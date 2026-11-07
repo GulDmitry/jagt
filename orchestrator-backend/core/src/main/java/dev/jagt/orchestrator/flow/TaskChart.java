@@ -72,9 +72,25 @@ final class TaskChart {
     private static final Set<TaskStatus> BEFORE_THE_VERDICT = EnumSet.of(NEW, IN_PROGRESS, SHIPPING, REVIEW_PENDING,
             CI_POLLING, CI_FAILED);
 
-    private static final Set<TaskStatus> READ = EnumSet.of(REVIEWED, APPROVED, CI_FAILED);
+    private static final Set<TaskStatus> WAITING_FOR_A_DEPLOY = EnumSet.of(REVIEWED, APPROVED);
 
-    private static final Set<TaskStatus> READ_FROM = EnumSet.of(CI_POLLING, REVIEWED, APPROVED, CI_FAILED);
+    private static final Set<TaskStatus> WAITING_ON_THE_HOST = union(WAITING_FOR_A_DEPLOY, CI_POLLING);
+
+    private static final Set<TaskStatus> READ = union(WAITING_FOR_A_DEPLOY, CI_FAILED);
+
+    private static final Set<TaskStatus> READ_FROM = union(WAITING_ON_THE_HOST, CI_FAILED);
+
+    private static final Set<TaskStatus> HANDED_OVER = union(WAITING_FOR_A_DEPLOY, DEPLOYED);
+
+    private static final Set<TaskStatus> WATCHED = EnumSet.of(NEW, IN_PROGRESS, SHIPPING);
+
+    private static final Set<TaskStatus> READ_BY_THE_MASTER = EnumSet.of(PLAN_PENDING, REVIEW_PENDING);
+
+    private static final Set<TaskStatus> OUT_FOR_REVIEW = EnumSet.of(CI_POLLING, REVIEWED);
+
+    private static final Set<TaskStatus> HANDED_BACK = EnumSet.of(REVIEW_PENDING, CI_FAILED);
+
+    private static final Set<TaskStatus> AWAITING_ITS_INSTRUCTION = EnumSet.of(SHIPPING, DEPLOY_CONFLICT);
 
     private static final Set<AgentReport> STANDING_THROUGH_A_READ = EnumSet.of(AgentReport.QUESTION,
             AgentReport.PERMISSION);
@@ -196,6 +212,70 @@ final class TaskChart {
 
     static Set<TaskStatus> reads() {
         return EnumSet.copyOf(READ);
+    }
+
+    private static Set<TaskStatus> union(Set<TaskStatus> base, TaskStatus extra) {
+        Set<TaskStatus> all = EnumSet.copyOf(base);
+        all.add(extra);
+        return all;
+    }
+
+    static boolean watched(TaskStatus status) {
+        return WATCHED.contains(status);
+    }
+
+    static boolean readByTheMaster(TaskStatus status) {
+        return READ_BY_THE_MASTER.contains(status);
+    }
+
+    static boolean outForReview(TaskStatus status) {
+        return OUT_FOR_REVIEW.contains(status);
+    }
+
+    static boolean handedBack(TaskStatus status) {
+        return HANDED_BACK.contains(status);
+    }
+
+    static boolean awaitsItsInstruction(TaskStatus status) {
+        return AWAITING_ITS_INSTRUCTION.contains(status);
+    }
+
+    static boolean waitsForADeploy(TaskStatus status) {
+        return WAITING_FOR_A_DEPLOY.contains(status);
+    }
+
+    static boolean waitsOnTheHost(TaskStatus status) {
+        return WAITING_ON_THE_HOST.contains(status);
+    }
+
+    static boolean handedOver(TaskStatus status) {
+        return HANDED_OVER.contains(status);
+    }
+
+    /** Statuses a verified hand-back is redirected from: the only way into them is a report that owes verification. */
+    static Set<TaskStatus> verifiable() {
+        Set<TaskStatus> from = EnumSet.noneOf(TaskStatus.class);
+        for (TaskStatus status : TaskStatus.values()) {
+            if (land(status, new TaskMove.Verified(true)).isPresent()) {
+                from.add(status);
+            }
+        }
+        return from;
+    }
+
+    /** What a read of the review round concludes: a red run stops it unless it died on infrastructure with a retry left. */
+    static Optional<TaskStatus> readConcludes(boolean unresolved, boolean approved, Pipeline checks, RedCause cause,
+                                              boolean retryLeft) {
+        if (checks == Pipeline.RED) {
+            return cause == RedCause.INFRASTRUCTURE && retryLeft ? Optional.empty() : Optional.of(CI_FAILED);
+        }
+        if (unresolved) {
+            return Optional.empty();
+        }
+        if (approved) {
+            return Optional.of(APPROVED);
+        }
+        return checks == Pipeline.GREEN ? Optional.of(REVIEWED) : Optional.empty();
     }
 
     private static Chart<TaskMove, ChartFacts, TaskEffect> build(Composition composition) {

@@ -114,7 +114,7 @@ public final class FlowRules {
 
     /** Whether the task's next step waits on the host's checks, so a red or green read can move it. */
     public static boolean waitsOnTheHost(TaskStatus status) {
-        return WAITING_ON_THE_HOST.contains(status);
+        return TaskChart.waitsOnTheHost(status);
     }
 
     /** Whether a read of the review round leaves this report standing: only the session or a human answers it. */
@@ -141,16 +141,7 @@ public final class FlowRules {
      */
     public static Optional<TaskStatus> readReview(boolean unresolved, boolean approved, Pipeline checks,
                                                   RedCause cause, boolean retryLeft) {
-        if (checks == Pipeline.RED) {
-            return cause == RedCause.INFRASTRUCTURE && retryLeft ? Optional.empty() : Optional.of(TaskStatus.CI_FAILED);
-        }
-        if (unresolved) {
-            return Optional.empty();
-        }
-        if (approved) {
-            return Optional.of(TaskStatus.APPROVED);
-        }
-        return checks == Pipeline.GREEN ? Optional.of(TaskStatus.REVIEWED) : Optional.empty();
+        return TaskChart.readConcludes(unresolved, approved, checks, cause, retryLeft);
     }
 
     /** A verified hand-back reaches the human; a failed one goes back to its session. */
@@ -180,17 +171,17 @@ public final class FlowRules {
 
     /** Where the agent is expected to act, so its silence means death; NEW for one that died before reporting. */
     public static boolean watched(TaskStatus status) {
-        return WATCHED.contains(status);
+        return TaskChart.watched(status);
     }
 
     /** A status a session hands control back with: news to the human, and where its drafted replies wait. */
     public static boolean handsBack(TaskStatus status) {
-        return HANDED_BACK.contains(status);
+        return TaskChart.handedBack(status);
     }
 
     /** A plan or a round handed back, which the Master reads before the human where it runs. */
     public static boolean readByTheMaster(TaskStatus status) {
-        return READ_BY_THE_MASTER.contains(status);
+        return TaskChart.readByTheMaster(status);
     }
 
     /** A hand-back the Master reads next, once verification has passed where one runs. */
@@ -200,12 +191,12 @@ public final class FlowRules {
 
     /** Read and green, with only the approval or the deploy still to come. */
     public static boolean awaitsApproval(TaskStatus status) {
-        return WAITING_FOR_A_DEPLOY.contains(status);
+        return TaskChart.waitsForADeploy(status);
     }
 
     /** A request green with every thread closed, which in act the Master deploys as the human would. */
     public static boolean deployedByTheMaster(TaskStatus status) {
-        return WAITING_FOR_A_DEPLOY.contains(status);
+        return TaskChart.waitsForADeploy(status);
     }
 
     /**
@@ -213,12 +204,12 @@ public final class FlowRules {
      * which is an open request whatever the status.
      */
     public static boolean outForReview(TaskStatus status) {
-        return OUT_FOR_REVIEW.contains(status);
+        return TaskChart.outForReview(status);
     }
 
     /** Green with nothing left for its session, so only a reviewer's word can move the request on. */
     public static boolean movedOnByAReviewerAlone(TaskStatus status) {
-        return MOVED_ON_BY_A_REVIEWER_ALONE.contains(status);
+        return TaskChart.handedOver(status);
     }
 
     /** A hand-back jagt holds until it has run the project's verification command; its agent's silence is no stall. */
@@ -253,7 +244,7 @@ public final class FlowRules {
 
     /** Waiting on an instruction jagt relayed, which nothing else written to the session may replace. */
     public static boolean awaitsItsInstruction(TaskStatus status) {
-        return AWAITING_ITS_INSTRUCTION.contains(status);
+        return TaskChart.awaitsItsInstruction(status);
     }
 
     /** A round read that found the request approved. */
@@ -268,39 +259,15 @@ public final class FlowRules {
 
     /** Whether the work has left the worktree, which is the only point a tracker's word can end the task. */
     public static boolean handedOver(TaskStatus status) {
-        return HANDED_OVER.contains(status);
+        return TaskChart.handedOver(status);
     }
 
     /** Statuses no action leads to and no task reports: a redirect in {@link #reported} is the only way in. */
     public static Set<TaskStatus> redirects() {
-        return EnumSet.of(TaskStatus.VERIFYING);
+        return TaskChart.verifiable();
     }
 
     private static final Set<TaskStop.Trigger> LIFTED_BY_THE_MASTER = EnumSet.of(TaskStop.Trigger.STALLED,
             TaskStop.Trigger.SHIPS, TaskStop.Trigger.ROUNDS, TaskStop.Trigger.PACE, TaskStop.Trigger.UNCHANGED_FAILURE);
 
-    private static final Set<TaskStatus> WATCHED = EnumSet.of(TaskStatus.NEW, TaskStatus.IN_PROGRESS,
-            TaskStatus.SHIPPING);
-
-    private static final Set<TaskStatus> READ_BY_THE_MASTER = EnumSet.of(TaskStatus.PLAN_PENDING,
-            TaskStatus.REVIEW_PENDING);
-
-    private static final Set<TaskStatus> OUT_FOR_REVIEW = EnumSet.of(TaskStatus.CI_POLLING, TaskStatus.REVIEWED);
-
-    private static final Set<TaskStatus> MOVED_ON_BY_A_REVIEWER_ALONE = EnumSet.of(TaskStatus.REVIEWED,
-            TaskStatus.APPROVED, TaskStatus.DEPLOYED);
-
-    private static final Set<TaskStatus> HANDED_BACK = EnumSet.of(TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED);
-
-    private static final Set<TaskStatus> WAITING_FOR_A_DEPLOY = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED);
-
-    private static final Set<TaskStatus> AWAITING_ITS_INSTRUCTION = EnumSet.of(TaskStatus.SHIPPING,
-            TaskStatus.DEPLOY_CONFLICT);
-
-    private static final Set<TaskStatus> WAITING_ON_THE_HOST = EnumSet.of(TaskStatus.CI_POLLING,
-            TaskStatus.REVIEWED, TaskStatus.APPROVED);
-
-    /** Statuses the work has been handed over from, so a tracker reaching its own last stage may close it. */
-    private static final Set<TaskStatus> HANDED_OVER = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED,
-            TaskStatus.DEPLOYED);
 }
