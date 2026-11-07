@@ -8,10 +8,9 @@ Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
 
 ## Context
 
-- A local-model QA eval ran 27 minutes for 2 of 12 cases, and nothing stopped it.
+- A local-model QA eval ran 27 min for 2 of 12 cases, unstopped; another 32 min for 10, in loops the read repeats.
 - Measured 2026-11-05 on a 10-core Mac, `--rerun-tasks --no-daemon`: `test` 66 s, `boardTest` 85 s, `e2eTest`
   168 s, `roleEval -Prole=master` about 7 min (21 cases), `promptEval` under 1 min.
-- The local-model QA eval: 32 min for 10 cases, its time spent in loops the read repeats, not in the model.
 - CI's `pitest` on a push's diff: 47 min on 2026-11-05 (5,428 mutations, `usecase` 2,813 s, 30 minion timeouts).
 - `pitestDiff` on one commit's diff: about 130 s for 1 and for 8 changed main files, most of it coverage analysis.
 
@@ -35,6 +34,7 @@ Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
   push diff took 11 min 40 s instead of 14 min 41 s, the same 3,015 of 3,288 mutants detected.
 - The ArchUnit rule tests share one import of main, `MainClasses.CODE`: each class took 19–27 s re-importing,
   about 4 s sharing it; the root `:test` task 16 s to 9 s.
+- jqwik runs in `:core:propertyTest`, finalizing `:core:test`, in `check`: gate 85 s to 73 s, same 7,258 tests.
 - `e2eTest` runs its classes in parallel forks, each naming its tmux sessions by its pid: 168 s to 90 s, bounded by
   `MasterModeFlowTest`.
 

@@ -14,3 +14,20 @@ dependencies {
     testImplementation 'org.mockito:mockito-core'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
+
+// 0139: the jqwik properties are the slowest class of the gate; in a task of their own they run beside the other
+// modules' suites instead of ahead of them. `test` is finalized by it, so every run of `test` still runs them.
+tasks.named('test', Test) {
+    useJUnitPlatform { excludeEngines 'jqwik' }
+    finalizedBy 'propertyTest'
+}
+
+tasks.register('propertyTest', Test) {
+    group = 'verification'
+    description = 'Runs the jqwik property tests, split from test to keep them off its critical path.'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform { includeEngines 'jqwik' }
+}
+
+tasks.named('check') { dependsOn 'propertyTest' }
