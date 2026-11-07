@@ -5,7 +5,9 @@ import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
 import dev.jagt.orchestrator.service.KeepAlive;
+import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn;
 import java.time.Clock;
@@ -84,7 +86,7 @@ public class McpProtocolService implements McpToolRegistry {
             case "initialize" -> initializeResult(message);
             case "ping" -> mapper.createObjectNode();
             case "tools/list" -> toolsList(callerTaskId);
-            case "tools/call" -> callTool(message, callerTaskId);
+            case "tools/call" -> callAs(message, callerTaskId);
             default -> null;
           };
       if (isNotification) {
@@ -172,6 +174,12 @@ public class McpProtocolService implements McpToolRegistry {
         effect,
         schema.json(),
         MessageTool.of(mapper, name, audience, message, context, handler));
+  }
+
+  private JsonNode callAs(JsonNode message, @Nullable String callerTaskId) {
+    return callerTaskId == null
+        ? OriginContext.as(ActionOrigin.ROOT, () -> callTool(message, null))
+        : callTool(message, callerTaskId);
   }
 
   private JsonNode callTool(JsonNode message, @Nullable String callerTaskId) {

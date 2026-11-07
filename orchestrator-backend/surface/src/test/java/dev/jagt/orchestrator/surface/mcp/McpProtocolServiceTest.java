@@ -17,12 +17,14 @@ import dev.jagt.orchestrator.protocol.NoArguments;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.OwnStatusReports;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.surface.mcp.tools.DeployTools;
 import dev.jagt.orchestrator.surface.mcp.tools.IdeTools;
 import dev.jagt.orchestrator.surface.mcp.tools.SessionTools;
 import dev.jagt.orchestrator.surface.mcp.tools.StatusTools;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
@@ -31,6 +33,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -44,6 +47,43 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 class McpProtocolServiceTest {
+
+  @Test
+  void recordsACallPresentingOnlyTheMasterTokenAsTheRootsOwn(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    AtomicReference<ActionOrigin> seen = new AtomicReference<>();
+    McpTools moving =
+        tools ->
+            tools.tool(
+                "move",
+                Audience.ANYONE,
+                Effect.CHANGES,
+                NoArguments.schema("moves"),
+                NoArguments.class,
+                (said, caller) -> MessageContext.NONE,
+                (said, caller) -> {
+                  seen.set(OriginContext.current());
+                  return "moved";
+                });
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(moving));
+
+    protocol.handle(
+        mapper.readTree(
+            "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\","
+                + "\"params\":{\"name\":\"move\",\"arguments\":{}}}"),
+        null,
+        true);
+
+    assertThat(seen.get()).isEqualTo(ActionOrigin.ROOT);
+  }
 
   @Test
   void offersASessionOnlyTheStatusesItMayReport(@TempDir Path root) {

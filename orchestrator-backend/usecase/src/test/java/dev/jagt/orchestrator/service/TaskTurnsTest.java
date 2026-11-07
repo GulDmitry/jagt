@@ -8,6 +8,7 @@ import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.MasterPhase;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.StatusChange;
@@ -79,6 +80,27 @@ class TaskTurnsTest {
         .extracting(ILoggingEvent::getKeyValuePairs)
         .asInstanceOf(InstanceOfAssertFactories.LIST)
         .contains(new KeyValuePair("status", TaskStatus.REVIEWED));
+  }
+
+  @Test
+  void doesNotReadARootSessionsMoveAsTheTaskSessionsAnswer(@TempDir Path root) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1, ActionOrigin.ROOT)))
+            .build());
+
+    new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.IN_PROGRESS);
+
+    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().mark("deploy:answers"))
+        .isEqualTo(Turn.digestOf(""));
   }
 
   @Test

@@ -7,8 +7,10 @@ public enum ActionOrigin {
   BOARD,
   /** Free text a model mapped to a command, whichever surface it was typed into. */
   PALETTE,
-  /** An MCP call: a sub-agent reporting its own progress, or the Master. */
+  /** An MCP call from a task's own session, reporting its progress. */
   MCP,
+  /** The root session, holding the Master token, acting on a task it does not run. */
+  ROOT,
   AUTO_REVIEW,
   /** The Master session acting where a human would have. */
   MASTER,

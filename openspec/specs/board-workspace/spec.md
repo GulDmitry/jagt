@@ -169,13 +169,15 @@ before it runs asks on its key too, and `Done` carries none and stands apart at 
 
 ### Requirement: The history names who asked
 Each step of a task's status history SHALL name who asked for it (`task/ActionOrigin`), the opening step what opened
-the task: the board, the palette, an MCP call or the tracker. A step jagt took unasked names nobody. A step whose asker
-gave a reason SHALL show it in the step's hover alone. The history holds 50 steps. Past that the oldest after the
+the task: the board, the palette, a task session's MCP call, the root session's or the tracker. A step jagt took unasked names nobody.
+A step whose asker gave a reason SHALL show it in the step's hover alone. The history holds 50 steps. Past that the oldest after the
 opening step drop; the opening step stays. Time held per owner leaves out the gap after it.
 
-#### Scenario: Opened twice
+#### Scenario: Opened twice, then the root moves one
 - **WHEN** ABC-42 is opened on the board and ABC-43 by an `initialize_task` call
 - **THEN** ABC-42's first step reads `board` and ABC-43's `mcp`
+- **WHEN** the root session, holding the Master token in no task's worktree, moves ABC-42
+- **THEN** that step reads `root`, and ABC-42's session does not take it as its own answer
 
 #### Scenario: Why a step was taken
 - **WHEN** ABC-42's session hands back with `why` "work done, tests green, ready for review"
