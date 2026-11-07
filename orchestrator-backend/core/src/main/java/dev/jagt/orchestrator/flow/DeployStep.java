@@ -84,7 +84,7 @@ public sealed interface DeployStep {
 
         private boolean unpushed(Deployment deployment) {
             return deployment.conflictedTarget().filter(target -> target.project().equals(project))
-                    .map(Deployment.Target::conflict).filter(conflict -> conflict.cause() == Deployment.Cause.MERGE)
+                    .map(target -> target.progress().conflict()).filter(conflict -> conflict.cause() == Deployment.Cause.MERGE)
                     .isPresent();
         }
     }

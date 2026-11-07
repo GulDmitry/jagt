@@ -41,7 +41,7 @@ public class RevertRunner {
             Deployment.Target recorded = recorded(task, target);
             try {
                 lastRevertCommit = gitDeploy.revertMergeAndPush(target.path(), taskId, target.deployBranch(),
-                        Objects.requireNonNull(recorded.merge()), recorded.fixes().reversed());
+                        Objects.requireNonNull(recorded.landing().merge()), recorded.landing().fixes().reversed());
             } catch (GitDeploy.RevertConflictException e) {
                 return handBackConflict(taskId, target, reverted, e);
             } catch (RuntimeException e) {

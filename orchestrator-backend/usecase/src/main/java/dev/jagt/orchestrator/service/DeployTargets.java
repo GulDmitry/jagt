@@ -82,7 +82,7 @@ public class DeployTargets {
     /** What the task's deployment waits on, as its record says; none while it stands in no conflict. */
     public static Optional<Deployment.Cause> conflictCause(TaskState task) {
         return Optional.ofNullable(task.deployment()).flatMap(Deployment::conflictedTarget)
-                .map(target -> Objects.requireNonNull(target.conflict()).cause());
+                .map(target -> Objects.requireNonNull(target.progress().conflict()).cause());
     }
 
     /** Whether the deploy waits for its pipeline, as its record says. */

@@ -228,7 +228,7 @@ class RevertServiceTest {
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
         assertThat(outcome.message()).contains("reverted web on dev", "api on dev", "REVERTED");
         assertThat(state.task("ABC-1").orElseThrow().deployment().targets())
-                .extracting(Deployment.Target::merge).containsOnlyNulls();
+                .extracting(target -> target.landing().merge()).containsOnlyNulls();
     }
 
     @Test
@@ -255,7 +255,7 @@ class RevertServiceTest {
         assertThat(outcome.message()).contains("reverted web on dev", "api still live on dev");
         assertThat(outcome.stamp()).contains("reverted web on dev", "api still live on dev");
         assertThat(state.task("ABC-1").orElseThrow().deployment().targets())
-                .extracting(Deployment.Target::merge).containsExactly("cafebabe1234", null);
+                .extracting(target -> target.landing().merge()).containsExactly("cafebabe1234", null);
     }
 
     @Test
@@ -412,7 +412,7 @@ class RevertServiceTest {
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.CONFLICT);
         assertThat(outcome.message()).contains("/ABC-1-revert", "dev");
         Deployment.Target stopped = state.task("ABC-1").orElseThrow().deployment().conflictedTarget().orElseThrow();
-        assertThat(stopped.conflict().cause()).isEqualTo(Deployment.Cause.REVERT);
+        assertThat(stopped.progress().conflict().cause()).isEqualTo(Deployment.Cause.REVERT);
         assertThat(stopped.landed()).isTrue();
     }
 

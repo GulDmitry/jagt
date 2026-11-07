@@ -177,7 +177,7 @@ class TaskStateTest {
         assertThat(task.worktreePath()).isEqualTo("/wt/ABC-1-demo");
         assertThat(task.remoteUrl()).isEqualTo("git@host:g/p.git");
         assertThat(task.mrUrl()).isEqualTo("https://host/mr/9");
-        assertThat(task.deployment().targets().getFirst().merge()).isEqualTo("cafebabe1234");
+        assertThat(task.deployment().targets().getFirst().landing().merge()).isEqualTo("cafebabe1234");
         assertThat(task.status()).isEqualTo(TaskStatus.CI_POLLING);
         assertThat(task.alias()).isEqualTo("a1");
     }
@@ -673,8 +673,8 @@ class TaskStateTest {
                           {"project":"java","worktreePath":"/wt/java","deployCommit":"beef2"}],
                  "status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0}""", TaskState.class);
 
-        assertThat(old.deployment().targets()).extracting(Deployment.Target::project, Deployment.Target::merge,
-                Deployment.Target::fixes).containsExactly(
+        assertThat(old.deployment().targets()).extracting(Deployment.Target::project, target -> target.landing().merge(),
+                target -> target.landing().fixes()).containsExactly(
                 tuple("php", "cafe1", List.of("f1x1", "f1x2")),
                 tuple("java", "beef2", List.of()));
         assertThat(old.deployment().live()).isTrue();
@@ -691,7 +691,7 @@ class TaskStateTest {
 
         assertThat(old.deployment().conflictedTarget()).hasValueSatisfying(target -> {
             assertThat(target.project()).isEqualTo("java");
-            assertThat(target.conflict().since()).isEqualTo(3);
+            assertThat(target.progress().conflict().since()).isEqualTo(3);
         });
     }
 

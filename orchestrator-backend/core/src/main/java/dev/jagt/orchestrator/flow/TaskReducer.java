@@ -348,7 +348,7 @@ public final class TaskReducer {
     }
 
     private static TaskMove.ConflictDrop dropOf(Deployment deployment, Deployment.Target conflicted) {
-        return switch (Objects.requireNonNull(conflicted.conflict()).cause()) {
+        return switch (Objects.requireNonNull(conflicted.progress().conflict()).cause()) {
             case RED_PIPELINE -> TaskMove.ConflictDrop.LANDS;
             case REVERT -> TaskMove.ConflictDrop.NONE;
             case MERGE -> !deployment.live() ? TaskMove.ConflictDrop.RETURNS

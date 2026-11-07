@@ -612,7 +612,7 @@ public record TaskState(
     @JsonIgnore
     public Optional<Conflict> currentConflict() {
         return status == TaskStatus.DEPLOY_CONFLICT
-                ? Optional.ofNullable(deployment).flatMap(Deployment::conflictedTarget).map(Deployment.Target::conflict)
+                ? Optional.ofNullable(deployment).flatMap(Deployment::conflictedTarget).map(target -> target.progress().conflict())
                 : Optional.empty();
     }
 

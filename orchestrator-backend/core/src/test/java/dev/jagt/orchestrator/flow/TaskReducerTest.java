@@ -34,7 +34,7 @@ class TaskReducerTest {
         TaskState deployed = TaskReducer.reduce(conflicted, new TaskMove.Ran(TaskAction.DEPLOY, Outcome.Kind.OK),
                 "deployed", true, 2_000);
 
-        assertThat(deployed.deployment().targets().getFirst().conflict()).isNull();
+        assertThat(deployed.deployment().targets().getFirst().progress().conflict()).isNull();
     }
 
     @Test
@@ -101,7 +101,7 @@ class TaskReducerTest {
         TaskState conflicted = TaskReducer.deployStepped(pushed, new DeployStep.Conflicted("b", Deployment.Cause.MERGE), 1_300);
 
         assertThat(conflicted.deployment().at()).isEqualTo(1);
-        assertThat(conflicted.deployment().targets().get(0).merge()).isEqualTo("cafe");
+        assertThat(conflicted.deployment().targets().get(0).landing().merge()).isEqualTo("cafe");
         assertThat(conflicted.deployment().targets().get(1).conflicted()).isTrue();
     }
 
@@ -115,7 +115,7 @@ class TaskReducerTest {
         TaskState second = TaskReducer.deployStepped(first, new DeployStep.Opened(List.of(
                 Deployment.Target.of("a", "dev"), Deployment.Target.of("b", "dev"))), 2_000);
 
-        assertThat(second.deployment().targets()).extracting(Deployment.Target::merge).containsExactly("cafe", null);
+        assertThat(second.deployment().targets()).extracting(target -> target.landing().merge()).containsExactly("cafe", null);
     }
 
     @Test
@@ -816,7 +816,7 @@ class TaskReducerTest {
         assertThat(left.deployment().targets()).extracting(Deployment.Target::project).containsExactly("alpha", "gamma");
         assertThat(left.deployment().at()).isEqualTo(1);
         assertThat(left.deployment().conflictedTarget()).isEmpty();
-        assertThat(left.deployment().targets().getFirst().merge()).isEqualTo("a1");
+        assertThat(left.deployment().targets().getFirst().landing().merge()).isEqualTo("a1");
         assertThat(DeployPhase.of(left.deployment())).isEqualTo(DeployPhase.LANDING);
     }
 

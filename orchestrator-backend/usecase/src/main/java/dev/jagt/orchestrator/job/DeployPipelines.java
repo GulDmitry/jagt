@@ -157,7 +157,7 @@ public class DeployPipelines {
         if (landed.isBare()) {
             return Reading.bare(landed.project());
         }
-        if (clock.millis() - landed.pushedAt() < NO_PIPELINE_AFTER.toMillis()) {
+        if (clock.millis() - landed.landing().pushedAt() < NO_PIPELINE_AFTER.toMillis()) {
             return Reading.waiting(at + "not started");
         }
         withoutPipeline(taskId, label, "the host listed none after " + NO_PIPELINE_AFTER.toMinutes() + " min");

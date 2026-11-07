@@ -94,7 +94,7 @@ class DeployServiceTest {
 
         Outcome outcome = deploys.deploy("a1");
 
-        assertThat(state.task("ABC-1").orElseThrow().deployment().targets().getFirst().merge())
+        assertThat(state.task("ABC-1").orElseThrow().deployment().targets().getFirst().landing().merge())
                 .isEqualTo("cafebabe1234");
         assertThat(outcome.message()).contains("cafebabe");
     }
@@ -116,7 +116,7 @@ class DeployServiceTest {
 
         Deployment deployment = state.task("ABC-1").orElseThrow().deployment();
         assertThat(deployment.at()).isEqualTo(1);
-        assertThat(deployment.targets().getFirst().merge()).isEqualTo("cafebabe1234");
+        assertThat(deployment.targets().getFirst().landing().merge()).isEqualTo("cafebabe1234");
         assertThat(deployment.targets().getFirst().deployBranch()).isEqualTo("dev");
     }
 
@@ -141,7 +141,7 @@ class DeployServiceTest {
         deploys.deploy("a1");
 
         Deployment.Target landed = state.task("ABC-1").orElseThrow().deployment().targets().getFirst();
-        assertThat(landed.merge()).isEqualTo("cafebabe1234");
+        assertThat(landed.landing().merge()).isEqualTo("cafebabe1234");
         assertThat(landed.tip()).isEqualTo("f1xf1x5678");
     }
 
@@ -259,7 +259,7 @@ class DeployServiceTest {
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
         assertThat(outcome.message()).contains("api into dev (cafebabe)", "web into dev (f00dfeed)", "DEPLOYED");
         assertThat(state.task("ABC-1").orElseThrow().deployment().targets())
-                .extracting(Deployment.Target::merge).containsExactly("cafebabe1234", "f00dfeed5678");
+                .extracting(target -> target.landing().merge()).containsExactly("cafebabe1234", "f00dfeed5678");
     }
 
     @Test
@@ -287,7 +287,7 @@ class DeployServiceTest {
                 "NOT deployed: web", deployWorktree.toString());
         assertThat(outcome.stamp()).contains("Live on the deploy branch: api", "NOT deployed: web");
         assertThat(state.task("ABC-1").orElseThrow().deployment().targets())
-                .extracting(Deployment.Target::merge).containsExactly("cafebabe1234", null);
+                .extracting(target -> target.landing().merge()).containsExactly("cafebabe1234", null);
     }
 
     @Test
@@ -381,7 +381,7 @@ class DeployServiceTest {
 
         verify(git, never()).mergeIntoAndPush(eq(Path.of("/repo/api")), anyString(), anyString());
         assertThat(outcome.message()).contains("web into dev (f00dfeed)", "already on the deploy branch: api (cafebabe)");
-        assertThat(state.task("ABC-1").orElseThrow().deployment().targets().getFirst().merge()).isEqualTo("cafebabe1234");
+        assertThat(state.task("ABC-1").orElseThrow().deployment().targets().getFirst().landing().merge()).isEqualTo("cafebabe1234");
     }
 
     @Test
