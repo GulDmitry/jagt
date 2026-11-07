@@ -2,13 +2,11 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.MasterRight;
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn.Holder;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Who holds a task's turn once its status, its last report and whether jagt stopped it stand, under the Master's mode

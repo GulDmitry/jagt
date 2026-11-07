@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.jspecify.annotations.Nullable;
 
 /** The Codex runtime's binary only; {@code orchestrator.claude.command} is the master assistant's CLI as well. */
 @ConfigurationProperties(prefix = "orchestrator.codex")

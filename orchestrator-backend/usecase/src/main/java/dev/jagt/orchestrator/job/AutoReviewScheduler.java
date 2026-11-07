@@ -5,7 +5,6 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ReviewSweepService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
-import dev.jagt.orchestrator.task.TaskLabel;
 import dev.jagt.orchestrator.task.ToldOnce;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.port.Notification;

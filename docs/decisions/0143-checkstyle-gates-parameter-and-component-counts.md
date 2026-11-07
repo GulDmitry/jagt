@@ -17,6 +17,7 @@ Accepted 2026-11-07.
   at Checkstyle's own defaults (7 and 8); `test` depends on `checkstyleMain`, so the gate fails on a breach.
 - `gradle/checkstyle/suppressions.xml` lists today's breaches by file and check, each with its reason and estimated cost;
   zero is the target, and a split by composition deletes its line.
+- `UnusedImports` and `RedundantImport` gate main the same way, at their defaults.
 - A bean keeps `CollaboratorCeilingTest`'s 3/5.
 
 ## Rejected

@@ -9,5 +9,7 @@
     <module name="TreeWalker">
         <module name="ParameterNumber"/>
         <module name="RecordComponentNumber"/>
+        <module name="UnusedImports"/>
+        <module name="RedundantImport"/>
     </module>
 </module>

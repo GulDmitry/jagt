@@ -10,7 +10,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /** A file jagt ships as {@code <name>.dist}; the human's copy beside it, named {@code <name>}, is read first. */
 final class HumanCopy {
