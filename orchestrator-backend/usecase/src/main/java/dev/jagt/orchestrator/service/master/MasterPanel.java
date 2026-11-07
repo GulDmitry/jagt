@@ -157,8 +157,8 @@ public class MasterPanel {
             return Optional.empty();
         }
         Judgement judged = reviews.review(taskId, new RoundReviewer.Round("",
-                answerPrompt(taskId, task, brief.get(), briefs.author(), question, read.get().decided(),
-                        read.get().said(), stuck, reviews.loadsMcpServer()),
+                answerPrompt(taskId, task, new Briefs(brief.get(), briefs.author()),
+                        new Asked(question, read.get().decided(), read.get().said(), stuck), reviews.loadsMcpServer()),
                 worktrees(task),
                 config.modelOrInherited()));
         return Optional.of(judged).filter(said -> said.failure().isBlank() && !said.findings().isEmpty())
@@ -244,15 +244,20 @@ public class MasterPanel {
         };
     }
 
-    static String answerPrompt(String taskId, TaskState task, String brief, String authorBrief, String question,
-                               String decided, List<String> said, boolean stuck, boolean tracker) {
+    record Briefs(String judgeBy, String worksTo) {
+    }
+
+    record Asked(String question, String decided, List<String> said, boolean stuck) {
+    }
+
+    static String answerPrompt(String taskId, TaskState task, Briefs standards, Asked asked, boolean tracker) {
         return GOAL + "<role>You stand in for the human on task " + taskId + ".</role>\n"
                 + RoundReviewer.QUESTION_LEAD + "\n"
-                + "<question>\n" + question + "\n</question>\n"
-                + "The brief you judge by:\n<brief>\n" + brief + "\n</brief>\n"
-                + "The brief the session works to, its %s filled per task:\n<author_brief>\n" + authorBrief
+                + "<question>\n" + asked.question() + "\n</question>\n"
+                + "The brief you judge by:\n<brief>\n" + standards.judgeBy() + "\n</brief>\n"
+                + "The brief the session works to, its %s filled per task:\n<author_brief>\n" + standards.worksTo()
                 + "\n</author_brief>\n"
-                + round(taskId, task) + settled(decided) + humanSaid(said) + (stuck ? STUCK : "")
+                + round(taskId, task) + settled(asked.decided()) + humanSaid(asked.said()) + (asked.stuck() ? STUCK : "")
                 + "<rules>\n"
                 + "1. " + ticket(tracker, "code") + " Read the code, its history with " + GIT + ".\n"
                 + "2. Then decide as the human would, by both briefs and the codebase. Decide only what you can prove.\n"

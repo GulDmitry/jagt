@@ -18,8 +18,6 @@
     <suppress files="[\\/]Facts\.java$" checks="RecordComponentNumber"/>
     <!-- persisted in finished.jsonl, read in the old flat shape; ~1 pt -->
     <suppress files="[\\/]FinishedTask\.java$" checks="RecordComponentNumber"/>
-    <!-- a method of 9 parameters; ~0.2 pt -->
-    <suppress files="[\\/]MasterPanel\.java$" checks="ParameterNumber"/>
     <suppress files="[\\/]NewTaskMessage\.java$" checks="RecordComponentNumber"/>
     <!-- Spring binding of jagt.yml; nested properties keep the keys; ~0.3 pt -->
     <suppress files="[\\/]OrchestratorProperties\.java$" checks="RecordComponentNumber"/>
