@@ -935,7 +935,7 @@ class AgentSessionsTest {
 
         sessions.relayUnderCold("ABC-1", "and handle empty files");
 
-        assertThat(root.resolve("task_context.md")).hasContent("and handle empty files");
+        assertThat(root.resolve("task_context.md")).content().startsWith("and handle empty files\n\n## Carried from the previous session");
         verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
     }
 

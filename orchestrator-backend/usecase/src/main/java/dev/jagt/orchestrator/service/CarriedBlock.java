@@ -9,7 +9,7 @@ import java.nio.file.Path;
 
 /**
  * What a fresh session is given of the one it replaces, gathered without a model: the board's facts, git's, the
- * conversation's own last words. A session that kept no transcript carries nothing.
+ * conversation's own last words. A session that kept no transcript carries all but the conversation's words and path.
  */
 @Component
 @RequiredArgsConstructor
@@ -26,9 +26,6 @@ public class CarriedBlock {
     String after(String instructions, TaskState task) {
         String own = without(instructions);
         Path worktree = Path.of(task.worktreePath());
-        if (runtime.sessionLogOf(worktree).isEmpty()) {
-            return own;
-        }
         StringBuilder carried = new StringBuilder(own).append(HEADING)
                 .append("### Where it stood\n").append(TaskFacts.of(task).stripLeading()).append("\n\n")
                 .append("### Git\n").append(changes.history(task, MAX_GIT_LINES)).append('\n');

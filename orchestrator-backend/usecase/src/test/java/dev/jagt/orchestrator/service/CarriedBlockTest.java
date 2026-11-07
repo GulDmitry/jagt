@@ -49,11 +49,29 @@ class CarriedBlockTest {
     }
 
     @Test
-    void carriesNothingWhereTheOldSessionKeptNoTranscript() {
-        TaskState task = TaskState.builder("proj", "/wt/ABC-42", TaskStatus.IN_PROGRESS).build();
+    void carriesTheReportAndHistoryButNoConversationWhereTheOldSessionKeptNoTranscript() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-42", TaskStatus.IN_PROGRESS).title("Add export")
+                .message("two tests left").build();
+        when(changes.history(task, 40)).thenReturn("# proj\ncommits:\nabc123 Add export\n");
         when(runtime.sessionLogOf(Path.of("/wt/ABC-42"))).thenReturn(Optional.empty());
+        when(runtime.conversationTail(Path.of("/wt/ABC-42"), 16_000)).thenReturn(Optional.empty());
 
-        assertThat(new CarriedBlock(changes, runtime).after("the round", task)).isEqualTo("the round");
+        String carried = new CarriedBlock(changes, runtime).after("the round", task);
+
+        assertThat(carried).isEqualTo("""
+                the round
+
+                ## Carried from the previous session
+
+                ### Where it stood
+                \u2014 Add export. On the board: IN_PROGRESS; your last report: two tests left
+
+                ### Git
+                # proj
+                commits:
+                abc123 Add export
+
+                """);
     }
 
     @Test
