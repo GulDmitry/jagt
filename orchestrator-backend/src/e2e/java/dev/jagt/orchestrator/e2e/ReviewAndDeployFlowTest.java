@@ -421,7 +421,7 @@ class ReviewAndDeployFlowTest {
   }
 
   @Test
-  void aTaskOpenedOverMcpRecordsTheCallAsItsOpener() throws Exception {
+  void aTaskOpenedByTheRootSessionRecordsTheRootAsItsOpener() throws Exception {
     String call =
         """
         {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
@@ -437,7 +437,7 @@ class ReviewAndDeployFlowTest {
 
     assertThat(task().history())
         .extracting(StatusChange::status, StatusChange::origin)
-        .containsExactly(tuple(TaskStatus.NEW, ActionOrigin.MCP));
+        .containsExactly(tuple(TaskStatus.NEW, ActionOrigin.ROOT));
   }
 
   @Test
