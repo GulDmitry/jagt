@@ -69,12 +69,12 @@ public final class Chart<E, X, F> {
         while (!queue.isEmpty()) {
             E current = queue.poll();
             List<Edge<E, F>> taken = enabled(config, facts, current, computed);
-            taken.stream().filter(t -> !t.internal()).forEach(t -> effects.addAll(exitEffects(t)));
+            taken.stream().filter(t -> !t.response().internal()).forEach(t -> effects.addAll(exitEffects(t)));
             for (Edge<E, F> t : taken) {
                 effects.addAll(t.effectsFor(current));
-                queue.addAll(t.raises());
+                queue.addAll(t.response().raises());
                 moves.add(t.describe());
-                raised += t.raises().size();
+                raised += t.response().raises().size();
             }
             if (raised > ceiling) {
                 throw new RaiseCeilingExceeded(ceiling, moves);

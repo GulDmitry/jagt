@@ -34,12 +34,12 @@ final class Mermaid {
             List<Edge<E, F>> sharing = own.stream().filter(other -> t.group() > 0 && other.group() == t.group())
                     .toList();
             if (sharing.size() < 2) {
-                lines.add("        " + id(region, t.from()) + " --> " + id(region, t.to()) + " : " + t.label());
+                lines.add("        " + id(region, t.from()) + " --> " + id(region, t.to()) + " : " + t.trigger().label());
             } else if (drawn.add(t.group())) {
                 String source = region.name() + "_from_" + t.group();
                 boolean loops = sharing.stream().allMatch(edge -> edge.from() == edge.to());
                 lines.add("        state \"" + sources(region, sharing) + "\" as " + source);
-                lines.add("        " + source + " --> " + (loops ? source : id(region, t.to())) + " : " + t.label());
+                lines.add("        " + source + " --> " + (loops ? source : id(region, t.to())) + " : " + t.trigger().label());
             }
         }
         region.states().stream().filter(region.finals()::contains)

@@ -45,12 +45,12 @@ public final class ChartBuilder<E, X, F> {
     }
 
     public <S extends Enum<S>> EdgeBuilder<E, X, F, S> on(RegionId<S> id, S from, Class<? extends E> type) {
-        return new EdgeBuilder<>(this, id.name(), from, type.getSimpleName(), type::isInstance);
+        return new EdgeBuilder<>(this, id.name(), from, new Edge.Trigger<>(type.getSimpleName(), type::isInstance));
     }
 
     public <S extends Enum<S>> EdgeBuilder<E, X, F, S> onMatching(RegionId<S> id, S from, String label,
                                                                     Predicate<E> matches) {
-        return new EdgeBuilder<>(this, id.name(), from, label, matches);
+        return new EdgeBuilder<>(this, id.name(), from, new Edge.Trigger<>(label, matches));
     }
 
     /** One edge declared from every state in {@code from}, drawn as a single labelled edge from the set. */
