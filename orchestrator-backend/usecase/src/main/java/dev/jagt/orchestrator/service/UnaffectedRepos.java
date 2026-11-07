@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.protocol.PlanRepositories;
 import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -8,8 +7,6 @@ import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -74,12 +71,6 @@ public class UnaffectedRepos {
           .log();
       return;
     }
-    Set<String> trustedOnlyByIt =
-        departure.trustedOnlyBy(taskId, Objects.requireNonNull(task), repo);
-    stateService.updateTask(
-        taskId,
-        current ->
-            TaskReducer.repoLeft(current, Objects.requireNonNull(repo.project()), trustedOnlyByIt));
-    departure.settle(taskId, repo, "the approved plan marks it unaffected");
+    departure.leave(taskId, repo, "the approved plan marks it unaffected");
   }
 }

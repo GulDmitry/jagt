@@ -2,15 +2,11 @@ package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -18,7 +14,6 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -172,7 +167,7 @@ class MergedRequestsTest {
   }
 
   @Test
-  void takesARepositoryWhoseRequestTheHostClosedOutOfATaskHoldingOthers(@TempDir Path root) {
+  void aRepositoryWhoseRequestTheHostClosedLeavesTheTaskWhereTheDepartureTakesIt(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -181,81 +176,22 @@ class MergedRequestsTest {
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())));
     TaskRepo web = new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web");
-    state.putTask(
-        "ABC-42",
-        TaskState.builder(
-                List.of(new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api"), web),
-                TaskStatus.REVIEWED)
-            .build());
+    when(departure.leave("ABC-42", web, "its request was closed on the host")).thenReturn(true);
 
     boolean left =
         new MergedRequests(
-                state, config, inspection, new WorktreeChanges(config, inspection), departure)
+                state,
+                config,
+                inspection,
+                new WorktreeChanges(config, inspection),
+                departure)
             .hostSaidClosed("ABC-42", web);
 
     assertThat(left).isTrue();
-    assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api");
-    verify(departure).settle(eq("ABC-42"), eq(web), any());
   }
 
   @Test
-  void aRepositoryWhoseRequestTheHostClosedTakesItsTrustedGitEntriesWithIt(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
-    TaskRepo web = new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web");
-    state.putTask(
-        "ABC-42",
-        TaskState.builder(
-                List.of(new TaskRepo("api", "/api-wt", "git@host:g/api.git", "http://mr/api"), web),
-                TaskStatus.REVIEWED)
-            .gitTrust(
-                GitTrust.of(
-                    Map.of(
-                        "core.bare in /api/.git/config",
-                        "a1",
-                        "core.bare in /web/.git/config",
-                        "b2")))
-            .build());
-    when(departure.trustedOnlyBy(eq("ABC-42"), any(), eq(web)))
-        .thenReturn(Set.of("core.bare in /web/.git/config"));
-
-    new MergedRequests(
-            state, config, inspection, new WorktreeChanges(config, inspection), departure)
-        .hostSaidClosed("ABC-42", web);
-
-    assertThat(state.task("ABC-42").orElseThrow().gitTrust().recorded())
-        .containsOnlyKeys("core.bare in /api/.git/config");
-  }
-
-  @Test
-  void keepsTheOnlyRepositoryOfATaskWhoseRequestTheHostClosed(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
-    TaskRepo only = new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api");
-    state.putTask("ABC-42", TaskState.builder(List.of(only), TaskStatus.REVIEWED).build());
-
-    boolean left =
-        new MergedRequests(
-                state, config, inspection, new WorktreeChanges(config, inspection), departure)
-            .hostSaidClosed("ABC-42", only);
-
-    assertThat(left).isFalse();
-    assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api");
-    verifyNoInteractions(departure);
-  }
-
-  @Test
-  void keepsThePrimaryRepositoryOfATaskHoldingOthersWhoseRequestTheHostClosed(@TempDir Path root) {
+  void aRepositoryTheDepartureKeepsStaysWhoseRequestTheHostClosed(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -264,22 +200,18 @@ class MergedRequestsTest {
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())));
     TaskRepo primary = new TaskRepo("api", "/api-wt", "git@host:g/api.git", "http://mr/api");
-    state.putTask(
-        "ABC-42",
-        TaskState.builder(
-                List.of(
-                    primary,
-                    new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web")),
-                TaskStatus.REVIEWED)
-            .build());
+    when(departure.leave("ABC-42", primary, "its request was closed on the host"))
+        .thenReturn(false);
 
     boolean left =
         new MergedRequests(
-                state, config, inspection, new WorktreeChanges(config, inspection), departure)
+                state,
+                config,
+                inspection,
+                new WorktreeChanges(config, inspection),
+                departure)
             .hostSaidClosed("ABC-42", primary);
 
     assertThat(left).isFalse();
-    assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api", "web");
-    verifyNoInteractions(departure);
   }
 }

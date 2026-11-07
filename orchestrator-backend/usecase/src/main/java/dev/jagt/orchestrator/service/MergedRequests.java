@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -76,17 +75,7 @@ public class MergedRequests {
    * or not, stays, for the caller to refuse.
    */
   public boolean hostSaidClosed(String taskId, TaskRepo repo) {
-    String project = Objects.requireNonNull(repo.project());
-    TaskState task = stateService.task(taskId).orElse(null);
-    boolean leaves = task != null && !project.equals(task.project());
-    if (leaves) {
-      Set<String> trustedOnlyByIt =
-          departure.trustedOnlyBy(taskId, Objects.requireNonNull(task), repo);
-      stateService.updateTask(
-          taskId, current -> TaskReducer.repoLeft(current, project, trustedOnlyByIt));
-      departure.settle(taskId, repo, "its request was closed on the host");
-    }
-    return leaves;
+    return departure.leave(taskId, repo, "its request was closed on the host");
   }
 
   private void record(String taskId, String project, boolean merged) {

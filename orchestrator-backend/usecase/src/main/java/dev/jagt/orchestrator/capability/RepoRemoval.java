@@ -1,14 +1,12 @@
 package dev.jagt.orchestrator.capability;
 
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.PipelineRetry;
 import dev.jagt.orchestrator.service.RepoDeparture;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -52,10 +50,7 @@ class RepoRemoval {
       close(taskId, project, request);
       closed = true;
     }
-    Set<String> trustedOnlyByIt = departure.trustedOnlyBy(taskId, task, repo);
-    stateService.updateTask(
-        taskId, current -> TaskReducer.repoLeft(current, project, trustedOnlyByIt));
-    departure.settle(taskId, repo, "you removed it");
+    departure.leave(taskId, repo, "you removed it");
     return "remove-repo "
         + taskId
         + ": "

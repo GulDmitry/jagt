@@ -1,8 +1,10 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,13 +22,26 @@ public class RepoDeparture {
   private final ConfigService configService;
   private final RetiredWorktrees worktrees;
   private final AgentSessions sessions;
+  private final StateService stateService;
 
-  /** The trusted git entries only {@code leaving} holds among {@code task}'s repositories. */
-  public Set<String> trustedOnlyBy(String taskId, TaskState task, TaskRepo leaving) {
-    return worktrees.trustedOnlyBy(taskId, task, leaving);
+  /**
+   * Takes {@code repo} out of the task and settles what it leaves behind. The task's primary
+   * repository stays and this answers false.
+   */
+  public boolean leave(String taskId, TaskRepo repo, String cause) {
+    String project = Objects.requireNonNull(repo.project());
+    TaskState task = stateService.task(taskId).orElse(null);
+    if (task == null || project.equals(task.project())) {
+      return false;
+    }
+    Set<String> trustedOnlyByIt = worktrees.trustedOnlyBy(taskId, task, repo);
+    stateService.updateTask(
+        taskId, current -> TaskReducer.repoLeft(current, project, trustedOnlyByIt));
+    settle(taskId, repo, cause);
+    return true;
   }
 
-  public void settle(String taskId, TaskRepo repo, String cause) {
+  private void settle(String taskId, TaskRepo repo, String cause) {
     log.atInfo()
         .setMessage("repository left the task")
         .addKeyValue("task", taskId)

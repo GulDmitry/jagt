@@ -56,9 +56,7 @@ class RepoRemovalTest {
     String said = new RepoRemoval(state, host, departure).remove("ABC-42", "web");
 
     assertThat(said).isEqualTo("remove-repo ABC-42: web left the task, its request closed");
-    assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api");
-    assertThat(state.task("ABC-42").orElseThrow().status()).isEqualTo(TaskStatus.REVIEWED);
-    verify(departure).settle(eq("ABC-42"), eq(web), any());
+    verify(departure).leave("ABC-42", web, "you removed it");
   }
 
   @Test
@@ -79,7 +77,7 @@ class RepoRemovalTest {
     String said = new RepoRemoval(state, host, departure).remove("ABC-42", "web");
 
     assertThat(said).isEqualTo("remove-repo ABC-42: web left the task");
-    assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api");
+    verify(departure).leave("ABC-42", web, "you removed it");
     verifyNoInteractions(host);
   }
 
@@ -132,7 +130,7 @@ class RepoRemovalTest {
 
     new RepoRemoval(state, host, departure).remove("ABC-42", "web");
 
-    assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api");
+    verify(departure).leave(eq("ABC-42"), any(), any());
     verifyNoInteractions(host);
   }
 
