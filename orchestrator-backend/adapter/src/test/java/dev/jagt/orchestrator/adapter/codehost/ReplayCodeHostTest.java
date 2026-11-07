@@ -12,8 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ReplayCodeHostTest {
 
     private final ReplayCodeHost replay = new ReplayCodeHost();
-    private final HostSettings host = new HostSettings("proj", "orchestrator.codeHost", null, Path.of("/repo"),
-            List.of(), List.of(), List.of(), List.of());
+    private final HostSettings host = new HostSettings("proj", "orchestrator.codeHost", Path.of("/repo"), new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(null, null, List.of(), List.of(), List.of(), List.of(), List.of()));
 
     @Test
     void aReplayedFailureReadsAsTheCodesSoTheSessionHearsOfIt() {

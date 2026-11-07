@@ -20,7 +20,7 @@ class ProjectCardControllerTest {
         ProjectCards.Card card = new ProjectCards.Card("demo", "code.example:acme/demo",
                 new ProjectConfig.Repository("/work/demo", List.of("web"), null, null),
                 new ProjectConfig.Branches("origin/main", "dev", null),
-                new ProjectConfig.CodeHost(null, null, null, null, null, null),
+                new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
                 new ProjectConfig.Verify(null, null));
         when(cards.of("demo")).thenReturn(card);
 

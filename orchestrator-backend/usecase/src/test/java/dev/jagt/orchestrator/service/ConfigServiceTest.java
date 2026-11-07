@@ -730,7 +730,7 @@ class ConfigServiceTest {
             "none, NULL, true", "none, ' ', true", "NULL, NULL, false", "gitlab, NULL, false"})
     void hasNoCodeHostWhereTheProjectsOwnKeyOrElseTheOrchestratorsSaysNone(String root, String own, boolean none) {
         ConfigFile config = ConfigFile.defaults().withCodeHost(root).withProjects(java.util.Map.of(
-                "demo", new dev.jagt.orchestrator.task.ProjectConfig(new dev.jagt.orchestrator.task.ProjectConfig.Repository("/repo", List.of(), null, null), new dev.jagt.orchestrator.task.ProjectConfig.Branches("origin/main", "dev", null), new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(own, null, null, null, null, null), new dev.jagt.orchestrator.task.ProjectConfig.Verify(List.of(), null))));
+                "demo", new dev.jagt.orchestrator.task.ProjectConfig(new dev.jagt.orchestrator.task.ProjectConfig.Repository("/repo", List.of(), null, null), new dev.jagt.orchestrator.task.ProjectConfig.Branches("origin/main", "dev", null), new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(own, null, null, null, null, null, null), new dev.jagt.orchestrator.task.ProjectConfig.Verify(List.of(), null))));
 
         assertThat(config.hasNoCodeHost("demo")).isEqualTo(none);
     }
@@ -738,7 +738,7 @@ class ConfigServiceTest {
     @Test
     void hasNoCodeHostWhereTheProjectHasNoRemote() {
         ConfigFile config = ConfigFile.defaults().withCodeHost("gitlab").withProjects(java.util.Map.of(
-                "demo", new dev.jagt.orchestrator.task.ProjectConfig(new dev.jagt.orchestrator.task.ProjectConfig.Repository("/repo", List.of(), null, null), new dev.jagt.orchestrator.task.ProjectConfig.Branches("main", "dev", "none"), new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(null, null, null, null, null, null), new dev.jagt.orchestrator.task.ProjectConfig.Verify(List.of(), null))));
+                "demo", new dev.jagt.orchestrator.task.ProjectConfig(new dev.jagt.orchestrator.task.ProjectConfig.Repository("/repo", List.of(), null, null), new dev.jagt.orchestrator.task.ProjectConfig.Branches("main", "dev", "none"), new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(null, null, null, null, null, null, null), new dev.jagt.orchestrator.task.ProjectConfig.Verify(List.of(), null))));
 
         assertThat(config.hasNoCodeHost("demo")).isTrue();
     }

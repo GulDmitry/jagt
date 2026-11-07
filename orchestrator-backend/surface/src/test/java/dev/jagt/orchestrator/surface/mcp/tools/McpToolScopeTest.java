@@ -195,7 +195,7 @@ class McpToolScopeTest {
     @Test
     void tellsTheMasterWhatEachConfiguredProjectIsAndWhichLabelsPlaceAnItemInIt() {
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of("api", new ProjectConfig(new ProjectConfig.Repository("/api", List.of("backend"), "the order API", null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null)))));
+        when(config.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of("api", new ProjectConfig(new ProjectConfig.Repository("/api", List.of("backend"), "the order API", null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null)))));
         Registered registered = new Registered();
         new TaskLifecycleTools(mock(TaskProvisioning.class),
                 mock(TaskViews.class), config).declare(registered);

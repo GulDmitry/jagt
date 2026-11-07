@@ -81,7 +81,7 @@ public class GitHubCli implements CodeHostDriver {
 
     @Override
     public Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha) {
-        return HostAddress.ofRemote(remoteUrl, sha, host.hostName(), false).map(address -> cli.parsed(
+        return HostAddress.ofRemote(remoteUrl, sha, host.host().name(), false).map(address -> cli.parsed(
                 cli.run(address.hostname(), List.of("run", "list", "--commit", address.id(), "--json",
                         "status,conclusion,url", "--limit", "100", "-R", repository(address))), GitHubCli::pipeline))
                 .orElseGet(() -> new Answer<>(Optional.of(CommitPipeline.unhosted()), TokenUsage.NONE));
@@ -89,7 +89,7 @@ public class GitHubCli implements CodeHostDriver {
 
     @Override
     public Answer<CommitPipeline> onBranchSince(HostSettings host, String remoteUrl, String branch, String sha) {
-        return HostAddress.ofRemote(remoteUrl, sha, host.hostName(), false).map(address -> HostCli.then(
+        return HostAddress.ofRemote(remoteUrl, sha, host.host().name(), false).map(address -> HostCli.then(
                 cli.parsed(cli.run(address.hostname(), List.of("run", "list", "--branch", branch, "--json",
                         "status,conclusion,url,headSha", "--limit", "100", "-R",
                         repository(address))), GitHubCli::newest),

@@ -37,9 +37,10 @@ public record ProjectConfig(
     public record CodeHost(@JsonProperty("codeHost") @Nullable String kind,
                            @JsonProperty("codeHostName") @Nullable String name,
                            List<String> pipelineCommand, List<String> retryCommand, List<String> loginCommand,
-                           List<String> closeCommand) {
+                           List<String> closeCommand, List<String> notesCommand) {
 
         public CodeHost {
+            notesCommand = notesCommand == null ? List.of() : notesCommand;
             pipelineCommand = pipelineCommand == null ? List.of() : pipelineCommand;
             retryCommand = retryCommand == null ? List.of() : retryCommand;
             loginCommand = loginCommand == null ? List.of() : loginCommand;
@@ -63,7 +64,7 @@ public record ProjectConfig(
     /** A project declaring no command of its own: the four keys every install has always had. */
     public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels) {
         this(new Repository(path, labels, null, List.of()), new Branches(baseBranch, deployBranch, null),
-                new CodeHost(null, null, List.of(), List.of(), List.of(), List.of()), new Verify(List.of(), null));
+                new CodeHost(null, null, List.of(), List.of(), List.of(), List.of(), List.of()), new Verify(List.of(), null));
     }
 
     public String path() {

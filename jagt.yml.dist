@@ -35,6 +35,7 @@ orchestrator:
   #   pipelineCommand: ["ci-state", "{sha}"]  # codeHost command: run in the project's directory, prints success | failed | running | none | unknown
   #   retryCommand: ["ci-rerun", "{pipeline}"]  # optional: re-runs a pipeline that died on infrastructure
   #   closeCommand: ["ci-close", "{request}"]   # optional: closes the open request at {request}, for `remove-repo`
+  #   notesCommand: ["ci-notes", "{request}"]   # optional: prints the ids of the request's unresolved review notes, one per line; unset = none, so a round is never read as a repeat
   #   loginCommand: ["ci-login", "--web"]       # optional: what the board's `login` opens when pipelineCommand exits 77 (signed out)
 
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────

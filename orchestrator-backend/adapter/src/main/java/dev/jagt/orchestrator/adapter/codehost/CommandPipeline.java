@@ -46,31 +46,39 @@ public class CommandPipeline implements CodeHostDriver {
 
     @Override
     public Answer<String> retryFailed(HostSettings host, String pipelineUrl) {
-        if (host.retryCommand().isEmpty()) {
+        if (host.host().retryCommand().isEmpty()) {
             return Answer.failed(TokenUsage.NONE, host.key("retryCommand") + " is not set");
         }
-        return run(host, "retryCommand", host.retryCommand(), "{pipeline}", pipelineUrl);
+        return run(host, "retryCommand", host.host().retryCommand(), "{pipeline}", pipelineUrl);
     }
 
     @Override
     public Answer<String> closeRequest(HostSettings host, String requestUrl) {
-        if (host.closeCommand().isEmpty()) {
+        if (host.host().closeCommand().isEmpty()) {
             return Answer.failed(TokenUsage.NONE, host.key("closeCommand") + " is not set");
         }
-        return run(host, "closeCommand", host.closeCommand(), "{request}", requestUrl);
+        return run(host, "closeCommand", host.host().closeCommand(), "{request}", requestUrl);
     }
 
     @Override
     public Answer<List<String>> unresolvedNotes(HostSettings host, String requestUrl) {
-        return new Answer<>(Optional.of(List.of()), TokenUsage.NONE);
+        if (host.host().notesCommand().isEmpty()) {
+            return new Answer<>(Optional.of(List.of()), TokenUsage.NONE);
+        }
+        Answer<String> printed = run(host, "notesCommand", host.host().notesCommand(), "{request}", requestUrl);
+        if (printed.facts().isEmpty()) {
+            return new Answer<>(Optional.empty(), TokenUsage.NONE, printed.failure(), false, printed.reach());
+        }
+        return new Answer<>(Optional.of(printed.facts().get().lines().map(String::strip).filter(id -> !id.isEmpty()).toList()),
+                TokenUsage.NONE);
     }
 
     @Override
     public Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha) {
-        if (host.pipelineCommand().isEmpty()) {
+        if (host.host().pipelineCommand().isEmpty()) {
             return Answer.failed(TokenUsage.NONE, host.key("pipelineCommand") + " is not set");
         }
-        Answer<String> printed = run(host, "pipelineCommand", host.pipelineCommand(), "{sha}", sha);
+        Answer<String> printed = run(host, "pipelineCommand", host.host().pipelineCommand(), "{sha}", sha);
         if (printed.facts().isEmpty()) {
             return new Answer<>(Optional.empty(), TokenUsage.NONE, printed.failure(), false, printed.reach());
         }
@@ -88,11 +96,11 @@ public class CommandPipeline implements CodeHostDriver {
     @Override
     public List<Problem> problems(HostSettings host) {
         String key = host.key("pipelineCommand");
-        if (host.pipelineCommand().isEmpty()) {
+        if (host.host().pipelineCommand().isEmpty()) {
             return List.of(new Problem(key, key + ": codeHost command needs a pipelineCommand printing the state of {sha}."));
         }
-        return Executables.unresolved(Executables.resolve(host.pipelineCommand().getFirst()))
-                ? List.of(new Problem(key, key + ": '" + host.pipelineCommand().getFirst()
+        return Executables.unresolved(Executables.resolve(host.host().pipelineCommand().getFirst()))
+                ? List.of(new Problem(key, key + ": '" + host.host().pipelineCommand().getFirst()
                         + "' is not on PATH nor in the usual install directories."))
                 : List.of();
     }
@@ -108,7 +116,7 @@ public class CommandPipeline implements CodeHostDriver {
                 return new Answer<>(Optional.of(result.stdout()), TokenUsage.NONE);
             }
             if (result.exitCode() == SIGNED_OUT) {
-                return unreached(host, host.loginCommand(), host.key(name) + " says it is signed out");
+                return unreached(host, host.host().loginCommand(), host.key(name) + " says it is signed out");
             }
             String said = OneLine.clipped(result.stderr().isBlank() ? result.stdout() : result.stderr());
             return Answer.failed(TokenUsage.NONE, host.key(name) + " exited " + result.exitCode()

@@ -29,8 +29,7 @@ class GitLabCliTest {
     private final Processes processes = mock(Processes.class);
     private final ReachLedger reach = new ReachLedger();
     private final GitLabCli gitlab = new GitLabCli(processes, reach);
-    private final HostSettings host = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo"),
-            List.of(), List.of(), List.of(), List.of());
+    private final HostSettings host = new HostSettings("shop", "orchestrator.codeHost", Path.of("/repo"), new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(null, null, List.of(), List.of(), List.of(), List.of(), List.of()));
 
     @Test
     void aPipelineIsRetriedThroughItsRetryEndpoint() {
@@ -59,8 +58,7 @@ class GitLabCliTest {
 
     @Test
     void theConfiguredHostNameAnswersInPlaceOfTheOneAnSshRemoteNames() {
-        HostSettings named = new HostSettings("shop", "orchestrator.codeHost", "gitlab.corp.invalid", Path.of("/repo"),
-                List.of(), List.of(), List.of(), List.of());
+        HostSettings named = new HostSettings("shop", "orchestrator.codeHost", Path.of("/repo"), new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(null, "gitlab.corp.invalid", List.of(), List.of(), List.of(), List.of(), List.of()));
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "[]", ""));
 
         gitlab.onCommit(named, "git@work-alias:shop/web.git", "0123abc");

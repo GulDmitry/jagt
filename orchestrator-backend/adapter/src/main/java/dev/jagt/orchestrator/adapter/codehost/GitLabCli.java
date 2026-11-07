@@ -78,7 +78,7 @@ public class GitLabCli implements CodeHostDriver {
 
     @Override
     public Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha) {
-        return HostAddress.ofRemote(remoteUrl, sha, host.hostName(), true).map(address -> cli.parsed(
+        return HostAddress.ofRemote(remoteUrl, sha, host.host().name(), true).map(address -> cli.parsed(
                 cli.run(address.hostname(), api(address, "/pipelines?sha=" + address.id() + "&per_page=1")),
                 GitLabCli::pipeline)).orElseGet(() -> new Answer<>(Optional.of(CommitPipeline.unhosted()), TokenUsage.NONE));
     }
@@ -86,7 +86,7 @@ public class GitLabCli implements CodeHostDriver {
     @Override
     public Answer<CommitPipeline> onBranchSince(HostSettings host, String remoteUrl, String branch, String sha) {
         // Any source, as onCommit reads its commit's newest: a scheduled or API pipeline runs the branch's CI too.
-        return HostAddress.ofRemote(remoteUrl, sha, host.hostName(), true).map(address -> HostCli.then(
+        return HostAddress.ofRemote(remoteUrl, sha, host.host().name(), true).map(address -> HostCli.then(
                 cli.parsed(cli.run(address.hostname(), api(address, "/pipelines?ref="
                         + URLEncoder.encode(branch, StandardCharsets.UTF_8) + "&scope=finished&per_page=1")),
                         GitLabCli::newest),

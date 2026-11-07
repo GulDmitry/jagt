@@ -15,7 +15,7 @@ class ProjectConfigTest {
 
     @Test
     void tellsARouterWhatTheRepositoryIsInTheWordsTheInstallWrote() {
-        var project = new ProjectConfig(new ProjectConfig.Repository("/repos/parser", List.of(), "the PDF parser behind the intake form", null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null));
+        var project = new ProjectConfig(new ProjectConfig.Repository("/repos/parser", List.of(), "the PDF parser behind the intake form", null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null));
 
         assertThat(project.aboutOrPath()).isEqualTo("the PDF parser behind the intake form");
     }
@@ -60,7 +60,7 @@ class ProjectConfigTest {
 
     @Test
     void listsTheHumanPathsTheInstallWroteAndNoneWhereItWroteNone() {
-        var declared = new ProjectConfig(new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of("db/migration/**")), new ProjectConfig.Branches("main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null));
+        var declared = new ProjectConfig(new ProjectConfig.Repository("/repos/parser", List.of(), null, List.of("db/migration/**")), new ProjectConfig.Branches("main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null));
         var undeclared = new ProjectConfig("/repos/parser", "main", "dev", List.of());
 
         assertThat(declared.humanPathsOrNone()).containsExactly("db/migration/**");
@@ -69,14 +69,14 @@ class ProjectConfigTest {
 
     @Test
     void readsTheBaseBranchWithoutTheProjectsOwnRemotePrefix() {
-        var project = new ProjectConfig(new ProjectConfig.Repository("/repos/parser", List.of(), null, null), new ProjectConfig.Branches("upstream/main", "dev", "upstream"), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null));
+        var project = new ProjectConfig(new ProjectConfig.Repository("/repos/parser", List.of(), null, null), new ProjectConfig.Branches("upstream/main", "dev", "upstream"), new ProjectConfig.CodeHost(null, null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null));
 
         assertThat(project.baseBranchName()).isEqualTo("main");
     }
 
     @Test
     void refusesToDeployIntoTheBaseBranchWhereTheRepositoryHasNoRemote() {
-        var project = new ProjectConfig(new ProjectConfig.Repository("/repos/parser", List.of(), null, null), new ProjectConfig.Branches("main", "main", "none"), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null));
+        var project = new ProjectConfig(new ProjectConfig.Repository("/repos/parser", List.of(), null, null), new ProjectConfig.Branches("main", "main", "none"), new ProjectConfig.CodeHost(null, null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null));
 
         assertThat(project.deploysIntoTheBaseBranch()).isTrue();
     }
@@ -84,7 +84,7 @@ class ProjectConfigTest {
     @ParameterizedTest
     @CsvSource({"0", "-3"})
     void limitsAVerifyCommandToTwentyMinutesWhereTheWrittenMinutesAreNotPositive(int written) {
-        var project = new ProjectConfig(new ProjectConfig.Repository("/repos/parser", List.of(), null, null), new ProjectConfig.Branches("main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), written));
+        var project = new ProjectConfig(new ProjectConfig.Repository("/repos/parser", List.of(), null, null), new ProjectConfig.Branches("main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), written));
 
         assertThat(project.verifyTimeoutOrDefault()).isEqualTo(Duration.ofMinutes(20));
     }
@@ -95,7 +95,7 @@ class ProjectConfigTest {
                 {"path":"/repos/parser","baseBranch":"upstream/main","deployBranch":"dev","labels":["pdf"],
                  "verifyCommand":["make","check"],"about":"the parser","humanPaths":["db/**"],
                  "codeHost":"gitlab","codeHostName":"main","pipelineCommand":["p"],"retryCommand":["r"],
-                 "loginCommand":["l"],"remote":"upstream","closeCommand":["c"],"verifyMinutes":7}""";
+                 "loginCommand":["l"],"remote":"upstream","closeCommand":["c"],"notesCommand":["n"],"verifyMinutes":7}""";
         JsonMapper mapper = JsonMapper.builder().build();
 
         ProjectConfig project = mapper.readValue(written, ProjectConfig.class);

@@ -40,7 +40,7 @@ orchestrator:
 | `remote` | the git remote every fetch, push and tracking ref uses: `origin` (default), another name, or `none` for a repository kept on this machine; `none` needs `codeHost: none` |
 | `codeHost` | `github` (default), `gitlab`, `command`, `none` or `replay`: what jagt reads this project's deploy pipeline through, `none` also shipping with a push and no request; wins over the top-level `codeHost` |
 | `codeHostName` | the code host's name where the remote does not give it, such as a self-hosted GitLab or GitHub Enterprise |
-| `pipelineCommand`, `retryCommand`, `closeCommand`, `loginCommand` | `codeHost: command` only: a command printing `success`, `failed`, `running`, `none` or `unknown` for `{sha}` (it gives no note ids, so a round with threads is never read as a repeat); one re-running `{pipeline}`; one closing the request at `{request}`; one the board's `login` opens when any exits 77 (signed out) |
+| `pipelineCommand`, `retryCommand`, `closeCommand`, `notesCommand`, `loginCommand` | `codeHost: command` only: a command printing `success`, `failed`, `running`, `none` or `unknown` for `{sha}` ; one re-running `{pipeline}`; one closing the request at `{request}`; one printing the ids of its unresolved review notes, one per line (unset, a round with threads is never read as a repeat); one the board's `login` opens when any exits 77 (signed out) |
 
 ## What a key does not say for itself
 

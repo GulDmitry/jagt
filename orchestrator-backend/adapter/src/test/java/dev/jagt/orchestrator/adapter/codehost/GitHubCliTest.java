@@ -29,8 +29,7 @@ class GitHubCliTest {
     private final Processes processes = mock(Processes.class);
     private final ReachLedger reach = new ReachLedger();
     private final GitHubCli github = new GitHubCli(processes, reach);
-    private final HostSettings host = new HostSettings("shop", "orchestrator.codeHost", null, Path.of("/repo"),
-            List.of(), List.of(), List.of(), List.of());
+    private final HostSettings host = new HostSettings("shop", "orchestrator.codeHost", Path.of("/repo"), new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(null, null, List.of(), List.of(), List.of(), List.of(), List.of()));
 
     @Test
     void aRunReRunsOnlyItsFailedJobsOnTheHostItLivesOn() {

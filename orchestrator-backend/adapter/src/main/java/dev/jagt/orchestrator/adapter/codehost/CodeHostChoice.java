@@ -24,8 +24,6 @@ record CodeHostChoice(String kind, HostSettings host) {
             kind = declared.gitRemote().local() ? ProjectConfig.NO_CODE_HOST : DEFAULT;
         }
         return new CodeHostChoice(kind.strip().toLowerCase(Locale.ROOT), new HostSettings(project, selectedBy,
-                declared.host().name(), Path.of(String.valueOf(declared.path())),
-                declared.host().pipelineCommand(), declared.host().retryCommand(), declared.host().loginCommand(),
-                declared.host().closeCommand()));
+                Path.of(String.valueOf(declared.path())), declared.host()));
     }
 }

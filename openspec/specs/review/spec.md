@@ -42,6 +42,13 @@ Over uncommitted work `no_changes` SHALL become a round with a diff (`WorktreeCh
 - **WHEN** the agent says it changed nothing but files changed
 - **THEN** not believed: the round has a diff
 
+### Requirement: The command driver reads note ids from its notesCommand
+The `command` code-host driver SHALL read a request's unresolved note ids from the project's `notesCommand`, run with `{request}`
+replaced, one id per line; unset, it gives none.
+#### Scenario: The command host lists the notes
+- **WHEN** `codeHost: command` has a `notesCommand` printing two ids and the next poll prints the same
+- **THEN** the round is the same and is relayed once
+
 ### Requirement: The unit of a round is a thread
 `ReviewFacts.threads` SHALL carry every note, oldest first with its author; the agent answers the newest.
 Threads SHALL be relayed while unresolved, the round telling how many notes are new or unchanged since the last round

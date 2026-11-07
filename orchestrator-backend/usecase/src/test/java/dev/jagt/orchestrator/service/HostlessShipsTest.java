@@ -18,7 +18,7 @@ class HostlessShipsTest {
     private final ConfigService configService = mock(ConfigService.class);
     private final WorktreeChanges changes = mock(WorktreeChanges.class);
     private final HostlessShips ships = new HostlessShips(configService, changes);
-    private final ProjectConfig hostless = new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, null), new ProjectConfig.Branches("main", "dev", null), new ProjectConfig.CodeHost("none", null, null, null, null, null), new ProjectConfig.Verify(List.of(), null));
+    private final ProjectConfig hostless = new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, null), new ProjectConfig.Branches("main", "dev", null), new ProjectConfig.CodeHost("none", null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null));
     private final ProjectConfig hosted = new ProjectConfig("/repo", "origin/main", "dev", List.of());
 
     @Test
