@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import tools.jackson.databind.json.JsonMapper;
+
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +33,31 @@ class TaskViewTest {
                 .mrUrl("http://host/mr/1").build(), false, watch, Map.of("proj", "dev"));
 
         assertThat(view.owner()).isEqualTo(expected);
+    }
+
+    @Test
+    void servesTheTaskAsOneFlatObjectWithoutTheDraftedRepliesFlag() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build(), true,
+                AutoReviewWatch.none(), Map.of("proj", "dev"));
+
+        var json = new JsonMapper().readTree(new JsonMapper().writeValueAsString(view));
+
+        assertThat(json.propertyNames()).containsExactlyInAnyOrder("id", "alias", "project", "title", "status",
+                "statusLabel", "phase", "owner", "attention", "ask", "hint", "actions", "confirmations", "detail",
+                "detailKind", "ticketUrl", "reviewRequestUrl", "repos", "statusSince", "requestOpenedAt", "history",
+                "deployed", "autoReview", "pipeline", "pipelineSaid", "pipelineUnread", "approved", "switches", "stop",
+                "waiting", "repliesWrittenAt");
+    }
+
+    @Test
+    void servesEachActionAsOneFlatObject() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build(), false,
+                AutoReviewWatch.none(), Map.of("proj", "dev"));
+
+        var json = new JsonMapper().readTree(new JsonMapper().writeValueAsString(view));
+
+        assertThat(json.get("actions").get(0).propertyNames()).containsExactlyInAnyOrder("id", "label", "hint",
+                "primary", "group", "readOnly", "again", "onRow", "apart", "key");
     }
 
     @Test

@@ -59,7 +59,8 @@ class TaskViewsTest {
 
         var views = new TaskViews(stateService, configService, new Rounds(configService, ignored -> false), Clock.systemUTC()).all();
 
-        assertThat(views).singleElement().extracting("repliesWrittenAt").isEqualTo(1_700_000_000_000L);
+        assertThat(views).singleElement().extracting(view -> view.replies().repliesWrittenAt())
+                .isEqualTo(1_700_000_000_000L);
     }
 
     @Test
@@ -70,7 +71,7 @@ class TaskViewsTest {
 
         var views = new TaskViews(stateService, configService, new Rounds(configService, ignored -> false), Clock.systemUTC()).all();
 
-        assertThat(views).singleElement().extracting("repliesWrittenAt").isEqualTo(0L);
+        assertThat(views).singleElement().extracting(view -> view.replies().repliesWrittenAt()).isEqualTo(0L);
     }
 
     @Test

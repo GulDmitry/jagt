@@ -6,6 +6,4 @@
     <!-- persisted in state.json, read in the old flat shape; split last; ~3 pt -->
     <suppress files="[\\/]TaskState\.java$" checks="ParameterNumber"/>
     <suppress files="[\\/]TaskState\.java$" checks="RecordComponentNumber"/>
-    <!-- built from TaskState; split with it; ~2 pt -->
-    <suppress files="[\\/]TaskView\.java$" checks="RecordComponentNumber"/>
 </suppressions>
