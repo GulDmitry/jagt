@@ -80,6 +80,8 @@ or local setup; such names live only in git-ignored files.
   group them into a component, never add a field.
 - **A method reads at cognitive complexity 12 at most** (`CognitiveComplexityTest`): split it, never raise the number.
 - **No duplicated block of 75 tokens or more in main** (`DuplicationTest`): extract the one holder, never raise the number.
+- **Checkstyle's default counts gate main**: 7 parameters, 8 record components; a suppression needs its reason, zero is the target
+  ([0143](docs/decisions/0143-checkstyle-gates-parameter-and-component-counts.md)).
 - **A test wiring over 3 mocks means the class does too much** (`MockCeilingTest`): fix the class, never the fixture.
 - **A test builds a class through the constructor production uses**: never a second constructor, an overload or a
   seam in `main` that only tests call (`ProductionConstructorTest`).

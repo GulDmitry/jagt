@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!-- 0143: each check at Checkstyle's own default limit. -->
+<module name="Checker">
+    <module name="SuppressionFilter">
+        <property name="file" value="${config_loc}/suppressions.xml"/>
+    </module>
+    <module name="TreeWalker">
+        <module name="ParameterNumber"/>
+        <module name="RecordComponentNumber"/>
+    </module>
+</module>

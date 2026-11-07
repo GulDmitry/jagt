@@ -56,6 +56,9 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
 - **Cognitive complexity 12 per method at most**, PMD's count of Sonar's metric (`CognitiveComplexityTest`,
   [0053](../decisions/0053-a-method-reads-at-cognitive-complexity-twelve-at-most.md)): over it, extract a named step.
   The ceiling only falls: `refresh` lowers it once few methods stand above the next step.
+- **Checkstyle's default counts gate main**: 7 parameters, 8 record components
+  ([0143](../decisions/0143-checkstyle-gates-parameter-and-component-counts.md)); over them, nested records or a builder.
+  A suppression carries its reason and estimated cost; zero suppressions is the target.
 - Over the ceiling, group by composition and never inheritance, or use a registry of small units
   (`surface/mcp/McpTools`, `Move.actions()`).
 - **English and UTC only**, set in `main` ([0055](../decisions/0055-jagt-speaks-english-and-keeps-utc.md)):

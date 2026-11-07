@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<suppressions>
+    <!-- 0143: each line names its reason and estimated cost (weekly points, estimate); zero is the target. -->
+    <!-- wire message a session sends; nesting changes the protocol schema; ~0.5 pt -->
+    <suppress files="[\\/]AgentStatusMessage\.java$" checks="RecordComponentNumber"/>
+    <!-- board JSON the page reads; split with the page; ~0.5 pt -->
+    <suppress files="[\\/]BoardApiController\.java$" checks="RecordComponentNumber"/>
+    <!-- Jackson creator mirroring an outside hook payload; a nested record per group; ~0.3 pt -->
+    <suppress files="[\\/]ClaudeHookReportMixIn\.java$" checks="ParameterNumber"/>
+    <!-- jagt.yml file shape, read in the old shape; ~1 pt -->
+    <suppress files="[\\/]ConfigService\.java$" checks="RecordComponentNumber"/>
+    <!-- persisted Target; ~0.5 pt -->
+    <suppress files="[\\/]Deployment\.java$" checks="RecordComponentNumber"/>
+    <!-- not yet split; ~0.3 pt -->
+    <suppress files="[\\/]Edge\.java$" checks="RecordComponentNumber"/>
+    <suppress files="[\\/]Facts\.java$" checks="RecordComponentNumber"/>
+    <!-- persisted in finished.jsonl, read in the old flat shape; ~1 pt -->
+    <suppress files="[\\/]FinishedTask\.java$" checks="RecordComponentNumber"/>
+    <!-- a method of 9 parameters; ~0.2 pt -->
+    <suppress files="[\\/]MasterPanel\.java$" checks="ParameterNumber"/>
+    <suppress files="[\\/]NewTaskMessage\.java$" checks="RecordComponentNumber"/>
+    <!-- Spring binding of jagt.yml; nested properties keep the keys; ~0.3 pt -->
+    <suppress files="[\\/]OrchestratorProperties\.java$" checks="RecordComponentNumber"/>
+    <!-- not yet split; ~0.5 pt -->
+    <suppress files="[\\/]Phases\.java$" checks="RecordComponentNumber"/>
+    <suppress files="[\\/]ProjectCards\.java$" checks="RecordComponentNumber"/>
+    <!-- next split, with a builder; ~1 pt -->
+    <suppress files="[\\/]ProjectConfig\.java$" checks="RecordComponentNumber"/>
+    <suppress files="[\\/]ReviewFacts\.java$" checks="RecordComponentNumber"/>
+    <!-- role file shape; ~0.3 pt -->
+    <suppress files="[\\/]RoleDefinition\.java$" checks="RecordComponentNumber"/>
+    <!-- persisted in state.json; ~0.3 pt -->
+    <suppress files="[\\/]Session\.java$" checks="RecordComponentNumber"/>
+    <suppress files="[\\/]SessionHookReport\.java$" checks="RecordComponentNumber"/>
+    <!-- persisted in state.json, read in the old flat shape; split last; ~3 pt -->
+    <suppress files="[\\/]TaskState\.java$" checks="ParameterNumber"/>
+    <suppress files="[\\/]TaskState\.java$" checks="RecordComponentNumber"/>
+    <!-- built from TaskState; split with it; ~2 pt -->
+    <suppress files="[\\/]TaskView\.java$" checks="RecordComponentNumber"/>
+</suppressions>

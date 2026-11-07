@@ -44,6 +44,16 @@ allprojects {
         }
     }
 
+    // 0143: the gate fails on a breach, so `test` waits for the check.
+    apply plugin: 'checkstyle'
+    checkstyle {
+        toolVersion = '14.4.0'
+        configDirectory = rootProject.layout.projectDirectory.dir('gradle/checkstyle')
+        sourceSets = [sourceSets.main]
+        maxWarnings = 0
+    }
+    tasks.named('test') { dependsOn 'checkstyleMain' }
+
     ext.tmuxDirOf = { Task task ->
         new File(System.getProperty('java.io.tmpdir'),
                 'jagt-tmux-' + Integer.toHexString("${task.project.rootDir}:${task.path}".hashCode()))
