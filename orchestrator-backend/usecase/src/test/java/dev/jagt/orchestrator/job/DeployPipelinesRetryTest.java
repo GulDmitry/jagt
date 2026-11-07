@@ -134,6 +134,29 @@ class DeployPipelinesRetryTest {
   }
 
   @Test
+  void aRedDeployCommitStandsOnALaterGreenPipelineWithoutReRunningTheRedOne(@TempDir Path root) {
+    StateService state = stateWith(root, Deployment.Target.of("shop", "dev").withMerge(SHA));
+    when(pipelines.onCommit("shop", REMOTE, SHA))
+        .thenReturn(new Answer<>(Optional.of(new CommitPipeline("failed", URL)), TokenUsage.NONE));
+    when(causes.judgeDeploy("ABC-42", "shop", URL))
+        .thenReturn(new RedCauses.Verdict(RedCause.CODE, false, "", Optional.empty()));
+    when(pipelines.onBranchSince("shop", REMOTE, "dev", SHA))
+        .thenReturn(
+            new Answer<>(
+                Optional.of(
+                    new CommitPipeline(
+                        "success", "https://git.example.invalid/shop/web/-/pipelines/9")),
+                TokenUsage.NONE));
+    DeployPipelines deploys =
+        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK));
+
+    DeployPipelines.Reading reading = deploys.read("ABC-42", state.task("ABC-42").orElseThrow());
+
+    assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.GREEN);
+    verify(pipelines, never()).retryFailed(anyString(), anyString());
+  }
+
+  @Test
   void aRedPipelineIsHandedBackAsItStandsWhereTheHostRefusesTheReRun(@TempDir Path root) {
     StateService state = stateWith(root, Deployment.Target.of("shop", "dev").withMerge(SHA));
     redOnTheCode();

@@ -218,12 +218,12 @@ public class DeployPipelines {
     if (verdict.stop().isPresent()) {
       return Reading.waiting(at + "red on infrastructure, " + verdict.stop().get().reading());
     }
+    if (greenSince(task, landed)) {
+      return Reading.green();
+    }
     if (!landed.retriedTip()
         && retried(taskId, project, url, Objects.requireNonNull(landed.tip()))) {
       return Reading.waiting(at + "red, re-run once before it is handed back");
-    }
-    if (greenSince(task, landed)) {
-      return Reading.green();
     }
     try {
       fixes.open(task, taskId, project);
