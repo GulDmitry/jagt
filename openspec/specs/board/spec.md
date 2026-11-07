@@ -14,9 +14,8 @@ no second answer to a board question. Stopping the backend is no verb.
 - **THEN** it asks its button's `FlowRules`
 ### Requirement: A mark says what it replaces
 The colour legend SHALL be a section of the `help` report (`static/ui/legend.js`), never a control beside it; colours are
-[design.md](../../../docs/rules/design.md)'s. A control the board lacks is the bug: the New task form's branch-strategy picker and MCP schema both
-read `task/BranchStrategy`. A verb with all its inputs gets no form. The project key renders only where projects are several, in the install or the
-task.
+[design.md](../../../docs/rules/design.md)'s. A control the board lacks is the bug: New task form's branch-strategy picker and MCP schema both read
+`task/BranchStrategy`. A verb with all its inputs gets no form. The project key shows only where projects are several, in the install or task.
 #### Scenario: A mark is unclear
 - **WHEN** the human opens `Help`
 - **THEN** above the commands every mark stands beside its one board-wide meaning
@@ -37,17 +36,18 @@ task.
 - **THEN** `resume <url>` after ⌘K is the one control
 
 ### Requirement: Verbs come off the wire in groups
-Per-task verbs SHALL come from `Move.actions()`, a row per `TaskAction.Group`; a hint's text lives in `command/CommandReference` alone. `approve-plan`
-replaces the CLI plan mode's approval dialog and its go-ahead hint. `add-repo` replaces the answer typed to a session asking for a repository:
-highlighted in place of `focus` while that request stands, no mark. Typed `add-repo <ticket> <project>` names the repository and
-`remove-repo <ticket> <project>` the one to drop, neither with a button; the project is an optional parameter of the action's one
-endpoint. A renamed verb still answers to its old spelling (`review` runs `sweep`), unadvertised (`TaskAction.RENAMED`).
-#### Scenario: A plan or a repository waits
-- **WHEN** a task is at `PLAN_PENDING`, or its session asked for a configured project it lacks
-- **THEN** its top row offers `approve-plan`, or `add-repo` on the NEEDS INPUT card; no other status or question does
+Per-task verbs SHALL come from `Move.actions()`, a row per `TaskAction.Group`; a hint's text lives in `command/CommandReference` alone.
+A renamed verb still answers to its old spelling (`review` runs `sweep`), unadvertised (`TaskAction.RENAMED`).
 #### Scenario: Which buttons change something
 - **WHEN** the human reads a card's buttons
 - **THEN** the top row moves the task on; the bottom row only looks or restarts
+### Requirement: A plan and a repository request have their own verbs
+`approve-plan` SHALL replace the CLI plan mode's approval dialog and its go-ahead hint. `add-repo` SHALL replace the answer typed to a session
+asking for a repository: highlighted in place of `focus` while that request stands, no mark. Typed `add-repo <ticket> <project>` names the repository
+and `remove-repo <ticket> <project>` the one to drop, neither with a button; the project is an optional parameter of the action's one endpoint.
+#### Scenario: A plan or a repository waits
+- **WHEN** a task is at `PLAN_PENDING`, or its session asked for a configured project it lacks
+- **THEN** its top row offers `approve-plan`, or `add-repo` on the NEEDS INPUT card; no other status or question does
 ### Requirement: Commands are two declarations
 A verb a task owns SHALL be a `flow/TaskAction` row gated by `Move`, run by `CommandService`; one no task owns is a `command/GlobalCommand` bean
 (`command/*`, collected by `GlobalCommands`) running itself. It declares the board part it opens typed alone and its tab (`offeredOn`).

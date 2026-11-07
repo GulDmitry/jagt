@@ -7,9 +7,9 @@ A task's life: which status allows which action and where each outcome leads; ho
 ## Requirements
 
 ### Requirement: One table owns the life of a task
-`flow/TaskChart` SHALL hold, as one compiler-checked statechart, which statuses allow which action and what each outcome leads to;
-`flow/FlowRules` answers from it. Its guard MUST
-read `flow/Facts`: an open request, a request found merged, a live deploy, and a liveness probe the projection passes as "no" (a spawn per row).
+`flow/TaskChart` SHALL hold, as one compiler-checked statechart, which statuses allow which action and what each outcome leads to; `flow/FlowRules`
+answers from it. Its guard MUST read `flow/Facts`: an open request, a request found merged, a live deploy, and a liveness probe the projection
+passes as "no" (a spawn per row).
 
 #### Scenario: An action is asked
 - **WHEN** an action is asked
@@ -74,19 +74,18 @@ The verify command SHALL be stopped after the project's `verifyMinutes`, twenty 
 - **THEN** its verify command is stopped after 20 minutes
 
 ### Requirement: In act a deploy conflict is the session's
-`DeployConflictJob` SHALL hand the session the conflict's worktree once per press, its own in its brief and its CLI (`AgentRuntime.admit`);
-staged in full it MUST finish the press, `deploy` or `revert` ([0013](../../../docs/decisions/0013-a-deploy-conflict-is-the-sessions-in-act.md)).
+`DeployConflictJob` SHALL hand the session the conflict's worktree once per press, its own in its brief and its CLI (`AgentRuntime.admit`); staged
+in full it MUST finish the press, `deploy` or `revert` ([0013](../../../docs/decisions/0013-a-deploy-conflict-is-the-sessions-in-act.md)).
 
 #### Scenario: A conflict where the Master acts
 - **WHEN** the session stages its resolution in full
 - **THEN** jagt finishes the deploy; ABC-42 stopped meanwhile: nothing is pressed, the log says so once (restarts too), the lift's tick finishes it
 
 ### Requirement: A stalled deploy conflict is the human's
-A handed conflict unchanged for `conflictStallMinutes` SHALL go to the Master first where it answers:
-`act`, `answer` not kept by the human, task not stopped, no question standing. The stall becomes the session's `QUESTION` at `DEPLOY_CONFLICT`,
-answered by the Master as any question is
-([0134](../../../docs/decisions/0134-a-stalled-deploy-conflict-asks-the-master-first.md)).
-The `Conflict` SHALL record that it was asked, and the stall clock restarts then.
+A handed conflict unchanged for `conflictStallMinutes` SHALL go to the Master first where it answers: `act`, `answer` not kept by the human, task
+not stopped, no question standing. The stall becomes the session's `QUESTION` at `DEPLOY_CONFLICT`, answered by the Master as any question is
+([0134](../../../docs/decisions/0134-a-stalled-deploy-conflict-asks-the-master-first.md)). The `Conflict` SHALL record that it was asked, and the
+stall clock restarts then.
 
 #### Scenario: A conflict nobody works, where the Master answers
 - **WHEN** ABC-42's deploy worktree has not changed for `conflictStallMinutes` and the Master acts
@@ -94,10 +93,9 @@ The `Conflict` SHALL record that it was asked, and the stall clock restarts then
 - **AND** the answer is relayed to the same session, and a restart in between asks nothing again
 
 ### Requirement: A stall the Master does not settle is told to the human
-A stall after the Master was asked, or one where the Master does not answer, SHALL tell the human once per stall.
-A worktree moved since the last telling makes the next stall a new one. Its card SHALL name the paths unmerged,
-where and since when, across a restart (its `Conflict`, [0063](../../../docs/decisions/0063-a-stalled-deploy-conflict-is-the-humans.md));
-a status past it clears it.
+A stall after the Master was asked, or one where the Master does not answer, SHALL tell the human once per stall. A worktree moved since the last
+telling makes the next stall a new one. Its card SHALL name the paths unmerged, where and since when, across a restart (its `Conflict`,
+[0063](../../../docs/decisions/0063-a-stalled-deploy-conflict-is-the-humans.md)); a status past it clears it.
 
 #### Scenario: The Master's question goes unanswered or the worktree stays unchanged
 - **WHEN** the worktree has not changed for `conflictStallMinutes` since the Master was asked
@@ -121,8 +119,8 @@ next report.
 - **THEN** the task stays and its card keeps the conflict, the report's line logged
 
 ### Requirement: A round read moves only a task waiting on the host or red
-A round read MUST move only a task waiting on the host or red (`FlowRules.readLands`). It leaves every other status in place, its checks
-alone updated: shipped work never goes back to approval, a session's work is never overwritten. It MUST leave a `QUESTION` or `PERMISSION` standing
+A round read MUST move only a task waiting on the host or red (`FlowRules.readLands`). It leaves every other status in place, its checks alone
+updated: shipped work never goes back to approval, a session's work is never overwritten. It MUST leave a `QUESTION` or `PERMISSION` standing
 (`FlowRules.standsThroughRead`): only the session's next report or a human answers it.
 
 #### Scenario: A round read at another status
@@ -144,20 +142,18 @@ A task needing more work after its request merged SHALL go back to `IN_PROGRESS`
 
 ### Requirement: Nothing below flow decides a status
 A capability SHALL report `OK` / `RELAYED` / `CONFLICT` / `PARTIAL` / `GONE` plus the sentence and the stamp, so work serves several statuses. Its
-sentence MAY name the status; nothing parses it. `withStatus` MUST appear only in `flow/` and its implementing record.
-`PARTIAL` SHALL be the one refusing outcome, stamped on the task first and thrown second: half a change is recorded.
+sentence MAY name the status; nothing parses it. `withStatus` MUST appear only in `flow/` and its implementing record. `PARTIAL` SHALL be the one
+refusing outcome, stamped on the task first and thrown second: half a change is recorded.
 
 #### Scenario: Half a change lands
 - **WHEN** a capability returns `PARTIAL`
 - **THEN** the task is stamped, then it throws
 
 ### Requirement: A closed request takes its repository out of the task
-Where a task holds several repositories and the host says one's request was closed unmerged, that repository SHALL
-leave the task: its checkout is removed, its branch kept, the session told in one line, and the sweep judges the others
-in the same pass. A task's only repository, and a request the host says does not exist, stay gone.
-The one a deploy was handed back on for its merge leaves the record and its deploy worktree is removed; the task stays
-`DEPLOY_CONFLICT` while a repository has landed and repositories after it are unpushed, and the next `deploy` lands them.
-Where nothing landed, the task returns to `REVIEWED` and `deploy` is offered again.
+Where a task holds several repositories and the host says one's request was closed unmerged, that repository SHALL leave the task: its checkout is
+removed, its branch kept, the session told in one line, and the sweep judges the others in the same pass. A task's only repository and its primary
+repository stay, and the sweep calls the request gone, naming it; a request the host says does not exist is called gone the same way and its
+repository stays.
 
 #### Scenario: One of three requests closed
 - **WHEN** ABC-42 spans `alpha`, `beta` and `gamma`, and the host says `beta`'s request was closed unmerged
@@ -172,9 +168,18 @@ Where nothing landed, the task returns to `REVIEWED` and `deploy` is offered aga
 - **WHEN** ABC-42 spans `alpha` and `beta` and the host says `beta`'s request does not exist
 - **THEN** the sweep calls it gone, and `beta` stays in the task
 
+#### Scenario: The primary request closed
+- **WHEN** ABC-42 spans `alpha` and `beta`, `alpha` primary, and the host says `alpha`'s request was closed unmerged
+- **THEN** `alpha` stays in the task with its checkout, and the sweep calls it gone, naming the request
+
 #### Scenario: A repository already landed
 - **WHEN** `beta` was deployed, then its request reads closed
 - **THEN** `beta` stays in the deployment's record, so `revert` still covers it
+
+### Requirement: The repository a deploy was handed back on leaves with its closed request
+The repository a deploy was handed back on for its merge SHALL leave the record when its request closes, its deploy worktree removed.
+The task stays `DEPLOY_CONFLICT` while a repository has landed and repositories after it are unpushed, and the next `deploy` lands them. Where
+nothing landed, the task returns to `REVIEWED` and `deploy` is offered again.
 
 #### Scenario: The repository a deploy waits on closed
 - **WHEN** ABC-42 spans `alpha`, `beta` and `gamma`, all landed, and `beta`'s pipeline went red, so the task stands in `DEPLOY_CONFLICT`

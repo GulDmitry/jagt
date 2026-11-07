@@ -148,15 +148,15 @@
 - **Spec fold at ship** — A ship archives the change and folds it into the specs in the same commit.
   [spec](../openspec/specs/spec-changes/spec.md#requirement-a-ship-folds-the-change-into-the-specs)
 
-## Startup · [spec](../openspec/specs/startup/spec.md)
+## Startup · [spec](../openspec/specs/startup/spec.md) · [agent seams](../openspec/specs/agent-seams/spec.md)
 - **Install checks** — A missing part of the installation is refused at start, with no network.
   [spec](../openspec/specs/startup/spec.md#requirement-a-bad-install-is-refused-at-once-offline)
 - **One configuration file** — Every option lives in `jagt.yml` alone, described in `jagt.yml.dist`.
   [spec](../openspec/specs/startup/spec.md#requirement-configuration-lives-in-jagtyml)
 - **Local reads** — A local model may map commands, else the cloud; a down one is a lost reach. Key: `orchestrator.assistant.local.endpoint`, off.
-  [spec](../openspec/specs/startup/spec.md#requirement-a-read-that-needs-no-tool-may-ask-a-local-model)
+  [spec](../openspec/specs/agent-seams/spec.md#requirement-a-read-that-needs-no-tool-may-ask-a-local-model)
 - **OpenCode agents** — `agent.cli: opencode` runs sessions there, `opencode.reads` a role's reads. Key: `orchestrator.opencode.reads`, off.
-  [spec](../openspec/specs/startup/spec.md#requirement-a-read-named-under-reads-runs-on-opencode)
+  [spec](../openspec/specs/agent-seams/spec.md#requirement-a-read-named-under-reads-runs-on-opencode)
 
 ## Task flow · [spec](../openspec/specs/task-flow/spec.md)
 - **One table of statuses** — One table says which action is allowed in which status and where it leads.

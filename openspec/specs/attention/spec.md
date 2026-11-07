@@ -179,7 +179,7 @@ Each notification SHALL carry one event: `your-move`, `auto-review`, `stopped`, 
 - **WHEN** `notifications.desktop` is `[stopped]` and a usage window fills
 - **THEN** no desktop banner is raised
 ### Requirement: A team channel is a configured command
-`notifications.channel.command` (argv, blank is off) runs once per event `notifications.channel.events` lists, JSON on stdin.
+`notifications.channel.command` (argv, blank is off) SHALL run once per event `notifications.channel.events` lists, JSON on stdin.
 #### Scenario: Run, skip, fail
 - **WHEN** `deployed` is listed and ABC-42 deploys
 - **THEN** the command gets `{"event":"deployed","task":"ABC-42",...}` on stdin, null fields omitted; unset events: `request-opened`, `deployed`

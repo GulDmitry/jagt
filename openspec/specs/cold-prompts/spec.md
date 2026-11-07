@@ -64,14 +64,8 @@ the lifetime, so nothing a restart lost is newer.
 ### Requirement: A fresh start carries what the old session knew
 Beneath the instructions in `task_context.md`, a fresh start SHALL carry, gathered without a model: the last report or
 open question, the commits and changed files since the base (40 lines each), and the old transcript's path.
-It SHALL also carry the last human prompts and model texts of the old conversation. Those are newest kept within
-16,000 characters, no tool input or output.
 A fresh start replacing a session with no transcript SHALL carry the report and the git facts, and no conversation
 or transcript path.
-
-#### Scenario: A long conversation
-- **WHEN** the old conversation holds more than 16,000 characters
-- **THEN** the oldest are cut and no tool input or output appears
 
 #### Scenario: A session with no transcript
 - **WHEN** a fresh start replaces a session with no transcript
@@ -81,6 +75,14 @@ or transcript path.
 #### Scenario: A round replaces a session the human talked to
 - **WHEN** a round's fresh start replaces a session whose transcript holds the human's last words
 - **THEN** `task_context.md` holds the round's instructions first, then the human's last words
+
+### Requirement: A fresh start carries the old conversation
+A fresh start SHALL also carry the last human prompts and model texts of the old conversation.
+Those are newest kept within 16,000 characters, no tool input or output.
+
+#### Scenario: A long conversation
+- **WHEN** the old conversation holds more than 16,000 characters
+- **THEN** the oldest are cut and no tool input or output appears
 
 ### Requirement: Notes stay current at a turn end
 A turn end of an IN_PROGRESS task SHALL be refused once when `task_notes.md` is older than `orchestrator.agent.notesEvery`

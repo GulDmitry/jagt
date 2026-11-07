@@ -159,9 +159,7 @@ A GitHub request with no review required SHALL count as approved once someone ap
 `TaskStops.round` SHALL keep a digest of the last round relayed into a task: the failing job and the pushed branch tip from git
 while the checks are red, and the sorted newest note ids awaiting the agent. The host's own read gives those ids
 (`PipelineRetry.unresolvedNotes`), never the model; they are compared without the request link. A round equal to the digest SHALL NOT
-be relayed again, whatever the brief's wording. Where git cannot name the tip, or a job or note id is unknown, the brief is digested.
-A failed host read leaves the ids unknown, with a warning naming the cause. Neither SHALL open threads with the last notes
-while the checks are red in neither. A `lift` SHALL forget both.
+be relayed again, whatever the brief's wording. A `lift` SHALL forget both.
 #### Scenario: A ship between two equal reads
 - **WHEN** ABC-42 ships and the next poll reads the same threads as the round before
 - **THEN** the sweep says the round is unchanged and no fresh session starts
@@ -174,6 +172,15 @@ while the checks are red in neither. A `lift` SHALL forget both.
 #### Scenario: The model writes other ids
 - **WHEN** two polls of one request have the model write different note ids and the host gives the same ones
 - **THEN** the round is the same and is relayed once
+
+### Requirement: An unknown id digests the brief
+Where the repository cannot name the tip, or a job or note id is unknown, the brief SHALL be digested.
+A failed host read SHALL leave the ids unknown, with a warning naming the cause.
+Neither SHALL open threads with the last notes while the checks are red in neither.
+
+#### Scenario: A tip or an id is unknown
+- **WHEN** the pushed tip cannot be named from the repository, or the host read failed, while the checks are red
+- **THEN** the brief is digested, and a failed host read logs a warning naming the cause
 
 ### Requirement: Threads and checks are judged on their own
 Threads and checks SHALL be two tracks, each judged on its own. While the last report asks the

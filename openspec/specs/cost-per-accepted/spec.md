@@ -9,8 +9,6 @@ What a shipped task really cost: all spend of a week's finished tasks over those
 `CostPerAcceptedTask.over` SHALL sum the `costUsd` of every task finished in the week, failed, stopped and reworked included.
 It SHALL divide that by the number of those tasks that reached DEPLOYED. The week is seven days from the start given to it.
 A task without `costUsd` adds zero and counts only if it shipped. A week with no shipped task has no number.
-A week's number is a lower bound where a finished task of it has no known `costUsd`, or an unpriced call.
-`stats` SHALL end with it for the last 7 days, `≥` before a lower bound, `unknown` where none shipped. It adds no board mark.
 
 #### Scenario: Spend of tasks that did not ship
 - **WHEN** a week finished a shipped task costing 2.00 and a task costing 3.00 that never reached DEPLOYED
@@ -19,6 +17,10 @@ A week's number is a lower bound where a finished task of it has no known `costU
 #### Scenario: A task with no recorded cost
 - **WHEN** a finished task of the week has no `costUsd`
 - **THEN** it adds zero to the spend and counts in the denominator only if it shipped
+
+### Requirement: A week's cost per accepted task is read in stats
+`stats` SHALL end with it for the last 7 days, `≥` before a lower bound, `unknown` where none shipped. It adds no board mark.
+A week's number is a lower bound where a finished task of it has no known `costUsd`, or an unpriced call.
 
 #### Scenario: A lower bound
 - **WHEN** `stats` is read and a task finished in the last 7 days has no `costUsd`

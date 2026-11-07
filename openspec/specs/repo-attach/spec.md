@@ -11,9 +11,6 @@ A running task gains a repository, one a session asked for or one the human name
 or adopt one already on that branch (`GitWorktrees.worktreeOf`). It SHALL register it after the session's own and rewrite
 every worktree's briefing and sandbox. It SHALL clear the request, hand the session the path and move the task to `IN_PROGRESS`.
 A cut that fails SHALL unwind and leave the request standing, the cause on the card.
-`add-repo <task> <project>` SHALL record that project as the request, then run as above. The session need not have asked.
-It SHALL be refused, nothing changed, for a project not in `jagt.yml`, or one the task already works in.
-It SHALL be refused at `PLAN_PENDING`, `DEPLOYED`, `DEPLOY_CONFLICT`, `REVERTED` and `DONE`.
 
 #### Scenario: The request is granted
 - **WHEN** you press `add-repo` on ABC-42, which asked for `schemaRegistry`
@@ -35,6 +32,11 @@ It SHALL be refused at `PLAN_PENDING`, `DEPLOYED`, `DEPLOY_CONFLICT`, `REVERTED`
 #### Scenario: The attached repository is trusted as it stands
 - **WHEN** `add-repo` attaches `schemaRegistry` to ABC-42
 - **THEN** its git config and hooks join the trusted record as they are, and the next `ship` is not refused for them
+
+### Requirement: The human may name the project to add
+`add-repo <task> <project>` SHALL record that project as the request, then run as above. The session need not have asked.
+It SHALL be refused, nothing changed, for a project not in `jagt.yml`, or one the task already works in.
+It SHALL be refused at `PLAN_PENDING`, `DEPLOYED`, `DEPLOY_CONFLICT`, `REVERTED` and `DONE`.
 
 #### Scenario: The human names the project
 - **WHEN** you type `add-repo ABC-42 schemaRegistry` on ABC-42 in `REVIEW_PENDING`, which asked for nothing
@@ -95,9 +97,6 @@ A repository whose remote is unknown judges nothing.
 A foreign link SHALL be dropped.
 A ship whose every link is dropped SHALL be a missed one: no round is recorded and the status does not move.
 A ship linking several repositories SHALL lose only its foreign links.
-The board's head SHALL carry one line per dropped link, under the existing reach mark.
-That line ends on the repository's next good link, or when the task closes.
-The line SHALL stand whoever reported; only a reporting session SHALL be told, once, naming the expected remote path.
 A foreign request found in `state.json` SHALL be cleared on the first read, with one INFO log line.
 #### Scenario: The only link is foreign
 - **WHEN** ABC-42 at `IN_PROGRESS` ships with a link outside its repository's remote
@@ -107,6 +106,15 @@ A foreign request found in `state.json` SHALL be cleared on the first read, with
 #### Scenario: One of two links is foreign
 - **WHEN** ABC-42 ships two repositories and one link is outside its remote
 - **THEN** the good link is recorded as the round and the foreign one is not
+
+#### Scenario: A foreign request already held
+- **WHEN** `state.json` holds a request not under its repository's remote
+- **THEN** the first read clears it and logs `foreign request cleared` once
+
+### Requirement: A dropped link stands on the board's head
+The board's head SHALL carry one line per dropped link, under the existing reach mark.
+That line ends on the repository's next good link, or when the task closes.
+The line SHALL stand whoever reported; only a reporting session SHALL be told, once, naming the expected remote path.
 
 #### Scenario: The session is told once
 - **WHEN** a session's link is dropped
@@ -123,7 +131,3 @@ A foreign request found in `state.json` SHALL be cleared on the first read, with
 #### Scenario: The line ends with the task
 - **WHEN** the task closes while its line stands
 - **THEN** the line leaves the board's head on the next read
-
-#### Scenario: A foreign request already held
-- **WHEN** `state.json` holds a request not under its repository's remote
-- **THEN** the first read clears it and logs `foreign request cleared` once
