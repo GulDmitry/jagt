@@ -49,6 +49,9 @@ A QA read on the 9B hit the 10-minute cap after 2 of 12 cases, both wrong:
 - one cited a commit sha it made up;
 - one answered prose outside the schema.
 
+A second run (2026-11-07, one run per case) judged 1 of 12 in 10 min, wrong: a read the gate refused did not end
+the read — the model made 7 calls — but its answer was prose outside the schema. Swap stayed flat.
+
 The gate worked: refused calls were retried, none discarded as unfenced. Role reads and sessions stay on the cloud.
 A task session on OpenCode was not tried: a session asks more of the model than a QA read.
 
