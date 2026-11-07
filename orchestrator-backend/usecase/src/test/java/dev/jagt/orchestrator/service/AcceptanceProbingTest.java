@@ -30,7 +30,7 @@ class AcceptanceProbingTest {
         .thenReturn(new Processes.Result(1, "", ""));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, 8290)
+        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -48,7 +48,7 @@ class AcceptanceProbingTest {
             new Processes.Result(1, "line 1\n" + "noise\n".repeat(30) + "BUILD FAILED", ""));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, 8290)
+        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -70,7 +70,7 @@ class AcceptanceProbingTest {
   @Test
   void neverRunsACommandTheSessionsOwnGuardRefuses(@TempDir Path worktree) {
     List<Probe> probed =
-        new AcceptanceProbing(processes, 8290)
+        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -94,7 +94,7 @@ class AcceptanceProbingTest {
     Files.createDirectories(worktree.resolve(".jagt/hooks"));
     when(processes.run(any(), any(), anyMap(), any())).thenReturn(new Processes.Result(0, "", ""));
 
-    new AcceptanceProbing(processes, 8290)
+    new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
         .probed(
             "ABC-42",
             worktree,
@@ -122,7 +122,7 @@ class AcceptanceProbingTest {
         .thenThrow(new IllegalStateException("Command timed out after PT5M: ./gradlew test"));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, 8290)
+        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -148,7 +148,7 @@ class AcceptanceProbingTest {
         .thenReturn(new Processes.Result(0, "", ""));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, 8290)
+        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -164,7 +164,7 @@ class AcceptanceProbingTest {
     Files.writeString(worktree.resolve("docs/guide.md"), "x");
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, 8290)
+        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -181,7 +181,7 @@ class AcceptanceProbingTest {
         .thenReturn(new Processes.Result(1, "a" + "b".repeat(2_000), ""));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, 8290)
+        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -200,7 +200,7 @@ class AcceptanceProbingTest {
         .thenReturn(new Processes.Result(1, "", ""));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, 8290)
+        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -213,7 +213,7 @@ class AcceptanceProbingTest {
   @Test
   void failsAFileTheWorktreeDoesNotHold(@TempDir Path worktree) {
     List<Probe> probed =
-        new AcceptanceProbing(processes, 8290)
+        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -230,7 +230,7 @@ class AcceptanceProbingTest {
     Files.createSymbolicLink(worktree.resolve("inside.md"), root.resolve("outside.md"));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, 8290)
+        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,
@@ -250,7 +250,7 @@ class AcceptanceProbingTest {
     Files.createSymbolicLink(worktree.resolve("loop.md"), worktree.resolve("loop.md"));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, 8290)
+        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
                 "ABC-42",
                 worktree,

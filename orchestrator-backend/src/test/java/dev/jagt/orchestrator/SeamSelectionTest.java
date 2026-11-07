@@ -26,7 +26,8 @@ class SeamSelectionTest {
               + "(?:\\s+implements\\s+([^{]+))?\\s*\\{");
   private static final Pattern SELECTED =
       Pattern.compile("@ConditionalOnExpression\\(|@ConditionalOnProperty\\([^)]*orchestrator");
-  private static final Set<String> RUN_TOGETHER = Set.of("StartupCheck", "Notifier");
+  private static final Set<String> RUN_TOGETHER =
+      Set.of("StartupCheck", "Notifier", "CodeHostCommands");
 
   @Test
   void selectsEveryAdapterOfAPortWithSeveralAdaptersByAnOrchestratorKey() {

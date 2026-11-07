@@ -39,6 +39,7 @@ public class AgentToolGateController {
   private final Clock clock;
   private final ConfigService configService;
   private final ToolGateEnvelope envelope;
+  private final ToolGate toolGate;
 
   /** Whatever comes back here is printed into the session, so an allowed call answers no body. */
   @PostMapping(value = "/api/agent/tool", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -68,7 +69,7 @@ public class AgentToolGateController {
             .findByWorktree(cwd)
             .map(owner -> remoteOf(owner.getValue()))
             .orElse(Remote.ORIGIN);
-    return ToolGate.refusal(call.command(), taskBranch, request.getLocalPort(), remote)
+    return toolGate.refusal(call.command(), taskBranch, request.getLocalPort(), remote)
         .map(
             reason -> {
               stateService.updateTask(

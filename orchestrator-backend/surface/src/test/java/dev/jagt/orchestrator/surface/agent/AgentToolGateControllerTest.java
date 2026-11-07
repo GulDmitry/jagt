@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.port.ToolGateEnvelope.Kind;
 import dev.jagt.orchestrator.protocol.ToolCall;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.ToolGate;
 import dev.jagt.orchestrator.task.Guard;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -62,7 +63,8 @@ class AgentToolGateControllerTest {
                     TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
     Map<String, Object> answered =
-        new AgentToolGateController(stateService, clock, configService, envelope)
+        new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Bash", "git push origin dev", null),
@@ -83,7 +85,8 @@ class AgentToolGateControllerTest {
                         .lastActiveTimestamp(100_000)
                         .build())));
 
-    new AgentToolGateController(stateService, clock, configService, envelope)
+    new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
         .gate(
             "/wt/ABC-1-proj",
             new ToolCall("Bash", "git push origin dev", null),
@@ -109,7 +112,8 @@ class AgentToolGateControllerTest {
                     TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
     var answered =
-        new AgentToolGateController(stateService, clock, configService, envelope)
+        new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Bash", "git push origin ABC-1", null),
@@ -123,7 +127,8 @@ class AgentToolGateControllerTest {
     when(stateService.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
     var answered =
-        new AgentToolGateController(stateService, clock, configService, envelope)
+        new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
             .gate(
                 "/elsewhere",
                 new ToolCall("Bash", "git push origin dev", null),
@@ -142,7 +147,8 @@ class AgentToolGateControllerTest {
                     TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
     var answered =
-        new AgentToolGateController(stateService, clock, configService, envelope)
+        new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Read", "git push origin dev", null),
@@ -154,7 +160,8 @@ class AgentToolGateControllerTest {
   @Test
   void answersACallWithNoPayloadWithNothing() {
     var answered =
-        new AgentToolGateController(stateService, clock, configService, envelope)
+        new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
             .gate("/wt/ABC-1-proj", null, new MockHttpServletRequest());
 
     assertThat(answered.getBody()).isNull();
@@ -173,7 +180,8 @@ class AgentToolGateControllerTest {
                         .build())));
 
     var answered =
-        new AgentToolGateController(stateService, clock, configService, envelope)
+        new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Write", null, "/wt/ABC-1-proj/src/Foo.java"),
@@ -203,13 +211,15 @@ class AgentToolGateControllerTest {
                         .build())));
 
     var plan =
-        new AgentToolGateController(stateService, clock, configService, envelope)
+        new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall(tool, null, "/wt/ABC-1-proj/plan.md"),
                 new MockHttpServletRequest());
     var visual =
-        new AgentToolGateController(stateService, clock, configService, envelope)
+        new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall(tool, null, "/wt/ABC-1-proj/task_visual.md"),
@@ -231,7 +241,8 @@ class AgentToolGateControllerTest {
                         .build())));
 
     var answered =
-        new AgentToolGateController(stateService, clock, configService, envelope)
+        new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("NotebookEdit", null, "/wt/ABC-1-proj/analysis.ipynb"),
@@ -250,7 +261,8 @@ class AgentToolGateControllerTest {
                     TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
     var answered =
-        new AgentToolGateController(stateService, clock, configService, envelope)
+        new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Edit", null, "/wt/ABC-1-proj/src/Foo.java"),
@@ -264,7 +276,8 @@ class AgentToolGateControllerTest {
     when(stateService.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
     var answered =
-        new AgentToolGateController(stateService, clock, configService, envelope)
+        new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
             .gate(
                 "/elsewhere",
                 new ToolCall("Write", null, "/elsewhere/Foo.java"),
@@ -282,7 +295,8 @@ class AgentToolGateControllerTest {
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
         .thenReturn(Optional.of(Map.entry("ABC-1", held)));
 
-    new AgentToolGateController(stateService, clock, configService, envelope)
+    new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
         .gate(
             "/wt/ABC-1-proj",
             new ToolCall("Read", null, "/wt/ABC-1-proj/a.txt"),
@@ -304,7 +318,8 @@ class AgentToolGateControllerTest {
                         .lastActiveTimestamp(95_000)
                         .build())));
 
-    new AgentToolGateController(stateService, clock, configService, envelope)
+    new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
         .gate(
             "/wt/ABC-1-proj",
             new ToolCall("Read", null, "/wt/ABC-1-proj/a.txt"),
@@ -330,7 +345,8 @@ class AgentToolGateControllerTest {
                     TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
     Map<String, Object> answered =
-        new AgentToolGateController(stateService, clock, configService, envelope)
+        new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Bash", "git push --no-verify upstream ABC-1", null),
@@ -352,7 +368,8 @@ class AgentToolGateControllerTest {
                     TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
     Map<String, Object> answered =
-        new AgentToolGateController(stateService, clock, configService, envelope)
+        new AgentToolGateController(
+            stateService, clock, configService, envelope, new ToolGate(List.of()))
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Bash", "git push --no-verify origin ABC-1", null),

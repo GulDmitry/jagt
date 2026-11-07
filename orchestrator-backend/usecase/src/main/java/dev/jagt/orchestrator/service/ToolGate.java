@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.CodeHostCommands;
 import dev.jagt.orchestrator.task.Remote;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,17 +9,19 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Service;
 
 /**
  * The shell lines a task may be refused: a line reaching the board or the Master's token, a write
- * to the code host past the push, {@code $'…'} or {@code $"…"} on a git, gh or glab line, a push
- * that could switch off the hook, a push naming no branch or one not the task's own, a delete of
- * the branch its review request is built on, and a force without the lease, and a worktree cut by
- * the session itself. Detaching a worktree's upstream removes the DEFAULT target and nothing else,
- * so an explicit {@code git push origin dev} still needs refusing. This is a gate on a few lines,
- * not a permission layer. What is read is the command LINE, so a push assembled at runtime is not
- * seen.
+ * to the code host past the push, {@code $'…'} or {@code $"…"} on a git or code-host CLI line, a
+ * push that could switch off the hook, a push naming no branch or one not the task's own, a delete
+ * of the branch its review request is built on, and a force without the lease, and a worktree cut
+ * by the session itself. Detaching a worktree's upstream removes the DEFAULT target and nothing
+ * else, so an explicit {@code git push origin dev} still needs refusing. This is a gate on a few
+ * lines, not a permission layer. What is read is the command LINE, so a push assembled at runtime
+ * is not seen.
  */
+@Service
 public final class ToolGate {
 
   /** An {@code &} beside a redirection ({@code 2>&1}, {@code &>}) separates nothing. */
@@ -46,8 +49,6 @@ public final class ToolGate {
   /** The shell decodes escapes inside these, which the line is not read through. */
   private static final Pattern UNREAD_QUOTING = Pattern.compile("\\$['\"]");
 
-  private static final Pattern GIT_WORD = Pattern.compile("(?i)\\b(git|gh|glab)\\b");
-
   /** git's plumbing writes a remote ref with no pre-push hook. */
   private static final Pattern PLUMBING = Pattern.compile("(send|receive)-pack|http-push");
 
@@ -73,7 +74,16 @@ public final class ToolGate {
 
   private record BoardPattern(int port, Pattern pattern) {}
 
-  private ToolGate() {}
+  private final HostCliLine hostCli;
+  private final Pattern gitWord;
+  private final String hostNames;
+
+  public ToolGate(List<CodeHostCommands> hosts) {
+    hostCli = new HostCliLine(hosts);
+    List<String> commands = hostCli.commands();
+    gitWord = Pattern.compile("(?i)\\b(git|" + String.join("|", commands) + ")\\b");
+    hostNames = String.join(" and ", commands);
+  }
 
   /** The board acts as the human, and the token as the Master: neither is a session's to reach. */
   private static Pattern board(int port) {
@@ -88,7 +98,7 @@ public final class ToolGate {
   }
 
   /** Why the line is refused, or empty when it is allowed. */
-  public static Optional<String> refusal(
+  public Optional<String> refusal(
       @Nullable String line, @Nullable String taskBranch, int boardPort, Remote remote) {
     if (line == null || taskBranch == null || taskBranch.isBlank()) {
       return Optional.empty();
@@ -118,24 +128,28 @@ public final class ToolGate {
     return Optional.empty();
   }
 
-  private static Optional<String> writesToHost(
+  private Optional<String> writesToHost(
       String command, String unquotedLine, String taskBranch, Remote remote) {
     if (PLUMBING.matcher(unquotedLine).find()
-        || Stream.of(SEPARATORS.split(command)).anyMatch(HostCliLine::writes)
-        || HostCliLine.writes(command)) {
+        || Stream.of(SEPARATORS.split(command)).anyMatch(hostCli::writes)
+        || hostCli.writes(command)) {
       return Optional.of(
-          "jagt refuses writing to the code host from here: gh and glab only read ("
-              + HostCliLine.readsAllowed()
+          "jagt refuses writing to the code host from here: "
+              + hostNames
+              + " only read ("
+              + hostCli.readsAllowed()
               + "). "
               + remote.pushAdvice(taskBranch));
     }
     return Optional.empty();
   }
 
-  private static Optional<String> readsUnquoted(String line, String unquotedLine) {
-    if (UNREAD_QUOTING.matcher(line).find() && GIT_WORD.matcher(unquotedLine).find()) {
+  private Optional<String> readsUnquoted(String line, String unquotedLine) {
+    if (UNREAD_QUOTING.matcher(line).find() && gitWord.matcher(unquotedLine).find()) {
       return Optional.of(
-          "jagt refuses $'…' and $\"…\" on a git, gh or glab line: write it in plain quotes.");
+          "jagt refuses $'…' and $\"…\" on a "
+              + hostNames.replace(" and ", ", ")
+              + " or git line: write it in plain quotes.");
     }
     return Optional.empty();
   }

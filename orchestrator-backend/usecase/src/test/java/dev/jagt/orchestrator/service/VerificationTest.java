@@ -35,7 +35,7 @@ class VerificationTest {
         new Verification(
                 config,
                 processes,
-                new AcceptanceProbing(processes, 8290),
+                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
                 mock(WorktreeChanges.class))
             .failure(TaskState.builder("gone", "/wt", TaskStatus.VERIFYING).build());
 
@@ -65,7 +65,7 @@ class VerificationTest {
         new Verification(
                 config,
                 processes,
-                new AcceptanceProbing(processes, 8290),
+                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
                 mock(WorktreeChanges.class))
             .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
@@ -94,7 +94,7 @@ class VerificationTest {
         new Verification(
                 config,
                 processes,
-                new AcceptanceProbing(processes, 8290),
+                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
                 mock(WorktreeChanges.class))
             .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
@@ -125,7 +125,7 @@ class VerificationTest {
         new Verification(
                 config,
                 processes,
-                new AcceptanceProbing(processes, 8290),
+                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
                 mock(WorktreeChanges.class))
             .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
@@ -162,7 +162,7 @@ class VerificationTest {
         new Verification(
                 config,
                 processes,
-                new AcceptanceProbing(processes, 8290),
+                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
                 mock(WorktreeChanges.class))
             .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
@@ -191,7 +191,7 @@ class VerificationTest {
         new Verification(
                 config,
                 processes,
-                new AcceptanceProbing(processes, 8290),
+                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
                 mock(WorktreeChanges.class))
             .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
@@ -220,7 +220,7 @@ class VerificationTest {
         new Verification(
                 config,
                 processes,
-                new AcceptanceProbing(processes, 8290),
+                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
                 mock(WorktreeChanges.class))
             .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
@@ -257,7 +257,7 @@ class VerificationTest {
         new Verification(
                 config,
                 processes,
-                new AcceptanceProbing(processes, 8290),
+                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
                 mock(WorktreeChanges.class))
             .failure(
                 TaskState.builder(
@@ -276,7 +276,7 @@ class VerificationTest {
         new Verification(
                 mock(ConfigService.class),
                 processes,
-                new AcceptanceProbing(processes, 8290),
+                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
                 mock(WorktreeChanges.class))
             .probed("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
@@ -296,7 +296,7 @@ class VerificationTest {
         new Verification(
                 config,
                 processes,
-                new AcceptanceProbing(processes, 8290),
+                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
                 mock(WorktreeChanges.class))
             .probed(
                 "ABC-42",
@@ -328,7 +328,7 @@ class VerificationTest {
         new Verification(
                 config,
                 processes,
-                new AcceptanceProbing(processes, 8290),
+                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
                 mock(WorktreeChanges.class))
             .probed(
                 "ABC-42",
@@ -362,7 +362,7 @@ class VerificationTest {
         new Verification(
                 config,
                 processes,
-                new AcceptanceProbing(processes, 8290),
+                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
                 mock(WorktreeChanges.class))
             .probed(
                 "ABC-42",
@@ -398,7 +398,7 @@ class VerificationTest {
         new Verification(
                 config,
                 processes,
-                new AcceptanceProbing(processes, 8290),
+                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
                 mock(WorktreeChanges.class))
             .probed(
                 "ABC-42",

@@ -1,7 +1,9 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.CodeHostCommands;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,17 +19,6 @@ import java.util.stream.Collectors;
  */
 final class HostCliLine {
 
-  private static final Pattern HOST_CLI =
-      Pattern.compile("(\\S*/)?(gh|glab)", Pattern.CASE_INSENSITIVE);
-  private static final Map<String, Set<String>> HOST_READS =
-      Map.of(
-          "pr", Set.of("view", "list", "diff", "checks", "status"),
-          "mr", Set.of("view", "list", "diff"),
-          "issue", Set.of("view", "list", "status"),
-          "run", Set.of("view", "list"),
-          "ci", Set.of("list", "status"),
-          "repo", Set.of("view"),
-          "auth", Set.of("status"));
   private static final Pattern HOST_METHOD = Pattern.compile("(-X|--method=?)(.*)");
 
   /**
@@ -61,88 +52,6 @@ final class HostCliLine {
   private static final Set<String> WRAPPER_OPTION_WITH_VALUE =
       Set.of("-u", "-C", "-S", "-a", "-n", "-I", "-L", "-P", "-s", "-d", "-E");
 
-  /**
-   * A host CLI sitting after any word still runs where the next word is one of its own command
-   * groups.
-   */
-  private static final Set<String> GROUPS =
-      Set.of(
-          "agent-task",
-          "alias",
-          "api",
-          "artifact-registry",
-          "attestation",
-          "auth",
-          "browse",
-          "cache",
-          "changelog",
-          "check-update",
-          "ci",
-          "cluster",
-          "co",
-          "codespace",
-          "completion",
-          "config",
-          "container-registry",
-          "copilot",
-          "dependency-firewall",
-          "deploy-key",
-          "discussion",
-          "duo",
-          "extension",
-          "gist",
-          "govern",
-          "gpg-key",
-          "incident",
-          "issue",
-          "iteration",
-          "job",
-          "label",
-          "licenses",
-          "mcp",
-          "milestone",
-          "mr",
-          "opentofu",
-          "orbit",
-          "org",
-          "packages",
-          "pr",
-          "preview",
-          "project",
-          "release",
-          "repo",
-          "ruleset",
-          "run",
-          "runner",
-          "runner-controller",
-          "schedule",
-          "search",
-          "secret",
-          "securefile",
-          "security",
-          "skill",
-          "skills",
-          "snippet",
-          "ssh-key",
-          "stack",
-          "status",
-          "todo",
-          "token",
-          "user",
-          "variable",
-          "work-items",
-          "workflow",
-          "pipe",
-          "pipeline",
-          "var",
-          "ext",
-          "extensions",
-          "cs",
-          "at",
-          "-R",
-          "--repo",
-          "--hostname");
-
   private static final Set<String> REPO_FLAGS = Set.of("-R", "--repo", "--hostname");
   private static final Pattern GLUED_REPO = Pattern.compile("-R.+|--(repo|hostname)=.+");
   private static final int WRITE = -1;
@@ -151,17 +60,42 @@ final class HostCliLine {
           "sh", "bash", "zsh", "dash", "ksh", "mksh", "csh", "tcsh", "fish", "watch", "ssh", "su",
           "sudo", "flock", "script");
 
-  private HostCliLine() {}
+  private final Pattern hostCli;
+  private final Map<String, Set<String>> hostReads = new TreeMap<>();
+  private final Set<String> groups = new HashSet<>(REPO_FLAGS);
+  private final List<String> commands;
+
+  HostCliLine(List<CodeHostCommands> hosts) {
+    commands = hosts.stream().map(CodeHostCommands::command).sorted().toList();
+    hostCli =
+        Pattern.compile("(\\S*/)?(" + String.join("|", commands) + ")", Pattern.CASE_INSENSITIVE);
+    hosts.forEach(
+        host -> {
+          groups.addAll(host.groups());
+          host.reads().forEach((group, verbs) -> hostReads.merge(group, verbs, HostCliLine::union));
+        });
+  }
+
+  /** The CLIs' words, sorted. */
+  List<String> commands() {
+    return commands;
+  }
+
+  private static Set<String> union(Set<String> left, Set<String> right) {
+    Set<String> both = new HashSet<>(left);
+    both.addAll(right);
+    return both;
+  }
 
   /** What a host CLI may run, as the refusal names it. */
-  static String readsAllowed() {
-    return new TreeMap<>(HOST_READS)
+  String readsAllowed() {
+    return new TreeMap<>(hostReads)
         .entrySet().stream()
             .map(read -> read.getKey() + " " + String.join("/", new TreeSet<>(read.getValue())))
             .collect(Collectors.joining(", ", "", ", api GET"));
   }
 
-  static boolean writes(String segment) {
+  boolean writes(String segment) {
     List<String> words = shellWords(segment);
     int command = commandPosition(words);
     for (int at = 0; at < words.size(); at++) {
@@ -172,12 +106,12 @@ final class HostCliLine {
     return false;
   }
 
-  private static boolean callsWrite(List<String> words, int at, int command) {
+  private boolean callsWrite(List<String> words, int at, int command) {
     String next = at + 1 < words.size() ? words.get(at + 1) : "";
     boolean glued = GLUED_REPO.matcher(next).matches();
     boolean called =
-        HOST_CLI.matcher(words.get(at)).matches()
-            && (at == command || GROUPS.contains(next) || glued || next.contains("{"));
+        hostCli.matcher(words.get(at)).matches()
+            && (at == command || groups.contains(next) || glued || next.contains("{"));
     return called && !reads(words, readsFrom(at, next, glued));
   }
 
@@ -214,27 +148,27 @@ final class HostCliLine {
    * A shell, {@code eval} and {@code env -S} may run a later quoted span as a line, so each one
    * holding a space is judged as one; a bare word is already judged where it stands.
    */
-  private static boolean runsLines(List<String> words, int at) {
+  private boolean runsLines(List<String> words, int at) {
     String word = words.get(at).replaceFirst(".*/", "");
     return (SHELLS.contains(word) || "eval".equals(word) || "env".equals(word))
         && words.subList(at + 1, words.size()).stream()
             .map(later -> later.replaceFirst("^(-S|--split-string=)", ""))
             .filter(later -> later.chars().anyMatch(Character::isWhitespace))
-            .anyMatch(HostCliLine::writesLine);
+            .anyMatch(this::writesLine);
   }
 
-  private static boolean writesLine(String line) {
-    return Arrays.stream(line.split("[;&|\\n]+")).anyMatch(HostCliLine::writes);
+  private boolean writesLine(String line) {
+    return Arrays.stream(line.split("[;&|\\n]+")).anyMatch(this::writes);
   }
 
-  private static boolean reads(List<String> words, int from) {
+  private boolean reads(List<String> words, int from) {
     String command = from < words.size() ? words.get(from) : "";
     return "api".equals(command) ? readsApi(words, from) : readsGroup(words, from, command);
   }
 
-  private static boolean readsGroup(List<String> words, int from, String command) {
+  private boolean readsGroup(List<String> words, int from, String command) {
     return from + 1 < words.size()
-        && HOST_READS.getOrDefault(command, Set.of()).contains(words.get(from + 1))
+        && hostReads.getOrDefault(command, Set.of()).contains(words.get(from + 1))
         && words.subList(from + 2, words.size()).stream().noneMatch(SHOWS_A_TOKEN);
   }
 
