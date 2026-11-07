@@ -253,4 +253,33 @@ class MergedRequestsTest {
     assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api");
     verifyNoInteractions(departure);
   }
+
+  @Test
+  void keepsThePrimaryRepositoryOfATaskHoldingOthersWhoseRequestTheHostClosed(@TempDir Path root) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    TaskRepo primary = new TaskRepo("api", "/api-wt", "git@host:g/api.git", "http://mr/api");
+    state.putTask(
+        "ABC-42",
+        TaskState.builder(
+                List.of(
+                    primary,
+                    new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web")),
+                TaskStatus.REVIEWED)
+            .build());
+
+    boolean left =
+        new MergedRequests(
+                state, config, inspection, new WorktreeChanges(config, inspection), departure)
+            .hostSaidClosed("ABC-42", primary);
+
+    assertThat(left).isFalse();
+    assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api", "web");
+    verifyNoInteractions(departure);
+  }
 }

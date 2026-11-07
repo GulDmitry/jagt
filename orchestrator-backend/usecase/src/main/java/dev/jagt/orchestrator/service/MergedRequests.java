@@ -72,21 +72,21 @@ public class MergedRequests {
 
   /**
    * The host said {@code repo}'s request was closed unmerged: where the task holds other
-   * repositories, it leaves the task and this answers true; the task's only repository stays, for
-   * the caller to refuse.
+   * repositories, it leaves the task and this answers true; the task's primary repository, alone
+   * or not, stays, for the caller to refuse.
    */
   public boolean hostSaidClosed(String taskId, TaskRepo repo) {
     String project = Objects.requireNonNull(repo.project());
     TaskState task = stateService.task(taskId).orElse(null);
-    boolean several = task != null && task.repos().size() > 1;
-    if (several) {
+    boolean leaves = task != null && !project.equals(task.project());
+    if (leaves) {
       Set<String> trustedOnlyByIt =
           departure.trustedOnlyBy(taskId, Objects.requireNonNull(task), repo);
       stateService.updateTask(
           taskId, current -> TaskReducer.repoLeft(current, project, trustedOnlyByIt));
       departure.settle(taskId, repo, "its request was closed on the host");
     }
-    return several;
+    return leaves;
   }
 
   private void record(String taskId, String project, boolean merged) {
