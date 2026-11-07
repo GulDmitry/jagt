@@ -19,8 +19,20 @@ class ClaudePricesTest {
     "claude-sonnet-4-6, SONNET",
     "claude-haiku-4-5-20251001, HAIKU",
   })
-  void picksTheMostSpecificFamilyTheModelIdNames(String model, ClaudePrices expected) {
+  void picksTheRowNamingTheModelId(String model, ClaudePrices expected) {
     assertThat(ClaudePrices.of(model)).contains(expected);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "claude-opus-5-turbo",
+    "my-claude-opus-5",
+    "opus",
+    "claude-opus-5-2025",
+    "claude-nova-9",
+  })
+  void leavesUnpricedAModelIdOnlyContainingAKnownModelsName(String model) {
+    assertThat(ClaudePrices.of(model)).isEmpty();
   }
 
   @ParameterizedTest

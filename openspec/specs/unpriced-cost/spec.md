@@ -23,6 +23,18 @@ A record without `unpricedCalls` reads as 0. Each unpriced model SHALL log one W
 - **WHEN** a ledger line has no `unpricedCalls`
 - **THEN** it reads with 0 and its cost is complete
 
+### Requirement: A model is priced by its exact id
+A session turn SHALL be priced only when its model id equals a price row's id, or that id plus a `-YYYYMMDD` date suffix.
+Any other id, one merely containing a known name included, SHALL be unpriced.
+
+#### Scenario: A model id merely containing a known name is unpriced
+- **WHEN** a session log holds a turn of a model whose id merely contains a known model's name
+- **THEN** `unpricedCalls` is 1 and `costUsd` is unchanged
+
+#### Scenario: A dated variant of a known id
+- **WHEN** a session log holds a turn of a known id followed by `-YYYYMMDD`
+- **THEN** it is priced at that id's row
+
 ### Requirement: A Codex session's turns are booked unpriced
 With `orchestrator.agent.cli=codex`, each `token_count` event of the session's newest rollout under the worktree's
 Codex home that carries usage SHALL book one call: fresh input (input minus cached), cached input and output tokens.
