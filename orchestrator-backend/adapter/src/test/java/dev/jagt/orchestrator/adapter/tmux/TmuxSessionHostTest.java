@@ -36,6 +36,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,10 +56,129 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("capture-pane")))).thenReturn(new Processes.Result(1, "", "can't find pane"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThatThrownBy(() -> host.screenOf("jagt", "ABC-1")).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void listsWindowsOnceAndReadsTheProcessTableOnceForEveryTaskOfATick() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows") && command.contains("-a")))).thenReturn(new Processes.Result(0,
+                "jagt\t@1 100 1700000000 ABC-1\njagt\t@2 200 1700000001 ABC-2\njagt\t@3 300 1700000002 ABC-3\n", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("ps")))).thenReturn(new Processes.Result(0, "    1\n  100\n  300\n", ""));
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, ToolchainProperties.defaults()),
+                new OrchestratorPaths(OrchestratorProperties.defaults()), mock(TerminalDriver.class), mock(AgentRuntime.class));
+        List<WindowState> states = new java.util.ArrayList<>();
+
+        host.readingOnce(() -> {
+            states.add(host.taskWindowState("jagt", "ABC-1"));
+            states.add(host.taskWindowState("jagt", "ABC-2"));
+            states.add(host.taskWindowState("jagt", "ABC-3"));
+        });
+
+        assertThat(states).containsExactly(WindowState.AGENT_RUNNING, WindowState.DEAD_SHELL, WindowState.AGENT_RUNNING);
+        verify(processes, times(1)).run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")));
+        verify(processes, times(1)).run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("ps")));
+        verify(processes, never()).run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("pgrep")));
+    }
+
+    @Test
+    void listsWindowsAgainWhenATaskWindowIsPressedWithinTheTick() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0,
+                "jagt\t@1 100 1700000000 ABC-1\n", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("send-keys")))).thenReturn(new Processes.Result(0, "", ""));
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, ToolchainProperties.defaults()),
+                new OrchestratorPaths(OrchestratorProperties.defaults()), mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        host.readingOnce(() -> {
+            host.lastWindowActivityMillis("jagt", "ABC-1");
+            host.submitTaskWindow("jagt", "ABC-1");
+            host.lastWindowActivityMillis("jagt", "ABC-1");
+        });
+
+        verify(processes, times(2)).run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")));
+    }
+
+    @Test
+    void listsWindowsAgainWhenATaskWindowIsOpenedWithinTheTick() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0,
+                "jagt\t@1 100 1700000000 ABC-1\n", ""));
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, ToolchainProperties.defaults()),
+                new OrchestratorPaths(OrchestratorProperties.defaults()), mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        host.readingOnce(() -> {
+            host.lastWindowActivityMillis("jagt", "ABC-1");
+            host.keepFeedWindow("jagt", "feed", Path.of("/feeds/a.log"));
+            host.lastWindowActivityMillis("jagt", "ABC-1");
+        });
+
+        verify(processes, times(2)).run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows") && command.contains("-a")));
+    }
+
+    @Test
+    void listsWindowsAgainWhenATaskWindowIsKilledWithinTheTick() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0,
+                "jagt\t@1 100 1700000000 ABC-1\n", ""));
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, ToolchainProperties.defaults()),
+                new OrchestratorPaths(OrchestratorProperties.defaults()), mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        host.readingOnce(() -> {
+            host.lastWindowActivityMillis("jagt", "ABC-1");
+            host.killTaskWindows("jagt", "ABC-1");
+            host.lastWindowActivityMillis("jagt", "ABC-1");
+        });
+
+        verify(processes, times(2)).run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows") && command.contains("-a")));
+    }
+
+    @Test
+    void readsOnlyTheWindowsOfTheSessionAskedAboutWithinATick() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0,
+                "other\t@4 400 1700000009 ABC-4\n", ""));
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, ToolchainProperties.defaults()),
+                new OrchestratorPaths(OrchestratorProperties.defaults()), mock(TerminalDriver.class), mock(AgentRuntime.class));
+        List<Long> activity = new java.util.ArrayList<>();
+
+        host.readingOnce(() -> activity.add(host.lastWindowActivityMillis("jagt", "ABC-4")));
+
+        assertThat(activity).containsExactly(0L);
+    }
+
+    @Test
+    void listsWindowsAgainForAReadAfterTheTickEnded() {
+        Processes processes = mock(Processes.class);
+        when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0,
+                "jagt\t@1 100 1700000000 ABC-1\n", ""));
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, ToolchainProperties.defaults()),
+                new OrchestratorPaths(OrchestratorProperties.defaults()), mock(TerminalDriver.class), mock(AgentRuntime.class));
+
+        host.readingOnce(() -> host.lastWindowActivityMillis("jagt", "ABC-1"));
+        host.lastWindowActivityMillis("jagt", "ABC-1");
+
+        verify(processes, times(2)).run(isNull(), any(Duration.class), argThat((List<String> command) ->
+                command.contains("list-windows")));
     }
 
     @Test
@@ -69,7 +189,7 @@ class TmuxSessionHostTest {
     @Test
     void namesTheSessionJagtWhereNoneIsConfigured() {
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(mock(Processes.class), properties,
+        TmuxSessionHost host = new TmuxSessionHost(mock(Processes.class), new TmuxReads(mock(Processes.class), properties),
                 new OrchestratorPaths(OrchestratorProperties.defaults()), mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThat(host.sessionName(null)).isEqualTo("jagt");
@@ -80,7 +200,7 @@ class TmuxSessionHostTest {
     @Test
     void refusesThroughTheHostASessionNameTmuxReserves() {
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(mock(Processes.class), properties,
+        TmuxSessionHost host = new TmuxSessionHost(mock(Processes.class), new TmuxReads(mock(Processes.class), properties),
                 new OrchestratorPaths(OrchestratorProperties.defaults()), mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThat(host.unaddressable("a:b")).isPresent();
@@ -96,7 +216,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("pgrep")))).thenReturn(new Processes.Result(pgrepExit, children, ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThat(host.taskWindowState("jagt", "ABC-1")).isEqualTo(expected);
@@ -107,7 +227,7 @@ class TmuxSessionHostTest {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThat(host.taskWindowState("jagt", "ABC-1")).isEqualTo(WindowState.MISSING);
@@ -120,7 +240,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0,
                 "@1 100 1700000000 XABC-1\n@2 200 1700000500 ABC-1\n", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThat(host.lastWindowActivityMillis("jagt", "ABC-1")).isEqualTo(1_700_000_500_000L);
@@ -139,7 +259,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("kill-window") && command.contains("@4")))).thenReturn(new Processes.Result(1, "", "gone"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         int killed = host.killTaskWindows("jagt", "ABC-1");
@@ -155,7 +275,7 @@ class TmuxSessionHostTest {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThat(host.killTaskWindows("jagt", "ABC-1")).isZero();
@@ -167,7 +287,7 @@ class TmuxSessionHostTest {
         TerminalDriver terminal = mock(TerminalDriver.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 terminal, mock(AgentRuntime.class));
 
         assertThat(host.focusTaskWindow("jagt", "agents", "ABC-1")).isFalse();
@@ -183,7 +303,7 @@ class TmuxSessionHostTest {
                 command.contains("list-windows")))).thenReturn(new Processes.Result(0,
                 "@1 100 1700000000 XABC-1\n@2 200 1700000500 ABC-1\n", ""));
         ToolchainProperties properties = ToolchainProperties.defaults().withTmuxCommand("/opt/jagt/tmux");
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 terminal, mock(AgentRuntime.class));
 
         boolean focused = host.focusTaskWindow("jagt", "agents", "ABC-1");
@@ -204,7 +324,7 @@ class TmuxSessionHostTest {
                 command.contains("list-windows")))).thenReturn(new Processes.Result(0, "@2 200 1700000500 ABC-1\n", ""));
         ToolchainProperties properties = ToolchainProperties.defaults().withTmuxCommand("/opt/jagt/tmux")
                 .withTmuxSocket("jagt-sock");
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         host.focusTaskWindow("jagt", "agents", "ABC-1");
@@ -224,7 +344,7 @@ class TmuxSessionHostTest {
                 command.contains("list-windows")))).thenReturn(new Processes.Result(0, "@2 200 1700000500 ABC-1\n", ""));
         ToolchainProperties properties = ToolchainProperties.defaults().withTmuxCommand("/opt/jagt/tmux")
                 .withTmuxSocket("jagt-sock");
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 terminal, mock(AgentRuntime.class));
 
         host.focusTaskWindow("jagt", "agents", "ABC-1");
@@ -238,7 +358,7 @@ class TmuxSessionHostTest {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "", ""));
         ToolchainProperties properties = ToolchainProperties.defaults().withTmuxCommand("tmux");
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         host.keepFeedWindow("jagt", "feed", Path.of("/feed.log"));
@@ -264,7 +384,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("list-clients")))).thenReturn(new Processes.Result(0, "/dev/ttys001: jagt", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 terminal, mock(AgentRuntime.class));
 
         host.focusTaskWindow("jagt", "agents", "ABC-1");
@@ -279,7 +399,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("list-windows")))).thenReturn(new Processes.Result(0, "@2 200 1700000500 ABC-1\n", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         boolean nudged = host.nudgeTaskWindow("jagt", "ABC-1", "carry on");
@@ -298,7 +418,7 @@ class TmuxSessionHostTest {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThat(host.nudgeTaskWindow("jagt", "ABC-1", "carry on")).isFalse();
@@ -311,7 +431,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("list-windows")))).thenReturn(new Processes.Result(0, "@2 200 1700000500 ABC-1\n", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         boolean submitted = host.submitTaskWindow("jagt", "ABC-1");
@@ -331,7 +451,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("capture-pane")))).thenReturn(new Processes.Result(0, "$ build ok", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThat(host.screenOf("jagt", "ABC-1")).contains("$ build ok");
@@ -356,7 +476,7 @@ class TmuxSessionHostTest {
 
                 """, ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThat(host.exitTail("jagt", "ABC-1"))
@@ -371,7 +491,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("pgrep")))).thenReturn(new Processes.Result(0, "4242\n", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThat(host.exitTail("jagt", "ABC-1")).isEmpty();
@@ -382,7 +502,7 @@ class TmuxSessionHostTest {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThat(host.screenOf("jagt", "ABC-1")).isEmpty();
@@ -395,7 +515,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
         when(agent.launchCommand(Path.of("/wt/ABC-1"), false)).thenReturn("agent-cmd");
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), agent);
 
         host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
@@ -414,7 +534,7 @@ class TmuxSessionHostTest {
         AgentRuntime agent = mock(AgentRuntime.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), agent);
 
         host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
@@ -432,7 +552,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
         when(agent.launchCommand(Path.of("/wt/ABC-1"), true, "opus")).thenReturn("agent-on-opus");
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), agent);
 
         host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), true, "opus");
@@ -449,7 +569,7 @@ class TmuxSessionHostTest {
         AgentRuntime agent = mock(AgentRuntime.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), agent);
 
         host.openTaskWindow("jagt", "agents", "ABC-1", "login fix", Path.of("/wt/ABC-1"), false, "");
@@ -468,7 +588,7 @@ class TmuxSessionHostTest {
         AgentRuntime agent = mock(AgentRuntime.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), agent);
 
         host.openTaskWindow("jagt", "agents", "ABC-1", "  ", Path.of("/wt/ABC-1"), false, "");
@@ -486,7 +606,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("has-session")))).thenReturn(new Processes.Result(1, "", "no session"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), agent);
 
         host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
@@ -503,7 +623,7 @@ class TmuxSessionHostTest {
         AgentRuntime agent = mock(AgentRuntime.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), agent);
 
         host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
@@ -521,7 +641,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("list-windows")))).thenReturn(new Processes.Result(0, "@4 ABC-1\n", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), agent);
 
         host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
@@ -540,7 +660,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("list-clients")))).thenReturn(new Processes.Result(0, "", ""));
         ToolchainProperties properties = ToolchainProperties.defaults().withTmuxCommand("/opt/jagt/tmux");
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 terminal, mock(AgentRuntime.class));
 
         host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
@@ -555,7 +675,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
         when(agent.reviveCommand(Path.of("/wt/ABC-1"))).thenReturn("agent --continue");
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), agent);
 
         host.reviveTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"));
@@ -575,7 +695,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("has-session")))).thenReturn(new Processes.Result(1, "", "no session"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         host.keepFeedWindow("jagt", "master-feed", Path.of("/feeds/master.log"));
@@ -591,7 +711,7 @@ class TmuxSessionHostTest {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         host.keepFeedWindow("jagt", "master-feed", Path.of("/feeds/it's.log"));
@@ -607,7 +727,7 @@ class TmuxSessionHostTest {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         host.openCommandWindow("jagt", "jagt", "login", List.of("no-such-cli", "auth", "it's"));
@@ -630,7 +750,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("list-clients")))).thenReturn(new Processes.Result(0, "", ""));
         ToolchainProperties properties = ToolchainProperties.defaults().withTmuxCommand("/opt/jagt/tmux");
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 terminal, mock(AgentRuntime.class));
 
         host.openCommandWindow("jagt", "jagt-title", "login", List.of("no-such-cli"));
@@ -650,7 +770,7 @@ class TmuxSessionHostTest {
                 command.contains("list-windows")))).thenReturn(new Processes.Result(0,
                 "@5 100 1700000000 master-feed\n", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         host.keepFeedWindow("jagt", "master-feed", Path.of("/feeds/master.log"));
@@ -665,7 +785,7 @@ class TmuxSessionHostTest {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThat(host.submitTaskWindow("jagt", "ABC-1")).isFalse();
@@ -682,7 +802,7 @@ class TmuxSessionHostTest {
                 command.contains("capture-pane")))).thenReturn(new Processes.Result(0,
                 "[jagt] agent exited \u2014 window closes in 15s (Ctrl+C to close now)\n", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThat(host.exitTail("jagt", "ABC-1")).contains("");
@@ -696,7 +816,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("automatic-rename")))).thenReturn(new Processes.Result(1, "", "no such window"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
         ListAppender<ILoggingEvent> log = new ListAppender<>();
         log.start();
@@ -718,7 +838,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("escape-time")))).thenReturn(new Processes.Result(1, "", "unknown option"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
         ListAppender<ILoggingEvent> log = new ListAppender<>();
         log.start();
@@ -740,11 +860,11 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("list-windows")))).thenReturn(new Processes.Result(1, "", "protocol version mismatch"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
         ListAppender<ILoggingEvent> log = new ListAppender<>();
         log.start();
-        Logger hostLog = (Logger) LoggerFactory.getLogger(TmuxSessionHost.class);
+        Logger hostLog = (Logger) LoggerFactory.getLogger(TmuxReads.class);
         hostLog.addAppender(log);
 
         host.keepFeedWindow("jagt", "master", Path.of("/logs/master.log"));
@@ -765,7 +885,7 @@ class TmuxSessionHostTest {
                 command.contains("list-windows")))).thenReturn(new Processes.Result(0,
                 "@1 100 1700000000 master\n@2 200 1700000500 xmaster\n", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         host.keepFeedWindow("jagt", "master", Path.of("/logs/master.log"));
@@ -782,7 +902,7 @@ class TmuxSessionHostTest {
                 command.contains("list-windows")))).thenReturn(new Processes.Result(0,
                 "@2 200 1700000500 xmaster\n", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         host.keepFeedWindow("jagt", "master", Path.of("/logs/master.log"));
@@ -798,7 +918,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("list-windows")))).thenReturn(new Processes.Result(1, "", "server timed out"));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         assertThatThrownBy(() -> host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, ""))
@@ -813,7 +933,7 @@ class TmuxSessionHostTest {
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults());
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, paths, mock(TerminalDriver.class),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), paths, mock(TerminalDriver.class),
                 mock(AgentRuntime.class));
 
         host.openTaskWindow("jagt", "agents", "ABC-1", null, paths.scratch().resolve("ABC-1"), true, "");
@@ -829,7 +949,7 @@ class TmuxSessionHostTest {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, "@9", ""));
         ToolchainProperties properties = ToolchainProperties.defaults();
-        TmuxSessionHost host = new TmuxSessionHost(processes, properties, new OrchestratorPaths(OrchestratorProperties.defaults()),
+        TmuxSessionHost host = new TmuxSessionHost(processes, new TmuxReads(processes, properties), new OrchestratorPaths(OrchestratorProperties.defaults()),
                 mock(TerminalDriver.class), mock(AgentRuntime.class));
 
         host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");

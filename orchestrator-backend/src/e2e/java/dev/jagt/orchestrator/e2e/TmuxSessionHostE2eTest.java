@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.e2e;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.tmux.TmuxReads;
 import dev.jagt.orchestrator.adapter.tmux.TmuxSessionHost;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -40,7 +41,7 @@ class TmuxSessionHostE2eTest {
         when(agentRuntime.launchCommand(any(), anyBoolean())).thenReturn("sleep 30");
         OrchestratorProperties orchestrator = OrchestratorProperties.defaults()
                 .withRoot(root.toString());
-        return new TmuxSessionHost(processes, ToolchainProperties.defaults().withTmuxCommand("tmux"),
+        return new TmuxSessionHost(processes, new TmuxReads(processes, ToolchainProperties.defaults().withTmuxCommand("tmux")),
                 new OrchestratorPaths(orchestrator),
                 mock(TerminalDriver.class), agentRuntime);
     }

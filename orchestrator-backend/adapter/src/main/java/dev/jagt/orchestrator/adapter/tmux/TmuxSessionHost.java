@@ -7,7 +7,6 @@ import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.WorktreeHooks;
@@ -21,7 +20,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -42,7 +40,7 @@ public class TmuxSessionHost implements SessionHost {
     private static final int TAIL_LINES = 3;
 
     private final Processes processRunner;
-    private final ToolchainProperties properties;
+    private final TmuxReads reads;
     private final OrchestratorPaths paths;
     private final TerminalDriver terminalDriver;
     private final AgentRuntime agentRuntime;
@@ -57,6 +55,11 @@ public class TmuxSessionHost implements SessionHost {
     static Optional<String> reserved(String name) {
         return name.chars().anyMatch(c -> c == ':' || c == '.')
                 ? Optional.of("contains ':' or '.', which tmux reserves") : Optional.empty();
+    }
+
+    @Override
+    public void readingOnce(Runnable tick) {
+        reads.once(tick);
     }
 
     @Override
@@ -146,6 +149,7 @@ public class TmuxSessionHost implements SessionHost {
                         "-t", "=" + session + ":", "-n", name, "-c", cwd.toString(), ran))
                 .expectSuccess("tmux new-window " + name)
                 .stdout().trim();
+        reads.changed();
         var rename = processRunner.run(null, TIMEOUT, tmux("set-option",
                 "-w", "-t", windowId, "automatic-rename", "off"));
         if (rename.exitCode() != 0) {
@@ -206,9 +210,8 @@ public class TmuxSessionHost implements SessionHost {
         return Optional.of(String.join("\n", printed.subList(Math.max(0, printed.size() - TAIL_LINES), printed.size())));
     }
 
-    private boolean agentRunning(Window window) {
-        var children = processRunner.run(null, TIMEOUT, List.of("pgrep", "-P", window.panePid()));
-        return children.exitCode() == 0 && !children.stdout().isBlank();
+    private boolean agentRunning(TmuxReads.Window window) {
+        return reads.hasChildren(window.panePid());
     }
 
     @Override
@@ -250,13 +253,14 @@ public class TmuxSessionHost implements SessionHost {
     private void enter(String windowId, String taskId) {
         processRunner.run(null, TIMEOUT, tmux("send-keys", "-t", windowId, "Enter"))
                 .expectSuccess("tmux send-keys Enter " + taskId);
+        reads.changed();
     }
 
     /** Killing a window also kills its processes, so this ends the agent with it. */
     @Override
     public int killTaskWindows(String session, String taskId) {
         synchronized (lock) {
-            List<String> ids = windowLines(session, "#{window_id} #{window_name}").stream()
+            List<String> ids = reads.lines(session, "#{window_id} #{window_name}").stream()
                     .filter(line -> line.endsWith(" " + taskId))
                     .map(line -> line.substring(0, line.indexOf(' ')))
                     .toList();
@@ -275,6 +279,7 @@ public class TmuxSessionHost implements SessionHost {
                             .log();
                 }
             }
+            reads.changed();
             return killed;
         }
     }
@@ -287,42 +292,13 @@ public class TmuxSessionHost implements SessionHost {
         }
     }
 
-    private record Window(String id, String panePid, long activitySeconds) {
-    }
-
     private Optional<String> findWindowId(String session, String taskId) {
-        return findWindow(session, taskId).map(Window::id);
+        return findWindow(session, taskId).map(TmuxReads.Window::id);
     }
 
-    private Optional<Window> findWindow(String session, String taskId) {
-        return windowLines(session, "#{window_id} #{pane_pid} #{window_activity} #{window_name}").stream()
-                .filter(line -> line.endsWith(" " + taskId))
-                .map(line -> line.split(" ", 4))
-                .map(fields -> new Window(fields[0], fields[1], Long.parseLong(fields[2])))
-                .findFirst();
+    private Optional<TmuxReads.Window> findWindow(String session, String taskId) {
+        return reads.windows(session).stream().filter(window -> window.name().equals(taskId)).findFirst();
     }
-
-    /** A session or server that is not there lists no windows; any other failure is unknown, never "none". */
-    private List<String> windowLines(String session, String format) {
-        var windows = processRunner.run(null, TIMEOUT, tmux("list-windows",
-                "-t", "=" + session, "-F", format));
-        if (windows.exitCode() == 0) {
-            return windows.stdout().lines().toList();
-        }
-        if (SESSION_ABSENT.matcher(windows.stderr()).find()) {
-            return List.of();
-        }
-        log.atWarn().setMessage("tmux windows unreadable")
-                .addKeyValue("session", session)
-                .addKeyValue("cause", OneLine.clipped(windows.stderr()))
-                .addKeyValue("effect", "no window opened, closed or reported this round")
-                .log();
-        throw new WindowsUnreadable("tmux list-windows " + session + " failed (exit " + windows.exitCode() + "): "
-                + OneLine.clipped(windows.stderr()));
-    }
-
-    private static final Pattern SESSION_ABSENT =
-            Pattern.compile("no server running|can't find session|error connecting to");
 
     private void ensureSession(String session) {
         var has = processRunner.run(null, TIMEOUT, tmux("has-session", "-t", "=" + session));
@@ -373,11 +349,7 @@ public class TmuxSessionHost implements SessionHost {
         terminalDriver.openViewer(tmux("attach", "-t", session), dedicatedTitle, VIEWER_CWD);
     }
 
-    /** Resolved HERE, where the process is spawned: a bare name is what the human configured, not a path. */
     private List<String> tmux(String... args) {
-        List<String> argv = new ArrayList<>(TmuxArgv.prefix(Executables.resolve(properties.tmuxCommand()),
-                properties.tmuxSocket()));
-        argv.addAll(List.of(args));
-        return argv;
+        return reads.argv(args);
     }
 }
