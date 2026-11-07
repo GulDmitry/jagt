@@ -60,7 +60,8 @@ A `NoClassDefFoundError` during a startup failure or on exit is the same cause, 
 | You cannot find the log | `tail -f jagt-backend.log`, next to where you started the jar |
 | A session went missing and you want to know when | `grep -E 'session window changed|session gone|task window' jagt-backend.log`: one line per change |
 
-There is one log file and it is never rolled into archives. Copy it before restarting: **every start empties it.**
+The log rolls at 10 MB into one `.1`. A start keeps the previous run as `jagt-backend.log.<UTC date-time>`
+for 14 days, 200 MB at most; a read of an earlier run goes there.
 
 ## State on disk
 

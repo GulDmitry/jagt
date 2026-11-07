@@ -87,7 +87,8 @@ cp jagt.yml.dist jagt.yml
 ```
 
 `projects` is the only section with no default — without one jagt refuses to start.
-Edit the `my-project` entry the copy already holds; the repository needs a remote named `origin`, fetched:
+Edit the `my-project` entry the copy already holds; the repository needs a fetched remote, `origin` unless
+`remote` names another (`remote: none` keeps it on this machine):
 
 ```yaml
 orchestrator:

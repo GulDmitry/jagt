@@ -155,7 +155,7 @@
   [spec](../openspec/specs/startup/spec.md#requirement-configuration-lives-in-jagtyml)
 - **Local reads** — A local model may map commands, else the cloud; a down one is a lost reach. Key: `orchestrator.assistant.local.endpoint`, off.
   [spec](../openspec/specs/agent-seams/spec.md#requirement-a-read-that-needs-no-tool-may-ask-a-local-model)
-- **OpenCode agents** — `agent.cli: opencode` runs sessions there, `opencode.reads` a role's reads. Key: `orchestrator.opencode.reads`, off.
+- **Codex and OpenCode agents** — `agent.cli: codex` or `opencode` runs sessions there, `opencode.reads`, off, a role's reads.
   [spec](../openspec/specs/agent-seams/spec.md#requirement-a-read-named-under-reads-runs-on-opencode)
 
 ## Task flow · [spec](../openspec/specs/task-flow/spec.md)

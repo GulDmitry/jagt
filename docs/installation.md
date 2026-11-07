@@ -13,6 +13,7 @@ absolute path in `jagt.yml` to pin one.
 | git | worktrees, branches, and the merge `deploy` makes | Xcode CLT · `apt install git` |
 | [Claude Code](https://claude.com/claude-code) | reads every ticket, merge request and review round, headless — whichever CLI writes the code | its own installer |
 | [tmux](https://github.com/tmux/tmux) | the session an agent lives in, outliving the board and the window | `brew install tmux` · `apt install tmux` |
+| `pgrep` | reading whether an agent still runs in its window | in the OS · `apt install procps` |
 | [kitty](https://sw.kovidgoyal.net/kitty/) | the window `focus` raises, one tab per agent | `brew install kitty` · `apt install kitty` |
 | [Ghostty](https://ghostty.org) 1.3+ | the alternative to kitty on macOS, `terminal: ghostty` | `brew install --cask ghostty` |
 | [bubblewrap](https://github.com/containers/bubblewrap) + socat | Claude's sandbox, only when `sandbox.enabled: true` keeps a session's writes in its task | built in · `apt install bubblewrap socat` |
@@ -27,7 +28,7 @@ The rest are optional, and what selects each is in `jagt.yml.dist`:
 | [OpenCode](https://opencode.ai/) | `agent.cli: opencode` — an alternative for the agents, on a local model through `opencode.endpoint` |
 | [terminal-notifier](https://github.com/julienXX/terminal-notifier) | macOS notifications you can click; without it, osascript banners you cannot |
 | [libnotify](https://gitlab.gnome.org/GNOME/libnotify) + a daemon such as [dunst](https://dunst-project.org/) | Linux notifications; GNOME and KDE bring the daemon, a bare WM does not |
-| [lsof](https://github.com/lsof-org/lsof) | reaping a worktree's leftover processes on `done`; skipped when absent |
+| [lsof](https://github.com/lsof-org/lsof), `pkill` | reaping a worktree's leftover processes on `done`; said once at start and skipped when absent |
 | [OpenSpec](https://github.com/Fission-AI/OpenSpec) | a repository holding `openspec/`: its hand-back is gated and `ship` folds the change; `npm i -g @fission-ai/openspec` |
 
 ## MCP access comes first

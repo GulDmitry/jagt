@@ -12,9 +12,9 @@ holds the pipeline (build → review → check → ready → deploy → done), a
 `▸_` on a row is Focus without opening the task. The empty board offers **New task** and **Add a project**.
 
 **The open task** stands beside the list: its card with every legal action, the obvious one highlighted and each
-one's key drawn on it, `Done` apart at the end; then four tabs: **Overview** (the status history), **Session** (its screen,
-with a line to tell it), **Drafted review** (the drafted replies) and **Files** (`plan.md`, `task_notes.md` and the other
-documents of the task, rendered). `deploy`, `revert` and `done` ask for
+one's key drawn on it, `Done` apart at the end; then four tabs: **Overview** (the status history), **Drafted review** (the drafted replies),
+**Artifacts** (`plan.md`, `task_notes.md` and the other documents of the task, rendered; plan lines new or changed since
+your last approval are marked) and **Session** (its screen, with a line to tell it). `deploy`, `revert` and `done` ask for
 confirmation. Under 1200 px the open task replaces the list; `Esc` goes back.
 
 **Keys.** `j`/`k` walk the list, `↵` opens the picked row, `n` opens the next task waiting on you, `f` focuses the
@@ -57,6 +57,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `respawn <ticket>` | restart a dead agent session |
 | `add-repo <ticket> [project]` | attach the repository a session asked for, or the project you name: its worktree is cut and the session told |
 | `remove-repo <ticket> <project>` | close that repository's request on its host and take it out of the task; the primary and a deployed one stay |
+| `pause <ticket>` / `lift <ticket>` | stop everything of jagt on a started task to look at it, until you lift the stop (a stop jagt set lifts the same way) |
 | `trust <ticket>` | adopt the git config or hooks jagt found changed |
 | `done <ticket>` | close the task: session, worktree and state gone (the branch stays) |
 
@@ -64,7 +65,9 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 
 | command | what it does |
 |---------|--------------|
-| `stats` | subscription limits, jagt's own model spend per task, cycle time |
+| `stats` | subscription limits, jagt's own model spend per task, cycle time, the week's cost per accepted task |
+| `project` | add a repository as a project, change or drop one (`project edit <key>`) |
+| `login` | log in where jagt lost its reach, in a window of its own |
 | `activity` | what jagt did unattended |
 | `jobs` | every scheduled job, its cadence, last and next run |
 | `run <job>` | run an unattended job now instead of at its next tick |

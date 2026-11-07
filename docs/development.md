@@ -26,8 +26,10 @@ project rule into a vendor-named file.
 Timed 2026-11-01, `--rerun-tasks`, 10 CPUs: `test` 80 s, `e2eTest` 309 s, `boardTest` 82 s, `standTest -Pmodelfree` 42 s,
 `roleEval -Prole=qa` 4–7 min, `-Prole=master` about 5 min; the next refresh compares against these.
 
-Only `test` is in `check`; the rest are asked for by name, each needing something a hermetic run must not
-depend on. `roleEval -Prole=master` starts a real session in `.master-eval/root`, and an agent CLI will not work in a
+Only `test` is in `check`, with its jqwik properties in `:core:propertyTest` after it; every executed suite appends
+its seconds to `suite-stats.jsonl`, and the build's end names one slower than its trend.
+The rest are asked for by name, each needing something a hermetic run must not depend on.
+`roleEval -Prole=master` starts a real session in `.master-eval/root`, and an agent CLI will not work in a
 directory nobody has trusted: run `claude` there once and accept. The suite checks that and refuses with the
 path rather than sitting at a prompt nobody sees.
 

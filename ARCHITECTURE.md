@@ -102,7 +102,8 @@ answer. Every type in `flow/`, one question each:
   in [`docs/task-plan-chart.md`](docs/task-plan-chart.md); the report, in
   [`docs/task-report-chart.md`](docs/task-report-chart.md); the turn, in
   [`docs/task-turn-chart.md`](docs/task-turn-chart.md); the session's signs, in
-  [`docs/task-session-chart.md`](docs/task-session-chart.md); the git trust, in
+  [`docs/task-session-chart.md`](docs/task-session-chart.md); the deploy, in
+  [`docs/task-deploy-chart.md`](docs/task-deploy-chart.md); the git trust, in
   [`docs/task-git-chart.md`](docs/task-git-chart.md); the repository request, in
   [`docs/task-repo-chart.md`](docs/task-repo-chart.md); the review requests, in
   [`docs/task-request-chart.md`](docs/task-request-chart.md); the checks and the approval a read
@@ -169,6 +170,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `Processes` | `adapter/ProcessRunner` |
 | `Host` | `adapter/SystemHost` — OS name, home, environment, executables on PATH, the running jar |
 | `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one single-impl seam; `openCommandWindow` runs a command as a window's process |
+| `ReadScope` | `adapter/tmux/TmuxReads` — a job run lists the windows and processes once for every task it visits ([0147](docs/decisions/0147-the-tick-scope-is-its-own-port.md)) |
 | `SessionLog` | `adapter/agent/ClaudeSessionLog` — what a session's own log says it last did |
 | `SubscriptionUsage` | `adapter/agent/{Claude,Codex}SubscriptionUsage` |
 | `BuildTools` | `adapter/RepositoryBuildTools` |
