@@ -534,7 +534,7 @@ class TaskStopsTest {
     }
 
     @Test
-    void tellsARelayedRoundsThreadsFromTheLastRoundRelayed(@TempDir Path root) {
+    void tellsARelayedRoundsNotesFromTheLastRoundRelayed(@TempDir Path root) {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(new JsonMapper(), paths);
@@ -548,7 +548,7 @@ class TaskStopsTest {
 
         String since = stops.sinceLast("ABC-42", next);
 
-        assertThat(since).isEqualTo("Since the last round — still open, with a new note: https://host/mr/1#note_1.");
+        assertThat(since).isEqualTo("Since the last round — new notes: 1.");
     }
 
     @Test

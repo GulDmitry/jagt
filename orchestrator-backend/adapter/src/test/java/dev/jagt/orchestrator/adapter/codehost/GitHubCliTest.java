@@ -231,4 +231,30 @@ class GitHubCliTest {
         assertThat(answer.failure()).contains("Resource not accessible");
         assertThat(answer.facts()).isEmpty();
     }
+
+    @Test
+    void anUnresolvedThreadAnsweredLastByAnotherAccountGivesItsNewestNoteId() {
+        when(processes.run(isNull(), any(Duration.class), anyList())).thenReturn(new Processes.Result(0, """
+                {"data":{"viewer":{"login":"agent"},"repository":{"pullRequest":{"reviewThreads":{"nodes":[
+                {"isResolved":false,"comments":{"nodes":[{"databaseId":101,"author":{"login":"mia"}}]}},
+                {"isResolved":true,"comments":{"nodes":[{"databaseId":102,"author":{"login":"mia"}}]}},
+                {"isResolved":false,"comments":{"nodes":[{"databaseId":103,"author":{"login":"agent"}}]}}]}}}}}
+                """, ""));
+
+        Answer<List<String>> answer = github.unresolvedNotes(host, "https://ghe.corp.invalid/acme/shop/pull/7");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(processes).run(isNull(), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSubsequence("api", "graphql", "--hostname", "ghe.corp.invalid");
+        assertThat(command.getValue()).contains("owner=acme", "name=shop", "number=7");
+        assertThat(answer.facts()).contains(List.of("101"));
+    }
+
+    @Test
+    void anAddressThatIsNoRequestHasNoNotesReadAndNothingIsRun() {
+        Answer<List<String>> answer = github.unresolvedNotes(host, "https://ghe.corp.invalid/acme/shop/actions/runs/5");
+
+        assertThat(answer.failure()).startsWith("not the address of a request");
+        verifyNoInteractions(processes);
+    }
 }

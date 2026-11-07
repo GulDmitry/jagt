@@ -61,6 +61,11 @@ public class CommandPipeline implements CodeHostDriver {
     }
 
     @Override
+    public Answer<List<String>> unresolvedNotes(HostSettings host, String requestUrl) {
+        return new Answer<>(Optional.of(List.of()), TokenUsage.NONE);
+    }
+
+    @Override
     public Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha) {
         if (host.pipelineCommand().isEmpty()) {
             return Answer.failed(TokenUsage.NONE, host.key("pipelineCommand") + " is not set");

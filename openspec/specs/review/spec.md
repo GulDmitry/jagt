@@ -18,7 +18,6 @@ or ask via `outcome=question`. It SHALL send a question to REVIEW_PENDING, never
 #### Scenario: Unclear, a design decision, or against the code
 - **WHEN** a comment is unclear, forces a design decision or contradicts what the code enforces
 - **THEN** the agent asks, before the code picks a side: NEEDS INPUT on the board
-
 #### Scenario: Already handled
 - **WHEN** a comment was already handled
 - **THEN** the agent says so; nothing highlighted, no ship advised
@@ -28,42 +27,35 @@ or ask via `outcome=question`. It SHALL send a question to REVIEW_PENDING, never
 all three at REVIEW_PENDING. What a report means SHALL be the task's `task/AgentReport`, never a marker read out of its
 line; an outcome typed into the message is words. A `state.json` from before SHALL read it once from the line's marker.
 Over uncommitted work `no_changes` SHALL become a round with a diff (`WorktreeChanges`, one `git status` per report).
-
 #### Scenario: A marker typed into the message
 - **WHEN** a session reports `outcome=question: which branch?` as its message and no `outcome`
 - **THEN** the line reads as written, and nobody is asked
-
 #### Scenario: A question from before the field
 - **WHEN** jagt starts on a `state.json` whose line reads `awaiting: which database`
 - **THEN** the card reads `NEEDS INPUT: which database`
-
 #### Scenario: A round comes back clean or approved
 - **WHEN** a round comes back clean, unapproved
 - **THEN** REVIEWED, nothing asked of you
 - **WHEN** an approval arrives
 - **THEN** you are tapped, the one time: it is yours to deploy
-
 #### Scenario: Claimed no change, files changed
 - **WHEN** the agent says it changed nothing but files changed
 - **THEN** not believed: the round has a diff
 
 ### Requirement: The unit of a round is a thread
 `ReviewFacts.threads` SHALL carry every note, oldest first with its author; the agent answers the newest.
-Threads SHALL be relayed while unresolved, each named new, still open with a new note, or unchanged since the last round
+Threads SHALL be relayed while unresolved, the round telling how many notes are new or unchanged since the last round
 (`RoundTrail.sinceLast`). The checks SHALL never decide whether a thread is answered. After a round with threads,
 a hand-back to REVIEW_PENDING SHALL be refused until `review_replies.md` is written since that relay or a ship ran (`HandBackDue`).
-
 #### Scenario: Red checks outside the code and a reviewer's answer
 - **WHEN** ABC-42's session hands back a question about the checks and writes no block for the thread
 - **THEN** refused, told how many threads await their block
 #### Scenario: A resolved thread
 - **WHEN** a reviewer resolves a thread on ABC-42's request
 - **THEN** no later round reads it again
-
 #### Scenario: GitHub review in the body
 - **WHEN** a GitHub review is written in the body, not a thread
 - **THEN** relayed all the same
-
 #### Scenario: The agent answered last
 - **WHEN** two polls read a thread whose newest note is by the account the host's tools act as
 - **THEN** neither relays it, as it waits on the reviewer, the task is not REVIEWED, and only a new note on it starts a round
@@ -71,7 +63,6 @@ a hand-back to REVIEW_PENDING SHALL be refused until `review_replies.md` is writ
 ### Requirement: Threads are resolved at ship
 The agent SHALL resolve at ship time over its own MCP (`ShipService.repliesStep`), only threads whose code it changed. During the
 round it SHALL post nothing, and a draft SHALL go only where the answered note's author matches `reviewReplyAuthors`.
-
 #### Scenario: Replies are posted
 - **WHEN** you `ship`
 - **THEN** replies are posted only now; a fixed thread is resolved, a disputed one left for the reviewer
@@ -80,11 +71,9 @@ round it SHALL post nothing, and a draft SHALL go only where the answered note's
 `TaskState.pipelineStatus` SHALL be one of jagt's five words: `success`, `failed`, `running`, `none`, `unknown`; `flow/Pipeline` parses it.
 A round reading no listing SHALL write nothing, the last word standing flagged. The third such round running since the `lift`
 SHALL stop the task, its evidence the reads' words for why; a listing counts anew.
-
 #### Scenario: No checks dot while the host shows a failed run
 - **WHEN** no checks dot shows while the host shows a failed run
 - **THEN** nobody read one yet; `none` means the host listed none
-
 #### Scenario: Checks nobody can list
 - **WHEN** a third poll running cannot list ABC-42's pipelines, `list_pipelines: 403 Forbidden`
 - **THEN** jagt stops it, and the hover says `3 reads running could not list the checks: list_pipelines: 403 Forbidden`
@@ -92,15 +81,12 @@ SHALL stop the task, its evidence the reads' words for why; a listing counts ane
 ### Requirement: A red round goes back to the session
 `FlowRules.readLands` SHALL send the task back to its session and relay the failing job's lines as `<checks>`, a clue; read twice they MUST read the
 same, or every poll re-briefs. A red the host calls infrastructure is not relayed: [infra-wait](../infra-wait/spec.md).
-
 #### Scenario: Pipeline goes red
 - **WHEN** the pipeline goes red
 - **THEN** `checks failed` on the card, one notification; the session finds and fixes the cause
-
 #### Scenario: Red, no comments
 - **WHEN** checks are red, no comments
 - **THEN** the agent fixes the build and hands back
-
 #### Scenario: Red the session cannot reproduce
 - **WHEN** the red is not in the code, or nothing here reads it, and the host does not call it infrastructure
 - **THEN** the session changes nothing and asks you, naming the job
@@ -108,7 +94,6 @@ same, or every poll re-briefs. A red the host calls infrastructure is not relaye
 ### Requirement: The reply shape is prescribed once
 The round brief (`RoundBrief.of`), relayed every round, SHALL prescribe one block per thread: its link, the quoted
 newest note, `FIXED | NO CHANGE | QUESTION`, reply.
-
 #### Scenario: Replies too long
 - **WHEN** replies run long
 - **THEN** the agent broke its brief; a re-`sweep` re-briefs
@@ -118,11 +103,9 @@ newest note, `FIXED | NO CHANGE | QUESTION`, reply.
 `mrCreatedAt`. jagt SHALL never delete the file; the agent is asked to.
 `CodeReviewConfig.shipPostsEveryDraft` SHALL decide when drafts are spent: under `postReviewReplies=false` or a partial
 `reviewReplyAuthors` filter none is, and the announcement stands until the human ends it.
-
 #### Scenario: Stale reply file
 - **WHEN** the file predates `mrCreatedAt`
 - **THEN** nothing is pending
-
 #### Scenario: Posting off
 - **WHEN** you `ship` under `postReviewReplies=false`
 - **THEN** the announcement stands
@@ -131,70 +114,63 @@ newest note, `FIXED | NO CHANGE | QUESTION`, reply.
 `replies [task]` (`command/ReviewRepliesReport`) SHALL print every block off the file, never the badge, unrecognised shape
 included. Its only button SHALL be the Drafted review tab, never the card (`GlobalCommand.aboutOneTask`).
 A line typed at it SHALL be said (`AgentSessions.say` → `nudgeTaskWindow`), never relayed: a relay overwrites `task_context.md`.
-
 #### Scenario: What will be posted
 - **WHEN** you ask what will be posted
 - **THEN** `replies <task>` or the Drafted review tab shows every draft, and the card has no replies button
-
 #### Scenario: A drafted reply is wrong
 - **WHEN** you say so under the open `replies` report
 - **THEN** the session answers into the same report
 
 ### Requirement: One sweep per task
 `ReviewSweepService` SHALL guard one review sweep per task at a time, ticks queueing in `Jobs`.
-
 #### Scenario: Tick during a sweep
 - **WHEN** a tick meets a running sweep
 - **THEN** it queues
 
 ### Requirement: Resume takes over a request
 `resume <url>` SHALL make the request's source branch the task and its target the base, leaving conflicts for the session.
-
 #### Scenario: Other branch convention, or target deleted
 - **WHEN** its branch follows another convention (`feature/x`), or its target branch was deleted since
 - **THEN** taken over as-is; it works, only the next `ship` needs a target
-
 #### Scenario: Branch already a task
 - **WHEN** its branch belongs to a task
 - **THEN** refused: two tasks cannot share a branch
-
 #### Scenario: No working MCP server
 - **WHEN** no MCP server for that host works
 - **THEN** refused as unread, never missing, naming what stopped the read on one line
-
 #### Scenario: No such request
 - **WHEN** the host answers there is no such request
 - **THEN** refused in those words: the one case "does not exist" is said
 
 ### Requirement: GitHub approval without a required review
 A GitHub request with no review required SHALL count as approved once someone approves.
-
 #### Scenario: Approved, not required
 - **WHEN** someone approves where no review is required
 - **THEN** approved
 
 ### Requirement: An unchanged round is relayed once
-`TaskStops.round` SHALL keep a digest of the last round relayed into a task: the failing job and the pushed branch tip from git while the checks are
-red, and each open thread's link and newest note id. A round equal to it SHALL NOT be relayed again, whatever the brief's wording; where git cannot
-name the tip, or a job or note id is unknown, the brief is digested. Neither SHALL open threads with the last notes while the checks are red in
-neither. A `lift` SHALL forget both.
-
+`TaskStops.round` SHALL keep a digest of the last round relayed into a task: the failing job and the pushed branch tip from git
+while the checks are red, and the sorted newest note ids awaiting the agent. The host's own read gives those ids
+(`PipelineRetry.unresolvedNotes`), never the model; they are compared without the request link. A round equal to the digest SHALL NOT
+be relayed again, whatever the brief's wording. Where git cannot name the tip, or a job or note id is unknown, the brief is digested.
+A failed host read leaves the ids unknown, with a warning naming the cause. Neither SHALL open threads with the last notes
+while the checks are red in neither. A `lift` SHALL forget both.
 #### Scenario: A ship between two equal reads
 - **WHEN** ABC-42 ships and the next poll reads the same threads as the round before
 - **THEN** the sweep says the round is unchanged and no fresh session starts
-
 #### Scenario: A reviewer's concession is not a loop
 - **WHEN** a thread's newest note is the reviewer's and two polls read it unchanged, the copied text differing
 - **THEN** only the first poll relays, and the second says the round is unchanged
-
 #### Scenario: The same failure in other words
 - **WHEN** the same job fails on the same pushed tip
 - **THEN** the round is not sent again, whatever the brief's wording
+#### Scenario: The model writes other ids
+- **WHEN** two polls of one request have the model write different note ids and the host gives the same ones
+- **THEN** the round is the same and is relayed once
 
 ### Requirement: Threads and checks are judged on their own
 Threads and checks SHALL be two tracks, each judged on its own. While the last report asks the
 human, a sweep SHALL hold the checks and every thread it carried; a thread with a new newest note is relayed alone.
-
 #### Scenario: A new note over a question about the checks
 - **WHEN** ABC-42's session asked about a failing job and a reviewer then adds a note to a thread
 - **THEN** that thread is relayed without the checks, and the question stands

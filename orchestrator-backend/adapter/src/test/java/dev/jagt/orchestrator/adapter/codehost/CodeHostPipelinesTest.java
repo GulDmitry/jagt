@@ -158,4 +158,13 @@ class CodeHostPipelinesTest {
         assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
         assertThat(answer.facts()).isPresent();
     }
+
+    @Test
+    void theNotesAreReadThroughTheDriverTheProjectChose() {
+        when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("none", null))));
+
+        Answer<List<String>> answer = pipelines.unresolvedNotes("shop", "https://git.example.invalid/shop/web/-/merge_requests/7");
+
+        assertThat(answer.facts()).contains(List.of());
+    }
 }

@@ -40,7 +40,7 @@ public class RoundReading {
     private static final int CAUSE_LIMIT = 200;
 
     private final StateService stateService;
-    private final ReviewReader reviewReader;
+    private final ReviewRound reviewRound;
     private final MergedRequests mergedRequests;
 
     /** A repository with no request is work nobody is reviewing, so the round cannot be called clean. */
@@ -68,7 +68,7 @@ public class RoundReading {
         List<TaskRepo> kept = new ArrayList<>();
         List<ReviewFacts> rounds = new ArrayList<>();
         for (TaskRepo repo : reviewed) {
-            Answer<ReviewFacts> answer = reviewReader.read(taskId, Objects.requireNonNull(repo.mrUrl()));
+            Answer<ReviewFacts> answer = reviewRound.read(taskId, Objects.requireNonNull(repo.project()), Objects.requireNonNull(repo.mrUrl()));
             Optional<ReviewFacts> read = answer.facts();
             if (read.isEmpty()) {
                 return new Refused(new SweepResult(SweepResult.Kind.UNREADABLE,

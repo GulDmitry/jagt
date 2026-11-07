@@ -18,6 +18,11 @@ abstract class OfflineCodeHost implements CodeHostDriver {
     }
 
     @Override
+    public Answer<List<String>> unresolvedNotes(HostSettings host, String requestUrl) {
+        return new Answer<>(Optional.of(List.of()), TokenUsage.NONE);
+    }
+
+    @Override
     public Answer<CommitPipeline> onBranchSince(HostSettings host, String remoteUrl, String branch, String sha) {
         return new Answer<>(Optional.of(new CommitPipeline("none", "")), TokenUsage.NONE);
     }

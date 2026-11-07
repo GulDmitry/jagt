@@ -18,7 +18,6 @@ public final class ReviewRead {
             .required("closed", "boolean", null)
             .required("openedAt", "string", null)
             .requiredTexts("threads", null)
-            .requiredTexts("newestNotes", null)
             .required("signedInAs", "string", null);
 
     private ReviewRead() {

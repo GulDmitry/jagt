@@ -3,10 +3,9 @@ package dev.jagt.orchestrator.task;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 /** The rounds relayed into a task since {@code since}, the last lift. */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -27,7 +26,7 @@ public record RoundTrail(List<Round> rounds, long since) {
         }
     }
 
-    /** The host's note ids alone: a thread's first line is model-written and reads differently from one read to the next. */
+    /** The host's note ids alone: a stored line may still lead with the thread it was read on. */
     private static RoundKey noteIds(String notes) {
         return RoundKey.stored(notes).known()
                 ? RoundKey.of(notes.lines().map(line -> line.substring(line.lastIndexOf(' ') + 1)).distinct().sorted().toList())
@@ -63,34 +62,22 @@ public record RoundTrail(List<Round> rounds, long since) {
         return RoundKey.stored(notes).known() && (rounds.isEmpty() || !rounds.getLast().repeats(notes));
     }
 
-    /** Each open thread told as new, carrying a new note, or unchanged since the last round; blank before a second round. */
+    /** The notes told as new or unchanged against the last round's; blank before a second round or where no note id is known. */
     public String sinceLast(ReviewFacts facts) {
-        if (rounds.isEmpty() || facts.newestNotes().size() != facts.threads().size()) {
+        if (rounds.isEmpty() || facts.newestNotes().isEmpty()) {
             return "";
         }
-        Map<String, String> last = newestNoteByThread(rounds.getLast().notes());
-        Map<String, List<String>> told = new LinkedHashMap<>();
-        for (int i = 0; i < facts.threads().size(); i++) {
-            String thread = facts.threads().get(i).strip().lines().findFirst().orElse("");
-            String seen = last.get(thread);
-            String kind = seen == null ? "new" : seen.equals(facts.newestNotes().get(i)) ? "still open, unchanged"
-                    : "still open, with a new note";
-            told.computeIfAbsent(kind, ignored -> new ArrayList<>()).add(thread);
+        Set<String> last = new HashSet<>(noteIds(rounds.getLast().notes()).facts());
+        long fresh = facts.newestNotes().stream().filter(id -> !last.contains(id)).count();
+        long kept = facts.newestNotes().size() - fresh;
+        List<String> told = new ArrayList<>();
+        if (fresh > 0) {
+            told.add("new notes: " + fresh);
         }
-        List<String> groups = told.entrySet().stream()
-                .map(group -> group.getKey() + ": " + String.join(", ", group.getValue())).toList();
-        return "Since the last round — " + String.join("; ", groups) + ".";
-    }
-
-    private static Map<String, String> newestNoteByThread(String notes) {
-        Map<String, String> byThread = new HashMap<>();
-        for (String line : notes.lines().toList()) {
-            int space = line.lastIndexOf(' ');
-            if (space > 0) {
-                byThread.put(line.substring(0, space), line.substring(space + 1));
-            }
+        if (kept > 0) {
+            told.add("still open, unchanged: " + kept);
         }
-        return byThread;
+        return "Since the last round — " + String.join("; ", told) + ".";
     }
 
     public boolean relayed(String digest) {

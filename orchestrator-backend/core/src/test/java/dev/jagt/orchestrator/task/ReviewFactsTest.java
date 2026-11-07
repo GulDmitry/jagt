@@ -84,10 +84,10 @@ class ReviewFactsTest {
     }
 
     @Test
-    void keepsEachNewestNoteIdWithItsThreadWhenAnotherThreadMovesToTheReviewer() {
+    void keepsTheHostsNoteIdsWhenAThreadMovesToTheReviewer() {
         ReviewFacts facts = new ReviewFacts(true, false, "success", null,
                 List.of("l1\nrev: a", "l2\nrev: b\nbot: done", "l3\nrev: c"), 7, List.of(),
-                List.of("note_1", "note_2", "note_3"), "", false, false);
+                List.of("note_1", "note_3"), "", false, false);
 
         ReviewFacts answered = facts.answeredBy("bot");
 
@@ -96,17 +96,17 @@ class ReviewFactsTest {
     }
 
     @Test
-    void fingerprintsTheSameOpenThreadsAndNewestNotesEquallyWhateverTheCopiedText() {
+    void fingerprintsTheSameHostNoteIdsEquallyWhateverTheCopiedTextOrOrder() {
         ReviewFacts first = new ReviewFacts(true, false, "success", null,
                 List.of("l2\nrev: b", "l1\nrev: a\nbot: fine"), 7, List.of(), List.of("note_2", "note_1"), "", false, false);
         ReviewFacts second = new ReviewFacts(true, false, "success", null,
-                List.of("l1\nrev: a\nbot: fine, agreed", "l2\nrev: b"), 9, List.of(), List.of("note_1", "note_2"), "", false, false);
+                List.of("l1\nrev: a\nbot: fine, agreed", "other\nrev: b"), 9, List.of(), List.of("note_1", "note_2"), "", false, false);
 
         assertThat(first.noteFingerprint()).isEqualTo(second.noteFingerprint());
     }
 
     @Test
-    void fingerprintsADifferentNewestNoteOnTheSameThreadDifferently() {
+    void fingerprintsADifferentNoteIdDifferently() {
         ReviewFacts before = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a"), 7, List.of(),
                 List.of("note_1"), "", false, false);
         ReviewFacts after = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a"), 7, List.of(),
@@ -116,18 +116,18 @@ class ReviewFactsTest {
     }
 
     @Test
-    void fingerprintsNothingWhereAReadMissesAThreadsNewestNoteId() {
+    void fingerprintsNothingWhereTheHostGaveNoNoteId() {
         ReviewFacts facts = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a", "l2\nrev: b"), 7,
-                List.of(), List.of("note_1"), "", false, false);
+                List.of(), List.of(), "", false, false);
 
         assertThat(facts.noteFingerprint()).isEmpty();
     }
 
     @Test
-    void twoReadsWithABlankNewestNoteIdOnOneThreadAreNeverTheSameRound() {
-        ReviewFacts first = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a", "l2\nrev: b"), 7,
+    void twoReadsWithABlankNoteIdAreNeverTheSameRound() {
+        ReviewFacts first = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a"), 7,
                 List.of(), List.of("note_1", ""), "", false, false);
-        ReviewFacts second = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a", "l2\nrev: b"), 9,
+        ReviewFacts second = new ReviewFacts(true, false, "success", null, List.of("l1\nrev: a"), 9,
                 List.of(), List.of("note_1", ""), "", false, false);
 
         assertThat(first.noteKey().sameAs(second.noteKey())).isFalse();

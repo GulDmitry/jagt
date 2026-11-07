@@ -3,13 +3,12 @@ package dev.jagt.orchestrator.task;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.IntStream;
 
 /**
  * One review round: whether it is APPROVED, the latest pipeline result, and every discussion THREAD still awaiting
  * the agent's answer — one entry per thread, its notes pre-formatted oldest first as {@code <author>: <body>}, so a
- * reviewer answering a reply reads as the exchange it is. {@code newestNotes} holds, per thread and in its order, the
- * host's id of that thread's newest note. {@code awaitingReviewer} holds the unresolved threads whose
+ * reviewer answering a reply reads as the exchange it is. {@code newestNotes} holds the host's ids of the newest
+ * note of each unresolved thread awaiting the agent, set from the host's own read and never by the model. {@code awaitingReviewer} holds the unresolved threads whose
  * newest note is the agent's own. Plus {@code pipelineFailure}, what the host says went wrong when that result is a
  * failure, or why the listing could not be got when it is unknown. {@code exists=false} means the HOST says there is
  * no such request — a read that failed carries no facts at all, and no caller may merge the two. {@code openedAt} is
@@ -29,15 +28,14 @@ public record ReviewFacts(boolean exists, boolean approved, String pipelineStatu
         pipelineUrl = pipelineUrl == null ? "" : pipelineUrl;
     }
 
-    /** The same for two reads of the same open threads with the same newest notes, whatever the copied text; unknown where any id is. */
+    /** The same for two reads carrying the same host note ids, whatever the copied text; unknown where there is none or any is blank. */
     public RoundKey noteKey() {
-        if (newestNotes.size() != threads.size()) {
-            return RoundKey.unknown();
-        }
-        return RoundKey.of(IntStream.range(0, threads.size())
-                .mapToObj(i -> newestNotes.get(i).isBlank() ? ""
-                        : threads.get(i).strip().lines().findFirst().orElse("") + " " + newestNotes.get(i))
-                .sorted().toList());
+        return RoundKey.of(newestNotes.stream().distinct().sorted().toList());
+    }
+
+    /** The same round with {@code ids}, the host's, as its newest notes. */
+    public ReviewFacts withNewestNotes(List<String> ids) {
+        return new ReviewFacts(exists, approved, pipelineStatus, pipelineFailure, threads, openedAt, awaitingReviewer, ids, pipelineUrl, merged, closed);
     }
 
     public String noteFingerprint() {
@@ -52,17 +50,15 @@ public record ReviewFacts(boolean exists, boolean approved, String pipelineStatu
     /** The threads whose newest note is by {@code account} moved to {@code awaitingReviewer}; blank moves none. */
     public ReviewFacts answeredBy(String account) {
         List<String> open = new ArrayList<>();
-        List<String> openNotes = new ArrayList<>();
         List<String> answered = new ArrayList<>(awaitingReviewer);
         for (int i = 0; i < threads.size(); i++) {
             if (newestAuthorIs(threads.get(i), account)) {
                 answered.add(threads.get(i));
             } else {
                 open.add(threads.get(i));
-                openNotes.add(i < newestNotes.size() ? newestNotes.get(i) : "");
             }
         }
-        return new ReviewFacts(exists, approved, pipelineStatus, pipelineFailure, open, openedAt, answered, openNotes, pipelineUrl, merged, closed);
+        return new ReviewFacts(exists, approved, pipelineStatus, pipelineFailure, open, openedAt, answered, newestNotes, pipelineUrl, merged, closed);
     }
 
     private static boolean newestAuthorIs(String thread, String account) {

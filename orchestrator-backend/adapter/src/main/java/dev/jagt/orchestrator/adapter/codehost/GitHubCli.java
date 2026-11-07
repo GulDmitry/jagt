@@ -31,6 +31,9 @@ public class GitHubCli implements CodeHostDriver {
     private static final Set<String> RUNNING = Set.of("queued", "in_progress", "waiting", "requested", "pending");
     private static final Set<String> AHEAD = Set.of("ahead", "identical");
     private static final CommitPipeline NO_PIPELINE = new CommitPipeline("none", "");
+    private static final String THREADS_QUERY = "query($owner:String!,$name:String!,$number:Int!){viewer{login}"
+            + " repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved"
+            + " comments(last:1){nodes{databaseId author{login}}}}}}}}";
     private static final JsonMapper JSON = new JsonMapper();
 
     private final HostCli cli;
@@ -67,6 +70,16 @@ public class GitHubCli implements CodeHostDriver {
     }
 
     @Override
+    public Answer<List<String>> unresolvedNotes(HostSettings host, String requestUrl) {
+        return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, false).map(address -> cli.parsed(
+                cli.run(address.hostname(), List.of("api", "graphql", "--hostname", address.hostname(),
+                        "-f", "query=" + THREADS_QUERY, "-f", "owner=" + address.project().split("/")[0],
+                        "-f", "name=" + address.project().substring(address.project().indexOf('/') + 1),
+                        "-F", "number=" + address.id())), GitHubCli::unresolved))
+                .orElseGet(() -> HostCli.notARequest(requestUrl));
+    }
+
+    @Override
     public Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha) {
         return HostAddress.ofRemote(remoteUrl, sha, host.hostName(), false).map(address -> cli.parsed(
                 cli.run(address.hostname(), List.of("run", "list", "--commit", address.id(), "--json",
@@ -93,6 +106,21 @@ public class GitHubCli implements CodeHostDriver {
 
     private static String repository(HostAddress address) {
         return address.hostname() + "/" + address.project();
+    }
+
+    private static List<String> unresolved(String output) {
+        JsonNode data = JSON.readTree(output).path("data");
+        String me = data.path("viewer").path("login").asString("");
+        List<String> ids = new ArrayList<>();
+        data.path("repository").path("pullRequest").path("reviewThreads").path("nodes").forEach(thread -> {
+            JsonNode newest = thread.path("comments").path("nodes").path(0);
+            String author = newest.path("author").path("login").asString("");
+            if (!thread.path("isResolved").asBoolean(false) && !newest.isMissingNode()
+                    && !(author.equalsIgnoreCase(me) && !me.isBlank())) {
+                ids.add(newest.path("databaseId").asString(""));
+            }
+        });
+        return ids;
     }
 
     private static BranchTip newest(String output) {

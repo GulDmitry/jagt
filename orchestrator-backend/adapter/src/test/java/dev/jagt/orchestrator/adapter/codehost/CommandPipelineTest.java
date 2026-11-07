@@ -187,4 +187,12 @@ class CommandPipelineTest {
         assertThat(answer.failure()).isEqualTo("orchestrator.projects.shop.closeCommand is not set");
         verifyNoInteractions(processes);
     }
+
+    @Test
+    void aCommandHostReadsNoNotesAndRunsNothing() {
+        Answer<List<String>> answer = command.unresolvedNotes(host, "https://ci.example.invalid/requests/9");
+
+        assertThat(answer.facts()).contains(List.of());
+        verifyNoInteractions(processes);
+    }
 }

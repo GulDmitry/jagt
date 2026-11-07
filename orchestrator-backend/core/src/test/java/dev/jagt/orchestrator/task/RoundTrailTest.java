@@ -79,16 +79,15 @@ class RoundTrailTest {
     }
 
     @Test
-    void tellsEachThreadNewReopenedOrUnchangedSinceTheLastRound() {
-        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 2, "", "a", "mr#note_1 11\nmr#note_2 21"));
+    void tellsHowManyNotesAreNewAndHowManyUnchangedSinceTheLastRound() {
+        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 2, "", "a", "11\n21"));
         ReviewFacts round = new ReviewFacts(true, false, "success", "",
                 List.of("mr#note_1\nbot: still wrong", "mr#note_2\nbot: drop it", "mr#note_3\nbot: rename"), 0,
                 List.of(), List.of("12", "21", "31"), "", false, false);
 
         String since = trail.sinceLast(round);
 
-        assertThat(since).isEqualTo("Since the last round — still open, with a new note: mr#note_1; "
-                + "still open, unchanged: mr#note_2; new: mr#note_3.");
+        assertThat(since).isEqualTo("Since the last round — new notes: 2; still open, unchanged: 1.");
     }
 
     @Test
@@ -97,5 +96,23 @@ class RoundTrailTest {
                 List.of(), List.of("11"), "", false, false);
 
         assertThat(RoundTrail.none().sinceLast(round)).isEmpty();
+    }
+
+    @Test
+    void saysNothingOfNewNotesWhereEveryNoteIsOneTheLastRoundCarried() {
+        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 1, "", "a", "11"));
+        ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of("mr#note_1\nbot: rename"), 0,
+                List.of(), List.of("11"), "", false, false);
+
+        assertThat(trail.sinceLast(round)).isEqualTo("Since the last round — still open, unchanged: 1.");
+    }
+
+    @Test
+    void saysNothingOfUnchangedNotesWhereEveryNoteIsNew() {
+        RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 1, "", "a", "11"));
+        ReviewFacts round = new ReviewFacts(true, false, "success", "", List.of("mr#note_2\nbot: rename"), 0,
+                List.of(), List.of("12"), "", false, false);
+
+        assertThat(trail.sinceLast(round)).isEqualTo("Since the last round — new notes: 1.");
     }
 }

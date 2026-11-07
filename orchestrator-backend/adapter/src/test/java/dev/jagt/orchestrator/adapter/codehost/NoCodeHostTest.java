@@ -38,4 +38,9 @@ class NoCodeHostTest {
     void noRequestIsClosed() {
         assertThat(none.closeRequest(host, "https://git.example.invalid/shop/web/-/merge_requests/7").facts()).isEmpty();
     }
+
+    @Test
+    void noNoteIsAwaitingAnAnswer() {
+        assertThat(none.unresolvedNotes(host, "https://git.example.invalid/shop/web/-/merge_requests/7").facts()).contains(List.of());
+    }
 }

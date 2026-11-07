@@ -21,7 +21,7 @@ import static org.mockito.Mockito.when;
 
 class HostMergedRequestTest {
 
-    private final ReviewReader reviewReader = mock(ReviewReader.class);
+    private final ReviewRound reviewRound = mock(ReviewRound.class);
     private final MergedRequests mergedRequests = mock(MergedRequests.class);
 
     @Test
@@ -31,8 +31,8 @@ class HostMergedRequestTest {
                         .withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
                 .alias("a1").mrUrl("http://mr/1").build());
-        RoundReading reading = new RoundReading(state, reviewReader, mergedRequests);
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(new Answer<>(Optional.of(
+        RoundReading reading = new RoundReading(state, reviewRound, mergedRequests);
+        when(reviewRound.read("ABC-1", "proj", "http://mr/1")).thenReturn(new Answer<>(Optional.of(
                 new ReviewFacts(true, false, "success", "", List.of(), 0, List.of(), List.of(), "", true, false)),
                 TokenUsage.NONE));
 

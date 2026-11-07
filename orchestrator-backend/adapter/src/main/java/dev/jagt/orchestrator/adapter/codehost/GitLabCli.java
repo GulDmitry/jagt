@@ -67,6 +67,16 @@ public class GitLabCli implements CodeHostDriver {
     }
 
     @Override
+    public Answer<List<String>> unresolvedNotes(HostSettings host, String requestUrl) {
+        return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, true).map(address -> HostCli.then(
+                cli.parsed(cli.run(address.hostname(), List.of("api", "--hostname", address.hostname(), "user")),
+                        output -> JSON.readTree(output).path("username").asString("")),
+                me -> cli.parsed(cli.run(address.hostname(), api(address, "/merge_requests/" + address.id()
+                        + "/discussions?per_page=100")), output -> unresolved(output, me))))
+                .orElseGet(() -> HostCli.notARequest(requestUrl));
+    }
+
+    @Override
     public Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha) {
         return HostAddress.ofRemote(remoteUrl, sha, host.hostName(), true).map(address -> cli.parsed(
                 cli.run(address.hostname(), api(address, "/pipelines?sha=" + address.id() + "&per_page=1")),
@@ -107,6 +117,23 @@ public class GitLabCli implements CodeHostDriver {
         JsonNode newest = JSON.readTree(output).path(0);
         return newest.isMissingNode() ? NO_PIPELINE
                 : new CommitPipeline(verdict(newest.path("status").asString("")), newest.path("web_url").asString(""));
+    }
+
+    private static List<String> unresolved(String output, String me) {
+        List<String> ids = new ArrayList<>();
+        JSON.readTree(output).forEach(discussion -> {
+            JsonNode notes = discussion.path("notes");
+            boolean open = false;
+            for (JsonNode note : notes) {
+                open |= note.path("resolvable").asBoolean(false) && !note.path("resolved").asBoolean(false);
+            }
+            JsonNode newest = notes.path(notes.size() - 1);
+            String author = newest.path("author").path("username").asString("");
+            if (open && !(author.equalsIgnoreCase(me) && !me.isBlank())) {
+                ids.add(newest.path("id").asString(""));
+            }
+        });
+        return ids;
     }
 
     private static BranchTip newest(String output) {

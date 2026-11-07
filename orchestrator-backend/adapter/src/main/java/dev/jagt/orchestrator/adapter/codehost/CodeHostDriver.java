@@ -19,6 +19,9 @@ public interface CodeHostDriver {
 
     Answer<String> closeRequest(HostSettings host, String requestUrl);
 
+    /** The newest note's id of each unresolved thread of the request not answered last by the account the host's CLI acts as. */
+    Answer<List<String>> unresolvedNotes(HostSettings host, String requestUrl);
+
     Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha);
 
     Answer<CommitPipeline> onBranchSince(HostSettings host, String remoteUrl, String branch, String sha);

@@ -97,15 +97,12 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
                 "<author>: <body>". Copy each body as the host gives it, cut at its first 60 words, never \
                 paraphrased and never summarised: a thread read twice must read the same. Empty array where no \
                 thread awaits an answer.
-                - newestNotes: one entry per threads entry, same order: the host's id of that thread's NEWEST note, \
-                exactly as the host gives it and never one of your own.
                 - signedInAs: that account's username exactly as a note names its author; empty string where you \
                 could not read it.
                 </output_format>
                 <examples>
                 threads: ["https://host.invalid/shop/merge_requests/9#note_1\\nmia: Why is this loop not bounded?\\n\
                 lee: The page size bounds it, see Paging.java"]
-                newestNotes: ["note_2"]
                 pipelineFailure (a failed pipeline): "unit-tests\\nCartTest.leavesShippingOutOfTheDiscount: expected \
                 60 but was 55"
                 </examples>
@@ -124,11 +121,9 @@ public class HeadlessClaudeCodeHostAssistant implements CodeHostAssistant {
     static ReviewFacts review(JsonNode n) {
         List<String> threads = new ArrayList<>();
         n.path("threads").forEach(t -> threads.add(cappedTail(t.asString(""))));
-        List<String> newestNotes = new ArrayList<>();
-        n.path("newestNotes").forEach(id -> newestNotes.add(id.asString("")));
         return new ReviewFacts(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
                 n.path("pipelineStatus").asString(""), capped(n.path("pipelineFailure").asString("")),
-                threads, HostStamp.epochMillis(n.path("openedAt").asString("")), List.of(), newestNotes,
+                threads, HostStamp.epochMillis(n.path("openedAt").asString("")), List.of(), List.of(),
                 n.path("pipelineUrl").asString(""), n.path("merged").asBoolean(false), n.path("closed").asBoolean(false))
                 .answeredBy(n.path("signedInAs").asString(""));
     }

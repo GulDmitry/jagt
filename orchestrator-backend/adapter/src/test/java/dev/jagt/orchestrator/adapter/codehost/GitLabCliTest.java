@@ -245,4 +245,38 @@ class GitLabCliTest {
         assertThat(answer.failure()).startsWith("not the address of a request");
         verifyNoInteractions(processes);
     }
+
+    @Test
+    void anUnresolvedDiscussionAnsweredLastByAnotherAccountGivesItsNewestNoteId() {
+        when(processes.run(isNull(), any(Duration.class), anyList()))
+                .thenReturn(new Processes.Result(0, "{\"username\":\"agent\"}", ""))
+                .thenReturn(new Processes.Result(0, """
+                        [{"individual_note":false,"notes":[
+                          {"id":201,"resolvable":true,"resolved":false,"author":{"username":"mia"}},
+                          {"id":202,"resolvable":true,"resolved":false,"author":{"username":"lee"}}]},
+                         {"individual_note":false,"notes":[
+                          {"id":203,"resolvable":true,"resolved":true,"author":{"username":"mia"}}]},
+                         {"individual_note":true,"notes":[
+                          {"id":204,"resolvable":false,"resolved":false,"author":{"username":"mia"}}]},
+                         {"individual_note":false,"notes":[
+                          {"id":205,"resolvable":true,"resolved":false,"author":{"username":"mia"}},
+                          {"id":206,"resolvable":true,"resolved":false,"author":{"username":"agent"}}]}]
+                        """, ""));
+
+        Answer<List<String>> answer = gitlab.unresolvedNotes(host, "https://git.example.invalid/shop/web/-/merge_requests/9");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(processes, times(2)).run(isNull(), any(Duration.class), command.capture());
+        assertThat(command.getAllValues().get(1)).containsSubsequence("api", "--hostname", "git.example.invalid",
+                "projects/shop%2Fweb/merge_requests/9/discussions?per_page=100");
+        assertThat(answer.facts()).contains(List.of("202"));
+    }
+
+    @Test
+    void anAddressThatIsNoRequestHasNoNotesReadAndNothingIsRun() {
+        Answer<List<String>> answer = gitlab.unresolvedNotes(host, "https://git.example.invalid/shop/web/-/pipelines/7");
+
+        assertThat(answer.failure()).startsWith("not the address of a request");
+        verifyNoInteractions(processes);
+    }
 }

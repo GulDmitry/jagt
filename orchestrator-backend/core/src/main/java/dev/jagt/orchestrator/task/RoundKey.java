@@ -39,6 +39,11 @@ public final class RoundKey {
         return known() && other.known() && stored().equals(other.stored());
     }
 
+    /** The facts in order; none where unknown. */
+    public List<String> facts() {
+        return facts;
+    }
+
     /** Blank where unknown. */
     public String stored() {
         return String.join("\n", facts);

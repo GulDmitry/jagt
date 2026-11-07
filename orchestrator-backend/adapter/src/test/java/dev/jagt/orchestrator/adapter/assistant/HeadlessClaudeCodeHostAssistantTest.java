@@ -197,7 +197,7 @@ class HeadlessClaudeCodeHostAssistantTest {
     }
 
     @Test
-    void carriesTheNewestNoteIdOfEachOpenThreadAlongWithIt() {
+    void leavesTheNoteIdsAModelWritesUnreadBecauseTheHostGivesThem() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
                 """
@@ -211,7 +211,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         var facts = assistant.readReview("https://host/mr/9").facts();
 
         assertThat(facts).isPresent();
-        assertThat(facts.get().newestNotes()).containsExactly("note_2", "note_5");
+        assertThat(facts.get().newestNotes()).isEmpty();
     }
 
     @Test
