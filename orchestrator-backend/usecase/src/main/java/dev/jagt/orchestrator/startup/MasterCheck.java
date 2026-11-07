@@ -74,7 +74,7 @@ public class MasterCheck implements StartupCheck {
                             + "' is not one of "
                             + MasterRight.ids())));
     if (master.modeOrDefault() == MasterMode.ACT) {
-      refuseAHalfAutomatedLoop(config, master, problems);
+      refuseHalfAutomatedLoop(config, master, problems);
     }
     Path brief = briefs.file(master);
     if (!Files.isRegularFile(brief)) {
@@ -94,7 +94,7 @@ public class MasterCheck implements StartupCheck {
    * finishes a round or it is judging, and a configuration saying both at once is refused rather
    * than half-run.
    */
-  private static void refuseAHalfAutomatedLoop(
+  private static void refuseHalfAutomatedLoop(
       ConfigService.ConfigFile config,
       ConfigService.ConfigFile.MasterConfig master,
       List<Problem> problems) {

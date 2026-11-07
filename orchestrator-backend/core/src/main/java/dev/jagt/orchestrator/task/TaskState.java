@@ -758,6 +758,10 @@ public record TaskState(
     return relinked(project, mrUrl, now).build();
   }
 
+  public TaskState withMrUrl(String mrUrl, long now) {
+    return withMrUrl(primary().project(), mrUrl, now);
+  }
+
   /**
    * Points one repository at a request, dropping every answer a read gave about the old one and
    * stamping the new one as opened NOW — a request reaches here only as it is being opened. A
@@ -775,10 +779,6 @@ public record TaskState(
   /** {@code project} holding no request, its read answers gone with it. */
   public TaskState withoutRequest(String project) {
     return toBuilder().repos(mapRepo(project, repo -> repo.withMrUrl(null))).build();
-  }
-
-  public TaskState withMrUrl(String mrUrl, long now) {
-    return withMrUrl(primary().project(), mrUrl, now);
   }
 
   public TaskState withMerged(String project, boolean merged) {
@@ -900,7 +900,7 @@ public record TaskState(
   }
 
   @JsonIgnore
-  public boolean asksForARepository() {
+  public boolean asksForRepository() {
     return repoRequest() != null;
   }
 

@@ -43,10 +43,10 @@ import tools.jackson.databind.node.ObjectNode;
 public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
   private static final JsonMapper JSON = new JsonMapper();
-  private static final String PROMPT_MARK = "\u276f";
+  private static final String PROMPT_MARK = "❯";
   private static final String INTERRUPT_HINT = "esc to interrupt";
   private static final Pattern SPINNER_LINE =
-      Pattern.compile("(?m)^\\s*[^\\p{L}\\p{N}\\s\u276f\u23fa>]\\s\\p{L}+\u2026");
+      Pattern.compile("(?m)^\\s*[^\\p{L}\\p{N}\\s❯⏺>]\\s\\p{L}+…");
   private static final Pattern DIMMED = Pattern.compile("\u001b\\[2m.*?(?=\u001b\\[(?:0|22)?m|$)");
   private static final String CLAUDE_MEMORY_FILE = "CLAUDE.md";
   private static final String LOCAL_MEMORY_FILE = "CLAUDE.local.md";
@@ -272,17 +272,18 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
    * worktree path.
    */
   static String mcpJson(String url, String worktreePath) {
-    return """
-    {
-      "mcpServers": {
-        "jagt-orchestrator": {
-          "type": "http",
-          "url": %s,
-          "headers": { %s: %s }
+    return
+        """
+        {
+          "mcpServers": {
+            "jagt-orchestrator": {
+              "type": "http",
+              "url": %s,
+              "headers": { %s: %s }
+            }
+          }
         }
-      }
-    }
-    """
+        """
         .formatted(quoted(url), quoted(McpEndpoint.CALLER_HEADER), quoted(worktreePath));
   }
 
@@ -325,18 +326,19 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         pluginsLine = "\n  \"enabledPlugins\": {" + entries + "},";
       }
     }
-    return """
-    {%s%s%s
-      "env": {"CLAUDE_CODE_AUTO_COMPACT_WINDOW": "%d"},
-      "enableAllProjectMcpServers": true,
-      "autoMemoryEnabled": false,
-      "idleCompaction": false,
-      "permissions": {
-        "allow": [%s],
-        "deny": ["AskUserQuestion"]
-      }
-    }
-    """
+    return
+        """
+        {%s%s%s
+          "env": {"CLAUDE_CODE_AUTO_COMPACT_WINDOW": "%d"},
+          "enableAllProjectMcpServers": true,
+          "autoMemoryEnabled": false,
+          "idleCompaction": false,
+          "permissions": {
+            "allow": [%s],
+            "deny": ["AskUserQuestion"]
+          }
+        }
+        """
         .formatted(
             styleLine,
             pluginsLine,
@@ -524,9 +526,10 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   }
 
   private static String hook(String event, String command, int timeoutSeconds) {
-    return """
-    %s: [{"hooks": [{"type": "command", "command": %s, "timeout": %d}]}]\
-    """
+    return
+        """
+        %s: [{"hooks": [{"type": "command", "command": %s, "timeout": %d}]}]\
+        """
         .formatted(quoted(event), quoted(command), timeoutSeconds);
   }
 

@@ -63,7 +63,7 @@ record CheckerRegion(CheckerRole role) implements Role {
               region(),
               CheckerPhase.READING,
               "the read ended, " + under + " beneath",
-              this::endsATurn)
+              this::endsTurn)
           .when((others, move) -> others.get(beneath()) == under)
           .emit(new TaskEffect.ClosesCheckerRead(id()))
           .to(under);
@@ -72,7 +72,7 @@ record CheckerRegion(CheckerRole role) implements Role {
               region(),
               CheckerPhase.READING,
               "deployed change left, " + under + " beneath",
-              move -> !endsATurn(move))
+              move -> !endsTurn(move))
           .when(
               (others, move) ->
                   others.get(beneath()) == under
@@ -148,8 +148,7 @@ record CheckerRegion(CheckerRole role) implements Role {
   @Override
   public void declareLifecycleEdge(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart
-        .onMatching(
-            TaskChart.LIFECYCLE, IN_PROGRESS, id() + " round declined", this::declinesARound)
+        .onMatching(TaskChart.LIFECYCLE, IN_PROGRESS, id() + " round declined", this::declinesRound)
         .when(
             (others, move) ->
                 others.get(region()) == CheckerPhase.ROUND_OPEN
@@ -158,14 +157,14 @@ record CheckerRegion(CheckerRole role) implements Role {
         .to(DEPLOYED);
   }
 
-  private boolean declinesARound(TaskMove move) {
+  private boolean declinesRound(TaskMove move) {
     return move instanceof TaskMove.Checked.RoundDeclined declined
         && id().equals(declined.role())
         && declined.means() == AgentReport.NO_CHANGES
         && declined.reported() == IN_PROGRESS;
   }
 
-  private boolean endsATurn(TaskMove move) {
+  private boolean endsTurn(TaskMove move) {
     return move instanceof TaskMove.Relayed
         || move instanceof TaskMove.TurnClosed
         || move instanceof TaskMove.TurnRestored

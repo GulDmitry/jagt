@@ -65,7 +65,7 @@ public class GitLabCli implements CodeHostDriver {
                             address,
                             "/pipelines/" + address.id() + "/jobs?scope[]=failed&per_page=100")),
                     GitLabCli::jobs))
-        .orElseGet(() -> HostCli.notAPipeline(pipelineUrl));
+        .orElseGet(() -> HostCli.notPipeline(pipelineUrl));
   }
 
   @Override
@@ -76,7 +76,7 @@ public class GitLabCli implements CodeHostDriver {
                 cli.run(
                     address.hostname(),
                     api(address, "-X", "POST", "/pipelines/" + address.id() + "/retry")))
-        .orElseGet(() -> HostCli.notAPipeline(pipelineUrl));
+        .orElseGet(() -> HostCli.notPipeline(pipelineUrl));
   }
 
   @Override
@@ -92,7 +92,7 @@ public class GitLabCli implements CodeHostDriver {
                         address.id(),
                         "-R",
                         address.hostname() + "/" + address.project())))
-        .orElseGet(() -> HostCli.notARequest(requestUrl));
+        .orElseGet(() -> HostCli.notRequest(requestUrl));
   }
 
   @Override
@@ -116,7 +116,7 @@ public class GitLabCli implements CodeHostDriver {
                                         + address.id()
                                         + "/discussions?per_page=100")),
                             output -> unresolved(output, me))))
-        .orElseGet(() -> HostCli.notARequest(requestUrl));
+        .orElseGet(() -> HostCli.notRequest(requestUrl));
   }
 
   @Override

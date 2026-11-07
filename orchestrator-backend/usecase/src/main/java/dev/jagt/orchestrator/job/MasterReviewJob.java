@@ -43,7 +43,7 @@ public class MasterReviewJob implements Job {
   @Override
   public String describe() {
     return "hand the Master session each plan and each round that came back, and act on what it"
-               + " answered";
+        + " answered";
   }
 
   @Override
@@ -108,11 +108,11 @@ public class MasterReviewJob implements Job {
     return FlowRules.readByTheMaster(task.status())
         && !judged
         && !task.stopped()
-        && (FlowRules.holdsAPlan(task.status()) || !(questionsAnswered && task.report().asks()));
+        && (FlowRules.holdsPlan(task.status()) || !(questionsAnswered && task.report().asks()));
   }
 
   private void ask(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
-    if (FlowRules.holdsAPlan(task.status())) {
+    if (FlowRules.holdsPlan(task.status())) {
       panel.plan(taskId, task, config);
     } else {
       panel.review(taskId, task, config);

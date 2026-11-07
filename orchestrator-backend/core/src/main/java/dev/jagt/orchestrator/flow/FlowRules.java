@@ -153,8 +153,8 @@ public final class FlowRules {
    * Whether a read of the review round leaves this report standing: only the session or a human
    * answers it.
    */
-  public static boolean standsThroughARead(AgentReport report) {
-    return TaskChart.standsThroughARead(report);
+  public static boolean standsThroughRead(AgentReport report) {
+    return TaskChart.standsThroughRead(report);
   }
 
   /** What a read of the review round can conclude, which only the host's round read may land. */
@@ -195,7 +195,7 @@ public final class FlowRules {
   }
 
   /** A task resumed onto a request already open waits on that request's checks. */
-  public static TaskStatus resumedOnARequest() {
+  public static TaskStatus resumedOnRequest() {
     return TaskStatus.CI_POLLING;
   }
 
@@ -240,14 +240,14 @@ public final class FlowRules {
 
   /** Read and green, with only the approval or the deploy still to come. */
   public static boolean awaitsApproval(TaskStatus status) {
-    return TaskChart.waitsForADeploy(status);
+    return TaskChart.waitsForDeploy(status);
   }
 
   /**
    * A request green with every thread closed, which in act the Master deploys as the human would.
    */
   public static boolean deployedByTheMaster(TaskStatus status) {
-    return TaskChart.waitsForADeploy(status);
+    return TaskChart.waitsForDeploy(status);
   }
 
   /**
@@ -259,7 +259,7 @@ public final class FlowRules {
   }
 
   /** Green with nothing left for its session, so only a reviewer's word can move the request on. */
-  public static boolean movedOnByAReviewerAlone(TaskStatus status) {
+  public static boolean movedOnByReviewerAlone(TaskStatus status) {
     return TaskChart.handedOver(status);
   }
 
@@ -290,7 +290,7 @@ public final class FlowRules {
   }
 
   /** A plan waiting to be read, rather than a round of code. */
-  public static boolean holdsAPlan(TaskStatus status) {
+  public static boolean holdsPlan(TaskStatus status) {
     return status == TaskStatus.PLAN_PENDING;
   }
 

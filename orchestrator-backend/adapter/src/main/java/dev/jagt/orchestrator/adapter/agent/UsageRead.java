@@ -14,17 +14,17 @@ final class UsageRead {
   private UsageRead() {}
 
   static Answer of(
-      OAuthCredential credential,
+      OauthCredential credential,
       UsageEndpoint endpoint,
       URI url,
       String cli,
-      Function<OAuthCredential.Token, Map<String, String>> headers,
+      Function<OauthCredential.Token, Map<String, String>> headers,
       Function<String, Answer> parse) {
     Answer answer =
         switch (credential) {
-          case OAuthCredential.None none -> new NoSubscription();
-          case OAuthCredential.Failed failed -> new Unreadable(failed.cause());
-          case OAuthCredential.Token token ->
+          case OauthCredential.None none -> new NoSubscription();
+          case OauthCredential.Failed failed -> new Unreadable(failed.cause());
+          case OauthCredential.Token token ->
               switch (endpoint.get(url, headers.apply(token))) {
                 case UsageEndpoint.Body body -> parse.apply(body.json());
                 case UsageEndpoint.Refused refused

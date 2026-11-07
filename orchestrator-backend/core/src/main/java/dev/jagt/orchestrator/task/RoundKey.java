@@ -33,6 +33,11 @@ public final class RoundKey {
     return text == null || text.isBlank() ? UNKNOWN : new RoundKey(List.of(text));
   }
 
+  /** Blank where unknown. */
+  public String stored() {
+    return String.join("\n", facts);
+  }
+
   public boolean known() {
     return this != UNKNOWN;
   }
@@ -44,10 +49,5 @@ public final class RoundKey {
   /** The facts in order; none where unknown. */
   public List<String> facts() {
     return facts;
-  }
-
-  /** Blank where unknown. */
-  public String stored() {
-    return String.join("\n", facts);
   }
 }

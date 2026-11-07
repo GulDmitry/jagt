@@ -18,6 +18,12 @@ public record MessageContext(
   /** Nothing is known about the task yet, so the rules that need it say nothing. */
   public static final MessageContext NONE = new MessageContext(List.of(), false, List.of());
 
+  public MessageContext {
+    projectsOnTask = projectsOnTask == null ? List.of() : List.copyOf(projectsOnTask);
+    configuredProjects = configuredProjects == null ? List.of() : List.copyOf(configuredProjects);
+    switchesOn = switchesOn == null ? List.of() : List.copyOf(switchesOn);
+  }
+
   public MessageContext(
       List<String> projectsOnTask, boolean planRequired, List<String> configuredProjects) {
     this(projectsOnTask, planRequired, configuredProjects, List.of(), false, false, false);
@@ -71,11 +77,5 @@ public record MessageContext(
         firstReport,
         visualMissing,
         waitsRefused);
-  }
-
-  public MessageContext {
-    projectsOnTask = projectsOnTask == null ? List.of() : List.copyOf(projectsOnTask);
-    configuredProjects = configuredProjects == null ? List.of() : List.copyOf(configuredProjects);
-    switchesOn = switchesOn == null ? List.of() : List.copyOf(switchesOn);
   }
 }

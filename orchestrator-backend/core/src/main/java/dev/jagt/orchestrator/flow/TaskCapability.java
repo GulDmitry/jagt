@@ -17,6 +17,11 @@ public interface TaskCapability {
 
   Outcome run(String taskId);
 
+  /** The work on the project a human named, once vetted. */
+  default Outcome run(String taskId, String project) {
+    throw Refusal.byState(action().id() + " takes no project");
+  }
+
   /**
    * Throws a {@link Refusal} when the project a human named cannot be taken, before anything is
    * written.
@@ -33,10 +38,5 @@ public interface TaskCapability {
   /** What the rules read a task as when a human named a project for this verb. */
   default Facts naming(Facts facts) {
     return facts;
-  }
-
-  /** The work on the project a human named, once vetted. */
-  default Outcome run(String taskId, String project) {
-    throw Refusal.byState(action().id() + " takes no project");
   }
 }

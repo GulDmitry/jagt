@@ -56,7 +56,8 @@ public final class ToolGate {
   private static final Pattern HOOK_OFF =
       Pattern.compile(
           "--no-verify|GIT_CONFIG|(?i:core\\.hookspath)"
-              + "|alias\\.|--config-env|\\benv\\s+(-\\w*[iu]\\b|-(\\s|$)|--ignore-environment|--unset)"
+              + "|alias\\.|--config-env"
+              + "|\\benv\\s+(-\\w*[iu]\\b|-(\\s|$)|--ignore-environment|--unset)"
               + "|\\b(sh|bash|zsh|dash|ksh)\\s+-\\w*c\\b|\\beval\\b");
 
   /**
@@ -65,7 +66,8 @@ public final class ToolGate {
    */
   private static final Pattern HEAD_MOVES =
       Pattern.compile(
-          "\\b(cd|pushd|checkout|switch|GIT_DIR|GIT_WORK_TREE)\\b|(^|\\s)(-C|--git-dir|--work-tree)(\\s|=)");
+          "\\b(cd|pushd|checkout|switch|GIT_DIR|GIT_WORK_TREE)\\b"
+              + "|(^|\\s)(-C|--git-dir|--work-tree)(\\s|=)");
 
   private static volatile @Nullable BoardPattern board;
 
@@ -100,7 +102,7 @@ public final class ToolGate {
             () -> writesToHost(command, unquotedLine, branch, remote),
             () -> readsUnquoted(line, unquotedLine),
             () -> skipsPrePush(command, branch, remote),
-            () -> cutsAWorktree(command),
+            () -> cutsWorktree(command),
             () -> pushRefusal(line, command, branch))
         .map(Supplier::get)
         .flatMap(Optional::stream)
@@ -141,7 +143,7 @@ public final class ToolGate {
   private static Optional<String> skipsPrePush(String command, String taskBranch, Remote remote) {
     if (PUSH.matcher(command).find()
         && (HOOK_OFF.matcher(command).find()
-            || Stream.of(SEPARATORS.split(command)).anyMatch(ToolGate::configuresAPush))) {
+            || Stream.of(SEPARATORS.split(command)).anyMatch(ToolGate::configuresPush))) {
       return Optional.of(
           "jagt refuses a push that could skip its pre-push check. "
               + remote.pushAdvice(taskBranch));
@@ -149,7 +151,7 @@ public final class ToolGate {
     return Optional.empty();
   }
 
-  private static Optional<String> cutsAWorktree(String command) {
+  private static Optional<String> cutsWorktree(String command) {
     if (Stream.of(SEPARATORS.split(command))
         .anyMatch(
             segment ->
@@ -198,7 +200,7 @@ public final class ToolGate {
   }
 
   /** A config before the subcommand may rewrite where a push lands. */
-  private static boolean configuresAPush(String segment) {
+  private static boolean configuresPush(String segment) {
     List<String> words = Stream.of(WHITESPACE.split(segment.trim())).map(ToolGate::bare).toList();
     for (int at = 0; at < words.size(); at++) {
       int subcommand = afterGitOptions(words, at + 1);

@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 /** What a CLI's stored login holds; a token lives only as long as the one read that needs it. */
-sealed interface OAuthCredential {
+sealed interface OauthCredential {
 
   /** {@code accountId} is blank where the vendor asks for none. */
-  record Token(String accessToken, String accountId) implements OAuthCredential {
+  record Token(String accessToken, String accountId) implements OauthCredential {
 
     @Override
     public String toString() {
@@ -13,8 +13,8 @@ sealed interface OAuthCredential {
   }
 
   /** A login without a subscription: an API key, or none at all. */
-  record None() implements OAuthCredential {}
+  record None() implements OauthCredential {}
 
   /** {@code cause} never quotes the stored login. */
-  record Failed(String cause) implements OAuthCredential {}
+  record Failed(String cause) implements OauthCredential {}
 }

@@ -11,6 +11,11 @@ public interface TaskJob extends Job {
 
   void run(String taskId, TaskState task);
 
+  @Override
+  default void run() {
+    throw new UnsupportedOperationException(id() + " is handed its tasks, not run bare");
+  }
+
   /**
    * Hands {@link #run(String, TaskState)} each of {@code tasks} the watch admits, in the map's
    * order.
@@ -23,10 +28,5 @@ public interface TaskJob extends Job {
             run(taskId, task);
           }
         });
-  }
-
-  @Override
-  default void run() {
-    throw new UnsupportedOperationException(id() + " is handed its tasks, not run bare");
   }
 }

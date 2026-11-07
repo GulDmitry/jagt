@@ -34,34 +34,34 @@ public class CodexCredentials {
             .resolve("auth.json");
   }
 
-  OAuthCredential read(Instant now) {
+  OauthCredential read(Instant now) {
     if (!Files.exists(file)) {
-      return new OAuthCredential.None();
+      return new OauthCredential.None();
     }
     try {
       return parse(Files.readString(file), now);
     } catch (IOException e) {
-      return new OAuthCredential.Failed("auth file unreadable " + e.getClass().getSimpleName());
+      return new OauthCredential.Failed("auth file unreadable " + e.getClass().getSimpleName());
     }
   }
 
-  static OAuthCredential parse(String stored, Instant now) {
+  static OauthCredential parse(String stored, Instant now) {
     JsonNode tokens;
     try {
       tokens = JSON.readTree(stored).path("tokens");
     } catch (JacksonException e) {
-      return new OAuthCredential.Failed("stored login is not JSON");
+      return new OauthCredential.Failed("stored login is not JSON");
     }
     if (!tokens.isObject()) {
-      return new OAuthCredential.None();
+      return new OauthCredential.None();
     }
     String token = tokens.path("access_token").asString("");
     if (token.isBlank()) {
-      return new OAuthCredential.Failed("stored login carries no access token");
+      return new OauthCredential.Failed("stored login carries no access token");
     }
     JsonNode expiresAt = claims(token).path("exp");
     if (expiresAt.isNumber() && !Instant.ofEpochSecond(expiresAt.longValue()).isAfter(now)) {
-      return new OAuthCredential.Failed(
+      return new OauthCredential.Failed(
           "token expired at "
               + Instant.ofEpochSecond(expiresAt.longValue())
               + ", running codex refreshes it");
@@ -78,9 +78,9 @@ public class CodexCredentials {
             .findFirst()
             .orElse("");
     if (account.isBlank()) {
-      return new OAuthCredential.Failed("stored login names no account");
+      return new OauthCredential.Failed("stored login names no account");
     }
-    return new OAuthCredential.Token(token, account);
+    return new OauthCredential.Token(token, account);
   }
 
   private static JsonNode claims(String jwt) {

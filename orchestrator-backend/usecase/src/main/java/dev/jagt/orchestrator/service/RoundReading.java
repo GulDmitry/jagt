@@ -48,7 +48,7 @@ public class RoundReading {
    * A repository with no request is work nobody is reviewing, so the round cannot be called clean.
    */
   private Optional<Refused> unshipped(String taskId, List<TaskRepo> repos) {
-    List<String> unshipped = mergedRequests.owingARequest(repos);
+    List<String> unshipped = mergedRequests.owingRequest(repos);
     return unshipped.isEmpty()
         ? Optional.empty()
         : Optional.of(

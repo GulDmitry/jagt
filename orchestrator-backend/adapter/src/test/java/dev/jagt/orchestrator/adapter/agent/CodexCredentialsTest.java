@@ -28,7 +28,7 @@ class CodexCredentialsTest {
 
     assertThat(credential)
         .isEqualTo(
-            new OAuthCredential.Token(
+            new OauthCredential.Token(
                 "h.eyJleHAiOjE4OTM0NTYwMDAsImh0dHBzOi8vYXBpLm9wZW5haS5jb20vYXV0aCI6eyJjaGF0Z3B0X2FjY291bnRfaWQiOiJhY2N0LTQyIn19.s",
                 "acct-42"));
   }
@@ -38,7 +38,7 @@ class CodexCredentialsTest {
     var credential =
         CodexCredentials.parse("{\"OPENAI_API_KEY\": \"key-abc\", \"tokens\": null}", NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.None());
+    assertThat(credential).isEqualTo(new OauthCredential.None());
   }
 
   @Test
@@ -52,7 +52,7 @@ class CodexCredentialsTest {
 
     assertThat(credential)
         .isEqualTo(
-            new OAuthCredential.Failed(
+            new OauthCredential.Failed(
                 "token expired at 2023-11-14T22:13:20Z, running codex refreshes it"));
   }
 
@@ -60,7 +60,7 @@ class CodexCredentialsTest {
   void answersFailedWhenTheStoredLoginIsNotJson() {
     var credential = CodexCredentials.parse("not json", NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.Failed("stored login is not JSON"));
+    assertThat(credential).isEqualTo(new OauthCredential.Failed("stored login is not JSON"));
   }
 
   @Test
@@ -68,14 +68,14 @@ class CodexCredentialsTest {
     var credential = CodexCredentials.parse("{\"tokens\": {\"account_id\": \"acct-42\"}}", NOW);
 
     assertThat(credential)
-        .isEqualTo(new OAuthCredential.Failed("stored login carries no access token"));
+        .isEqualTo(new OauthCredential.Failed("stored login carries no access token"));
   }
 
   @Test
   void answersFailedWhenNoSourceNamesTheAccount() {
     var credential = CodexCredentials.parse("{\"tokens\": {\"access_token\": \"opaque\"}}", NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.Failed("stored login names no account"));
+    assertThat(credential).isEqualTo(new OauthCredential.Failed("stored login names no account"));
   }
 
   @Test
@@ -90,7 +90,7 @@ class CodexCredentialsTest {
 
     assertThat(credential)
         .isEqualTo(
-            new OAuthCredential.Token(
+            new OauthCredential.Token(
                 "h.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdC03In19.s",
                 "acct-1"));
   }
@@ -106,7 +106,7 @@ class CodexCredentialsTest {
 
     assertThat(credential)
         .isEqualTo(
-            new OAuthCredential.Token(
+            new OauthCredential.Token(
                 "h.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdC03In19",
                 "acct-7"));
   }
@@ -122,7 +122,7 @@ class CodexCredentialsTest {
 
     assertThat(credential)
         .isEqualTo(
-            new OAuthCredential.Failed(
+            new OauthCredential.Failed(
                 "token expired at 2026-10-10T12:00:00Z, running codex refreshes it"));
   }
 
@@ -136,7 +136,7 @@ class CodexCredentialsTest {
 
     var credential = new CodexCredentials(host).read(NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.Token("opaque", "acct-42"));
+    assertThat(credential).isEqualTo(new OauthCredential.Token("opaque", "acct-42"));
   }
 
   @Test
@@ -151,7 +151,7 @@ class CodexCredentialsTest {
 
     var credential = new CodexCredentials(host).read(NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.Token("opaque", "acct-42"));
+    assertThat(credential).isEqualTo(new OauthCredential.Token("opaque", "acct-42"));
   }
 
   @Test
@@ -162,7 +162,7 @@ class CodexCredentialsTest {
 
     var credential = new CodexCredentials(host).read(NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.None());
+    assertThat(credential).isEqualTo(new OauthCredential.None());
   }
 
   @Test
@@ -175,19 +175,19 @@ class CodexCredentialsTest {
     var credential = new CodexCredentials(host).read(NOW);
 
     assertThat(credential)
-        .isEqualTo(new OAuthCredential.Failed("auth file unreadable IOException"));
+        .isEqualTo(new OauthCredential.Failed("auth file unreadable IOException"));
   }
 
   @Test
   void readsATokenWhoseClaimsCannotBeDecodedAsCarryingNoAccount() {
     var credential = CodexCredentials.parse("{\"tokens\": {\"access_token\": \"h.!!!.s\"}}", NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.Failed("stored login names no account"));
+    assertThat(credential).isEqualTo(new OauthCredential.Failed("stored login names no account"));
   }
 
   @Test
   void neverPrintsTheTokenItHolds() {
-    var token = new OAuthCredential.Token("secret-access-token", "acct-1");
+    var token = new OauthCredential.Token("secret-access-token", "acct-1");
 
     assertThat(token.toString()).doesNotContain("secret-access-token").doesNotContain("acct-1");
   }

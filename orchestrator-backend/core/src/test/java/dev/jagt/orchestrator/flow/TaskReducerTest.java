@@ -441,7 +441,7 @@ class TaskReducerTest {
   }
 
   @Test
-  void endsATurnFailureWhenTheSessionRestarts() {
+  void endsTurnFailureWhenTheSessionRestarts() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
     TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
 
@@ -750,7 +750,7 @@ class TaskReducerTest {
 
     TaskState attached = TaskReducer.repoAttached(asked, TaskRepo.of("registry", "/wt-registry"));
 
-    assertThat(attached.asksForARepository()).isFalse();
+    assertThat(attached.asksForRepository()).isFalse();
     assertThat(attached.repos()).extracting(TaskRepo::project).contains("registry");
   }
 
@@ -782,7 +782,7 @@ class TaskReducerTest {
 
     TaskState placed = TaskReducer.placed(task, List.of(TaskRepo.of("api", "/wt-api")), null);
 
-    assertThat(placed.asksForARepository()).isFalse();
+    assertThat(placed.asksForRepository()).isFalse();
     assertThat(placed.baseBranch()).isNull();
   }
 
@@ -793,7 +793,7 @@ class TaskReducerTest {
 
     TaskState reported = TaskReducer.repoAsked(task, null);
 
-    assertThat(reported.asksForARepository()).isFalse();
+    assertThat(reported.asksForRepository()).isFalse();
   }
 
   @Test

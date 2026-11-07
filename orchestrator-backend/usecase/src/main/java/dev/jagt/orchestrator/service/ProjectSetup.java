@@ -89,10 +89,10 @@ public class ProjectSetup {
     Path path = Path.of(expand(rawPath)).toAbsolutePath().normalize();
     String key =
         path.getFileName() == null ? "" : path.getFileName().toString().toLowerCase(Locale.ROOT);
-    Optional<String> notARepositoryRoot = problemWith(path);
-    if (notARepositoryRoot.isPresent()) {
+    Optional<String> notRepositoryRoot = problemWith(path);
+    if (notRepositoryRoot.isPresent()) {
       return new Reading(
-          List.of(new Line(false, notARepositoryRoot.get())), key, "", "", List.of(), List.of());
+          List.of(new Line(false, notRepositoryRoot.get())), key, "", "", List.of(), List.of());
     }
     List<Line> lines = new ArrayList<>();
     boolean local = keptLocally(path);
@@ -123,10 +123,10 @@ public class ProjectSetup {
     }
     Processes.Result top = git(path, "rev-parse", "--show-toplevel");
     if (top.exitCode() != 0) {
-      boolean notARepository =
+      boolean notRepository =
           top.exitCode() == 128 && top.stderr().contains("not a git repository");
       return Optional.of(
-          notARepository
+          notRepository
               ? "not a git repository"
               : "git could not read " + path + ": " + firstLine(top.stderr()));
     }

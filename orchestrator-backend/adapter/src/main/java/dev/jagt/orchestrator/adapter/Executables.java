@@ -48,33 +48,6 @@ public final class Executables {
         applicationDirs);
   }
 
-  /**
-   * Where application bundles are installed: the system's, and the user's own when the home is
-   * known.
-   */
-  public static List<Path> applicationDirs(@Nullable String userHome) {
-    return userHome == null || userHome.isBlank()
-        ? List.of(Path.of("/Applications"))
-        : List.of(Path.of("/Applications"), Path.of(userHome, "Applications"));
-  }
-
-  /** True when {@link #resolve} found nothing and handed the bare name back. */
-  public static boolean unresolved(@Nullable String resolved) {
-    return resolved == null || resolved.isBlank() || !resolved.contains("/");
-  }
-
-  /**
-   * Whether a bare name is on {@code PATH} — all a plain spawn looks at, none of the fallbacks
-   * below.
-   */
-  public static boolean onPath(String name) {
-    return onPath(name, System.getenv("PATH"), Executables::isExecutableFile);
-  }
-
-  static boolean onPath(String name, @Nullable String pathEnv, Predicate<Path> isExecutable) {
-    return firstMatch(splitPath(pathEnv), name, isExecutable) != null;
-  }
-
   static String resolve(
       @Nullable String configured, @Nullable String pathEnv, Predicate<Path> isExecutable) {
     return resolve(
@@ -112,6 +85,33 @@ public final class Executables {
     }
     String bundled = inBundles(name, applicationDirs, isExecutable);
     return bundled != null ? bundled : name;
+  }
+
+  /**
+   * Where application bundles are installed: the system's, and the user's own when the home is
+   * known.
+   */
+  public static List<Path> applicationDirs(@Nullable String userHome) {
+    return userHome == null || userHome.isBlank()
+        ? List.of(Path.of("/Applications"))
+        : List.of(Path.of("/Applications"), Path.of(userHome, "Applications"));
+  }
+
+  /** True when {@link #resolve} found nothing and handed the bare name back. */
+  public static boolean unresolved(@Nullable String resolved) {
+    return resolved == null || resolved.isBlank() || !resolved.contains("/");
+  }
+
+  /**
+   * Whether a bare name is on {@code PATH} — all a plain spawn looks at, none of the fallbacks
+   * below.
+   */
+  public static boolean onPath(String name) {
+    return onPath(name, System.getenv("PATH"), Executables::isExecutableFile);
+  }
+
+  static boolean onPath(String name, @Nullable String pathEnv, Predicate<Path> isExecutable) {
+    return firstMatch(splitPath(pathEnv), name, isExecutable) != null;
   }
 
   /**

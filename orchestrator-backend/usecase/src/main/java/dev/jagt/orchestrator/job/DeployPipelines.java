@@ -127,20 +127,6 @@ public class DeployPipelines {
     return new Reading(Kind.GREEN, "", "", "", List.copyOf(bare));
   }
 
-  /** The first repository still open, by {@link Kind} order. */
-  private static @Nullable Reading stillOpen(@Nullable Reading open, Reading one) {
-    if (one.kind() == Kind.GREEN) {
-      return open;
-    }
-    return open == null || one.kind().compareTo(open.kind()) > 0 ? one : open;
-  }
-
-  private static List<Deployment.Target> landedTargets(TaskState task) {
-    return task.deployment() == null
-        ? List.of()
-        : task.deployment().targets().stream().filter(Deployment.Target::landed).toList();
-  }
-
   private Reading read(String taskId, TaskState task, Deployment.Target landed) {
     String commit = Objects.requireNonNull(landed.tip());
     String project = landed.project();
@@ -176,6 +162,20 @@ public class DeployPipelines {
       case NONE -> none(taskId, landed, label, at);
       case UNKNOWN -> Reading.waiting(at + "state unknown");
     };
+  }
+
+  /** The first repository still open, by {@link Kind} order. */
+  private static @Nullable Reading stillOpen(@Nullable Reading open, Reading one) {
+    if (one.kind() == Kind.GREEN) {
+      return open;
+    }
+    return open == null || one.kind().compareTo(open.kind()) > 0 ? one : open;
+  }
+
+  private static List<Deployment.Target> landedTargets(TaskState task) {
+    return task.deployment() == null
+        ? List.of()
+        : task.deployment().targets().stream().filter(Deployment.Target::landed).toList();
   }
 
   private Reading none(String taskId, Deployment.Target landed, String label, String at) {

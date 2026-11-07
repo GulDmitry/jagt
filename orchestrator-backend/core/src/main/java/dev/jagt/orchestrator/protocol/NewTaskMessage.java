@@ -89,7 +89,6 @@ public record NewTaskMessage(
   @Override
   public List<Violation> violations(MessageContext context) {
     String projectKey = placement.projectKey();
-    String branchStrategy = placement.branchStrategy();
     List<Violation> found = new ArrayList<>();
     Why.violation(why).ifPresent(found::add);
     if (taskId == null) {
@@ -102,6 +101,7 @@ public record NewTaskMessage(
     if (mode != null && !SessionStart.MODES.contains(lower(mode))) {
       found.add(new Violation("mode", "one of " + SessionStart.MODES + ", or left out"));
     }
+    String branchStrategy = placement.branchStrategy();
     if (branchStrategy != null && !BranchStrategy.ids().contains(lower(branchStrategy))) {
       found.add(
           new Violation("branchStrategy", "one of " + BranchStrategy.ids() + ", or left out"));

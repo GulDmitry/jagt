@@ -123,7 +123,7 @@ next report.
 ### Requirement: A round read moves only a task waiting on the host or red
 A round read MUST move only a task waiting on the host or red (`FlowRules.readLands`). It leaves every other status in place, its checks
 alone updated: shipped work never goes back to approval, a session's work is never overwritten. It MUST leave a `QUESTION` or `PERMISSION` standing
-(`FlowRules.standsThroughARead`): only the session's next report or a human answers it.
+(`FlowRules.standsThroughRead`): only the session's next report or a human answers it.
 
 #### Scenario: A round read at another status
 - **WHEN** a poll reads `APPROVED` past `DEPLOYED`

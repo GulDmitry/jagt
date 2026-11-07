@@ -60,7 +60,7 @@ public class DeployCheckJob implements TaskJob {
   @Override
   public String describe() {
     return "ask each deployed task's session to check the change where it landed, once its pipeline"
-               + " is green";
+        + " is green";
   }
 
   @Override
@@ -168,7 +168,7 @@ public class DeployCheckJob implements TaskJob {
       case RED ->
           reports.readDeploy(taskId, reading.project(), reading.said() + " " + reading.url());
       case GREEN -> markBare(taskId, task, reading.bare());
-      case WAITING, UNREACHED, UNREAD -> {}
+      default -> {}
     }
   }
 
@@ -201,10 +201,10 @@ public class DeployCheckJob implements TaskJob {
           reports.deployAsked(taskId, Turn.digestOf(landed));
         }
       }
-      case WAITING, UNREACHED, UNREAD ->
-          reports.readDeploy(taskId, null, stamp + " — waiting on its pipeline: " + reading.said());
       case RED ->
           reports.readDeploy(taskId, reading.project(), reading.said() + " " + reading.url());
+      default ->
+          reports.readDeploy(taskId, null, stamp + " — waiting on its pipeline: " + reading.said());
     }
   }
 

@@ -29,7 +29,7 @@ class ClaudeKeychain {
 
   private final Processes processes;
 
-  Optional<OAuthCredential> read(Instant now) {
+  Optional<OauthCredential> read(Instant now) {
     Processes.Result keychain;
     try {
       keychain =
@@ -43,14 +43,14 @@ class ClaudeKeychain {
                   KEYCHAIN_SERVICE,
                   "-w"));
     } catch (IllegalStateException e) {
-      return Optional.of(new OAuthCredential.Failed("keychain read failed " + e.getMessage()));
+      return Optional.of(new OauthCredential.Failed("keychain read failed " + e.getMessage()));
     }
     if (keychain.exitCode() == 0) {
       return Optional.of(ClaudeCredentials.parse(keychain.stdout(), now));
     }
     if (keychain.exitCode() != KEYCHAIN_ITEM_MISSING) {
       return Optional.of(
-          new OAuthCredential.Failed(
+          new OauthCredential.Failed(
               "keychain read exited " + keychain.exitCode() + " " + keychain.stderr()));
     }
     return Optional.empty();

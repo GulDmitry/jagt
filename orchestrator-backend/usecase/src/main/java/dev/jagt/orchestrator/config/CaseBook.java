@@ -145,10 +145,6 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
     return parse(Shape.STEPS, file, text);
   }
 
-  public static CaseBook parseMoves(String file, String text) {
-    return parse(Shape.MOVES, file, text);
-  }
-
   private static CaseBook parse(Shape shape, String file, String text) {
     List<Case> cases = new ArrayList<>();
     List<Problem> faults = new ArrayList<>();
@@ -161,6 +157,10 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
       read(shape, file, section, faults).ifPresent(cases::add);
     }
     return new CaseBook(shape, cases, faults);
+  }
+
+  public static CaseBook parseMoves(String file, String text) {
+    return parse(Shape.MOVES, file, text);
   }
 
   /**
@@ -251,7 +251,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
                 says.add(line);
               }
             });
-    int before = faults.size();
+    final int before = faults.size();
     String id = section.id();
     String step = keys.getOrDefault(shape.key, "");
     if (step.isEmpty()) {

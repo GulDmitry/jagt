@@ -54,19 +54,6 @@ public final class RoleDefinitions {
     return compile(load(yaml));
   }
 
-  private static Object load(String yaml) {
-    return new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
-  }
-
-  private static @Nullable Object over(@Nullable Object base, @Nullable Object top) {
-    if (base instanceof Map<?, ?> under && top instanceof Map<?, ?> above) {
-      Map<Object, Object> merged = new LinkedHashMap<>(under);
-      above.forEach((key, value) -> merged.put(key, over(under.get(key), value)));
-      return merged;
-    }
-    return top == null ? base : top;
-  }
-
   private static RoleDefinition compile(@Nullable Object tree) {
     if (!(tree instanceof Map<?, ?> document)) {
       throw new RoleInvalid(
@@ -92,6 +79,19 @@ public final class RoleDefinitions {
         tools(map(document, "tools")),
         new RoleDefinition.Checking(
             Boolean.TRUE.equals(document.get("jobs")), strings(document, "readSteps")));
+  }
+
+  private static Object load(String yaml) {
+    return new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
+  }
+
+  private static @Nullable Object over(@Nullable Object base, @Nullable Object top) {
+    if (base instanceof Map<?, ?> under && top instanceof Map<?, ?> above) {
+      Map<Object, Object> merged = new LinkedHashMap<>(under);
+      above.forEach((key, value) -> merged.put(key, over(under.get(key), value)));
+      return merged;
+    }
+    return top == null ? base : top;
   }
 
   private static RoleDefinition.Tools tools(Map<?, ?> tools) {

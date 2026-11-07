@@ -103,17 +103,17 @@ public class TaskTurns {
         task -> TaskReducer.checkerReadEnded(task, role, step, digest, task.lastActiveTimestamp()));
   }
 
+  /** The turn the task's last report answered, passed to whoever holds it now. */
+  public static TaskState closed(TaskState task) {
+    return TaskReducer.turnClosed(task, task.lastActiveTimestamp());
+  }
+
   /**
    * A reply refused stops its task first, and a stopped task's turn is the human's whatever the
    * Master's profile.
    */
   public void refused(String taskId) {
     stateService.updateTask(stateService.canonicalTaskId(taskId), task -> closed(task));
-  }
-
-  /** The turn the task's last report answered, passed to whoever holds it now. */
-  public static TaskState closed(TaskState task) {
-    return TaskReducer.turnClosed(task, task.lastActiveTimestamp());
   }
 
   public void left(String taskId, String step) {

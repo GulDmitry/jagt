@@ -1217,7 +1217,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void holdsAPlanReaderToTheFactThatTheSessionWroteNoPlan() {
+  void holdsPlanReaderToTheFactThatTheSessionWroteNoPlan() {
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =

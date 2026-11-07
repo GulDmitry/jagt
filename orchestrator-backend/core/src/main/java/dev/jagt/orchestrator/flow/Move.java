@@ -181,6 +181,11 @@ public record Move(
     return owner == Owner.CI && pollStopped ? Owner.YOU : owner;
   }
 
+  /** Whose turn a status ALONE means. */
+  public static Owner ownerOf(TaskStatus status) {
+    return turnOf(status, RoundState.NONE);
+  }
+
   private static Attention attentionOf(
       Owner owner, TaskStatus status, RoundState round, boolean polled) {
     if (owner != Owner.YOU) {
@@ -302,11 +307,6 @@ public record Move(
     return status != TaskStatus.REVERTED
         && status != TaskStatus.DEPLOY_CONFLICT
         && status != TaskStatus.DONE;
-  }
-
-  /** Whose turn a status ALONE means. */
-  public static Owner ownerOf(TaskStatus status) {
-    return turnOf(status, RoundState.NONE);
   }
 
   private static @Nullable TaskAction primaryOf(

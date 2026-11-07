@@ -104,6 +104,10 @@ class HeadlessClaude {
     return reported(answer, label);
   }
 
+  Answer<JsonNode> read(String prompt, String schema, String label, AssistantCallKind kind) {
+    return read(prompt, schema, label, kind, TIMEOUT);
+  }
+
   static Answer<JsonNode> reported(Answer<JsonNode> answer, String label) {
     String failure = answer.facts().map(n -> n.path("failure").asString("")).orElse("").trim();
     if (failure.isEmpty()) {
@@ -115,10 +119,6 @@ class HeadlessClaude {
         .addKeyValue("cause", failure)
         .log();
     return new Answer<>(Optional.empty(), answer.usage(), failure, answer.refused());
-  }
-
-  Answer<JsonNode> read(String prompt, String schema, String label, AssistantCallKind kind) {
-    return read(prompt, schema, label, kind, TIMEOUT);
   }
 
   Answer<JsonNode> ask(

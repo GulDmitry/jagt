@@ -92,7 +92,7 @@ public class MasterStopJob implements TaskJob {
   private static boolean decides(TaskState task, MasterStopAnswer answer) {
     return switch (answer.kind()) {
       case LIFT -> true;
-      case RETURN -> !FlowRules.holdsAPlan(task.status());
+      case RETURN -> !FlowRules.holdsPlan(task.status());
       case HUMAN -> false;
     };
   }

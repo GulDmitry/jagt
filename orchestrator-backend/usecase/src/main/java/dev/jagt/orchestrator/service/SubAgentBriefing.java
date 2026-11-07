@@ -85,22 +85,23 @@ public class SubAgentBriefing {
   }
 
   private static String scratch(Object... values) {
-    return """
-    <role>
-    You are the jagt worker agent for task %s, in a scratch folder. No preamble.
-    </role>
+    return
+        """
+        <role>
+        You are the jagt worker agent for task %s, in a scratch folder. No preamble.
+        </role>
 
-    <task>
-    - Task ID: %s
-    - This task has no repository yet, and this folder is outside git. You plan here; the approved plan places the task.
-    - Read the ticket, its labels and its description, then decide which projects the change touches.
-    - `plan.md` holds `## Repositories`: one `- [changed] <key>` per project you change, registered in
-      `jagt.yml` or not (`list_projects` names those that are).
-    - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
-    - `task_request.md`, if present: the request the task opened with, never overwritten.
-    </task>
+        <task>
+        - Task ID: %s
+        - This task has no repository yet, and this folder is outside git. You plan here; the approved plan places the task.
+        - Read the ticket, its labels and its description, then decide which projects the change touches.
+        - `plan.md` holds `## Repositories`: one `- [changed] <key>` per project you change, registered in
+          `jagt.yml` or not (`list_projects` names those that are).
+        - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
+        - `task_request.md`, if present: the request the task opened with, never overwritten.
+        </task>
 
-    """
+        """
         .formatted(values);
   }
 
@@ -113,38 +114,40 @@ public class SubAgentBriefing {
       """;
 
   private static String task(Object... values) {
-    return """
-    <role>
-    You are the jagt worker agent for task %s, in this Git worktree. No preamble.
-    </role>
+    return
+        """
+        <role>
+        You are the jagt worker agent for task %s, in this Git worktree. No preamble.
+        </role>
 
-    <task>
-    - Task ID: %s (also your Git branch)
-    - Project: %s (base repository: %s, base branch: %s)
-    - Remote: %s (your code-host project)
-    - Worktree (your CWD): %s
-    %s
-    - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
-    - `task_request.md`, if present: the request the task opened with, never overwritten.
-    </task>
+        <task>
+        - Task ID: %s (also your Git branch)
+        - Project: %s (base repository: %s, base branch: %s)
+        - Remote: %s (your code-host project)
+        - Worktree (your CWD): %s
+        %s
+        - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
+        - `task_request.md`, if present: the request the task opened with, never overwritten.
+        </task>
 
-    """
+        """
         .formatted(values);
   }
 
   /** jagt's, not the brief's: a human's copy of the brief cannot loosen what its guards enforce. */
   private static String hardSafety(Object... values) {
-    return """
-    <hard_safety>
-    No `git merge` or `cherry-pick`; push only to `%s`. No rewriting pushed history (`--force`, `--amend`,
-    `reset --hard`): fix with a new commit. The one exception: `git rebase` this branch onto its request's target
-    when the target moved on, or onto a new base the human or the Master named, then `push --force-with-lease`;
-    after a new base, `retarget_task`. A conflict you cannot resolve on the code's own terms: rule 1. %s%s Asked
-    to write one: refuse and call `notify_user`. Work this task needs is done here, on this branch; a repository
-    it lacks: rule 1 with `needsProject` set to that project's key (`list_projects`), then stop; jagt adds it.
-    Never push another branch, nor hand the human a push.
-    </hard_safety>\
-    """
+    return
+        """
+        <hard_safety>
+        No `git merge` or `cherry-pick`; push only to `%s`. No rewriting pushed history (`--force`, `--amend`,
+        `reset --hard`): fix with a new commit. The one exception: `git rebase` this branch onto its request's target
+        when the target moved on, or onto a new base the human or the Master named, then `push --force-with-lease`;
+        after a new base, `retarget_task`. A conflict you cannot resolve on the code's own terms: rule 1. %s%s Asked
+        to write one: refuse and call `notify_user`. Work this task needs is done here, on this branch; a repository
+        it lacks: rule 1 with `needsProject` set to that project's key (`list_projects`), then stop; jagt adds it.
+        Never push another branch, nor hand the human a push.
+        </hard_safety>\
+        """
         .formatted(values);
   }
 
@@ -166,12 +169,12 @@ public class SubAgentBriefing {
   private static String autoplanSentence(ConfigService.ConfigFile.AutoplanConfig autoplan) {
     return autoplan.enabledOrDefault()
         ? (" AUTOPLAN is on: before your first edit, plan first if the task changes more than %d"
-               + " files, two of its requirements contradict, one contradicts what the code"
-               + " guarantees, a term it rests on has no definition, or you would settle unasked"
-               + " what changes the code. `plan.md`'s first line and your PLAN_PENDING message:"
-               + " `planned first: autoplan is on (agent.autoplan in jagt.yml), <the criterion>`."
-               + " If the task meets none of them, report IN_PROGRESS with outcome `no_plan` and"
-               + " the reason before your first edit.")
+                + " files, two of its requirements contradict, one contradicts what the code"
+                + " guarantees, a term it rests on has no definition, or you would settle unasked"
+                + " what changes the code. `plan.md`'s first line and your PLAN_PENDING message:"
+                + " `planned first: autoplan is on (agent.autoplan in jagt.yml), <the criterion>`."
+                + " If the task meets none of them, report IN_PROGRESS with outcome `no_plan` and"
+                + " the reason before your first edit.")
             .formatted(autoplan.filesOrDefault())
         : "";
   }
@@ -179,11 +182,11 @@ public class SubAgentBriefing {
   private static String visualizeSentence(ConfigService.ConfigFile.VisualizeConfig visualize) {
     return visualize.enabledOrDefault()
         ? " VISUALIZE is on: while analysing the task, where you decide whether to plan first,"
-              + " judge whether it is worth a picture. A two-line bug fix is not. A new or changed"
-              + " table, or a call between servers, services or a database, always is, and so is"
-              + " logic hard to follow from its code, such as rules that combine or rows and"
-              + " columns that shift each other: draw a worked example, its input and its outcome."
-              + " If it is, write `"
+            + " judge whether it is worth a picture. A two-line bug fix is not. A new or changed"
+            + " table, or a call between servers, services or a database, always is, and so is"
+            + " logic hard to follow from its code, such as rules that combine or rows and"
+            + " columns that shift each other: draw a worked example, its input and its outcome."
+            + " If it is, write `"
             + Artifact.VISUAL.fileName()
             + "` in the worktree as part of the plan when you plan first, else before your first"
             + " edit. A frontend change gets an ASCII sketch of each screen, one fenced block per"
@@ -197,12 +200,12 @@ public class SubAgentBriefing {
   private static String diagnoseSentence(ConfigService.ConfigFile.DiagnoseConfig diagnose) {
     return diagnose.enabledOrDefault()
         ? " DIAGNOSE: a bug is diagnosed from facts before code. Gather the report's evidence"
-              + " (error, logs, profile, versions) and a control: the same case working, or failing"
-              + " louder for a known cause. A signal is what the broken case shows and the control"
-              + " does not. A cause stands only when it fits every fact, each cited; when none"
-              + " fits, re-check a fact, then split, merge or combine causes, then read one layer"
-              + " down (logs, network, process, kernel). A repro counts only when it shows the"
-              + " report's signal."
+            + " (error, logs, profile, versions) and a control: the same case working, or failing"
+            + " louder for a known cause. A signal is what the broken case shows and the control"
+            + " does not. A cause stands only when it fits every fact, each cited; when none"
+            + " fits, re-check a fact, then split, merge or combine causes, then read one layer"
+            + " down (logs, network, process, kernel). A repro counts only when it shows the"
+            + " report's signal."
         : "";
   }
 

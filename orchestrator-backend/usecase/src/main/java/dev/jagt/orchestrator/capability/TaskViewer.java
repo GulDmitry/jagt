@@ -44,9 +44,9 @@ public class TaskViewer {
     return switch (revealed) {
       case WINDOW -> " and raised the agents window";
       case UNREACHABLE_TAB ->
-          " \u2014 the agents viewer is a tab this terminal cannot select; click it" + " yourself";
+          " — the agents viewer is a tab this terminal cannot select; click it yourself";
       case NOT_RUNNING ->
-          " \u2014 no agents viewer is open; the session is there, nothing is showing it";
+          " — no agents viewer is open; the session is there, nothing is showing it";
     };
   }
 }

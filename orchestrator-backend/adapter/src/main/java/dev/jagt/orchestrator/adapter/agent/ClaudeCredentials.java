@@ -33,43 +33,43 @@ public class ClaudeCredentials {
     this.file = host.home().resolve(".claude").resolve(".credentials.json");
   }
 
-  OAuthCredential read(Instant now) {
-    Optional<OAuthCredential> stored = keychain.flatMap(k -> k.read(now));
+  OauthCredential read(Instant now) {
+    Optional<OauthCredential> stored = keychain.flatMap(k -> k.read(now));
     if (stored.isPresent()) {
       return stored.get();
     }
     if (!Files.exists(file)) {
-      return new OAuthCredential.None();
+      return new OauthCredential.None();
     }
     try {
       return parse(Files.readString(file), now);
     } catch (IOException e) {
-      return new OAuthCredential.Failed(
+      return new OauthCredential.Failed(
           "credentials file unreadable " + e.getClass().getSimpleName());
     }
   }
 
-  static OAuthCredential parse(String stored, Instant now) {
+  static OauthCredential parse(String stored, Instant now) {
     JsonNode login;
     try {
       login = JSON.readTree(stored).path("claudeAiOauth");
     } catch (JacksonException e) {
-      return new OAuthCredential.Failed("stored login is not JSON");
+      return new OauthCredential.Failed("stored login is not JSON");
     }
     if (login.isMissingNode() || login.isNull()) {
-      return new OAuthCredential.None();
+      return new OauthCredential.None();
     }
     String token = login.path("accessToken").asString("");
     if (token.isBlank()) {
-      return new OAuthCredential.Failed("stored login carries no access token");
+      return new OauthCredential.Failed("stored login carries no access token");
     }
     JsonNode expiresAt = login.path("expiresAt");
     if (expiresAt.isNumber() && !Instant.ofEpochMilli(expiresAt.longValue()).isAfter(now)) {
-      return new OAuthCredential.Failed(
+      return new OauthCredential.Failed(
           "token expired at "
               + Instant.ofEpochMilli(expiresAt.longValue())
               + ", running claude refreshes it");
     }
-    return new OAuthCredential.Token(token, "");
+    return new OauthCredential.Token(token, "");
   }
 }

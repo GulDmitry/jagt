@@ -36,7 +36,7 @@ class FlowRulesTest {
   @CsvSource({"REVIEWED,true", "APPROVED,true", "DEPLOYED,true", "IN_PROGRESS,false"})
   void isMovedOnByAReviewerAloneOnlyWhenGreenWithNothingLeftForItsSession(
       TaskStatus status, boolean alone) {
-    assertThat(FlowRules.movedOnByAReviewerAlone(status)).isEqualTo(alone);
+    assertThat(FlowRules.movedOnByReviewerAlone(status)).isEqualTo(alone);
   }
 
   @Test
@@ -593,7 +593,7 @@ class FlowRulesTest {
   @Test
   void putsASessionHandedWorkBackAtWorkAndAResumedRequestOnItsChecks() {
     assertThat(FlowRules.relayed()).isEqualTo(TaskStatus.IN_PROGRESS);
-    assertThat(FlowRules.resumedOnARequest()).isEqualTo(TaskStatus.CI_POLLING);
+    assertThat(FlowRules.resumedOnRequest()).isEqualTo(TaskStatus.CI_POLLING);
   }
 
   @ParameterizedTest
@@ -647,8 +647,8 @@ class FlowRulesTest {
 
   @ParameterizedTest
   @CsvSource({"PLAN_PENDING,true", "REVIEW_PENDING,false"})
-  void holdsAPlanOnlyWhilePlanPending(TaskStatus status, boolean holds) {
-    assertThat(FlowRules.holdsAPlan(status)).isEqualTo(holds);
+  void holdsPlanOnlyWhilePlanPending(TaskStatus status, boolean holds) {
+    assertThat(FlowRules.holdsPlan(status)).isEqualTo(holds);
   }
 
   @ParameterizedTest

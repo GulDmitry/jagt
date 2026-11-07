@@ -152,7 +152,7 @@ public class FlowEngine {
         Facts.Hold.defaults().withAgentLive(() -> live(taskId)).withStopped(task.stopped()),
         Facts.Workspace.defaults()
             .withGitStateChanged(task.gitStateChanged())
-            .withRepoRequested(task.asksForARepository())
+            .withRepoRequested(task.asksForRepository())
             .withSeveralRepos(task.repos().size() > 1));
   }
 }

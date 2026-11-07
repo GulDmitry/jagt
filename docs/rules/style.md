@@ -4,6 +4,7 @@
 
 ## Writing
 
+- **Java follows Google style**; Checkstyle's Google checks gate main, Javadoc checks off, and `gradle/checkstyle/` holds the config.
 - A comment is deleted on sight when it is narration of what the code does; an argument that a change
   is correct; how the code got this way; a fact whose source of truth is elsewhere.
 - **A situation is a scenario in its spec** (`openspec/specs/`): "the request does not target the base branch → …".

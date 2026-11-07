@@ -88,9 +88,15 @@ final class ProjectBlocks {
     String child = null;
     for (int i = 1; i < lines.length; i++) {
       String indent = indent(lines[i]);
-      if (indent == null) continue;
-      if (indent.isEmpty()) break;
-      if (child == null) child = indent;
+      if (indent == null) {
+        continue;
+      }
+      if (indent.isEmpty()) {
+        break;
+      }
+      if (child == null) {
+        child = indent;
+      }
       if (indent.equals(child) && lines[i].strip().matches("projects:\\s*(\\{\\s*})?\\s*(#.*)?")) {
         return new Located(
             file.substring(0, root.end()), List.of(lines), i, child, entryIndent(lines, i, child));
@@ -102,7 +108,9 @@ final class ProjectBlocks {
   private static String entryIndent(String[] lines, int at, String parent) {
     for (int i = at + 1; i < lines.length; i++) {
       String indent = indent(lines[i]);
-      if (indent == null) continue;
+      if (indent == null) {
+        continue;
+      }
       return indent.length() > parent.length() ? indent : parent + parent;
     }
     return parent + parent;
@@ -118,7 +126,9 @@ final class ProjectBlocks {
     int end = lines.length;
     for (int i = at.projectsAt() + 1; i < lines.length && end == lines.length; i++) {
       String indent = indent(lines[i]);
-      if (indent == null) continue;
+      if (indent == null) {
+        continue;
+      }
       if (endsBlock(at, from >= 0, indent)) {
         end = i;
       } else if (from < 0 && startsBlock(at, lines[i], indent, key)) {
@@ -147,7 +157,9 @@ final class ProjectBlocks {
   private static String childIndent(String[] lines, Span span, String fallback) {
     for (int i = span.from() + 1; i < span.to(); i++) {
       String indent = indent(lines[i]);
-      if (indent != null) return indent;
+      if (indent != null) {
+        return indent;
+      }
     }
     return fallback;
   }
@@ -165,9 +177,13 @@ final class ProjectBlocks {
           indent != null
               && (indent.length() > child.length()
                   || (indent.equals(child) && lines[i].strip().startsWith("- ")));
-      if (dropping && continuation) continue;
+      if (dropping && continuation) {
+        continue;
+      }
       dropping = indent != null && indent.equals(child) && MANAGED.contains(keyOf(lines[i]));
-      if (!dropping) kept.add(lines[i]);
+      if (!dropping) {
+        kept.add(lines[i]);
+      }
     }
     return kept;
   }

@@ -28,7 +28,7 @@ class ClaudeCredentialsTest {
             """,
             NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.Token("tok-abc", ""));
+    assertThat(credential).isEqualTo(new OauthCredential.Token("tok-abc", ""));
   }
 
   @Test
@@ -42,7 +42,7 @@ class ClaudeCredentialsTest {
 
     assertThat(credential)
         .isEqualTo(
-            new OAuthCredential.Failed(
+            new OauthCredential.Failed(
                 "token expired at 2023-11-14T22:13:20Z, running claude refreshes it"));
   }
 
@@ -50,14 +50,14 @@ class ClaudeCredentialsTest {
   void answersNoSubscriptionWhereTheLoginHoldsNoOauthToken() {
     var credential = ClaudeCredentials.parse("{\"primaryApiKey\": \"key-abc\"}", NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.None());
+    assertThat(credential).isEqualTo(new OauthCredential.None());
   }
 
   @Test
   void neverQuotesTheStoredLoginWhenItIsNotJson() {
     var credential = ClaudeCredentials.parse("tok-abc-not-json", NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.Failed("stored login is not JSON"));
+    assertThat(credential).isEqualTo(new OauthCredential.Failed("stored login is not JSON"));
   }
 
   @Test
@@ -75,7 +75,7 @@ class ClaudeCredentialsTest {
     var credential =
         new ClaudeCredentials(Optional.of(new ClaudeKeychain(processes)), host).read(NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.Token("tok-file", ""));
+    assertThat(credential).isEqualTo(new OauthCredential.Token("tok-file", ""));
   }
 
   @Test
@@ -91,7 +91,7 @@ class ClaudeCredentialsTest {
     var credential =
         new ClaudeCredentials(Optional.of(new ClaudeKeychain(processes)), host).read(NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.Token("tok-keychain", ""));
+    assertThat(credential).isEqualTo(new OauthCredential.Token("tok-keychain", ""));
   }
 
   @Test
@@ -101,7 +101,7 @@ class ClaudeCredentialsTest {
 
     var credential = new ClaudeCredentials(Optional.empty(), host).read(NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.None());
+    assertThat(credential).isEqualTo(new OauthCredential.None());
   }
 
   @Test
@@ -115,7 +115,7 @@ class ClaudeCredentialsTest {
 
     var credential = new ClaudeCredentials(Optional.empty(), host).read(NOW);
 
-    assertThat(credential).isEqualTo(new OAuthCredential.Token("tok-file", ""));
+    assertThat(credential).isEqualTo(new OauthCredential.Token("tok-file", ""));
   }
 
   @Test
@@ -128,7 +128,7 @@ class ClaudeCredentialsTest {
     var credential = new ClaudeCredentials(Optional.empty(), host).read(NOW);
 
     assertThat(credential)
-        .isEqualTo(new OAuthCredential.Failed("credentials file unreadable IOException"));
+        .isEqualTo(new OauthCredential.Failed("credentials file unreadable IOException"));
   }
 
   @Test
@@ -137,6 +137,6 @@ class ClaudeCredentialsTest {
         ClaudeCredentials.parse("{\"claudeAiOauth\": {\"expiresAt\": 1791900000000}}", NOW);
 
     assertThat(credential)
-        .isEqualTo(new OAuthCredential.Failed("stored login carries no access token"));
+        .isEqualTo(new OauthCredential.Failed("stored login carries no access token"));
   }
 }

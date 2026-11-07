@@ -36,7 +36,8 @@ public class GitHubCli implements CodeHostDriver {
   private static final CommitPipeline NO_PIPELINE = new CommitPipeline("none", "");
   private static final String THREADS_QUERY =
       "query($owner:String!,$name:String!,$number:Int!){viewer{login}"
-          + " repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved"
+          + " repository(owner:$owner,name:$name){pullRequest(number:$number)"
+          + "{reviewThreads(first:100){nodes{isResolved"
           + " comments(last:1){nodes{databaseId author{login}}}}}}}}";
   private static final JsonMapper JSON = new JsonMapper();
 
@@ -73,7 +74,7 @@ public class GitHubCli implements CodeHostDriver {
                             "-R",
                             repository(address))),
                     output -> jobs(address, output)))
-        .orElseGet(() -> HostCli.notAPipeline(pipelineUrl));
+        .orElseGet(() -> HostCli.notPipeline(pipelineUrl));
   }
 
   @Override
@@ -84,14 +85,14 @@ public class GitHubCli implements CodeHostDriver {
                 cli.run(
                     address.hostname(),
                     List.of("run", "rerun", address.id(), "--failed", "-R", repository(address))))
-        .orElseGet(() -> HostCli.notAPipeline(pipelineUrl));
+        .orElseGet(() -> HostCli.notPipeline(pipelineUrl));
   }
 
   @Override
   public Answer<String> closeRequest(HostSettings host, String requestUrl) {
     return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, false)
         .map(address -> cli.run(address.hostname(), List.of("pr", "close", requestUrl.strip())))
-        .orElseGet(() -> HostCli.notARequest(requestUrl));
+        .orElseGet(() -> HostCli.notRequest(requestUrl));
   }
 
   @Override
@@ -117,7 +118,7 @@ public class GitHubCli implements CodeHostDriver {
                             "-F",
                             "number=" + address.id())),
                     GitHubCli::unresolved))
-        .orElseGet(() -> HostCli.notARequest(requestUrl));
+        .orElseGet(() -> HostCli.notRequest(requestUrl));
   }
 
   @Override

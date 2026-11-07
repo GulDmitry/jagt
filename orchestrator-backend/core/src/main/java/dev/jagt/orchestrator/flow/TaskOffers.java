@@ -1,6 +1,19 @@
 package dev.jagt.orchestrator.flow;
 
-import static dev.jagt.orchestrator.task.TaskStatus.*;
+import static dev.jagt.orchestrator.task.TaskStatus.APPROVED;
+import static dev.jagt.orchestrator.task.TaskStatus.CI_FAILED;
+import static dev.jagt.orchestrator.task.TaskStatus.CI_POLLING;
+import static dev.jagt.orchestrator.task.TaskStatus.DEPLOYED;
+import static dev.jagt.orchestrator.task.TaskStatus.DEPLOY_CONFLICT;
+import static dev.jagt.orchestrator.task.TaskStatus.DONE;
+import static dev.jagt.orchestrator.task.TaskStatus.IN_PROGRESS;
+import static dev.jagt.orchestrator.task.TaskStatus.NEW;
+import static dev.jagt.orchestrator.task.TaskStatus.PLAN_PENDING;
+import static dev.jagt.orchestrator.task.TaskStatus.REVERTED;
+import static dev.jagt.orchestrator.task.TaskStatus.REVIEWED;
+import static dev.jagt.orchestrator.task.TaskStatus.REVIEW_PENDING;
+import static dev.jagt.orchestrator.task.TaskStatus.SHIPPING;
+import static dev.jagt.orchestrator.task.TaskStatus.VERIFYING;
 
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.statechart.ChartBuilder;

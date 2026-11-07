@@ -37,6 +37,10 @@ public record AutoReviewWatch(
     };
   }
 
+  public static AutoReviewWatch stopped(TaskStop stop) {
+    return new AutoReviewWatch(State.LOOP_STOPPED, 0, stop.reading(), "jagt stopped");
+  }
+
   public static AutoReviewWatch none() {
     return new AutoReviewWatch(State.NONE, 0, null, null);
   }
@@ -56,10 +60,6 @@ public record AutoReviewWatch(
   public static AutoReviewWatch offForTask() {
     return new AutoReviewWatch(
         State.OFF_FOR_TASK, 0, "polling is disabled for this task", "polling off");
-  }
-
-  public static AutoReviewWatch stopped(TaskStop stop) {
-    return new AutoReviewWatch(State.LOOP_STOPPED, 0, stop.reading(), "jagt stopped");
   }
 
   /**

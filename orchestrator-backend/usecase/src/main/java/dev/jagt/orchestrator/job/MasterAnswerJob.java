@@ -93,10 +93,10 @@ public class MasterAnswerJob implements Job {
     if (task.message() == null) {
       return Optional.of("a question with no text");
     }
-    if (task.asksForARepository()) {
+    if (task.asksForRepository()) {
       return Optional.of("a repository jagt attaches");
     }
-    return FlowRules.holdsAPlan(task.status())
+    return FlowRules.holdsPlan(task.status())
         ? Optional.of("the plan review answers it")
         : Optional.empty();
   }

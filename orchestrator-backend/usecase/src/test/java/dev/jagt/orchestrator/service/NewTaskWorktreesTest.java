@@ -925,7 +925,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void cutsAWorktreePerRepositoryTheFirstBeingThePrimary() {
+  void cutsWorktreePerRepositoryTheFirstBeingThePrimary() {
     ConfigService.ConfigFile configured =
         ConfigService.ConfigFile.defaults()
             .withProjects(

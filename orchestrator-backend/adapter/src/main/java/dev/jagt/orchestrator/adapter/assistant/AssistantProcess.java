@@ -32,7 +32,7 @@ class AssistantProcess {
     switch (reading.verdict()) {
       case REACHED -> breaker.succeeded();
       case FAILED -> breaker.failed(reading.cause());
-      case UNKNOWN -> breaker.inconclusive();
+      default -> breaker.inconclusive();
     }
     return result;
   }

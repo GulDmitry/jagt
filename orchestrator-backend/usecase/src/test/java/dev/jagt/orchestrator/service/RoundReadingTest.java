@@ -55,7 +55,7 @@ class RoundReadingTest {
                         TaskStatus.CI_POLLING)
                     .alias("a1")
                     .build()));
-    when(mergedRequests.owingARequest(any())).thenReturn(List.of("web"));
+    when(mergedRequests.owingRequest(any())).thenReturn(List.of("web"));
 
     var read = reading.read("ABC-1");
 
@@ -82,7 +82,7 @@ class RoundReadingTest {
                         TaskStatus.CI_POLLING)
                     .alias("a1")
                     .build()));
-    when(mergedRequests.owingARequest(any())).thenReturn(List.of());
+    when(mergedRequests.owingRequest(any())).thenReturn(List.of());
     when(reviewReader.read("ABC-1", "api", "http://mr/api"))
         .thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
 

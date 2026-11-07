@@ -104,11 +104,11 @@ final class HostCli {
         : List.of();
   }
 
-  static <T> Answer<T> notAPipeline(String url) {
+  static <T> Answer<T> notPipeline(String url) {
     return Answer.failed(TokenUsage.NONE, "not the address of a pipeline: " + OneLine.clipped(url));
   }
 
-  static <T> Answer<T> notARequest(String url) {
+  static <T> Answer<T> notRequest(String url) {
     return Answer.failed(TokenUsage.NONE, "not the address of a request: " + OneLine.clipped(url));
   }
 

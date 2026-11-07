@@ -203,7 +203,7 @@ public class RoutingMemory {
       return new Rule(
           tail.substring(0, counted).strip(),
           Integer.parseInt(tail.substring(counted + USES.length()).strip()));
-    } catch (NumberFormatException notACount) {
+    } catch (NumberFormatException notCount) {
       return new Rule(tail.strip(), 0);
     }
   }

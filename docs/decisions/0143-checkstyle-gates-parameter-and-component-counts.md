@@ -19,6 +19,8 @@ Accepted 2026-11-07.
   zero is the target, and a split by composition deletes its line.
 - `UnusedImports` and `RedundantImport` gate main the same way, at their defaults.
 - A bean keeps `CollaboratorCeilingTest`'s 3/5.
+- The same config is Checkstyle's bundled Google checks with every Javadoc check off (comments default to none);
+  google-java-format 1.37.0 laid the layout once, and Checkstyle stays the one gate: no Spotless.
 
 ## Rejected
 

@@ -60,7 +60,7 @@ public class MasterVerdicts {
       TaskState task,
       MasterReview.Verdict verdict,
       ConfigService.ConfigFile.MasterConfig config) {
-    boolean plan = FlowRules.holdsAPlan(task.status());
+    boolean plan = FlowRules.holdsPlan(task.status());
     return switch (verdict.kind()) {
       case NOT_READY -> returned(taskId, task, verdict, plan);
       case QUESTION -> {

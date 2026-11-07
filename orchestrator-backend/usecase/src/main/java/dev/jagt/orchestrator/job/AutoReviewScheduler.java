@@ -100,7 +100,7 @@ public class AutoReviewScheduler implements Job {
               }
             }
             case POLL -> poll(taskId, task.alias(), task.mrCreatedAt());
-            case SKIP -> {}
+            default -> {}
           }
         });
   }

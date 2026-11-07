@@ -1,6 +1,19 @@
 package dev.jagt.orchestrator.flow;
 
-import static dev.jagt.orchestrator.task.TaskStatus.*;
+import static dev.jagt.orchestrator.task.TaskStatus.APPROVED;
+import static dev.jagt.orchestrator.task.TaskStatus.CI_FAILED;
+import static dev.jagt.orchestrator.task.TaskStatus.CI_POLLING;
+import static dev.jagt.orchestrator.task.TaskStatus.DEPLOYED;
+import static dev.jagt.orchestrator.task.TaskStatus.DEPLOY_CONFLICT;
+import static dev.jagt.orchestrator.task.TaskStatus.DONE;
+import static dev.jagt.orchestrator.task.TaskStatus.IN_PROGRESS;
+import static dev.jagt.orchestrator.task.TaskStatus.NEW;
+import static dev.jagt.orchestrator.task.TaskStatus.PLAN_PENDING;
+import static dev.jagt.orchestrator.task.TaskStatus.REVERTED;
+import static dev.jagt.orchestrator.task.TaskStatus.REVIEWED;
+import static dev.jagt.orchestrator.task.TaskStatus.REVIEW_PENDING;
+import static dev.jagt.orchestrator.task.TaskStatus.SHIPPING;
+import static dev.jagt.orchestrator.task.TaskStatus.VERIFYING;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.PlanGate;
@@ -247,12 +260,18 @@ final class TaskChart {
     return HELD.contains(status);
   }
 
-  static boolean standsThroughARead(AgentReport report) {
+  static boolean standsThroughRead(AgentReport report) {
     return STANDING_THROUGH_A_READ.contains(report);
   }
 
   static Set<TaskStatus> reads() {
     return EnumSet.copyOf(READ);
+  }
+
+  private static void reads(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+    for (TaskStatus concluded : READ) {
+      edges(chart, READ_FROM, "read " + concluded, new TaskMove.Read(concluded)::equals, concluded);
+    }
   }
 
   private static Set<TaskStatus> union(Set<TaskStatus> base, TaskStatus extra) {
@@ -281,7 +300,7 @@ final class TaskChart {
     return AWAITING_ITS_INSTRUCTION.contains(status);
   }
 
-  static boolean waitsForADeploy(TaskStatus status) {
+  static boolean waitsForDeploy(TaskStatus status) {
     return WAITING_FOR_A_DEPLOY.contains(status);
   }
 
@@ -717,14 +736,14 @@ final class TaskChart {
             REQUEST,
             RequestPhase.NONE,
             "repository added with a request",
-            TaskChart::attachesARequest)
+            TaskChart::attachesRequest)
         .to(RequestPhase.OPEN);
     chart
         .onMatching(
             REQUEST,
             RequestPhase.MERGED,
             "repository added with a request merged",
-            TaskChart::attachesAMergedRequest)
+            TaskChart::attachesMergedRequest)
         .stay();
     chart
         .onMatching(
@@ -787,12 +806,12 @@ final class TaskChart {
         RequestPhase.NONE);
   }
 
-  private static boolean attachesARequest(TaskMove move) {
+  private static boolean attachesRequest(TaskMove move) {
     return move instanceof TaskMove.RepoAttached attached && attached.repo().hasReviewRequest();
   }
 
-  private static boolean attachesAMergedRequest(TaskMove move) {
-    return attachesARequest(move) && ((TaskMove.RepoAttached) move).repo().wasMerged();
+  private static boolean attachesMergedRequest(TaskMove move) {
+    return attachesRequest(move) && ((TaskMove.RepoAttached) move).repo().wasMerged();
   }
 
   private static boolean readsMerge(TaskMove move) {
@@ -849,7 +868,7 @@ final class TaskChart {
           CHECKS,
           from,
           "a new round",
-          TaskChart::beginsARound,
+          TaskChart::beginsRound,
           move -> new TaskEffect.ResetsChecks(),
           ChecksPhase.NONE);
     }
@@ -883,7 +902,7 @@ final class TaskChart {
     }
   }
 
-  private static boolean beginsARound(TaskMove move) {
+  private static boolean beginsRound(TaskMove move) {
     return move instanceof TaskMove.RequestLinked linked && (linked.newRound() || linked.relinks());
   }
 
@@ -904,7 +923,7 @@ final class TaskChart {
           APPROVAL,
           from,
           "a new round",
-          TaskChart::beginsARound,
+          TaskChart::beginsRound,
           move -> new TaskEffect.ResetsApproval(),
           ApprovalPhase.UNREAD);
       regionEdge(
@@ -934,7 +953,7 @@ final class TaskChart {
           INFRA,
           from,
           "a new round",
-          TaskChart::beginsARound,
+          TaskChart::beginsRound,
           move -> new TaskEffect.ResetsInfra(),
           InfraPhase.NONE);
       regionEdge(
@@ -1260,12 +1279,6 @@ final class TaskChart {
   private static boolean mayReport(TaskStatus from, TaskStatus to) {
     return (to != PLAN_PENDING || BEFORE_THE_CODE.contains(from))
         && (to != CI_POLLING || BEFORE_THE_VERDICT.contains(from));
-  }
-
-  private static void reads(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
-    for (TaskStatus concluded : READ) {
-      edges(chart, READ_FROM, "read " + concluded, new TaskMove.Read(concluded)::equals, concluded);
-    }
   }
 
   private static void edges(

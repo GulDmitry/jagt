@@ -37,6 +37,11 @@ public class ReviewDrafts {
     return file != null && Files.isRegularFile(file) && !spent(file, task, shipPostsEveryDraft);
   }
 
+  /** The same for a caller with no configuration in hand. */
+  public boolean pending(TaskState task, TaskStatus status) {
+    return pending(task, status, configService.load().codeReview().shipPostsEveryDraft());
+  }
+
   /** When the replies file was last written; 0 where there is none or its time cannot be read. */
   public static long writtenAt(TaskState task) {
     Path file = draftsIn(task.worktreePath());
@@ -49,11 +54,6 @@ public class ReviewDrafts {
     }
   }
 
-  /** The same for a caller with no configuration in hand. */
-  public boolean pending(TaskState task, TaskStatus status) {
-    return pending(task, status, configService.load().codeReview().shipPostsEveryDraft());
-  }
-
   /**
    * Answered by a ship that has already happened: the drafts are older than the round now open.
    * Never true where the answers are not jagt's to spend.
@@ -61,6 +61,18 @@ public class ReviewDrafts {
   public boolean spent(TaskState task) {
     Path file = draftsIn(task.worktreePath());
     return file != null && Files.isRegularFile(file) && spent(file, task, postsEveryDraft());
+  }
+
+  /** A timestamp that cannot be read leaves the file announced: whoever opens it loses nothing. */
+  private static boolean spent(Path file, TaskState task, boolean shipPostsEveryDraft) {
+    if (!shipPostsEveryDraft) {
+      return false;
+    }
+    try {
+      return Files.getLastModifiedTime(file).toMillis() < task.mrCreatedAt();
+    } catch (IOException e) {
+      return false;
+    }
   }
 
   /** Replies written and not yet spent by a ship; a blank file holds none. */
@@ -93,18 +105,6 @@ public class ReviewDrafts {
 
   private boolean postsEveryDraft() {
     return configService.load().codeReview().shipPostsEveryDraft();
-  }
-
-  /** A timestamp that cannot be read leaves the file announced: whoever opens it loses nothing. */
-  private static boolean spent(Path file, TaskState task, boolean shipPostsEveryDraft) {
-    if (!shipPostsEveryDraft) {
-      return false;
-    }
-    try {
-      return Files.getLastModifiedTime(file).toMillis() < task.mrCreatedAt();
-    } catch (IOException e) {
-      return false;
-    }
   }
 
   private static @Nullable Path draftsIn(@Nullable String worktree) {

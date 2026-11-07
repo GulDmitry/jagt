@@ -67,17 +67,17 @@ public class CaseDoor {
     return held(taskId, action.id());
   }
 
+  /** Only the Master's move is held to a case: any other passes. */
+  public boolean presses(String taskId, String move) {
+    return !byTheMaster() || held(taskId, move);
+  }
+
   /**
    * The one human-only verb the Master presses: a lift of a stop it was asked about, within its
    * bound.
    */
   private boolean liftedByTheMaster(String taskId, TaskAction action) {
     return action == TaskAction.LIFT && stops.masterMayLift(stateService.canonicalTaskId(taskId));
-  }
-
-  /** Only the Master's move is held to a case: any other passes. */
-  public boolean presses(String taskId, String move) {
-    return !byTheMaster() || held(taskId, move);
   }
 
   private boolean held(String taskId, String move) {

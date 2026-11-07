@@ -22,16 +22,6 @@ public class Rounds implements PhaseProfiles {
     return of(task, configService.load());
   }
 
-  @Override
-  public Arbiter.Profile at(TaskState task) {
-    return of(task).master();
-  }
-
-  /** The Master runs and has read the plan or round in front. */
-  public boolean judged(TaskState task) {
-    return configService.load().master().running() && MasterPhase.readTheRoundInFront(task);
-  }
-
   /**
    * Where the Master read the round in front or left the task to the human, nothing of it stands in
    * any more.
@@ -46,5 +36,15 @@ public class Rounds implements PhaseProfiles {
         .withMasterReading(FlowRules.readByTheMaster(task.status()) && master.running())
         .withCheckers(Checkers.of(task))
         .withRequestless(requestless.stands(task));
+  }
+
+  @Override
+  public Arbiter.Profile at(TaskState task) {
+    return of(task).master();
+  }
+
+  /** The Master runs and has read the plan or round in front. */
+  public boolean judged(TaskState task) {
+    return configService.load().master().running() && MasterPhase.readTheRoundInFront(task);
   }
 }

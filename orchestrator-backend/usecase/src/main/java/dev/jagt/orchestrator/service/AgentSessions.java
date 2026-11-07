@@ -309,11 +309,11 @@ public class AgentSessions implements SessionLines {
       if (screen.filter(agentRuntime::holdsDraft).isPresent()) {
         if (resubmittedOwnNudge(screen.get(), session, taskId, task.alias())) {
           return "Instructions written to task_context.md; the nudge already sat unsent in the"
-                     + " agent's window, so it was sent.";
+              + " agent's window, so it was sent.";
         }
         nudgeOnceSent(session, taskId, task.alias());
         return "Instructions written to task_context.md; the human is typing in the agent's window,"
-                   + " so the nudge waits until they send it.";
+            + " so the nudge waits until they send it.";
       }
       if (sessions.nudgeTaskWindow(session, taskId, NUDGE)) {
         return undelivered(session, taskId, NUDGE)
@@ -340,7 +340,7 @@ public class AgentSessions implements SessionLines {
         task.alias(),
         Path.of(task.worktreePath()));
     return "Instructions written to task_context.md; the agent session was down, so it was"
-               + " re-entered to read and follow them.";
+        + " re-entered to read and follow them.";
   }
 
   private String relayFreshStart(
@@ -358,7 +358,7 @@ public class AgentSessions implements SessionLines {
         ? "Instructions written to task_context.md; a fresh session was started to read them with"
             + " task_notes.md."
         : "Instructions written to task_context.md; the human is in the agent's window, so the"
-              + " fresh session starts when they are done.";
+            + " fresh session starts when they are done.";
   }
 
   private boolean running(String session, String taskId) {
@@ -380,6 +380,11 @@ public class AgentSessions implements SessionLines {
           .log();
       return false;
     }
+  }
+
+  /** Whether the human has an unsent draft in the task's window. */
+  public boolean composing(String taskId) {
+    return composing(agentSession(configService.load(), taskId), taskId);
   }
 
   /** Our own nudge left unsent is no human's draft: Enter is pressed on it, never waited for. */
@@ -419,6 +424,10 @@ public class AgentSessions implements SessionLines {
         .isPresent();
   }
 
+  private boolean cold(TaskState task, ConfigService.ConfigFile config) {
+    return SessionPhase.cold(task.session(), agentRuntime, config.agent().cacheLifetimeOrDefault());
+  }
+
   /**
    * Whether the session's log was written after {@code millis}; false where it keeps none jagt can
    * find.
@@ -430,10 +439,6 @@ public class AgentSessions implements SessionLines {
         .flatMap(worktree -> agentRuntime.sessionLogOf(Path.of(worktree)))
         .filter(log -> FileStamps.modified(log) > millis)
         .isPresent();
-  }
-
-  private boolean cold(TaskState task, ConfigService.ConfigFile config) {
-    return SessionPhase.cold(task.session(), agentRuntime, config.agent().cacheLifetimeOrDefault());
   }
 
   /**
@@ -710,11 +715,6 @@ public class AgentSessions implements SessionLines {
         .or(() -> Optional.of(config.agent().modelOrInherited()))
         .filter(models::contains)
         .orElse("");
-  }
-
-  /** Whether the human has an unsent draft in the task's window. */
-  public boolean composing(String taskId) {
-    return composing(agentSession(configService.load(), taskId), taskId);
   }
 
   private String agentSession(ConfigService.ConfigFile config, String taskId) {

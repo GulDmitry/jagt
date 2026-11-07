@@ -78,7 +78,7 @@ public final class AutoReviewCadence {
     }
     Duration elapsed = Duration.ofMillis(now - roundStart);
     Duration interval =
-        FlowRules.movedOnByAReviewerAlone(task.status())
+        FlowRules.movedOnByReviewerAlone(task.status())
             ? waitingInterval(elapsed)
             : pollInterval(elapsed);
     if (interval == null) {

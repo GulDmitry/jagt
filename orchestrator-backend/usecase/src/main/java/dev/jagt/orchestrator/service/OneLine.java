@@ -15,13 +15,6 @@ public final class OneLine {
     return text == null ? null : text.replaceAll("\\s+", " ").strip();
   }
 
-  /**
-   * Flattened and cut to a width a log line or a notice still reads at a glance; null stays null.
-   */
-  public static @Nullable String clipped(@Nullable String text) {
-    return of(text, CLIP);
-  }
-
   /** Null stays null. */
   public static @Nullable String of(@Nullable String text, int width) {
     if (text == null) {
@@ -29,5 +22,12 @@ public final class OneLine {
     }
     String flat = Objects.requireNonNull(of(text));
     return flat.length() <= width ? flat : flat.substring(0, width - 1) + "…";
+  }
+
+  /**
+   * Flattened and cut to a width a log line or a notice still reads at a glance; null stays null.
+   */
+  public static @Nullable String clipped(@Nullable String text) {
+    return of(text, CLIP);
   }
 }

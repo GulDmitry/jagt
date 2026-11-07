@@ -42,6 +42,22 @@ public class ProcessRunner implements Processes {
     return run(workingDir, timeout, Map.of(), command);
   }
 
+  @Override
+  public Result run(
+      @Nullable Path workingDir, Duration timeout, Map<String, String> env, List<String> command) {
+    return execute(workingDir, timeout, env, null, command);
+  }
+
+  @Override
+  public Result run(
+      @Nullable Path workingDir,
+      Duration timeout,
+      Map<String, String> env,
+      String stdin,
+      List<String> command) {
+    return execute(workingDir, timeout, env, stdin, command);
+  }
+
   /**
    * A GUI launcher's CLI blocks until its window closes, so waiting would time out and destroy that
    * window.
@@ -54,7 +70,6 @@ public class ProcessRunner implements Processes {
         throw new IllegalStateException(
             "Failed to launch: " + String.join(" ", command) + " (not on PATH)");
       }
-      long startedAt = System.nanoTime();
       ProcessBuilder builder = new ProcessBuilder(detached);
       if (workingDir != null) {
         builder.directory(workingDir.toFile());
@@ -62,6 +77,7 @@ public class ProcessRunner implements Processes {
       builder.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("/dev/null")));
       builder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
       builder.redirectError(ProcessBuilder.Redirect.DISCARD);
+      long startedAt = System.nanoTime();
       Process launched = builder.start();
       // The wrapper always starts, so a missing binary is not an IOException but the wrapper
       // exiting 127.
@@ -159,22 +175,6 @@ public class ProcessRunner implements Processes {
         .filter(candidate -> Files.isExecutable(Path.of(candidate)))
         .findFirst()
         .orElse(null);
-  }
-
-  @Override
-  public Result run(
-      @Nullable Path workingDir, Duration timeout, Map<String, String> env, List<String> command) {
-    return execute(workingDir, timeout, env, null, command);
-  }
-
-  @Override
-  public Result run(
-      @Nullable Path workingDir,
-      Duration timeout,
-      Map<String, String> env,
-      String stdin,
-      List<String> command) {
-    return execute(workingDir, timeout, env, stdin, command);
   }
 
   private Result execute(

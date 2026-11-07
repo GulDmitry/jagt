@@ -32,10 +32,6 @@ final class WorktreeSandbox {
     return of(config, writable, home, tempDir);
   }
 
-  static Sandbox scratch(SandboxConfig config, Path folder, Path home, Path tempDir) {
-    return of(config, new LinkedHashSet<>(Set.of(real(folder))), home, tempDir);
-  }
-
   private static Sandbox of(SandboxConfig config, Set<Path> writable, Path home, Path tempDir) {
     if (!config.enabledOrDefault()) {
       return Sandbox.off();
@@ -53,6 +49,10 @@ final class WorktreeSandbox {
         Stream.concat(EXCLUDED.stream(), config.excludedCommandsOrEmpty().stream())
             .distinct()
             .toList());
+  }
+
+  static Sandbox scratch(SandboxConfig config, Path folder, Path home, Path tempDir) {
+    return of(config, new LinkedHashSet<>(Set.of(real(folder))), home, tempDir);
   }
 
   private static Path expanded(String entry, Path home) {

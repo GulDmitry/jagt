@@ -46,6 +46,12 @@ public class TaskLauncher {
                     : launches.written(request, resolveProjects(request.project())));
   }
 
+  /** {@code read} is the item's facts already read and paid for, as intake reads them. */
+  public Launched launch(LaunchRequest request, Answer<TicketFacts> read) {
+    return launches.ticket(
+        request, request.project() != null ? resolveProjects(request.project()) : null, read);
+  }
+
   /**
    * A start with no project: only a plan can come before the repository is known, and no router is
    * asked.
@@ -69,12 +75,6 @@ public class TaskLauncher {
         ? Optional.of(
             Launched.refused(Launched.Reason.NOTHING_TO_DO, "error: no ticket and nothing to do"))
         : Optional.empty();
-  }
-
-  /** {@code read} is the item's facts already read and paid for, as intake reads them. */
-  public Launched launch(LaunchRequest request, Answer<TicketFacts> read) {
-    return launches.ticket(
-        request, request.project() != null ? resolveProjects(request.project()) : null, read);
   }
 
   public Launched resume(String reviewRequestUrl) {

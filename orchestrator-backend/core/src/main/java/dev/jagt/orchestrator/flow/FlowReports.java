@@ -70,6 +70,56 @@ public class FlowReports {
     return report(taskId, status, means, message, alsoRecord, verificationOwed, task -> true);
   }
 
+  private Optional<Landed> report(
+      String taskId,
+      TaskStatus status,
+      AgentReport means,
+      @Nullable String message,
+      BiFunction<TaskStatus, TaskState, TaskState> alsoRecord,
+      Predicate<TaskState> verificationOwed,
+      Predicate<TaskState> standing) {
+    // Judged against the state being WRITTEN, not one read a moment earlier: two reports arriving
+    // together
+    // must not both pass on a status neither of them ends up leaving from.
+    AtomicReference<Landed> landed = new AtomicReference<>();
+    AtomicReference<String> refused = new AtomicReference<>();
+    tasks.updateTask(
+        taskId,
+        task -> {
+          if (!standing.test(task)) {
+            return task;
+          }
+          Optional<String> why = FlowRules.refusedReport(task.status(), status, means);
+          if (why.isPresent()) {
+            refused.set(why.get());
+            return task.refused(Guard.STATUS_REPORT);
+          }
+          TaskMove.Reported move =
+              new TaskMove.Reported(status, !means.asks() && verificationOwed.test(task));
+          TaskState said =
+              TaskReducer.reduce(
+                  TaskReducer.said(task, means),
+                  move,
+                  lineOf(task, means, message),
+                  false,
+                  clock.millis());
+          said = declined(said, means, status);
+          landed.set(new Landed(task.status(), said.status()));
+          return alsoRecord.apply(task.status(), said);
+        });
+    Optional<String> why =
+        Optional.ofNullable(refused.get())
+            .or(
+                () ->
+                    FlowRules.reportable(status)
+                        ? Optional.empty()
+                        : FlowRules.refusedReport(status, status));
+    if (why.isPresent()) {
+      throw Refusal.byState(why.get());
+    }
+    return Optional.ofNullable(landed.get());
+  }
+
   /**
    * A question jagt itself puts about a task, which keeps its status: a status no session reports
    * cannot carry it.
@@ -160,56 +210,6 @@ public class FlowReports {
     return Standing.of(task).equals(Standing.of(read));
   }
 
-  private Optional<Landed> report(
-      String taskId,
-      TaskStatus status,
-      AgentReport means,
-      @Nullable String message,
-      BiFunction<TaskStatus, TaskState, TaskState> alsoRecord,
-      Predicate<TaskState> verificationOwed,
-      Predicate<TaskState> standing) {
-    // Judged against the state being WRITTEN, not one read a moment earlier: two reports arriving
-    // together
-    // must not both pass on a status neither of them ends up leaving from.
-    AtomicReference<Landed> landed = new AtomicReference<>();
-    AtomicReference<String> refused = new AtomicReference<>();
-    tasks.updateTask(
-        taskId,
-        task -> {
-          if (!standing.test(task)) {
-            return task;
-          }
-          Optional<String> why = FlowRules.refusedReport(task.status(), status, means);
-          if (why.isPresent()) {
-            refused.set(why.get());
-            return task.refused(Guard.STATUS_REPORT);
-          }
-          TaskMove.Reported move =
-              new TaskMove.Reported(status, !means.asks() && verificationOwed.test(task));
-          TaskState said =
-              TaskReducer.reduce(
-                  TaskReducer.said(task, means),
-                  move,
-                  lineOf(task, means, message),
-                  false,
-                  clock.millis());
-          said = declined(said, means, status);
-          landed.set(new Landed(task.status(), said.status()));
-          return alsoRecord.apply(task.status(), said);
-        });
-    Optional<String> why =
-        Optional.ofNullable(refused.get())
-            .or(
-                () ->
-                    FlowRules.reportable(status)
-                        ? Optional.empty()
-                        : FlowRules.refusedReport(status, status));
-    if (why.isPresent()) {
-      throw Refusal.byState(why.get());
-    }
-    return Optional.ofNullable(landed.get());
-  }
-
   private TaskState declined(TaskState said, AgentReport means, TaskStatus status) {
     TaskState declined = said;
     for (Map.Entry<String, CheckerPhase> checker : Checkers.of(said).entrySet()) {
@@ -249,7 +249,7 @@ public class FlowReports {
           return TaskReducer.reduce(
               task,
               new TaskMove.Read(concluded),
-              FlowRules.standsThroughARead(task.report()) ? task.message() : message,
+              FlowRules.standsThroughRead(task.report()) ? task.message() : message,
               false,
               clock.millis());
         });

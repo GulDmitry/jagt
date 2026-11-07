@@ -69,7 +69,9 @@ public class BoardLanguages {
 
   @GetMapping("/{code}")
   public Map<String, String> catalog(@PathVariable("code") String code) {
-    if (!CODE.matcher(code).matches()) throw new ResponseStatusException(NOT_FOUND);
+    if (!CODE.matcher(code).matches()) {
+      throw new ResponseStatusException(NOT_FOUND);
+    }
     Map<String, String> words = new LinkedHashMap<>();
     try {
       ClassPathResource shipped = new ClassPathResource("static/i18n/" + code + ".json");
@@ -86,7 +88,9 @@ public class BoardLanguages {
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
-    if (words.isEmpty()) throw new ResponseStatusException(NOT_FOUND);
+    if (words.isEmpty()) {
+      throw new ResponseStatusException(NOT_FOUND);
+    }
     return words;
   }
 

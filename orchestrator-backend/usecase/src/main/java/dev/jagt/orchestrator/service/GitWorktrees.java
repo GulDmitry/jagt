@@ -63,7 +63,7 @@ public class GitWorktrees {
                         + base
                         + ") or 'resume' (continue the existing branch and its commits).");
             case RECREATE -> recreate(projectPath, worktreePath, branch, base);
-            case RESUME -> resumeExisting(remote, projectPath, worktreePath, branch, base);
+            default -> resumeExisting(remote, projectPath, worktreePath, branch, base);
           }
         });
   }

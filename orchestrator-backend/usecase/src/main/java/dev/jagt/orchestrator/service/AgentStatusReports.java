@@ -51,25 +51,6 @@ public class AgentStatusReports {
     return report(accepted(said, taskId), taskId, handBack::verificationOwed, false);
   }
 
-  /** A verification run's own verdict, which owes no further run. */
-  public String verified(boolean passed, String message, String taskId) {
-    TaskStatus verdict = FlowRules.verified(passed);
-    AgentStatusMessage said = new AgentStatusMessage(verdict.name(), message, null, null, Map.of());
-    String answer = report(accepted(said, taskId), taskId, task -> false, false);
-    TaskStatus landed = stateService.task(taskId).map(TaskState::status).orElse(null);
-    // A measured verdict the flow turns aside leaves the task held, and the run repeats with
-    // nothing to say why.
-    if (landed != verdict) {
-      log.atError()
-          .setMessage("verdict not landed")
-          .addKeyValue("task", taskId)
-          .addKeyValue("status", landed)
-          .addKeyValue("cause", "verdict " + verdict + " turned aside")
-          .log();
-    }
-    return answer;
-  }
-
   /**
    * A session's message that reached the door, closing the turn it answers. It is judged here as
    * well as at the transport, because jagt's own reports and a session's come through the same door
@@ -77,47 +58,6 @@ public class AgentStatusReports {
    */
   public String report(AgentStatusMessage said, String taskId) {
     return report(accepted(said, taskId), taskId, handBack::verificationOwed, true);
-  }
-
-  private Reported accepted(AgentStatusMessage said, String taskId) {
-    MessageContext context = contextFor(taskId);
-    List<Violation> violations = said.reportViolations(context);
-    if (!violations.isEmpty()) {
-      throw new IllegalArgumentException(Message.refusal(violations));
-    }
-    return said.accepted(context).orElseThrow();
-  }
-
-  /** What the rules may ask about the task this message is about. */
-  public MessageContext contextFor(String taskId) {
-    return new MessageContext(
-        known(taskId),
-        stateService.task(taskId).filter(task -> task.planGate() == PlanGate.REQUIRED).isPresent(),
-        List.copyOf(configService.load().projects().keySet()));
-  }
-
-  /**
-   * As {@link #contextFor}, for a session's own report: what it owes a judgement on, and whether
-   * its picture is there.
-   */
-  public MessageContext sessionContextFor(String taskId) {
-    Optional<TaskState> task = stateService.task(taskId);
-    boolean visualMissing =
-        task.map(TaskState::worktreePath)
-            .filter(path -> !path.isBlank())
-            .map(path -> !Files.isRegularFile(Path.of(path, Artifact.VISUAL.fileName())))
-            .orElse(false);
-    return contextFor(taskId)
-        .withSwitchesOn(configService.load().agent().switchesOn())
-        .withFirstReport(task.filter(one -> one.status() == TaskStatus.NEW).isPresent())
-        .withVisualMissing(visualMissing);
-  }
-
-  /**
-   * The task's repositories, primary first: which link a human follows first is the session's own.
-   */
-  private List<String> known(String taskId) {
-    return stateService.task(taskId).map(TaskState::projects).orElse(List.of());
   }
 
   private String report(
@@ -174,6 +114,66 @@ public class AgentStatusReports {
     logReplacedStop(taskId, current);
     refusals.onBoard(asked, taskId);
     return answer(taskId, newStatus, landed, shortMessage);
+  }
+
+  /** A verification run's own verdict, which owes no further run. */
+  public String verified(boolean passed, String message, String taskId) {
+    TaskStatus verdict = FlowRules.verified(passed);
+    AgentStatusMessage said = new AgentStatusMessage(verdict.name(), message, null, null, Map.of());
+    String answer = report(accepted(said, taskId), taskId, task -> false, false);
+    TaskStatus landed = stateService.task(taskId).map(TaskState::status).orElse(null);
+    // A measured verdict the flow turns aside leaves the task held, and the run repeats with
+    // nothing to say why.
+    if (landed != verdict) {
+      log.atError()
+          .setMessage("verdict not landed")
+          .addKeyValue("task", taskId)
+          .addKeyValue("status", landed)
+          .addKeyValue("cause", "verdict " + verdict + " turned aside")
+          .log();
+    }
+    return answer;
+  }
+
+  private Reported accepted(AgentStatusMessage said, String taskId) {
+    MessageContext context = contextFor(taskId);
+    List<Violation> violations = said.reportViolations(context);
+    if (!violations.isEmpty()) {
+      throw new IllegalArgumentException(Message.refusal(violations));
+    }
+    return said.accepted(context).orElseThrow();
+  }
+
+  /** What the rules may ask about the task this message is about. */
+  public MessageContext contextFor(String taskId) {
+    return new MessageContext(
+        known(taskId),
+        stateService.task(taskId).filter(task -> task.planGate() == PlanGate.REQUIRED).isPresent(),
+        List.copyOf(configService.load().projects().keySet()));
+  }
+
+  /**
+   * As {@link #contextFor}, for a session's own report: what it owes a judgement on, and whether
+   * its picture is there.
+   */
+  public MessageContext sessionContextFor(String taskId) {
+    Optional<TaskState> task = stateService.task(taskId);
+    boolean visualMissing =
+        task.map(TaskState::worktreePath)
+            .filter(path -> !path.isBlank())
+            .map(path -> !Files.isRegularFile(Path.of(path, Artifact.VISUAL.fileName())))
+            .orElse(false);
+    return contextFor(taskId)
+        .withSwitchesOn(configService.load().agent().switchesOn())
+        .withFirstReport(task.filter(one -> one.status() == TaskStatus.NEW).isPresent())
+        .withVisualMissing(visualMissing);
+  }
+
+  /**
+   * The task's repositories, primary first: which link a human follows first is the session's own.
+   */
+  private List<String> known(String taskId) {
+    return stateService.task(taskId).map(TaskState::projects).orElse(List.of());
   }
 
   /**
@@ -271,7 +271,7 @@ public class AgentStatusReports {
     String next =
         FlowRules.awaitingVerification(landed)
             ? "; verification runs first, and the Master reads this round once it passes; end your"
-                  + " turn"
+                + " turn"
             : "; the Master reads this round next; end your turn";
     return "Task "
         + taskId
@@ -316,7 +316,7 @@ public class AgentStatusReports {
 
   /** Read as the plan is put up, not after: what VERIFYING runs is what was ratified. */
   private TaskState planned(TaskStatus was, TaskState next) {
-    if (FlowRules.holdsAPlan(was) || !FlowRules.holdsAPlan(next.status())) {
+    if (FlowRules.holdsPlan(was) || !FlowRules.holdsPlan(next.status())) {
       return next;
     }
     PlanProbes.Read read = handBack.planProbes(next);

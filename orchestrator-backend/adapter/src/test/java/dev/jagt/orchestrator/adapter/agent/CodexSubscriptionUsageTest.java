@@ -21,7 +21,7 @@ class CodexSubscriptionUsageTest {
   void sendsTheStoredTokenWithItsAccount() {
     CodexCredentials credentials = mock(CodexCredentials.class);
     UsageEndpoint endpoint = mock(UsageEndpoint.class);
-    when(credentials.read(any())).thenReturn(new OAuthCredential.Token("tok-abc", "acct-42"));
+    when(credentials.read(any())).thenReturn(new OauthCredential.Token("tok-abc", "acct-42"));
     when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Body("{}"));
 
     new CodexSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
@@ -41,7 +41,7 @@ class CodexSubscriptionUsageTest {
   void asksForANewLoginOnlyWhenTheTokenWasRefused(int status, String cause, String expected) {
     CodexCredentials credentials = mock(CodexCredentials.class);
     UsageEndpoint endpoint = mock(UsageEndpoint.class);
-    when(credentials.read(any())).thenReturn(new OAuthCredential.Token("tok-abc", "acct-42"));
+    when(credentials.read(any())).thenReturn(new OauthCredential.Token("tok-abc", "acct-42"));
     when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Refused(status, cause));
 
     var answer = new CodexSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
@@ -53,7 +53,7 @@ class CodexSubscriptionUsageTest {
   void answersNoSubscriptionWhenNoCredentialIsStored() {
     CodexCredentials credentials = mock(CodexCredentials.class);
     UsageEndpoint endpoint = mock(UsageEndpoint.class);
-    when(credentials.read(any())).thenReturn(new OAuthCredential.None());
+    when(credentials.read(any())).thenReturn(new OauthCredential.None());
 
     var answer = new CodexSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
 

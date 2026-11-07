@@ -37,12 +37,6 @@ public class HeadlessClaudeCheckerReader {
   }
 
   private HeadlessReply ask(CheckerReader.Run run) {
-    RoleDefinition.Tools scope =
-        roles.stream()
-            .filter(role -> role.id().equals(run.role()))
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException("no installed role " + run.role()))
-            .tools();
     List<String> mcpReads = ReadOnlyTools.mcpNamed(assistant.allowedTools());
     List<String> cmd =
         new ArrayList<>(
@@ -66,6 +60,12 @@ public class HeadlessClaudeCheckerReader {
     if (!run.model().isBlank()) {
       cmd.addAll(List.of("--model", run.model()));
     }
+    RoleDefinition.Tools scope =
+        roles.stream()
+            .filter(role -> role.id().equals(run.role()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("no installed role " + run.role()))
+            .tools();
     ClaudeToolScope claude =
         ClaudeToolScope.of(scope.shell(), scope.refuseShell(), scope.refuseRead(), scope.fetch());
     cmd.addAll(

@@ -35,7 +35,7 @@ class ClaudeKeychainTest {
 
     assertThat(credential)
         .contains(
-            new OAuthCredential.Failed("keychain read exited 51 user interaction is not allowed"));
+            new OauthCredential.Failed("keychain read exited 51 user interaction is not allowed"));
   }
 
   @Test
@@ -48,7 +48,7 @@ class ClaudeKeychainTest {
 
     var credential = new ClaudeKeychain(processes).read(NOW);
 
-    assertThat(credential).contains(new OAuthCredential.Token("tok-keychain", ""));
+    assertThat(credential).contains(new OauthCredential.Token("tok-keychain", ""));
   }
 
   @Test
@@ -60,6 +60,6 @@ class ClaudeKeychainTest {
     var credential = new ClaudeKeychain(processes).read(NOW);
 
     assertThat(credential)
-        .contains(new OAuthCredential.Failed("keychain read failed security not found"));
+        .contains(new OauthCredential.Failed("keychain read failed security not found"));
   }
 }

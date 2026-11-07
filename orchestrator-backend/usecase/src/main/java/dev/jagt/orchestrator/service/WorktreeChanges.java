@@ -53,6 +53,17 @@ public class WorktreeChanges {
     return Optional.of(anyChanged);
   }
 
+  private Optional<Boolean> uncommitted(TaskRepo repo) {
+    try {
+      return Optional.of(
+          inspection.hasUncommittedChanges(
+              projectPath(Objects.requireNonNull(repo.project())), Path.of(repo.worktreePath())));
+    } catch (RuntimeException e) {
+      warn(repo.worktreePath(), e);
+      return Optional.empty();
+    }
+  }
+
   /**
    * Every repository's {@link WorktreeInspection#treeState}; EMPTY where git could not answer for
    * one.
@@ -73,17 +84,6 @@ public class WorktreeChanges {
       }
     }
     return Optional.of(state.toString());
-  }
-
-  private Optional<Boolean> uncommitted(TaskRepo repo) {
-    try {
-      return Optional.of(
-          inspection.hasUncommittedChanges(
-              projectPath(Objects.requireNonNull(repo.project())), Path.of(repo.worktreePath())));
-    } catch (RuntimeException e) {
-      warn(repo.worktreePath(), e);
-      return Optional.empty();
-    }
   }
 
   /**

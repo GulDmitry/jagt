@@ -179,7 +179,6 @@ public record AgentStatusMessage(
    * refusal and not this one's to make.
    */
   public List<Violation> reportViolations(MessageContext context) {
-    List<String> projectsOnTask = context.projectsOnTask();
     List<Violation> found = new ArrayList<>();
     if (status == null) {
       found.add(new Violation("status", "required, one of " + OFFERED));
@@ -210,6 +209,7 @@ public record AgentStatusMessage(
                 found.add(
                     new Violation(
                         "reviewRequestUrl", "an http(s) link the human can open, not " + link)));
+    List<String> projectsOnTask = context.projectsOnTask();
     if (parsedStatus() == TaskStatus.CI_POLLING && link(projectsOnTask) == null) {
       found.add(
           new Violation(

@@ -111,7 +111,7 @@ public class MergedRequests {
    * The projects among these repositories with no request though one is owed: a repository with no
    * code host is owed none.
    */
-  public List<String> owingARequest(List<TaskRepo> repos) {
+  public List<String> owingRequest(List<TaskRepo> repos) {
     ConfigService.ConfigFile config = configService.load();
     return repos.stream()
         .filter(

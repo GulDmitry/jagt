@@ -21,7 +21,7 @@ class ClaudeSubscriptionUsageTest {
   void sendsTheStoredTokenWithTheOauthBetaHeader() {
     ClaudeCredentials credentials = mock(ClaudeCredentials.class);
     UsageEndpoint endpoint = mock(UsageEndpoint.class);
-    when(credentials.read(any())).thenReturn(new OAuthCredential.Token("tok-abc", ""));
+    when(credentials.read(any())).thenReturn(new OauthCredential.Token("tok-abc", ""));
     when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Body("{}"));
 
     new ClaudeSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
@@ -36,7 +36,7 @@ class ClaudeSubscriptionUsageTest {
   void answersUnreadableNamingTheRefreshWhenTheTokenIsRefused() {
     ClaudeCredentials credentials = mock(ClaudeCredentials.class);
     UsageEndpoint endpoint = mock(UsageEndpoint.class);
-    when(credentials.read(any())).thenReturn(new OAuthCredential.Token("tok-abc", ""));
+    when(credentials.read(any())).thenReturn(new OauthCredential.Token("tok-abc", ""));
     when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Refused(401, "http 401"));
 
     var answer = new ClaudeSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
@@ -50,7 +50,7 @@ class ClaudeSubscriptionUsageTest {
   void answersNoSubscriptionWithoutCallingTheEndpointForALoginHoldingNone() {
     ClaudeCredentials credentials = mock(ClaudeCredentials.class);
     UsageEndpoint endpoint = mock(UsageEndpoint.class);
-    when(credentials.read(any())).thenReturn(new OAuthCredential.None());
+    when(credentials.read(any())).thenReturn(new OauthCredential.None());
 
     var answer = new ClaudeSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();
 
@@ -65,7 +65,7 @@ class ClaudeSubscriptionUsageTest {
   void asksForANewLoginOnlyWhenTheTokenWasRefused(int status, String cause, String expected) {
     ClaudeCredentials credentials = mock(ClaudeCredentials.class);
     UsageEndpoint endpoint = mock(UsageEndpoint.class);
-    when(credentials.read(any())).thenReturn(new OAuthCredential.Token("tok-abc", ""));
+    when(credentials.read(any())).thenReturn(new OauthCredential.Token("tok-abc", ""));
     when(endpoint.get(any(), anyMap())).thenReturn(new UsageEndpoint.Refused(status, cause));
 
     var answer = new ClaudeSubscriptionUsage(credentials, endpoint, Clock.systemUTC()).read();

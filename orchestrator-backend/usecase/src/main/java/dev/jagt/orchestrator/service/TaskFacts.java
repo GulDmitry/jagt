@@ -16,7 +16,7 @@ public final class TaskFacts {
         task.report().asks()
             ? "; your open question: " + task.message()
             : present(task.message()) ? "; your last report: " + task.message() : "";
-    return (present(task.title()) ? " \u2014 " + task.title() : "")
+    return (present(task.title()) ? " — " + task.title() : "")
         + (present(task.ticketUrl()) ? " (" + task.ticketUrl() + ")" : "")
         + ". On the board: "
         + task.status()

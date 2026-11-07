@@ -71,7 +71,7 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace) {
             .withStopIsTheMasters(StopHold.mayBeLifted(task) && !StopHold.asked(task)),
         Workspace.defaults()
             .withGitStateChanged(task.gitStateChanged())
-            .withRepoRequested(task.asksForARepository())
+            .withRepoRequested(task.asksForRepository())
             .withSeveralRepos(task.repos().size() > 1));
   }
 }

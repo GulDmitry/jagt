@@ -120,12 +120,59 @@ public record TaskView(
     return standing.statusLabel();
   }
 
+  private static String statusLabel(TaskState task, RoundState round) {
+    if (round.masterReading() || StopHold.of(task, round.master()) == StopHold.MASTER) {
+      return "master review";
+    }
+    Optional<String> passer = Checkers.installed().stream().filter(task::passedBy).findFirst();
+    if (passer.isPresent()) {
+      return passer.get() + " passed";
+    }
+    return task.requestsMerged() && FlowRules.awaitsApproval(task.status())
+        ? "merged"
+        : task.status().label();
+  }
+
   public Map<String, String> confirmations() {
     return asking.confirmations();
   }
 
+  private static Map<String, String> confirmations(
+      String id, TaskState task, Map<String, String> deployBranches) {
+    List<String> targets =
+        task.repos().stream()
+            .map(
+                repo -> {
+                  String branch = deployBranches.get(repo.project());
+                  return repo.project()
+                      + " → "
+                      + (branch == null || branch.isBlank()
+                          ? "no deployBranch in jagt.yml"
+                          : branch);
+                })
+            .toList();
+    Map<String, String> confirmations = new LinkedHashMap<>();
+    for (TaskAction action : TaskAction.values()) {
+      action
+          .confirmation(id, targets)
+          .ifPresent(question -> confirmations.put(action.id(), question));
+    }
+    return confirmations;
+  }
+
   public @Nullable String waiting() {
     return asking.waiting();
+  }
+
+  private static @Nullable String waiting(TaskState task) {
+    if (task.report() != AgentReport.WAIT) {
+      return null;
+    }
+    String next =
+        Wake.parse(task.turnOrNone().mark(Wake.MARK))
+            .map(wake -> "\nnext try " + UtcTime.clock(wake.at()))
+            .orElse("");
+    return (task.message() == null ? "waiting" : task.message()) + next;
   }
 
   public Owner owner() {
@@ -338,30 +385,6 @@ public record TaskView(
             deployed));
   }
 
-  private static String statusLabel(TaskState task, RoundState round) {
-    if (round.masterReading() || StopHold.of(task, round.master()) == StopHold.MASTER) {
-      return "master review";
-    }
-    Optional<String> passer = Checkers.installed().stream().filter(task::passedBy).findFirst();
-    if (passer.isPresent()) {
-      return passer.get() + " passed";
-    }
-    return task.requestsMerged() && FlowRules.awaitsApproval(task.status())
-        ? "merged"
-        : task.status().label();
-  }
-
-  private static @Nullable String waiting(TaskState task) {
-    if (task.report() != AgentReport.WAIT) {
-      return null;
-    }
-    String next =
-        Wake.parse(task.turnOrNone().mark(Wake.MARK))
-            .map(wake -> "\nnext try " + UtcTime.clock(wake.at()))
-            .orElse("");
-    return (task.message() == null ? "waiting" : task.message()) + next;
-  }
-
   private static Optional<InfraRetry> awaitingRetry(TaskState task) {
     return Pipeline.of(task.checksRead()) == Pipeline.RED
         ? InfraRetry.pending(task.infraRetries())
@@ -381,29 +404,6 @@ public record TaskView(
     return stop != null && move.primary() == TaskAction.LIFT
         ? move.ask() + " — " + stop.reason()
         : move.ask();
-  }
-
-  private static Map<String, String> confirmations(
-      String id, TaskState task, Map<String, String> deployBranches) {
-    List<String> targets =
-        task.repos().stream()
-            .map(
-                repo -> {
-                  String branch = deployBranches.get(repo.project());
-                  return repo.project()
-                      + " → "
-                      + (branch == null || branch.isBlank()
-                          ? "no deployBranch in jagt.yml"
-                          : branch);
-                })
-            .toList();
-    Map<String, String> confirmations = new LinkedHashMap<>();
-    for (TaskAction action : TaskAction.values()) {
-      action
-          .confirmation(id, targets)
-          .ifPresent(question -> confirmations.put(action.id(), question));
-    }
-    return confirmations;
   }
 
   /**

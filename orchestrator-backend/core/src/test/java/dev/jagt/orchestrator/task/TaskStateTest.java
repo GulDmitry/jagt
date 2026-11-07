@@ -676,7 +676,7 @@ class TaskStateTest {
   void asksForNoRepositoryUntilTheSessionNamesOne() {
     TaskState working = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
 
-    assertThat(working.asksForARepository()).isFalse();
+    assertThat(working.asksForRepository()).isFalse();
   }
 
   @Test
@@ -748,7 +748,7 @@ class TaskStateTest {
 
     TaskState asked = working.withRepoRequest("registry");
 
-    assertThat(asked.asksForARepository()).isTrue();
+    assertThat(asked.asksForRepository()).isTrue();
     assertThat(asked.lastActiveTimestamp()).isEqualTo(7_000);
   }
 

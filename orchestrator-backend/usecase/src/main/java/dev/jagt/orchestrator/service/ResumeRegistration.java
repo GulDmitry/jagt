@@ -84,7 +84,7 @@ public class ResumeRegistration {
     if (asksTheTracker) {
       tickets.charge(taskId, ticket.usage());
     }
-    statusReports.report(FlowRules.resumedOnARequest(), "review request: " + mrUrl, taskId);
+    statusReports.report(FlowRules.resumedOnRequest(), "review request: " + mrUrl, taskId);
     return Launched.created(
         taskId,
         "Resumed "
