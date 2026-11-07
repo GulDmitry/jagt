@@ -11,7 +11,6 @@ const phaseBar = document.getElementById('phases');
 const waitingLabel = document.getElementById('waiting');
 const autoReviewChip = document.getElementById('auto-review');
 const jobsChip = document.getElementById('jobs-pulse');
-const assistantChip = document.getElementById('assistant-down');
 const reachChip = document.getElementById('reach-lost');
 const actChip = document.getElementById('act-stopped');
 const masterChip = document.getElementById('master-mode');
@@ -31,24 +30,13 @@ function renderJobs() {
   jobsChip.dataset.tip = t('header.jobs.tip', {next: due === null ? '-' : left(due)});
 }
 
-// What has stopped is said; the hover names the provider's last error and when the next read probes.
-function renderAssistant() {
-  const down = store.assistant();
-  assistantChip.hidden = !down;
-  if (!down) {
-    return;
-  }
-  const due = down.retryAt - Date.now();
-  assistantChip.textContent = t('assistant');
-  assistantChip.dataset.tip = t('header.assistant.tip', {cause: down.cause, next: left(due)});
-}
-
 function renderReach() {
   const lost = store.reach();
   reachChip.hidden = !lost.length;
   reachChip.disabled = !lost.some((one) => one.fix.length);
   reachChip.textContent = lost.map((one) => one.said).join(' \u00b7 ');
-  reachChip.dataset.tip = lost.map((one) => one.said + (one.fix.length ? `\n${t('header.reach.fix', {fix: one.fix.join(' ')})}` : '')).join('\n')
+  reachChip.dataset.tip = lost.map((one) => one.said + (one.fix.length ? `\n${t('header.reach.fix', {fix: one.fix.join(' ')})}` : '')
+    + (one.retryAt ? `\n${t('header.reach.next', {next: left(one.retryAt - Date.now())})}` : '')).join('\n')
     + `\n${t('header.reach.clears')}`;
 }
 
@@ -75,7 +63,6 @@ export function render(tasks, showing) {
   masterChip.textContent = t('header.master');
   masterChip.dataset.tip = t('header.master.tip');
   renderJobs();
-  renderAssistant();
   renderReach();
   const stop = store.actStop();
   actChip.hidden = !stop;

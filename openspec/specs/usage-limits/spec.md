@@ -184,15 +184,14 @@ as `AssistantUnavailable` naming the last provider error, never queued, never as
 - **AND** a usage limit leaves the session wake path untouched
 
 ### Requirement: The header says when the assistant is unavailable
-While the headless breaker is open or probing, the header SHALL show a `.chip.bad` reading `assistant unavailable`.
-Its hover names the provider's last error and the time to the next probe.
+While the headless breaker is open or probing, jagt's lost reach SHALL hold driver `assistant` on host `local`, saying
+`assistant unavailable: ` and the provider's last error. It SHALL end when the breaker closes. No second mark exists.
 
 #### Scenario: The breaker opens
 - **WHEN** the breaker is open
-- **THEN** the chip shows and the tab icon is red
-- **AND** the chip reuses the mark of `backend unreachable` and a failed job, in that legend row
+- **THEN** the head's one reach mark shows `assistant unavailable: 529 Overloaded` and the tab icon is red
 - **AND** it is not pressable
 
 #### Scenario: The breaker closes
 - **WHEN** a probe read succeeds
-- **THEN** the chip is gone
+- **THEN** the mark is gone

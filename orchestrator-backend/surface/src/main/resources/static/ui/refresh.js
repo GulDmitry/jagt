@@ -24,7 +24,6 @@ export async function refresh() {
       autoReview: {summary: data.autoReview, enabled: data.autoReviewEnabled},
       jobs: data.jobs,
       actStop: data.actStop,
-      assistant: data.assistant,
       reach: data.reach || [],
       masterMode: data.masterMode,
       offers: data.offers || {},

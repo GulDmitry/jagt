@@ -7,7 +7,6 @@ import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.flow.Phase;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.job.Jobs;
-import dev.jagt.orchestrator.port.AssistantHealth;
 import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.service.ActStop;
 import dev.jagt.orchestrator.service.TaskViews;
@@ -45,7 +44,6 @@ public class BoardApiController {
     public record Header(
         Jobs.Summary jobs,
         @Nullable ActStop actStop,
-        AssistantHealth.@Nullable Outage assistant,
         List<ReachLost> reach) {}
 
     public record Choices(
@@ -69,7 +67,6 @@ public class BoardApiController {
         new Board.Header(
             header.summary(),
             snapshot.actStop(),
-            header.assistantOutage().orElse(null),
             header.reachLost()),
         new Board.Choices(BranchStrategy.choices(), Phase.choices()));
   }

@@ -27,7 +27,7 @@ Accepted 2026-10-25. Mechanism superseded by [0086](0086-the-breaker-is-resilien
 - `ProviderFault` reads the result envelope: `is_error` with `terminal_reason: api_error` and an `api_error_status`
   of 500 or more, or none (a refused connection), is a failure; 429 means the provider answered and never counts.
 - A timeout, a spend ceiling, another status or no envelope says nothing and is ignored.
-- `port/AssistantHealth` carries the outage to the board's header chip.
+- The outage is a lost `port/Reach` (driver `assistant`), standing while the breaker is not closed.
 
 ## Rejected
 

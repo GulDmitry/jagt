@@ -1,14 +1,15 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.port.AssistantHealth;
 import dev.jagt.orchestrator.port.AssistantUnavailable;
+import dev.jagt.orchestrator.port.Reach;
+import dev.jagt.orchestrator.port.ReachLost;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig.SlidingWindowType;
 import java.time.Clock;
+import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Slf4j
-class AssistantBreaker implements AssistantHealth {
+class AssistantBreaker {
 
   private static final class ProviderFailure extends RuntimeException {
 
@@ -28,15 +29,19 @@ class AssistantBreaker implements AssistantHealth {
     }
   }
 
+  private static final String DRIVER = "assistant";
+  private static final String HOST = "local";
+
   private final CircuitBreaker breaker;
   private final Clock clock;
+  private final Reach reach;
   private final int threshold;
   private final long cooldownMillis;
   private volatile String cause = "";
-  private volatile long retryAt;
 
-  AssistantBreaker(AssistantProperties assistant, Clock clock) {
+  AssistantBreaker(AssistantProperties assistant, Clock clock, Reach reach) {
     this.clock = clock;
+    this.reach = reach;
     this.threshold = assistant.breakerFailures();
     this.cooldownMillis = assistant.breakerCooldown().toMillis();
     this.breaker =
@@ -80,13 +85,6 @@ class AssistantBreaker implements AssistantHealth {
     breaker.releasePermission();
   }
 
-  @Override
-  public Optional<Outage> outage() {
-    return breaker.getState() == CircuitBreaker.State.CLOSED
-        ? Optional.empty()
-        : Optional.of(new Outage(cause, retryAt));
-  }
-
   private void transitioned(CircuitBreaker.State from, CircuitBreaker.State to) {
     switch (to) {
       case OPEN -> opened(from);
@@ -98,7 +96,14 @@ class AssistantBreaker implements AssistantHealth {
   }
 
   private void opened(CircuitBreaker.State from) {
-    retryAt = clock.instant().toEpochMilli() + cooldownMillis;
+    reach.lost(
+        new ReachLost(
+            DRIVER,
+            HOST,
+            List.of(),
+            "assistant unavailable: " + cause,
+            clock.instant().toEpochMilli() + cooldownMillis),
+        () -> breaker.getState() != CircuitBreaker.State.CLOSED);
     log.atWarn()
         .setMessage(
             from == CircuitBreaker.State.HALF_OPEN
@@ -117,6 +122,7 @@ class AssistantBreaker implements AssistantHealth {
         .addKeyValue("previous", from.name().toLowerCase(Locale.ROOT))
         .addKeyValue("cause", cause)
         .log();
+    reach.reached(DRIVER, HOST);
     cause = "";
   }
 }

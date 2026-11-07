@@ -310,7 +310,6 @@ class TaskEventStreamTest {
                             Clock.systemUTC(),
                             org.mockito.Mockito.mock(
                                 dev.jagt.orchestrator.service.StateService.class)),
-                        org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class),
                         new dev.jagt.orchestrator.service.ReachLedger(),
                         Clock.systemUTC())))
             .build()
@@ -351,7 +350,6 @@ class TaskEventStreamTest {
                             Clock.systemUTC(),
                             org.mockito.Mockito.mock(
                                 dev.jagt.orchestrator.service.StateService.class)),
-                        org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class),
                         new dev.jagt.orchestrator.service.ReachLedger(),
                         Clock.systemUTC())))
             .build()
@@ -392,7 +390,6 @@ class TaskEventStreamTest {
                             Clock.systemUTC(),
                             org.mockito.Mockito.mock(
                                 dev.jagt.orchestrator.service.StateService.class)),
-                        org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class),
                         new dev.jagt.orchestrator.service.ReachLedger(),
                         Clock.systemUTC())))
             .build()

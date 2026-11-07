@@ -48,7 +48,6 @@ class BoardApiControllerTest {
                   org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class),
                   Clock.systemUTC(),
                   org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)),
-              org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class),
               new dev.jagt.orchestrator.service.ReachLedger(),
               Clock.systemUTC()));
 
@@ -149,41 +148,9 @@ class BoardApiControllerTest {
             "autoReviewEnabled",
             "jobs",
             "actStop",
-            "assistant",
             "reach",
             "branchStrategies",
             "phases");
-  }
-
-  @Test
-  void tellsTheBoardWhenTheAssistantIsUnavailable() {
-    var health = org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class);
-    var outage = new dev.jagt.orchestrator.port.AssistantHealth.Outage("529 overloaded", 5_000L);
-    when(health.outage()).thenReturn(java.util.Optional.of(outage));
-    when(taskViews.snapshot())
-        .thenReturn(
-            new TaskViews.Snapshot(
-                List.of(),
-                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60, 240),
-                List.of(),
-                null,
-                "off"));
-    BoardApiController board =
-        new BoardApiController(
-            taskViews,
-            mock(TaskEventStream.class),
-            new GlobalCommands(List.of()),
-            new HeaderState(
-                new Jobs(
-                    List.of(),
-                    org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class),
-                    Clock.systemUTC(),
-                    org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)),
-                health,
-                new dev.jagt.orchestrator.service.ReachLedger(),
-                Clock.systemUTC()));
-
-    assertThat(board.tasks().header().assistant()).isEqualTo(outage);
   }
 
   @Test
@@ -215,7 +182,6 @@ class BoardApiControllerTest {
                     org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class),
                     Clock.systemUTC(),
                     org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)),
-                org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class),
                 reach,
                 Clock.systemUTC()));
 
@@ -237,7 +203,6 @@ class BoardApiControllerTest {
                     org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class),
                     Clock.systemUTC(),
                     org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)),
-                org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class),
                 new dev.jagt.orchestrator.service.ReachLedger(),
                 Clock.systemUTC()));
 
@@ -267,7 +232,6 @@ class BoardApiControllerTest {
                     org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class),
                     Clock.systemUTC(),
                     org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)),
-                org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class),
                 new dev.jagt.orchestrator.service.ReachLedger(),
                 Clock.systemUTC()));
 
@@ -290,7 +254,6 @@ class BoardApiControllerTest {
                     org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class),
                     Clock.systemUTC(),
                     org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)),
-                org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class),
                 new dev.jagt.orchestrator.service.ReachLedger(),
                 Clock.systemUTC()));
 
@@ -353,7 +316,6 @@ class BoardApiControllerTest {
                     org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class),
                     Clock.systemUTC(),
                     org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)),
-                org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class),
                 new dev.jagt.orchestrator.service.ReachLedger(),
                 Clock.systemUTC()));
     TaskView drafted =

@@ -163,10 +163,9 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `CodeHostCommands` | `adapter/codehost/{GitHub,GitLab}Commands` — each code-host CLI's word, read verbs and command groups; `service/ToolGate` judges every one wherever it stands |
 | `RoundReviewer` | `adapter/assistant/ChosenRoundReviewer` choosing a driver by config (`HeadlessClaudeRoundReviewer`, OpenCode), `ReplayRoundReviewer` (a stand recording played back) |
 | `CheckerReader` | `adapter/assistant/ChosenCheckerReader` choosing a driver by config (`HeadlessClaudeCheckerReader`, `OpenCodeCheckerReader`), `ReplayCheckerReader` |
-| `AssistantHealth` | `adapter/assistant/AssistantBreaker` |
 | `EnvironmentProbe` | `adapter/assistant/HttpEnvironmentProbe` |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
-| `Reach` | `service/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login` |
+| `Reach` | `service/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login`; `adapter/assistant/AssistantBreaker` writes the assistant's outage into it |
 | `Notifier` | `adapter/DesktopNotifier`; `notify/Notifications` fans out to every one |
 | `Processes` | `adapter/ProcessRunner` |
 | `Host` | `adapter/SystemHost` — OS name, home, environment, executables on PATH, the running jar |

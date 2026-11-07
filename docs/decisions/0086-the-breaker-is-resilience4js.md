@@ -21,8 +21,8 @@ Accepted 2026-10-25. Resilience4j 2.4.0, current on Maven Central 2026-10-25.
 - `breakerCooldown` is `waitDurationInOpenState`, one permitted call in half-open.
 - `ProviderFault` still decides what counts: only its `FAILED` reaches the breaker as an error, `REACHED` as a success,
   anything else releases the permit and counts as neither.
-- A refused permit throws `port/AssistantUnavailable` with the last provider error; `AssistantHealth` reads the state
-  and the next probe time recorded at the transition to open.
+- A refused permit throws `port/AssistantUnavailable` with the last provider error; a transition to open reports `Reach.lost`
+  with the next probe time, standing while the state is not closed; closing reports `reached`.
 - Each transition is one structured log event with its cause, from the library's event publisher.
 - One difference: the probe is admitted strictly after the cool-down, not at it, one millisecond later.
 

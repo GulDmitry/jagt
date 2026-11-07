@@ -73,7 +73,7 @@ class AssistantProcessTest {
       new AssistantProcess(
           runner,
           new AssistantBreaker(
-              AssistantProperties.empty().withBreakerFailures(3), Clock.systemUTC()));
+              AssistantProperties.empty().withBreakerFailures(3), Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger()));
 
   @Test
   void startsNoProcessOnceThreeProviderFailuresInARowOpenedIt() {
@@ -110,7 +110,8 @@ class AssistantProcessTest {
                 AssistantProperties.empty()
                     .withBreakerFailures(3)
                     .withBreakerCooldown(Duration.ofMinutes(5)),
-                clock));
+                clock,
+                new dev.jagt.orchestrator.service.ReachLedger()));
     when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(OVERLOADED);
     probing.run(CWD, TIMEOUT, List.of("claude"));
     probing.run(CWD, TIMEOUT, List.of("claude"));
@@ -136,7 +137,8 @@ class AssistantProcessTest {
                 AssistantProperties.empty()
                     .withBreakerFailures(3)
                     .withBreakerCooldown(Duration.ofMinutes(5)),
-                clock));
+                clock,
+                new dev.jagt.orchestrator.service.ReachLedger()));
     when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(OVERLOADED);
     probing.run(CWD, TIMEOUT, List.of("claude"));
     probing.run(CWD, TIMEOUT, List.of("claude"));
@@ -160,7 +162,8 @@ class AssistantProcessTest {
                 AssistantProperties.empty()
                     .withBreakerFailures(3)
                     .withBreakerCooldown(Duration.ofMinutes(5)),
-                clock));
+                clock,
+                new dev.jagt.orchestrator.service.ReachLedger()));
     when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(OVERLOADED);
     probing.run(CWD, TIMEOUT, List.of("claude"));
     probing.run(CWD, TIMEOUT, List.of("claude"));

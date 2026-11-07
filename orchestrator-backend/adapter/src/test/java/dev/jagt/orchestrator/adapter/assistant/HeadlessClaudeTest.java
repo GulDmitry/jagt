@@ -58,7 +58,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -89,7 +89,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -109,7 +109,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -158,7 +158,8 @@ class HeadlessClaudeTest {
                 runner,
                 new AssistantBreaker(
                     AssistantProperties.empty().withBreakerFailures(1),
-                    java.time.Clock.systemUTC())),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -187,7 +188,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -209,7 +210,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -234,7 +235,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -256,7 +257,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -286,7 +287,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty()
                 .withMcpConfig(
@@ -315,7 +316,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -338,7 +339,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty().withModel("haiku"),
             mock(UsageTracker.class),
@@ -360,7 +361,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty().withModel(""),
             mock(UsageTracker.class),
@@ -382,7 +383,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -404,7 +405,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -431,7 +432,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -461,7 +462,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -487,7 +488,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -513,7 +514,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -540,7 +541,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -570,7 +571,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -601,7 +602,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -637,7 +638,7 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -679,7 +680,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -710,7 +711,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -740,7 +741,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -772,7 +773,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -806,7 +807,7 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             usage,
@@ -862,7 +863,7 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -893,7 +894,7 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -925,7 +926,7 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -951,7 +952,7 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -999,7 +1000,7 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty().withMaxCostUsd(1.5),
             mock(UsageTracker.class),
@@ -1028,7 +1029,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -1050,7 +1051,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -1072,7 +1073,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -1100,7 +1101,7 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -1125,7 +1126,7 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),

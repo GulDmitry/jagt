@@ -36,7 +36,7 @@ class HeadlessClaudeCheckerReaderTest {
       new HeadlessClaudeCheckerReader(
           new HeadlessClaude(
               new AssistantProcess(
-                  runner, new AssistantBreaker(AssistantProperties.empty(), Clock.systemUTC())),
+                  runner, new AssistantBreaker(AssistantProperties.empty(), Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
               ClaudeProperties.defaults(),
               AssistantProperties.empty(),
               usage,

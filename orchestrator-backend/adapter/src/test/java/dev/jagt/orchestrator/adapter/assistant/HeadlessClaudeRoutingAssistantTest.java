@@ -31,7 +31,7 @@ class HeadlessClaudeRoutingAssistantTest {
           new HeadlessClaude(
               new AssistantProcess(
                   runner,
-                  new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC())),
+                  new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
               ClaudeProperties.defaults(),
               AssistantProperties.empty(),
               mock(UsageTracker.class),

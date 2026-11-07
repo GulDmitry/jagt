@@ -14,7 +14,6 @@ export const phases = () => data.phases;
 export const autoReview = () => data.autoReview;
 export const jobs = () => data.jobs;
 export const actStop = () => data.actStop;
-export const assistant = () => data.assistant;
 export const reach = () => data.reach;
 export const masterMode = () => data.masterMode;
 export const verbs = () => data.verbs;

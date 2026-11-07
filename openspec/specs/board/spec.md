@@ -185,9 +185,9 @@ go through a press's batch and switch. A sighting is logged once per change, nev
 - **WHEN** a task's attention turns REQUIRED, or the hidden failed-jobs chip appears, on a board already painted
 - **THEN** one line holds `shown:required` and its status, or `shown:jobs-failed` and null; further renders add none
 ### Requirement: jagt's lost reach is the board's head
-Where jagt cannot reach a code host it reads, the header SHALL show ONE mark naming driver and host, its hover giving
-the fix command; it replaces the per-card `DEPLOY_UNREAD` stop on that cause and wears the broken colour. `login`, a
-`GlobalCommand`, SHALL open the driver's own login as a window's process, never by keystroke or credential.
+Where jagt cannot reach a code host it reads, the header SHALL show ONE mark naming driver and host. Its hover gives
+the fix command and the time left to the next probe, if scheduled. It replaces the per-card `DEPLOY_UNREAD` stop on that
+cause and wears the broken colour. `login` SHALL open the driver's login as a window's process, never by keystroke.
 #### Scenario: glab is signed out
 - **WHEN** `glab` is signed out of `git.example.invalid` while ABC-42 and ABC-43 are deployed
 - **THEN** no card stops, and the header says `glab not logged in to git.example.invalid`

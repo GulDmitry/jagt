@@ -7,22 +7,26 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.port.AssistantHealth;
 import dev.jagt.orchestrator.port.AssistantUnavailable;
+import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.service.ReachLedger;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class AssistantBreakerTest {
 
   private final Clock clock = mock(Clock.class);
+  private final ReachLedger reach = new ReachLedger();
   private final AssistantBreaker breaker =
       new AssistantBreaker(
           AssistantProperties.empty()
               .withBreakerFailures(3)
               .withBreakerCooldown(Duration.ofMinutes(5)),
-          clock);
+          clock,
+          reach);
 
   @Test
   void staysClosedBelowTheFailureThreshold() {
@@ -30,7 +34,7 @@ class AssistantBreakerTest {
     breaker.failed("529 overloaded");
 
     assertThatCode(breaker::admit).doesNotThrowAnyException();
-    assertThat(breaker.outage()).isEmpty();
+    assertThat(reach.standing()).isEmpty();
   }
 
   @Test
@@ -44,7 +48,14 @@ class AssistantBreakerTest {
         .isInstanceOf(AssistantUnavailable.class)
         .extracting(refused -> ((AssistantUnavailable) refused).lastCause())
         .isEqualTo("529 overloaded");
-    assertThat(breaker.outage()).contains(new AssistantHealth.Outage("529 overloaded", 301_000L));
+    assertThat(reach.standing())
+        .containsExactly(
+            new ReachLost(
+                "assistant",
+                "local",
+                List.of(),
+                "assistant unavailable: 529 overloaded",
+                301_000L));
   }
 
   @Test
@@ -80,7 +91,7 @@ class AssistantBreakerTest {
     breaker.admit();
     breaker.succeeded();
 
-    assertThat(breaker.outage()).isEmpty();
+    assertThat(reach.standing()).isEmpty();
     assertThatCode(breaker::admit).doesNotThrowAnyException();
   }
 
@@ -95,7 +106,27 @@ class AssistantBreakerTest {
 
     breaker.failed("503 unavailable");
 
-    assertThat(breaker.outage()).contains(new AssistantHealth.Outage("503 unavailable", 600_001L));
+    assertThat(reach.standing())
+        .containsExactly(
+            new ReachLost(
+                "assistant",
+                "local",
+                List.of(),
+                "assistant unavailable: 503 unavailable",
+                600_001L));
+  }
+
+  @Test
+  void theReachStaysLostWhileTheProbeIsInFlight() {
+    when(clock.instant()).thenReturn(Instant.ofEpochMilli(0L));
+    breaker.failed("529 overloaded");
+    breaker.failed("529 overloaded");
+    breaker.failed("529 overloaded");
+    when(clock.instant()).thenReturn(Instant.ofEpochMilli(300_001L));
+
+    breaker.admit();
+
+    assertThat(reach.standing()).hasSize(1);
   }
 
   @Test
