@@ -67,7 +67,7 @@ public class GitCommands {
     private Optional<Path> checkoutOf(Path worktree, String branch) {
         Processes.Result listing = run(worktree, List.of("git", "worktree", "list", "--porcelain"));
         Path holder = null;
-        for (String line : listing.stdout().split("\n")) {
+        for (String line : listing.stdout().split("\n", 0)) {
             if (line.startsWith("worktree ")) {
                 holder = Path.of(line.substring("worktree ".length()));
             } else if (line.equals("branch refs/heads/" + branch)) {

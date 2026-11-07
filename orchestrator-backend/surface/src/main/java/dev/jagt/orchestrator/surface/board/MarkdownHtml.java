@@ -90,7 +90,7 @@ final class MarkdownHtml {
     private static boolean marked(Node node, LineChange change) {
         boolean block = node instanceof Heading || node instanceof FencedCodeBlock || node instanceof IndentedCodeBlock
                 || node instanceof TableRow || node instanceof ListItem
-                || node instanceof Paragraph && !(node.getParent() instanceof ListItem);
+                || (node instanceof Paragraph && !(node.getParent() instanceof ListItem));
         Node own = node instanceof ListItem ? node.getFirstChild() : node;
         return block && own != null && own.getSourceSpans().stream()
                 .anyMatch(span -> change.changed().contains(span.getLineIndex()));

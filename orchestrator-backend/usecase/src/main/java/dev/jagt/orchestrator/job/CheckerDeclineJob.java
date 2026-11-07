@@ -64,8 +64,8 @@ public class CheckerDeclineJob implements TaskJob {
         RoleConfig qa = settings.load();
         String role = settings.role().id();
         CheckerPhase reading = CheckerPhase.of(task, role);
-        Optional<CheckerRecords.Record> asked = records.latest(taskId).filter(record -> answered(task, role, record));
-        if (asked.isEmpty() || !qa.enabledOrDefault() || task.worktreePath() == null || task.turnOrNone().open() && reading != CheckerPhase.READING) {
+        Optional<CheckerRecords.Entry> asked = records.latest(taskId).filter(record -> answered(task, role, record));
+        if (asked.isEmpty() || !qa.enabledOrDefault() || task.worktreePath() == null || (task.turnOrNone().open() && reading != CheckerPhase.READING)) {
             return;
         }
         String sha = asked.get().sha();
@@ -79,7 +79,7 @@ public class CheckerDeclineJob implements TaskJob {
     }
 
     /** A round or a first dispute of this deploy stands, and the session replied after it was put. */
-    private static boolean answered(TaskState task, String role, CheckerRecords.Record record) {
+    private static boolean answered(TaskState task, String role, CheckerRecords.Entry record) {
         Deployment deployment = task.deployment();
         return deployment != null && record.digest().equals(deployment.askedDigest()) && task.roundOpen(role)
                 && (record.ending() == QaEnding.NOT_MET || record.ending() == QaEnding.DISPUTED)

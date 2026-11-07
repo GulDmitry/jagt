@@ -46,19 +46,14 @@ public class TmuxReads {
     private final Processes processes;
     private final ToolchainProperties properties;
     private final AtomicLong generation = new AtomicLong();
-    private final ThreadLocal<Tick> tick = new ThreadLocal<>();
+    private final ScopedValue<Tick> tick = ScopedValue.newInstance();
 
     public void once(Runnable reads) {
-        if (tick.get() != null) {
+        if (tick.isBound()) {
             reads.run();
             return;
         }
-        tick.set(new Tick());
-        try {
-            reads.run();
-        } finally {
-            tick.remove();
-        }
+        ScopedValue.where(tick, new Tick()).run(reads);
     }
 
     /** A window opened, closed or pressed, on any thread, outdates what a tick has read. */
@@ -74,7 +69,7 @@ public class TmuxReads {
     }
 
     public List<Window> windows(String session) {
-        Tick scoped = tick.get();
+        Tick scoped = tick.isBound() ? tick.get() : null;
         if (scoped == null) {
             return lines(session, FIELDS).stream().flatMap(line -> window(line).stream()).toList();
         }
@@ -90,7 +85,7 @@ public class TmuxReads {
     }
 
     public boolean hasChildren(String panePid) {
-        Tick scoped = tick.get();
+        Tick scoped = tick.isBound() ? tick.get() : null;
         if (scoped == null) {
             var children = processes.run(null, TIMEOUT, List.of("pgrep", "-P", panePid));
             return children.exitCode() == 0 && !children.stdout().isBlank();

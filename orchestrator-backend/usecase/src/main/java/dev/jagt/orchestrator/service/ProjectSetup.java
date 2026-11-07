@@ -111,7 +111,7 @@ public class ProjectSetup {
         if (remote.exitCode() == 0 && !origin.isBlank()) {
             return new Line(true, "a git repository, origin " + GitRemote.withoutCredentials(origin));
         }
-        if (remote.exitCode() == 0 || remote.exitCode() == 2 && remote.stderr().contains("No such remote")) {
+        if (remote.exitCode() == 0 || (remote.exitCode() == 2 && remote.stderr().contains("No such remote"))) {
             return new Line(false, "no remote named origin");
         }
         return new Line(false, "git could not read the remote of " + path + ": " + firstLine(remote.stderr()));

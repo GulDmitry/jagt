@@ -22,7 +22,7 @@ record HostAddress(String hostname, String project, String id) {
         if (uri.getHost() == null || at <= 1) {
             return Optional.empty();
         }
-        String id = path.substring(at + marker.length()).split("/")[0];
+        String id = path.substring(at + marker.length()).split("/", 2)[0];
         return id.isBlank() ? Optional.empty()
                 : Optional.of(new HostAddress(authority(uri, keepsPort), path.substring(1, at).replaceAll("/-$", ""), id));
     }

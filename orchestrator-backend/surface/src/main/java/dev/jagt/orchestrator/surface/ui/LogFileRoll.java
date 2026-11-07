@@ -24,7 +24,7 @@ public class LogFileRoll implements ApplicationListener<ApplicationEnvironmentPr
         apply(event.getEnvironment());
     }
 
-    /** @return whether this run rolled the log; false means it deliberately left the file alone. */
+    /** Whether this run rolled the log; false means it deliberately left the file alone. */
     boolean apply(ConfigurableEnvironment environment) {
         List<String> configured = Stream.of("logging.file.name", "logging.master.name")
                 .map(key -> environment.getProperty(key, ""))

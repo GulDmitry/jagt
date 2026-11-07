@@ -7,6 +7,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /** A task as a file holds it, the current keys and every older one, until {@link #read()} makes the one value. */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -79,7 +80,7 @@ record StoredTask(
         TaskState read = new TaskState(stored.stream().map(LegacyDeployment.Repo::repo).toList(), migratedStanding(), ticket,
                 migratedRound(), migratedChecks(), gate, migratedWork());
         Deployment migrated = LegacyDeployment.of(read, stored, unmigrated.conflict());
-        return migrated == work.deployment() ? read : read.toBuilder().deployment(migrated).build();
+        return Objects.equals(migrated, work.deployment()) ? read : read.toBuilder().deployment(migrated).build();
     }
 
     private TaskState.Standing migratedStanding() {

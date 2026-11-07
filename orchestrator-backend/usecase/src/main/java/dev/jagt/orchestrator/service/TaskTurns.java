@@ -133,7 +133,7 @@ public class TaskTurns {
         stateService.updateTask(stateService.canonicalTaskId(taskId), task -> task.withoutMark(step));
     }
 
-    /** The question standing on the task, as {@link #UNANSWERED} records it. */
+    /** The question standing on the task, as the Master's {@code unanswered} mark records it. */
     public static String asked(TaskState task) {
         return task.askedDigest();
     }

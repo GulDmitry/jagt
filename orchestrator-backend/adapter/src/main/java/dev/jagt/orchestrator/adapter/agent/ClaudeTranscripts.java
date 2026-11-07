@@ -11,9 +11,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -141,8 +141,8 @@ final class ClaudeTranscripts {
         }
         JsonNode entry = JSON.readTree(line);
         String type = entry.path("type").asString("");
-        return "assistant".equals(type) && "end_turn".equals(entry.path("message").path("stop_reason").asString(""))
-                || "system".equals(type) && "turn_duration".equals(entry.path("subtype").asString(""));
+        return ("assistant".equals(type) && "end_turn".equals(entry.path("message").path("stop_reason").asString("")))
+                || ("system".equals(type) && "turn_duration".equals(entry.path("subtype").asString("")));
     }
 
     /** The newest conversation's last human prompts and model text, oldest first; the oldest is cut to fit. */
@@ -159,7 +159,7 @@ final class ClaudeTranscripts {
                     .addKeyValue("cause", unreadable.toString()).log();
             return Optional.empty();
         }
-        LinkedList<String> kept = new LinkedList<>();
+        ArrayDeque<String> kept = new ArrayDeque<>();
         int left = maxChars;
         for (int at = said.size() - 1; at >= 0 && left > 0; at--) {
             String entry = said.get(at);

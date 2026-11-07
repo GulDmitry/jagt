@@ -159,3 +159,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0143 Checkstyle gates parameter and component counts](0143-checkstyle-gates-parameter-and-component-counts.md)
 - [0144 What was told once is one ledger, written by the reducer](0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md) (extends 0076)
 - [0145 jagt's own records roll themselves](0145-jagts-own-records-roll-themselves.md)
+- [0146 Error Prone gates its default checks in main](0146-error-prone-gates-its-default-checks-in-main.md) (extends 0143)

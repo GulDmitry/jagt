@@ -66,7 +66,7 @@ final class GitStates {
         String listed = git.run(common, List.of("git", "config", "--file", file.toString(), "--list", "-z"))
                 .expectSuccess("git config --list of " + file).stdout();
         Map<String, List<String>> values = new TreeMap<>();
-        for (String entry : listed.split("\0")) {
+        for (String entry : listed.split("\0", 0)) {
             int split = entry.indexOf('\n');
             String key = split < 0 ? entry : entry.substring(0, split);
             if (!key.isBlank()) {

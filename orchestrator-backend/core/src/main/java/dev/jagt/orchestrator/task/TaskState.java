@@ -678,8 +678,10 @@ public record TaskState(
         return toBuilder().baseBranch(baseBranch).build();
     }
 
-    /** Does NOT touch lastActiveTimestamp: the gate moves by a human's word or by the session declaring no plan. */
-    /** What the session judged, merged over what it judged before: the last word on a switch stands. */
+    /**
+     * What the session judged, merged over what it judged before: the last word on a switch stands.
+     * Does NOT touch lastActiveTimestamp: the gate moves by a human's word or by the session declaring no plan.
+     */
     public TaskState judged(Map<String, String> judged) {
         if (judged.isEmpty()) {
             return this;

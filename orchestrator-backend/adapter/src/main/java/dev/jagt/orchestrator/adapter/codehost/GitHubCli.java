@@ -73,7 +73,7 @@ public class GitHubCli implements CodeHostDriver {
     public Answer<List<String>> unresolvedNotes(HostSettings host, String requestUrl) {
         return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, false).map(address -> cli.parsed(
                 cli.run(address.hostname(), List.of("api", "graphql", "--hostname", address.hostname(),
-                        "-f", "query=" + THREADS_QUERY, "-f", "owner=" + address.project().split("/")[0],
+                        "-f", "query=" + THREADS_QUERY, "-f", "owner=" + address.project().split("/", 2)[0],
                         "-f", "name=" + address.project().substring(address.project().indexOf('/') + 1),
                         "-F", "number=" + address.id())), GitHubCli::unresolved))
                 .orElseGet(() -> HostCli.notARequest(requestUrl));
@@ -142,7 +142,7 @@ public class GitHubCli implements CodeHostDriver {
             String status = run.path("status").asString("");
             String said = "completed".equals(status) ? run.path("conclusion").asString("") : status;
             CommitPipeline read = new CommitPipeline(verdict(said), run.path("url").asString(""));
-            if (worst == NO_PIPELINE || Pipeline.of(read.status()).severity() < Pipeline.of(worst.status()).severity()) {
+            if (worst.equals(NO_PIPELINE) || Pipeline.of(read.status()).severity() < Pipeline.of(worst.status()).severity()) {
                 worst = read;
             }
         }

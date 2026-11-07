@@ -251,7 +251,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
 
     private static Optional<Set<AgentReport>> kinds(String list) {
         Set<AgentReport> kinds = EnumSet.noneOf(AgentReport.class);
-        for (String name : list.split(",")) {
+        for (String name : list.split(",", 0)) {
             Optional<AgentReport> kind = Arrays.stream(AgentReport.values())
                     .filter(value -> Replies.kind(value).equals(name.strip())).findFirst();
             if (kind.isEmpty()) {
@@ -273,7 +273,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
 
     private static Optional<Set<TaskStatus>> named(String list) {
         Set<TaskStatus> statuses = EnumSet.noneOf(TaskStatus.class);
-        for (String name : list.split(",")) {
+        for (String name : list.split(",", 0)) {
             Optional<TaskStatus> status = Arrays.stream(TaskStatus.values())
                     .filter(value -> value.name().equals(name.strip())).findFirst();
             if (status.isEmpty()) {

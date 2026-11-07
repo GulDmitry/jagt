@@ -231,7 +231,6 @@ public class FlowReports {
         });
     }
 
-    /** The deploy's check recorded as asked on the facts of {@code digest}, so the session is not asked again. */
     /** Marks {@code bare} as the landed targets that settled with no pipeline listed; a target listed since is cleared. */
     public void deployBare(String taskId, List<String> bare) {
         tasks.updateTask(taskId, task -> TaskReducer.deployStepped(task, new DeployStep.Bare(bare), clock.millis()));

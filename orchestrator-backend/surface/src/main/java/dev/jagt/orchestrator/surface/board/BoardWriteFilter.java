@@ -29,7 +29,7 @@ public class BoardWriteFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         boolean resolved = path.equals(request.getServletPath() + Objects.toString(request.getPathInfo(), ""));
         return "GET".equals(request.getMethod()) || "HEAD".equals(request.getMethod())
-                || resolved && (path.equals("/mcp") || path.startsWith("/api/agent/"));
+                || (resolved && (path.equals("/mcp") || path.startsWith("/api/agent/")));
     }
 
     @Override

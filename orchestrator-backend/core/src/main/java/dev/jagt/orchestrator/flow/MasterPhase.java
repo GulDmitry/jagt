@@ -9,9 +9,9 @@ public enum MasterPhase {
 
     public static MasterPhase of(TaskState task) {
         Master master = task.masterOrNone();
-        if (!master.left().isEmpty() || task.report().asks() && master.unanswered().equals(task.askedDigest())
-                || FlowRules.deployedByTheMaster(task.status())
-                && master.pressedDeploy().equals(String.valueOf(task.statusSince()))) {
+        if (!master.left().isEmpty() || (task.report().asks() && master.unanswered().equals(task.askedDigest()))
+                || (FlowRules.deployedByTheMaster(task.status())
+                && master.pressedDeploy().equals(String.valueOf(task.statusSince())))) {
             return LEFT;
         }
         return readTheRoundInFront(task) ? READ : STANDS_IN;

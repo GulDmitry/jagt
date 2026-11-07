@@ -219,8 +219,8 @@ public class TaskStops {
     /** Equal for one round read twice, the brief's wording aside; empty where a fact it turns on is unknown. */
     private static String factKey(ReviewFacts facts, String failing, String notes, String tip) {
         boolean red = Pipeline.of(facts.pipeline().status()) == Pipeline.RED;
-        boolean unknown = red && (failing.isBlank() || tip.isBlank())
-                || !facts.discussion().threads().isEmpty() && notes.isBlank() || !red && facts.discussion().threads().isEmpty();
+        boolean unknown = (red && (failing.isBlank() || tip.isBlank()))
+                || (!facts.discussion().threads().isEmpty() && notes.isBlank()) || (!red && facts.discussion().threads().isEmpty());
         return unknown ? "" : (red ? failing + "@" + tip : "") + "\n" + notes;
     }
 

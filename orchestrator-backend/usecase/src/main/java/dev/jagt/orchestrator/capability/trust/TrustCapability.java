@@ -33,7 +33,7 @@ public class TrustCapability implements TaskCapability {
 
     private boolean answer(String taskId) {
         Standing read = relay.standing(taskId);
-        return read.status() != null && FlowRules.awaitsItsInstruction(read.status())
+        return (read.status() != null && FlowRules.awaitsItsInstruction(read.status()))
                 ? relay.relayUnder(taskId, Step.ANSWERED_UNDER, TRUSTED, false, read)
                 : relay.relay(taskId, Step.ANSWERED, TRUSTED, read);
     }

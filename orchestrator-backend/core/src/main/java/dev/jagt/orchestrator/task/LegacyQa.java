@@ -24,8 +24,8 @@ final class LegacyQa {
     }
 
     static @Nullable Turn withoutMarks(@Nullable Turn turn) {
-        if (turn == null || !turn.marks().containsKey(PASSED) && !turn.marks().containsKey(DIGEST)
-                && !turn.marks().containsKey(ROWS)) {
+        if (turn == null || (!turn.marks().containsKey(PASSED) && !turn.marks().containsKey(DIGEST)
+                && !turn.marks().containsKey(ROWS))) {
             return turn;
         }
         Map<String, String> kept = new HashMap<>(turn.marks());

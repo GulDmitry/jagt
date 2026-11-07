@@ -107,6 +107,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
                 return eventsOf(desktop);
             }
 
+            @Override
             public ChannelConfig channel() {
                 return channel == null ? ChannelConfig.defaults() : channel;
             }
@@ -641,7 +642,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         /** Whether the project has no code host: it has no remote, or its {@code codeHost} says none. */
         public boolean hasNoCodeHost(String project) {
             ProjectConfig declared = projects.get(project);
-            return declared != null && declared.gitRemote().local()
+            return (declared != null && declared.gitRemote().local())
                     || codeHostNamed(project).filter(ProjectConfig.NO_CODE_HOST::equalsIgnoreCase).isPresent();
         }
 

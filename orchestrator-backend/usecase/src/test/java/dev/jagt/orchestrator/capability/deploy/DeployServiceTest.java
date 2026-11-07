@@ -49,7 +49,7 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         GitDeploy git = mock(GitDeploy.class);
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -69,7 +69,7 @@ class DeployServiceTest {
         GitDeploy git = mock(GitDeploy.class);
         when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"))).thenThrow(
                 new GitDeploy.ForeignDeployWorktreeException(Path.of("/repos/ABC-1-deploy"), Path.of("/repos/x")));
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -88,7 +88,7 @@ class DeployServiceTest {
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         GitDeploy git = mock(GitDeploy.class);
         when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"))).thenReturn("cafebabe1234");
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -108,7 +108,7 @@ class DeployServiceTest {
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         GitDeploy git = mock(GitDeploy.class);
         when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"))).thenReturn("cafebabe1234");
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -134,7 +134,7 @@ class DeployServiceTest {
         when(git.hasDeployWorktree(Path.of("/repo"), "ABC-1")).thenReturn(true);
         when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"))).thenReturn("f1xf1x5678");
         when(git.isFix(any(), eq("f1xf1x5678"))).thenReturn(true);
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -160,7 +160,7 @@ class DeployServiceTest {
         GitDeploy git = mock(GitDeploy.class);
         when(git.hasDeployWorktree(Path.of("/repo"), "ABC-1")).thenReturn(true);
         when(git.deployResolved(Path.of("/repo"), "ABC-1", "dev")).thenReturn(false);
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -187,7 +187,7 @@ class DeployServiceTest {
         Path deployWorktree = root.resolve("ABC-1-deploy");
         doThrow(new GitDeploy.MergeConflictException("ABC-1", "dev", "conflict in schema.yaml", deployWorktree))
                 .when(git).mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"));
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -209,7 +209,7 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/release", "release", null));
         GitDeploy git = mock(GitDeploy.class);
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -228,7 +228,7 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", null, null));
         GitDeploy git = mock(GitDeploy.class);
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -250,7 +250,7 @@ class DeployServiceTest {
         GitDeploy git = mock(GitDeploy.class);
         when(git.mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev")).thenReturn("cafebabe1234");
         when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -276,7 +276,7 @@ class DeployServiceTest {
         Path deployWorktree = root.resolve("ABC-1-deploy");
         doThrow(new GitDeploy.MergeConflictException("ABC-1", "dev", "conflict in Widget.java", deployWorktree))
                 .when(git).mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -303,7 +303,7 @@ class DeployServiceTest {
         GitDeploy git = mock(GitDeploy.class);
         doThrow(new GitDeploy.MergeConflictException("ABC-1", "dev", "conflict", root.resolve("ABC-1-deploy")))
                 .when(git).mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev");
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -324,7 +324,7 @@ class DeployServiceTest {
         GitDeploy git = mock(GitDeploy.class);
         when(git.hasDeployWorktree(Path.of("/repo/web"), "ABC-1")).thenReturn(true);
         when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"))).thenReturn("cafebabe1234");
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -348,7 +348,7 @@ class DeployServiceTest {
         GitDeploy git = mock(GitDeploy.class);
         when(git.hasDeployWorktree(Path.of("/repo/web"), "ABC-1")).thenReturn(true);
         when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -373,7 +373,7 @@ class DeployServiceTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", new ProjectConfig("/repo/api", "origin/main", "dev", null), "web", new ProjectConfig("/repo/web", "origin/main", "dev", null))));
         GitDeploy git = mock(GitDeploy.class);
         when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -402,7 +402,7 @@ class DeployServiceTest {
                 "api", new ProjectConfig("/repo/api", "origin/main", "dev", null),
                 "web", new ProjectConfig("/repo/web", "origin/main", "dev", null))));
         GitDeploy git = mock(GitDeploy.class);
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -425,7 +425,7 @@ class DeployServiceTest {
         doThrow(new GitDeploy.NothingToDeployException("ABC-1", "dev"))
                 .when(git).mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev");
         when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -448,7 +448,7 @@ class DeployServiceTest {
         GitDeploy git = mock(GitDeploy.class);
         doThrow(new GitDeploy.NothingToDeployException("ABC-1", "dev"))
                 .when(git).mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"));
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -471,7 +471,7 @@ class DeployServiceTest {
         when(git.mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev")).thenReturn("cafebabe1234");
         doThrow(new IllegalStateException("Deploy push to dev was rejected"))
                 .when(git).mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -496,7 +496,7 @@ class DeployServiceTest {
         GitDeploy git = mock(GitDeploy.class);
         when(git.mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev")).thenReturn("cafebabe1234");
         doThrow(new NullPointerException()).when(git).mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -516,7 +516,7 @@ class DeployServiceTest {
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", null, null));
         GitDeploy git = mock(GitDeploy.class);
-        DeployTargets targets = new DeployTargets(config, git);
+        DeployTargets targets = new DeployTargets(config);
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 
@@ -532,7 +532,7 @@ class DeployServiceTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         GitDeploy git = mock(GitDeploy.class);
-        DeployTargets targets = new DeployTargets(mock(ConfigService.class), git);
+        DeployTargets targets = new DeployTargets(mock(ConfigService.class));
         DeployService deploys = new DeployService(state, targets, git,
                 new DeployRunner(state, targets, git, Clock.systemUTC()));
 

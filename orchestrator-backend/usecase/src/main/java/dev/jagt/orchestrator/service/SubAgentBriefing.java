@@ -27,11 +27,11 @@ public class SubAgentBriefing {
                      ConfigService.ConfigFile.DiagnoseConfig diagnose) {
         String taskId = request.taskId();
         String switches = switches(request, autoplan, visualize, diagnose);
-        return TASK.formatted(taskId, taskId, repo.project(), repo.config().path(), repo.baseBranch(),
+        return task(taskId, taskId, repo.project(), repo.config().path(), repo.baseBranch(),
                         repo.remoteUrl(), repo.worktreePath(), alsoYours(repo, repos) + deployWorktrees(taskId, repos))
                 + brief.section(Step.CONTEXT).filter(context -> !context.isBlank()).map(context -> context + "\n\n")
                         .orElse("")
-                + HARD_SAFETY.formatted(taskId, baseBranches(repos), deployBranches(repos))
+                + hardSafety(taskId, baseBranches(repos), deployBranches(repos))
                 + (switches.isBlank() ? "" : "\n\n<switches>\n" + switches.strip() + "\n</switches>");
     }
 
@@ -40,7 +40,7 @@ public class SubAgentBriefing {
                             ConfigService.ConfigFile.VisualizeConfig visualize,
                             ConfigService.ConfigFile.DiagnoseConfig diagnose) {
         String switches = switches(request, autoplan, visualize, diagnose);
-        return SCRATCH.formatted(request.taskId(), request.taskId())
+        return scratch(request.taskId(), request.taskId())
                 + brief.section(Step.CONTEXT).filter(context -> !context.isBlank()).map(context -> context + "\n\n")
                         .orElse("")
                 + SCRATCH_SAFETY
@@ -56,7 +56,8 @@ public class SubAgentBriefing {
                         .withVisualize(visualize).withDiagnose(diagnose).switchesOn());
     }
 
-    private static final String SCRATCH = """
+    private static String scratch(Object... values) {
+        return """
             <role>
             You are the jagt worker agent for task %s, in a scratch folder. No preamble.
             </role>
@@ -71,7 +72,8 @@ public class SubAgentBriefing {
             - `task_request.md`, if present: the request the task opened with, never overwritten.
             </task>
 
-            """;
+            """.formatted(values);
+    }
 
     private static final String SCRATCH_SAFETY = """
             <hard_safety>
@@ -79,7 +81,8 @@ public class SubAgentBriefing {
             code waits for the approved plan, which cuts a worktree per repository it names.
             </hard_safety>""";
 
-    private static final String TASK = """
+    private static String task(Object... values) {
+        return """
             <role>
             You are the jagt worker agent for task %s, in this Git worktree. No preamble.
             </role>
@@ -94,10 +97,12 @@ public class SubAgentBriefing {
             - `task_request.md`, if present: the request the task opened with, never overwritten.
             </task>
 
-            """;
+            """.formatted(values);
+    }
 
     /** jagt's, not the brief's: a human's copy of the brief cannot loosen what its guards enforce. */
-    private static final String HARD_SAFETY = """
+    private static String hardSafety(Object... values) {
+        return """
             <hard_safety>
             No `git merge` or `cherry-pick`; push only to `%s`. No rewriting pushed history (`--force`, `--amend`,
             `reset --hard`): fix with a new commit. The one exception: `git rebase` this branch onto its request's target
@@ -106,7 +111,8 @@ public class SubAgentBriefing {
             to write one: refuse and call `notify_user`. Work this task needs is done here, on this branch; a repository
             it lacks: rule 1 with `needsProject` set to that project's key (`list_projects`), then stop; jagt adds it.
             Never push another branch, nor hand the human a push.
-            </hard_safety>""";
+            </hard_safety>""".formatted(values);
+    }
 
     private static String planFirstSentence(@Nullable String mode) {
         return "plan".equalsIgnoreCase(mode)

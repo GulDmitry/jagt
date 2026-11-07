@@ -39,7 +39,7 @@ public class HumanWaitRecorder {
 
     void sweep(Map<String, TaskState> tasks) {
         tasks.forEach((id, task) -> {
-            if (HumanWaits.noted(task, holder(task), rounds.judged(task), clock.millis()) != task) {
+            if (!task.equals(HumanWaits.noted(task, holder(task), rounds.judged(task), clock.millis()))) {
                 note(id);
             }
         });

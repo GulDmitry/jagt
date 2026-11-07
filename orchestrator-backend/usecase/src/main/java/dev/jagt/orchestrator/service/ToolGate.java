@@ -29,8 +29,6 @@ public final class ToolGate {
     private static final Pattern DELETE = Pattern.compile("--d(e(l(e(te?)?)?)?)?|-[a-zA-Z]*d[a-zA-Z]*");
     /** What the branch a worktree is on is called, so a push of it is a push of the task's branch. */
     private static final String CURRENT_BRANCH = "HEAD";
-    /** The board acts as the human, and the token as the Master: neither is a session's to reach. */
-    private static final String BOARD = "(?i):0*%d\\b|master-token|mcp_client\\.js";
     private static final Pattern QUOTING = Pattern.compile("[\\\\'\"]");
     private static final Pattern ESCAPED = Pattern.compile("\\\\(.)");
     private static final Pattern WHITESPACE = Pattern.compile("\\s+");
@@ -58,10 +56,11 @@ public final class ToolGate {
     private ToolGate() {
     }
 
+    /** The board acts as the human, and the token as the Master: neither is a session's to reach. */
     private static Pattern board(int port) {
         BoardPattern last = board;
         if (last == null || last.port() != port) {
-            last = new BoardPattern(port, Pattern.compile(BOARD.formatted(port)));
+            last = new BoardPattern(port, Pattern.compile("(?i):0*%d\\b|master-token|mcp_client\\.js".formatted(port)));
             board = last;
         }
         return last.pattern();
@@ -221,7 +220,7 @@ public final class ToolGate {
         for (String raw : arguments) {
             String argument = unquoted(raw);
             boolean quoted = !argument.equals(raw);
-            if (argument.isBlank() || !quoted && argument.startsWith("#")) {
+            if (argument.isBlank() || (!quoted && argument.startsWith("#"))) {
                 break;
             }
             if (redirectTarget) {
@@ -257,7 +256,7 @@ public final class ToolGate {
 
     private static boolean writes(String refspec, String taskBranch, boolean headIsTheTask) {
         String destination = destinationOf(refspec);
-        return destination.equals(taskBranch) || headIsTheTask && refspec.equals(CURRENT_BRANCH);
+        return destination.equals(taskBranch) || (headIsTheTask && refspec.equals(CURRENT_BRANCH));
     }
 
     private static String destinationOf(String refspec) {

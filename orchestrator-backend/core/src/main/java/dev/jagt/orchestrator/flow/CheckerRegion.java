@@ -100,7 +100,7 @@ record CheckerRegion(CheckerRole role) implements Role {
     private boolean endsATurn(TaskMove move) {
         return move instanceof TaskMove.Relayed || move instanceof TaskMove.TurnClosed
                 || move instanceof TaskMove.TurnRestored
-                || move instanceof TaskMove.Checked.ReadEnded ended && id().equals(ended.role());
+                || (move instanceof TaskMove.Checked.ReadEnded ended && id().equals(ended.role()));
     }
 
     private boolean ownsAndStands(String role, boolean stands) {

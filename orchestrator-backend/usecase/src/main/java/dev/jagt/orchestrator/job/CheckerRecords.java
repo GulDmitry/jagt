@@ -23,13 +23,13 @@ public class CheckerRecords {
     private static final String TAB = "\t";
 
     /** {@code digest} is the deploy's, {@code sha} what the check read, {@code at} when it ended. */
-    public record Record(String digest, String sha, QaEnding ending, long at) {
+    public record Entry(String digest, String sha, QaEnding ending, long at) {
     }
 
     private final OrchestratorPaths paths;
     private final Clock clock;
 
-    public synchronized Optional<Record> latest(String taskId) {
+    public synchronized Optional<Entry> latest(String taskId) {
         return Optional.ofNullable(all().get(taskId));
     }
 
@@ -40,8 +40,8 @@ public class CheckerRecords {
 
     /** The environment answered: the waiting check is no longer held and runs again. */
     public synchronized void released(String taskId, String digest) {
-        Map<String, Record> kept = all();
-        Record record = kept.get(taskId);
+        Map<String, Entry> kept = all();
+        Entry record = kept.get(taskId);
         if (record != null && record.digest().equals(digest) && record.ending() == QaEnding.WAITING) {
             kept.remove(taskId);
             write(kept);
@@ -49,12 +49,12 @@ public class CheckerRecords {
     }
 
     public synchronized void put(String taskId, String digest, String sha, QaEnding ending) {
-        Map<String, Record> kept = all();
-        kept.put(taskId, new Record(digest, sha, ending, clock.millis()));
+        Map<String, Entry> kept = all();
+        kept.put(taskId, new Entry(digest, sha, ending, clock.millis()));
         write(kept);
     }
 
-    private void write(Map<String, Record> kept) {
+    private void write(Map<String, Entry> kept) {
         try {
             Files.write(paths.qaVerdicts(), kept.entrySet().stream().map(entry -> entry.getKey() + TAB
                     + entry.getValue().digest() + TAB + entry.getValue().sha() + TAB + entry.getValue().ending()
@@ -65,12 +65,12 @@ public class CheckerRecords {
         }
     }
 
-    private Map<String, Record> all() {
-        Map<String, Record> read = new LinkedHashMap<>();
+    private Map<String, Entry> all() {
+        Map<String, Entry> read = new LinkedHashMap<>();
         for (String line : lines()) {
-            String[] part = line.split(TAB);
+            String[] part = line.split(TAB, 0);
             if (part.length == 5) {
-                read.put(part[0], new Record(part[1], part[2], QaEnding.valueOf(part[3]), Long.parseLong(part[4])));
+                read.put(part[0], new Entry(part[1], part[2], QaEnding.valueOf(part[3]), Long.parseLong(part[4])));
             }
         }
         return read;

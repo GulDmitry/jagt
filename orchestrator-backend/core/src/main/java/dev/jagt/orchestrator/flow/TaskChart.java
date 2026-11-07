@@ -17,10 +17,12 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static dev.jagt.orchestrator.task.TaskStatus.*;
 
@@ -96,12 +98,13 @@ final class TaskChart {
             AgentReport.PERMISSION);
 
     private record Assembled(Composition composition, Chart<TaskMove, ChartFacts, TaskEffect> chart,
-                             List<Configuration> starts) {
+                             Map<TaskStatus, Configuration> starts) {
 
         static Assembled of(Composition composition) {
             Chart<TaskMove, ChartFacts, TaskEffect> chart = build(composition);
             return new Assembled(composition, chart, Arrays.stream(TaskStatus.values())
-                    .map(status -> configurationOf(chart, composition, Phases.at(status))).toList());
+                    .collect(Collectors.toUnmodifiableMap(status -> status,
+                            status -> configurationOf(chart, composition, Phases.at(status)))));
         }
     }
 
@@ -154,7 +157,7 @@ final class TaskChart {
     /** Whether a task at {@code status} with {@code facts} may be offered {@code action}. */
     static boolean offers(TaskStatus status, TaskAction action, Facts facts) {
         Assembled now = current;
-        return now.chart().takes(LIFECYCLE, now.starts().get(status.ordinal()),
+        return now.chart().takes(LIFECYCLE, Objects.requireNonNull(now.starts().get(status)),
                 new ChartFacts(false, Map.of(), facts), new TaskMove.Offers(action));
     }
 
@@ -549,8 +552,8 @@ final class TaskChart {
     }
 
     private static boolean completesMerge(TaskMove move) {
-        return move instanceof TaskMove.MergedByHost host && host.completes()
-                || move instanceof TaskMove.MergedByGit git && git.completes();
+        return (move instanceof TaskMove.MergedByHost host && host.completes())
+                || (move instanceof TaskMove.MergedByGit git && git.completes());
     }
 
     private static TaskEffect linksRequests(TaskMove move) {

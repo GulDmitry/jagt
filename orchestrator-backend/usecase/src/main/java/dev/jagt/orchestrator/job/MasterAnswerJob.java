@@ -71,11 +71,11 @@ public class MasterAnswerJob implements Job {
     /** A question no answer came back for is not asked again, nor after a restart; a new one is. */
     private static boolean answers(TaskState task, Arbiter.Profile profile) {
         return Move.asking(task.status(), task.report())
-                && Turns.next(task.status(), task.report(), task.stopped(), Checkers.of(task), profile) == Turn.Holder.ARBITER
+                && Turns.next(task.status(), task.report(), task.stopped(), Checkers.of(task), profile).equals(Turn.Holder.ARBITER)
                 && !task.masterOrNone().unanswered().equals(task.askedDigest());
     }
 
-    private void unanswered(String taskId, TaskState task) {
+    private void unanswered(String taskId) {
         turns.unanswered(taskId);
     }
 
@@ -100,7 +100,7 @@ public class MasterAnswerJob implements Job {
                     .addKeyValue("cause", humans.get())
                     .addKeyValue("effect", "no answer is written here")
                     .log();
-            unanswered(taskId, task);
+            unanswered(taskId);
             return;
         }
         int given = verdicts.answersOverThisTree(task);
@@ -110,7 +110,7 @@ public class MasterAnswerJob implements Job {
                     .addKeyValue("cause", "answers over a tree nothing changed in")
                     .addKeyValue("effect", "the question waits for the human")
                     .log();
-            unanswered(taskId, task);
+            unanswered(taskId);
             return;
         }
         // Answers nothing acted on change the approach, in the same session.
@@ -123,7 +123,7 @@ public class MasterAnswerJob implements Job {
                 log.atWarn().setMessage("master answer unusable").addKeyValue("task", taskId)
                         .addKeyValue("effect", "the question waits for the human")
                         .log();
-                unanswered(taskId, task);
+                unanswered(taskId);
             }
         } catch (TaskMovedOn dropped) {
             return;

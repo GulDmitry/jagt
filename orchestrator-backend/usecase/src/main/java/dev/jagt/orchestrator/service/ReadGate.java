@@ -41,7 +41,7 @@ public final class ReadGate {
                                            @Nullable String cwd) {
         List<String> allowing = read.tools().stream().filter(named -> names(named, tool)).toList();
         if (allowing.contains(tool)
-                || !allowing.isEmpty() && read.writes().stream().noneMatch(write -> names(write, tool))) {
+                || (!allowing.isEmpty() && read.writes().stream().noneMatch(write -> names(write, tool)))) {
             return Optional.empty();
         }
         Map<String, Object> arguments = input == null ? Map.of() : input;
@@ -73,8 +73,8 @@ public final class ReadGate {
 
     private static Optional<String> fetchRefusal(ReadScope read, String url) {
         boolean listed = read.fetchable().stream().anyMatch(environment -> url.equals(environment)
-                || url.startsWith(environment) && "/?#".indexOf(url.charAt(environment.length())) >= 0
-                || url.startsWith(environment) && environment.endsWith("/"));
+                || (url.startsWith(environment) && "/?#".indexOf(url.charAt(environment.length())) >= 0)
+                || (url.startsWith(environment) && environment.endsWith("/")));
         return listed ? Optional.empty()
                 : Optional.of("jagt refuses fetching " + url + ": a read reaches only the environments the role names.");
     }

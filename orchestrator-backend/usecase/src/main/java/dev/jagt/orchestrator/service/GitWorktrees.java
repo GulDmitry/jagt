@@ -214,7 +214,7 @@ public class GitWorktrees {
         }
         String[] counted = git.run(projectPath, List.of("git", "rev-list", "--left-right",
                         "--count", remote.track(branch) + "..." + branch))
-                .expectSuccess("git rev-list --count " + branch).stdout().strip().split("\\s+");
+                .expectSuccess("git rev-list --count " + branch).stdout().strip().split("\\s+", 0);
         long behind = Long.parseLong(counted[0]);
         long ahead = Long.parseLong(counted[1]);
         if (behind > 0 && ahead > 0) {

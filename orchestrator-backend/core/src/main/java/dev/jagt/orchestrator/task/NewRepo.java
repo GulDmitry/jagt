@@ -14,12 +14,12 @@ public record NewRepo(String project, ProjectConfig config, Path projectPath, Pa
         return new NewRepo(project, config, projectPath, worktreePath, gitCommonDir, baseBranch, remoteUrl, false);
     }
 
-    /** The same repository as {@code state.json} keeps it: no request and no deploy yet. */
     /** The same repository, worked in the worktree at {@code path}. */
     public NewRepo at(Path path) {
         return new NewRepo(project, config, projectPath, path, gitCommonDir, baseBranch, remoteUrl, primary);
     }
 
+    /** The same repository as {@code state.json} keeps it: no request and no deploy yet. */
     public TaskRepo registered() {
         return TaskRepo.of(project, worktreePath.toString()).withRemoteUrl(remoteUrl);
     }

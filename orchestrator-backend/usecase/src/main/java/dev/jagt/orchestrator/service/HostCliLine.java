@@ -170,9 +170,7 @@ final class HostCliLine {
     /** An unclosed quote keeps its mark, so what follows it never reads as a bare word. */
     private static List<String> shellWords(String segment) {
         Words words = new Words();
-        for (char c : segment.toCharArray()) {
-            words.read(c);
-        }
+        segment.chars().forEach(c -> words.read((char) c));
         return words.finish();
     }
 

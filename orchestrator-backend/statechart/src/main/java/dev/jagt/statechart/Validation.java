@@ -26,7 +26,7 @@ final class Validation {
         return problems;
     }
 
-    private static <E, X, F> List<String> problemsOf(Stored<F> region, List<Edge<E, F>> transitions) {
+    private static <E, F> List<String> problemsOf(Stored<F> region, List<Edge<E, F>> transitions) {
         List<Edge<E, F>> own = transitions.stream().filter(t -> t.region().equals(region.name())).toList();
         Set<Enum<?>> reached = reachable(region.initial(), own);
         return region.states().stream().flatMap(state -> Stream.of(

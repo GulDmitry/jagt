@@ -92,7 +92,7 @@ final class GitReadLine {
         boolean paths = false;
         for (String argument : arguments) {
             paths |= "--".equals(argument);
-            String value = paths || !argument.startsWith("-") ? argument : valueOf(argument, subcommand, options);
+            String value = paths || !argument.startsWith("-") ? argument : valueOf(argument, options);
             if (value == null) {
                 return Optional.of("jagt refuses git " + subcommand + " " + argument + " in a read: only "
                         + options.stream().sorted().collect(Collectors.joining(" ")) + " are allowed.");
@@ -105,7 +105,7 @@ final class GitReadLine {
     }
 
     /** What an allowed option carries, empty when it carries nothing, or null when the option is not allowed. */
-    private static @Nullable String valueOf(String argument, String subcommand, Set<String> options) {
+    private static @Nullable String valueOf(String argument, Set<String> options) {
         String name = argument.split("=", 2)[0];
         if (options.contains(name)) {
             return argument.length() > name.length() ? argument.substring(name.length() + 1) : "";

@@ -71,7 +71,7 @@ public class CodexCredentials {
     }
 
     private static JsonNode claims(String jwt) {
-        String[] parts = jwt.split("\\.");
+        String[] parts = jwt.split("\\.", 0);
         if (parts.length < 2) {
             return JSON.missingNode();
         }

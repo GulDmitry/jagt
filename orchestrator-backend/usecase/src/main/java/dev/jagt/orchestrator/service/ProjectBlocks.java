@@ -22,7 +22,7 @@ final class ProjectBlocks {
     private ProjectBlocks() {
     }
 
-    private record Located(String head, String[] lines, int projectsAt, String parent, String entryIndent) {
+    private record Located(String head, List<String> lines, int projectsAt, String parent, String entryIndent) {
     }
 
     private record Span(int from, int to) {
@@ -31,7 +31,7 @@ final class ProjectBlocks {
     /** The file with the entry first under the {@code projects:} that is a direct child of {@code orchestrator:}. */
     static String inserted(String file, ProjectSetup.Entry entry, Path path, boolean keptLocally) {
         Located at = locate(file);
-        String[] lines = at.lines();
+        String[] lines = at.lines().toArray(String[]::new);
         String step = at.entryIndent().substring(at.parent().length());
         lines[at.projectsAt()] = at.parent() + "projects:\n"
                 + (at.entryIndent() + entry.key() + ":\n" + managed(at.entryIndent() + step, entry, path)
@@ -43,7 +43,7 @@ final class ProjectBlocks {
     static String replaced(String file, ProjectSetup.Entry entry, Path path) {
         Located at = locate(file);
         Span span = span(at, entry.key());
-        String[] lines = at.lines();
+        String[] lines = at.lines().toArray(String[]::new);
         if (!lines[span.from()].strip().matches(Pattern.quote(entry.key()) + ":\\s*(#.*)?")) {
             throw new IllegalArgumentException(entry.key() + " is written inline in jagt.yml: change it by hand");
         }
@@ -60,8 +60,8 @@ final class ProjectBlocks {
     static String removed(String file, String key) {
         Located at = locate(file);
         Span span = span(at, key);
-        List<String> result = new ArrayList<>(List.of(at.lines()).subList(0, span.from()));
-        result.addAll(List.of(at.lines()).subList(span.to(), at.lines().length));
+        List<String> result = new ArrayList<>(at.lines().subList(0, span.from()));
+        result.addAll(at.lines().subList(span.to(), at.lines().size()));
         return at.head() + String.join("\n", result);
     }
 
@@ -78,7 +78,7 @@ final class ProjectBlocks {
             if (indent.isEmpty()) break;
             if (child == null) child = indent;
             if (indent.equals(child) && lines[i].strip().matches("projects:\\s*(\\{\\s*})?\\s*(#.*)?")) {
-                return new Located(file.substring(0, root.end()), lines, i, child, entryIndent(lines, i, child));
+                return new Located(file.substring(0, root.end()), List.of(lines), i, child, entryIndent(lines, i, child));
             }
         }
         throw new IllegalArgumentException("jagt.yml holds no projects: under orchestrator: to add to");
@@ -95,7 +95,7 @@ final class ProjectBlocks {
 
     /** The lines of the project's block, where comment and blank lines before the next key belong to that key. */
     private static Span span(Located at, String key) {
-        String[] lines = at.lines();
+        String[] lines = at.lines().toArray(String[]::new);
         int from = -1;
         int end = lines.length;
         for (int i = at.projectsAt() + 1; i < lines.length && end == lines.length; i++) {
@@ -117,7 +117,7 @@ final class ProjectBlocks {
     }
 
     private static boolean endsBlock(Located at, boolean inBlock, String indent) {
-        return indent.length() <= at.parent().length() || inBlock && indent.length() <= at.entryIndent().length();
+        return indent.length() <= at.parent().length() || (inBlock && indent.length() <= at.entryIndent().length());
     }
 
     private static boolean startsBlock(Located at, String line, String indent, String key) {
@@ -139,7 +139,7 @@ final class ProjectBlocks {
         for (int i = span.from() + 1; i < span.to(); i++) {
             String indent = indent(lines[i]);
             boolean continuation = indent != null && (indent.length() > child.length()
-                    || indent.equals(child) && lines[i].strip().startsWith("- "));
+                    || (indent.equals(child) && lines[i].strip().startsWith("- ")));
             if (dropping && continuation) continue;
             dropping = indent != null && indent.equals(child) && MANAGED.contains(keyOf(lines[i]));
             if (!dropping) kept.add(lines[i]);

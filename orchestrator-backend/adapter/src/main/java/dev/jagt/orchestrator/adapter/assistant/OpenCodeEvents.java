@@ -20,7 +20,7 @@ record OpenCodeEvents(Optional<String> answer, TokenUsage usage, List<Call> call
         String answer = null;
         TokenUsage usage = TokenUsage.NONE;
         List<Call> calls = new ArrayList<>();
-        for (String line : stdout.split("\n")) {
+        for (String line : stdout.split("\n", 0)) {
             JsonNode event = event(line);
             JsonNode part = event.path("part");
             switch (event.path("type").asString("")) {

@@ -13,7 +13,7 @@ import static org.mockito.Mockito.when;
 class DeployTargetsTest {
 
     private final ConfigService config = mock(ConfigService.class);
-    private final DeployTargets targets = new DeployTargets(config, mock(GitDeploy.class));
+    private final DeployTargets targets = new DeployTargets(config);
 
     @Test
     void namesTheDeployBranchAProjectIsConfiguredWith() {

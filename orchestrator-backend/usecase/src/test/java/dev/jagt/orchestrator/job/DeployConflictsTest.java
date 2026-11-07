@@ -42,7 +42,7 @@ class DeployConflictsTest {
         when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
         when(git.deployResolved(Path.of("/src/web"), "ABC-1", "dev")).thenReturn(true);
         when(git.deployProgress(Path.of("/src/web"), "ABC-1")).thenReturn(new Conflict.Progress(0, 2, "d"));
-        DeployConflicts service = new DeployConflicts(state, new DeployTargets(config, git), git);
+        DeployConflicts service = new DeployConflicts(state, new DeployTargets(config), git);
 
         var conflicts = service.waiting();
 
@@ -64,7 +64,7 @@ class DeployConflictsTest {
                 new ProjectConfig("/src/web", "origin/main", "dev", null))));
         GitDeploy git = mock(GitDeploy.class);
         when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
-        DeployConflicts service = new DeployConflicts(state, new DeployTargets(config, git), git);
+        DeployConflicts service = new DeployConflicts(state, new DeployTargets(config), git);
 
         var conflicts = service.waiting();
 
@@ -85,7 +85,7 @@ class DeployConflictsTest {
         GitDeploy git = mock(GitDeploy.class);
         when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
         when(git.deployProgress(Path.of("/src/web"), "ABC-1")).thenReturn(new Conflict.Progress(0, 0, "d"));
-        DeployConflicts service = new DeployConflicts(state, new DeployTargets(config, git), git);
+        DeployConflicts service = new DeployConflicts(state, new DeployTargets(config), git);
 
         var conflicts = service.waiting();
 
@@ -107,7 +107,7 @@ class DeployConflictsTest {
         when(git.hasRevertWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
         when(git.revertResolved(Path.of("/src/web"), "ABC-1")).thenReturn(true);
         when(git.revertProgress(Path.of("/src/web"), "ABC-1")).thenReturn(new Conflict.Progress(0, 1, "r"));
-        DeployConflicts service = new DeployConflicts(state, new DeployTargets(config, git), git);
+        DeployConflicts service = new DeployConflicts(state, new DeployTargets(config), git);
 
         var conflicts = service.waiting();
 

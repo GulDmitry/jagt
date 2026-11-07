@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -104,7 +105,7 @@ public class ProcessRunner implements Processes {
                 .addKeyValue("session", ownSession ? "own" : "jagt")
                 .addKeyValue("cmd", OneLine.clipped(String.join(" ", command)))
                 .log();
-        launched.onExit().thenAccept(ended -> log.atInfo().setMessage("process ended")
+        CompletableFuture<Void> _ = launched.onExit().thenAccept(ended -> log.atInfo().setMessage("process ended")
                 .addKeyValue("pid", ended.pid())
                 .addKeyValue("exit", endedBy(ended.exitValue()))
                 .addKeyValue("after", Duration.ofNanos(System.nanoTime() - startedAt))

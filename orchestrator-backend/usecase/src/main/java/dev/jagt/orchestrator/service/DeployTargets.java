@@ -22,7 +22,6 @@ import java.util.Optional;
 public class DeployTargets {
 
     private final ConfigService configService;
-    private final GitDeploy gitDeploy;
 
     /**
      * Every repository the task works in. All resolved before anything is pushed, so a project misconfigured at the

@@ -123,7 +123,7 @@ public class StepRelay {
             return false;
         }
         String digest = Turn.digestOf(facts);
-        if (turns.of(taskId).holds(step.id(), digest) || round && !door.roundDue(taskId, step.id())) {
+        if (turns.of(taskId).holds(step.id(), digest) || (round && !door.roundDue(taskId, step.id()))) {
             return false;
         }
         if (claim == null) {

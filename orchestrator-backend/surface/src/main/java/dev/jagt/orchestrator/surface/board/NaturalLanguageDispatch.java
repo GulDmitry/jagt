@@ -48,7 +48,7 @@ public class NaturalLanguageDispatch {
         if (text == null || text.isBlank()) {
             return "Nothing to interpret.";
         }
-        String retired = RETIRED.get(text.strip().split("\\s+")[0].toLowerCase(Locale.ROOT));
+        String retired = RETIRED.get(text.strip().split("\\s+", 2)[0].toLowerCase(Locale.ROOT));
         if (retired != null) {
             return retired;
         }

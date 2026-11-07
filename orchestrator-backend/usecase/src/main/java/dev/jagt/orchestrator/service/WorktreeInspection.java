@@ -190,7 +190,7 @@ public class WorktreeInspection {
             command.addAll(agentRuntime.projectAgentFiles());
             return git.run(worktree, command)
                     .expectSuccess("git diff --numstat in " + worktree).stdout().lines()
-                    .map(line -> line.split("\t")[0])
+                    .map(line -> line.split("\t", 2)[0])
                     .filter(added -> added.matches("\\d+"))
                     .mapToInt(Integer::parseInt).sum();
         });

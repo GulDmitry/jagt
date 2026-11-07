@@ -124,7 +124,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     @Override
     public Optional<String> draft(String screen) {
         String draft = "";
-        for (String line : screen.split("\n")) {
+        for (String line : screen.split("\n", 0)) {
             if (Ansi.strip(line).startsWith(PROMPT_MARK)) {
                 String typed = line.substring(line.indexOf(PROMPT_MARK) + PROMPT_MARK.length());
                 draft = Ansi.strip(DIMMED.matcher(typed).replaceAll(""));

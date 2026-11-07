@@ -5,12 +5,13 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * The whole lines of a bounded read of a log another process appends to. {@code bytes} is how far the next read
  * moves: through the last newline, never into a half-written record.
  */
-record JsonlWindow(String[] lines, long bytes) {
+record JsonlWindow(List<String> lines, long bytes) {
 
     static JsonlWindow of(Path log, long from, long limit) throws IOException {
         byte[] window;
@@ -25,8 +26,9 @@ record JsonlWindow(String[] lines, long bytes) {
         if (lastLine < 0) {
             // A record longer than the window: waiting for a newline that is not coming would freeze the spend
             // for good. A SHORT window is the tail being written.
-            return new JsonlWindow(new String[0], window.length < limit ? 0 : window.length);
+            return new JsonlWindow(List.of(), window.length < limit ? 0 : window.length);
         }
-        return new JsonlWindow(new String(window, 0, lastLine, StandardCharsets.UTF_8).split("\n"), lastLine + 1L);
+        return new JsonlWindow(List.of(new String(window, 0, lastLine, StandardCharsets.UTF_8).split("\n", 0)),
+                lastLine + 1L);
     }
 }

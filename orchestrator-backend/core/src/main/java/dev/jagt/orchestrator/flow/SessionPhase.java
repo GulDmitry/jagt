@@ -60,7 +60,7 @@ public enum SessionPhase {
         if (!silent(task)) {
             return null;
         }
-        boolean running = session.alive() == Boolean.TRUE;
+        boolean running = Boolean.TRUE.equals(session.alive());
         if (halt == null) {
             return running ? "no sign of life, process running" : null;
         }

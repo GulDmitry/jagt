@@ -46,7 +46,7 @@ class IdeProjectTest {
         when(deploys.hasDeployWorktree(api, "ABC-1")).thenReturn(false);
         when(deploys.hasDeployWorktree(web, "ABC-1")).thenReturn(true);
 
-        new IdeProject(new DeployTargets(config, deploys), deploys, editor).open("ABC-1", task);
+        new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
         verify(editor).open(GitDeploy.deployWorktreePath(web, "ABC-1"));
         verify(editor, never()).open(GitDeploy.deployWorktreePath(api, "ABC-1"));
@@ -62,7 +62,7 @@ class IdeProjectTest {
                 Map.of("proj", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
         when(deploys.hasDeployWorktree(repo, "ABC-1")).thenReturn(true);
 
-        String out = new IdeProject(new DeployTargets(config, deploys), deploys, editor).open("ABC-1", task);
+        String out = new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
         assertThat(out).contains("deploy worktree");
     }
@@ -74,7 +74,7 @@ class IdeProjectTest {
                 .build();
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of()));
 
-        String out = new IdeProject(new DeployTargets(config, deploys), deploys, editor).open("ABC-1", task);
+        String out = new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
         verify(editor).open(taskWorktree);
         assertThat(out).contains("as a project in the editor");
@@ -84,7 +84,7 @@ class IdeProjectTest {
     void showsTheHumanTheTasksOwnWorktreeAsAProject() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
-        new IdeProject(new DeployTargets(config, deploys), deploys, editor).open("ABC-1", task);
+        new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
         verify(editor).open(Path.of("/wt"));
     }
@@ -95,7 +95,7 @@ class IdeProjectTest {
                         TaskRepo.of("api", "/api-wt"), TaskRepo.of("web", "/web-wt")),
                 TaskStatus.REVIEW_PENDING).build();
 
-        new IdeProject(new DeployTargets(config, deploys), deploys, editor).open("ABC-1", task);
+        new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
         verify(editor).open(Path.of("/api-wt"));
         verify(editor).open(Path.of("/web-wt"));
@@ -112,7 +112,7 @@ class IdeProjectTest {
                 Map.of("proj", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
         when(deploys.hasRevertWorktree(repo, "ABC-1")).thenReturn(true);
 
-        String out = new IdeProject(new DeployTargets(config, deploys), deploys, editor).open("ABC-1", task);
+        String out = new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
 
         verify(editor).open(GitDeploy.revertWorktreePath(repo, "ABC-1"));
         assertThat(out).contains("revert worktree", "`revert ABC-1` again");

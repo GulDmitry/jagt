@@ -13,7 +13,7 @@ public final class CommandRead {
     private CommandRead() {
     }
 
-    /** {@code task} may also be empty: {@code do} and {@code resume} act on no task. */
+    /** The task choice may also be empty: {@code do} and {@code resume} act on no task. */
     public static Schema schemaFor(Collection<String> commands, Collection<String> tasks) {
         return Schema.answer()
                 .choiceRequired("command", Wire.withNone(commands, NONE), null)

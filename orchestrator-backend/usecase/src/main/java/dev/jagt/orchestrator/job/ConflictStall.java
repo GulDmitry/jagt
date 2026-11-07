@@ -62,7 +62,7 @@ class ConflictStall {
     /** The question a session would put here, were it the one asking, goes to the Master: the same fact {@code MasterAnswerJob} answers by. */
     private boolean masterAnswers(TaskState task) {
         return !task.report().asks() && Turns.next(task.status(), AgentReport.QUESTION, task.stopped(),
-                Checkers.of(task), config.load().master().profile()) == Turn.Holder.ARBITER;
+                Checkers.of(task), config.load().master().profile()).equals(Turn.Holder.ARBITER);
     }
 
     private static String kindOf(TaskState task) {

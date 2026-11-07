@@ -18,13 +18,15 @@ public final class HumanWaits {
     private HumanWaits() {
     }
 
-    /** The task with its waits brought in line with {@code holder}; the same instance where nothing changed. */
-    /** {@code judged}: the Master has read the round or plan in front and left it to the human. */
+    /**
+     * The task with its waits brought in line with {@code holder}; the same instance where nothing changed.
+     * {@code judged}: the Master has read the round or plan in front and left it to the human.
+     */
     public static TaskState noted(TaskState task, Holder holder, boolean judged, long now) {
         List<HumanWait> waits = new ArrayList<>(task.waits());
         Optional<HumanWait> open = waits.isEmpty() || !waits.getLast().open() ? Optional.empty()
                 : Optional.of(waits.getLast());
-        Optional<Why> why = holder == Holder.HUMAN ? Optional.of(whyOf(task, judged)) : Optional.empty();
+        Optional<Why> why = Holder.HUMAN.equals(holder) ? Optional.of(whyOf(task, judged)) : Optional.empty();
         if (open.map(HumanWait::why).equals(why)) {
             return task;
         }

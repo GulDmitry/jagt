@@ -41,7 +41,7 @@ public class ClaudeSessionLog implements SessionLog {
 
     private Spent counted(Path log, long from, long limit) throws IOException {
         JsonlWindow window = JsonlWindow.of(log, from, limit);
-        String[] lines = window.lines();
+        String[] lines = window.lines().toArray(String[]::new);
         if (lines.length == 0) {
             return new Spent(TokenUsage.NONE, from + window.bytes());
         }
