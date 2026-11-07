@@ -68,7 +68,7 @@ class AbstractKittyTerminalDriverTest {
     void opensATabInTheViewerInstanceListeningOnTheSessionsOwnSocket() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(isNull(), any(Duration.class), any())).thenReturn(new Processes.Result(0, "", ""));
-        var driver = new AbstractKittyTerminalDriver(runner, OrchestratorProperties.defaults().withOpenTerminalWindow(true).withTmuxCommand("tmux"), new KittyOptions("kitty", ""), Clock.systemUTC()) {
+        var driver = new AbstractKittyTerminalDriver(runner, OrchestratorProperties.defaults().withOpenTerminalWindow(true), new KittyOptions("kitty", ""), Clock.systemUTC()) {
             @Override
             protected List<String> platformOptions() {
                 return List.of();
@@ -94,7 +94,7 @@ class AbstractKittyTerminalDriverTest {
         when(runner.run(isNull(), any(Duration.class), any())).thenReturn(new Processes.Result(0, "", ""));
         Clock clock = mock(Clock.class);
         when(clock.millis()).thenReturn(100_000L, 160_000L);
-        var driver = new AbstractKittyTerminalDriver(runner, OrchestratorProperties.defaults().withOpenTerminalWindow(true).withTmuxCommand("tmux"), new KittyOptions("kitty", ""), clock) {
+        var driver = new AbstractKittyTerminalDriver(runner, OrchestratorProperties.defaults().withOpenTerminalWindow(true), new KittyOptions("kitty", ""), clock) {
             @Override
             protected List<String> platformOptions() {
                 return List.of();

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.e2e;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.AgentRuntime;
@@ -115,7 +115,7 @@ class MasterModeFlowTest {
     @Autowired
     private OrchestratorPaths paths;
     @Autowired
-    private OrchestratorProperties properties;
+    private ToolchainProperties properties;
     @Autowired
     private Jobs jobs;
     @LocalServerPort

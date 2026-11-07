@@ -30,7 +30,7 @@ class LinuxKittyTerminalDriverLinuxTest {
 
     private LinuxKittyTerminalDriver driver() {
         return new LinuxKittyTerminalDriver(runner, OrchestratorProperties.defaults()
-                .withOpenTerminalWindow(true).withTmuxCommand("tmux"), new KittyOptions("kitty", ""), Clock.systemUTC());
+                .withOpenTerminalWindow(true), new KittyOptions("kitty", ""), Clock.systemUTC());
     }
 
     private String socket() {

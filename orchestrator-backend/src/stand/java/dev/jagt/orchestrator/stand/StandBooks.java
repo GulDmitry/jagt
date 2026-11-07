@@ -19,7 +19,7 @@ public final class StandBooks {
 
     public StandBooks(Path root) {
         this.root = root;
-        this.paths = new OrchestratorPaths(new OrchestratorProperties(root.toString(), null, null, null, null, null, null, null,
+        this.paths = new OrchestratorPaths(new OrchestratorProperties(root.toString(), null, null, null,
                 false, null));
     }
 

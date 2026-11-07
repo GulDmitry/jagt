@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.port.EditorDriver;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 public class CliEditorDriver implements EditorDriver, StartupCheck {
 
     private final ProcessRunner processRunner;
-    private final OrchestratorProperties properties;
+    private final ToolchainProperties properties;
 
     @Override
     public List<Problem> problems() {

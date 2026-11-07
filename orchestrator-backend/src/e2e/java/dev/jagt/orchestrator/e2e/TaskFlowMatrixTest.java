@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.e2e;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.capability.done.TaskRetirement;
@@ -63,7 +63,7 @@ class TaskFlowMatrixTest {
     @Autowired
     private OrchestratorPaths paths;
     @Autowired
-    private OrchestratorProperties properties;
+    private ToolchainProperties properties;
 
     @BeforeAll
     static void createTheThrowawayOutsideWorld() throws Exception {

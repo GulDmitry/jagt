@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter;
 
-import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.Problem;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -21,7 +21,7 @@ class CliEditorDriverTest {
     void findsTheLauncherOnPathAndPassesItsArgumentsThroughUntouched() {
         ProcessRunner runner = mock(ProcessRunner.class);
         CliEditorDriver driver = new CliEditorDriver(runner,
-                OrchestratorProperties.defaults().withEditorDiffCommand(List.of("sh", "diff")));
+                ToolchainProperties.defaults().withEditorDiffCommand(List.of("sh", "diff")));
 
         driver.openDiff(Path.of("/left"), Path.of("/right"));
 
@@ -34,7 +34,7 @@ class CliEditorDriverTest {
     @Test
     void refusesToStartNamingBothEditorKeysWhenNeitherLauncherIsInstalled() {
         CliEditorDriver driver = new CliEditorDriver(mock(ProcessRunner.class),
-                OrchestratorProperties.defaults().withEditorCommand(List.of("no-such-editor"))
+                ToolchainProperties.defaults().withEditorCommand(List.of("no-such-editor"))
                         .withEditorDiffCommand(List.of("no-such-difftool")));
 
         assertThat(driver.problems()).extracting(Problem::key)
@@ -44,7 +44,7 @@ class CliEditorDriverTest {
     @Test
     void saysWhichKeyToSetWhenTheConfiguredEditorLauncherIsNowhereToBeFound() {
         ProcessRunner processRunner = mock(ProcessRunner.class);
-        CliEditorDriver driver = new CliEditorDriver(processRunner, OrchestratorProperties.defaults()
+        CliEditorDriver driver = new CliEditorDriver(processRunner, ToolchainProperties.defaults()
                 .withEditorCommand(List.of("no-such-editor")));
 
         assertThatThrownBy(() -> driver.open(Path.of("/wt")))
@@ -57,7 +57,7 @@ class CliEditorDriverTest {
     @Test
     void saysWhichKeyToSetWhenTheConfiguredEditorLauncherIsBlank() {
         ProcessRunner processRunner = mock(ProcessRunner.class);
-        CliEditorDriver driver = new CliEditorDriver(processRunner, OrchestratorProperties.defaults()
+        CliEditorDriver driver = new CliEditorDriver(processRunner, ToolchainProperties.defaults()
                 .withEditorCommand(List.of(" ")));
 
         assertThatThrownBy(() -> driver.open(Path.of("/wt")))
@@ -69,7 +69,7 @@ class CliEditorDriverTest {
     @Test
     void startsWithoutADiffCommand() {
         CliEditorDriver driver = new CliEditorDriver(mock(ProcessRunner.class),
-                OrchestratorProperties.defaults().withEditorCommand(List.of("sh")));
+                ToolchainProperties.defaults().withEditorCommand(List.of("sh")));
 
         assertThat(driver.problems()).isEmpty();
     }
@@ -77,7 +77,7 @@ class CliEditorDriverTest {
     @Test
     void refusesADiffNamingTheKeyAndAnExampleWhenNoDiffCommandIsSet() {
         ProcessRunner processRunner = mock(ProcessRunner.class);
-        CliEditorDriver driver = new CliEditorDriver(processRunner, OrchestratorProperties.defaults()
+        CliEditorDriver driver = new CliEditorDriver(processRunner, ToolchainProperties.defaults()
                 .withEditorCommand(List.of("sh")));
 
         assertThatThrownBy(() -> driver.openDiff(Path.of("/left"), Path.of("/right")))

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator;
 
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.ToolchainProperties;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ class ConfigReferenceTest {
     void jagtYmlDistDescribesEveryKeyTheBackendReads() {
         String dist = read(Path.of("../jagt.yml.dist"));
         Pattern named = Pattern.compile("[\"{]orchestrator\\.([a-z][a-z-]*)");
-        Stream<String> bound = Stream.of(OrchestratorProperties.class, AssistantProperties.class)
+        Stream<String> bound = Stream.of(OrchestratorProperties.class, ToolchainProperties.class, AssistantProperties.class)
                 .flatMap(type -> Arrays.stream(type.getRecordComponents())).map(RecordComponent::getName);
         Stream<String> looked = ROOTS.stream().flatMap(ConfigReferenceTest::javaFilesUnder)
                 .flatMap(path -> named.matcher(read(path)).results()).map(match -> Pattern.compile("-([a-z])").matcher(match.group(1))

@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.WorktreeHooks;
@@ -42,7 +42,7 @@ public class TmuxSessionHost implements SessionHost {
     private static final int TAIL_LINES = 3;
 
     private final Processes processRunner;
-    private final OrchestratorProperties properties;
+    private final ToolchainProperties properties;
     private final OrchestratorPaths paths;
     private final TerminalDriver terminalDriver;
     private final AgentRuntime agentRuntime;

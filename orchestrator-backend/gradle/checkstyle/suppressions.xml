@@ -5,8 +5,6 @@
     <!-- 0143: each line names its reason and estimated cost (weekly points, estimate); zero is the target. -->
     <!-- board JSON the page reads; split with the page; ~0.5 pt -->
     <suppress files="[\\/]BoardApiController\.java$" checks="RecordComponentNumber"/>
-    <!-- Spring binding of jagt.yml; nested properties keep the keys; ~0.3 pt -->
-    <suppress files="[\\/]OrchestratorProperties\.java$" checks="RecordComponentNumber"/>
     <!-- not yet split; ~0.5 pt -->
     <suppress files="[\\/]Phases\.java$" checks="RecordComponentNumber"/>
     <!-- persisted in state.json; ~0.3 pt -->

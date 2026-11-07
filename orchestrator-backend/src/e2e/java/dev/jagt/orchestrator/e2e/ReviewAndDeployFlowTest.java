@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.port.RoutingAssistant;
 import dev.jagt.orchestrator.port.TrackerAssistant;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -115,7 +115,7 @@ class ReviewAndDeployFlowTest {
     @Autowired
     private OrchestratorPaths paths;
     @Autowired
-    private OrchestratorProperties properties;
+    private ToolchainProperties properties;
     @LocalServerPort
     private int port;
 

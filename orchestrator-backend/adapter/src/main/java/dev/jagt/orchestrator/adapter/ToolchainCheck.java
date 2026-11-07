@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.ToolchainProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +13,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ToolchainCheck implements StartupCheck {
 
-    private final OrchestratorProperties properties;
+    private final ToolchainProperties properties;
 
     @Override
     public List<Problem> problems() {

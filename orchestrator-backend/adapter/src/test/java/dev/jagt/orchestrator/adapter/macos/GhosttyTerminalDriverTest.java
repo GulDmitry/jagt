@@ -26,7 +26,7 @@ class GhosttyTerminalDriverTest {
     void opensNoGhosttyWindowWhereTheHumanTurnedTheWindowOff() {
         OsaScript osaScript = mock(OsaScript.class);
         var driver = new GhosttyTerminalDriver(
-                OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(false),
+                OrchestratorProperties.defaults().withOpenTerminalWindow(false),
                 osaScript, mock(Host.class), Clock.systemUTC());
 
         driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
@@ -38,7 +38,7 @@ class GhosttyTerminalDriverTest {
     void opensTheViewerAsATabAttachedToTmuxTitledWithTheViewerTitle() {
         OsaScript osaScript = mock(OsaScript.class);
         var driver = new GhosttyTerminalDriver(
-                OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
+                OrchestratorProperties.defaults().withOpenTerminalWindow(true),
                 osaScript, mock(Host.class), Clock.systemUTC());
 
         driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents \"main\"", Path.of("/work/tree"));
@@ -70,7 +70,7 @@ class GhosttyTerminalDriverTest {
     void opensNoSecondViewerWhileTheFirstIsStillAttaching() {
         OsaScript osaScript = mock(OsaScript.class);
         var driver = new GhosttyTerminalDriver(
-                OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
+                OrchestratorProperties.defaults().withOpenTerminalWindow(true),
                 osaScript, mock(Host.class), Clock.systemUTC());
 
         driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
@@ -84,7 +84,7 @@ class GhosttyTerminalDriverTest {
         OsaScript osaScript = mock(OsaScript.class);
         doThrow(new IllegalStateException("osascript failed")).when(osaScript).run(anyString());
         var driver = new GhosttyTerminalDriver(
-                OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
+                OrchestratorProperties.defaults().withOpenTerminalWindow(true),
                 osaScript, mock(Host.class), Clock.systemUTC());
 
         driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
@@ -166,7 +166,7 @@ class GhosttyTerminalDriverTest {
         Clock clock = mock(Clock.class);
         when(clock.millis()).thenReturn(100_000L, 160_000L);
         var driver = new GhosttyTerminalDriver(
-                OrchestratorProperties.defaults().withTmuxCommand("tmux").withOpenTerminalWindow(true),
+                OrchestratorProperties.defaults().withOpenTerminalWindow(true),
                 osaScript, mock(Host.class), clock);
 
         driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
