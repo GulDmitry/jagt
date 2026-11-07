@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import dev.jagt.orchestrator.flow.Phase;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.command.CommandReference;
@@ -31,11 +32,19 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class BoardApiController {
 
-    public record Board(List<TaskView> tasks, List<String> projects, String autoReview,
-                        boolean autoReviewEnabled, Jobs.Summary jobs, @Nullable ActStop actStop,
-                        AssistantHealth.@Nullable Outage assistant, List<ReachLost> reach,
-                        List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases,
-                        Map<String, List<String>> offers, String masterMode) {
+    public record Board(List<TaskView> tasks, List<String> projects, Map<String, List<String>> offers,
+                        String masterMode, @JsonUnwrapped Cadence cadence, @JsonUnwrapped Header header,
+                        @JsonUnwrapped Choices choices) {
+
+        public record Cadence(String autoReview, boolean autoReviewEnabled) {
+        }
+
+        public record Header(Jobs.Summary jobs, @Nullable ActStop actStop, AssistantHealth.@Nullable Outage assistant,
+                             List<ReachLost> reach) {
+        }
+
+        public record Choices(List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases) {
+        }
     }
 
     private final TaskViews taskViews;
@@ -46,11 +55,11 @@ public class BoardApiController {
     @GetMapping("/tasks")
     public Board tasks() {
         var snapshot = taskViews.snapshot();
-        return new Board(snapshot.tasks(), snapshot.projects(),
-                snapshot.cadence().summary(), snapshot.cadence().enabled(),
-                header.summary(), snapshot.actStop(), header.assistantOutage().orElse(null), header.reachLost(), BranchStrategy.choices(),
-                Phase.choices(),
-                offers(snapshot.tasks()), snapshot.masterMode());
+        return new Board(snapshot.tasks(), snapshot.projects(), offers(snapshot.tasks()), snapshot.masterMode(),
+                new Board.Cadence(snapshot.cadence().summary(), snapshot.cadence().enabled()),
+                new Board.Header(header.summary(), snapshot.actStop(), header.assistantOutage().orElse(null),
+                        header.reachLost()),
+                new Board.Choices(BranchStrategy.choices(), Phase.choices()));
     }
 
     private Map<String, List<String>> offers(List<TaskView> tasks) {

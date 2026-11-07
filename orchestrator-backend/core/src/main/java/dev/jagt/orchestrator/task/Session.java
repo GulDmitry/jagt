@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.task;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import lombok.With;
 import org.jspecify.annotations.Nullable;
 
@@ -9,11 +10,27 @@ import org.jspecify.annotations.Nullable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record Session(@With long movedAt, @With long workStartedAt, @With long reportedAt, @With @Nullable Halt halt,
-                      @With long quietSince, @With @Nullable Window window, @With @Nullable String log,
-                      @With boolean stampedAsk, @With int generation) {
+                      @With long quietSince, @With @Nullable String log, @With boolean stampedAsk,
+                      @With @JsonUnwrapped Start start) {
 
     public static Session defaults() {
-        return new Session(0, 0, 0, null, 0, null, null, false, 0);
+        return new Session(0, 0, 0, null, 0, null, false, new Start(0, null));
+    }
+
+    public int generation() {
+        return start.generation();
+    }
+
+    public @Nullable Window window() {
+        return start.window();
+    }
+
+    public Session withGeneration(int generation) {
+        return withStart(new Start(generation, start.window()));
+    }
+
+    public Session withWindow(@Nullable Window window) {
+        return withStart(new Start(start.generation(), window));
     }
 
     /** The record of a session just started: no read has seen it, and its start is stamped by the first one; {@code generation} counts the starts. */
@@ -28,6 +45,7 @@ public record Session(@With long movedAt, @With long workStartedAt, @With long r
 
     /** Started over and not yet read. */
     public boolean awaitingFirstRead() {
+        Window window = window();
         return window != null && window.state() == Window.State.UNREAD && window.at() == 0;
     }
 
@@ -41,6 +59,7 @@ public record Session(@With long movedAt, @With long workStartedAt, @With long r
 
     /** Whether its process runs as the last window read showed; null where no read has told. */
     public @Nullable Boolean alive() {
+        Window window = window();
         if (window == null || window.state() == Window.State.UNREAD) {
             return null;
         }
@@ -50,6 +69,12 @@ public record Session(@With long movedAt, @With long workStartedAt, @With long r
     /** When it last signed life, stopped or was last seen by a read, the latest of the three; 0 where it has signed nothing. */
     public long idleSince() {
         return Math.max(Math.max(movedAt, quietSince), halt == null ? 0 : halt.at());
+    }
+
+    /** Which start of the session this is, and what the last read of its window made of it. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Start(int generation, @Nullable Window window) {
     }
 
     /** How a session stopped, when, and why in the words a human reads. */

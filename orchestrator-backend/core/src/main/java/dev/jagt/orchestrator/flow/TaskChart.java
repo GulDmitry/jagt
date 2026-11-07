@@ -151,14 +151,14 @@ final class TaskChart {
 
     private static Map<String, String> corePhases(Phases phases) {
         return Map.ofEntries(
-                Map.entry(LIFECYCLE.name(), phases.lifecycle().name()), Map.entry(STOP.name(), phases.stop().name()),
-                Map.entry(PLAN.name(), phases.plan().name()), Map.entry(REPORT.name(), phases.report().name()),
-                Map.entry(TURN.name(), phases.turn().name()), Map.entry(DEPLOY.name(), phases.deploy().name()),
-                Map.entry(SESSION.name(), phases.session().name()), Map.entry(GIT.name(), phases.git().name()),
-                Map.entry(REPO.name(), phases.repo().name()), Map.entry(REQUEST.name(), phases.request().name()),
-                Map.entry(CHECKS.name(), phases.checks().name()),
-                Map.entry(APPROVAL.name(), phases.approval().name()), Map.entry(INFRA.name(), phases.infra().name()),
-                Map.entry(MasterRegion.REGION.name(), phases.master().name()));
+                Map.entry(LIFECYCLE.name(), phases.progress().lifecycle().name()), Map.entry(STOP.name(), phases.progress().stop().name()),
+                Map.entry(PLAN.name(), phases.progress().plan().name()), Map.entry(REPORT.name(), phases.progress().report().name()),
+                Map.entry(TURN.name(), phases.progress().turn().name()), Map.entry(DEPLOY.name(), phases.delivery().deploy().name()),
+                Map.entry(SESSION.name(), phases.progress().session().name()), Map.entry(GIT.name(), phases.delivery().git().name()),
+                Map.entry(REPO.name(), phases.delivery().repo().name()), Map.entry(REQUEST.name(), phases.delivery().request().name()),
+                Map.entry(CHECKS.name(), phases.gates().checks().name()),
+                Map.entry(APPROVAL.name(), phases.gates().approval().name()), Map.entry(INFRA.name(), phases.gates().infra().name()),
+                Map.entry(MasterRegion.REGION.name(), phases.watchers().master().name()));
     }
 
     /** Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it. */

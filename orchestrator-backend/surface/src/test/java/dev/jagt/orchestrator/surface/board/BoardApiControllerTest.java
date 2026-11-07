@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.Clock;
@@ -101,6 +102,18 @@ class BoardApiControllerTest {
     }
 
     @Test
+    void servesTheBoardAsOneFlatObject() {
+        when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
+                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60, 240), List.of(), null, "off"));
+
+        var json = new JsonMapper().readTree(new JsonMapper().writeValueAsString(api.tasks()));
+
+        assertThat(json.propertyNames()).containsExactlyInAnyOrder("tasks", "projects", "offers", "masterMode",
+                "autoReview", "autoReviewEnabled", "jobs", "actStop", "assistant", "reach", "branchStrategies",
+                "phases");
+    }
+
+    @Test
     void tellsTheBoardWhenTheAssistantIsUnavailable() {
         var health = org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class);
         var outage = new dev.jagt.orchestrator.port.AssistantHealth.Outage("529 overloaded", 5_000L);
@@ -111,7 +124,7 @@ class BoardApiControllerTest {
                 new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)),
                 health, new dev.jagt.orchestrator.service.ReachLedger(), Clock.systemUTC()));
 
-        assertThat(board.tasks().assistant()).isEqualTo(outage);
+        assertThat(board.tasks().header().assistant()).isEqualTo(outage);
     }
 
     @Test
@@ -126,7 +139,7 @@ class BoardApiControllerTest {
                 new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)),
                 org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), reach, Clock.systemUTC()));
 
-        assertThat(board.tasks().reach()).containsExactly(lost);
+        assertThat(board.tasks().header().reach()).containsExactly(lost);
     }
 
     @Test
@@ -148,7 +161,7 @@ class BoardApiControllerTest {
         BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
                 new GlobalCommands(List.of()), new HeaderState(new Jobs(List.of(poll), org.mockito.Mockito.mock(org.springframework.scheduling.TaskScheduler.class), Clock.systemUTC(), org.mockito.Mockito.mock(dev.jagt.orchestrator.service.StateService.class)), org.mockito.Mockito.mock(dev.jagt.orchestrator.port.AssistantHealth.class), new dev.jagt.orchestrator.service.ReachLedger(), Clock.systemUTC()));
 
-        assertThat(board.tasks().jobs().count()).isEqualTo(1);
+        assertThat(board.tasks().header().jobs().count()).isEqualTo(1);
     }
 
     @Test
@@ -170,8 +183,8 @@ class BoardApiControllerTest {
 
         var board = api.tasks();
 
-        assertThat(board.autoReviewEnabled()).isTrue();
-        assertThat(board.autoReview()).isEqualTo("auto-review on");
+        assertThat(board.cadence().autoReviewEnabled()).isTrue();
+        assertThat(board.cadence().autoReview()).isEqualTo("auto-review on");
     }
 
     @Test
