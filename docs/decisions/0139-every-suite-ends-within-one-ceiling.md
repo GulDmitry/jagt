@@ -21,7 +21,7 @@ Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
 - A suite over it is a defect to speed up, never a raised number.
 - The full gate, `test`, `boardTest`, `e2eTest` and `standTest` in one `--rerun-tasks` run, ends within the same 10
   minutes of wall time, and as far under as it can (owner, 2026-11-07: speed matters); evals and `pitest` aside.
-  Each refresh measures it; over it is a defect, never a failed build.
+  Each refresh measures it; over it opens a speed-up task, ending in sped up or the owner raising it; never a failed build.
 - An investigation (a measurement, a model comparison, a spike, a local-model eval) states its expected length
   before it starts as `-PrunMinutes=<n>`, which replaces the ceiling for that run only.
 - The regular flow (commit gate, batch-end suites, release gate) never passes `-PrunMinutes`.
