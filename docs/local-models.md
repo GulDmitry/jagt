@@ -21,6 +21,7 @@ stay on the cloud until a model passes their evals here.
 
    One model at a time. A model that pushes the machine into swap is too big for it: check `sysctl vm.swapusage`
    before and after its first answer. Without `--reasoning-budget 0` the model spends its tokens thinking.
+   A first answer: `curl -s localhost:8080/v1/chat/completions -d '{"messages":[{"role":"user","content":"Say ok"}]}'`.
 3. Uncomment the `local:` block under `assistant` in `jagt.yml`; `model` is the name the server lists at
    `http://127.0.0.1:8080/v1/models`.
 
