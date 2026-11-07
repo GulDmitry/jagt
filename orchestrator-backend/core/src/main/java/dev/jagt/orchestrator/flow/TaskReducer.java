@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.ToldOnce;
 import dev.jagt.orchestrator.task.Turn;
 import org.jspecify.annotations.Nullable;
 
@@ -66,6 +67,16 @@ public final class TaskReducer {
         TaskStop standing = task.stop();
         return standing == null || !standing.voidedBy(task.requests()) ? task
                 : step(task, new TaskMove.RequestReplaced(), now);
+    }
+
+    /** {@code task} with {@code kind} told for {@code key}. */
+    public static TaskState told(TaskState task, ToldOnce.Kind kind, String key) {
+        return task.withTold(task.toldOrNone().with(kind, key));
+    }
+
+    /** {@code task} with each of {@code kinds} told no more. */
+    public static TaskState untold(TaskState task, ToldOnce.Kind... kinds) {
+        return task.withTold(task.toldOrNone().without(kinds));
     }
 
     /** {@code task} asked to open in plan mode; where it is not plan mode, or the code is written, the gate stays. */

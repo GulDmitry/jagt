@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.ToldOnce;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -22,6 +23,18 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TaskReducerTest {
+
+    @Test
+    void keepsTheSilenceToldWhereTheAutoReviewPingsAreForgotten() {
+        TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+        TaskState told = TaskReducer.told(TaskReducer.told(task, ToldOnce.Kind.AUTO_REVIEW_WINDOW, "5"),
+                ToldOnce.Kind.SILENCE, "9");
+
+        TaskState forgot = TaskReducer.untold(told, ToldOnce.Kind.AUTO_REVIEW_WINDOW,
+                ToldOnce.Kind.AUTO_REVIEW_UNREADABLE);
+
+        assertThat(forgot.toldOrNone().entries()).containsOnlyKeys(ToldOnce.Kind.SILENCE);
+    }
 
     @Test
     void forgetsTheDeployConflictOnceTheDeployLands() {

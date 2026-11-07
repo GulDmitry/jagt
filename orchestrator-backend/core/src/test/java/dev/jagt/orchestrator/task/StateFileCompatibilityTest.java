@@ -26,6 +26,22 @@ class StateFileCompatibilityTest {
     }
 
     @Test
+    void aStateFileCarryingTheSilenceAndVerifyMarksLoadsThemAsToldAndKeepsTheOtherMarks() {
+        String json = """
+                {"status":"IN_PROGRESS","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
+                 "repos":[{"project":"proj","worktreePath":"/wt"}],
+                 "turn":{"step":"ship","id":3,"digest":"","since":4,
+                         "marks":{"alerted:silence":"77","verify:failed":"tree1","press:ship":"tree"}}}
+                """;
+
+        TaskState task = new JsonMapper().readValue(json, TaskState.class);
+
+        assertThat(task.toldOrNone().said(ToldOnce.Kind.SILENCE, "77")).isTrue();
+        assertThat(task.toldOrNone().said(ToldOnce.Kind.VERIFY_FAILED, "tree1")).isTrue();
+        assertThat(task.turnOrNone().marks()).containsOnlyKeys("press:ship");
+    }
+
+    @Test
     void aCurrentStateFileIsWrittenBackKeyForKey() {
         String json = """
                 {
@@ -62,7 +78,7 @@ class StateFileCompatibilityTest {
                 "headTip":"tip2",
                 "deployment":{"pressedAt":22,"targets":[{"project":"proj","deployBranch":"","fixes":[],"pushedAt":0}],"at":0},
                 "session":{"movedAt":23,"workStartedAt":0,"reportedAt":0,"halt":{"kind":"FAILED","at":24,"cause":"c"},"quietSince":0,"log":"log","stampedAsk":true,"generation":2,"window":{"state":"RUNNING","at":25,"printedAt":26}},
-                "told":{"windowElapsed":27,"unreadable":28,"none":false},
+                "told":{"unreadable":"28","windowElapsed":"27"},
                 "waits":[{"since":29,"until":30,"why":"QUESTION"}],
                 "roles":{"qa":{"reading":"r","passed":"p","roundDigest":"d","roundRows":"rows"}},
                 "master":{"left":"l","unanswered":"u","pressedDeploy":"p","seal":"s","sealedRound":31,"askedStop":"a","liftedStops":2}
@@ -157,7 +173,7 @@ class StateFileCompatibilityTest {
                 "headTip":"tip2",
                 "deployment":{"pressedAt":1,"targets":[{"project":"proj","deployBranch":"","merge":"c0ffee","fixes":[],"pushedAt":1}],"at":1},
                 "session":{"movedAt":23,"workStartedAt":0,"reportedAt":0,"halt":{"kind":"FAILED","at":24,"cause":"c"},"quietSince":0,"log":"log","stampedAsk":true,"generation":2,"window":{"state":"RUNNING","at":25,"printedAt":26}},
-                "told":{"windowElapsed":27,"unreadable":28,"none":false},
+                "told":{"unreadable":"28","windowElapsed":"27"},
                 "waits":[{"since":29,"until":30,"why":"QUESTION"}],
                 "roles":{"qa":{"reading":"r","passed":"p","roundDigest":"d","roundRows":"rows"}},
                 "master":{"left":"l","unanswered":"u","pressedDeploy":"p","seal":"s","sealedRound":31,"askedStop":"a","liftedStops":2}

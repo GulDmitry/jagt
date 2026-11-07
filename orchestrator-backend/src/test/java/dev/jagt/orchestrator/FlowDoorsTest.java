@@ -44,6 +44,14 @@ class FlowDoorsTest {
     }
 
     @Test
+    void whatWasToldOnceIsWrittenOnlyByTheReducer() {
+        noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
+                .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")
+                .should().callMethodWhere(target(name("withTold")))
+                .check(MainClasses.CODE);
+    }
+
+    @Test
     void aRepositoryRequestIsWrittenOnlyByTheReducer() {
         noClasses().that().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
                 .and().doNotHaveFullyQualifiedName("dev.jagt.orchestrator.task.TaskState")

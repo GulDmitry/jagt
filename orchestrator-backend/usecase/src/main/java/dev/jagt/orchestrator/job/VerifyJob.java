@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.StateService;
@@ -13,6 +14,7 @@ import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.ToldOnce;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,8 +33,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class VerifyJob implements TaskJob {
-
-    private static final String FAILED = "verify:failed";
 
     private final StateService stateService;
     private final Verification verification;
@@ -73,7 +73,7 @@ public class VerifyJob implements TaskJob {
 
     private void verify(String taskId, TaskState task) {
         Optional<String> key = verification.key(task);
-        if (key.filter(failing -> failing.equals(task.turnOrNone().mark(FAILED))).isPresent()) {
+        if (key.filter(failing -> task.toldOrNone().said(ToldOnce.Kind.VERIFY_FAILED, failing)).isPresent()) {
             stops.stop(taskId, TaskStop.Trigger.UNCHANGED_FAILURE, "handed back the tree its verification failed on: "
                     + standing(task));
             return;
@@ -128,7 +128,7 @@ public class VerifyJob implements TaskJob {
         }
         if (told) {
             key.ifPresent(failing -> stateService.updateTask(taskId,
-                    current -> current.withMark(FAILED, failing)));
+                    current -> TaskReducer.told(current, ToldOnce.Kind.VERIFY_FAILED, failing)));
         } else if (stateService.task(taskId).filter(TaskState::stopped).isPresent()) {
             return;
         }

@@ -14,12 +14,15 @@ import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.ToldOnce;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
@@ -200,6 +203,29 @@ class AutoReviewSchedulerTest {
         verify(notifications, times(2)).send(
                 argThat(sent -> sent.topic() == Notification.Topic.AGENT && "ABC-1".equals(sent.taskId())
                         && sent.body().contains("past its 24h window")));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ToldOnce.Kind.class, names = {"AUTO_REVIEW_WINDOW", "AUTO_REVIEW_UNREADABLE"})
+    void forgetsOnlyTheAutoReviewReminderOfATaskThatLeftPolling(ToldOnce.Kind reminder, @TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        ToldOnce told = ToldOnce.none().with(reminder, "5").with(ToldOnce.Kind.SILENCE, "9");
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE)
+                .mrUrl("http://mr/1").autoReview(true).told(told).build());
+        Notifications notifications = mock(Notifications.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
+                new AutoReviewPolls(mock(ReviewSweepService.class), notifications, new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString())
+                                        .withStateFile(root.resolve("state.json").toString())))), Clock.systemUTC()), Runnable::run, state), notifications, Clock.systemUTC());
+
+        scheduler.run();
+
+        assertThat(state.task("ABC-1").orElseThrow().toldOrNone().entries()).containsOnlyKeys(ToldOnce.Kind.SILENCE);
     }
 
     @Test

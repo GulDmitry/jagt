@@ -6,9 +6,10 @@ import dev.jagt.orchestrator.service.ReviewSweepService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.TaskLabel;
-import dev.jagt.orchestrator.task.AutoReviewTold;
+import dev.jagt.orchestrator.task.ToldOnce;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -66,17 +67,20 @@ public class AutoReviewScheduler implements Job {
         tasks.forEach((taskId, task) -> {
             // A task the poller has no business with any more re-arms its pings.
             if (!cadence.polls(task)) {
-                if (!task.toldOrNone().isNone()) {
-                    stateService.updateTask(taskId, t -> t.withTold(AutoReviewTold.none()));
+                ToldOnce told = task.toldOrNone();
+                if (told.has(ToldOnce.Kind.AUTO_REVIEW_WINDOW) || told.has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE)) {
+                    stateService.updateTask(taskId, t -> TaskReducer.untold(t,
+                            ToldOnce.Kind.AUTO_REVIEW_WINDOW, ToldOnce.Kind.AUTO_REVIEW_UNREADABLE));
                 }
                 return;
             }
             switch (decide(task, cadence, now)) {
                 case WINDOW_ELAPSED -> {
                     // Keyed by the WINDOW: another round starts a new one without ever leaving CI_POLLING.
-                    if (task.toldOrNone().windowElapsed() != task.mrCreatedAt()) {
+                    String window = String.valueOf(task.mrCreatedAt());
+                    if (!task.toldOrNone().said(ToldOnce.Kind.AUTO_REVIEW_WINDOW, window)) {
                         stateService.updateTask(taskId,
-                                t -> t.withTold(t.toldOrNone().withWindowElapsed(task.mrCreatedAt())));
+                                t -> TaskReducer.told(t, ToldOnce.Kind.AUTO_REVIEW_WINDOW, window));
                         notifications.send(Notification.fromAgent(taskId, "auto-review",
                                 Objects.requireNonNull(AutoReviewWatch.windowElapsed(cadence.windowHours()).note()))
                                 .withEvent(Notification.Event.AUTO_REVIEW));

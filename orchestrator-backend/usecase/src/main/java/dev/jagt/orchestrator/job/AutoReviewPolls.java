@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.OriginContext;
@@ -7,6 +8,7 @@ import dev.jagt.orchestrator.service.ReviewSweepService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.ToldOnce;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,8 +69,8 @@ class AutoReviewPolls {
             // retries are spent, and every further tick would say the same thing to the same log.
             if ((result.kind() == ReviewSweepService.SweepResult.Kind.UNREADABLE
                     || result.kind() == ReviewSweepService.SweepResult.Kind.GONE)
-                    && stateService.task(taskId).filter(t -> t.toldOrNone().unreadable() != round).isPresent()) {
-                stateService.updateTask(taskId, t -> t.withTold(t.toldOrNone().withUnreadable(round)));
+                    && stateService.task(taskId).filter(t -> !t.toldOrNone().said(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE, String.valueOf(round))).isPresent()) {
+                stateService.updateTask(taskId, t -> TaskReducer.told(t, ToldOnce.Kind.AUTO_REVIEW_UNREADABLE, String.valueOf(round)));
                 notifications.send(Notification.fromAgent(taskId, "auto-review", result.message())
                         .withEvent(Notification.Event.AUTO_REVIEW));
             }

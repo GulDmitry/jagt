@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.ToldOnce;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,7 +34,6 @@ import java.util.Objects;
 @Slf4j
 public class WatchdogService implements Job {
 
-    private static final String ALERTED = "alerted:silence";
 
     private final StateService stateService;
     private final Notifications notifications;
@@ -118,11 +118,11 @@ public class WatchdogService implements Job {
         }
         long since = SessionPhase.silentSince(task);
         // The wait FOLLOWING an agent's own question was announced when it asked.
-        if (stillAsking(task) || task.turnOrNone().marked(ALERTED, String.valueOf(since))) {
+        if (stillAsking(task) || task.toldOrNone().said(ToldOnce.Kind.SILENCE, String.valueOf(since))) {
             return;
         }
         String said = Objects.requireNonNullElse(SessionPhase.silentBecause(task), "no sign of life");
-        stateService.updateTask(taskId, current -> current.withMark(ALERTED, String.valueOf(since)));
+        stateService.updateTask(taskId, current -> TaskReducer.told(current, ToldOnce.Kind.SILENCE, String.valueOf(since)));
         log.atWarn().setMessage("task stopped")
                 .addKeyValue("task", taskId)
                 .addKeyValue("said", OneLine.clipped(said))
@@ -138,8 +138,8 @@ public class WatchdogService implements Job {
     }
 
     private void forgetAlert(String taskId, TaskState task) {
-        if (task.turnOrNone().mark(ALERTED) != null) {
-            stateService.updateTask(taskId, current -> current.withoutMark(ALERTED));
+        if (task.toldOrNone().has(ToldOnce.Kind.SILENCE)) {
+            stateService.updateTask(taskId, current -> TaskReducer.untold(current, ToldOnce.Kind.SILENCE));
         }
     }
 

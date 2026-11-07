@@ -157,3 +157,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0141 The board's words are catalog files](0141-the-boards-words-are-catalog-files.md)
 - [0142 A team channel is a configured command](0142-a-team-channel-is-a-configured-command.md) (stands under 0130)
 - [0143 Checkstyle gates parameter and component counts](0143-checkstyle-gates-parameter-and-component-counts.md)
+- [0144 What was told once is one ledger, written by the reducer](0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md) (extends 0076)

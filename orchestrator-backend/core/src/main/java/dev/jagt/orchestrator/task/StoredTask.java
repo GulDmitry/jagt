@@ -93,7 +93,8 @@ record StoredTask(
 
     private TaskState.Round migratedRound() {
         return new TaskState.Round(round.mrCreatedAt(), round.requestOpenedAt(), round.lastPolledAt(),
-                round.autoReview(), round.approved(), round.told(), Loop.trail(round.trail(), unmigrated.loop()));
+                round.autoReview(), round.approved(), LegacyTold.of(round.told(), work.turn()),
+                Loop.trail(round.trail(), unmigrated.loop()));
     }
 
     private TaskState.Checks migratedChecks() {
@@ -106,7 +107,8 @@ record StoredTask(
     private TaskState.Work migratedWork() {
         List<HumanWait> waits = work.waits();
         return new TaskState.Work(Session.migrated(work.session(), unmigrated.silentSince()),
-                LegacyMaster.withoutMarks(LegacyQa.withoutMarks(work.turn())), waits == null ? List.of() : waits,
+                LegacyTold.withoutMarks(LegacyMaster.withoutMarks(LegacyQa.withoutMarks(work.turn()))),
+                waits == null ? List.of() : waits,
                 Loop.stop(work.stop(), unmigrated.loop()), work.repoRequest(), work.deployment(),
                 LegacyRoles.of(work.roles(), LegacyQa.of(unmigrated.qa(), work.turn(), standing.status())),
                 LegacyMaster.of(work.master(), work.turn()));

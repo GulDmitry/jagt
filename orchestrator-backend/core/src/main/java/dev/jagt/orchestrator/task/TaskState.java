@@ -86,7 +86,7 @@ public record TaskState(
             // Whether the host says this round is approved. Null = no read has said yet.
             @Nullable Boolean approved,
             // Null until an auto-review ping was sent.
-            @Nullable AutoReviewTold told,
+            @Nullable ToldOnce told,
             @Nullable RoundTrail trail
     ) {
     }
@@ -188,7 +188,7 @@ public record TaskState(
     @JsonIgnore public long lastPolledAt() { return round.lastPolledAt(); }
     @JsonIgnore public @Nullable Boolean autoReview() { return round.autoReview(); }
     @JsonIgnore public @Nullable Boolean approved() { return round.approved(); }
-    @JsonIgnore public @Nullable AutoReviewTold told() { return round.told(); }
+    @JsonIgnore public @Nullable ToldOnce told() { return round.told(); }
     @JsonIgnore public @Nullable RoundTrail trail() { return round.trail(); }
     @JsonIgnore public @Nullable String pipelineStatus() { return checks.pipelineStatus(); }
     @JsonIgnore public List<ChecksUnread> checksUnread() { return checks.checksUnread(); }
@@ -755,16 +755,16 @@ public record TaskState(
     }
 
     @JsonIgnore
-    public AutoReviewTold toldOrNone() {
-        return told() == null ? AutoReviewTold.none() : told();
+    public ToldOnce toldOrNone() {
+        return told() == null ? ToldOnce.none() : told();
     }
 
     public TaskState withWaits(List<HumanWait> waits) {
         return toBuilder().waits(waits).build();
     }
 
-    public TaskState withTold(AutoReviewTold told) {
-        return toBuilder().told(told.isNone() ? null : told).build();
+    public TaskState withTold(ToldOnce told) {
+        return toBuilder().told(told.isEmpty() ? null : told).build();
     }
 
     public TaskState withSession(Session session) {
@@ -807,7 +807,7 @@ public record TaskState(
         private long lastPolledAt;
         private @Nullable Boolean autoReview;
         private @Nullable Boolean approved;
-        private @Nullable AutoReviewTold told;
+        private @Nullable ToldOnce told;
         private @Nullable RoundTrail trail;
         private @Nullable String pipelineStatus;
         private List<ChecksUnread> checksUnread = List.of();
@@ -845,7 +845,7 @@ public record TaskState(
         public TaskStateBuilder lastPolledAt(long lastPolledAt) { this.lastPolledAt = lastPolledAt; return this; }
         public TaskStateBuilder autoReview(@Nullable Boolean autoReview) { this.autoReview = autoReview; return this; }
         public TaskStateBuilder approved(@Nullable Boolean approved) { this.approved = approved; return this; }
-        public TaskStateBuilder told(@Nullable AutoReviewTold told) { this.told = told; return this; }
+        public TaskStateBuilder told(@Nullable ToldOnce told) { this.told = told; return this; }
         public TaskStateBuilder trail(@Nullable RoundTrail trail) { this.trail = trail; return this; }
         public TaskStateBuilder pipelineStatus(@Nullable String pipelineStatus) { this.pipelineStatus = pipelineStatus; return this; }
         public TaskStateBuilder checksUnread(List<ChecksUnread> checksUnread) { this.checksUnread = checksUnread; return this; }

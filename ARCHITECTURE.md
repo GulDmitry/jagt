@@ -110,7 +110,9 @@ answer. Every type in `flow/`, one question each:
   [`docs/task-approval-chart.md`](docs/task-approval-chart.md); the infrastructure re-runs, in
   [`docs/task-infra-chart.md`](docs/task-infra-chart.md); QA's read, pass and round, in
   [`docs/task-qa-chart.md`](docs/task-qa-chart.md); what the Master left, in
-  [`docs/task-master-chart.md`](docs/task-master-chart.md). The other marks are bookkeeping, written by `withMark` from anywhere.
+  [`docs/task-master-chart.md`](docs/task-master-chart.md). What was told once is the ledger `task/ToldOnce`, written by the
+  reducer alone ([0144](docs/decisions/0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md)); the other
+  marks are bookkeeping, written by `withMark` from anywhere.
 - `withStatus` has exactly two callers outside the record itself: the two doors (`FlowDoorsTest`). A task is born at NEW
   (`service/TaskProvisioning`).
 - **A move with no edge in `TaskChart` is not in the table**; `FlowRules.allows(...)` is the query the engine and the
