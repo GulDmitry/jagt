@@ -1,104 +1,132 @@
 package dev.jagt.orchestrator.command;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class CommandReferenceTest {
 
-    private record Declared(String id, String hint, List<String> usage, boolean report,
-                           boolean aboutOneTask, int rank) implements GlobalCommand {
-        @Override
-        public String run(String tail) {
-            return "ran";
-        }
+  private record Declared(
+      String id, String hint, List<String> usage, boolean report, boolean aboutOneTask, int rank)
+      implements GlobalCommand {
+    @Override
+    public String run(String tail) {
+      return "ran";
     }
+  }
 
-    private static final GlobalCommand SPEND = new Declared("spend", "what the calls cost",
-            List.of("spend [since]", "  … today — only this session"), true, false, 15);
+  private static final GlobalCommand SPEND =
+      new Declared(
+          "spend",
+          "what the calls cost",
+          List.of("spend [since]", "  … today — only this session"),
+          true,
+          false,
+          15);
 
-    @Test
-    void advertisesOnlyTheCurrentSpellingOfARenamedVerb() {
-        assertThat(CommandReference.text(List.of())).contains("sweep <ticket>").doesNotContain("review <ticket>");
-    }
+  @Test
+  void advertisesOnlyTheCurrentSpellingOfARenamedVerb() {
+    assertThat(CommandReference.text(List.of()))
+        .contains("sweep <ticket>")
+        .doesNotContain("review <ticket>");
+  }
 
-    @Test
-    void offersOnlyTheCurrentSpellingToThePalette() {
-        assertThat(CommandReference.verbs(List.of())).extracting(CommandReference.Verb::id)
-                .contains("sweep").doesNotContain("review");
-    }
+  @Test
+  void offersOnlyTheCurrentSpellingToThePalette() {
+    assertThat(CommandReference.verbs(List.of()))
+        .extracting(CommandReference.Verb::id)
+        .contains("sweep")
+        .doesNotContain("review");
+  }
 
-    @Test
-    void handsThePaletteTheRetiredSpellingSoMuscleMemoryStillRuns() {
-        assertThat(CommandReference.verbs(List.of())).filteredOn(verb -> verb.id().equals("sweep"))
-                .singleElement().extracting(CommandReference.Verb::aliases)
-                .isEqualTo(List.of("review"));
-    }
+  @Test
+  void handsThePaletteTheRetiredSpellingSoMuscleMemoryStillRuns() {
+    assertThat(CommandReference.verbs(List.of()))
+        .filteredOn(verb -> verb.id().equals("sweep"))
+        .singleElement()
+        .extracting(CommandReference.Verb::aliases)
+        .isEqualTo(List.of("review"));
+  }
 
-    @Test
-    void putsACommandDeclaredOnceIntoTheReferenceAndThePaletteBoth() {
-        assertThat(CommandReference.text(List.of(SPEND))).contains("spend [since]", "what the calls cost");
-        assertThat(CommandReference.verbs(List.of(SPEND))).filteredOn(verb -> verb.id().equals("spend"))
-                .singleElement().satisfies(verb -> {
-                    assertThat(verb.report()).isTrue();
-                    assertThat(verb.takesTask()).isFalse();
-                });
-    }
+  @Test
+  void putsACommandDeclaredOnceIntoTheReferenceAndThePaletteBoth() {
+    assertThat(CommandReference.text(List.of(SPEND)))
+        .contains("spend [since]", "what the calls cost");
+    assertThat(CommandReference.verbs(List.of(SPEND)))
+        .filteredOn(verb -> verb.id().equals("spend"))
+        .singleElement()
+        .satisfies(
+            verb -> {
+              assertThat(verb.report()).isTrue();
+              assertThat(verb.takesTask()).isFalse();
+            });
+  }
 
-    @Test
-    void sortsACommandAmongTheTaskVerbsByTheRankItDeclares() {
-        assertThat(CommandReference.verbs(List.of(SPEND))).extracting(CommandReference.Verb::id)
-                .startsWith("sweep", "spend", "ship");
-    }
+  @Test
+  void sortsACommandAmongTheTaskVerbsByTheRankItDeclares() {
+    assertThat(CommandReference.verbs(List.of(SPEND)))
+        .extracting(CommandReference.Verb::id)
+        .startsWith("sweep", "spend", "ship");
+  }
 
-    @Test
-    void ordersTwoCommandsOfTheSameRankByTheirIdWhateverOrderTheyWereDeclaredIn() {
-        GlobalCommand zeta = new Declared("zeta", "last by name", List.of("zeta"), false, false, 15);
-        GlobalCommand alpha = new Declared("alpha", "first by name", List.of("alpha"), false, false, 15);
+  @Test
+  void ordersTwoCommandsOfTheSameRankByTheirIdWhateverOrderTheyWereDeclaredIn() {
+    GlobalCommand zeta = new Declared("zeta", "last by name", List.of("zeta"), false, false, 15);
+    GlobalCommand alpha =
+        new Declared("alpha", "first by name", List.of("alpha"), false, false, 15);
 
-        assertThat(CommandReference.verbs(List.of(zeta, alpha))).extracting(CommandReference.Verb::id)
-                .containsSubsequence("alpha", "zeta");
-    }
+    assertThat(CommandReference.verbs(List.of(zeta, alpha)))
+        .extracting(CommandReference.Verb::id)
+        .containsSubsequence("alpha", "zeta");
+  }
 
-    @Test
-    void handsNoPartToACommandThatBelongsToNone() {
-        assertThat(CommandReference.verbs(List.of(SPEND))).filteredOn(verb -> verb.id().equals("spend"))
-                .singleElement().extracting(CommandReference.Verb::part).isNull();
-    }
+  @Test
+  void handsNoPartToACommandThatBelongsToNone() {
+    assertThat(CommandReference.verbs(List.of(SPEND)))
+        .filteredOn(verb -> verb.id().equals("spend"))
+        .singleElement()
+        .extracting(CommandReference.Verb::part)
+        .isNull();
+  }
 
-    @Test
-    void printsAModifierUnderTheVerbItBelongsTo() {
-        List<String> lines = List.of(CommandReference.text(List.of(SPEND)).split("\n"));
+  @Test
+  void printsAModifierUnderTheVerbItBelongsTo() {
+    List<String> lines = List.of(CommandReference.text(List.of(SPEND)).split("\n"));
 
-        int verb = lines.indexOf(lines.stream().filter(l -> l.contains("spend [since]")).findFirst().orElseThrow());
-        assertThat(lines.get(verb + 1)).contains("only this session");
-    }
+    int verb =
+        lines.indexOf(
+            lines.stream().filter(l -> l.contains("spend [since]")).findFirst().orElseThrow());
+    assertThat(lines.get(verb + 1)).contains("only this session");
+  }
 
-    @Test
-    void marksAReportAboutOneTaskSoNoSurfaceOffersItWithoutOne() {
-        GlobalCommand drafts = new Declared("drafts", "what one task drafted", List.of("drafts <task>"), true,
-                true, 200);
+  @Test
+  void marksAReportAboutOneTaskSoNoSurfaceOffersItWithoutOne() {
+    GlobalCommand drafts =
+        new Declared("drafts", "what one task drafted", List.of("drafts <task>"), true, true, 200);
 
-        assertThat(CommandReference.verbs(List.of(drafts))).filteredOn(verb -> verb.id().equals("drafts"))
-                .singleElement().extracting(CommandReference.Verb::aboutOneTask).isEqualTo(true);
-    }
+    assertThat(CommandReference.verbs(List.of(drafts)))
+        .filteredOn(verb -> verb.id().equals("drafts"))
+        .singleElement()
+        .extracting(CommandReference.Verb::aboutOneTask)
+        .isEqualTo(true);
+  }
 
-    @Test
-    void alignsEveryHintInOneColumn() {
-        List<String> lines = List.of(CommandReference.text(List.of(SPEND)).split("\n"));
+  @Test
+  void alignsEveryHintInOneColumn() {
+    List<String> lines = List.of(CommandReference.text(List.of(SPEND)).split("\n"));
 
-        assertThat(lines).contains("  spend [since]                what the calls cost");
-    }
+    assertThat(lines).contains("  spend [since]                what the calls cost");
+  }
 
-    @Test
-    void separatesAUsageAsWideAsTheColumnFromItsHintByOneSpace() {
-        GlobalCommand wide = new Declared("wide", "the hint", List.of("abcdefghij abcdefghij abcdefg"), true, false,
-                200);
+  @Test
+  void separatesAUsageAsWideAsTheColumnFromItsHintByOneSpace() {
+    GlobalCommand wide =
+        new Declared(
+            "wide", "the hint", List.of("abcdefghij abcdefghij abcdefg"), true, false, 200);
 
-        List<String> lines = List.of(CommandReference.text(List.of(wide)).split("\n"));
+    List<String> lines = List.of(CommandReference.text(List.of(wide)).split("\n"));
 
-        assertThat(lines).contains("  abcdefghij abcdefghij abcdefg the hint");
-    }
+    assertThat(lines).contains("  abcdefghij abcdefghij abcdefg the hint");
+  }
 }

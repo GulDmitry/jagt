@@ -4,5 +4,5 @@ import java.util.List;
 
 public interface Invariant {
 
-    List<Violation> check(RunRecord run);
+  List<Violation> check(RunRecord run);
 }

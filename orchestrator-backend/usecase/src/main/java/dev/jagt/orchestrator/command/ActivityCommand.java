@@ -7,30 +7,30 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ActivityCommand implements GlobalCommand {
 
-    private final ActivityReport activity;
+  private final ActivityReport activity;
 
-    @Override
-    public String id() {
-        return "activity";
-    }
+  @Override
+  public String id() {
+    return "activity";
+  }
 
-    @Override
-    public int rank() {
-        return 140;
-    }
+  @Override
+  public int rank() {
+    return 140;
+  }
 
-    @Override
-    public String hint() {
-        return "what jagt did on its own, newest first";
-    }
+  @Override
+  public String hint() {
+    return "what jagt did on its own, newest first";
+  }
 
-    @Override
-    public boolean report() {
-        return true;
-    }
+  @Override
+  public boolean report() {
+    return true;
+  }
 
-    @Override
-    public String run(String tail) {
-        return activity.render();
-    }
+  @Override
+  public String run(String tail) {
+    return activity.render();
+  }
 }

@@ -1,85 +1,111 @@
 package dev.jagt.orchestrator.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.TaskState;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
-
+import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import tools.jackson.databind.json.JsonMapper;
 
 class FinishedTasksTest {
 
-    @Test
-    void keepsARetiredTaskAfterTheStateEntryIsGone(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
-        StateService state = new StateService(mapper, paths);
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1")
-                .title("a thing").build());
-        FinishedTasks finished = new FinishedTasks(mapper, state, paths, mock(MasterReview.class), Clock.systemUTC());
+  @Test
+  void keepsARetiredTaskAfterTheStateEntryIsGone(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    StateService state = new StateService(mapper, paths);
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").title("a thing").build());
+    FinishedTasks finished =
+        new FinishedTasks(mapper, state, paths, mock(MasterReview.class), Clock.systemUTC());
 
-        finished.record("ABC-1");
-        state.removeTask("ABC-1");
+    finished.record("ABC-1");
+    state.removeTask("ABC-1");
 
-        List<FinishedTask> all = finished.all();
-        assertThat(all).singleElement().satisfies(task -> {
-            assertThat(task.identity().id()).isEqualTo("ABC-1");
-            assertThat(task.identity().title()).isEqualTo("a thing");
-        });
-    }
+    List<FinishedTask> all = finished.all();
+    assertThat(all)
+        .singleElement()
+        .satisfies(
+            task -> {
+              assertThat(task.identity().id()).isEqualTo("ABC-1");
+              assertThat(task.identity().title()).isEqualTo("a thing");
+            });
+  }
 
-    @Test
-    void skipsALineItCannotParseInsteadOfLosingTheWholeLog(@TempDir Path root) throws Exception {
-        JsonMapper mapper = new JsonMapper();
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
-        StateService state = new StateService(mapper, paths);
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
-        FinishedTasks finished = new FinishedTasks(mapper, state, paths, mock(MasterReview.class), Clock.systemUTC());
-        finished.record("ABC-1");
-        Files.writeString(root.resolve("finished.jsonl"),
-                Files.readString(root.resolve("finished.jsonl")) + "{ this is not json\n");
+  @Test
+  void skipsALineItCannotParseInsteadOfLosingTheWholeLog(@TempDir Path root) throws Exception {
+    JsonMapper mapper = new JsonMapper();
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    StateService state = new StateService(mapper, paths);
+    state.putTask(
+        "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
+    FinishedTasks finished =
+        new FinishedTasks(mapper, state, paths, mock(MasterReview.class), Clock.systemUTC());
+    finished.record("ABC-1");
+    Files.writeString(
+        root.resolve("finished.jsonl"),
+        Files.readString(root.resolve("finished.jsonl")) + "{ this is not json\n");
 
-        assertThat(finished.all()).singleElement()
-                .satisfies(task -> assertThat(task.identity().id()).isEqualTo("ABC-1"));
-    }
+    assertThat(finished.all())
+        .singleElement()
+        .satisfies(task -> assertThat(task.identity().id()).isEqualTo("ABC-1"));
+  }
 
-    @Test
-    void packsTheOlderHalfBesideItOnceTheLogPassesItsCeiling(@TempDir Path root) throws Exception {
-        JsonMapper mapper = new JsonMapper();
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
-        StateService state = new StateService(mapper, paths);
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
-        state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a2").build());
-        state.putTask("ABC-3", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a3").build());
-        FinishedTasks finished = new FinishedTasks(mapper, state, paths, mock(MasterReview.class), Clock.systemUTC());
-        finished.record("ABC-1");
-        finished.record("ABC-2");
-        Files.writeString(root.resolve("finished.jsonl"), Files.readString(root.resolve("finished.jsonl"))
-                + "#".repeat(10 * 1024 * 1024) + "\n");
+  @Test
+  void packsTheOlderHalfBesideItOnceTheLogPassesItsCeiling(@TempDir Path root) throws Exception {
+    JsonMapper mapper = new JsonMapper();
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    StateService state = new StateService(mapper, paths);
+    state.putTask(
+        "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
+    state.putTask(
+        "ABC-2", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a2").build());
+    state.putTask(
+        "ABC-3", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a3").build());
+    FinishedTasks finished =
+        new FinishedTasks(mapper, state, paths, mock(MasterReview.class), Clock.systemUTC());
+    finished.record("ABC-1");
+    finished.record("ABC-2");
+    Files.writeString(
+        root.resolve("finished.jsonl"),
+        Files.readString(root.resolve("finished.jsonl")) + "#".repeat(10 * 1024 * 1024) + "\n");
 
-        finished.record("ABC-3");
+    finished.record("ABC-3");
 
-        assertThat(finished.all()).extracting(task -> task.identity().id()).containsExactly("ABC-3");
-        assertThat(finished.archives()).singleElement().satisfies(archive -> {
-            try (var in = new GZIPInputStream(Files.newInputStream(archive))) {
-                assertThat(new String(in.readAllBytes())).contains("\"ABC-1\"", "\"ABC-2\"")
-                        .doesNotContain("\"ABC-3\"");
-            }
-        });
-    }
+    assertThat(finished.all()).extracting(task -> task.identity().id()).containsExactly("ABC-3");
+    assertThat(finished.archives())
+        .singleElement()
+        .satisfies(
+            archive -> {
+              try (var in = new GZIPInputStream(Files.newInputStream(archive))) {
+                assertThat(new String(in.readAllBytes()))
+                    .contains("\"ABC-1\"", "\"ABC-2\"")
+                    .doesNotContain("\"ABC-3\"");
+              }
+            });
+  }
 }

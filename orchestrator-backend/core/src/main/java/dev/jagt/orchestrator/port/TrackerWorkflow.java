@@ -4,28 +4,32 @@ import dev.jagt.orchestrator.task.TicketFacts;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Which stages of a tracker's workflow jagt acts on: what it may start unasked, and what closes the task working
- * on it. Not a client — the reading stays the assistant's and jagt holds no credential — but the vocabulary those
- * reads are judged against, and that vocabulary is a tracker's own rather than jagt's.
+ * Which stages of a tracker's workflow jagt acts on: what it may start unasked, and what closes the
+ * task working on it. Not a client — the reading stays the assistant's and jagt holds no credential
+ * — but the vocabulary those reads are judged against, and that vocabulary is a tracker's own
+ * rather than jagt's.
  */
 public interface TrackerWorkflow {
 
-    /** The {@code orchestrator.tracker.workflow} value selecting this one. */
-    String id();
+  /** The {@code orchestrator.tracker.workflow} value selecting this one. */
+  String id();
 
-    /** Whether a name is the key this tracker gives an item, as opposed to a url or a branch named after anything else. */
-    boolean isItemKey(@Nullable String name);
+  /**
+   * Whether a name is the key this tracker gives an item, as opposed to a url or a branch named
+   * after anything else.
+   */
+  boolean isItemKey(@Nullable String name);
 
-    /** What the assistant is asked to find, phrased the way THIS tracker is searched. */
-    String candidateQuery();
+  /** What the assistant is asked to find, phrased the way THIS tracker is searched. */
+  String candidateQuery();
 
-    /**
-     * Whether an item's own facts make it one a machine may start. Decided on the facts read back off the item
-     * rather than on whatever listed it; a status nobody could read is the caller's to tell apart from one that
-     * simply does not match.
-     */
-    boolean startsWork(TicketFacts facts);
+  /**
+   * Whether an item's own facts make it one a machine may start. Decided on the facts read back off
+   * the item rather than on whatever listed it; a status nobody could read is the caller's to tell
+   * apart from one that simply does not match.
+   */
+  boolean startsWork(TicketFacts facts);
 
-    /** Whether the item has reached the stage that closes the task working on it. */
-    boolean closesWork(TicketFacts facts);
+  /** Whether the item has reached the stage that closes the task working on it. */
+  boolean closesWork(TicketFacts facts);
 }

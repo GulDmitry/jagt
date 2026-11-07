@@ -6,11 +6,6 @@ import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.service.ReadScopes;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.task.AssistantCallKind;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import tools.jackson.databind.json.JsonMapper;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,112 +14,233 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import tools.jackson.databind.json.JsonMapper;
 
-/** A headless read takes its orders from the text it reads, so what it may call is bounded here, not in the prompt. */
+/**
+ * A headless read takes its orders from the text it reads, so what it may call is bounded here, not
+ * in the prompt.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 class ReadOnlyTools {
 
-    /**
-     * An allow glob needs the literal server before it, so a read is allowed by its verb, server by server.
-     * {@code query} is none: a database server's query runs SQL.
-     */
-    private static final List<String> READ_VERBS = List.of("get", "list", "search", "read", "fetch", "find",
-            "describe", "lookup", "whoami", "discover");
+  /**
+   * An allow glob needs the literal server before it, so a read is allowed by its verb, server by
+   * server. {@code query} is none: a database server's query runs SQL.
+   */
+  private static final List<String> READ_VERBS =
+      List.of(
+          "get",
+          "list",
+          "search",
+          "read",
+          "fetch",
+          "find",
+          "describe",
+          "lookup",
+          "whoami",
+          "discover");
 
-    /** A read named by what it returns, not by a verb. */
-    private static final List<String> READ_NOUNS = List.of("discussions", "notes");
+  /** A read named by what it returns, not by a verb. */
+  private static final List<String> READ_NOUNS = List.of("discussions", "notes");
 
-    /** Behind the fence, a second line: a write the human allowed everywhere is denied by its verb. */
-    static final List<String> MCP_WRITES = Stream.concat(Stream.of("accept", "add", "approve", "archive", "assign",
-                            "cancel", "click", "close", "comment", "create", "delete", "drag", "edit", "emulate",
-                            "evaluate", "exec", "fill", "fork", "handle", "hover", "insert", "invite", "lighthouse",
-                            "link", "manage", "mark", "merge", "move", "navigate", "new", "patch", "performance",
-                            "post", "press", "publish", "push", "put", "python", "react", "remove", "rename",
-                            "replace", "reply", "resolve", "respond", "run", "save", "schedule", "select", "send",
-                            "set", "share", "start", "stop", "submit", "take", "transition", "trigger", "type",
-                            "update", "upload", "wait", "write")
-                    .map(verb -> "mcp__*__" + verb + "*"),
-            // A read's own name may hold `merge` or `type`, so only these verbs are refused mid-name.
-            Stream.of("audit", "clear", "create", "delete", "remove", "rename", "replace", "send", "start", "submit",
-                            "update", "upload", "write")
-                    .flatMap(verb -> Stream.of("mcp__*__*_" + verb, "mcp__*__*_" + verb + "_*", "mcp__*__*-" + verb + "*",
-                            "mcp__*__*" + Character.toUpperCase(verb.charAt(0)) + verb.substring(1) + "*")))
-            .toList();
+  /**
+   * Behind the fence, a second line: a write the human allowed everywhere is denied by its verb.
+   */
+  static final List<String> MCP_WRITES =
+      Stream.concat(
+              Stream.of(
+                      "accept",
+                      "add",
+                      "approve",
+                      "archive",
+                      "assign",
+                      "cancel",
+                      "click",
+                      "close",
+                      "comment",
+                      "create",
+                      "delete",
+                      "drag",
+                      "edit",
+                      "emulate",
+                      "evaluate",
+                      "exec",
+                      "fill",
+                      "fork",
+                      "handle",
+                      "hover",
+                      "insert",
+                      "invite",
+                      "lighthouse",
+                      "link",
+                      "manage",
+                      "mark",
+                      "merge",
+                      "move",
+                      "navigate",
+                      "new",
+                      "patch",
+                      "performance",
+                      "post",
+                      "press",
+                      "publish",
+                      "push",
+                      "put",
+                      "python",
+                      "react",
+                      "remove",
+                      "rename",
+                      "replace",
+                      "reply",
+                      "resolve",
+                      "respond",
+                      "run",
+                      "save",
+                      "schedule",
+                      "select",
+                      "send",
+                      "set",
+                      "share",
+                      "start",
+                      "stop",
+                      "submit",
+                      "take",
+                      "transition",
+                      "trigger",
+                      "type",
+                      "update",
+                      "upload",
+                      "wait",
+                      "write")
+                  .map(verb -> "mcp__*__" + verb + "*"),
+              // A read's own name may hold `merge` or `type`, so only these verbs are refused
+              // mid-name.
+              Stream.of(
+                      "audit", "clear", "create", "delete", "remove", "rename", "replace", "send",
+                      "start", "submit", "update", "upload", "write")
+                  .flatMap(
+                      verb ->
+                          Stream.of(
+                              "mcp__*__*_" + verb,
+                              "mcp__*__*_" + verb + "_*",
+                              "mcp__*__*-" + verb + "*",
+                              "mcp__*__*"
+                                  + Character.toUpperCase(verb.charAt(0))
+                                  + verb.substring(1)
+                                  + "*")))
+          .toList();
 
-    private static final Pattern BARE_SERVER = Pattern.compile("mcp__(?!.*__)[^*]+");
+  private static final Pattern BARE_SERVER = Pattern.compile("mcp__(?!.*__)[^*]+");
 
-    private final McpHealth mcp;
-    private final AssistantProperties assistant;
-    private final ReadScopes scopes;
-    private final HookEndpoint hooks;
-    private final JsonMapper mapper = new JsonMapper();
+  private final McpHealth mcp;
+  private final AssistantProperties assistant;
+  private final ReadScopes scopes;
+  private final HookEndpoint hooks;
+  private final JsonMapper mapper = new JsonMapper();
 
-    /** Every call of the run under {@code fence} is put to jagt first: a hook's deny beats any allow rule. */
-    List<String> fence(String fence, ReadScope scope) {
-        open(fence, scope);
-        return List.of("--settings", mapper.writeValueAsString(Map.of("disableAllHooks", false,
-                "hooks", Map.of("PreToolUse", List.of(Map.of("hooks", List.of(Map.of("type", "command",
-                        "command", hooks.readGateCommand(fence), "timeout", 10))))))));
+  /**
+   * Every call of the run under {@code fence} is put to jagt first: a hook's deny beats any allow
+   * rule.
+   */
+  List<String> fence(String fence, ReadScope scope) {
+    open(fence, scope);
+    return List.of(
+        "--settings",
+        mapper.writeValueAsString(
+            Map.of(
+                "disableAllHooks",
+                false,
+                "hooks",
+                Map.of(
+                    "PreToolUse",
+                    List.of(
+                        Map.of(
+                            "hooks",
+                            List.of(
+                                Map.of(
+                                    "type",
+                                    "command",
+                                    "command",
+                                    hooks.readGateCommand(fence),
+                                    "timeout",
+                                    10))))))));
+  }
+
+  void open(String fence, ReadScope scope) {
+    scopes.open(fence, scope.withWrites(MCP_WRITES));
+  }
+
+  /** Every call the run under {@code fence} made, asked before {@link #lift} forgets them. */
+  List<String> calls(String fence) {
+    return scopes.heard(fence);
+  }
+
+  /** Whether the fence refused a call of the run, asked before {@link #lift} forgets it. */
+  boolean refused(String fence) {
+    return scopes.refused(fence);
+  }
+
+  /**
+   * Why the fence held nothing, where no call ever reached it: a managed policy may drop a hook
+   * unsaid.
+   */
+  Optional<String> lift(String fence) {
+    return scopes.close(fence) ? Optional.empty() : Optional.of("no call reached the read gate");
+  }
+
+  /**
+   * The read-shaped tools of every server this kind of call loads, and the human's own list beside
+   * them.
+   */
+  List<String> allowed(AssistantCallKind kind) {
+    String pinned = assistant.mcpConfigFor(kind);
+    List<String> servers = pinned.isBlank() ? mcp.servers().orElse(List.of()) : declared(pinned);
+    return Stream.concat(
+            servers.stream()
+                .map(name -> "mcp__" + name.replaceAll("[^A-Za-z0-9_-]", "_"))
+                .flatMap(ReadOnlyTools::readsOf),
+            named(assistant.allowedTools()).stream())
+        .toList();
+  }
+
+  /**
+   * A bare server the human names is its reads; only a tool or a glob named in full widens past
+   * them.
+   */
+  static List<String> named(List<String> tools) {
+    return tools.stream()
+        .flatMap(tool -> BARE_SERVER.matcher(tool).matches() ? readsOf(tool) : Stream.of(tool))
+        .toList();
+  }
+
+  /** The MCP tools among the human's allowed ones, a bare server as its reads. */
+  static List<String> mcpNamed(List<String> allowed) {
+    return named(allowed.stream().filter(tool -> tool.startsWith("mcp__")).toList());
+  }
+
+  private static Stream<String> readsOf(String server) {
+    return Stream.concat(
+        READ_VERBS.stream().map(verb -> server + "__" + verb + "*"),
+        READ_NOUNS.stream().map(noun -> server + "__*" + noun + "*"));
+  }
+
+  private List<String> declared(String pinned) {
+    try {
+      String json = pinned.strip().startsWith("{") ? pinned : Files.readString(Path.of(pinned));
+      return List.copyOf(mapper.readTree(json).path("mcpServers").propertyNames());
+    } catch (IOException | RuntimeException e) {
+      log.atWarn()
+          .setMessage("mcp config unreadable")
+          .addKeyValue("path", pinned)
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "no mcp tool allowed")
+          .log();
+      return List.of();
     }
-
-    void open(String fence, ReadScope scope) {
-        scopes.open(fence, scope.withWrites(MCP_WRITES));
-    }
-
-    /** Every call the run under {@code fence} made, asked before {@link #lift} forgets them. */
-    List<String> calls(String fence) {
-        return scopes.heard(fence);
-    }
-
-    /** Whether the fence refused a call of the run, asked before {@link #lift} forgets it. */
-    boolean refused(String fence) {
-        return scopes.refused(fence);
-    }
-
-    /** Why the fence held nothing, where no call ever reached it: a managed policy may drop a hook unsaid. */
-    Optional<String> lift(String fence) {
-        return scopes.close(fence) ? Optional.empty() : Optional.of("no call reached the read gate");
-    }
-
-    /** The read-shaped tools of every server this kind of call loads, and the human's own list beside them. */
-    List<String> allowed(AssistantCallKind kind) {
-        String pinned = assistant.mcpConfigFor(kind);
-        List<String> servers = pinned.isBlank() ? mcp.servers().orElse(List.of()) : declared(pinned);
-        return Stream.concat(servers.stream()
-                        .map(name -> "mcp__" + name.replaceAll("[^A-Za-z0-9_-]", "_"))
-                        .flatMap(ReadOnlyTools::readsOf),
-                named(assistant.allowedTools()).stream()).toList();
-    }
-
-    /** A bare server the human names is its reads; only a tool or a glob named in full widens past them. */
-    static List<String> named(List<String> tools) {
-        return tools.stream().flatMap(tool -> BARE_SERVER.matcher(tool).matches() ? readsOf(tool) : Stream.of(tool))
-                .toList();
-    }
-
-    /** The MCP tools among the human's allowed ones, a bare server as its reads. */
-    static List<String> mcpNamed(List<String> allowed) {
-        return named(allowed.stream().filter(tool -> tool.startsWith("mcp__")).toList());
-    }
-
-    private static Stream<String> readsOf(String server) {
-        return Stream.concat(READ_VERBS.stream().map(verb -> server + "__" + verb + "*"),
-                READ_NOUNS.stream().map(noun -> server + "__*" + noun + "*"));
-    }
-
-    private List<String> declared(String pinned) {
-        try {
-            String json = pinned.strip().startsWith("{") ? pinned : Files.readString(Path.of(pinned));
-            return List.copyOf(mapper.readTree(json).path("mcpServers").propertyNames());
-        } catch (IOException | RuntimeException e) {
-            log.atWarn().setMessage("mcp config unreadable")
-                    .addKeyValue("path", pinned)
-                    .addKeyValue("cause", e.toString())
-                    .addKeyValue("effect", "no mcp tool allowed")
-                    .log();
-            return List.of();
-        }
-    }
+  }
 }

@@ -5,61 +5,61 @@ import dev.jagt.orchestrator.task.Master;
 /** One thing written to what the Master left on a task. */
 sealed interface MasterNote {
 
-    Master applyTo(Master master);
+  Master applyTo(Master master);
 
-    record Left(String step) implements MasterNote {
+  record Left(String step) implements MasterNote {
 
-        @Override
-        public Master applyTo(Master master) {
-            return master.withLeft(step);
-        }
+    @Override
+    public Master applyTo(Master master) {
+      return master.withLeft(step);
     }
+  }
 
-    record Took() implements MasterNote {
+  record Took() implements MasterNote {
 
-        @Override
-        public Master applyTo(Master master) {
-            return master.withLeft("");
-        }
+    @Override
+    public Master applyTo(Master master) {
+      return master.withLeft("");
     }
+  }
 
-    record Unanswered(String digest) implements MasterNote {
+  record Unanswered(String digest) implements MasterNote {
 
-        @Override
-        public Master applyTo(Master master) {
-            return master.withUnanswered(digest);
-        }
+    @Override
+    public Master applyTo(Master master) {
+      return master.withUnanswered(digest);
     }
+  }
 
-    record PressedDeploy(String arrival) implements MasterNote {
+  record PressedDeploy(String arrival) implements MasterNote {
 
-        @Override
-        public Master applyTo(Master master) {
-            return master.withPressedDeploy(arrival);
-        }
+    @Override
+    public Master applyTo(Master master) {
+      return master.withPressedDeploy(arrival);
     }
+  }
 
-    record Sealed(String seal, long round) implements MasterNote {
+  record Sealed(String seal, long round) implements MasterNote {
 
-        @Override
-        public Master applyTo(Master master) {
-            return master.withSeal(seal, round);
-        }
+    @Override
+    public Master applyTo(Master master) {
+      return master.withSeal(seal, round);
     }
+  }
 
-    record AskedStop(String key) implements MasterNote {
+  record AskedStop(String key) implements MasterNote {
 
-        @Override
-        public Master applyTo(Master master) {
-            return master.withAskedStop(key);
-        }
+    @Override
+    public Master applyTo(Master master) {
+      return master.withAskedStop(key);
     }
+  }
 
-    record LiftedStops(int count) implements MasterNote {
+  record LiftedStops(int count) implements MasterNote {
 
-        @Override
-        public Master applyTo(Master master) {
-            return master.withLiftedStops(count);
-        }
+    @Override
+    public Master applyTo(Master master) {
+      return master.withLiftedStops(count);
     }
+  }
 }

@@ -15,36 +15,44 @@ import tools.jackson.databind.JsonNode;
 
 public final class ContextRelays {
 
-    private final SessionBrief brief;
-    private final Map<String, String> seen = new HashMap<>();
+  private final SessionBrief brief;
+  private final Map<String, String> seen = new HashMap<>();
 
-    public ContextRelays(SessionBrief brief) {
-        this.brief = brief;
-    }
+  public ContextRelays(SessionBrief brief) {
+    this.brief = brief;
+  }
 
-    public Optional<List<String>> changed(String task, JsonNode state) {
-        String worktree = state.path("repos").path(0).path("worktreePath").asString("");
-        Path context = Path.of(worktree).resolve(Artifact.CONTEXT.fileName());
-        if (worktree.isEmpty() || !Files.isRegularFile(context)) {
-            return Optional.empty();
-        }
-        String text = read(context);
-        if (text.equals(seen.put(task, text))) {
-            return Optional.empty();
-        }
-        return Optional.of(steps(text));
+  public Optional<List<String>> changed(String task, JsonNode state) {
+    String worktree = state.path("repos").path(0).path("worktreePath").asString("");
+    Path context = Path.of(worktree).resolve(Artifact.CONTEXT.fileName());
+    if (worktree.isEmpty() || !Files.isRegularFile(context)) {
+      return Optional.empty();
     }
+    String text = read(context);
+    if (text.equals(seen.put(task, text))) {
+      return Optional.empty();
+    }
+    return Optional.of(steps(text));
+  }
 
-    private List<String> steps(String text) {
-        return Arrays.stream(Step.values()).filter(step -> brief.section(step).filter(body -> !body.isBlank())
-                .filter(text::contains).isPresent()).map(Step::id).toList();
-    }
+  private List<String> steps(String text) {
+    return Arrays.stream(Step.values())
+        .filter(
+            step ->
+                brief
+                    .section(step)
+                    .filter(body -> !body.isBlank())
+                    .filter(text::contains)
+                    .isPresent())
+        .map(Step::id)
+        .toList();
+  }
 
-    private static String read(Path context) {
-        try {
-            return Files.readString(context);
-        } catch (IOException e) {
-            throw new StandFailure("cannot read " + context, e);
-        }
+  private static String read(Path context) {
+    try {
+      return Files.readString(context);
+    } catch (IOException e) {
+      throw new StandFailure("cannot read " + context, e);
     }
+  }
 }

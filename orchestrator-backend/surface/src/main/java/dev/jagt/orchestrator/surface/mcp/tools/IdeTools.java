@@ -1,29 +1,36 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.protocol.IdeOpen;
+import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.surface.mcp.Audience;
+import dev.jagt.orchestrator.surface.mcp.CallerScope;
 import dev.jagt.orchestrator.surface.mcp.Effect;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
-import dev.jagt.orchestrator.surface.mcp.CallerScope;
-import dev.jagt.orchestrator.service.CommandService;
-import dev.jagt.orchestrator.protocol.IdeOpen;
-import dev.jagt.orchestrator.protocol.MessageContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
 
 @Component
 @RequiredArgsConstructor
 public class IdeTools implements McpTools {
 
-    private final CommandService commands;
-    private final CallerScope callerScope;
+  private final CommandService commands;
+  private final CallerScope callerScope;
 
-    @Override
-    public void declare(McpToolRegistry tools) {
-        tools.tool("open_in_ide", Audience.ANYONE, Effect.REPORTS, IdeOpen.SCHEMA, IdeOpen.class, (said, caller) -> MessageContext.NONE,
-                (said, caller) -> commands.execute(callerScope.resolve(said.taskId(), caller),
-                        said.diff() ? TaskAction.DIFF : TaskAction.IDE));
-    }
+  @Override
+  public void declare(McpToolRegistry tools) {
+    tools.tool(
+        "open_in_ide",
+        Audience.ANYONE,
+        Effect.REPORTS,
+        IdeOpen.SCHEMA,
+        IdeOpen.class,
+        (said, caller) -> MessageContext.NONE,
+        (said, caller) ->
+            commands.execute(
+                callerScope.resolve(said.taskId(), caller),
+                said.diff() ? TaskAction.DIFF : TaskAction.IDE));
+  }
 }

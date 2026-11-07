@@ -1,61 +1,63 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class StubAgentRuntimeTest {
 
-    @Test
-    void launchesAnImmediatelyExitingCommandWhereNoScriptIsGiven() {
-        var runtime = new StubAgentRuntime(StubAgentProperties.defaults());
+  @Test
+  void launchesAnImmediatelyExitingCommandWhereNoScriptIsGiven() {
+    var runtime = new StubAgentRuntime(StubAgentProperties.defaults());
 
-        assertThat(runtime.launchCommand(Path.of("/w/task"), false)).isEqualTo("true");
-    }
+    assertThat(runtime.launchCommand(Path.of("/w/task"), false)).isEqualTo("true");
+  }
 
-    @Test
-    void launchesTheScriptWithTheWorktreeQuoted() {
-        var runtime = new StubAgentRuntime(new StubAgentProperties("/s/it's.sh"));
+  @Test
+  void launchesTheScriptWithTheWorktreeQuoted() {
+    var runtime = new StubAgentRuntime(new StubAgentProperties("/s/it's.sh"));
 
-        assertThat(runtime.launchCommand(Path.of("/w/task"), false)).isEqualTo("'/s/it'\\''s.sh' '/w/task'");
-    }
+    assertThat(runtime.launchCommand(Path.of("/w/task"), false))
+        .isEqualTo("'/s/it'\\''s.sh' '/w/task'");
+  }
 
-    @Test
-    void appendsPlanToTheScriptInPlanMode() {
-        var runtime = new StubAgentRuntime(new StubAgentProperties("/s/run.sh"));
+  @Test
+  void appendsPlanToTheScriptInPlanMode() {
+    var runtime = new StubAgentRuntime(new StubAgentProperties("/s/run.sh"));
 
-        assertThat(runtime.launchCommand(Path.of("/w/task"), true)).isEqualTo("'/s/run.sh' '/w/task' plan");
-    }
+    assertThat(runtime.launchCommand(Path.of("/w/task"), true))
+        .isEqualTo("'/s/run.sh' '/w/task' plan");
+  }
 
-    @Test
-    void treatsABlankScriptAsNoneAndStripsAnyOther() {
-        assertThat(new StubAgentProperties("  ").script()).isNull();
-        assertThat(new StubAgentProperties(" /s/run.sh ").script()).isEqualTo("/s/run.sh");
-    }
+  @Test
+  void treatsABlankScriptAsNoneAndStripsAnyOther() {
+    assertThat(new StubAgentProperties("  ").script()).isNull();
+    assertThat(new StubAgentProperties(" /s/run.sh ").script()).isEqualTo("/s/run.sh");
+  }
 
-    @Test
-    void hearsNothingFromAScriptedSessionAndKnowsOfNoActivity() {
-        var runtime = new StubAgentRuntime(StubAgentProperties.defaults());
+  @Test
+  void hearsNothingFromAScriptedSessionAndKnowsOfNoActivity() {
+    var runtime = new StubAgentRuntime(StubAgentProperties.defaults());
 
-        assertThat(runtime.humanSaid(Path.of("/w/task"), Set.of())).contains(List.of());
-        assertThat(runtime.readsWhatTheHumanTyped()).isTrue();
-        assertThat(runtime.lastSessionActivity(Path.of("/w/task"))).isEmpty();
-    }
+    assertThat(runtime.humanSaid(Path.of("/w/task"), Set.of())).contains(List.of());
+    assertThat(runtime.readsWhatTheHumanTyped()).isTrue();
+    assertThat(runtime.lastSessionActivity(Path.of("/w/task"))).isEmpty();
+  }
 
-    @Test
-    void briefsTheAgentThroughTheSharedKnowledgeFileInItsWorktree() {
-        var runtime = new StubAgentRuntime(StubAgentProperties.defaults());
+  @Test
+  void briefsTheAgentThroughTheSharedKnowledgeFileInItsWorktree() {
+    var runtime = new StubAgentRuntime(StubAgentProperties.defaults());
 
-        assertThat(runtime.systemKnowledgeFile(Path.of("/w/does-not-exist")).getParent())
-                .isEqualTo(Path.of("/w/does-not-exist"));
-    }
+    assertThat(runtime.systemKnowledgeFile(Path.of("/w/does-not-exist")).getParent())
+        .isEqualTo(Path.of("/w/does-not-exist"));
+  }
 
-    @Test
-    void namesItselfStub() {
-        assertThat(new StubAgentRuntime(StubAgentProperties.defaults()).displayName()).isEqualTo("Stub");
-    }
+  @Test
+  void namesItselfStub() {
+    assertThat(new StubAgentRuntime(StubAgentProperties.defaults()).displayName())
+        .isEqualTo("Stub");
+  }
 }

@@ -1,7 +1,17 @@
 package dev.jagt.orchestrator.service;
 
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.ParameterizedTest;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.BranchStrategy;
@@ -9,15 +19,10 @@ import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.PlanGate;
-import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.Remote;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
-
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
@@ -25,277 +30,458 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import tools.jackson.databind.json.JsonMapper;
 
 class TaskProvisioningTest {
 
-    @TempDir
-    Path root;
+  @TempDir Path root;
 
-    private final ConfigService config = mock(ConfigService.class);
-    private final NewTaskWorktrees worktrees = mock(NewTaskWorktrees.class);
-    private final AgentSessions sessions = mock(AgentSessions.class);
-    private StateService state;
-    private TaskProvisioning provisioning;
+  private final ConfigService config = mock(ConfigService.class);
+  private final NewTaskWorktrees worktrees = mock(NewTaskWorktrees.class);
+  private final AgentSessions sessions = mock(AgentSessions.class);
+  private StateService state;
+  private TaskProvisioning provisioning;
 
-    @BeforeEach
-    void setUp() {
-        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString());
-        state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
-        provisioning = new TaskProvisioning(config, state, worktrees, sessions, Clock.systemUTC());
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    }
+  @BeforeEach
+  void setUp() {
+    OrchestratorProperties properties =
+        OrchestratorProperties.defaults()
+            .withRoot(root.toString())
+            .withStateFile(root.resolve("state.json").toString());
+    state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+    provisioning = new TaskProvisioning(config, state, worktrees, sessions, Clock.systemUTC());
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+  }
 
-    @Test
-    void rejectsUnknownModeBeforeCuttingAnything() {
-        assertThatThrownBy(() -> provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("bogus").build()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unknown mode");
-        verifyNoInteractions(worktrees);
-    }
+  @Test
+  void rejectsUnknownModeBeforeCuttingAnything() {
+    assertThatThrownBy(
+            () ->
+                provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("bogus").build()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Unknown mode");
+    verifyNoInteractions(worktrees);
+  }
 
-    @Test
-    void registersEveryProjectAndRunsTheSessionInTheFirst() {
-        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
-                new NewRepo("api", null, Path.of("/api"), Path.of("/ABC-7-api"), null, "origin/main", null, true),
-                new NewRepo("web", null, Path.of("/web"), Path.of("/ABC-7-web"), null, "origin/main", null, false)));
+  @Test
+  void registersEveryProjectAndRunsTheSessionInTheFirst() {
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new NewRepo(
+                    "api",
+                    null,
+                    Path.of("/api"),
+                    Path.of("/ABC-7-api"),
+                    null,
+                    "origin/main",
+                    null,
+                    true),
+                new NewRepo(
+                    "web",
+                    null,
+                    Path.of("/web"),
+                    Path.of("/ABC-7-web"),
+                    null,
+                    "origin/main",
+                    null,
+                    false)));
 
-        String answer = provisioning.initializeTask(NewTask.builder("ABC-7", "api").alsoIn(List.of("web")).build());
+    String answer =
+        provisioning.initializeTask(NewTask.builder("ABC-7", "api").alsoIn(List.of("web")).build());
 
-        assertThat(answer).contains("agent running on ABC-7", "also in web");
-        assertThat(state.task("ABC-7").orElseThrow().projects()).containsExactly("api", "web");
-        verify(sessions).startAgent("ABC-7", "a1", Path.of("/ABC-7-api"), false);
-    }
+    assertThat(answer).contains("agent running on ABC-7", "also in web");
+    assertThat(state.task("ABC-7").orElseThrow().projects()).containsExactly("api", "web");
+    verify(sessions).startAgent("ABC-7", "a1", Path.of("/ABC-7-api"), false);
+  }
 
-    @Test
-    void bornTrustingWhatGitObeyedAsItsWorktreesWereCut() {
-        List<NewRepo> cut = List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/wt"), null, "origin/main", null, true));
-        when(worktrees.cut(any(), any(), any())).thenReturn(cut);
-        when(worktrees.trust(cut)).thenReturn(GitTrust.of(Map.of("core.editor in /repo/.git/config", "a1")));
+  @Test
+  void bornTrustingWhatGitObeyedAsItsWorktreesWereCut() {
+    List<NewRepo> cut =
+        List.of(
+            new NewRepo(
+                "proj", null, Path.of("/repo"), Path.of("/wt"), null, "origin/main", null, true));
+    when(worktrees.cut(any(), any(), any())).thenReturn(cut);
+    when(worktrees.trust(cut))
+        .thenReturn(GitTrust.of(Map.of("core.editor in /repo/.git/config", "a1")));
 
-        provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
+    provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
 
-        assertThat(state.task("ABC-2").orElseThrow().gitTrust())
-                .isEqualTo(GitTrust.of(Map.of("core.editor in /repo/.git/config", "a1")));
-    }
+    assertThat(state.task("ABC-2").orElseThrow().gitTrust())
+        .isEqualTo(GitTrust.of(Map.of("core.editor in /repo/.git/config", "a1")));
+  }
 
-    @Test
-    void assignsNextFreeAliasWhenTicketLetterAlreadyInUse() {
-        state.putTask("ABC-1", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).alias("a1").build());
-        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/two"), null, "origin/main", null, true)));
+  @Test
+  void assignsNextFreeAliasWhenTicketLetterAlreadyInUse() {
+    state.putTask(
+        "ABC-1", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).alias("a1").build());
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new NewRepo(
+                    "proj",
+                    null,
+                    Path.of("/repo"),
+                    Path.of("/two"),
+                    null,
+                    "origin/main",
+                    null,
+                    true)));
 
-        provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
+    provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
 
-        assertThat(state.task("ABC-2").orElseThrow().alias()).isEqualTo("a2");
-    }
+    assertThat(state.task("ABC-2").orElseThrow().alias()).isEqualTo("a2");
+  }
 
-    @Test
-    void aliasesATicketStartingWithIWithTheDottedIWhateverTheMachineLocale() {
-        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/INF-2-proj"), null, "origin/main", null, true)));
+  @Test
+  void aliasesATicketStartingWithIWithTheDottedIWhateverTheMachineLocale() {
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new NewRepo(
+                    "proj",
+                    null,
+                    Path.of("/repo"),
+                    Path.of("/INF-2-proj"),
+                    null,
+                    "origin/main",
+                    null,
+                    true)));
 
-        provisioning.initializeTask(NewTask.builder("INF-2", "proj").build());
+    provisioning.initializeTask(NewTask.builder("INF-2", "proj").build());
 
-        assertThat(state.task("INF-2").orElseThrow().alias()).isEqualTo("i1");
-    }
+    assertThat(state.task("INF-2").orElseThrow().alias()).isEqualTo("i1");
+  }
 
-    @Test
-    void remembersTheBaseBranchTheHumanNamedForTheReviewRequest() {
-        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(new NewRepo("proj", null, Path.of("/repo"),
-                Path.of("/ABC-3-proj"), null, "feature/parent", null, true)));
+  @Test
+  void remembersTheBaseBranchTheHumanNamedForTheReviewRequest() {
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new NewRepo(
+                    "proj",
+                    null,
+                    Path.of("/repo"),
+                    Path.of("/ABC-3-proj"),
+                    null,
+                    "feature/parent",
+                    null,
+                    true)));
 
-        provisioning.initializeTask(NewTask.builder("ABC-3", "proj").baseBranch("origin/feature/parent").build());
+    provisioning.initializeTask(
+        NewTask.builder("ABC-3", "proj").baseBranch("origin/feature/parent").build());
 
-        assertThat(state.task("ABC-3").orElseThrow().baseBranch()).isEqualTo("feature/parent");
-    }
+    assertThat(state.task("ABC-3").orElseThrow().baseBranch()).isEqualTo("feature/parent");
+  }
 
-    @Test
-    void leavesTheBaseBranchUnsetWhenTheHumanNamedNone() {
-        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-4-proj"), null, "origin/main", null, true)));
+  @Test
+  void leavesTheBaseBranchUnsetWhenTheHumanNamedNone() {
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new NewRepo(
+                    "proj",
+                    null,
+                    Path.of("/repo"),
+                    Path.of("/ABC-4-proj"),
+                    null,
+                    "origin/main",
+                    null,
+                    true)));
 
-        provisioning.initializeTask(NewTask.builder("ABC-4", "proj").build());
+    provisioning.initializeTask(NewTask.builder("ABC-4", "proj").build());
 
-        assertThat(state.task("ABC-4").orElseThrow().baseBranch()).isNull();
-    }
+    assertThat(state.task("ABC-4").orElseThrow().baseBranch()).isNull();
+  }
 
-    @Test
-    void registersNothingWhenTheWorktreesCouldNotBeCut() {
-        when(worktrees.cut(any(), any(), any())).thenThrow(new IllegalStateException("provisioning failed"));
+  @Test
+  void registersNothingWhenTheWorktreesCouldNotBeCut() {
+    when(worktrees.cut(any(), any(), any()))
+        .thenThrow(new IllegalStateException("provisioning failed"));
 
-        assertThatThrownBy(() -> provisioning.initializeTask(NewTask.builder("ABC-9", "proj").build()))
-                .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> provisioning.initializeTask(NewTask.builder("ABC-9", "proj").build()))
+        .isInstanceOf(IllegalStateException.class);
 
-        assertThat(state.task("ABC-9")).isEmpty();
-    }
+    assertThat(state.task("ABC-9")).isEmpty();
+  }
 
-    @Test
-    void removesTheCutWorktreesWhenTheTaskCannotBeRegistered() {
-        List<NewRepo> repos = List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true));
-        when(worktrees.cut(any(), any(), any())).thenReturn(repos);
-        root.toFile().setWritable(false);
-        NewTask request = NewTask.builder("ABC-1", "proj").build();
+  @Test
+  void removesTheCutWorktreesWhenTheTaskCannotBeRegistered() {
+    List<NewRepo> repos =
+        List.of(
+            new NewRepo(
+                "proj",
+                null,
+                Path.of("/repo"),
+                Path.of("/ABC-1-proj"),
+                null,
+                "origin/main",
+                null,
+                true));
+    when(worktrees.cut(any(), any(), any())).thenReturn(repos);
+    root.toFile().setWritable(false);
+    NewTask request = NewTask.builder("ABC-1", "proj").build();
 
-        assertThatThrownBy(() -> provisioning.initializeTask(request)).isInstanceOf(java.io.UncheckedIOException.class);
+    assertThatThrownBy(() -> provisioning.initializeTask(request))
+        .isInstanceOf(java.io.UncheckedIOException.class);
 
-        verify(worktrees).uncut(request, repos, BranchStrategy.FRESH);
-    }
+    verify(worktrees).uncut(request, repos, BranchStrategy.FRESH);
+  }
 
-    @Test
-    void cutsASecondTaskOnlyOnceTheFirstIsRegistered() throws Exception {
-        CountDownLatch firstCutting = new CountDownLatch(1);
-        CountDownLatch secondCutting = new CountDownLatch(1);
-        AtomicBoolean firstRegisteredWhenSecondCut = new AtomicBoolean();
-        doAnswer(call -> {
-            firstCutting.countDown();
-            secondCutting.await(500, TimeUnit.MILLISECONDS);
-            return List.of(new NewRepo("proj", null, Path.of("/repo"), Path.of("/one"), null, "main", null, true));
-        }).when(worktrees).cut(argThat(task -> task.taskId().equals("ABC-1")), any(), any());
-        doAnswer(call -> {
-            firstRegisteredWhenSecondCut.set(state.task("ABC-1").isPresent());
-            secondCutting.countDown();
-            return List.of(new NewRepo("proj", null, Path.of("/repo"), Path.of("/two"), null, "main", null, true));
-        }).when(worktrees).cut(argThat(task -> task.taskId().equals("ABC-2")), any(), any());
-        Thread first = Thread.ofVirtual()
-                .start(() -> provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build()));
-        firstCutting.await();
+  @Test
+  void cutsASecondTaskOnlyOnceTheFirstIsRegistered() throws Exception {
+    CountDownLatch firstCutting = new CountDownLatch(1);
+    CountDownLatch secondCutting = new CountDownLatch(1);
+    AtomicBoolean firstRegisteredWhenSecondCut = new AtomicBoolean();
+    doAnswer(
+            call -> {
+              firstCutting.countDown();
+              secondCutting.await(500, TimeUnit.MILLISECONDS);
+              return List.of(
+                  new NewRepo(
+                      "proj", null, Path.of("/repo"), Path.of("/one"), null, "main", null, true));
+            })
+        .when(worktrees)
+        .cut(argThat(task -> task.taskId().equals("ABC-1")), any(), any());
+    doAnswer(
+            call -> {
+              firstRegisteredWhenSecondCut.set(state.task("ABC-1").isPresent());
+              secondCutting.countDown();
+              return List.of(
+                  new NewRepo(
+                      "proj", null, Path.of("/repo"), Path.of("/two"), null, "main", null, true));
+            })
+        .when(worktrees)
+        .cut(argThat(task -> task.taskId().equals("ABC-2")), any(), any());
+    Thread first =
+        Thread.ofVirtual()
+            .start(() -> provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build()));
+    firstCutting.await();
 
-        provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
-        first.join();
+    provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
+    first.join();
 
-        assertThat(firstRegisteredWhenSecondCut).isTrue();
-    }
+    assertThat(firstRegisteredWhenSecondCut).isTrue();
+  }
 
-    @Test
-    void refusesToBuildATaskWithNoProjectForItsSession() {
-        assertThatThrownBy(() -> NewTask.builder("ABC-1", " ").alsoIn(List.of("web")).build())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("needs the project its session runs in");
-    }
+  @Test
+  void refusesToBuildATaskWithNoProjectForItsSession() {
+    assertThatThrownBy(() -> NewTask.builder("ABC-1", " ").alsoIn(List.of("web")).build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("needs the project its session runs in");
+  }
 
-    @Test
-    void tellsTheCallerWhereTheAgentRunsAndWhatItWasCutFrom() {
-        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+  @Test
+  void tellsTheCallerWhereTheAgentRunsAndWhatItWasCutFrom() {
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new NewRepo(
+                    "proj",
+                    null,
+                    Path.of("/repo"),
+                    Path.of("/ABC-1-proj"),
+                    null,
+                    "origin/main",
+                    null,
+                    true)));
 
-        String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build());
+    String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build());
 
-        assertThat(answer).isEqualTo("ABC-1 is a1 — agent running on ABC-1 from origin/main.");
-    }
+    assertThat(answer).isEqualTo("ABC-1 is a1 — agent running on ABC-1 from origin/main.");
+  }
 
-    @Test
-    void tellsTheCallerTheTaskWasResumedAndNotCutFromABase() {
-        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+  @Test
+  void tellsTheCallerTheTaskWasResumedAndNotCutFromABase() {
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new NewRepo(
+                    "proj",
+                    null,
+                    Path.of("/repo"),
+                    Path.of("/ABC-1-proj"),
+                    null,
+                    "origin/main",
+                    null,
+                    true)));
 
-        String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").branchStrategy("resume").build());
+    String answer =
+        provisioning.initializeTask(
+            NewTask.builder("ABC-1", "proj").branchStrategy("resume").build());
 
-        assertThat(answer).isEqualTo("ABC-1 is a1 — agent running on ABC-1 (resumed).");
-    }
+    assertThat(answer).isEqualTo("ABC-1 is a1 — agent running on ABC-1 (resumed).");
+  }
 
-    @Test
-    void tellsTheCallerToApproveThePlanOnTheBoardOfATaskStartedInPlanMode() {
-        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+  @Test
+  void tellsTheCallerToApproveThePlanOnTheBoardOfATaskStartedInPlanMode() {
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new NewRepo(
+                    "proj",
+                    null,
+                    Path.of("/repo"),
+                    Path.of("/ABC-1-proj"),
+                    null,
+                    "origin/main",
+                    null,
+                    true)));
 
-        String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("plan").build());
-
-        assertThat(answer).endsWith(" Plan mode: read plan.md, then approve-plan a1.");
-    }
-
-    @Test
-    void requiresThePlanOfATaskStartedInPlanModeWhateverAutoplanSays() {
-        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
-
+    String answer =
         provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("plan").build());
 
-        assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
-    }
+    assertThat(answer).endsWith(" Plan mode: read plan.md, then approve-plan a1.");
+  }
 
-    @Test
-    void closesThePlanGateOfAnAutoModeTaskWhenAutoplanIsOn() {
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withAgent(
-                ConfigService.ConfigFile.AgentConfig.defaults().withAutoplan(
-                        ConfigService.ConfigFile.AutoplanConfig.defaults().withEnabled(true))));
-        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+  @Test
+  void requiresThePlanOfATaskStartedInPlanModeWhateverAutoplanSays() {
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new NewRepo(
+                    "proj",
+                    null,
+                    Path.of("/repo"),
+                    Path.of("/ABC-1-proj"),
+                    null,
+                    "origin/main",
+                    null,
+                    true)));
 
-        provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
+    provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("plan").build());
 
-        assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.CLOSED);
-    }
+    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
+  }
 
-    @Test
-    void leavesThePlanGateOpenOfAnAutoModeTaskWhenAutoplanIsOff() {
-        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+  @Test
+  void closesThePlanGateOfAnAutoModeTaskWhenAutoplanIsOn() {
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withAgent(
+                    ConfigService.ConfigFile.AgentConfig.defaults()
+                        .withAutoplan(
+                            ConfigService.ConfigFile.AutoplanConfig.defaults().withEnabled(true))));
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new NewRepo(
+                    "proj",
+                    null,
+                    Path.of("/repo"),
+                    Path.of("/ABC-1-proj"),
+                    null,
+                    "origin/main",
+                    null,
+                    true)));
 
-        provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
+    provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
 
-        assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
-    }
+    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.CLOSED);
+  }
 
-    @Test
-    void keepsTheTaskRegisteredAndSaysSoWhenItsAgentSessionFailsToStart() {
-        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
-        doThrow(new IllegalStateException("no tmux")).when(sessions).startAgent(any(), any(), any(), anyBoolean());
+  @Test
+  void leavesThePlanGateOpenOfAnAutoModeTaskWhenAutoplanIsOff() {
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new NewRepo(
+                    "proj",
+                    null,
+                    Path.of("/repo"),
+                    Path.of("/ABC-1-proj"),
+                    null,
+                    "origin/main",
+                    null,
+                    true)));
 
-        String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build());
+    provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
 
-        assertThat(answer).isEqualTo("Task ABC-1 registered and worktree created at /ABC-1-proj, but the agent session"
-                + " failed to start: no tmux Fix the cause and call open_task_tab(\"ABC-1\") — do NOT call"
-                + " initialize_task again.");
-        assertThat(state.task("ABC-1")).isPresent();
-    }
+    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
+  }
 
-    @ParameterizedTest
-    @CsvSource(value = {"https://tracker/ABC-1,https://tracker/ABC-1", "'   ',"})
-    void registersTheTicketLinkOnlyWhereOneWasGiven(String given, String registered) {
-        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true)));
+  @Test
+  void keepsTheTaskRegisteredAndSaysSoWhenItsAgentSessionFailsToStart() {
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new NewRepo(
+                    "proj",
+                    null,
+                    Path.of("/repo"),
+                    Path.of("/ABC-1-proj"),
+                    null,
+                    "origin/main",
+                    null,
+                    true)));
+    doThrow(new IllegalStateException("no tmux"))
+        .when(sessions)
+        .startAgent(any(), any(), any(), anyBoolean());
 
-        provisioning.initializeTask(NewTask.builder("ABC-1", "proj").ticketUrl(given).build());
+    String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build());
 
-        assertThat(state.task("ABC-1").orElseThrow().ticketUrl()).isEqualTo(registered);
-    }
+    assertThat(answer)
+        .isEqualTo(
+            "Task ABC-1 registered and worktree created at /ABC-1-proj, but the agent session"
+                + " failed to start: no tmux Fix the cause and call open_task_tab(\"ABC-1\") — do"
+                + " NOT call initialize_task again.");
+    assertThat(state.task("ABC-1")).isPresent();
+  }
 
-    @Test
-    void namesTheRemoteAProjectSharesItsBranchesThrough() {
-        when(config.project("proj")).thenReturn(new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, null), new ProjectConfig.Branches("upstream/main", "dev", "upstream"), new ProjectConfig.CodeHost(null, null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null)));
+  @ParameterizedTest
+  @CsvSource(value = {"https://tracker/ABC-1,https://tracker/ABC-1", "'   ',"})
+  void registersTheTicketLinkOnlyWhereOneWasGiven(String given, String registered) {
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(
+            List.of(
+                new NewRepo(
+                    "proj",
+                    null,
+                    Path.of("/repo"),
+                    Path.of("/ABC-1-proj"),
+                    null,
+                    "origin/main",
+                    null,
+                    true)));
 
-        assertThat(provisioning.remoteOf("proj")).isEqualTo(new Remote("upstream"));
-    }
+    provisioning.initializeTask(NewTask.builder("ABC-1", "proj").ticketUrl(given).build());
 
-    @Test
-    void runsAPlanOnlyTaskInItsScratchFolderWithNoProject() {
-        Path folder = root.resolve("scratch/ABC-8");
-        when(worktrees.scratch(any(), any())).thenReturn(folder);
+    assertThat(state.task("ABC-1").orElseThrow().ticketUrl()).isEqualTo(registered);
+  }
 
-        String answer = provisioning.initializeTask(NewTask.unplacedBuilder("ABC-8").mode("plan")
-                .baseBranch("feature/parent").build());
+  @Test
+  void namesTheRemoteAProjectSharesItsBranchesThrough() {
+    when(config.project("proj"))
+        .thenReturn(
+            new ProjectConfig(
+                new ProjectConfig.Repository("/repo", List.of(), null, null),
+                new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
+                new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+                new ProjectConfig.Verify(List.of(), null)));
 
-        TaskState task = state.task("ABC-8").orElseThrow();
-        assertThat(answer).contains("agent planning in " + folder, "approve-plan a1");
-        assertThat(task.baseBranch()).isEqualTo("feature/parent");
-        assertThat(task.unplaced()).isTrue();
-        assertThat(task.worktreePath()).isEqualTo(folder.toString());
-        verify(sessions).startAgent("ABC-8", "a1", folder, true);
-    }
+    assertThat(provisioning.remoteOf("proj")).isEqualTo(new Remote("upstream"));
+  }
+
+  @Test
+  void runsAPlanOnlyTaskInItsScratchFolderWithNoProject() {
+    Path folder = root.resolve("scratch/ABC-8");
+    when(worktrees.scratch(any(), any())).thenReturn(folder);
+
+    String answer =
+        provisioning.initializeTask(
+            NewTask.unplacedBuilder("ABC-8").mode("plan").baseBranch("feature/parent").build());
+
+    TaskState task = state.task("ABC-8").orElseThrow();
+    assertThat(answer).contains("agent planning in " + folder, "approve-plan a1");
+    assertThat(task.baseBranch()).isEqualTo("feature/parent");
+    assertThat(task.unplaced()).isTrue();
+    assertThat(task.worktreePath()).isEqualTo(folder.toString());
+    verify(sessions).startAgent("ABC-8", "a1", folder, true);
+  }
 }

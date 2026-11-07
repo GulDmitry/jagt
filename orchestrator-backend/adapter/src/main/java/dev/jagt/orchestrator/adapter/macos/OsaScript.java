@@ -1,30 +1,32 @@
 package dev.jagt.orchestrator.adapter.macos;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-
 import java.time.Duration;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
 public class OsaScript {
 
-    private static final Duration TIMEOUT = Duration.ofSeconds(30);
+  private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
-    private final ProcessRunner processRunner;
+  private final ProcessRunner processRunner;
 
-    public void run(String script) {
-        processRunner.run(null, TIMEOUT, List.of("osascript", "-e", script)).expectSuccess("osascript");
-    }
+  public void run(String script) {
+    processRunner.run(null, TIMEOUT, List.of("osascript", "-e", script)).expectSuccess("osascript");
+  }
 
-    public String answer(String script) {
-        return processRunner.run(null, TIMEOUT, List.of("osascript", "-e", script)).expectSuccess("osascript")
-                .stdout().strip();
-    }
+  public String answer(String script) {
+    return processRunner
+        .run(null, TIMEOUT, List.of("osascript", "-e", script))
+        .expectSuccess("osascript")
+        .stdout()
+        .strip();
+  }
 
-    public static String string(String value) {
-        return '"' + value.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
-    }
+  public static String string(String value) {
+    return '"' + value.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
+  }
 }

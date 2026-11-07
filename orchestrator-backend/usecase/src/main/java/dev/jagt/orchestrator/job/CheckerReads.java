@@ -15,25 +15,26 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CheckerReads {
 
-    private final RoleDefinition role;
-    private final CheckerReader reader;
-    private final TaskTurns turns;
+  private final RoleDefinition role;
+  private final CheckerReader reader;
+  private final TaskTurns turns;
 
-    public Answer<QaVerdict> check(String taskId, String step, String digest, CheckerReader.Run run) {
-        turns.opened(taskId, step, digest, TaskStatus.DEPLOYED);
-        try {
-            return reader.read(run);
-        } finally {
-            turns.closed(taskId, role.id(), step, digest);
-        }
+  public Answer<QaVerdict> check(String taskId, String step, String digest, CheckerReader.Run run) {
+    turns.opened(taskId, step, digest, TaskStatus.DEPLOYED);
+    try {
+      return reader.read(run);
+    } finally {
+      turns.closed(taskId, role.id(), step, digest);
     }
+  }
 
-    public Answer<QaDecline> decline(String taskId, String step, String digest, CheckerReader.Run run) {
-        turns.opened(taskId, step, digest, TaskStatus.DEPLOYED);
-        try {
-            return reader.reconsider(run);
-        } finally {
-            turns.closed(taskId, role.id(), step, digest);
-        }
+  public Answer<QaDecline> decline(
+      String taskId, String step, String digest, CheckerReader.Run run) {
+    turns.opened(taskId, step, digest, TaskStatus.DEPLOYED);
+    try {
+      return reader.reconsider(run);
+    } finally {
+      turns.closed(taskId, role.id(), step, digest);
     }
+  }
 }

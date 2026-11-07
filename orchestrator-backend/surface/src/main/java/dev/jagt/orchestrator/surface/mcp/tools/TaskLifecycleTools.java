@@ -1,58 +1,78 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
+import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.protocol.NewTaskMessage;
+import dev.jagt.orchestrator.protocol.NoArguments;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.TaskProvisioning;
+import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.surface.mcp.Audience;
 import dev.jagt.orchestrator.surface.mcp.Effect;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
 import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.TaskViews;
-import dev.jagt.orchestrator.service.TaskProvisioning;
-import dev.jagt.orchestrator.protocol.MessageContext;
-import dev.jagt.orchestrator.protocol.NewTaskMessage;
-import dev.jagt.orchestrator.protocol.NoArguments;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-
-import java.util.stream.Collectors;
-
-
 
 @Component
 @RequiredArgsConstructor
 public class TaskLifecycleTools implements McpTools {
 
-    private final TaskProvisioning provisioning;
-    private final TaskViews taskViews;
-    private final ConfigService configService;
+  private final TaskProvisioning provisioning;
+  private final TaskViews taskViews;
+  private final ConfigService configService;
 
-    @Override
-    public void declare(McpToolRegistry tools) {
-        tools.tool("initialize_task", Audience.MASTER, Effect.CHANGES, NewTaskMessage.SCHEMA, NewTaskMessage.class,
-                (said, caller) -> MessageContext.NONE,
-                (said, caller) -> provisioning.initializeTask(NewTask.builder(said.taskId(), said.placement().projectKey())
-                        .alsoIn(said.placement().alsoProjects())
-                        .instructions(said.instructions())
-                        .mode(said.mode())
-                        .branchStrategy(said.placement().branchStrategy())
-                        .baseBranch(said.placement().baseBranch())
-                        .title(said.title())
-                        .ticketUrl(said.ticketUrl())
-                        .build()));
+  @Override
+  public void declare(McpToolRegistry tools) {
+    tools.tool(
+        "initialize_task",
+        Audience.MASTER,
+        Effect.CHANGES,
+        NewTaskMessage.SCHEMA,
+        NewTaskMessage.class,
+        (said, caller) -> MessageContext.NONE,
+        (said, caller) ->
+            provisioning.initializeTask(
+                NewTask.builder(said.taskId(), said.placement().projectKey())
+                    .alsoIn(said.placement().alsoProjects())
+                    .instructions(said.instructions())
+                    .mode(said.mode())
+                    .branchStrategy(said.placement().branchStrategy())
+                    .baseBranch(said.placement().baseBranch())
+                    .title(said.title())
+                    .ticketUrl(said.ticketUrl())
+                    .build()));
 
-        tools.tool("list_tasks", Audience.MASTER, Effect.REPORTS, NoArguments.schema("Every task, one per line: its id, status,"
-                        + " title, last message, each worktree with its review request, its alias and the verbs"
-                        + " legal for it now."),
-                NoArguments.class, (said, caller) -> MessageContext.NONE,
-                (said, caller) -> taskViews.listing());
+    tools.tool(
+        "list_tasks",
+        Audience.MASTER,
+        Effect.REPORTS,
+        NoArguments.schema(
+            "Every task, one per line: its id, status, title, last message, each worktree with its"
+                + " review request, its alias and the verbs legal for it now."),
+        NoArguments.class,
+        (said, caller) -> MessageContext.NONE,
+        (said, caller) -> taskViews.listing());
 
-        tools.tool("list_projects", Audience.MASTER, Effect.REPORTS, NoArguments.schema("Every project jagt works on, one per line:"
-                        + " its key (what initialize_task's projectKey takes), what it is, and the labels placing an"
-                        + " item in it."),
-                NoArguments.class, (said, caller) -> MessageContext.NONE,
-                (said, caller) -> configService.load().projects().entrySet().stream()
-                        .map(entry -> entry.getKey() + ": " + entry.getValue().aboutOrPath()
-                                + " — labels " + entry.getValue().labels())
-                        .collect(Collectors.joining("\n")));
-    }
+    tools.tool(
+        "list_projects",
+        Audience.MASTER,
+        Effect.REPORTS,
+        NoArguments.schema(
+            "Every project jagt works on, one per line: its key (what initialize_task's projectKey"
+                + " takes), what it is, and the labels placing an item in it."),
+        NoArguments.class,
+        (said, caller) -> MessageContext.NONE,
+        (said, caller) ->
+            configService.load().projects().entrySet().stream()
+                .map(
+                    entry ->
+                        entry.getKey()
+                            + ": "
+                            + entry.getValue().aboutOrPath()
+                            + " — labels "
+                            + entry.getValue().labels())
+                .collect(Collectors.joining("\n")));
+  }
 }

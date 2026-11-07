@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.jagt.orchestrator.port.ToolGateEnvelope;
 import dev.jagt.orchestrator.service.ReadGate;
 import dev.jagt.orchestrator.service.ReadScopes;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,36 +15,40 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-import java.util.Optional;
-
-/** Fails closed, unlike a session's gate: a read runs only while jagt does, so no answer means nothing runs. */
+/**
+ * Fails closed, unlike a session's gate: a read runs only while jagt does, so no answer means
+ * nothing runs.
+ */
 @RestController
 @RequiredArgsConstructor
 public class ReadGateController {
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record ToolCall(@JsonProperty("tool_name") String toolName,
-                           @JsonProperty("tool_input") Map<String, Object> toolInput,
-                           @JsonProperty("cwd") String cwd) {
-    }
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record ToolCall(
+      @JsonProperty("tool_name") String toolName,
+      @JsonProperty("tool_input") Map<String, Object> toolInput,
+      @JsonProperty("cwd") String cwd) {}
 
-    private final ReadScopes scopes;
-    private final ToolGateEnvelope envelope;
+  private final ReadScopes scopes;
+  private final ToolGateEnvelope envelope;
 
-    @PostMapping(value = "/api/agent/read/{fence}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Map<String, Object>> gate(@PathVariable String fence,
-                                                    @RequestBody(required = false) ToolCall call) {
-        if (call != null) {
-            scopes.hear(fence, call.toolName(), call.toolInput());
-        }
-        Optional<String> refusal = call == null
-                ? Optional.of("jagt refuses a call it cannot read.")
-                : scopes.ask(fence)
-                        .map(scope -> ReadGate.refusal(scope, call.toolName(), call.toolInput(), call.cwd()))
-                        .orElse(Optional.of("jagt refuses a call it holds no read for."));
-        refusal.ifPresent(reason -> scopes.refuse(fence));
-        return refusal.map(reason -> ResponseEntity.ok(envelope.denial(reason)))
-                .orElseGet(() -> ResponseEntity.noContent().build());
+  @PostMapping(value = "/api/agent/read/{fence}", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Map<String, Object>> gate(
+      @PathVariable String fence, @RequestBody(required = false) ToolCall call) {
+    if (call != null) {
+      scopes.hear(fence, call.toolName(), call.toolInput());
     }
+    Optional<String> refusal =
+        call == null
+            ? Optional.of("jagt refuses a call it cannot read.")
+            : scopes
+                .ask(fence)
+                .map(
+                    scope -> ReadGate.refusal(scope, call.toolName(), call.toolInput(), call.cwd()))
+                .orElse(Optional.of("jagt refuses a call it holds no read for."));
+    refusal.ifPresent(reason -> scopes.refuse(fence));
+    return refusal
+        .map(reason -> ResponseEntity.ok(envelope.denial(reason)))
+        .orElseGet(() -> ResponseEntity.noContent().build());
+  }
 }

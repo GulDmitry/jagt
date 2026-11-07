@@ -1,164 +1,228 @@
 package dev.jagt.orchestrator.service;
 
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.ParameterizedTest;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import java.time.Clock;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.protocol.PlanProbes;
-import dev.jagt.orchestrator.task.Probe;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.service.master.MasterBrake;
+import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
-import static org.mockito.Mockito.when;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import tools.jackson.databind.json.JsonMapper;
 
 class HandBackTest {
 
-    @Test
-    void owesNoVerificationForAProjectTheConfigurationNoLongerNames(@TempDir Path root) throws IOException {
-        Path configFile = Files.writeString(root.resolve("jagt.yml"), """
-                orchestrator:
-                  projects: {}
-                """);
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withConfigFile(configFile.toString()));
-        ConfigService config = new ConfigService(paths, mock(AgentRuntime.class),
-                new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths), paths)));
-        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
+  @Test
+  void owesNoVerificationForAProjectTheConfigurationNoLongerNames(@TempDir Path root)
+      throws IOException {
+    Path configFile =
+        Files.writeString(
+            root.resolve("jagt.yml"),
+            """
+            orchestrator:
+              projects: {}
+            """);
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+    ConfigService config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths), paths)));
+    HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
-        boolean owed = handBack.verificationOwed(TaskState.builder("gone", "/wt", TaskStatus.IN_PROGRESS).build());
+    boolean owed =
+        handBack.verificationOwed(TaskState.builder("gone", "/wt", TaskStatus.IN_PROGRESS).build());
 
-        assertThat(owed).isFalse();
-    }
+    assertThat(owed).isFalse();
+  }
 
-    @Test
-    void owesVerificationForATaskCarryingProbesWhereNoProjectCommandIsConfigured(@TempDir Path root) throws IOException {
-        Path configFile = Files.writeString(root.resolve("jagt.yml"), """
-                orchestrator:
-                  projects: {}
-                """);
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withConfigFile(configFile.toString()));
-        ConfigService config = new ConfigService(paths, mock(AgentRuntime.class),
-                new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths), paths)));
-        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
+  @Test
+  void owesVerificationForATaskCarryingProbesWhereNoProjectCommandIsConfigured(@TempDir Path root)
+      throws IOException {
+    Path configFile =
+        Files.writeString(
+            root.resolve("jagt.yml"),
+            """
+            orchestrator:
+              projects: {}
+            """);
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+    ConfigService config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths), paths)));
+    HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
-        boolean owed = handBack.verificationOwed(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .probes(List.of(Probe.specified(Probe.Kind.REF, List.of("main"), 0))).build());
+    boolean owed =
+        handBack.verificationOwed(
+            TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .probes(List.of(Probe.specified(Probe.Kind.REF, List.of("main"), 0)))
+                .build());
 
-        assertThat(owed).isTrue();
-    }
+    assertThat(owed).isTrue();
+  }
 
-    @ParameterizedTest
-    @CsvSource({"judge,true", "act,true", "off,false"})
-    void readsWhetherTheMasterIsRunningFromTheConfiguredMode(String mode, boolean expected) {
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+  @ParameterizedTest
+  @CsvSource({"judge,true", "act,true", "off,false"})
+  void readsWhetherTheMasterIsRunningFromTheConfiguredMode(String mode, boolean expected) {
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
                 .withMaster(new MasterConfig(mode, null, null, null, null)));
-        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
+    HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
-        assertThat(handBack.masterReads()).isEqualTo(expected);
-    }
+    assertThat(handBack.masterReads()).isEqualTo(expected);
+  }
 
-    @Test
-    void refusesAPlanPutUpWithNoPlanFile(@TempDir Path worktree) {
-        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+  @Test
+  void refusesAPlanPutUpWithNoPlanFile(@TempDir Path worktree) {
+    HandBack handBack =
+        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
 
-        PlanProbes.Read read = handBack.planProbes(TaskState.builder("proj", worktree.toString(),
-                TaskStatus.PLAN_PENDING).build());
+    PlanProbes.Read read =
+        handBack.planProbes(
+            TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build());
 
-        assertThat(read.probes()).isEmpty();
-        assertThat(read.violations()).singleElement().asString().contains("## Acceptance criteria");
-    }
+    assertThat(read.probes()).isEmpty();
+    assertThat(read.violations()).singleElement().asString().contains("## Acceptance criteria");
+  }
 
-    @Test
-    void refusesAPlanFileJagtCannotRead(@TempDir Path worktree) throws IOException {
-        Path plan = Files.writeString(worktree.resolve("plan.md"), "1. tag v1");
-        assertThat(plan.toFile().setReadable(false)).isTrue();
-        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+  @Test
+  void refusesAPlanFileJagtCannotRead(@TempDir Path worktree) throws IOException {
+    Path plan = Files.writeString(worktree.resolve("plan.md"), "1. tag v1");
+    assertThat(plan.toFile().setReadable(false)).isTrue();
+    HandBack handBack =
+        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
 
-        PlanProbes.Read read = handBack.planProbes(TaskState.builder("proj", worktree.toString(),
-                TaskStatus.PLAN_PENDING).build());
+    PlanProbes.Read read =
+        handBack.planProbes(
+            TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build());
 
-        assertThat(read.violations()).singleElement().asString().contains("jagt could not read it");
-    }
+    assertThat(read.violations()).singleElement().asString().contains("jagt could not read it");
+  }
 
-    @Test
-    void refusesAPlanOfASeveralRepositoryTaskThatNamesNoRepositories(@TempDir Path worktree) throws IOException {
-        Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n");
-        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING)
-                .repos(List.of(new TaskRepo("api", worktree.toString(), null, null),
-                        new TaskRepo("web", worktree.toString(), null, null))).build();
+  @Test
+  void refusesAPlanOfASeveralRepositoryTaskThatNamesNoRepositories(@TempDir Path worktree)
+      throws IOException {
+    Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n");
+    HandBack handBack =
+        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+    TaskState task =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING)
+            .repos(
+                List.of(
+                    new TaskRepo("api", worktree.toString(), null, null),
+                    new TaskRepo("web", worktree.toString(), null, null)))
+            .build();
 
-        PlanProbes.Read read = handBack.planProbes(task);
+    PlanProbes.Read read = handBack.planProbes(task);
 
-        assertThat(read.violations()).singleElement().asString().contains("## Repositories");
-    }
+    assertThat(read.violations()).singleElement().asString().contains("## Repositories");
+  }
 
-    @Test
-    void refusesAProbeNamingARepositoryTheTaskLacks(@TempDir Path worktree) throws IOException {
-        Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n\n```probes\n"
-                + "command repo=front npm test\n```\n");
-        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+  @Test
+  void refusesAProbeNamingARepositoryTheTaskLacks(@TempDir Path worktree) throws IOException {
+    Files.writeString(
+        worktree.resolve("plan.md"),
+        "## Acceptance criteria\n- [here] it works\n\n```probes\n"
+            + "command repo=front npm test\n```\n");
+    HandBack handBack =
+        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
 
-        PlanProbes.Read read = handBack.planProbes(TaskState.builder("proj", worktree.toString(),
-                TaskStatus.PLAN_PENDING).build());
+    PlanProbes.Read read =
+        handBack.planProbes(
+            TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build());
 
-        assertThat(read.violations()).singleElement().asString()
-                .contains("command repo=front npm test").contains("proj");
-    }
+    assertThat(read.violations())
+        .singleElement()
+        .asString()
+        .contains("command repo=front npm test")
+        .contains("proj");
+  }
 
-    @Test
-    void acceptsAProbeNamingARepositoryOfTheTask(@TempDir Path worktree) throws IOException {
-        Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n\n"
-                + "## Repositories\n- [changed] proj\n- [unaffected: no UI change] front\n\n```probes\n"
-                + "command repo=front npm test\n```\n");
-        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING)
-                .repos(List.of(new TaskRepo("proj", worktree.toString(), null, null),
-                        new TaskRepo("front", worktree.toString(), null, null))).build();
+  @Test
+  void acceptsAProbeNamingARepositoryOfTheTask(@TempDir Path worktree) throws IOException {
+    Files.writeString(
+        worktree.resolve("plan.md"),
+        "## Acceptance criteria\n- [here] it works\n\n"
+            + "## Repositories\n- [changed] proj\n- [unaffected: no UI change] front\n\n```probes\n"
+            + "command repo=front npm test\n```\n");
+    HandBack handBack =
+        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+    TaskState task =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING)
+            .repos(
+                List.of(
+                    new TaskRepo("proj", worktree.toString(), null, null),
+                    new TaskRepo("front", worktree.toString(), null, null)))
+            .build();
 
-        PlanProbes.Read read = handBack.planProbes(task);
+    PlanProbes.Read read = handBack.planProbes(task);
 
-        assertThat(read.violations()).isEmpty();
-    }
+    assertThat(read.violations()).isEmpty();
+  }
 
-    @Test
-    void acceptsAProbeNamingAChangedRepositoryOfATaskWithNoRepositoryYet(@TempDir Path worktree) throws IOException {
-        Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n\n"
-                + "## Repositories\n- [changed] api\n\n```probes\ncommand repo=api npm test\n```\n");
-        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
-        TaskState task = TaskState.builder(List.of(TaskRepo.of(null, worktree.toString())), TaskStatus.PLAN_PENDING).build();
+  @Test
+  void acceptsAProbeNamingAChangedRepositoryOfATaskWithNoRepositoryYet(@TempDir Path worktree)
+      throws IOException {
+    Files.writeString(
+        worktree.resolve("plan.md"),
+        "## Acceptance criteria\n- [here] it works\n\n"
+            + "## Repositories\n- [changed] api\n\n```probes\ncommand repo=api npm test\n```\n");
+    HandBack handBack =
+        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+    TaskState task =
+        TaskState.builder(List.of(TaskRepo.of(null, worktree.toString())), TaskStatus.PLAN_PENDING)
+            .build();
 
-        PlanProbes.Read read = handBack.planProbes(task);
+    PlanProbes.Read read = handBack.planProbes(task);
 
-        assertThat(read.violations()).isEmpty();
-    }
+    assertThat(read.violations()).isEmpty();
+  }
 
-    @Test
-    void refusesAProbeNamingNoChangedRepositoryOfATaskWithNoRepositoryYet(@TempDir Path worktree) throws IOException {
-        Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n\n"
-                + "## Repositories\n- [changed] api\n\n```probes\ncommand repo=front npm test\n```\n");
-        HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
-        TaskState task = TaskState.builder(List.of(TaskRepo.of(null, worktree.toString())), TaskStatus.PLAN_PENDING).build();
+  @Test
+  void refusesAProbeNamingNoChangedRepositoryOfATaskWithNoRepositoryYet(@TempDir Path worktree)
+      throws IOException {
+    Files.writeString(
+        worktree.resolve("plan.md"),
+        "## Acceptance criteria\n- [here] it works\n\n"
+            + "## Repositories\n- [changed] api\n\n```probes\ncommand repo=front npm test\n```\n");
+    HandBack handBack =
+        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+    TaskState task =
+        TaskState.builder(List.of(TaskRepo.of(null, worktree.toString())), TaskStatus.PLAN_PENDING)
+            .build();
 
-        PlanProbes.Read read = handBack.planProbes(task);
+    PlanProbes.Read read = handBack.planProbes(task);
 
-        assertThat(read.violations()).singleElement().asString().contains("command repo=front npm test").contains("api");
-    }
+    assertThat(read.violations())
+        .singleElement()
+        .asString()
+        .contains("command repo=front npm test")
+        .contains("api");
+  }
 }

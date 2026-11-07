@@ -1,5 +1,12 @@
 package dev.jagt.orchestrator.board;
 
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Route;
@@ -10,519 +17,570 @@ import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Pattern;
-
-import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class BoardPaletteAndLaunchTest extends BoardPageContext {
 
-    @ParameterizedTest
-    @CsvSource({"Macintosh; Intel Mac OS X 10_15_7, ⌘K", "X11; Linux x86_64, Ctrl+K"})
-    void thePaletteButtonNamesTheModifierOfTheHumansPlatform(String platform, String label) {
-        session.addInitScript("Object.defineProperty(navigator, 'userAgent', {get: () => 'Mozilla/5.0 (" + platform + ")'})");
+  @ParameterizedTest
+  @CsvSource({"Macintosh; Intel Mac OS X 10_15_7, ⌘K", "X11; Linux x86_64, Ctrl+K"})
+  void thePaletteButtonNamesTheModifierOfTheHumansPlatform(String platform, String label) {
+    session.addInitScript(
+        "Object.defineProperty(navigator, 'userAgent', {get: () => 'Mozilla/5.0 ("
+            + platform
+            + ")'})");
 
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
+    Page page = session.newPage();
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("#open-palette")).hasText(label);
-    }
+    assertThat(page.locator("#open-palette")).hasText(label);
+  }
 
-    @Test
-    void thePaletteConfirmsALineItCanRunAsTyped() {
-        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+  @Test
+  void thePaletteConfirmsALineItCanRunAsTyped() {
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
+            .alias("a1")
+            .lastActiveTimestamp(System.currentTimeMillis())
+            .build());
 
-        Page page = session.newPage();
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.keyboard().press("Control+k");
-        page.locator("#ask").fill("ship a1");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("ship a1");
 
-        assertThat(page.locator("#palette-state")).containsText("runs as typed");
-    }
+    assertThat(page.locator("#palette-state")).containsText("runs as typed");
+  }
 
-    @Test
-    void thePaletteExecutesACommandItUnderstandsWithoutPayingForTheModel() {
-        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
-        when(commands.execute("ABC-1", TaskAction.SHIP, null)).thenReturn("Shipped ABC-1 — review request updated.");
+  @Test
+  void thePaletteExecutesACommandItUnderstandsWithoutPayingForTheModel() {
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
+            .alias("a1")
+            .lastActiveTimestamp(System.currentTimeMillis())
+            .build());
+    when(commands.execute("ABC-1", TaskAction.SHIP, null))
+        .thenReturn("Shipped ABC-1 — review request updated.");
 
-        Page page = session.newPage();
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.keyboard().press("Control+k");
-        page.locator("#ask").fill("ship a1");
-        page.locator("#ask").press("Enter");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("ship a1");
+    page.locator("#ask").press("Enter");
 
-        assertThat(page.locator("#toasts .toast")).hasText("Shipped ABC-1 — review request updated.");
-        verifyNoInteractions(naturalLanguage);
-    }
+    assertThat(page.locator("#toasts .toast")).hasText("Shipped ABC-1 — review request updated.");
+    verifyNoInteractions(naturalLanguage);
+  }
 
-    @Test
-    void thePaletteSaysSoBeforeRunningWhenItCannotFindTheTask() {
-        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+  @Test
+  void thePaletteSaysSoBeforeRunningWhenItCannotFindTheTask() {
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
+            .alias("a1")
+            .lastActiveTimestamp(System.currentTimeMillis())
+            .build());
 
-        Page page = session.newPage();
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.keyboard().press("Control+k");
-        page.locator("#ask").fill("ship nope");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("ship nope");
 
-        assertThat(page.locator("#palette-state")).hasClass(Pattern.compile("\\bbad\\b"));
-        assertThat(page.locator("#palette-state")).containsText("no task");
-    }
+    assertThat(page.locator("#palette-state")).hasClass(Pattern.compile("\\bbad\\b"));
+    assertThat(page.locator("#palette-state")).containsText("no task");
+  }
 
-    @Test
-    void thePaletteJudgesALineTypedBeforeTheCommandsArrivedOnceTheyDo() {
-        List<Route> verbs = new ArrayList<>();
-        Page page = session.newPage();
-        page.route("**/api/commands", verbs::add);
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.keyboard().press("Control+k");
-        page.locator("#ask").fill("ship nope");
+  @Test
+  void thePaletteJudgesALineTypedBeforeTheCommandsArrivedOnceTheyDo() {
+    List<Route> verbs = new ArrayList<>();
+    Page page = session.newPage();
+    page.route("**/api/commands", verbs::add);
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("ship nope");
 
-        verbs.get(0).resume();
+    verbs.get(0).resume();
 
-        assertThat(page.locator("#palette-state")).hasClass(Pattern.compile("\\bbad\\b"));
-    }
+    assertThat(page.locator("#palette-state")).hasClass(Pattern.compile("\\bbad\\b"));
+  }
 
-    @Test
-    void aCommandSentBeforeTheCommandsArrivedRunsOnceTheyDoWithoutPayingTheModel() {
-        when(launcher.launchLine(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
-        List<Route> verbs = new ArrayList<>();
-        Page page = session.newPage();
-        page.route("**/api/commands", verbs::add);
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.keyboard().press("Control+k");
-        page.locator("#ask").fill("do ABC-9 plan keep the API stable");
-        page.locator("#ask").press("Enter");
+  @Test
+  void aCommandSentBeforeTheCommandsArrivedRunsOnceTheyDoWithoutPayingTheModel() {
+    when(launcher.launchLine(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+    List<Route> verbs = new ArrayList<>();
+    Page page = session.newPage();
+    page.route("**/api/commands", verbs::add);
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("do ABC-9 plan keep the API stable");
+    page.locator("#ask").press("Enter");
 
-        verbs.get(0).resume();
+    verbs.get(0).resume();
 
-        assertThat(page.locator("#toasts .toast")).containsText("Started ABC-9.");
-        verifyNoInteractions(naturalLanguage);
-    }
+    assertThat(page.locator("#toasts .toast")).containsText("Started ABC-9.");
+    verifyNoInteractions(naturalLanguage);
+  }
 
-    @Test
-    void thePaletteRunsARetiredVerbItselfInsteadOfPayingTheModelForIt() {
-        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host/x/merge_requests/7")
-                .lastActiveTimestamp(System.currentTimeMillis()).build());
-        when(commands.execute("ABC-1", TaskAction.SWEEP, null)).thenReturn("sweep ABC-1: checks success");
+  @Test
+  void thePaletteRunsARetiredVerbItselfInsteadOfPayingTheModelForIt() {
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
+            .alias("a1")
+            .mrUrl("https://host/x/merge_requests/7")
+            .lastActiveTimestamp(System.currentTimeMillis())
+            .build());
+    when(commands.execute("ABC-1", TaskAction.SWEEP, null))
+        .thenReturn("sweep ABC-1: checks success");
 
-        Page page = session.newPage();
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.keyboard().press("Control+k");
-        page.locator("#ask").fill("review a1");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("review a1");
 
-        assertThat(page.locator("#palette-state")).containsText("runs as typed");
+    assertThat(page.locator("#palette-state")).containsText("runs as typed");
 
-        page.locator("#ask").press("Enter");
+    page.locator("#ask").press("Enter");
 
-        assertThat(page.locator("#toasts .toast")).hasText("sweep ABC-1: checks success");
-        verifyNoInteractions(naturalLanguage);
-    }
+    assertThat(page.locator("#toasts .toast")).hasText("sweep ABC-1: checks success");
+    verifyNoInteractions(naturalLanguage);
+  }
 
-    @Test
-    void freeTextIsInterpretedAndTheBoardLeadsWithHowItWasUnderstood() {
-        when(naturalLanguage.interpret("send the widget work out for review"))
-                .thenReturn("understood as `ship a1` — Shipped ABC-1.");
+  @Test
+  void freeTextIsInterpretedAndTheBoardLeadsWithHowItWasUnderstood() {
+    when(naturalLanguage.interpret("send the widget work out for review"))
+        .thenReturn("understood as `ship a1` — Shipped ABC-1.");
 
-        Page page = session.newPage();
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.keyboard().press("Control+k");
-        page.locator("#ask").fill("send the widget work out for review");
-        page.locator("#ask").press("Enter");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("send the widget work out for review");
+    page.locator("#ask").press("Enter");
 
-        assertThat(page.locator("#toasts .toast")).hasText("understood as `ship a1` — Shipped ABC-1.");
-    }
+    assertThat(page.locator("#toasts .toast")).hasText("understood as `ship a1` — Shipped ABC-1.");
+  }
 
-    @Test
-    void startingATaskWithNoProjectIsAllowedWhenPlanFirstIsTicked() {
-        when(launcher.launchUnplaced(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+  @Test
+  void startingATaskWithNoProjectIsAllowedWhenPlanFirstIsTicked() {
+    when(launcher.launchUnplaced(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
-        Page page = session.newPage();
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#new-task").click();
-        page.locator("#ref").fill("ABC-9");
-        page.locator("#plan").check();
-        page.locator("#launch button[type=submit]").click();
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.locator("#new-task").click();
+    page.locator("#ref").fill("ABC-9");
+    page.locator("#plan").check();
+    page.locator("#launch button[type=submit]").click();
 
-        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-        verify(launcher).launchUnplaced(LaunchRequest.of("ABC-9").withMode("plan").withStrategy("fresh"));
-    }
+    assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
+    verify(launcher)
+        .launchUnplaced(LaunchRequest.of("ABC-9").withMode("plan").withStrategy("fresh"));
+  }
 
-    @Test
-    void startingATaskWithNoProjectAndNoPlanFirstSaysSoAndSendsNothing() {
-        Page page = session.newPage();
+  @Test
+  void startingATaskWithNoProjectAndNoPlanFirstSaysSoAndSendsNothing() {
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#new-task").click();
-        page.locator("#ref").fill("ABC-9");
-        page.locator("#launch button[type=submit]").click();
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.locator("#new-task").click();
+    page.locator("#ref").fill("ABC-9");
+    page.locator("#launch button[type=submit]").click();
 
-        assertThat(page.locator("#launch-state")).hasText("Choose a project, or start with plan first");
-        verifyNoInteractions(launcher);
-    }
+    assertThat(page.locator("#launch-state")).hasText("Choose a project, or start with plan first");
+    verifyNoInteractions(launcher);
+  }
 
-    @Test
-    void startingAFreshFormSaysItNeedsATicketOrNotesAndSendsNothing() {
-        Page page = session.newPage();
+  @Test
+  void startingAFreshFormSaysItNeedsATicketOrNotesAndSendsNothing() {
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#new-task").click();
-        page.locator("#launch button[type=submit]").click();
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.locator("#new-task").click();
+    page.locator("#launch button[type=submit]").click();
 
-        assertThat(page.locator("#launch-state")).hasText("Give a ticket, or notes saying what to do");
-        verifyNoInteractions(launcher);
-    }
+    assertThat(page.locator("#launch-state")).hasText("Give a ticket, or notes saying what to do");
+    verifyNoInteractions(launcher);
+  }
 
-    @Test
-    void startingWithWordsInTheTicketFieldSaysATicketIsAKeyOrAUrlAndSendsNothing() {
-        Page page = session.newPage();
+  @Test
+  void startingWithWordsInTheTicketFieldSaysATicketIsAKeyOrAUrlAndSendsNothing() {
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#new-task").click();
-        page.locator("#ref").fill("fix the login page");
-        page.locator("#project input[value=alpha]").check();
-        page.locator("#launch button[type=submit]").click();
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.locator("#new-task").click();
+    page.locator("#ref").fill("fix the login page");
+    page.locator("#project input[value=alpha]").check();
+    page.locator("#launch button[type=submit]").click();
 
-        assertThat(page.locator("#launch-state"))
-                .hasText("A ticket is a key or a URL, not words");
-        verifyNoInteractions(launcher);
-    }
+    assertThat(page.locator("#launch-state")).hasText("A ticket is a key or a URL, not words");
+    verifyNoInteractions(launcher);
+  }
 
-    @Test
-    void startingNotesWithNoTicketAndNoProjectAmongSeveralSaysToChooseOneAndSendsNothing() {
-        Page page = session.newPage();
+  @Test
+  void startingNotesWithNoTicketAndNoProjectAmongSeveralSaysToChooseOneAndSendsNothing() {
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#new-task").click();
-        page.locator("#notes").fill("fix the login page");
-        page.locator("#launch button[type=submit]").click();
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.locator("#new-task").click();
+    page.locator("#notes").fill("fix the login page");
+    page.locator("#launch button[type=submit]").click();
 
-        assertThat(page.locator("#launch-state")).hasText("Choose a project for your notes");
-        verifyNoInteractions(launcher);
-    }
+    assertThat(page.locator("#launch-state")).hasText("Choose a project for your notes");
+    verifyNoInteractions(launcher);
+  }
 
-    @Test
-    void sendsTheExtraInstructionsTypedForTheAgent() {
-        when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+  @Test
+  void sendsTheExtraInstructionsTypedForTheAgent() {
+    when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
-        Page page = session.newPage();
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#new-task").click();
-        page.locator("#ref").fill("ABC-9");
-        page.locator("#project input[value=alpha]").check();
-        page.locator("#notes").fill("start with the failing test");
-        page.locator("#launch button[type=submit]").click();
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.locator("#new-task").click();
+    page.locator("#ref").fill("ABC-9");
+    page.locator("#project input[value=alpha]").check();
+    page.locator("#notes").fill("start with the failing test");
+    page.locator("#launch button[type=submit]").click();
 
-        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-        verify(launcher).launch(LaunchRequest.of("ABC-9").withProject("alpha").withStrategy("fresh")
+    assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
+    verify(launcher)
+        .launch(
+            LaunchRequest.of("ABC-9")
+                .withProject("alpha")
+                .withStrategy("fresh")
                 .withNotes("start with the failing test"));
-    }
+  }
 
-    @Test
-    void keepsEverythingTypedWhenTheLaunchCreatedNoTask() {
-        when(launcher.launch(any()))
-                .thenReturn(Launched.refused("error: read failed: ABC-9 (cause in the log) — no task created"));
+  @Test
+  void keepsEverythingTypedWhenTheLaunchCreatedNoTask() {
+    when(launcher.launch(any()))
+        .thenReturn(
+            Launched.refused("error: read failed: ABC-9 (cause in the log) — no task created"));
 
-        Page page = session.newPage();
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#new-task").click();
-        page.locator("#ref").fill("ABC-9");
-        page.locator("#project input[value=alpha]").check();
-        page.locator("#base-branch").fill("feature/parent");
-        page.locator("#notes").fill("start with the failing test");
-        page.locator("#launch button[type=submit]").click();
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.locator("#new-task").click();
+    page.locator("#ref").fill("ABC-9");
+    page.locator("#project input[value=alpha]").check();
+    page.locator("#base-branch").fill("feature/parent");
+    page.locator("#notes").fill("start with the failing test");
+    page.locator("#launch button[type=submit]").click();
 
-        assertThat(page.locator("#toasts .toast")).containsText("no task created");
-        assertThat(page.locator("#ref")).hasValue("ABC-9");
-        assertThat(page.locator("#base-branch")).hasValue("feature/parent");
-        assertThat(page.locator("#notes")).hasValue("start with the failing test");
-    }
+    assertThat(page.locator("#toasts .toast")).containsText("no task created");
+    assertThat(page.locator("#ref")).hasValue("ABC-9");
+    assertThat(page.locator("#base-branch")).hasValue("feature/parent");
+    assertThat(page.locator("#notes")).hasValue("start with the failing test");
+  }
 
-    @Test
-    void aTypedLaunchCarriesEveryModifierAndNotOnlyTheTicket() {
-        when(launcher.launchLine(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+  @Test
+  void aTypedLaunchCarriesEveryModifierAndNotOnlyTheTicket() {
+    when(launcher.launchLine(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
-        Page page = session.newPage();
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.keyboard().press("Control+k");
-        page.locator("#ask").fill("do ABC-9 plan keep the API stable");
-        page.locator("#ask").press("Enter");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("do ABC-9 plan keep the API stable");
+    page.locator("#ask").press("Enter");
 
-        assertThat(page.locator("#toasts .toast")).containsText("Started ABC-9.");
-        verify(launcher).launchLine("ABC-9 plan keep the API stable");
-    }
+    assertThat(page.locator("#toasts .toast")).containsText("Started ABC-9.");
+    verify(launcher).launchLine("ABC-9 plan keep the API stable");
+  }
 
-    @Test
-    void aVerbTypedAloneHandsOverToThePartOfTheBoardItNames() {
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.keyboard().press("Control+k");
-        page.locator("#ask").fill("do");
-        page.locator("#ask").press("Enter");
+  @Test
+  void aVerbTypedAloneHandsOverToThePartOfTheBoardItNames() {
+    Page page = session.newPage();
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("do");
+    page.locator("#ask").press("Enter");
 
-        assertThat(page.locator("#ref")).isFocused();
-        verifyNoInteractions(launcher, naturalLanguage);
-    }
+    assertThat(page.locator("#ref")).isFocused();
+    verifyNoInteractions(launcher, naturalLanguage);
+  }
 
-    @Test
-    void aReviewRequestIsResumedFromAskWhichIsItsOnlyControl() {
-        when(launcher.resume("https://host.example/mr/42"))
-                .thenReturn(Launched.created("ABC-9", "Resumed ABC-9 on its existing branch"));
+  @Test
+  void aReviewRequestIsResumedFromAskWhichIsItsOnlyControl() {
+    when(launcher.resume("https://host.example/mr/42"))
+        .thenReturn(Launched.created("ABC-9", "Resumed ABC-9 on its existing branch"));
 
-        Page page = session.newPage();
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.keyboard().press("Control+k");
-        page.locator("#ask").fill("resume https://host.example/mr/42");
-        page.locator("#ask").press("Enter");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("resume https://host.example/mr/42");
+    page.locator("#ask").press("Enter");
 
-        assertThat(page.locator("#toasts .toast")).hasText("Resumed ABC-9 on its existing branch");
-        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Resume").setExact(true)))
-                .hasCount(0);
-    }
+    assertThat(page.locator("#toasts .toast")).hasText("Resumed ABC-9 on its existing branch");
+    assertThat(
+            page.getByRole(
+                AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Resume").setExact(true)))
+        .hasCount(0);
+  }
 
-    @Test
-    void keepsTheTypedPaletteLineWhenTheLaunchItRanCreatedNoTask() {
-        when(launcher.launchLine(any()))
-                .thenReturn(Launched.refused("branch 'ABC-9' already exists in alpha (previous run)"));
+  @Test
+  void keepsTheTypedPaletteLineWhenTheLaunchItRanCreatedNoTask() {
+    when(launcher.launchLine(any()))
+        .thenReturn(Launched.refused("branch 'ABC-9' already exists in alpha (previous run)"));
 
-        Page page = session.newPage();
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.keyboard().press("Control+k");
-        page.locator("#ask").fill("do ABC-9");
-        page.locator("#ask").press("Enter");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("do ABC-9");
+    page.locator("#ask").press("Enter");
 
-        assertThat(page.locator("#toasts .toast")).containsText("already exists in alpha");
-        assertThat(page.locator("#ask")).hasValue("do ABC-9");
-    }
+    assertThat(page.locator("#toasts .toast")).containsText("already exists in alpha");
+    assertThat(page.locator("#ask")).hasValue("do ABC-9");
+  }
 
-    @Test
-    void offersEveryProjectAsABoxWithNoneTicked() {
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+  @Test
+  void offersEveryProjectAsABoxWithNoneTicked() {
+    Page page = session.newPage();
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
-        page.locator("#new-task").click();
+    page.locator("#new-task").click();
 
-        assertThat(page.locator("#project input[type=checkbox]")).hasCount(2);
-        assertThat(page.locator("#project input:checked")).hasCount(0);
-    }
+    assertThat(page.locator("#project input[type=checkbox]")).hasCount(2);
+    assertThat(page.locator("#project input:checked")).hasCount(0);
+  }
 
-    @Test
-    void hoveringAProjectShowsItsConfigurationAndTheAddressOfItsRepository() throws Exception {
-        Files.createDirectories(root.resolve("alpha"));
-        new ProcessBuilder("git", "-C", root.resolve("alpha").toString(), "init", "-q").start().waitFor();
-        new ProcessBuilder("git", "-C", root.resolve("alpha").toString(), "remote", "add", "origin",
-                "git@code.example:acme/alpha.git").start().waitFor();
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#new-task").click();
-        assertThat(page.locator("#project label").first()).hasAttribute("data-tip",
-                Pattern.compile("remoteUrl: git@code.example:acme/alpha.git"));
+  @Test
+  void hoveringAProjectShowsItsConfigurationAndTheAddressOfItsRepository() throws Exception {
+    Files.createDirectories(root.resolve("alpha"));
+    new ProcessBuilder("git", "-C", root.resolve("alpha").toString(), "init", "-q")
+        .start()
+        .waitFor();
+    new ProcessBuilder(
+            "git",
+            "-C",
+            root.resolve("alpha").toString(),
+            "remote",
+            "add",
+            "origin",
+            "git@code.example:acme/alpha.git")
+        .start()
+        .waitFor();
+    Page page = session.newPage();
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.locator("#new-task").click();
+    assertThat(page.locator("#project label").first())
+        .hasAttribute("data-tip", Pattern.compile("remoteUrl: git@code.example:acme/alpha.git"));
 
-        page.locator("#project label").first().hover();
+    page.locator("#project label").first().hover();
 
-        assertThat(page.locator("#tip")).containsText("baseBranch: origin/main");
-        assertThat(page.locator("#tip")).containsText("deployBranch: dev");
-        assertThat(page.locator("#tip")).containsText("remoteUrl: git@code.example:acme/alpha.git");
-    }
+    assertThat(page.locator("#tip")).containsText("baseBranch: origin/main");
+    assertThat(page.locator("#tip")).containsText("deployBranch: dev");
+    assertThat(page.locator("#tip")).containsText("remoteUrl: git@code.example:acme/alpha.git");
+  }
 
-    @Test
-    void offersTheProjectsByNameWhateverOrderJagtYmlListsThem() {
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+  @Test
+  void offersTheProjectsByNameWhateverOrderJagtYmlListsThem() {
+    Page page = session.newPage();
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
-        page.locator("#new-task").click();
+    page.locator("#new-task").click();
 
-        assertThat(page.locator("#project label")).hasText(new String[] {"alpha", "beta"});
-    }
+    assertThat(page.locator("#project label")).hasText(new String[] {"alpha", "beta"});
+  }
 
-    @Test
-    void startingATaskInBothProjectsSendsThemInTheOrderJagtYmlListsThem() {
-        when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9 in beta."));
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#new-task").click();
-        page.locator("#ref").fill("ABC-9");
-        page.locator("#project input[value=alpha]").check();
-        page.locator("#project input[value=beta]").check();
+  @Test
+  void startingATaskInBothProjectsSendsThemInTheOrderJagtYmlListsThem() {
+    when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9 in beta."));
+    Page page = session.newPage();
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.locator("#new-task").click();
+    page.locator("#ref").fill("ABC-9");
+    page.locator("#project input[value=alpha]").check();
+    page.locator("#project input[value=beta]").check();
 
-        page.locator("#launch button[type=submit]").click();
+    page.locator("#launch button[type=submit]").click();
 
-        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9 in beta.");
-        verify(launcher).launch(LaunchRequest.of("ABC-9").withProject("beta,alpha").withStrategy("fresh"));
-    }
+    assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9 in beta.");
+    verify(launcher)
+        .launch(LaunchRequest.of("ABC-9").withProject("beta,alpha").withStrategy("fresh"));
+  }
 
-    @Test
-    void answersATasklessVerbItselfInsteadOfSendingItToTheModel() {
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.keyboard().press("Control+k");
-        page.locator("#ask").fill("ship");
-        page.locator("#ask").press("Enter");
+  @Test
+  void answersATasklessVerbItselfInsteadOfSendingItToTheModel() {
+    Page page = session.newPage();
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("ship");
+    page.locator("#ask").press("Enter");
 
-        assertThat(page.locator("#palette-state")).containsText("ship needs a task");
-        verifyNoInteractions(naturalLanguage);
-    }
+    assertThat(page.locator("#palette-state")).containsText("ship needs a task");
+    verifyNoInteractions(naturalLanguage);
+  }
 
-    @Test
-    void startingATaskWithAPickedProjectSendsThatProject() {
-        when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9 in beta."));
+  @Test
+  void startingATaskWithAPickedProjectSendsThatProject() {
+    when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9 in beta."));
 
-        Page page = session.newPage();
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#new-task").click();
-        page.locator("#ref").fill("ABC-9");
-        page.locator("#project input[value=beta]").check();
-        page.locator("#launch button[type=submit]").click();
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.locator("#new-task").click();
+    page.locator("#ref").fill("ABC-9");
+    page.locator("#project input[value=beta]").check();
+    page.locator("#launch button[type=submit]").click();
 
-        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9 in beta.");
-        verify(launcher).launch(LaunchRequest.of("ABC-9").withProject("beta").withStrategy("fresh"));
-    }
+    assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9 in beta.");
+    verify(launcher).launch(LaunchRequest.of("ABC-9").withProject("beta").withStrategy("fresh"));
+  }
 
-    @Test
-    void startingATaskWithAChosenBranchStrategySendsIt() {
-        when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+  @Test
+  void startingATaskWithAChosenBranchStrategySendsIt() {
+    when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
-        Page page = session.newPage();
+    Page page = session.newPage();
 
-        page.navigate("http://localhost:" + port + "/");
+    page.navigate("http://localhost:" + port + "/");
 
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#new-task").click();
-        page.locator("#ref").fill("ABC-9");
-        page.locator("#project input[value=alpha]").check();
-        page.locator("#strategy").selectOption("recreate");
-        page.locator("#launch button[type=submit]").click();
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.locator("#new-task").click();
+    page.locator("#ref").fill("ABC-9");
+    page.locator("#project input[value=alpha]").check();
+    page.locator("#strategy").selectOption("recreate");
+    page.locator("#launch button[type=submit]").click();
 
-        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-        verify(launcher).launch(LaunchRequest.of("ABC-9").withProject("alpha").withStrategy("recreate"));
-    }
+    assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
+    verify(launcher)
+        .launch(LaunchRequest.of("ABC-9").withProject("alpha").withStrategy("recreate"));
+  }
 
-    @ParameterizedTest
-    @CsvSource(delimiter = '|', value = {"/api/tasks/say|{\"line\": \"hello\"}|'task'",
-            "/api/tasks|{not json|not readable"})
-    void aMalformedRequestIsRefusedInTheShapeEveryRefusalHas(String path, String body, String named) {
-        APIResponse refused = session.request().post("http://localhost:" + port + path,
-                RequestOptions.create().setHeader("Content-Type", "application/json")
-                        .setHeader("Origin", "http://localhost:" + port).setData(body));
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = '|',
+      value = {"/api/tasks/say|{\"line\": \"hello\"}|'task'", "/api/tasks|{not json|not readable"})
+  void aMalformedRequestIsRefusedInTheShapeEveryRefusalHas(String path, String body, String named) {
+    APIResponse refused =
+        session
+            .request()
+            .post(
+                "http://localhost:" + port + path,
+                RequestOptions.create()
+                    .setHeader("Content-Type", "application/json")
+                    .setHeader("Origin", "http://localhost:" + port)
+                    .setData(body));
 
-        org.assertj.core.api.Assertions.assertThat(refused.status()).isEqualTo(400);
-        org.assertj.core.api.Assertions.assertThat(refused.text()).startsWith("{\"error\":").contains(named)
-                .doesNotContain("timestamp");
-    }
+    org.assertj.core.api.Assertions.assertThat(refused.status()).isEqualTo(400);
+    org.assertj.core.api.Assertions.assertThat(refused.text())
+        .startsWith("{\"error\":")
+        .contains(named)
+        .doesNotContain("timestamp");
+  }
 
-    @ParameterizedTest
-    @CsvSource({"filter, filter", "ref, ticket", "base-branch, base branch", "notes, instructions",
-            "ask, command", "say, tell this session", "project, projects", "strategy, when the branch exists"})
-    void everyFieldIsNamedWithoutLeaningOnItsPlaceholder(String id, String named) {
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+  @ParameterizedTest
+  @CsvSource({
+    "filter, filter",
+    "ref, ticket",
+    "base-branch, base branch",
+    "notes, instructions",
+    "ask, command",
+    "say, tell this session",
+    "project, projects",
+    "strategy, when the branch exists"
+  })
+  void everyFieldIsNamedWithoutLeaningOnItsPlaceholder(String id, String named) {
+    Page page = session.newPage();
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
-        assertThat(page.locator("#" + id)).hasAttribute("aria-label", Pattern.compile(named));
-    }
+    assertThat(page.locator("#" + id)).hasAttribute("aria-label", Pattern.compile(named));
+  }
 
-    @Test
-    void commandEnterStartsTheTaskFromAnyFieldOfTheForm() {
-        when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#new-task").click();
-        page.locator("#ref").fill("ABC-9");
-        page.locator("#project input[value=alpha]").check();
+  @Test
+  void commandEnterStartsTheTaskFromAnyFieldOfTheForm() {
+    when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+    Page page = session.newPage();
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.locator("#new-task").click();
+    page.locator("#ref").fill("ABC-9");
+    page.locator("#project input[value=alpha]").check();
 
-        page.locator("#ref").press("Meta+Enter");
+    page.locator("#ref").press("Meta+Enter");
 
-        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-    }
+    assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
+  }
 
-    @Test
-    void aSecondCommandEnterDuringASlowLaunchStartsNoSecondTask() {
-        CountDownLatch release = new CountDownLatch(1);
-        when(launcher.launch(any())).thenAnswer(call -> {
-            release.await();
-            return Launched.created("ABC-9", "Started ABC-9.");
-        });
-        Page page = session.newPage();
-        page.navigate("http://localhost:" + port + "/");
-        assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-        page.locator("#new-task").click();
-        page.locator("#ref").fill("ABC-9");
-        page.locator("#project input[value=alpha]").check();
+  @Test
+  void aSecondCommandEnterDuringASlowLaunchStartsNoSecondTask() {
+    CountDownLatch release = new CountDownLatch(1);
+    when(launcher.launch(any()))
+        .thenAnswer(
+            call -> {
+              release.await();
+              return Launched.created("ABC-9", "Started ABC-9.");
+            });
+    Page page = session.newPage();
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    page.locator("#new-task").click();
+    page.locator("#ref").fill("ABC-9");
+    page.locator("#project input[value=alpha]").check();
 
-        page.locator("#ref").press("Meta+Enter");
-        assertThat(page.locator("#launch button[type=submit]")).isDisabled();
-        page.locator("#ref").press("Meta+Enter");
-        release.countDown();
+    page.locator("#ref").press("Meta+Enter");
+    assertThat(page.locator("#launch button[type=submit]")).isDisabled();
+    page.locator("#ref").press("Meta+Enter");
+    release.countDown();
 
-        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-        verify(launcher, times(1)).launch(any());
-    }
+    assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
+    verify(launcher, times(1)).launch(any());
+  }
 }

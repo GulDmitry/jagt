@@ -6,22 +6,23 @@ import tools.jackson.databind.JsonNode;
 
 public interface StandWorld {
 
-    StandStore store();
+  StandStore store();
 
-    StandProject project();
+  StandProject project();
 
-    Path scratch(String name);
+  Path scratch(String name);
 
-    void note(String event);
+  void note(String event);
 
-    int relaysSeen();
+  int relaysSeen();
 
-    void say(String line);
+  void say(String line);
 
-    void restart();
+  void restart();
 
-    default Optional<JsonNode> openRequest() {
-        return store().allRequests().stream().filter(request -> request.path("state").asString().equals("open"))
-                .findFirst();
-    }
+  default Optional<JsonNode> openRequest() {
+    return store().allRequests().stream()
+        .filter(request -> request.path("state").asString().equals("open"))
+        .findFirst();
+  }
 }

@@ -1,9 +1,10 @@
 package dev.jagt.orchestrator.flow;
 
 enum Fact {
-    NO, YES;
+  NO,
+  YES;
 
-    static Fact of(boolean holds) {
-        return holds ? YES : NO;
-    }
+  static Fact of(boolean holds) {
+    return holds ? YES : NO;
+  }
 }

@@ -6,15 +6,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class SessionCases {
 
-    public static final String FILE = "roles/session/cases.md";
+  public static final String FILE = "roles/session/cases.md";
 
-    private final RoleFiles files;
+  private final RoleFiles files;
 
-    public SessionCases(OrchestratorPaths paths) {
-        this.files = new RoleFiles(paths, "session");
-    }
+  public SessionCases(OrchestratorPaths paths) {
+    this.files = new RoleFiles(paths, "session");
+  }
 
-    public CaseBook book() {
-        return files.book();
-    }
+  public CaseBook book() {
+    return files.book();
+  }
 }

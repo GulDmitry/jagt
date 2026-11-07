@@ -1,266 +1,409 @@
 package dev.jagt.orchestrator.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import dev.jagt.orchestrator.task.Remote;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 class ToolGateTest {
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "git push origin dev",
-            "git push origin HEAD:dev",
-            "git push origin refs/heads/ABC-42:refs/heads/release/stage",
-            "git push --force origin +HEAD:main",
-            "cd /wt && git push origin dev",
-            "git commit -m 'x' ; git push origin master",
-            "/opt/homebrew/bin/git push origin dev",
-            "git push -o ci.skip origin dev",
-            "git -C /wt/ABC-42 push origin dev",
-            "git --no-pager push origin main",
-            "git -c user.name=x push origin release/stage",
-            "git switch main && git push origin HEAD",
-            "git -C /repo push origin HEAD",
-            "cd /repo && git push -u origin HEAD",
-            "git push origin ABC-42 & git push origin main",
-            "git push origin ABC-42 >/dev/null main",
-            "git push origin ABC-42 2> /dev/null main",
-            "git push origin ABC-42 2>&1 main",
-            "git push origin ABC-42 >&2 main",
-            "git push origin ABC-42 &>/dev/null main",
-            "git push origin ABC-42 &>>/tmp/log main",
-            "\\git push origin main",
-            "\"git\" push origin main",
-            "'git' push origin main",
-            "g''it push origin main",
-            "git \"push\" origin main",
-            "g'i't push origin main",
-            "git pu'sh' origin main",
-            "GIT_DIR=/repo/.git git push origin HEAD",
-            "GIT_WORK_TREE=/repo git push origin HEAD",
-            "git push origin ABC-42:HEAD",
-            "git push origin ABC-42 \\#x main",
-            "git push origin ABC-42 x\\> main",
-    })
-    void refusesAPushWhoseDestinationIsNotTheTasksBranch(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
-                .isPresent()
-                .get(org.assertj.core.api.InstanceOfAssertFactories.STRING)
-                .contains("ABC-42");
-    }
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "git push origin dev",
+        "git push origin HEAD:dev",
+        "git push origin refs/heads/ABC-42:refs/heads/release/stage",
+        "git push --force origin +HEAD:main",
+        "cd /wt && git push origin dev",
+        "git commit -m 'x' ; git push origin master",
+        "/opt/homebrew/bin/git push origin dev",
+        "git push -o ci.skip origin dev",
+        "git -C /wt/ABC-42 push origin dev",
+        "git --no-pager push origin main",
+        "git -c user.name=x push origin release/stage",
+        "git switch main && git push origin HEAD",
+        "git -C /repo push origin HEAD",
+        "cd /repo && git push -u origin HEAD",
+        "git push origin ABC-42 & git push origin main",
+        "git push origin ABC-42 >/dev/null main",
+        "git push origin ABC-42 2> /dev/null main",
+        "git push origin ABC-42 2>&1 main",
+        "git push origin ABC-42 >&2 main",
+        "git push origin ABC-42 &>/dev/null main",
+        "git push origin ABC-42 &>>/tmp/log main",
+        "\\git push origin main",
+        "\"git\" push origin main",
+        "'git' push origin main",
+        "g''it push origin main",
+        "git \"push\" origin main",
+        "g'i't push origin main",
+        "git pu'sh' origin main",
+        "GIT_DIR=/repo/.git git push origin HEAD",
+        "GIT_WORK_TREE=/repo git push origin HEAD",
+        "git push origin ABC-42:HEAD",
+        "git push origin ABC-42 \\#x main",
+        "git push origin ABC-42 x\\> main",
+      })
+  void refusesAPushWhoseDestinationIsNotTheTasksBranch(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
+        .isPresent()
+        .get(org.assertj.core.api.InstanceOfAssertFactories.STRING)
+        .contains("ABC-42");
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "git push origin ABC-42",
-            "git push origin ABC-42:ABC-42",
-            "git push origin refs/heads/ABC-42:refs/heads/ABC-42",
-            "git push --force-with-lease origin ABC-42",
-            "git fetch && git rebase origin/release/x && git push --force-with-lease origin ABC-42",
-            "git push -o ci.skip origin ABC-42",
-            "git add -A && git commit -m 'ABC-42 fix' && git push origin ABC-42",
-            "git fetch origin dev",
-            "git status",
-            "echo 'git push origin dev is what jagt refuses'",
-            "git push origin ABC-42 2>&1",
-            "git push origin ABC-42 > /tmp/out",
-            "git push origin ABC-42 # push the branch",
-            "git push origin \"ABC-42\"",
-            "git push origin HEAD",
-            "git push -u origin HEAD",
-            "git -C /wt/ABC-42 push origin ABC-42",
-            "git commit -c HEAD && git push origin ABC-42",
-            "echo git",
-            "echo push git",
-    })
-    void allowsEverythingThatDoesNotWriteAnotherBranch(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).isEmpty();
-    }
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "git push origin ABC-42",
+        "git push origin ABC-42:ABC-42",
+        "git push origin refs/heads/ABC-42:refs/heads/ABC-42",
+        "git push --force-with-lease origin ABC-42",
+        "git fetch && git rebase origin/release/x && git push --force-with-lease origin ABC-42",
+        "git push -o ci.skip origin ABC-42",
+        "git add -A && git commit -m 'ABC-42 fix' && git push origin ABC-42",
+        "git fetch origin dev",
+        "git status",
+        "echo 'git push origin dev is what jagt refuses'",
+        "git push origin ABC-42 2>&1",
+        "git push origin ABC-42 > /tmp/out",
+        "git push origin ABC-42 # push the branch",
+        "git push origin \"ABC-42\"",
+        "git push origin HEAD",
+        "git push -u origin HEAD",
+        "git -C /wt/ABC-42 push origin ABC-42",
+        "git commit -c HEAD && git push origin ABC-42",
+        "echo git",
+        "echo push git",
+      })
+  void allowsEverythingThatDoesNotWriteAnotherBranch(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).isEmpty();
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "git push --no-verify origin ABC-42",
-            "git -c core.hooksPath=/dev/null push origin ABC-42",
-            "git -c alias.p=push p origin dev",
-            "env -u GIT_CONFIG_COUNT git push origin ABC-42",
-            "GIT_CONFIG_COUNT=0 git push origin ABC-42",
-            "env -i git push origin ABC-42",
-            "sh -c 'git push origin dev'",
-            "bash -lc \"git push origin ABC-42\"",
-            "unset GIT_CONF''IG_COUNT; git push origin ABC-42",
-            "env - git push origin ABC-42",
-            "git -c remote.origin.push=refs/heads/ABC-42:refs/heads/main push origin ABC-42",
-            "git '-c' remote.origin.push=refs/heads/ABC-42:refs/heads/main push origin ABC-42",
-    })
-    void refusesAPushThatCouldSkipThePrePushCheck(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).get()
-                .asString().contains("could skip its pre-push check");
-    }
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "git push --no-verify origin ABC-42",
+        "git -c core.hooksPath=/dev/null push origin ABC-42",
+        "git -c alias.p=push p origin dev",
+        "env -u GIT_CONFIG_COUNT git push origin ABC-42",
+        "GIT_CONFIG_COUNT=0 git push origin ABC-42",
+        "env -i git push origin ABC-42",
+        "sh -c 'git push origin dev'",
+        "bash -lc \"git push origin ABC-42\"",
+        "unset GIT_CONF''IG_COUNT; git push origin ABC-42",
+        "env - git push origin ABC-42",
+        "git -c remote.origin.push=refs/heads/ABC-42:refs/heads/main push origin ABC-42",
+        "git '-c' remote.origin.push=refs/heads/ABC-42:refs/heads/main push origin ABC-42",
+      })
+  void refusesAPushThatCouldSkipThePrePushCheck(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
+        .get()
+        .asString()
+        .contains("could skip its pre-push check");
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"git push --force origin ABC-42", "git push -f origin ABC-42",
-            "git push -uf origin ABC-42", "git push origin +ABC-42", "git push --force-with-lease origin +ABC-42"})
-    void refusesForcingTheTasksOwnBranchWithoutTheLease(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).get()
-                .asString().contains("--force-with-lease");
-    }
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "git push --force origin ABC-42",
+        "git push -f origin ABC-42",
+        "git push -uf origin ABC-42",
+        "git push origin +ABC-42",
+        "git push --force-with-lease origin +ABC-42"
+      })
+  void refusesForcingTheTasksOwnBranchWithoutTheLease(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
+        .get()
+        .asString()
+        .contains("--force-with-lease");
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"curl -X POST 'http://127.0.0.1:8290/api/tasks/actions/deploy?task=ABC-7'",
-            "curl -d '{\"line\":\"x\"}' localhost:8290/api/tasks/say", "curl http://[::1]:8290/mcp",
-            "cat ../../.jagt/master-token", "node /root/mcp_client.js", "cat .jagt/master-tok'en'",
-            "curl -X POST -H Origin:http://localhost:'8290' http://localhost:'8290'/api/tasks/actions/deploy?task=ABC-42",
-            "curl -X POST -H Origin:http://localhost:08290 http://localhost:08290/api/tasks/actions/deploy?task=ABC-42",
-            "curl -X POST http://127.1:8290/api/tasks/say", "curl -X POST http://2130706433:8290/api/tasks/say",
-            "curl -X POST http://0x7f000001:8290/api/tasks/say", "curl -X POST http://LOCALHOST:8290/api/tasks/say",
-            "curl -X POST http://[::ffff:127.0.0.1]:8290/api/tasks/say", "cat .jagt/MASTER-TOKEN"})
-    void refusesALineReachingTheBoardOrTheMastersToken(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).get()
-                .asString().contains("reaching its board");
-    }
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "curl -X POST 'http://127.0.0.1:8290/api/tasks/actions/deploy?task=ABC-7'",
+        "curl -d '{\"line\":\"x\"}' localhost:8290/api/tasks/say",
+        "curl http://[::1]:8290/mcp",
+        "cat ../../.jagt/master-token",
+        "node /root/mcp_client.js",
+        "cat .jagt/master-tok'en'",
+        "curl -X POST -H Origin:http://localhost:'8290'"
+            + " http://localhost:'8290'/api/tasks/actions/deploy?task=ABC-42",
+        "curl -X POST -H Origin:http://localhost:08290"
+            + " http://localhost:08290/api/tasks/actions/deploy?task=ABC-42",
+        "curl -X POST http://127.1:8290/api/tasks/say",
+        "curl -X POST http://2130706433:8290/api/tasks/say",
+        "curl -X POST http://0x7f000001:8290/api/tasks/say",
+        "curl -X POST http://LOCALHOST:8290/api/tasks/say",
+        "curl -X POST http://[::ffff:127.0.0.1]:8290/api/tasks/say",
+        "cat .jagt/MASTER-TOKEN"
+      })
+  void refusesALineReachingTheBoardOrTheMastersToken(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
+        .get()
+        .asString()
+        .contains("reaching its board");
+  }
 
-    @Test
-    void refusesTheBoardOnThePortItServesAfterAnotherPortWasAsked() {
-        ToolGate.refusal("curl localhost:8290/api/tasks/say", "ABC-42", 8290, Remote.ORIGIN);
+  @Test
+  void refusesTheBoardOnThePortItServesAfterAnotherPortWasAsked() {
+    ToolGate.refusal("curl localhost:8290/api/tasks/say", "ABC-42", 8290, Remote.ORIGIN);
 
-        assertThat(ToolGate.refusal("curl localhost:9300/api/tasks/say", "ABC-42", 9300, Remote.ORIGIN)).get()
-                .asString().contains("reaching its board");
-    }
+    assertThat(ToolGate.refusal("curl localhost:9300/api/tasks/say", "ABC-42", 9300, Remote.ORIGIN))
+        .get()
+        .asString()
+        .contains("reaching its board");
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"git send-pack origin refs/heads/ABC-42:refs/heads/main",
-            "git -C /wt send-pack origin ABC-42:main", "git http-push https://host/repo.git main",
-            "git receive-pack /repo", "git-send-pack origin ABC-42:main",
-            "gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc", "gh api --method POST repos/o/r/git/refs",
-            "gh api --method=PUT repos/o/r/git/refs", "gh api -XDELETE repos/o/r/git/refs/heads/main",
-            "gh api repos/o/r/git/refs -f ref=refs/heads/main", "gh api repos/o/r/git/refs -Fsha=abc",
-            "glab api -X PUT projects/1/repository/branches", "glab api --input body.json projects/1",
-            "cd /wt && gh api graphql --raw-field query=x", "gh pr merge 12 --admin", "glab mr merge 12",
-            "gh repo edit --default-branch x", "gh", "/usr/local/bin/gh release create v1",
-            "GH_TOKEN=x gh pr merge 12", "env -u GH_HOST gh pr merge 12", "xargs -n 1 gh pr close",
-            "command 'gh' pr merge 12", "gh pr", "gh api -X", "GH_TOKEN=x gh frob", "env -u GH_HOST gh frob",
-            "env -i gh frob"})
-    void refusesWritingToTheCodeHostPastThePush(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).get()
-                .asString().contains("writing to the code host");
-    }
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "git send-pack origin refs/heads/ABC-42:refs/heads/main",
+        "git -C /wt send-pack origin ABC-42:main",
+        "git http-push https://host/repo.git main",
+        "git receive-pack /repo",
+        "git-send-pack origin ABC-42:main",
+        "gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc",
+        "gh api --method POST repos/o/r/git/refs",
+        "gh api --method=PUT repos/o/r/git/refs",
+        "gh api -XDELETE repos/o/r/git/refs/heads/main",
+        "gh api repos/o/r/git/refs -f ref=refs/heads/main",
+        "gh api repos/o/r/git/refs -Fsha=abc",
+        "glab api -X PUT projects/1/repository/branches",
+        "glab api --input body.json projects/1",
+        "cd /wt && gh api graphql --raw-field query=x",
+        "gh pr merge 12 --admin",
+        "glab mr merge 12",
+        "gh repo edit --default-branch x",
+        "gh",
+        "/usr/local/bin/gh release create v1",
+        "GH_TOKEN=x gh pr merge 12",
+        "env -u GH_HOST gh pr merge 12",
+        "xargs -n 1 gh pr close",
+        "command 'gh' pr merge 12",
+        "gh pr",
+        "gh api -X",
+        "GH_TOKEN=x gh frob",
+        "env -u GH_HOST gh frob",
+        "env -i gh frob"
+      })
+  void refusesWritingToTheCodeHostPastThePush(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
+        .get()
+        .asString()
+        .contains("writing to the code host");
+  }
 
-    @Test
-    void namesEveryReadAHostCliMayRunInItsRefusal() {
-        assertThat(ToolGate.refusal("gh pr merge 1", "ABC-42", 8290, Remote.ORIGIN)).get().asString().contains(
-                "(auth status, ci list/status, issue list/status/view, mr diff/list/view,"
-                        + " pr checks/diff/list/status/view, repo view, run list/view, api GET)");
-    }
+  @Test
+  void namesEveryReadAHostCliMayRunInItsRefusal() {
+    assertThat(ToolGate.refusal("gh pr merge 1", "ABC-42", 8290, Remote.ORIGIN))
+        .get()
+        .asString()
+        .contains(
+            "(auth status, ci list/status, issue list/status/view, mr diff/list/view,"
+                + " pr checks/diff/list/status/view, repo view, run list/view, api GET)");
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"{ gh pr merge 1; }", "if gh pr merge 1; then :; fi", "! gh pr merge 1",
-            "time gh pr merge 1", "nohup gh pr merge 1", "sudo gh pr merge 1", "timeout 9 gh pr merge 1",
-            "eval gh pr merge 1", "while true; do glab mr merge 1; done", ">/dev/null gh pr merge 1",
-            "find . -exec gh pr merge 1 ;", "builtin exec gh pr merge 1", "gh -R o/r pr merge 1",
-            "bash -c 'gh pr merge 1'", "sh -c \"glab mr merge 1\"", "eval \"gh pr merge 1\"",
-            "env -S 'gh pr merge 1'", "zsh -lc 'gh release create v1'", "bash -c -- 'gh pr merge 1'",
-            "bash --norc -c 'gh pr merge 1'", "env -S\"gh pr merge 1\"", "env --split-string='gh pr merge 1'",
-            "bash -c 'gh pr merge 1; true'", "bash -c 'gh pr merge 1 && true'", "bash -o pipefail -c 'gh pr merge 1'",
-            "env -u X -S 'gh pr merge 1'", "nohup gh --repo=o/r pr merge 1", "time gh -Ro/r pr merge 1",
-            "time gh ssh-key add k.pub", "nohup glab schedule run 1", "time gh {pr,} merge 1", "eval -- 'gh pr merge 1'",
-            "bash -O extglob -c 'gh pr merge 1'", "tcsh -c 'gh pr merge 1'", "gh api -iXPOST repos/o/r/merges",
-            "gh api -if title=x repos/o/r/issues", "glab api -iXPUT projects/1/merge_requests/1/merge",
-            "gh api -H 'X-HTTP-Method-Override: DELETE' repos/o/r/git/refs/heads/x", "GH pr merge 1",
-            "time Gh pr merge 1", "/opt/homebrew/bin/GH pr merge 1",
-            "gh auth status --show-token", "nohup glab pipe delete 1", "nohup gh ext install x",
-            "watch 'gh pr merge 1'", "ssh localhost 'gh pr merge 1'",
-            "su -c 'gh pr merge 1'", "flock f -c 'gh pr merge 1'"})
-    void refusesAHostCliWriteHoweverItIsWrapped(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).get()
-                .asString().contains("writing to the code host");
-    }
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "{ gh pr merge 1; }",
+        "if gh pr merge 1; then :; fi",
+        "! gh pr merge 1",
+        "time gh pr merge 1",
+        "nohup gh pr merge 1",
+        "sudo gh pr merge 1",
+        "timeout 9 gh pr merge 1",
+        "eval gh pr merge 1",
+        "while true; do glab mr merge 1; done",
+        ">/dev/null gh pr merge 1",
+        "find . -exec gh pr merge 1 ;",
+        "builtin exec gh pr merge 1",
+        "gh -R o/r pr merge 1",
+        "bash -c 'gh pr merge 1'",
+        "sh -c \"glab mr merge 1\"",
+        "eval \"gh pr merge 1\"",
+        "env -S 'gh pr merge 1'",
+        "zsh -lc 'gh release create v1'",
+        "bash -c -- 'gh pr merge 1'",
+        "bash --norc -c 'gh pr merge 1'",
+        "env -S\"gh pr merge 1\"",
+        "env --split-string='gh pr merge 1'",
+        "bash -c 'gh pr merge 1; true'",
+        "bash -c 'gh pr merge 1 && true'",
+        "bash -o pipefail -c 'gh pr merge 1'",
+        "env -u X -S 'gh pr merge 1'",
+        "nohup gh --repo=o/r pr merge 1",
+        "time gh -Ro/r pr merge 1",
+        "time gh ssh-key add k.pub",
+        "nohup glab schedule run 1",
+        "time gh {pr,} merge 1",
+        "eval -- 'gh pr merge 1'",
+        "bash -O extglob -c 'gh pr merge 1'",
+        "tcsh -c 'gh pr merge 1'",
+        "gh api -iXPOST repos/o/r/merges",
+        "gh api -if title=x repos/o/r/issues",
+        "glab api -iXPUT projects/1/merge_requests/1/merge",
+        "gh api -H 'X-HTTP-Method-Override: DELETE' repos/o/r/git/refs/heads/x",
+        "GH pr merge 1",
+        "time Gh pr merge 1",
+        "/opt/homebrew/bin/GH pr merge 1",
+        "gh auth status --show-token",
+        "nohup glab pipe delete 1",
+        "nohup gh ext install x",
+        "watch 'gh pr merge 1'",
+        "ssh localhost 'gh pr merge 1'",
+        "su -c 'gh pr merge 1'",
+        "flock f -c 'gh pr merge 1'"
+      })
+  void refusesAHostCliWriteHoweverItIsWrapped(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
+        .get()
+        .asString()
+        .contains("writing to the code host");
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"gh api repos/o/r/pulls", "gh api -X GET repos/o/r", "glab api --method get projects/1",
-            "gh pr view 7", "glab mr view 7", "gh -R o/r pr view 1", "gh --repo o/r pr list", "time gh --repo=o/r pr view 1",
-            "gh api repos/o/r/pulls --paginate --jq .[].number", "gh api -i -H Accept:x repos/o/r",
-            "env gh pr view 1", "env GH_TOKEN=x gh pr view 1", "env GH_PAGER= gh pr view 1", "env -u GH_TOKEN gh pr list",
-            "gh api repos/o/r --jq"})
-    void letsTheCodeHostBeRead(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).isEmpty();
-    }
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "gh api repos/o/r/pulls",
+        "gh api -X GET repos/o/r",
+        "glab api --method get projects/1",
+        "gh pr view 7",
+        "glab mr view 7",
+        "gh -R o/r pr view 1",
+        "gh --repo o/r pr list",
+        "time gh --repo=o/r pr view 1",
+        "gh api repos/o/r/pulls --paginate --jq .[].number",
+        "gh api -i -H Accept:x repos/o/r",
+        "env gh pr view 1",
+        "env GH_TOKEN=x gh pr view 1",
+        "env GH_PAGER= gh pr view 1",
+        "env -u GH_TOKEN gh pr list",
+        "gh api repos/o/r --jq"
+      })
+  void letsTheCodeHostBeRead(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).isEmpty();
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"grep -rn glab src", "ls docs/gh", "which gh", "git commit -m \"bump gh to 2.0\"",
-            "rg -t sh gh src", "bash scripts/check.sh gh", "env | grep gh", "which bash gh"})
-    void letsAHostCliBeNamedAnywhereButInCommandPosition(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).isEmpty();
-    }
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "grep -rn glab src",
+        "ls docs/gh",
+        "which gh",
+        "git commit -m \"bump gh to 2.0\"",
+        "rg -t sh gh src",
+        "bash scripts/check.sh gh",
+        "env | grep gh",
+        "which bash gh"
+      })
+  void letsAHostCliBeNamedAnywhereButInCommandPosition(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).isEmpty();
+  }
 
-    @Test
-    void letsATaskWhoseBranchOpensWithAHashPushItQuoted() {
-        assertThat(ToolGate.refusal("git push origin '#123'", "#123", 8290, Remote.ORIGIN)).isEmpty();
-    }
+  @Test
+  void letsATaskWhoseBranchOpensWithAHashPushItQuoted() {
+    assertThat(ToolGate.refusal("git push origin '#123'", "#123", 8290, Remote.ORIGIN)).isEmpty();
+  }
 
-    @Test
-    void refusesAPushThatNamesNoBranchBecauseTheConfigWouldDecide() {
-        assertThat(ToolGate.refusal("git push", "ABC-42", 8290, Remote.ORIGIN)).get()
-                .asString().contains("names no branch");
-    }
+  @Test
+  void refusesAPushThatNamesNoBranchBecauseTheConfigWouldDecide() {
+    assertThat(ToolGate.refusal("git push", "ABC-42", 8290, Remote.ORIGIN))
+        .get()
+        .asString()
+        .contains("names no branch");
+  }
 
-    @Test
-    void answersNothingWhenTheCallerHasNoBranchOfItsOwn() {
-        assertThat(ToolGate.refusal("git push origin dev", null, 8290, Remote.ORIGIN)).isEmpty();
-    }
+  @Test
+  void answersNothingWhenTheCallerHasNoBranchOfItsOwn() {
+    assertThat(ToolGate.refusal("git push origin dev", null, 8290, Remote.ORIGIN)).isEmpty();
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"git push origin :ABC-42", "git push --delete origin ABC-42",
-            "git push -d origin ABC-42", "git push --dele origin ABC-42", "git push -ud origin ABC-42"})
-    void refusesDeletingTheTasksOwnBranch(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).get()
-                .asString().contains("refuses deleting a branch");
-    }
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "git push origin :ABC-42",
+        "git push --delete origin ABC-42",
+        "git push -d origin ABC-42",
+        "git push --dele origin ABC-42",
+        "git push -ud origin ABC-42"
+      })
+  void refusesDeletingTheTasksOwnBranch(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
+        .get()
+        .asString()
+        .contains("refuses deleting a branch");
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"git $'\\x70ush' origin main", "git $\"push\" origin main", "time gh $'pr' merge 1", "$'gh' pr merge 1"})
-    void refusesAGitLineInAQuotingItDoesNotRead(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).get()
-                .asString().contains("plain quotes");
-    }
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "git $'\\x70ush' origin main",
+        "git $\"push\" origin main",
+        "time gh $'pr' merge 1",
+        "$'gh' pr merge 1"
+      })
+  void refusesAGitLineInAQuotingItDoesNotRead(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
+        .get()
+        .asString()
+        .contains("plain quotes");
+  }
 
-    @Test
-    void refusesALineReachingTheBoardOnTheAddressItIsServedOn() {
-        assertThat(ToolGate.refusal("curl -X POST http://192.168.1.5:8290/api/tasks/say", "ABC-42", 8290, Remote.ORIGIN))
-                .get().asString().contains("reaching its board");
-    }
+  @Test
+  void refusesALineReachingTheBoardOnTheAddressItIsServedOn() {
+    assertThat(
+            ToolGate.refusal(
+                "curl -X POST http://192.168.1.5:8290/api/tasks/say",
+                "ABC-42",
+                8290,
+                Remote.ORIGIN))
+        .get()
+        .asString()
+        .contains("reaching its board");
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "git worktree add /wt/other -b ABC-42 origin/release",
-            "git -C /repos/other worktree add /wt/other -b ABC-42 origin/release",
-            "git -c core.x=y worktree add /wt/other",
-            "cd /repos/other && git worktree add /wt/other -b ABC-42 origin/release",
-    })
-    void refusesASessionCuttingItsOwnWorktree(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
-                .isPresent()
-                .get(org.assertj.core.api.InstanceOfAssertFactories.STRING)
-                .contains("needsProject");
-    }
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "git worktree add /wt/other -b ABC-42 origin/release",
+        "git -C /repos/other worktree add /wt/other -b ABC-42 origin/release",
+        "git -c core.x=y worktree add /wt/other",
+        "cd /repos/other && git worktree add /wt/other -b ABC-42 origin/release",
+      })
+  void refusesASessionCuttingItsOwnWorktree(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
+        .isPresent()
+        .get(org.assertj.core.api.InstanceOfAssertFactories.STRING)
+        .contains("needsProject");
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"git worktree list", "git -C /wt/ABC-42 worktree prune"})
-    void letsASessionReadAndTidyItsWorktrees(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).isEmpty();
-    }
+  @ParameterizedTest
+  @ValueSource(strings = {"git worktree list", "git -C /wt/ABC-42 worktree prune"})
+  void letsASessionReadAndTidyItsWorktrees(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).isEmpty();
+  }
 
-    @Test
-    void namesTheProjectsOwnRemoteWhereItRefusesAPushThatCouldSkipItsCheck() {
-        assertThat(ToolGate.refusal("git push --no-verify upstream ABC-42", "ABC-42", 8290, new Remote("upstream"))).get()
-                .asString().contains("`git push upstream ABC-42`").doesNotContain("origin");
-    }
+  @Test
+  void namesTheProjectsOwnRemoteWhereItRefusesAPushThatCouldSkipItsCheck() {
+    assertThat(
+            ToolGate.refusal(
+                "git push --no-verify upstream ABC-42", "ABC-42", 8290, new Remote("upstream")))
+        .get()
+        .asString()
+        .contains("`git push upstream ABC-42`")
+        .doesNotContain("origin");
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"git push --no-verify . ABC-42", "gh pr merge 1"})
-    void namesNoPushWhereTheRepositoryIsKeptOnThisMachine(String command) {
-        assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.LOCAL)).get()
-                .asString().doesNotContain("git push .");
-    }
+  @ParameterizedTest
+  @ValueSource(strings = {"git push --no-verify . ABC-42", "gh pr merge 1"})
+  void namesNoPushWhereTheRepositoryIsKeptOnThisMachine(String command) {
+    assertThat(ToolGate.refusal(command, "ABC-42", 8290, Remote.LOCAL))
+        .get()
+        .asString()
+        .doesNotContain("git push .");
+  }
 }

@@ -1,212 +1,281 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.Artifact;
+import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
-import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
-
+import dev.jagt.orchestrator.task.Step;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Service;
 
 /** The system knowledge a fresh sub-agent wakes up with: its own task, and its branches. */
 @Service
 @RequiredArgsConstructor
 public class SubAgentBriefing {
 
-    private final SessionBrief brief;
+  private final SessionBrief brief;
 
-    public String of(NewTask request, NewRepo repo, List<NewRepo> repos,
-                     ConfigService.ConfigFile.AutoplanConfig autoplan,
-                     ConfigService.ConfigFile.VisualizeConfig visualize,
-                     ConfigService.ConfigFile.DiagnoseConfig diagnose) {
-        String taskId = request.taskId();
-        String switches = switches(request, autoplan, visualize, diagnose);
-        return task(taskId, taskId, repo.project(), repo.config().path(), repo.baseBranch(),
-                        repo.remoteUrl(), repo.worktreePath(), alsoYours(repo, repos) + deployWorktrees(taskId, repos))
-                + brief.section(Step.CONTEXT).filter(context -> !context.isBlank()).map(context -> context + "\n\n")
-                        .orElse("")
-                + hardSafety(taskId, baseBranches(repos), deployBranches(repos))
-                + (switches.isBlank() ? "" : "\n\n<switches>\n" + switches.strip() + "\n</switches>");
-    }
+  public String of(
+      NewTask request,
+      NewRepo repo,
+      List<NewRepo> repos,
+      ConfigService.ConfigFile.AutoplanConfig autoplan,
+      ConfigService.ConfigFile.VisualizeConfig visualize,
+      ConfigService.ConfigFile.DiagnoseConfig diagnose) {
+    String taskId = request.taskId();
+    String switches = switches(request, autoplan, visualize, diagnose);
+    return task(
+            taskId,
+            taskId,
+            repo.project(),
+            repo.config().path(),
+            repo.baseBranch(),
+            repo.remoteUrl(),
+            repo.worktreePath(),
+            alsoYours(repo, repos) + deployWorktrees(taskId, repos))
+        + brief
+            .section(Step.CONTEXT)
+            .filter(context -> !context.isBlank())
+            .map(context -> context + "\n\n")
+            .orElse("")
+        + hardSafety(taskId, baseBranches(repos), deployBranches(repos))
+        + (switches.isBlank() ? "" : "\n\n<switches>\n" + switches.strip() + "\n</switches>");
+  }
 
-    /** A task with no repository yet: it plans in a scratch folder, outside git, and names its repositories. */
-    public String ofScratch(NewTask request, ConfigService.ConfigFile.AutoplanConfig autoplan,
-                            ConfigService.ConfigFile.VisualizeConfig visualize,
-                            ConfigService.ConfigFile.DiagnoseConfig diagnose) {
-        String switches = switches(request, autoplan, visualize, diagnose);
-        return scratch(request.taskId(), request.taskId())
-                + brief.section(Step.CONTEXT).filter(context -> !context.isBlank()).map(context -> context + "\n\n")
-                        .orElse("")
-                + SCRATCH_SAFETY
-                + (switches.isBlank() ? "" : "\n\n<switches>\n" + switches.strip() + "\n</switches>");
-    }
+  /**
+   * A task with no repository yet: it plans in a scratch folder, outside git, and names its
+   * repositories.
+   */
+  public String ofScratch(
+      NewTask request,
+      ConfigService.ConfigFile.AutoplanConfig autoplan,
+      ConfigService.ConfigFile.VisualizeConfig visualize,
+      ConfigService.ConfigFile.DiagnoseConfig diagnose) {
+    String switches = switches(request, autoplan, visualize, diagnose);
+    return scratch(request.taskId(), request.taskId())
+        + brief
+            .section(Step.CONTEXT)
+            .filter(context -> !context.isBlank())
+            .map(context -> context + "\n\n")
+            .orElse("")
+        + SCRATCH_SAFETY
+        + (switches.isBlank() ? "" : "\n\n<switches>\n" + switches.strip() + "\n</switches>");
+  }
 
-    private static String switches(NewTask request, ConfigService.ConfigFile.AutoplanConfig autoplan,
-                                   ConfigService.ConfigFile.VisualizeConfig visualize,
-                                   ConfigService.ConfigFile.DiagnoseConfig diagnose) {
-        return planFirstSentence(request.mode()) + autoplanSentence(autoplan)
-                + visualizeSentence(visualize) + diagnoseSentence(diagnose)
-                + judgementSentence(ConfigService.ConfigFile.AgentConfig.defaults().withAutoplan(autoplan)
-                        .withVisualize(visualize).withDiagnose(diagnose).switchesOn());
-    }
+  private static String switches(
+      NewTask request,
+      ConfigService.ConfigFile.AutoplanConfig autoplan,
+      ConfigService.ConfigFile.VisualizeConfig visualize,
+      ConfigService.ConfigFile.DiagnoseConfig diagnose) {
+    return planFirstSentence(request.mode())
+        + autoplanSentence(autoplan)
+        + visualizeSentence(visualize)
+        + diagnoseSentence(diagnose)
+        + judgementSentence(
+            ConfigService.ConfigFile.AgentConfig.defaults()
+                .withAutoplan(autoplan)
+                .withVisualize(visualize)
+                .withDiagnose(diagnose)
+                .switchesOn());
+  }
 
-    private static String scratch(Object... values) {
-        return """
-            <role>
-            You are the jagt worker agent for task %s, in a scratch folder. No preamble.
-            </role>
+  private static String scratch(Object... values) {
+    return """
+    <role>
+    You are the jagt worker agent for task %s, in a scratch folder. No preamble.
+    </role>
 
-            <task>
-            - Task ID: %s
-            - This task has no repository yet, and this folder is outside git. You plan here; the approved plan places the task.
-            - Read the ticket, its labels and its description, then decide which projects the change touches.
-            - `plan.md` holds `## Repositories`: one `- [changed] <key>` per project you change, registered in
-              `jagt.yml` or not (`list_projects` names those that are).
-            - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
-            - `task_request.md`, if present: the request the task opened with, never overwritten.
-            </task>
+    <task>
+    - Task ID: %s
+    - This task has no repository yet, and this folder is outside git. You plan here; the approved plan places the task.
+    - Read the ticket, its labels and its description, then decide which projects the change touches.
+    - `plan.md` holds `## Repositories`: one `- [changed] <key>` per project you change, registered in
+      `jagt.yml` or not (`list_projects` names those that are).
+    - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
+    - `task_request.md`, if present: the request the task opened with, never overwritten.
+    </task>
 
-            """.formatted(values);
-    }
+    """
+        .formatted(values);
+  }
 
-    private static final String SCRATCH_SAFETY = """
-            <hard_safety>
-            No git of any kind here: no commit, no push, no branch. Write nothing but the plan and what it asks for;
-            code waits for the approved plan, which cuts a worktree per repository it names.
-            </hard_safety>""";
+  private static final String SCRATCH_SAFETY =
+      """
+      <hard_safety>
+      No git of any kind here: no commit, no push, no branch. Write nothing but the plan and what it asks for;
+      code waits for the approved plan, which cuts a worktree per repository it names.
+      </hard_safety>\
+      """;
 
-    private static String task(Object... values) {
-        return """
-            <role>
-            You are the jagt worker agent for task %s, in this Git worktree. No preamble.
-            </role>
+  private static String task(Object... values) {
+    return """
+    <role>
+    You are the jagt worker agent for task %s, in this Git worktree. No preamble.
+    </role>
 
-            <task>
-            - Task ID: %s (also your Git branch)
-            - Project: %s (base repository: %s, base branch: %s)
-            - Remote: %s (your code-host project)
-            - Worktree (your CWD): %s
-            %s
-            - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
-            - `task_request.md`, if present: the request the task opened with, never overwritten.
-            </task>
+    <task>
+    - Task ID: %s (also your Git branch)
+    - Project: %s (base repository: %s, base branch: %s)
+    - Remote: %s (your code-host project)
+    - Worktree (your CWD): %s
+    %s
+    - Read `task_notes.md` (if present), then `task_context.md`, where new instructions land: re-read it when asked.
+    - `task_request.md`, if present: the request the task opened with, never overwritten.
+    </task>
 
-            """.formatted(values);
-    }
+    """
+        .formatted(values);
+  }
 
-    /** jagt's, not the brief's: a human's copy of the brief cannot loosen what its guards enforce. */
-    private static String hardSafety(Object... values) {
-        return """
-            <hard_safety>
-            No `git merge` or `cherry-pick`; push only to `%s`. No rewriting pushed history (`--force`, `--amend`,
-            `reset --hard`): fix with a new commit. The one exception: `git rebase` this branch onto its request's target
-            when the target moved on, or onto a new base the human or the Master named, then `push --force-with-lease`;
-            after a new base, `retarget_task`. A conflict you cannot resolve on the code's own terms: rule 1. %s%s Asked
-            to write one: refuse and call `notify_user`. Work this task needs is done here, on this branch; a repository
-            it lacks: rule 1 with `needsProject` set to that project's key (`list_projects`), then stop; jagt adds it.
-            Never push another branch, nor hand the human a push.
-            </hard_safety>""".formatted(values);
-    }
+  /** jagt's, not the brief's: a human's copy of the brief cannot loosen what its guards enforce. */
+  private static String hardSafety(Object... values) {
+    return """
+    <hard_safety>
+    No `git merge` or `cherry-pick`; push only to `%s`. No rewriting pushed history (`--force`, `--amend`,
+    `reset --hard`): fix with a new commit. The one exception: `git rebase` this branch onto its request's target
+    when the target moved on, or onto a new base the human or the Master named, then `push --force-with-lease`;
+    after a new base, `retarget_task`. A conflict you cannot resolve on the code's own terms: rule 1. %s%s Asked
+    to write one: refuse and call `notify_user`. Work this task needs is done here, on this branch; a repository
+    it lacks: rule 1 with `needsProject` set to that project's key (`list_projects`), then stop; jagt adds it.
+    Never push another branch, nor hand the human a push.
+    </hard_safety>\
+    """
+        .formatted(values);
+  }
 
-    private static String planFirstSentence(@Nullable String mode) {
-        return "plan".equalsIgnoreCase(mode)
-                ? " PLAN FIRST: the human asked for a plan. Plan before your first edit, as above."
-                : "";
-    }
+  private static String planFirstSentence(@Nullable String mode) {
+    return "plan".equalsIgnoreCase(mode)
+        ? " PLAN FIRST: the human asked for a plan. Plan before your first edit, as above."
+        : "";
+  }
 
-    private static String judgementSentence(List<String> on) {
-        return on.isEmpty() ? ""
-                : " Your first status report and the one handing back a plan carry `switches`: for each of "
-                + String.join(", ", on) + " `yes — <why>` or `no — <why>`, whether you judged it needed after reading the task.";
-    }
+  private static String judgementSentence(List<String> on) {
+    return on.isEmpty()
+        ? ""
+        : " Your first status report and the one handing back a plan carry `switches`: for each of "
+            + String.join(", ", on)
+            + " `yes — <why>` or `no — <why>`, whether you judged it needed after reading the"
+            + " task.";
+  }
 
-    private static String autoplanSentence(ConfigService.ConfigFile.AutoplanConfig autoplan) {
-        return autoplan.enabledOrDefault()
-                ? (" AUTOPLAN is on: before your first edit, plan first if the task changes more than %d"
-                + " files, two of its requirements contradict, one contradicts what the code guarantees, a term it"
-                + " rests on has no definition, or you would settle unasked what changes the code. `plan.md`'s first"
-                + " line and your PLAN_PENDING message: `planned first: autoplan is on (agent.autoplan in jagt.yml),"
-                + " <the criterion>`. If the task meets none of them, report IN_PROGRESS with outcome `no_plan` and"
-                + " the reason before your first edit.").formatted(autoplan.filesOrDefault())
-                : "";
-    }
+  private static String autoplanSentence(ConfigService.ConfigFile.AutoplanConfig autoplan) {
+    return autoplan.enabledOrDefault()
+        ? (" AUTOPLAN is on: before your first edit, plan first if the task changes more than %d"
+               + " files, two of its requirements contradict, one contradicts what the code"
+               + " guarantees, a term it rests on has no definition, or you would settle unasked"
+               + " what changes the code. `plan.md`'s first line and your PLAN_PENDING message:"
+               + " `planned first: autoplan is on (agent.autoplan in jagt.yml), <the criterion>`."
+               + " If the task meets none of them, report IN_PROGRESS with outcome `no_plan` and"
+               + " the reason before your first edit.")
+            .formatted(autoplan.filesOrDefault())
+        : "";
+  }
 
-    private static String visualizeSentence(ConfigService.ConfigFile.VisualizeConfig visualize) {
-        return visualize.enabledOrDefault()
-                ? " VISUALIZE is on: while analysing the task, where you decide whether to plan first, judge whether"
-                + " it is worth a picture. A two-line bug fix is not. A new or changed table, or a call between servers,"
-                + " services or a database, always is, and so is logic hard to follow from its code, such as rules that"
-                + " combine or rows and columns that shift each other: draw a worked example, its input and its outcome."
-                + " If it is, write `" + Artifact.VISUAL.fileName()
-                + "` in the worktree as part of the plan when you plan first, else before your first edit. A frontend"
-                + " change gets an ASCII sketch of each screen, one fenced block per screen. A backend change gets Mermaid (class, sequence or ER diagram, in a"
-                + " mermaid fence) and markdown tables: an ER diagram draws every reference between the tables, a sequence"
-                + " diagram every call between servers, services and the database; no `;` in a Mermaid label, where it ends the statement."
-                + " Pictures over prose."
-                : "";
-    }
+  private static String visualizeSentence(ConfigService.ConfigFile.VisualizeConfig visualize) {
+    return visualize.enabledOrDefault()
+        ? " VISUALIZE is on: while analysing the task, where you decide whether to plan first,"
+              + " judge whether it is worth a picture. A two-line bug fix is not. A new or changed"
+              + " table, or a call between servers, services or a database, always is, and so is"
+              + " logic hard to follow from its code, such as rules that combine or rows and"
+              + " columns that shift each other: draw a worked example, its input and its outcome."
+              + " If it is, write `"
+            + Artifact.VISUAL.fileName()
+            + "` in the worktree as part of the plan when you plan first, else before your first"
+            + " edit. A frontend change gets an ASCII sketch of each screen, one fenced block per"
+            + " screen. A backend change gets Mermaid (class, sequence or ER diagram, in a mermaid"
+            + " fence) and markdown tables: an ER diagram draws every reference between the tables,"
+            + " a sequence diagram every call between servers, services and the database; no `;` in"
+            + " a Mermaid label, where it ends the statement. Pictures over prose."
+        : "";
+  }
 
-    private static String diagnoseSentence(ConfigService.ConfigFile.DiagnoseConfig diagnose) {
-        return diagnose.enabledOrDefault()
-                ? " DIAGNOSE: a bug is diagnosed from facts before code. Gather the report's evidence (error, logs,"
-                + " profile, versions) and a control: the same case working, or failing louder for a known cause."
-                + " A signal is what the broken case shows and the control does not. A cause stands only when it fits"
-                + " every fact, each cited; when none fits, re-check a fact, then split, merge or combine causes, then"
-                + " read one layer down (logs, network, process, kernel). A repro counts only when it shows the"
-                + " report's signal."
-                : "";
-    }
+  private static String diagnoseSentence(ConfigService.ConfigFile.DiagnoseConfig diagnose) {
+    return diagnose.enabledOrDefault()
+        ? " DIAGNOSE: a bug is diagnosed from facts before code. Gather the report's evidence"
+              + " (error, logs, profile, versions) and a control: the same case working, or failing"
+              + " louder for a known cause. A signal is what the broken case shows and the control"
+              + " does not. A cause stands only when it fits every fact, each cited; when none"
+              + " fits, re-check a fact, then split, merge or combine causes, then read one layer"
+              + " down (logs, network, process, kernel). A repro counts only when it shows the"
+              + " report's signal."
+        : "";
+  }
 
-    private static String baseBranches(List<NewRepo> repos) {
-        String named = named(repos, repos.size(), NewRepo::baseBranch);
-        return repos.size() == 1
-                ? "The base branch " + named + " is read-only."
-                : "The base branches " + named + " are read-only.";
-    }
+  private static String baseBranches(List<NewRepo> repos) {
+    String named = named(repos, repos.size(), NewRepo::baseBranch);
+    return repos.size() == 1
+        ? "The base branch " + named + " is read-only."
+        : "The base branches " + named + " are read-only.";
+  }
 
-    private static String deployBranches(List<NewRepo> repos) {
-        List<NewRepo> deployed = repos.stream()
-                .filter(repo -> repo.config().deployBranch() != null && !repo.config().deployBranch().isBlank())
-                .toList();
-        String named = named(deployed, repos.size(), repo -> repo.config().deployBranch());
-        return switch (deployed.size()) {
-            case 0 -> "";
-            case 1 -> " The deploy branch " + named + " is jagt's `deploy` alone.";
-            default -> " The deploy branches " + named + " are jagt's `deploy` alone.";
-        };
-    }
+  private static String deployBranches(List<NewRepo> repos) {
+    List<NewRepo> deployed =
+        repos.stream()
+            .filter(
+                repo ->
+                    repo.config().deployBranch() != null && !repo.config().deployBranch().isBlank())
+            .toList();
+    String named = named(deployed, repos.size(), repo -> repo.config().deployBranch());
+    return switch (deployed.size()) {
+      case 0 -> "";
+      case 1 -> " The deploy branch " + named + " is jagt's `deploy` alone.";
+      default -> " The deploy branches " + named + " are jagt's `deploy` alone.";
+    };
+  }
 
-    private static String named(List<NewRepo> repos, int ofTheTask, Function<NewRepo, String> branch) {
-        return repos.stream()
-                .map(repo -> "`" + branch.apply(repo) + "`" + (ofTheTask == 1 ? "" : " (" + repo.project() + ")"))
-                .collect(Collectors.joining(", "));
-    }
+  private static String named(
+      List<NewRepo> repos, int ofTheTask, Function<NewRepo, String> branch) {
+    return repos.stream()
+        .map(
+            repo ->
+                "`"
+                    + branch.apply(repo)
+                    + "`"
+                    + (ofTheTask == 1 ? "" : " (" + repo.project() + ")"))
+        .collect(Collectors.joining(", "));
+  }
 
-    private static String deployWorktrees(String taskId, List<NewRepo> repos) {
-        String paths = GitDeploy.deployWorktreePaths(repos, taskId).stream().map(Path::toString)
-                .collect(Collectors.joining(", "));
-        return paths.isBlank() ? "" : "\n- Also yours while jagt hands you a deploy conflict there: " + paths
-                + ". Finishing that merge (edit, `git add`) is not a `git merge` of yours.";
-    }
+  private static String deployWorktrees(String taskId, List<NewRepo> repos) {
+    String paths =
+        GitDeploy.deployWorktreePaths(repos, taskId).stream()
+            .map(Path::toString)
+            .collect(Collectors.joining(", "));
+    return paths.isBlank()
+        ? ""
+        : "\n- Also yours while jagt hands you a deploy conflict there: "
+            + paths
+            + ". Finishing that merge (edit, `git add`) is not a `git merge` of yours.";
+  }
 
-    /** The task's OTHER worktrees, which this agent may edit as well, or a sentence saying there are none. */
-    private static String alsoYours(NewRepo mine, List<NewRepo> repos) {
-        String siblings = repos.stream()
-                .filter(repo -> !repo.project().equals(mine.project()))
-                .map(repo -> "  - " + repo.project() + ": " + repo.worktreePath()
-                        + " (cut from " + repo.baseBranch() + ")")
-                .collect(Collectors.joining("\n"));
-        return siblings.isBlank()
-                ? "- This task works in this repository only."
-                : "- This task ALSO works in these worktrees, and you edit them yourself — same task, same"
-                        + " branch name, one session:\n" + siblings
-                        + "\n  Your instructions and your drafted review replies stay in THIS directory:"
-                        + " task_context.md and review_replies.md are read from here, never from those.";
-    }
+  /**
+   * The task's OTHER worktrees, which this agent may edit as well, or a sentence saying there are
+   * none.
+   */
+  private static String alsoYours(NewRepo mine, List<NewRepo> repos) {
+    String siblings =
+        repos.stream()
+            .filter(repo -> !repo.project().equals(mine.project()))
+            .map(
+                repo ->
+                    "  - "
+                        + repo.project()
+                        + ": "
+                        + repo.worktreePath()
+                        + " (cut from "
+                        + repo.baseBranch()
+                        + ")")
+            .collect(Collectors.joining("\n"));
+    return siblings.isBlank()
+        ? "- This task works in this repository only."
+        : "- This task ALSO works in these worktrees, and you edit them yourself — same task, same"
+            + " branch name, one session:\n"
+            + siblings
+            + "\n  Your instructions and your drafted review replies stay in THIS directory:"
+            + " task_context.md and review_replies.md are read from here, never from those.";
+  }
 }

@@ -3,37 +3,37 @@ package dev.jagt.orchestrator.task;
 import lombok.RequiredArgsConstructor;
 
 /**
- * What a metered model call was FOR, so the once-per-task reads can be told apart from the poll that repeats up
- * to hourly.
+ * What a metered model call was FOR, so the once-per-task reads can be told apart from the poll
+ * that repeats up to hourly.
  */
 @RequiredArgsConstructor
 public enum AssistantCallKind {
 
-    /** Reading the work item behind `do` — once per task. */
-    TICKET_READ("ticket read"),
-    /** Reading a merge request to `resume` it — rare. */
-    MR_READ("merge-request read"),
-    /** One review round: the manual `sweep` and every auto-review poll. */
-    REVIEW_SWEEP("review sweep"),
-    /** Free text mapped to a command (the palette / an unknown console line). */
-    COMMAND_MAP("command mapping"),
-    /** Listing the items a tracker says are ready to be worked on — one call per intake poll. */
-    INTAKE("intake search"),
-    /** Which repository an item belongs in, asked only where its labels did not say. */
-    ROUTE("project routing"),
-    /** One role's reading of a round handed back to the Master. */
-    MASTER_REVIEW("master review"),
-    /** One QA run checking a deployed change against its ticket. */
-    QA_CHECK("qa check");
+  /** Reading the work item behind `do` — once per task. */
+  TICKET_READ("ticket read"),
+  /** Reading a merge request to `resume` it — rare. */
+  MR_READ("merge-request read"),
+  /** One review round: the manual `sweep` and every auto-review poll. */
+  REVIEW_SWEEP("review sweep"),
+  /** Free text mapped to a command (the palette / an unknown console line). */
+  COMMAND_MAP("command mapping"),
+  /** Listing the items a tracker says are ready to be worked on — one call per intake poll. */
+  INTAKE("intake search"),
+  /** Which repository an item belongs in, asked only where its labels did not say. */
+  ROUTE("project routing"),
+  /** One role's reading of a round handed back to the Master. */
+  MASTER_REVIEW("master review"),
+  /** One QA run checking a deployed change against its ticket. */
+  QA_CHECK("qa check");
 
-    private final String label;
+  private final String label;
 
-    public String label() {
-        return label;
-    }
+  public String label() {
+    return label;
+  }
 
-    /** Only a mapping of text onto a command reads nothing outside its prompt. */
-    public boolean readsTools() {
-        return this != COMMAND_MAP;
-    }
+  /** Only a mapping of text onto a command reads nothing outside its prompt. */
+  public boolean readsTools() {
+    return this != COMMAND_MAP;
+  }
 }

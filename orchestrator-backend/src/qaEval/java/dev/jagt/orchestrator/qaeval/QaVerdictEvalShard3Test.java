@@ -1,4 +1,3 @@
 package dev.jagt.orchestrator.qaeval;
 
-class QaVerdictEvalShard3Test extends QaVerdictEvalTest {
-}
+class QaVerdictEvalShard3Test extends QaVerdictEvalTest {}

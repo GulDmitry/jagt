@@ -8,13 +8,12 @@ import java.util.Locale;
 /** A moment as a human reads a clock, always in UTC. */
 public final class UtcTime {
 
-    private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
-            .withZone(ZoneOffset.UTC);
+  private static final DateTimeFormatter CLOCK =
+      DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT).withZone(ZoneOffset.UTC);
 
-    private UtcTime() {
-    }
+  private UtcTime() {}
 
-    public static String clock(long epochMillis) {
-        return CLOCK.format(Instant.ofEpochMilli(epochMillis)) + " UTC";
-    }
+  public static String clock(long epochMillis) {
+    return CLOCK.format(Instant.ofEpochMilli(epochMillis)) + " UTC";
+  }
 }

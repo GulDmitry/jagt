@@ -12,23 +12,27 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PlanCapability implements TaskCapability {
 
-    private final PlanApproval approval;
+  private final PlanApproval approval;
 
-    @Override
-    public TaskAction action() {
-        return TaskAction.APPROVE_PLAN;
-    }
+  @Override
+  public TaskAction action() {
+    return TaskAction.APPROVE_PLAN;
+  }
 
-    @Override
-    public Outcome run(String taskId) {
-        try {
-            return approval.approve(taskId, "The human read plan.md")
-                    ? Outcome.relayed("approve-plan " + taskId + ": the session was told the plan holds",
-                            "plan approved")
-                    : Outcome.nothing("approve-plan " + taskId + ": the session was already told");
-        } catch (Unplaceable unplaceable) {
-            return Outcome.nothing("approve-plan " + taskId + ": " + unplaceable.question(),
-                    "add " + String.join(", ", unplaceable.projects()) + " in the add-project form, then approve").asking();
-        }
+  @Override
+  public Outcome run(String taskId) {
+    try {
+      return approval.approve(taskId, "The human read plan.md")
+          ? Outcome.relayed(
+              "approve-plan " + taskId + ": the session was told the plan holds", "plan approved")
+          : Outcome.nothing("approve-plan " + taskId + ": the session was already told");
+    } catch (Unplaceable unplaceable) {
+      return Outcome.nothing(
+              "approve-plan " + taskId + ": " + unplaceable.question(),
+              "add "
+                  + String.join(", ", unplaceable.projects())
+                  + " in the add-project form, then approve")
+          .asking();
     }
+  }
 }

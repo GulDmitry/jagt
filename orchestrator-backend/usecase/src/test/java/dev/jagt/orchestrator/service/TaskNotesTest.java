@@ -1,121 +1,141 @@
 package dev.jagt.orchestrator.service;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class TaskNotesTest {
 
-    @Test
-    void owesNothingWhenTheNotesWereRewrittenAfterTheRoundArrived(@TempDir Path worktree) throws Exception {
-        Files.setLastModifiedTime(Files.writeString(worktree.resolve("task_context.md"), "round 2"),
-                FileTime.from(Instant.parse("2026-01-01T10:00:00Z")));
-        Files.setLastModifiedTime(Files.writeString(worktree.resolve("task_notes.md"), "kept the retry: ABC-42"),
-                FileTime.from(Instant.parse("2026-01-01T11:00:00Z")));
+  @Test
+  void owesNothingWhenTheNotesWereRewrittenAfterTheRoundArrived(@TempDir Path worktree)
+      throws Exception {
+    Files.setLastModifiedTime(
+        Files.writeString(worktree.resolve("task_context.md"), "round 2"),
+        FileTime.from(Instant.parse("2026-01-01T10:00:00Z")));
+    Files.setLastModifiedTime(
+        Files.writeString(worktree.resolve("task_notes.md"), "kept the retry: ABC-42"),
+        FileTime.from(Instant.parse("2026-01-01T11:00:00Z")));
 
-        assertThat(TaskNotes.owed(worktree)).isEmpty();
-    }
+    assertThat(TaskNotes.owed(worktree)).isEmpty();
+  }
 
-    @Test
-    void owesARewriteWhenTheNotesPredateTheRound(@TempDir Path worktree) throws Exception {
-        Files.setLastModifiedTime(Files.writeString(worktree.resolve("task_notes.md"), "kept the retry"),
-                FileTime.from(Instant.parse("2026-01-01T09:00:00Z")));
-        Files.setLastModifiedTime(Files.writeString(worktree.resolve("task_context.md"), "round 2"),
-                FileTime.from(Instant.parse("2026-01-01T10:00:00Z")));
+  @Test
+  void owesARewriteWhenTheNotesPredateTheRound(@TempDir Path worktree) throws Exception {
+    Files.setLastModifiedTime(
+        Files.writeString(worktree.resolve("task_notes.md"), "kept the retry"),
+        FileTime.from(Instant.parse("2026-01-01T09:00:00Z")));
+    Files.setLastModifiedTime(
+        Files.writeString(worktree.resolve("task_context.md"), "round 2"),
+        FileTime.from(Instant.parse("2026-01-01T10:00:00Z")));
 
-        assertThat(TaskNotes.owed(worktree))
-                .contains("task_notes.md predates this round's task_context.md: rewrite it for this round");
-    }
+    assertThat(TaskNotes.owed(worktree))
+        .contains("task_notes.md predates this round's task_context.md: rewrite it for this round");
+  }
 
-    @Test
-    void owesACompressionWhenTheNotesPassTheirCap(@TempDir Path worktree) throws Exception {
-        Files.writeString(worktree.resolve("task_notes.md"), "x".repeat(16_001));
+  @Test
+  void owesACompressionWhenTheNotesPassTheirCap(@TempDir Path worktree) throws Exception {
+    Files.writeString(worktree.resolve("task_notes.md"), "x".repeat(16_001));
 
-        assertThat(TaskNotes.owed(worktree))
-                .contains("task_notes.md is 16001 characters, at most 16000: compress it, keeping every fact");
-    }
+    assertThat(TaskNotes.owed(worktree))
+        .contains(
+            "task_notes.md is 16001 characters, at most 16000: compress it, keeping every fact");
+  }
 
-    @Test
-    void owesNothingWhenTheNotesAreExactlyAtTheirCap(@TempDir Path worktree) throws Exception {
-        Files.writeString(worktree.resolve("task_notes.md"), "x".repeat(16_000));
+  @Test
+  void owesNothingWhenTheNotesAreExactlyAtTheirCap(@TempDir Path worktree) throws Exception {
+    Files.writeString(worktree.resolve("task_notes.md"), "x".repeat(16_000));
 
-        assertThat(TaskNotes.owed(worktree)).isEmpty();
-    }
+    assertThat(TaskNotes.owed(worktree)).isEmpty();
+  }
 
-    @Test
-    void owesNothingWhenTheNotesAndTheRoundShareATimestamp(@TempDir Path worktree) throws Exception {
-        FileTime same = FileTime.from(Instant.parse("2026-01-01T10:00:00Z"));
-        Files.setLastModifiedTime(Files.writeString(worktree.resolve("task_notes.md"), "kept the retry"), same);
-        Files.setLastModifiedTime(Files.writeString(worktree.resolve("task_context.md"), "round 2"), same);
+  @Test
+  void owesNothingWhenTheNotesAndTheRoundShareATimestamp(@TempDir Path worktree) throws Exception {
+    FileTime same = FileTime.from(Instant.parse("2026-01-01T10:00:00Z"));
+    Files.setLastModifiedTime(
+        Files.writeString(worktree.resolve("task_notes.md"), "kept the retry"), same);
+    Files.setLastModifiedTime(
+        Files.writeString(worktree.resolve("task_context.md"), "round 2"), same);
 
-        assertThat(TaskNotes.owed(worktree)).isEmpty();
-    }
+    assertThat(TaskNotes.owed(worktree)).isEmpty();
+  }
 
-    @Test
-    void owesNothingWhenEveryLineTheTaskAddedToTheAgentFileIsNamed(@TempDir Path worktree) throws Exception {
-        Files.writeString(worktree.resolve("task_notes.md"), "agent-file: a\nagent-file: b\nagent-file: c\n");
+  @Test
+  void owesNothingWhenEveryLineTheTaskAddedToTheAgentFileIsNamed(@TempDir Path worktree)
+      throws Exception {
+    Files.writeString(
+        worktree.resolve("task_notes.md"), "agent-file: a\nagent-file: b\nagent-file: c\n");
 
-        assertThat(TaskNotes.agentFileOwed(worktree, 3)).isEmpty();
-    }
+    assertThat(TaskNotes.agentFileOwed(worktree, 3)).isEmpty();
+  }
 
-    @Test
-    void countsOnlyTheAgentFileLinesOfTheNotes(@TempDir Path worktree) throws Exception {
-        Files.writeString(worktree.resolve("task_notes.md"), "kept the retry\nagent-file: a\n");
+  @Test
+  void countsOnlyTheAgentFileLinesOfTheNotes(@TempDir Path worktree) throws Exception {
+    Files.writeString(worktree.resolve("task_notes.md"), "kept the retry\nagent-file: a\n");
 
-        assertThat(TaskNotes.agentFileOwed(worktree, 2)).contains("task_notes.md names the gap for 1 of the 2 lines"
+    assertThat(TaskNotes.agentFileOwed(worktree, 2))
+        .contains(
+            "task_notes.md names the gap for 1 of the 2 lines"
                 + " this task added to the project's agent file: one `agent-file:` line each");
-    }
+  }
 
-    @Test
-    void owesAJustificationForEachLineTheTaskAddedToTheProjectsAgentFile(@TempDir Path worktree) throws Exception {
-        Files.writeString(worktree.resolve("task_notes.md"), "agent-file: the build needs the local registry\n");
+  @Test
+  void owesAJustificationForEachLineTheTaskAddedToTheProjectsAgentFile(@TempDir Path worktree)
+      throws Exception {
+    Files.writeString(
+        worktree.resolve("task_notes.md"), "agent-file: the build needs the local registry\n");
 
-        assertThat(TaskNotes.agentFileOwed(worktree, 2)).contains("task_notes.md names the gap for 1 of the 2 lines"
+    assertThat(TaskNotes.agentFileOwed(worktree, 2))
+        .contains(
+            "task_notes.md names the gap for 1 of the 2 lines"
                 + " this task added to the project's agent file: one `agent-file:` line each");
-    }
+  }
 
-    @Test
-    void owesACutWhenTheTaskAddedMoreThanThreeLinesToTheProjectsAgentFile(@TempDir Path worktree) throws Exception {
-        Files.writeString(worktree.resolve("task_notes.md"), "agent-file: a\nagent-file: b\nagent-file: c\nagent-file: d\n");
+  @Test
+  void owesACutWhenTheTaskAddedMoreThanThreeLinesToTheProjectsAgentFile(@TempDir Path worktree)
+      throws Exception {
+    Files.writeString(
+        worktree.resolve("task_notes.md"),
+        "agent-file: a\nagent-file: b\nagent-file: c\nagent-file: d\n");
 
-        assertThat(TaskNotes.agentFileOwed(worktree, 4)).contains("this task adds 4 lines to the project's agent file,"
+    assertThat(TaskNotes.agentFileOwed(worktree, 4))
+        .contains(
+            "this task adds 4 lines to the project's agent file,"
                 + " at most 3: keep the gaps the next task would hit");
-    }
+  }
 
-    @Test
-    void readsTheModelTheNotesNameForTheNextFreshRound() {
-        assertThat(TaskNotes.nextModel("kept the retry\n  next-model: haiku \n")).contains("haiku");
-    }
+  @Test
+  void readsTheModelTheNotesNameForTheNextFreshRound() {
+    assertThat(TaskNotes.nextModel("kept the retry\n  next-model: haiku \n")).contains("haiku");
+  }
 
-    @Test
-    void readsNoModelWhenTheNotesNameNone() {
-        assertThat(TaskNotes.nextModel("kept the retry\nnext-model:\n")).isEmpty();
-    }
+  @Test
+  void readsNoModelWhenTheNotesNameNone() {
+    assertThat(TaskNotes.nextModel("kept the retry\nnext-model:\n")).isEmpty();
+  }
 
-    @Test
-    void ignoresTheModelLineWhenNoModelIsOffered() {
-        assertThat(TaskNotes.unknownModel("next-model: gpt", "Codex", List.of())).isEmpty();
-    }
+  @Test
+  void ignoresTheModelLineWhenNoModelIsOffered() {
+    assertThat(TaskNotes.unknownModel("next-model: gpt", "Codex", List.of())).isEmpty();
+  }
 
-    @Test
-    void owesTheNotesToBeReadableWhenTheyCannotBeRead(@TempDir Path worktree) throws Exception {
-        Path notes = Files.writeString(worktree.resolve("task_notes.md"), "kept the retry");
-        assertThat(notes.toFile().setReadable(false)).isTrue();
+  @Test
+  void owesTheNotesToBeReadableWhenTheyCannotBeRead(@TempDir Path worktree) throws Exception {
+    Path notes = Files.writeString(worktree.resolve("task_notes.md"), "kept the retry");
+    assertThat(notes.toFile().setReadable(false)).isTrue();
 
-        assertThat(TaskNotes.owed(worktree)).hasValueSatisfying(owed -> assertThat(owed)
-                .startsWith("could not read task_notes.md: "));
-    }
+    assertThat(TaskNotes.owed(worktree))
+        .hasValueSatisfying(owed -> assertThat(owed).startsWith("could not read task_notes.md: "));
+  }
 
-    @Test
-    void owesTheNotesToBeReadableWhenTheAgentFileLinesCannotBeCounted(@TempDir Path worktree) {
-        assertThat(TaskNotes.agentFileOwed(worktree, 1)).hasValueSatisfying(owed -> assertThat(owed)
-                .startsWith("could not read task_notes.md: "));
-    }
+  @Test
+  void owesTheNotesToBeReadableWhenTheAgentFileLinesCannotBeCounted(@TempDir Path worktree) {
+    assertThat(TaskNotes.agentFileOwed(worktree, 1))
+        .hasValueSatisfying(owed -> assertThat(owed).startsWith("could not read task_notes.md: "));
+  }
 }

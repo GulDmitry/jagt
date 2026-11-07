@@ -9,156 +9,156 @@ import org.junit.jupiter.api.Test;
 
 class RunEndTest {
 
-    @Test
-    void aJudgeRunIsHeldOnceTheTimelineWasQuietForAMinuteWithNothingToPress() {
-        Timeline timeline = mock(Timeline.class);
-        when(timeline.lastOwner()).thenReturn("YOU");
-        when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
-        when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
+  @Test
+  void aJudgeRunIsHeldOnceTheTimelineWasQuietForAMinuteWithNothingToPress() {
+    Timeline timeline = mock(Timeline.class);
+    when(timeline.lastOwner()).thenReturn("YOU");
+    when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
+    when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
 
-        boolean held = new RunEnd(StandMode.JUDGE, false, false).held(timeline, true);
+    boolean held = new RunEnd(StandMode.JUDGE, false, false).held(timeline, true);
 
-        assertThat(held).isTrue();
-    }
+    assertThat(held).isTrue();
+  }
 
-    @Test
-    void aJudgeRunIsNotHeldWhileTheTimelineStillMoves() {
-        Timeline timeline = mock(Timeline.class);
-        when(timeline.lastOwner()).thenReturn("YOU");
-        when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
-        when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(false);
+  @Test
+  void aJudgeRunIsNotHeldWhileTheTimelineStillMoves() {
+    Timeline timeline = mock(Timeline.class);
+    when(timeline.lastOwner()).thenReturn("YOU");
+    when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
+    when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(false);
 
-        boolean held = new RunEnd(StandMode.JUDGE, false, false).held(timeline, true);
+    boolean held = new RunEnd(StandMode.JUDGE, false, false).held(timeline, true);
 
-        assertThat(held).isFalse();
-    }
+    assertThat(held).isFalse();
+  }
 
-    @Test
-    void anActRunIsNotHeldOnNothingToPressBecauseTheMasterPressesOnYourTurn() {
-        Timeline timeline = mock(Timeline.class);
-        when(timeline.lastOwner()).thenReturn("YOU");
-        when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
-        when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
+  @Test
+  void anActRunIsNotHeldOnNothingToPressBecauseTheMasterPressesOnYourTurn() {
+    Timeline timeline = mock(Timeline.class);
+    when(timeline.lastOwner()).thenReturn("YOU");
+    when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
+    when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
 
-        boolean held = new RunEnd(StandMode.ACT, false, false).held(timeline, true);
+    boolean held = new RunEnd(StandMode.ACT, false, false).held(timeline, true);
 
-        assertThat(held).isFalse();
-    }
+    assertThat(held).isFalse();
+  }
 
-    @Test
-    void anActRunIsHeldAfterTenMinutesWithoutAChange() {
-        Timeline timeline = mock(Timeline.class);
-        when(timeline.lastOwner()).thenReturn("YOU");
-        when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
-        when(timeline.stalledFor(Duration.ofMinutes(10))).thenReturn(true);
+  @Test
+  void anActRunIsHeldAfterTenMinutesWithoutAChange() {
+    Timeline timeline = mock(Timeline.class);
+    when(timeline.lastOwner()).thenReturn("YOU");
+    when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
+    when(timeline.stalledFor(Duration.ofMinutes(10))).thenReturn(true);
 
-        boolean held = new RunEnd(StandMode.ACT, false, false).held(timeline, true);
+    boolean held = new RunEnd(StandMode.ACT, false, false).held(timeline, true);
 
-        assertThat(held).isTrue();
-    }
+    assertThat(held).isTrue();
+  }
 
-    @Test
-    void aDeployConflictRunIsHeldAsSoonAsTheConflictStepReachedTheSession() {
-        Timeline timeline = mock(Timeline.class);
-        when(timeline.lastOwner()).thenReturn("YOU");
-        when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
-        when(timeline.relayed("conflict")).thenReturn(true);
+  @Test
+  void aDeployConflictRunIsHeldAsSoonAsTheConflictStepReachedTheSession() {
+    Timeline timeline = mock(Timeline.class);
+    when(timeline.lastOwner()).thenReturn("YOU");
+    when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
+    when(timeline.relayed("conflict")).thenReturn(true);
 
-        boolean held = new RunEnd(StandMode.ACT, true, true).held(timeline, true);
+    boolean held = new RunEnd(StandMode.ACT, true, true).held(timeline, true);
 
-        assertThat(held).isTrue();
-    }
+    assertThat(held).isTrue();
+  }
 
-    @Test
-    void aDeployConflictRunIsHeldAfterAMinuteWithoutTheConflictStep() {
-        Timeline timeline = mock(Timeline.class);
-        when(timeline.lastOwner()).thenReturn("YOU");
-        when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
-        when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
+  @Test
+  void aDeployConflictRunIsHeldAfterAMinuteWithoutTheConflictStep() {
+    Timeline timeline = mock(Timeline.class);
+    when(timeline.lastOwner()).thenReturn("YOU");
+    when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
+    when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
 
-        boolean held = new RunEnd(StandMode.ACT, true, true).held(timeline, true);
+    boolean held = new RunEnd(StandMode.ACT, true, true).held(timeline, true);
 
-        assertThat(held).isTrue();
-    }
+    assertThat(held).isTrue();
+  }
 
-    @Test
-    void aDeployConflictRunIsHeldAtOnceWhereNoConflictStepComes() {
-        Timeline timeline = mock(Timeline.class);
-        when(timeline.lastOwner()).thenReturn("YOU");
-        when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
+  @Test
+  void aDeployConflictRunIsHeldAtOnceWhereNoConflictStepComes() {
+    Timeline timeline = mock(Timeline.class);
+    when(timeline.lastOwner()).thenReturn("YOU");
+    when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
 
-        boolean held = new RunEnd(StandMode.JUDGE, true, false).held(timeline, true);
+    boolean held = new RunEnd(StandMode.JUDGE, true, false).held(timeline, true);
 
-        assertThat(held).isTrue();
-    }
+    assertThat(held).isTrue();
+  }
 
-    @Test
-    void aDeployConflictRunWaitsWhileTheConflictStepIsStillComing() {
-        Timeline timeline = mock(Timeline.class);
-        when(timeline.lastOwner()).thenReturn("YOU");
-        when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
+  @Test
+  void aDeployConflictRunWaitsWhileTheConflictStepIsStillComing() {
+    Timeline timeline = mock(Timeline.class);
+    when(timeline.lastOwner()).thenReturn("YOU");
+    when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
 
-        boolean held = new RunEnd(StandMode.ACT, true, true).held(timeline, true);
+    boolean held = new RunEnd(StandMode.ACT, true, true).held(timeline, true);
 
-        assertThat(held).isFalse();
-    }
+    assertThat(held).isFalse();
+  }
 
-    @Test
-    void aReachedRunWaitsForAnEventNotFiredYet() {
-        Timeline timeline = mock(Timeline.class);
+  @Test
+  void aReachedRunWaitsForAnEventNotFiredYet() {
+    Timeline timeline = mock(Timeline.class);
 
-        boolean reached = new RunEnd(StandMode.ACT, false, false).reached(true, true, timeline);
+    boolean reached = new RunEnd(StandMode.ACT, false, false).reached(true, true, timeline);
 
-        assertThat(reached).isFalse();
-    }
+    assertThat(reached).isFalse();
+  }
 
-    @Test
-    void aReachedRunStopsWaitingForAnEventAfterAQuietMinute() {
-        Timeline timeline = mock(Timeline.class);
-        when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
+  @Test
+  void aReachedRunStopsWaitingForAnEventAfterAQuietMinute() {
+    Timeline timeline = mock(Timeline.class);
+    when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
 
-        boolean reached = new RunEnd(StandMode.ACT, false, false).reached(true, true, timeline);
+    boolean reached = new RunEnd(StandMode.ACT, false, false).reached(true, true, timeline);
 
-        assertThat(reached).isTrue();
-    }
+    assertThat(reached).isTrue();
+  }
 
-    @Test
-    void aReachedRunWithNoEventPendingEndsAtOnce() {
-        Timeline timeline = mock(Timeline.class);
+  @Test
+  void aReachedRunWithNoEventPendingEndsAtOnce() {
+    Timeline timeline = mock(Timeline.class);
 
-        boolean reached = new RunEnd(StandMode.ACT, false, false).reached(true, false, timeline);
+    boolean reached = new RunEnd(StandMode.ACT, false, false).reached(true, false, timeline);
 
-        assertThat(reached).isTrue();
-    }
+    assertThat(reached).isTrue();
+  }
 
-    @Test
-    void aRunEndsOnTheReviewerOnceTheSweepsWaitedAndNothingElseMovedForThreeSeconds() {
-        Timeline timeline = mock(Timeline.class);
-        when(timeline.stalledFor(Duration.ofSeconds(3))).thenReturn(true);
+  @Test
+  void aRunEndsOnTheReviewerOnceTheSweepsWaitedAndNothingElseMovedForThreeSeconds() {
+    Timeline timeline = mock(Timeline.class);
+    when(timeline.stalledFor(Duration.ofSeconds(3))).thenReturn(true);
 
-        boolean waiting = new RunEnd(StandMode.ACT, false, false).waitingOnTheReviewer(true, timeline);
+    boolean waiting = new RunEnd(StandMode.ACT, false, false).waitingOnTheReviewer(true, timeline);
 
-        assertThat(waiting).isTrue();
-    }
+    assertThat(waiting).isTrue();
+  }
 
-    @Test
-    void aRunKeepsGoingWhileSomethingElseStillMovesBesideTheWaitingSweeps() {
-        Timeline timeline = mock(Timeline.class);
+  @Test
+  void aRunKeepsGoingWhileSomethingElseStillMovesBesideTheWaitingSweeps() {
+    Timeline timeline = mock(Timeline.class);
 
-        boolean waiting = new RunEnd(StandMode.ACT, false, false).waitingOnTheReviewer(true, timeline);
+    boolean waiting = new RunEnd(StandMode.ACT, false, false).waitingOnTheReviewer(true, timeline);
 
-        assertThat(waiting).isFalse();
-    }
+    assertThat(waiting).isFalse();
+  }
 
-    @Test
-    void aDeployConflictNoMutationExpectedIsNotHeldAtTheConflictRelay() {
-        Timeline timeline = mock(Timeline.class);
-        when(timeline.lastOwner()).thenReturn("YOU");
-        when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
-        when(timeline.relayed("conflict")).thenReturn(true);
+  @Test
+  void aDeployConflictNoMutationExpectedIsNotHeldAtTheConflictRelay() {
+    Timeline timeline = mock(Timeline.class);
+    when(timeline.lastOwner()).thenReturn("YOU");
+    when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
+    when(timeline.relayed("conflict")).thenReturn(true);
 
-        boolean held = new RunEnd(StandMode.ACT, false, false).held(timeline, true);
+    boolean held = new RunEnd(StandMode.ACT, false, false).held(timeline, true);
 
-        assertThat(held).isFalse();
-    }
+    assertThat(held).isFalse();
+  }
 }

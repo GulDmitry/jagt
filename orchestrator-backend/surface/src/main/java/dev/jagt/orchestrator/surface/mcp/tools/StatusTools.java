@@ -1,50 +1,65 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
-import org.jspecify.annotations.Nullable;
-import dev.jagt.orchestrator.surface.mcp.Audience;
-import dev.jagt.orchestrator.surface.mcp.Effect;
-import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
-import dev.jagt.orchestrator.surface.mcp.McpTools;
-import dev.jagt.orchestrator.surface.mcp.CallerScope;
+import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.UserNotice;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.OwnStatusReports;
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.surface.mcp.Audience;
+import dev.jagt.orchestrator.surface.mcp.CallerScope;
+import dev.jagt.orchestrator.surface.mcp.Effect;
+import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
+import dev.jagt.orchestrator.surface.mcp.McpTools;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
-
 
 @Component
 @RequiredArgsConstructor
 public class StatusTools implements McpTools {
 
-    private final AgentStatusReports statusReports;
-    private final OwnStatusReports ownReports;
-    private final CallerScope callerScope;
-    private final Notifications notifications;
+  private final AgentStatusReports statusReports;
+  private final OwnStatusReports ownReports;
+  private final CallerScope callerScope;
+  private final Notifications notifications;
 
-    /** The task a report is about: the one it names where a Master sent it, else the caller's own worktree. */
-    private String taskOf(AgentStatusMessage said, @Nullable String caller) {
-        return callerScope.resolve(said.taskId(), caller);
-    }
+  /**
+   * The task a report is about: the one it names where a Master sent it, else the caller's own
+   * worktree.
+   */
+  private String taskOf(AgentStatusMessage said, @Nullable String caller) {
+    return callerScope.resolve(said.taskId(), caller);
+  }
 
-    @Override
-    public void declare(McpToolRegistry tools) {
-        tools.tool("update_agent_status", Audience.ANYONE, Effect.REPORTS, AgentStatusMessage.SCHEMA, AgentStatusMessage.class,
-                (said, caller) -> caller == null ? statusReports.contextFor(taskOf(said, caller))
-                        : ownReports.contextFor(taskOf(said, caller)),
-                (said, caller) -> caller == null
-                        ? statusReports.report(said, taskOf(said, caller))
-                        : ownReports.report(said, taskOf(said, caller)));
+  @Override
+  public void declare(McpToolRegistry tools) {
+    tools.tool(
+        "update_agent_status",
+        Audience.ANYONE,
+        Effect.REPORTS,
+        AgentStatusMessage.SCHEMA,
+        AgentStatusMessage.class,
+        (said, caller) ->
+            caller == null
+                ? statusReports.contextFor(taskOf(said, caller))
+                : ownReports.contextFor(taskOf(said, caller)),
+        (said, caller) ->
+            caller == null
+                ? statusReports.report(said, taskOf(said, caller))
+                : ownReports.report(said, taskOf(said, caller)));
 
-        tools.tool("notify_user", Audience.ANYONE, Effect.REPORTS, UserNotice.SCHEMA, UserNotice.class,
-                (said, caller) -> MessageContext.NONE,
-                (said, caller) -> {
-                    notifications.send(Notification.fromAgent(null, said.title(), said.message()));
-                    return "Notification sent";
-                });
-    }
+    tools.tool(
+        "notify_user",
+        Audience.ANYONE,
+        Effect.REPORTS,
+        UserNotice.SCHEMA,
+        UserNotice.class,
+        (said, caller) -> MessageContext.NONE,
+        (said, caller) -> {
+          notifications.send(Notification.fromAgent(null, said.title(), said.message()));
+          return "Notification sent";
+        });
+  }
 }

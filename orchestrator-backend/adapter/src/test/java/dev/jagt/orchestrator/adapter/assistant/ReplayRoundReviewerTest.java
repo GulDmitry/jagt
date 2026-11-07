@@ -15,37 +15,47 @@ import org.junit.jupiter.api.io.TempDir;
 
 class ReplayRoundReviewerTest {
 
-    @Test
-    void aReplayedReadAnswersWithTheVerdictTheRecordingHeldAtNoCost(@TempDir Path root) throws Exception {
-        Path file = root.resolve("recording.jsonl");
-        Files.writeString(file, """
-                {"type":"verdict","round":1,"role":"QA","judgement":{"failure":"","verdict":"ready","findings":[],"question":"","premises":[],"newTask":""}}
-                """);
-        ReplayRoundReviewer reviewer = new ReplayRoundReviewer(new RecordedVerdicts(new Recording(file.toString())));
+  @Test
+  void aReplayedReadAnswersWithTheVerdictTheRecordingHeldAtNoCost(@TempDir Path root)
+      throws Exception {
+    Path file = root.resolve("recording.jsonl");
+    Files.writeString(
+        file,
+        """
+        {"type":"verdict","round":1,"role":"QA","judgement":{"failure":"","verdict":"ready","findings":[],"question":"","premises":[],"newTask":""}}
+        """);
+    ReplayRoundReviewer reviewer =
+        new ReplayRoundReviewer(new RecordedVerdicts(new Recording(file.toString())));
 
-        Answer<Judgement> answer = reviewer.review(new Round("", "<role>You are the QA</role>", List.of(), ""));
+    Answer<Judgement> answer =
+        reviewer.review(new Round("", "<role>You are the QA</role>", List.of(), ""));
 
-        assertThat(answer.facts().orElseThrow().verdict()).isEqualTo("ready");
-        assertThat(answer.usage().isNone()).isTrue();
-    }
+    assertThat(answer.facts().orElseThrow().verdict()).isEqualTo("ready");
+    assertThat(answer.usage().isNone()).isTrue();
+  }
 
-    @Test
-    void aReadPastTheRecordingIsAFailedJudgementNamingWhy(@TempDir Path root) throws Exception {
-        Path file = root.resolve("recording.jsonl");
-        Files.writeString(file, "\n");
-        ReplayRoundReviewer reviewer = new ReplayRoundReviewer(new RecordedVerdicts(new Recording(file.toString())));
+  @Test
+  void aReadPastTheRecordingIsAFailedJudgementNamingWhy(@TempDir Path root) throws Exception {
+    Path file = root.resolve("recording.jsonl");
+    Files.writeString(file, "\n");
+    ReplayRoundReviewer reviewer =
+        new ReplayRoundReviewer(new RecordedVerdicts(new Recording(file.toString())));
 
-        Answer<Judgement> answer = reviewer.review(new Round("", "<role>You are the QA</role>", List.of(), ""));
+    Answer<Judgement> answer =
+        reviewer.review(new Round("", "<role>You are the QA</role>", List.of(), ""));
 
-        assertThat(answer.facts().orElseThrow().failure()).isEqualTo("the recording holds no verdict for this read");
-    }
+    assertThat(answer.facts().orElseThrow().failure())
+        .isEqualTo("the recording holds no verdict for this read");
+  }
 
-    @Test
-    void aReplayedReadLoadsTheMcpServerSoATicketTheRoundDoesNotQuoteStaysReadable(@TempDir Path root) throws Exception {
-        Path file = root.resolve("recording.jsonl");
-        Files.writeString(file, "\n");
-        ReplayRoundReviewer reviewer = new ReplayRoundReviewer(new RecordedVerdicts(new Recording(file.toString())));
+  @Test
+  void aReplayedReadLoadsTheMcpServerSoATicketTheRoundDoesNotQuoteStaysReadable(@TempDir Path root)
+      throws Exception {
+    Path file = root.resolve("recording.jsonl");
+    Files.writeString(file, "\n");
+    ReplayRoundReviewer reviewer =
+        new ReplayRoundReviewer(new RecordedVerdicts(new Recording(file.toString())));
 
-        assertThat(reviewer.loadsMcpServer()).isTrue();
-    }
+    assertThat(reviewer.loadsMcpServer()).isTrue();
+  }
 }

@@ -7,61 +7,70 @@ import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.TicketFacts;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
-/** One tracker item placed in a project and started, or turned away; and the keys intake holds already. */
+/**
+ * One tracker item placed in a project and started, or turned away; and the keys intake holds
+ * already.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class IntakeStart {
 
-    private final ProjectRouting routing;
-    private final IntakeHistory history;
-    private final TaskLauncher launcher;
+  private final ProjectRouting routing;
+  private final IntakeHistory history;
+  private final TaskLauncher launcher;
 
-    public Set<String> held() {
-        return history.held();
-    }
+  public Set<String> held() {
+    return history.held();
+  }
 
-    /** False where the poll should stop: the rest of the list would get the same answer once per candidate. */
-    public boolean start(IntakeCandidates.Ready ready) {
-        TicketFacts item = ready.item();
-        ProjectRouting.Placement placement = routing.projectFor(item);
-        // Not turned away: the next poll asks again, where a turned-away key would wait for a restart.
-        if (placement instanceof ProjectRouting.Unreadable) {
-            return false;
-        }
-        List<String> projects = placement.projects();
-        if (projects.isEmpty()) {
-            history.turnAway(item.key(), placement.reason());
-            return true;
-        }
-        try {
-            Launched launched = launcher.launch(
-                    LaunchRequest.of(item.key()).withProject(String.join(",", projects)),
-                    new Answer<>(Optional.of(item), ready.paid()));
-            if (!launched.created()) {
-                history.turnAway(item.key(), launched.message());
-                return true;
-            }
-            log.atInfo().setMessage("intake started a task")
-                    .addKeyValue("task", item.key())
-                    .addKeyValue("project", String.join(",", projects))
-                    .addKeyValue("stage", item.trackerStatus())
-                    .log();
-            return true;
-        } catch (RuntimeException refused) {
-            log.atWarn().setMessage("intake could not start a task").setCause(refused)
-                    .addKeyValue("ref", item.key())
-                    .addKeyValue("cause", Causes.of(refused))
-                    .log();
-            return false;
-        }
+  /**
+   * False where the poll should stop: the rest of the list would get the same answer once per
+   * candidate.
+   */
+  public boolean start(IntakeCandidates.Ready ready) {
+    TicketFacts item = ready.item();
+    ProjectRouting.Placement placement = routing.projectFor(item);
+    // Not turned away: the next poll asks again, where a turned-away key would wait for a restart.
+    if (placement instanceof ProjectRouting.Unreadable) {
+      return false;
     }
+    List<String> projects = placement.projects();
+    if (projects.isEmpty()) {
+      history.turnAway(item.key(), placement.reason());
+      return true;
+    }
+    try {
+      Launched launched =
+          launcher.launch(
+              LaunchRequest.of(item.key()).withProject(String.join(",", projects)),
+              new Answer<>(Optional.of(item), ready.paid()));
+      if (!launched.created()) {
+        history.turnAway(item.key(), launched.message());
+        return true;
+      }
+      log.atInfo()
+          .setMessage("intake started a task")
+          .addKeyValue("task", item.key())
+          .addKeyValue("project", String.join(",", projects))
+          .addKeyValue("stage", item.trackerStatus())
+          .log();
+      return true;
+    } catch (RuntimeException refused) {
+      log.atWarn()
+          .setMessage("intake could not start a task")
+          .setCause(refused)
+          .addKeyValue("ref", item.key())
+          .addKeyValue("cause", Causes.of(refused))
+          .log();
+      return false;
+    }
+  }
 }

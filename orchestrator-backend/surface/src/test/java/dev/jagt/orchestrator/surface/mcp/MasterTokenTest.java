@@ -1,51 +1,56 @@
 package dev.jagt.orchestrator.surface.mcp;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class MasterTokenTest {
 
-    @Test
-    void admitsWhatItLeftForTheRootsOwnConfigOnly(@TempDir Path root) throws Exception {
-        MasterToken token = new MasterToken(new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString())));
+  @Test
+  void admitsWhatItLeftForTheRootsOwnConfigOnly(@TempDir Path root) throws Exception {
+    MasterToken token =
+        new MasterToken(
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
-        String written = Files.readString(root.resolve(".jagt/master-token"));
+    String written = Files.readString(root.resolve(".jagt/master-token"));
 
-        assertThat(token.matches(written)).isTrue();
-        assertThat(token.matches(written + "0")).isFalse();
-        assertThat(token.matches(null)).isFalse();
-        assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(root.resolve(".jagt/master-token"))))
-                .isEqualTo("rw-------");
-    }
+    assertThat(token.matches(written)).isTrue();
+    assertThat(token.matches(written + "0")).isFalse();
+    assertThat(token.matches(null)).isFalse();
+    assertThat(
+            PosixFilePermissions.toString(
+                Files.getPosixFilePermissions(root.resolve(".jagt/master-token"))))
+        .isEqualTo("rw-------");
+  }
 
-    @Test
-    void closesTheDirectoryHoldingItToEveryoneButItsOwner(@TempDir Path root) throws Exception {
-        Files.createDirectory(root.resolve(".jagt"), PosixFilePermissions.asFileAttribute(
-                PosixFilePermissions.fromString("rwxr-xr-x")));
+  @Test
+  void closesTheDirectoryHoldingItToEveryoneButItsOwner(@TempDir Path root) throws Exception {
+    Files.createDirectory(
+        root.resolve(".jagt"),
+        PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxr-xr-x")));
 
-        new MasterToken(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+    new MasterToken(
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
-        assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(root.resolve(".jagt"))))
-                .isEqualTo("rwx------");
-    }
+    assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(root.resolve(".jagt"))))
+        .isEqualTo("rwx------");
+  }
 
-    @Test
-    void drawsANewTokenAtEachStart(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-        new MasterToken(paths);
-        String first = Files.readString(root.resolve(".jagt/master-token"));
+  @Test
+  void drawsANewTokenAtEachStart(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    new MasterToken(paths);
+    String first = Files.readString(root.resolve(".jagt/master-token"));
 
-        MasterToken restarted = new MasterToken(paths);
+    MasterToken restarted = new MasterToken(paths);
 
-        assertThat(restarted.matches(first)).isFalse();
-    }
+    assertThat(restarted.matches(first)).isFalse();
+  }
 }

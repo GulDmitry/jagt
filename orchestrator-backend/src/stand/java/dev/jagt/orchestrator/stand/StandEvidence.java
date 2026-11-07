@@ -8,27 +8,35 @@ import java.util.List;
 
 public final class StandEvidence {
 
-    private static final List<String> FILES = List.of("timeline.log", "jagt-backend.log", "jagt.out", "screens.log",
-            "jagt.out" + JagtProcess.BEFORE_RESTART, "jagt-backend.log" + JagtProcess.BEFORE_RESTART,
-            "state.json", "misses.jsonl", "recording.jsonl", StandMarker.FILE);
+  private static final List<String> FILES =
+      List.of(
+          "timeline.log",
+          "jagt-backend.log",
+          "jagt.out",
+          "screens.log",
+          "jagt.out" + JagtProcess.BEFORE_RESTART,
+          "jagt-backend.log" + JagtProcess.BEFORE_RESTART,
+          "state.json",
+          "misses.jsonl",
+          "recording.jsonl",
+          StandMarker.FILE);
 
-    public static final Path DIR = Path.of("build", "stand", "failed");
+  public static final Path DIR = Path.of("build", "stand", "failed");
 
-    private StandEvidence() {
-    }
+  private StandEvidence() {}
 
-    public static Path keep(Path root, String scenario, Path failedDir) {
-        Path target = failedDir.resolve(scenario.replace('/', '-') + "-" + root.getFileName());
-        try {
-            Files.createDirectories(target);
-            for (String name : FILES) {
-                if (Files.isRegularFile(root.resolve(name))) {
-                    Files.copy(root.resolve(name), target.resolve(name), StandardCopyOption.REPLACE_EXISTING);
-                }
-            }
-        } catch (IOException e) {
-            throw new StandFailure("cannot keep the evidence of " + root, e);
+  public static Path keep(Path root, String scenario, Path failedDir) {
+    Path target = failedDir.resolve(scenario.replace('/', '-') + "-" + root.getFileName());
+    try {
+      Files.createDirectories(target);
+      for (String name : FILES) {
+        if (Files.isRegularFile(root.resolve(name))) {
+          Files.copy(root.resolve(name), target.resolve(name), StandardCopyOption.REPLACE_EXISTING);
         }
-        return target;
+      }
+    } catch (IOException e) {
+      throw new StandFailure("cannot keep the evidence of " + root, e);
     }
+    return target;
+  }
 }

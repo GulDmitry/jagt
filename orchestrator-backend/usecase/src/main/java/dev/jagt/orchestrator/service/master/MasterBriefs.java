@@ -1,18 +1,17 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.RoleFiles;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
+import dev.jagt.orchestrator.task.Step;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 /** The two briefs a Master reader judges by: its own, and the one the session worked to. */
 @Component
@@ -20,29 +19,34 @@ import java.util.Optional;
 @Slf4j
 public class MasterBriefs {
 
-    private final OrchestratorPaths paths;
-    private final SessionBrief sessionBrief;
+  private final OrchestratorPaths paths;
+  private final SessionBrief sessionBrief;
 
-    public Optional<String> master(String taskId, ConfigService.ConfigFile.MasterConfig config) {
-        try {
-            return Optional.of(Files.readString(file(config)));
-        } catch (IOException unreadable) {
-            log.atError().setMessage("master brief unreadable").addKeyValue("task", taskId)
-                    .addKeyValue("file", config.briefOrDefault())
-                    .addKeyValue("cause", unreadable.toString())
-                    .log();
-            return Optional.empty();
-        }
+  public Optional<String> master(String taskId, ConfigService.ConfigFile.MasterConfig config) {
+    try {
+      return Optional.of(Files.readString(file(config)));
+    } catch (IOException unreadable) {
+      log.atError()
+          .setMessage("master brief unreadable")
+          .addKeyValue("task", taskId)
+          .addKeyValue("file", config.briefOrDefault())
+          .addKeyValue("cause", unreadable.toString())
+          .log();
+      return Optional.empty();
     }
+  }
 
-    /** Where none was named, the first copy that exists, the shipped one last: judging by default asks for no setup. */
-    public Path file(ConfigService.ConfigFile.MasterConfig config) {
-        boolean unnamed = config.brief() == null || config.brief().isBlank();
-        Path named = paths.root().resolve(config.briefOrDefault());
-        return unnamed ? new RoleFiles(paths, "master").briefFile().orElse(named) : named;
-    }
+  /**
+   * Where none was named, the first copy that exists, the shipped one last: judging by default asks
+   * for no setup.
+   */
+  public Path file(ConfigService.ConfigFile.MasterConfig config) {
+    boolean unnamed = config.brief() == null || config.brief().isBlank();
+    Path named = paths.root().resolve(config.briefOrDefault());
+    return unnamed ? new RoleFiles(paths, "master").briefFile().orElse(named) : named;
+  }
 
-    public String author() {
-        return sessionBrief.section(Step.CONTEXT).orElse("");
-    }
+  public String author() {
+    return sessionBrief.section(Step.CONTEXT).orElse("");
+  }
 }

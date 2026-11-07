@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.protocol;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -10,30 +9,35 @@ import java.util.Locale;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record SessionStart(String taskId, String mode) implements Message {
 
-    public static final List<String> MODES = List.of("auto", "plan");
+  public static final List<String> MODES = List.of("auto", "plan");
 
-    public static final Schema SCHEMA = Schema
-            .of("Start a fresh sub-agent session in its own tab for an ALREADY registered task, replacing"
-                    + " whatever ran there: the new conversation remembers nothing of the old one. For a session"
-                    + " that hangs, or one to restart in plan mode; to only show a task, focus_task.")
-            .required("taskId", "string", "Task id or its short alias.")
-            .choice("mode", MODES, "plan = start the agent in its planning mode, which writes plan.md and stops."
-                    + " Default: auto.");
+  public static final Schema SCHEMA =
+      Schema.of(
+              "Start a fresh sub-agent session in its own tab for an ALREADY registered task,"
+                  + " replacing whatever ran there: the new conversation remembers nothing of the"
+                  + " old one. For a session that hangs, or one to restart in plan mode; to only"
+                  + " show a task, focus_task.")
+          .required("taskId", "string", "Task id or its short alias.")
+          .choice(
+              "mode",
+              MODES,
+              "plan = start the agent in its planning mode, which writes plan.md and stops."
+                  + " Default: auto.");
 
-    public SessionStart {
-        taskId = taskId == null || taskId.isBlank() ? null : taskId;
-        mode = mode == null || mode.isBlank() ? null : mode;
+  public SessionStart {
+    taskId = taskId == null || taskId.isBlank() ? null : taskId;
+    mode = mode == null || mode.isBlank() ? null : mode;
+  }
+
+  @Override
+  public List<Violation> violations(MessageContext context) {
+    List<Violation> found = new ArrayList<>();
+    if (taskId == null) {
+      found.add(new Violation("taskId", "required: the task to start a session for"));
     }
-
-    @Override
-    public List<Violation> violations(MessageContext context) {
-        List<Violation> found = new ArrayList<>();
-        if (taskId == null) {
-            found.add(new Violation("taskId", "required: the task to start a session for"));
-        }
-        if (mode != null && !MODES.contains(mode.strip().toLowerCase(Locale.ROOT))) {
-            found.add(new Violation("mode", "one of " + MODES + ", or left out"));
-        }
-        return List.copyOf(found);
+    if (mode != null && !MODES.contains(mode.strip().toLowerCase(Locale.ROOT))) {
+      found.add(new Violation("mode", "one of " + MODES + ", or left out"));
     }
+    return List.copyOf(found);
+  }
 }

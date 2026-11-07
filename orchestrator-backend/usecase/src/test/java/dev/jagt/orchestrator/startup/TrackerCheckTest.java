@@ -1,5 +1,9 @@
 package dev.jagt.orchestrator.startup;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -7,67 +11,89 @@ import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 class TrackerCheckTest {
 
-    private final ConfigService configService = mock(ConfigService.class);
-    private final TrackerWorkflow workflow = mock(TrackerWorkflow.class);
-    private final TrackerCheck check = new TrackerCheck(configService, workflow);
+  private final ConfigService configService = mock(ConfigService.class);
+  private final TrackerWorkflow workflow = mock(TrackerWorkflow.class);
+  private final TrackerCheck check = new TrackerCheck(configService, workflow);
 
-    @Test
-    void saysNothingAboutATrackerDrivingNeitherEnd() {
-        when(configService.load()).thenReturn(ConfigFile.defaults());
+  @Test
+  void saysNothingAboutATrackerDrivingNeitherEnd() {
+    when(configService.load()).thenReturn(ConfigFile.defaults());
 
-        assertThat(check.problems()).isEmpty();
-    }
+    assertThat(check.problems()).isEmpty();
+  }
 
-    @Test
-    void refusesAModeThatIsNotOneOfTheOnesJagtHas() {
-        when(configService.load()).thenReturn(ConfigFile.defaults()
+  @Test
+  void refusesAModeThatIsNotOneOfTheOnesJagtHas() {
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
                 .withTracker(TrackerConfig.defaults().withMode("sometimes").withWorkflow("jira")));
 
-        assertThat(check.problems()).extracting(Problem::key).containsExactly("orchestrator.tracker.mode");
-    }
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.tracker.mode");
+  }
 
-    @Test
-    void asksForNoLandedStageWhereNothingIsSetToClose() {
-        when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withTracker(TrackerConfig.defaults().withMode("take").withWorkflow("jira").withAssignee("jdoe")
+  @Test
+  void asksForNoLandedStageWhereNothingIsSetToClose() {
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withTracker(
+                    TrackerConfig.defaults()
+                        .withMode("take")
+                        .withWorkflow("jira")
+                        .withAssignee("jdoe")
                         .withStartStatus("In Progress")));
-        when(workflow.id()).thenReturn("jira");
+    when(workflow.id()).thenReturn("jira");
 
-        assertThat(check.problems()).isEmpty();
-    }
+    assertThat(check.problems()).isEmpty();
+  }
 
-    @Test
-    void asksForNoStartingStageWhereNothingIsSetToTakeWork() {
-        when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withTracker(TrackerConfig.defaults().withMode("close").withWorkflow("jira")
+  @Test
+  void asksForNoStartingStageWhereNothingIsSetToTakeWork() {
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withTracker(
+                    TrackerConfig.defaults()
+                        .withMode("close")
+                        .withWorkflow("jira")
                         .withDoneStatus("Ready for Stage")));
-        when(workflow.id()).thenReturn("jira");
+    when(workflow.id()).thenReturn("jira");
 
-        assertThat(check.problems()).isEmpty();
-    }
+    assertThat(check.problems()).isEmpty();
+  }
 
-    @Test
-    void namesEveryBlankStageAtOnceRatherThanOnePerRestart() {
-        when(configService.load()).thenReturn(ConfigFile.defaults()
+  @Test
+  void namesEveryBlankStageAtOnceRatherThanOnePerRestart() {
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
                 .withTracker(TrackerConfig.defaults().withMode("both").withWorkflow("jira")));
 
-        assertThat(check.problems()).extracting(Problem::key).containsExactly("orchestrator.tracker.assignee",
-                "orchestrator.tracker.startStatus", "orchestrator.tracker.doneStatus");
-    }
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly(
+            "orchestrator.tracker.assignee",
+            "orchestrator.tracker.startStatus",
+            "orchestrator.tracker.doneStatus");
+  }
 
-    @Test
-    void refusesADrivenTrackerJagtCarriesNoWorkflowFor() {
-        when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withTracker(new TrackerConfig("both", "none", "jdoe", "In Progress", "Ready for Stage",
-                        null)));
-        when(workflow.id()).thenReturn("none");
+  @Test
+  void refusesADrivenTrackerJagtCarriesNoWorkflowFor() {
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withTracker(
+                    new TrackerConfig(
+                        "both", "none", "jdoe", "In Progress", "Ready for Stage", null)));
+    when(workflow.id()).thenReturn("none");
 
-        assertThat(check.problems()).extracting(Problem::key).containsExactly("orchestrator.tracker.workflow");
-    }
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.tracker.workflow");
+  }
 }

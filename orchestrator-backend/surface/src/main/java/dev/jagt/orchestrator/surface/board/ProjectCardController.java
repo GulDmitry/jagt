@@ -12,11 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ProjectCardController {
 
-    private final ProjectCards cards;
+  private final ProjectCards cards;
 
-    /** A GET: reading a card writes nothing. */
-    @GetMapping("/{key}/card")
-    public ProjectCards.Card card(@PathVariable("key") String key) {
-        return cards.of(key);
-    }
+  /** A GET: reading a card writes nothing. */
+  @GetMapping("/{key}/card")
+  public ProjectCards.Card card(@PathVariable("key") String key) {
+    return cards.of(key);
+  }
 }

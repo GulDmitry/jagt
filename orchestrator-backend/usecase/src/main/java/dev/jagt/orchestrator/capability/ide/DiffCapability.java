@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.capability.ide;
 
-import dev.jagt.orchestrator.flow.TaskCapability;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.TaskCapability;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -10,15 +10,15 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DiffCapability implements TaskCapability {
 
-    private final IdeLauncher ide;
+  private final IdeLauncher ide;
 
-    @Override
-    public TaskAction action() {
-        return TaskAction.DIFF;
-    }
+  @Override
+  public TaskAction action() {
+    return TaskAction.DIFF;
+  }
 
-    @Override
-    public Outcome run(String taskId) {
-        return Outcome.ok(ide.open(taskId, IdeLauncher.Mode.DIFF));
-    }
+  @Override
+  public Outcome run(String taskId) {
+    return Outcome.ok(ide.open(taskId, IdeLauncher.Mode.DIFF));
+  }
 }

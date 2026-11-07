@@ -7,7 +7,6 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
-
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -15,19 +14,24 @@ import java.util.function.Supplier;
 /** Refuses {@code action} on a task jagt stopped, unless a human pressed it. */
 public record StopGuard(TaskAction action, TaskStops stops) implements CapabilityInterceptor {
 
-    private static final Set<ActionOrigin> HUMAN = EnumSet.of(ActionOrigin.BOARD, ActionOrigin.PALETTE);
+  private static final Set<ActionOrigin> HUMAN =
+      EnumSet.of(ActionOrigin.BOARD, ActionOrigin.PALETTE);
 
-    @Override
-    public int order() {
-        return -1;
-    }
+  @Override
+  public int order() {
+    return -1;
+  }
 
-    @Override
-    public Outcome around(String taskId, Supplier<Outcome> work) {
-        if (!HUMAN.contains(OriginContext.current()) && stops.stopped(taskId)) {
-            throw Refusal.byState(action.id() + " " + taskId + " refused: jagt stopped it;"
-                    + " only a human presses it until `lift`");
-        }
-        return work.get();
+  @Override
+  public Outcome around(String taskId, Supplier<Outcome> work) {
+    if (!HUMAN.contains(OriginContext.current()) && stops.stopped(taskId)) {
+      throw Refusal.byState(
+          action.id()
+              + " "
+              + taskId
+              + " refused: jagt stopped it;"
+              + " only a human presses it until `lift`");
     }
+    return work.get();
+  }
 }

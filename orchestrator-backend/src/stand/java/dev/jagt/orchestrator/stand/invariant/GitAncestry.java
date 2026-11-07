@@ -5,8 +5,8 @@ import java.nio.file.Path;
 
 public record GitAncestry(Path repository) implements Ancestry {
 
-    @Override
-    public boolean descends(String commit, String from) {
-        return StandShell.gitSucceeds(repository, "merge-base", "--is-ancestor", from, commit);
-    }
+  @Override
+  public boolean descends(String commit, String from) {
+    return StandShell.gitSucceeds(repository, "merge-base", "--is-ancestor", from, commit);
+  }
 }

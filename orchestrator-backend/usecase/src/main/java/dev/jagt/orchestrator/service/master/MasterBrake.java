@@ -7,10 +7,6 @@ import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -21,143 +17,184 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
-/** Stops `act` after {@link #STRIKES} tasks in a row the Master moved ended badly; a deploy resets the count. */
+/**
+ * Stops `act` after {@link #STRIKES} tasks in a row the Master moved ended badly; a deploy resets
+ * the count.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class MasterBrake {
 
-    static final int STRIKES = 3;
+  static final int STRIKES = 3;
 
-    private final StateService stateService;
-    private final OrchestratorPaths paths;
-    private final Map<String, Seen> seen = new HashMap<>();
-    private final Set<String> strikes = new LinkedHashSet<>();
+  private final StateService stateService;
+  private final OrchestratorPaths paths;
+  private final Map<String, Seen> seen = new HashMap<>();
+  private final Set<String> strikes = new LinkedHashSet<>();
 
-    private record Seen(long step, long silence) {
+  private record Seen(long step, long silence) {
 
-        static Seen of(TaskState task) {
-            return new Seen(task.history().isEmpty() ? 0 : task.history().getLast().at(), SessionPhase.silentSince(task));
-        }
+    static Seen of(TaskState task) {
+      return new Seen(
+          task.history().isEmpty() ? 0 : task.history().getLast().at(),
+          SessionPhase.silentSince(task));
     }
+  }
 
-    private record Ending(String task, long at, boolean bad, String why) {
-    }
+  private record Ending(String task, long at, boolean bad, String why) {}
 
-    /** Only what happens after this start counts. */
-    @PostConstruct
-    void follow() {
-        stateService.tasks().forEach((id, task) -> seen.put(id, Seen.of(task)));
-        strikes.addAll(kept());
-        stateService.onChange(written -> observe(written.tasks()));
-    }
+  /** Only what happens after this start counts. */
+  @PostConstruct
+  void follow() {
+    stateService.tasks().forEach((id, task) -> seen.put(id, Seen.of(task)));
+    strikes.addAll(kept());
+    stateService.onChange(written -> observe(written.tasks()));
+  }
 
-    synchronized void observe(Map<String, TaskState> tasks) {
-        List<Ending> endings = new ArrayList<>();
-        tasks.forEach((id, task) -> {
-            if (movedByTheMaster(task)) {
-                endings.addAll(endings(id, task, seen.getOrDefault(id, new Seen(0, 0))));
-            }
-            seen.put(id, Seen.of(task));
+  synchronized void observe(Map<String, TaskState> tasks) {
+    List<Ending> endings = new ArrayList<>();
+    tasks.forEach(
+        (id, task) -> {
+          if (movedByTheMaster(task)) {
+            endings.addAll(endings(id, task, seen.getOrDefault(id, new Seen(0, 0))));
+          }
+          seen.put(id, Seen.of(task));
         });
-        seen.keySet().retainAll(tasks.keySet());
-        endings.stream().sorted(Comparator.comparingLong(Ending::at)).forEach(this::count);
-    }
+    seen.keySet().retainAll(tasks.keySet());
+    endings.stream().sorted(Comparator.comparingLong(Ending::at)).forEach(this::count);
+  }
 
-    public boolean stopped() {
-        return Files.exists(paths.actStopped());
-    }
+  public boolean stopped() {
+    return Files.exists(paths.actStopped());
+  }
 
-    /** True where it was stopped. */
-    public synchronized boolean restore() {
-        strikes.clear();
-        keep();
-        try {
-            boolean was = Files.deleteIfExists(paths.actStopped());
-            log.atInfo().setMessage("master act restored").addKeyValue("wasStopped", was).log();
-            return was;
-        } catch (IOException e) {
-            throw new UncheckedIOException("Cannot remove " + paths.actStopped(), e);
-        }
+  /** True where it was stopped. */
+  public synchronized boolean restore() {
+    strikes.clear();
+    keep();
+    try {
+      boolean was = Files.deleteIfExists(paths.actStopped());
+      log.atInfo().setMessage("master act restored").addKeyValue("wasStopped", was).log();
+      return was;
+    } catch (IOException e) {
+      throw new UncheckedIOException("Cannot remove " + paths.actStopped(), e);
     }
+  }
 
-    private static boolean movedByTheMaster(TaskState task) {
-        return task.history().stream().anyMatch(step -> step.origin() == ActionOrigin.MASTER);
-    }
+  private static boolean movedByTheMaster(TaskState task) {
+    return task.history().stream().anyMatch(step -> step.origin() == ActionOrigin.MASTER);
+  }
 
-    private static boolean silenceFollowsTheMaster(TaskState task) {
-        return task.history().stream().filter(step -> step.at() <= SessionPhase.silentSince(task))
-                .reduce((first, second) -> second).map(StatusChange::origin).orElse(null) == ActionOrigin.MASTER;
-    }
+  private static boolean silenceFollowsTheMaster(TaskState task) {
+    return task.history().stream()
+            .filter(step -> step.at() <= SessionPhase.silentSince(task))
+            .reduce((first, second) -> second)
+            .map(StatusChange::origin)
+            .orElse(null)
+        == ActionOrigin.MASTER;
+  }
 
-    private static List<Ending> endings(String id, TaskState task, Seen was) {
-        List<Ending> endings = new ArrayList<>();
-        for (StatusChange step : task.history()) {
-            if (step.at() <= was.step()) {
-                continue;
-            }
-            switch (step.status()) {
-                case DEPLOYED -> endings.add(new Ending(id, step.at(), false, "deployed"));
-                case DEPLOY_CONFLICT, REVERTED -> endings.add(new Ending(id, step.at(), true, step.status().label()));
-                default -> { }
-            }
-        }
-        if (SessionPhase.silent(task) && SessionPhase.silentSince(task) != was.silence() && silenceFollowsTheMaster(task)) {
-            endings.add(new Ending(id, SessionPhase.silentSince(task), true, "silent: " + SessionPhase.silentBecause(task)));
-        }
-        return endings;
+  private static List<Ending> endings(String id, TaskState task, Seen was) {
+    List<Ending> endings = new ArrayList<>();
+    for (StatusChange step : task.history()) {
+      if (step.at() <= was.step()) {
+        continue;
+      }
+      switch (step.status()) {
+        case DEPLOYED -> endings.add(new Ending(id, step.at(), false, "deployed"));
+        case DEPLOY_CONFLICT, REVERTED ->
+            endings.add(new Ending(id, step.at(), true, step.status().label()));
+        default -> {}
+      }
     }
+    if (SessionPhase.silent(task)
+        && SessionPhase.silentSince(task) != was.silence()
+        && silenceFollowsTheMaster(task)) {
+      endings.add(
+          new Ending(
+              id,
+              SessionPhase.silentSince(task),
+              true,
+              "silent: " + SessionPhase.silentBecause(task)));
+    }
+    return endings;
+  }
 
-    private void count(Ending ending) {
-        if (!ending.bad()) {
-            strikes.clear();
-            keep();
-            return;
-        }
-        strikes.add(ending.task());
-        keep();
-        log.atInfo().setMessage("master strike").addKeyValue("task", ending.task())
-                .addKeyValue("why", ending.why()).addKeyValue("strikes", strikes.size()).log();
-        if (strikes.size() >= STRIKES) {
-            stop();
-        }
+  private void count(Ending ending) {
+    if (!ending.bad()) {
+      strikes.clear();
+      keep();
+      return;
     }
+    strikes.add(ending.task());
+    keep();
+    log.atInfo()
+        .setMessage("master strike")
+        .addKeyValue("task", ending.task())
+        .addKeyValue("why", ending.why())
+        .addKeyValue("strikes", strikes.size())
+        .log();
+    if (strikes.size() >= STRIKES) {
+      stop();
+    }
+  }
 
-    private void stop() {
-        try {
-            Files.writeString(paths.actStopped(), String.join("\n", strikes) + "\n");
-            log.atWarn().setMessage("master act stopped").addKeyValue("tasks", List.copyOf(strikes))
-                    .addKeyValue("cause", STRIKES + " tasks in a row the Master moved ended badly")
-                    .addKeyValue("effect", "the Master judges until the human runs `act`").log();
-        } catch (IOException e) {
-            log.atError().setMessage("master act not stopped").addKeyValue("file", paths.actStopped())
-                    .addKeyValue("cause", e.toString()).addKeyValue("effect", "act keeps pressing").log();
-        }
-        strikes.clear();
-        keep();
+  private void stop() {
+    try {
+      Files.writeString(paths.actStopped(), String.join("\n", strikes) + "\n");
+      log.atWarn()
+          .setMessage("master act stopped")
+          .addKeyValue("tasks", List.copyOf(strikes))
+          .addKeyValue("cause", STRIKES + " tasks in a row the Master moved ended badly")
+          .addKeyValue("effect", "the Master judges until the human runs `act`")
+          .log();
+    } catch (IOException e) {
+      log.atError()
+          .setMessage("master act not stopped")
+          .addKeyValue("file", paths.actStopped())
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "act keeps pressing")
+          .log();
     }
+    strikes.clear();
+    keep();
+  }
 
-    private List<String> kept() {
-        try {
-            return Files.isRegularFile(paths.actStrikes()) ? Files.readAllLines(paths.actStrikes()) : List.of();
-        } catch (IOException e) {
-            log.atWarn().setMessage("master strikes unread").addKeyValue("file", paths.actStrikes())
-                    .addKeyValue("cause", e.toString()).addKeyValue("effect", "the count starts again").log();
-            return List.of();
-        }
+  private List<String> kept() {
+    try {
+      return Files.isRegularFile(paths.actStrikes())
+          ? Files.readAllLines(paths.actStrikes())
+          : List.of();
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("master strikes unread")
+          .addKeyValue("file", paths.actStrikes())
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "the count starts again")
+          .log();
+      return List.of();
     }
+  }
 
-    private void keep() {
-        try {
-            if (strikes.isEmpty()) {
-                Files.deleteIfExists(paths.actStrikes());
-            } else {
-                Files.writeString(paths.actStrikes(), String.join("\n", strikes) + "\n");
-            }
-        } catch (IOException e) {
-            log.atWarn().setMessage("master strikes not kept").addKeyValue("file", paths.actStrikes())
-                    .addKeyValue("cause", e.toString()).addKeyValue("effect", "a restart forgets the count").log();
-        }
+  private void keep() {
+    try {
+      if (strikes.isEmpty()) {
+        Files.deleteIfExists(paths.actStrikes());
+      } else {
+        Files.writeString(paths.actStrikes(), String.join("\n", strikes) + "\n");
+      }
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("master strikes not kept")
+          .addKeyValue("file", paths.actStrikes())
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "a restart forgets the count")
+          .log();
     }
+  }
 }

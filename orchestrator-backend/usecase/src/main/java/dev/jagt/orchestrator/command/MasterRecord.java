@@ -1,86 +1,105 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
+import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 /**
- * What the reviewer's verdicts turned out to be worth, read off the finished record rather than off any
- * opinion of its own. A verdict AND what the task then did are both facts, and the only ways they can
- * disagree are counted: it passed work that never landed or that you took back out, and it failed work you
- * landed anyway. The record keeps the verdict's word but not when it was written, so a round that followed it
- * cannot be told from one that preceded it and is not counted.
+ * What the reviewer's verdicts turned out to be worth, read off the finished record rather than off
+ * any opinion of its own. A verdict AND what the task then did are both facts, and the only ways
+ * they can disagree are counted: it passed work that never landed or that you took back out, and it
+ * failed work you landed anyway. The record keeps the verdict's word but not when it was written,
+ * so a round that followed it cannot be told from one that preceded it and is not counted.
  */
 @Service
 @RequiredArgsConstructor
 public class MasterRecord {
 
-    private final FinishedTasks finished;
-    private final ConfigService configService;
+  private final FinishedTasks finished;
+  private final ConfigService configService;
 
-    /** Zeroes where nothing has been judged yet, which reads the same as a reviewer nobody has turned on. */
-    public record Seen(int judged, int passed, int asked, int passedNeverDeployed, int passedReverted,
-                       int failedButDeployed) {
+  /**
+   * Zeroes where nothing has been judged yet, which reads the same as a reviewer nobody has turned
+   * on.
+   */
+  public record Seen(
+      int judged,
+      int passed,
+      int asked,
+      int passedNeverDeployed,
+      int passedReverted,
+      int failedButDeployed) {
 
-        public boolean any() {
-            return judged > 0;
-        }
-
-        public int disagreed() {
-            return passedNeverDeployed + passedReverted + failedButDeployed;
-        }
+    public boolean any() {
+      return judged > 0;
     }
 
-    public Seen seen() {
-        List<FinishedTask> judged = finished.all().stream().filter(FinishedTask::judged).toList();
-        return new Seen(judged.size(),
-                count(judged, FinishedTask::passed),
-                count(judged, FinishedTask::asked),
-                count(judged, task -> task.passed() && task.course().rounds() > 0 && !task.reached(TaskStatus.DEPLOYED)
-                        && deployable(task)),
-                count(judged, MasterRecord::passedReverted),
-                count(judged, MasterRecord::failedButDeployed));
+    public int disagreed() {
+      return passedNeverDeployed + passedReverted + failedButDeployed;
     }
+  }
 
-    /** {@code passed} false where it failed work you deployed anyway. */
-    public record Disagreement(String task, boolean passed) {
-    }
+  public Seen seen() {
+    List<FinishedTask> judged = finished.all().stream().filter(FinishedTask::judged).toList();
+    return new Seen(
+        judged.size(),
+        count(judged, FinishedTask::passed),
+        count(judged, FinishedTask::asked),
+        count(
+            judged,
+            task ->
+                task.passed()
+                    && task.course().rounds() > 0
+                    && !task.reached(TaskStatus.DEPLOYED)
+                    && deployable(task)),
+        count(judged, MasterRecord::passedReverted),
+        count(judged, MasterRecord::failedButDeployed));
+  }
 
-    /** The latest task you undid a verdict on: you acted, so there is an exchange to learn from. */
-    public Optional<Disagreement> latestDisagreement() {
-        return finished.all().stream().filter(FinishedTask::judged)
-                .filter(task -> passedReverted(task) || failedButDeployed(task))
-                .max(Comparator.comparingLong(FinishedTask::finishedAt))
-                .map(task -> new Disagreement(task.identity().id(), task.passed()));
-    }
+  /** {@code passed} false where it failed work you deployed anyway. */
+  public record Disagreement(String task, boolean passed) {}
 
-    private static boolean passedReverted(FinishedTask task) {
-        return task.passed() && task.reached(TaskStatus.REVERTED);
-    }
+  /** The latest task you undid a verdict on: you acted, so there is an exchange to learn from. */
+  public Optional<Disagreement> latestDisagreement() {
+    return finished.all().stream()
+        .filter(FinishedTask::judged)
+        .filter(task -> passedReverted(task) || failedButDeployed(task))
+        .max(Comparator.comparingLong(FinishedTask::finishedAt))
+        .map(task -> new Disagreement(task.identity().id(), task.passed()));
+  }
 
-    private static boolean failedButDeployed(FinishedTask task) {
-        return !task.passed() && !task.asked() && task.judgedBefore(TaskStatus.DEPLOYED);
-    }
+  private static boolean passedReverted(FinishedTask task) {
+    return task.passed() && task.reached(TaskStatus.REVERTED);
+  }
 
-    /** A project jagt does not deploy, or no longer knows, owes no deploy: its work lands elsewhere. */
-    private boolean deployable(FinishedTask task) {
-        Map<String, ProjectConfig> projects = configService.load().projects();
-        return task.identity().projects().stream().map(projects::get)
-                .allMatch(project -> project != null && project.deployBranch() != null
-                        && !project.deployBranch().isBlank());
-    }
+  private static boolean failedButDeployed(FinishedTask task) {
+    return !task.passed() && !task.asked() && task.judgedBefore(TaskStatus.DEPLOYED);
+  }
 
-    private static int count(List<FinishedTask> tasks, Predicate<FinishedTask> which) {
-        return (int) tasks.stream().filter(which).count();
-    }
+  /**
+   * A project jagt does not deploy, or no longer knows, owes no deploy: its work lands elsewhere.
+   */
+  private boolean deployable(FinishedTask task) {
+    Map<String, ProjectConfig> projects = configService.load().projects();
+    return task.identity().projects().stream()
+        .map(projects::get)
+        .allMatch(
+            project ->
+                project != null
+                    && project.deployBranch() != null
+                    && !project.deployBranch().isBlank());
+  }
+
+  private static int count(List<FinishedTask> tasks, Predicate<FinishedTask> which) {
+    return (int) tasks.stream().filter(which).count();
+  }
 }

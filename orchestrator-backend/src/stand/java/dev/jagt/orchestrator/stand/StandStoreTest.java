@@ -11,35 +11,37 @@ import tools.jackson.databind.JsonNode;
 
 class StandStoreTest {
 
-    @TempDir
-    Path directory;
+  @TempDir Path directory;
 
-    @Test
-    void listsMergeRequestsInTheOrderTheyWereOpenedPastNine() {
-        StandStore store = new StandStore(directory, "http://127.0.0.1:1");
-        Stream.of("a", "b", "c", "d", "e", "f", "g", "h", "i", "j").forEach(branch -> store.createRequest(branch, "main", branch, ""));
+  @Test
+  void listsMergeRequestsInTheOrderTheyWereOpenedPastNine() {
+    StandStore store = new StandStore(directory, "http://127.0.0.1:1");
+    Stream.of("a", "b", "c", "d", "e", "f", "g", "h", "i", "j")
+        .forEach(branch -> store.createRequest(branch, "main", branch, ""));
 
-        List<JsonNode> requests = store.allRequests();
+    List<JsonNode> requests = store.allRequests();
 
-        assertThat(requests).extracting(request -> request.path("id").asInt()).containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-    }
+    assertThat(requests)
+        .extracting(request -> request.path("id").asInt())
+        .containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  }
 
-    @Test
-    void awaitsTheReviewerWhenTheAgentAnsweredEveryOpenThreadLast() {
-        StandStore store = new StandStore(directory, "http://127.0.0.1:1");
-        store.createRequest("a", "main", "a", "");
-        store.addThread(1, "greet.sh", 3, "stiff");
-        store.reply(1, 1, "agent", "kept as is, the ticket says so");
+  @Test
+  void awaitsTheReviewerWhenTheAgentAnsweredEveryOpenThreadLast() {
+    StandStore store = new StandStore(directory, "http://127.0.0.1:1");
+    store.createRequest("a", "main", "a", "");
+    store.addThread(1, "greet.sh", 3, "stiff");
+    store.reply(1, 1, "agent", "kept as is, the ticket says so");
 
-        assertThat(store.awaitsTheReviewer()).isTrue();
-    }
+    assertThat(store.awaitsTheReviewer()).isTrue();
+  }
 
-    @Test
-    void doesNotAwaitTheReviewerWhileAnOpenThreadHasNoAnswer() {
-        StandStore store = new StandStore(directory, "http://127.0.0.1:1");
-        store.createRequest("a", "main", "a", "");
-        store.addThread(1, "greet.sh", 3, "stiff");
+  @Test
+  void doesNotAwaitTheReviewerWhileAnOpenThreadHasNoAnswer() {
+    StandStore store = new StandStore(directory, "http://127.0.0.1:1");
+    store.createRequest("a", "main", "a", "");
+    store.addThread(1, "greet.sh", 3, "stiff");
 
-        assertThat(store.awaitsTheReviewer()).isFalse();
-    }
+    assertThat(store.awaitsTheReviewer()).isFalse();
+  }
 }

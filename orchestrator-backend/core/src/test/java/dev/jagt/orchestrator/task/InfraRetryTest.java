@@ -1,71 +1,156 @@
 package dev.jagt.orchestrator.task;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class InfraRetryTest {
 
-    @Test
-    void aRecordArmedBeforeItNamedItsProjectReadsAsBlank() {
-        InfraRetry old = new InfraRetry(1_000, null, "https://host.invalid/p/1", "unit-tests",
-                "runner_system_failure", false, 1, 3);
+  @Test
+  void aRecordArmedBeforeItNamedItsProjectReadsAsBlank() {
+    InfraRetry old =
+        new InfraRetry(
+            1_000,
+            null,
+            "https://host.invalid/p/1",
+            "unit-tests",
+            "runner_system_failure",
+            false,
+            1,
+            3);
 
-        assertThat(old.project()).isEmpty();
-    }
+    assertThat(old.project()).isEmpty();
+  }
 
-    @Test
-    void stopsTheTaskWithTheJobAndItsReasonOnceTheLastRetryWasSent() {
-        List<InfraRetry> retries = List.of(
-                new InfraRetry(1_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3),
-                new InfraRetry(2_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3),
-                new InfraRetry(3_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3));
+  @Test
+  void stopsTheTaskWithTheJobAndItsReasonOnceTheLastRetryWasSent() {
+    List<InfraRetry> retries =
+        List.of(
+            new InfraRetry(
+                1_000,
+                "shop",
+                "https://host.invalid/p/1",
+                "unit-tests",
+                "runner_system_failure",
+                true,
+                1,
+                3),
+            new InfraRetry(
+                2_000,
+                "shop",
+                "https://host.invalid/p/1",
+                "unit-tests",
+                "runner_system_failure",
+                true,
+                1,
+                3),
+            new InfraRetry(
+                3_000,
+                "shop",
+                "https://host.invalid/p/1",
+                "unit-tests",
+                "runner_system_failure",
+                true,
+                1,
+                3));
 
-        Optional<TaskStop> stop = InfraRetry.stop(retries, RoundTrail.none(), 3, 4_000);
+    Optional<TaskStop> stop = InfraRetry.stop(retries, RoundTrail.none(), 3, 4_000);
 
-        assertThat(stop).contains(new TaskStop(TaskStop.Trigger.INFRA, 4_000,
-                "unit-tests: runner_system_failure, 3 retries"));
-    }
+    assertThat(stop)
+        .contains(
+            new TaskStop(
+                TaskStop.Trigger.INFRA, 4_000, "unit-tests: runner_system_failure, 3 retries"));
+  }
 
-    @Test
-    void leavesTheTaskWaitingWhileARetryIsLeft() {
-        List<InfraRetry> retries = List.of(
-                new InfraRetry(1_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3),
-                InfraRetry.armed(9_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3));
+  @Test
+  void leavesTheTaskWaitingWhileARetryIsLeft() {
+    List<InfraRetry> retries =
+        List.of(
+            new InfraRetry(
+                1_000,
+                "shop",
+                "https://host.invalid/p/1",
+                "unit-tests",
+                "runner_system_failure",
+                true,
+                1,
+                3),
+            InfraRetry.armed(
+                9_000,
+                "shop",
+                "https://host.invalid/p/1",
+                "unit-tests",
+                "runner_system_failure",
+                1,
+                3));
 
-        Optional<TaskStop> stop = InfraRetry.stop(retries, RoundTrail.none(), 2, 4_000);
+    Optional<TaskStop> stop = InfraRetry.stop(retries, RoundTrail.none(), 2, 4_000);
 
-        assertThat(stop).isEmpty();
-    }
+    assertThat(stop).isEmpty();
+  }
 
-    @Test
-    void countsNoRetrySentBeforeTheLift() {
-        List<InfraRetry> retries = List.of(
-                new InfraRetry(1_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3),
-                new InfraRetry(2_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3));
+  @Test
+  void countsNoRetrySentBeforeTheLift() {
+    List<InfraRetry> retries =
+        List.of(
+            new InfraRetry(
+                1_000,
+                "shop",
+                "https://host.invalid/p/1",
+                "unit-tests",
+                "runner_system_failure",
+                true,
+                1,
+                3),
+            new InfraRetry(
+                2_000,
+                "shop",
+                "https://host.invalid/p/1",
+                "unit-tests",
+                "runner_system_failure",
+                true,
+                1,
+                3));
 
-        Optional<TaskStop> stop = InfraRetry.stop(retries, RoundTrail.liftedAt(1_500), 2, 4_000);
+    Optional<TaskStop> stop = InfraRetry.stop(retries, RoundTrail.liftedAt(1_500), 2, 4_000);
 
-        assertThat(stop).isEmpty();
-    }
+    assertThat(stop).isEmpty();
+  }
 
-    @Test
-    void stopsAtOnceWhenNoRetryIsAllowed() {
-        Optional<TaskStop> stop = InfraRetry.stop(List.of(), RoundTrail.none(), 0, 4_000);
+  @Test
+  void stopsAtOnceWhenNoRetryIsAllowed() {
+    Optional<TaskStop> stop = InfraRetry.stop(List.of(), RoundTrail.none(), 0, 4_000);
 
-        assertThat(stop).isEmpty();
-    }
+    assertThat(stop).isEmpty();
+  }
 
-    @Test
-    void countsNoRetrySentAtTheInstantOfTheLift() {
-        List<InfraRetry> retries = List.of(
-                new InfraRetry(1_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 1, 3),
-                new InfraRetry(2_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", true, 2, 3));
+  @Test
+  void countsNoRetrySentAtTheInstantOfTheLift() {
+    List<InfraRetry> retries =
+        List.of(
+            new InfraRetry(
+                1_000,
+                "shop",
+                "https://host.invalid/p/1",
+                "unit-tests",
+                "runner_system_failure",
+                true,
+                1,
+                3),
+            new InfraRetry(
+                2_000,
+                "shop",
+                "https://host.invalid/p/1",
+                "unit-tests",
+                "runner_system_failure",
+                true,
+                2,
+                3));
 
-        assertThat(InfraRetry.sentSince(retries, RoundTrail.liftedAt(1_000))).extracting(InfraRetry::at)
-                .containsExactly(2_000L);
-    }
+    assertThat(InfraRetry.sentSince(retries, RoundTrail.liftedAt(1_000)))
+        .extracting(InfraRetry::at)
+        .containsExactly(2_000L);
+  }
 }

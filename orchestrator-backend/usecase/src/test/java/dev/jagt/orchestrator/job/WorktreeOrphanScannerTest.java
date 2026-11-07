@@ -1,26 +1,5 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.TaskRepo;
-import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.notify.Notifications;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -28,388 +7,698 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import tools.jackson.databind.json.JsonMapper;
+
 class WorktreeOrphanScannerTest {
 
-    @Test
-    void findsALeftoverWorktreeAndCountsTheSecretsStillSittingInIt(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path orphan = Files.createDirectories(root.resolve("ABC-40-demo"));
-        Files.createDirectories(orphan.resolve("app"));
-        Files.writeString(orphan.resolve("app").resolve(".env"), "TOKEN=secret");
-        Files.writeString(orphan.resolve("app").resolve("key.pem"), "-----BEGIN KEY-----");
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env", "**/*.pem"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+  @Test
+  void findsALeftoverWorktreeAndCountsTheSecretsStillSittingInIt(@TempDir Path root)
+      throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path orphan = Files.createDirectories(root.resolve("ABC-40-demo"));
+    Files.createDirectories(orphan.resolve("app"));
+    Files.writeString(orphan.resolve("app").resolve(".env"), "TOKEN=secret");
+    Files.writeString(orphan.resolve("app").resolve("key.pem"), "-----BEGIN KEY-----");
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env", "**/*.pem"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    WorktreeOrphanScanner scanner =
+        new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
-        var orphans = scanner.scan();
+    var orphans = scanner.scan();
 
-        assertThat(orphans).singleElement().satisfies(found -> {
-            assertThat(found.path()).isEqualTo(orphan);
-            assertThat(found.projectKey()).isEqualTo("demo");
-            assertThat(found.secretFiles()).isEqualTo(2);
-        });
-    }
+    assertThat(orphans)
+        .singleElement()
+        .satisfies(
+            found -> {
+              assertThat(found.path()).isEqualTo(orphan);
+              assertThat(found.projectKey()).isEqualTo("demo");
+              assertThat(found.secretFiles()).isEqualTo(2);
+            });
+  }
 
-    @Test
-    void leavesEveryRepositoryOfALiveTaskAloneNotJustItsFirst(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path agentRuns = Files.createDirectories(root.resolve("ABC-1-alpha"));
-        Path alsoEdited = Files.createDirectories(root.resolve("ABC-1-demo"));
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("alpha", agentRuns.toString()),
-                TaskRepo.of("demo", alsoEdited.toString())), TaskStatus.IN_PROGRESS).build());
-        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+  @Test
+  void leavesEveryRepositoryOfALiveTaskAloneNotJustItsFirst(@TempDir Path root) throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path agentRuns = Files.createDirectories(root.resolve("ABC-1-alpha"));
+    Path alsoEdited = Files.createDirectories(root.resolve("ABC-1-demo"));
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-1",
+        TaskState.builder(
+                List.of(
+                    TaskRepo.of("alpha", agentRuns.toString()),
+                    TaskRepo.of("demo", alsoEdited.toString())),
+                TaskStatus.IN_PROGRESS)
+            .build());
+    WorktreeOrphanScanner scanner =
+        new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
-        assertThat(scanner.scan()).isEmpty();
-    }
+    assertThat(scanner.scan()).isEmpty();
+  }
 
-    @Test
-    void countsASecretLeftAtTheRootOfAnOrphanTheSameWayItWasCopiedThere(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path orphan = Files.createDirectories(root.resolve("ABC-42-demo"));
-        Files.writeString(orphan.resolve(".env"), "TOKEN=secret");
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+  @Test
+  void countsASecretLeftAtTheRootOfAnOrphanTheSameWayItWasCopiedThere(@TempDir Path root)
+      throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path orphan = Files.createDirectories(root.resolve("ABC-42-demo"));
+    Files.writeString(orphan.resolve(".env"), "TOKEN=secret");
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    WorktreeOrphanScanner scanner =
+        new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
-        assertThat(scanner.scan()).singleElement()
-                .satisfies(found -> assertThat(found.secretFiles()).isEqualTo(1));
-    }
+    assertThat(scanner.scan())
+        .singleElement()
+        .satisfies(found -> assertThat(found.secretFiles()).isEqualTo(1));
+  }
 
-    @Test
-    void leavesTheWorktreeOfALiveTaskAlone(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
-        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+  @Test
+  void leavesTheWorktreeOfALiveTaskAlone(@TempDir Path root) throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+    WorktreeOrphanScanner scanner =
+        new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
-        assertThat(scanner.scan()).isEmpty();
-    }
+    assertThat(scanner.scan()).isEmpty();
+  }
 
-    @Test
-    void staysSilentAtStartupWhenNothingIsRotting(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Notifications notifications = mock(Notifications.class);
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
+  @Test
+  void staysSilentAtStartupWhenNothingIsRotting(@TempDir Path root) throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Notifications notifications = mock(Notifications.class);
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
 
-        new WorktreeOrphanScanner(config, new StateService(new JsonMapper(), new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())
-                        .withStateFile(root.resolve("state.json").toString()))), notifications).run();
+    new WorktreeOrphanScanner(
+            config,
+            new StateService(
+                new JsonMapper(),
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))),
+            notifications)
+        .run();
 
-        verifyNoInteractions(notifications);
-    }
+    verifyNoInteractions(notifications);
+  }
 
-    @Test
-    void ignoresACheckoutSomebodyCutByHandOutsideJagt(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path byHand = Files.createDirectories(root.resolve("ABC-46-demo"));
-        Files.createDirectories(repo.resolve(".git/worktrees/ABC-46-demo"));
-        Files.writeString(byHand.resolve(".git"), "gitdir: " + repo.resolve(".git/worktrees/ABC-46-demo") + "\n");
-        Files.writeString(byHand.resolve(".env"), "TOKEN=secret");
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+  @Test
+  void ignoresACheckoutSomebodyCutByHandOutsideJagt(@TempDir Path root) throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path byHand = Files.createDirectories(root.resolve("ABC-46-demo"));
+    Files.createDirectories(repo.resolve(".git/worktrees/ABC-46-demo"));
+    Files.writeString(
+        byHand.resolve(".git"), "gitdir: " + repo.resolve(".git/worktrees/ABC-46-demo") + "\n");
+    Files.writeString(byHand.resolve(".env"), "TOKEN=secret");
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    WorktreeOrphanScanner scanner =
+        new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
-        assertThat(scanner.scan()).isEmpty();
-    }
+    assertThat(scanner.scan()).isEmpty();
+  }
 
-    @Test
-    void reportsACheckoutJagtCutItselfAndNobodyRetired(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path cutByJagt = Files.createDirectories(root.resolve("ABC-47-demo"));
-        Files.createDirectories(repo.resolve(".git/worktrees/ABC-47-demo"));
-        Files.writeString(cutByJagt.resolve(".git"),
-                "gitdir: " + repo.resolve(".git/worktrees/ABC-47-demo") + "\n");
-        Files.writeString(cutByJagt.resolve("task_context.md"), "the task");
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+  @Test
+  void reportsACheckoutJagtCutItselfAndNobodyRetired(@TempDir Path root) throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path cutByJagt = Files.createDirectories(root.resolve("ABC-47-demo"));
+    Files.createDirectories(repo.resolve(".git/worktrees/ABC-47-demo"));
+    Files.writeString(
+        cutByJagt.resolve(".git"), "gitdir: " + repo.resolve(".git/worktrees/ABC-47-demo") + "\n");
+    Files.writeString(cutByJagt.resolve("task_context.md"), "the task");
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    WorktreeOrphanScanner scanner =
+        new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
-        assertThat(scanner.scan()).singleElement()
-                .satisfies(found -> assertThat(found.path()).isEqualTo(cutByJagt));
-    }
+    assertThat(scanner.scan())
+        .singleElement()
+        .satisfies(found -> assertThat(found.path()).isEqualTo(cutByJagt));
+  }
 
-    @Test
-    void deletesAnOrphanHoldingNothingButTheFilesTheIdeWroteBackAfterTheCheckoutWasGone(@TempDir Path root)
-            throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path husk = Files.createDirectories(root.resolve("ABC-42-demo"));
-        Files.createDirectories(husk.resolve(".idea"));
-        Files.writeString(husk.resolve(".idea").resolve("workspace.xml"), "<project/>");
-        Files.createDirectories(husk.resolve(".run"));
-        Files.writeString(husk.resolve(".run").resolve("app.run.xml"), "<component/>");
-        Files.createFile(husk.resolve("N"));
-        Notifications notifications = mock(Notifications.class);
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
+  @Test
+  void deletesAnOrphanHoldingNothingButTheFilesTheIdeWroteBackAfterTheCheckoutWasGone(
+      @TempDir Path root) throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path husk = Files.createDirectories(root.resolve("ABC-42-demo"));
+    Files.createDirectories(husk.resolve(".idea"));
+    Files.writeString(husk.resolve(".idea").resolve("workspace.xml"), "<project/>");
+    Files.createDirectories(husk.resolve(".run"));
+    Files.writeString(husk.resolve(".run").resolve("app.run.xml"), "<component/>");
+    Files.createFile(husk.resolve("N"));
+    Notifications notifications = mock(Notifications.class);
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
 
+    new WorktreeOrphanScanner(
+            config,
+            new StateService(
+                new JsonMapper(),
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))),
+            notifications)
+        .run();
 
-        new WorktreeOrphanScanner(config, new StateService(new JsonMapper(), new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())
-                        .withStateFile(root.resolve("state.json").toString()))), notifications).run();
+    assertThat(husk).doesNotExist();
+    verifyNoInteractions(notifications);
+  }
 
-        assertThat(husk).doesNotExist();
-        verifyNoInteractions(notifications);
-    }
+  @Test
+  void deletesAnOrphanHoldingTheIdesFilesAndWhatTheOsWroteBesideThem(@TempDir Path root)
+      throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path husk = Files.createDirectories(root.resolve("ABC-42-demo"));
+    Files.createDirectories(husk.resolve(".idea"));
+    Files.writeString(husk.resolve(".idea").resolve("workspace.xml"), "<project/>");
+    Files.writeString(husk.resolve(".DS_Store"), "Bud1");
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
 
-    @Test
-    void deletesAnOrphanHoldingTheIdesFilesAndWhatTheOsWroteBesideThem(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path husk = Files.createDirectories(root.resolve("ABC-42-demo"));
-        Files.createDirectories(husk.resolve(".idea"));
-        Files.writeString(husk.resolve(".idea").resolve("workspace.xml"), "<project/>");
-        Files.writeString(husk.resolve(".DS_Store"), "Bud1");
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
+    new WorktreeOrphanScanner(
+            config,
+            new StateService(
+                new JsonMapper(),
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))),
+            mock(Notifications.class))
+        .run();
 
-        new WorktreeOrphanScanner(config, new StateService(new JsonMapper(), new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())
-                        .withStateFile(root.resolve("state.json").toString()))), mock(Notifications.class)).run();
+    assertThat(husk).doesNotExist();
+  }
 
-        assertThat(husk).doesNotExist();
-    }
+  @Test
+  void keepsAnOrphanStillHoldingItsCheckout(@TempDir Path root) throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path orphan = Files.createDirectories(root.resolve("ABC-43-demo"));
+    Files.writeString(
+        orphan.resolve(".git"), "gitdir: " + repo.resolve(".git/worktrees/ABC-43-demo") + "\n");
+    Files.createDirectories(orphan.resolve(".idea"));
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    WorktreeOrphanScanner scanner =
+        new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
-    @Test
-    void keepsAnOrphanStillHoldingItsCheckout(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path orphan = Files.createDirectories(root.resolve("ABC-43-demo"));
-        Files.writeString(orphan.resolve(".git"), "gitdir: " + repo.resolve(".git/worktrees/ABC-43-demo") + "\n");
-        Files.createDirectories(orphan.resolve(".idea"));
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+    scanner.run();
 
-        scanner.run();
+    assertThat(orphan).exists();
+  }
 
-        assertThat(orphan).exists();
-    }
+  @Test
+  void keepsAnOrphanHoldingAFileWithSomethingInIt(@TempDir Path root) throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path orphan = Files.createDirectories(root.resolve("ABC-44-demo"));
+    Files.writeString(orphan.resolve("Notes.md"), "half a day of work");
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    WorktreeOrphanScanner scanner =
+        new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
-    @Test
-    void keepsAnOrphanHoldingAFileWithSomethingInIt(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path orphan = Files.createDirectories(root.resolve("ABC-44-demo"));
-        Files.writeString(orphan.resolve("Notes.md"), "half a day of work");
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+    scanner.run();
 
-        scanner.run();
+    assertThat(orphan).exists();
+  }
 
-        assertThat(orphan).exists();
-    }
+  @Test
+  void keepsAnOrphanHoldingACopiedSecretEvenWhenItIsEmpty(@TempDir Path root) throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path orphan = Files.createDirectories(root.resolve("ABC-45-demo"));
+    Files.createFile(orphan.resolve(".env"));
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    WorktreeOrphanScanner scanner =
+        new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
-    @Test
-    void keepsAnOrphanHoldingACopiedSecretEvenWhenItIsEmpty(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path orphan = Files.createDirectories(root.resolve("ABC-45-demo"));
-        Files.createFile(orphan.resolve(".env"));
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+    scanner.run();
 
-        scanner.run();
+    assertThat(orphan).exists();
+  }
 
-        assertThat(orphan).exists();
-    }
+  @Test
+  void recognisesBothATaskWorktreeAndAnAbandonedDeployWorktree() {
+    List<String> onDisk =
+        List.of(
+            "ABC-40-demo",
+            "ABC-41-demo",
+            "ABC-41-deploy",
+            "demo-repo",
+            "something-else",
+            "XYZ-1-other");
 
-    @Test
-    void recognisesBothATaskWorktreeAndAnAbandonedDeployWorktree() {
-        List<String> onDisk = List.of("ABC-40-demo", "ABC-41-demo", "ABC-41-deploy", "demo-repo",
-                "something-else", "XYZ-1-other");
+    Set<String> orphans =
+        WorktreeOrphanScanner.orphanNames(
+            onDisk, "demo", Set.of("ABC-41-demo", "ABC-41-deploy"), name -> true);
 
-        Set<String> orphans = WorktreeOrphanScanner.orphanNames(onDisk, "demo",
-                Set.of("ABC-41-demo", "ABC-41-deploy"), name -> true);
+    assertThat(orphans).containsExactly("ABC-40-demo");
+  }
 
-        assertThat(orphans).containsExactly("ABC-40-demo");
-    }
+  @Test
+  void treatsADeployLeftoverOfARetiredTaskAsAnOrphan() {
+    Set<String> orphans =
+        WorktreeOrphanScanner.orphanNames(
+            List.of("ABC-40-deploy", "demo-repo"), "demo", Set.of(), name -> true);
 
-    @Test
-    void treatsADeployLeftoverOfARetiredTaskAsAnOrphan() {
-        Set<String> orphans = WorktreeOrphanScanner.orphanNames(
-                List.of("ABC-40-deploy", "demo-repo"), "demo", Set.of(), name -> true);
+    assertThat(orphans).containsExactly("ABC-40-deploy");
+  }
 
-        assertThat(orphans).containsExactly("ABC-40-deploy");
-    }
+  @Test
+  void treatsARevertLeftoverAsAnOrphanJustLikeADeployOne() {
+    Set<String> orphans =
+        WorktreeOrphanScanner.orphanNames(
+            List.of("ABC-40-revert", "demo-repo"), "demo", Set.of(), name -> true);
 
-    @Test
-    void treatsARevertLeftoverAsAnOrphanJustLikeADeployOne() {
-        Set<String> orphans = WorktreeOrphanScanner.orphanNames(
-                List.of("ABC-40-revert", "demo-repo"), "demo", Set.of(), name -> true);
+    assertThat(orphans).containsExactly("ABC-40-revert");
+  }
 
-        assertThat(orphans).containsExactly("ABC-40-revert");
-    }
+  @Test
+  void reportsADeployDirectoryHoldingNoCheckoutWhileItsTaskIsStillAlive(@TempDir Path root)
+      throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
+    Path residue = Files.createDirectories(root.resolve("ABC-41-deploy"));
+    Files.createDirectories(residue.resolve(".idea"));
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+    WorktreeOrphanScanner scanner =
+        new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
-    @Test
-    void reportsADeployDirectoryHoldingNoCheckoutWhileItsTaskIsStillAlive(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
-        Path residue = Files.createDirectories(root.resolve("ABC-41-deploy"));
-        Files.createDirectories(residue.resolve(".idea"));
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
-        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+    assertThat(scanner.scan())
+        .singleElement()
+        .satisfies(found -> assertThat(found.path()).isEqualTo(residue));
+  }
 
-        assertThat(scanner.scan()).singleElement()
-                .satisfies(found -> assertThat(found.path()).isEqualTo(residue));
-    }
+  @Test
+  void reportsADeployDirectoryWhoseCheckoutWasUnregisteredButNeverDeleted(@TempDir Path root)
+      throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
+    Path unregistered = Files.createDirectories(root.resolve("ABC-41-deploy"));
+    Files.writeString(
+        unregistered.resolve(".git"),
+        "gitdir: " + repo.resolve(".git/worktrees/ABC-41-deploy") + "\n");
+    Files.writeString(unregistered.resolve(".env"), "TOKEN=secret");
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+    WorktreeOrphanScanner scanner =
+        new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
-    @Test
-    void reportsADeployDirectoryWhoseCheckoutWasUnregisteredButNeverDeleted(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
-        Path unregistered = Files.createDirectories(root.resolve("ABC-41-deploy"));
-        Files.writeString(unregistered.resolve(".git"),
-                "gitdir: " + repo.resolve(".git/worktrees/ABC-41-deploy") + "\n");
-        Files.writeString(unregistered.resolve(".env"), "TOKEN=secret");
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
-        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+    assertThat(scanner.scan())
+        .singleElement()
+        .satisfies(found -> assertThat(found.secretFiles()).isEqualTo(1));
+  }
 
-        assertThat(scanner.scan()).singleElement()
-                .satisfies(found -> assertThat(found.secretFiles()).isEqualTo(1));
-    }
+  @Test
+  void pingsTheCountOfCopiedSecretsLeftInAnOrphan(@TempDir Path root) throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path orphan = Files.createDirectories(root.resolve("ABC-48-demo"));
+    Files.writeString(orphan.resolve(".env"), "TOKEN=secret");
+    Notifications notifications = mock(Notifications.class);
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
 
-    @Test
-    void pingsTheCountOfCopiedSecretsLeftInAnOrphan(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path orphan = Files.createDirectories(root.resolve("ABC-48-demo"));
-        Files.writeString(orphan.resolve(".env"), "TOKEN=secret");
-        Notifications notifications = mock(Notifications.class);
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    new WorktreeOrphanScanner(config, state, notifications).run();
 
-        new WorktreeOrphanScanner(config, state, notifications).run();
+    verify(notifications)
+        .send(
+            argThat(
+                sent ->
+                    "1 orphaned worktree(s)".equals(sent.title())
+                        && "1 copied secret file(s) left on disk — see the log"
+                            .equals(sent.body())));
+  }
 
-        verify(notifications).send(argThat(sent -> "1 orphaned worktree(s)".equals(sent.title())
-                && "1 copied secret file(s) left on disk — see the log".equals(sent.body())));
-    }
+  @Test
+  void pingsThatAnOrphanHoldingWorkWasLeftByACrashedTask(@TempDir Path root) throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path orphan = Files.createDirectories(root.resolve("ABC-48-demo"));
+    Files.writeString(orphan.resolve("notes.txt"), "unsaved work");
+    Notifications notifications = mock(Notifications.class);
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
 
-    @Test
-    void pingsThatAnOrphanHoldingWorkWasLeftByACrashedTask(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path orphan = Files.createDirectories(root.resolve("ABC-48-demo"));
-        Files.writeString(orphan.resolve("notes.txt"), "unsaved work");
-        Notifications notifications = mock(Notifications.class);
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    new WorktreeOrphanScanner(config, state, notifications).run();
 
-        new WorktreeOrphanScanner(config, state, notifications).run();
+    verify(notifications)
+        .send(
+            argThat(
+                sent ->
+                    "1 orphaned worktree(s)".equals(sent.title())
+                        && "left over from a crashed or abandoned task — see the log"
+                            .equals(sent.body())));
+  }
 
-        verify(notifications).send(argThat(sent -> "1 orphaned worktree(s)".equals(sent.title())
-                && "left over from a crashed or abandoned task — see the log".equals(sent.body())));
-    }
+  @Test
+  void leavesTheDeployDirectoryOfALiveTaskWhileItHoldsARealCheckout(@TempDir Path root)
+      throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
+    Files.createDirectories(root.resolve("ABC-41-deploy").resolve(".git"));
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+    WorktreeOrphanScanner scanner =
+        new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
-    @Test
-    void leavesTheDeployDirectoryOfALiveTaskWhileItHoldsARealCheckout(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
-        Files.createDirectories(root.resolve("ABC-41-deploy").resolve(".git"));
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
-        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+    assertThat(scanner.scan()).isEmpty();
+  }
 
-        assertThat(scanner.scan()).isEmpty();
-    }
+  @Test
+  void stillFindsALeftoverWhenALiveTaskHasNotCutAWorktreeInOneOfItsRepositories(@TempDir Path root)
+      throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path orphan = Files.createDirectories(root.resolve("ABC-40-demo"));
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-41",
+        TaskState.builder(List.of(TaskRepo.of("demo", null)), TaskStatus.IN_PROGRESS).build());
+    WorktreeOrphanScanner scanner =
+        new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
-    @Test
-    void stillFindsALeftoverWhenALiveTaskHasNotCutAWorktreeInOneOfItsRepositories(@TempDir Path root)
-            throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path orphan = Files.createDirectories(root.resolve("ABC-40-demo"));
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-41", TaskState.builder(List.of(TaskRepo.of("demo", null)), TaskStatus.IN_PROGRESS).build());
-        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class));
+    assertThat(scanner.scan())
+        .singleElement()
+        .satisfies(found -> assertThat(found.path()).isEqualTo(orphan));
+  }
 
-        assertThat(scanner.scan()).singleElement().satisfies(found -> assertThat(found.path()).isEqualTo(orphan));
-    }
+  @Test
+  void reportsAnEmptyHuskItCouldNotDeleteInsteadOfCallingItGone(@TempDir Path root)
+      throws IOException {
+    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    Path husk = Files.createDirectories(root.resolve("ABC-49-demo"));
+    Files.createFile(husk.resolve("empty"));
+    Files.setPosixFilePermissions(husk, PosixFilePermissions.fromString("r-xr-xr-x"));
+    Notifications notifications = mock(Notifications.class);
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "demo",
+                        new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(
+                    ConfigService.ConfigFile.WorktreeConfig.defaults()
+                        .withCopyGlobs(List.of("**/.env"))));
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
 
-    @Test
-    void reportsAnEmptyHuskItCouldNotDeleteInsteadOfCallingItGone(@TempDir Path root) throws IOException {
-        Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        Path husk = Files.createDirectories(root.resolve("ABC-49-demo"));
-        Files.createFile(husk.resolve("empty"));
-        Files.setPosixFilePermissions(husk, PosixFilePermissions.fromString("r-xr-xr-x"));
-        Notifications notifications = mock(Notifications.class);
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+    new WorktreeOrphanScanner(config, state, notifications).run();
 
-        new WorktreeOrphanScanner(config, state, notifications).run();
-
-        verify(notifications).send(argThat(sent -> "1 orphaned worktree(s)".equals(sent.title())));
-    }
+    verify(notifications).send(argThat(sent -> "1 orphaned worktree(s)".equals(sent.title())));
+  }
 }

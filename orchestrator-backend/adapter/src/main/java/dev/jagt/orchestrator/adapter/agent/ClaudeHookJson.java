@@ -6,16 +6,19 @@ import org.springframework.context.annotation.Configuration;
 import tools.jackson.databind.JacksonModule;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "claude", matchIfMissing = true)
+@ConditionalOnProperty(
+    name = "orchestrator.agent.cli",
+    havingValue = "claude",
+    matchIfMissing = true)
 class ClaudeHookJson {
 
-    @Bean
-    JacksonModule claudeHookReportModule() {
-        return ClaudeHookReportMixIn.module();
-    }
+  @Bean
+  JacksonModule claudeHookReportModule() {
+    return ClaudeHookReportMixIn.module();
+  }
 
-    @Bean
-    JacksonModule claudeToolCallModule() {
-        return ClaudeToolCallDeserializer.module();
-    }
+  @Bean
+  JacksonModule claudeToolCallModule() {
+    return ClaudeToolCallDeserializer.module();
+  }
 }

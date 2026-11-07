@@ -6,33 +6,39 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-/** An install with no tracker: every stage still has an answer, and the answer is that nothing arrives unasked. */
+/**
+ * An install with no tracker: every stage still has an answer, and the answer is that nothing
+ * arrives unasked.
+ */
 @Component
-@ConditionalOnProperty(name = "orchestrator.tracker.workflow", havingValue = "none", matchIfMissing = true)
+@ConditionalOnProperty(
+    name = "orchestrator.tracker.workflow",
+    havingValue = "none",
+    matchIfMissing = true)
 public class NoTrackerWorkflow implements TrackerWorkflow {
 
-    @Override
-    public String id() {
-        return "none";
-    }
+  @Override
+  public String id() {
+    return "none";
+  }
 
-    @Override
-    public boolean isItemKey(@Nullable String name) {
-        return false;
-    }
+  @Override
+  public boolean isItemKey(@Nullable String name) {
+    return false;
+  }
 
-    @Override
-    public String candidateQuery() {
-        return "";
-    }
+  @Override
+  public String candidateQuery() {
+    return "";
+  }
 
-    @Override
-    public boolean startsWork(TicketFacts facts) {
-        return false;
-    }
+  @Override
+  public boolean startsWork(TicketFacts facts) {
+    return false;
+  }
 
-    @Override
-    public boolean closesWork(TicketFacts facts) {
-        return false;
-    }
+  @Override
+  public boolean closesWork(TicketFacts facts) {
+    return false;
+  }
 }

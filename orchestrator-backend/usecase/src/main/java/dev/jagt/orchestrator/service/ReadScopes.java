@@ -1,8 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import lombok.With;
-import org.springframework.stereotype.Component;
-
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -10,76 +7,86 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.With;
+import org.springframework.stereotype.Component;
 
 /** What each running headless call may touch, keyed by the fence its hook names. */
 @Component
 public class ReadScopes {
 
-    static final int MAX_CALLS = 50;
-    static final int MAX_LINE = 200;
+  static final int MAX_CALLS = 50;
+  static final int MAX_LINE = 200;
 
-    /**
-     * {@code tools} are tool names or globs; {@code roots} bound the file tools; {@code git} admits the read-only
-     * git subcommands inside them; {@code writes} are globs a tool only a glob allowed must not match;
-     * {@code fetchable} are the URLs a web fetch may reach, each itself and what lies below it.
-     */
-    @With
-    public record ReadScope(List<Path> roots, List<String> tools, boolean git, List<String> writes,
-                            List<String> fetchable) {
+  /**
+   * {@code tools} are tool names or globs; {@code roots} bound the file tools; {@code git} admits
+   * the read-only git subcommands inside them; {@code writes} are globs a tool only a glob allowed
+   * must not match; {@code fetchable} are the URLs a web fetch may reach, each itself and what lies
+   * below it.
+   */
+  @With
+  public record ReadScope(
+      List<Path> roots,
+      List<String> tools,
+      boolean git,
+      List<String> writes,
+      List<String> fetchable) {
 
-        public ReadScope(List<Path> roots, List<String> tools, boolean git) {
-            this(roots, tools, git, List.of(), List.of());
-        }
+    public ReadScope(List<Path> roots, List<String> tools, boolean git) {
+      this(roots, tools, git, List.of(), List.of());
     }
+  }
 
-    private final Map<String, ReadScope> open = new ConcurrentHashMap<>();
-    private final Set<String> asked = ConcurrentHashMap.newKeySet();
-    private final Map<String, List<String>> heard = new ConcurrentHashMap<>();
-    private final Set<String> refused = ConcurrentHashMap.newKeySet();
+  private final Map<String, ReadScope> open = new ConcurrentHashMap<>();
+  private final Set<String> asked = ConcurrentHashMap.newKeySet();
+  private final Map<String, List<String>> heard = new ConcurrentHashMap<>();
+  private final Set<String> refused = ConcurrentHashMap.newKeySet();
 
-    public void open(String fence, ReadScope scope) {
-        open.put(fence, scope);
+  public void open(String fence, ReadScope scope) {
+    open.put(fence, scope);
+  }
+
+  /** False where no call ever asked under the fence: its hook never ran. */
+  public boolean close(String fence) {
+    open.remove(fence);
+    heard.remove(fence);
+    refused.remove(fence);
+    return asked.remove(fence);
+  }
+
+  /**
+   * One line per call the run made, so where an answer came from is read off the run, not off the
+   * answer.
+   */
+  public void hear(String fence, String tool, Object input) {
+    if (!open.containsKey(fence)) {
+      return;
     }
-
-    /** False where no call ever asked under the fence: its hook never ran. */
-    public boolean close(String fence) {
-        open.remove(fence);
-        heard.remove(fence);
-        refused.remove(fence);
-        return asked.remove(fence);
+    String line = tool + " " + input;
+    List<String> calls = heard.computeIfAbsent(fence, key -> new CopyOnWriteArrayList<>());
+    if (calls.size() < MAX_CALLS) {
+      calls.add(line.length() <= MAX_LINE ? line : line.substring(0, MAX_LINE) + "…");
     }
+  }
 
-    /** One line per call the run made, so where an answer came from is read off the run, not off the answer. */
-    public void hear(String fence, String tool, Object input) {
-        if (!open.containsKey(fence)) {
-            return;
-        }
-        String line = tool + " " + input;
-        List<String> calls = heard.computeIfAbsent(fence, key -> new CopyOnWriteArrayList<>());
-        if (calls.size() < MAX_CALLS) {
-            calls.add(line.length() <= MAX_LINE ? line : line.substring(0, MAX_LINE) + "…");
-        }
+  /** The run under {@code fence} was refused a tool: asking it again meets the same refusal. */
+  public void refuse(String fence) {
+    if (open.containsKey(fence)) {
+      refused.add(fence);
     }
+  }
 
-    /** The run under {@code fence} was refused a tool: asking it again meets the same refusal. */
-    public void refuse(String fence) {
-        if (open.containsKey(fence)) {
-            refused.add(fence);
-        }
-    }
+  public boolean refused(String fence) {
+    return refused.contains(fence);
+  }
 
-    public boolean refused(String fence) {
-        return refused.contains(fence);
-    }
+  public List<String> heard(String fence) {
+    return List.copyOf(heard.getOrDefault(fence, List.of()));
+  }
 
-    public List<String> heard(String fence) {
-        return List.copyOf(heard.getOrDefault(fence, List.of()));
-    }
-
-    /** The scope held under {@code fence}, counting the call as one the fence heard. */
-    public Optional<ReadScope> ask(String fence) {
-        Optional<ReadScope> scope = Optional.ofNullable(fence).map(open::get);
-        scope.ifPresent(held -> asked.add(fence));
-        return scope;
-    }
+  /** The scope held under {@code fence}, counting the call as one the fence heard. */
+  public Optional<ReadScope> ask(String fence) {
+    Optional<ReadScope> scope = Optional.ofNullable(fence).map(open::get);
+    scope.ifPresent(held -> asked.add(fence));
+    return scope;
+  }
 }

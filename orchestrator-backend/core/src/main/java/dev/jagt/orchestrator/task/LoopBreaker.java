@@ -1,110 +1,157 @@
 package dev.jagt.orchestrator.task;
 
-import org.jspecify.annotations.Nullable;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.jspecify.annotations.Nullable;
 
 /**
- * When jagt stops a task as a loop of its own making: {@code stalledRounds} rounds running that brought no new note
- * and left the same job failing, a ship asked past {@code ships} within {@code window} that answered a round
- * bringing no new note or, answering none, was pressed on the tree of the ship before, a round of one step past {@code rounds} sent running that answered one unchanged report, or
- * more than {@code perHour} moves in an hour that nobody asked for.
+ * When jagt stops a task as a loop of its own making: {@code stalledRounds} rounds running that
+ * brought no new note and left the same job failing, a ship asked past {@code ships} within {@code
+ * window} that answered a round bringing no new note or, answering none, was pressed on the tree of
+ * the ship before, a round of one step past {@code rounds} sent running that answered one unchanged
+ * report, or more than {@code perHour} moves in an hour that nobody asked for.
  */
 public record LoopBreaker(int stalledRounds, int ships, int rounds, int perHour, Duration window) {
 
-    /** The breaker as configured at the moment it is asked. */
-    @FunctionalInterface
-    public interface Current {
-        LoopBreaker current();
-    }
+  /** The breaker as configured at the moment it is asked. */
+  @FunctionalInterface
+  public interface Current {
+    LoopBreaker current();
+  }
 
-    private static final Duration ROUND_WINDOW = Duration.ofHours(24);
-    private static final Duration MOVE_WINDOW = Duration.ofHours(1);
+  private static final Duration ROUND_WINDOW = Duration.ofHours(24);
+  private static final Duration MOVE_WINDOW = Duration.ofHours(1);
 
-    /** A round of {@code step} sent {@code rounds} times running, each answering the one report, within 24h since the lift is the last. */
-    public Optional<TaskStop> beforeRound(String step, Turn turn, RoundTrail trail, long now) {
-        long from = Math.max(trail.since(), now - ROUND_WINDOW.toMillis());
-        long running = turn.step().equals(step) ? turn.run().stream().filter(at -> at > from).count() : 0;
-        return running < rounds ? Optional.empty()
-                : Optional.of(new TaskStop(TaskStop.Trigger.ROUNDS, now, step + " sent " + running
-                        + " rounds running in " + ROUND_WINDOW.toHours() + "h; the next one was not"));
-    }
+  /**
+   * A round of {@code step} sent {@code rounds} times running, each answering the one report,
+   * within 24h since the lift is the last.
+   */
+  public Optional<TaskStop> beforeRound(String step, Turn turn, RoundTrail trail, long now) {
+    long from = Math.max(trail.since(), now - ROUND_WINDOW.toMillis());
+    long running =
+        turn.step().equals(step) ? turn.run().stream().filter(at -> at > from).count() : 0;
+    return running < rounds
+        ? Optional.empty()
+        : Optional.of(
+            new TaskStop(
+                TaskStop.Trigger.ROUNDS,
+                now,
+                step
+                    + " sent "
+                    + running
+                    + " rounds running in "
+                    + ROUND_WINDOW.toHours()
+                    + "h; the next one was not"));
+  }
 
-    /** The {@code perHour}th move made unasked within the hour since the lift is the last. */
-    public Optional<TaskStop> beforeMove(List<StatusChange> history, RoundTrail trail, long now) {
-        long from = Math.max(trail.since(), now - MOVE_WINDOW.toMillis());
-        long moved = history.stream().filter(move -> move.at() > from && unattended(move.origin())).count();
-        return moved < perHour ? Optional.empty()
-                : Optional.of(new TaskStop(TaskStop.Trigger.PACE, now, moved + " unattended moves in 1h; the next one was not made"));
-    }
+  /** The {@code perHour}th move made unasked within the hour since the lift is the last. */
+  public Optional<TaskStop> beforeMove(List<StatusChange> history, RoundTrail trail, long now) {
+    long from = Math.max(trail.since(), now - MOVE_WINDOW.toMillis());
+    long moved =
+        history.stream().filter(move -> move.at() > from && unattended(move.origin())).count();
+    return moved < perHour
+        ? Optional.empty()
+        : Optional.of(
+            new TaskStop(
+                TaskStop.Trigger.PACE,
+                now,
+                moved + " unattended moves in 1h; the next one was not made"));
+  }
 
-    private static boolean unattended(@Nullable ActionOrigin origin) {
-        return origin == ActionOrigin.MASTER || origin == ActionOrigin.QA || origin == ActionOrigin.AUTO_REVIEW || origin == ActionOrigin.TRACKER
-                || origin == ActionOrigin.JAGT;
-    }
+  private static boolean unattended(@Nullable ActionOrigin origin) {
+    return origin == ActionOrigin.MASTER
+        || origin == ActionOrigin.QA
+        || origin == ActionOrigin.AUTO_REVIEW
+        || origin == ActionOrigin.TRACKER
+        || origin == ActionOrigin.JAGT;
+  }
 
-    public Optional<TaskStop> afterRound(RoundTrail trail, List<StatusChange> history, long now) {
-        int stalled = stalled(trail.rounds());
-        return stalled < stalledRounds ? Optional.empty()
-                : Optional.of(new TaskStop(TaskStop.Trigger.STALLED, now,
-                        stalled + " rounds running brought no new note; " + evidence(trail, history, now)));
-    }
+  public Optional<TaskStop> afterRound(RoundTrail trail, List<StatusChange> history, long now) {
+    int stalled = stalled(trail.rounds());
+    return stalled < stalledRounds
+        ? Optional.empty()
+        : Optional.of(
+            new TaskStop(
+                TaskStop.Trigger.STALLED,
+                now,
+                stalled + " rounds running brought no new note; " + evidence(trail, history, now)));
+  }
 
-    public Optional<TaskStop> beforeShip(RoundTrail trail, List<StatusChange> history, long now) {
-        return shipped(trail, history, now) < ships ? Optional.empty()
-                : Optional.of(new TaskStop(TaskStop.Trigger.SHIPS, now,
-                        "a ship asked past " + ships + " without a new note in " + window.toHours() + "h; " + evidence(trail, history, now)));
-    }
+  public Optional<TaskStop> beforeShip(RoundTrail trail, List<StatusChange> history, long now) {
+    return shipped(trail, history, now) < ships
+        ? Optional.empty()
+        : Optional.of(
+            new TaskStop(
+                TaskStop.Trigger.SHIPS,
+                now,
+                "a ship asked past "
+                    + ships
+                    + " without a new note in "
+                    + window.toHours()
+                    + "h; "
+                    + evidence(trail, history, now)));
+  }
 
-    private static int stalled(List<RoundTrail.Round> rounds) {
-        int stalled = 0;
-        for (int i = rounds.size() - 1; i > 0; i--) {
-            RoundTrail.Round round = rounds.get(i);
-            RoundTrail.Round before = rounds.get(i - 1);
-            if (!round.repeats(before.notes()) || !round.failing().equals(before.failing())) {
-                break;
-            }
-            stalled++;
-        }
-        return stalled;
+  private static int stalled(List<RoundTrail.Round> rounds) {
+    int stalled = 0;
+    for (int i = rounds.size() - 1; i > 0; i--) {
+      RoundTrail.Round round = rounds.get(i);
+      RoundTrail.Round before = rounds.get(i - 1);
+      if (!round.repeats(before.notes()) || !round.failing().equals(before.failing())) {
+        break;
+      }
+      stalled++;
     }
+    return stalled;
+  }
 
-    private long shipped(RoundTrail trail, List<StatusChange> history, long now) {
-        long from = Math.max(trail.since(), now - window.toMillis());
-        List<StatusChange> ships = history.stream().filter(step -> step.status() == TaskStatus.SHIPPING).toList();
-        return IntStream.range(0, ships.size()).filter(i -> ships.get(i).at() > from)
-                .filter(i -> !broughtNewNote(trail.rounds(), ships.get(i).at())
-                        && !newWork(trail.rounds(), ships, i)).count();
-    }
+  private long shipped(RoundTrail trail, List<StatusChange> history, long now) {
+    long from = Math.max(trail.since(), now - window.toMillis());
+    List<StatusChange> ships =
+        history.stream().filter(step -> step.status() == TaskStatus.SHIPPING).toList();
+    return IntStream.range(0, ships.size())
+        .filter(i -> ships.get(i).at() > from)
+        .filter(
+            i ->
+                !broughtNewNote(trail.rounds(), ships.get(i).at())
+                    && !newWork(trail.rounds(), ships, i))
+        .count();
+  }
 
-    private static int answered(List<RoundTrail.Round> rounds, long shipAt) {
-        int answered = -1;
-        for (int i = 0; i < rounds.size() && rounds.get(i).at() <= shipAt; i++) {
-            answered = i;
-        }
-        return answered;
+  private static int answered(List<RoundTrail.Round> rounds, long shipAt) {
+    int answered = -1;
+    for (int i = 0; i < rounds.size() && rounds.get(i).at() <= shipAt; i++) {
+      answered = i;
     }
+    return answered;
+  }
 
-    private static boolean broughtNewNote(List<RoundTrail.Round> rounds, long shipAt) {
-        int answered = answered(rounds, shipAt);
-        return answered > 0 && !rounds.get(answered).repeats(rounds.get(answered - 1).notes());
-    }
+  private static boolean broughtNewNote(List<RoundTrail.Round> rounds, long shipAt) {
+    int answered = answered(rounds, shipAt);
+    return answered > 0 && !rounds.get(answered).repeats(rounds.get(answered - 1).notes());
+  }
 
-    private static boolean newWork(List<RoundTrail.Round> rounds, List<StatusChange> ships, int index) {
-        String tree = ships.get(index).tree();
-        if (answered(rounds, ships.get(index).at()) > 0 || tree == null) {
-            return false;
-        }
-        return index == 0 || (ships.get(index - 1).tree() != null && !tree.equals(ships.get(index - 1).tree()));
+  private static boolean newWork(
+      List<RoundTrail.Round> rounds, List<StatusChange> ships, int index) {
+    String tree = ships.get(index).tree();
+    if (answered(rounds, ships.get(index).at()) > 0 || tree == null) {
+      return false;
     }
+    return index == 0
+        || (ships.get(index - 1).tree() != null && !tree.equals(ships.get(index - 1).tree()));
+  }
 
-    private String evidence(RoundTrail trail, List<StatusChange> history, long now) {
-        return "threads per round: " + trail.rounds().stream().map(round -> String.valueOf(round.threads()))
-                .collect(Collectors.joining(", "))
-                + "; ships without a new note in " + window.toHours() + "h: " + shipped(trail, history, now);
-    }
+  private String evidence(RoundTrail trail, List<StatusChange> history, long now) {
+    return "threads per round: "
+        + trail.rounds().stream()
+            .map(round -> String.valueOf(round.threads()))
+            .collect(Collectors.joining(", "))
+        + "; ships without a new note in "
+        + window.toHours()
+        + "h: "
+        + shipped(trail, history, now);
+  }
 }

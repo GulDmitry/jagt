@@ -2,24 +2,23 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.NewRepo;
-import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.task.TaskName;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 /** The only writes to a shared branch: a deploy's merge, and the revert that undoes it. */
 @Service
@@ -27,593 +26,918 @@ import java.util.Objects;
 @Slf4j
 public class GitDeploy {
 
-    private final GitCommands git;
+  private final GitCommands git;
 
-    /**
-     * Merges the task branch into the deploy branch and pushes, in a worktree cut from {@code origin/<target>} so
-     * the task branch is NEVER modified. A conflict LEAVES that worktree with its markers instead of aborting; the
-     * next call finishes a resolution waiting there, and otherwise merges again against the target as it is then.
-     */
-    public String mergeIntoAndPush(Path projectPath, String sourceBranch, String targetBranch) {
-        Remote remote = git.remote(projectPath);
-        return git.locked(projectPath, () -> {
-            Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
-            String deployBranch = deployBranch(sourceBranch);
-            git.fetchPruning(remote, projectPath).expectSuccess("git fetch in " + projectPath);
-            if (Files.isDirectory(deployWorktree)
-                    && settleLeftover(remote, projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch)) {
-                return finishDeploy(remote, projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
-            }
-            // Deploy is decoupled from review state: its ONLY precondition is work that was SHIPPED. What it
-            // merges is the remote branch, which is what the request shows — a session may push HEAD under the
-            // task's name from a local branch named otherwise, leaving that local ref moved by nobody.
-            String source = remote.track(sourceBranch);
-            requireWorkToDeploy(remote, projectPath, source, sourceBranch, targetBranch);
-            // A registration outlives a directory deleted by hand, and the add then refuses the branch as
-            // still checked out.
-            git.clearWorktreePath(projectPath, deployWorktree);
-            git.run(projectPath, List.of("git", "worktree", "add",
-                            "-B", deployBranch, deployWorktree.toString(), remote.track(targetBranch)))
-                    .expectSuccess("git worktree add (deploy) " + targetBranch);
-            // The message is explicit because git's default would name the throwaway branch, not the target.
-            // --no-ff ALWAYS: that one merge commit is what `revert` undoes; a fast-forward leaves them loose.
-            var merge = git.run(deployWorktree, List.of("git", "merge", "--no-ff",
-                    "--no-edit", "-m", "Merge branch '" + sourceBranch + "' into " + targetBranch,
-                    source));
-            if (merge.exitCode() != 0) {
-                throw mergeFailure(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch,
-                        merge.stderr().isBlank() ? merge.stdout() : merge.stderr());
-            }
-            return pushAndRemoveDeploy(remote, projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
+  /**
+   * Merges the task branch into the deploy branch and pushes, in a worktree cut from {@code
+   * origin/<target>} so the task branch is NEVER modified. A conflict LEAVES that worktree with its
+   * markers instead of aborting; the next call finishes a resolution waiting there, and otherwise
+   * merges again against the target as it is then.
+   */
+  public String mergeIntoAndPush(Path projectPath, String sourceBranch, String targetBranch) {
+    Remote remote = git.remote(projectPath);
+    return git.locked(
+        projectPath,
+        () -> {
+          Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
+          String deployBranch = deployBranch(sourceBranch);
+          git.fetchPruning(remote, projectPath).expectSuccess("git fetch in " + projectPath);
+          if (Files.isDirectory(deployWorktree)
+              && settleLeftover(
+                  remote, projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch)) {
+            return finishDeploy(
+                remote, projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
+          }
+          // Deploy is decoupled from review state: its ONLY precondition is work that was SHIPPED.
+          // What it
+          // merges is the remote branch, which is what the request shows — a session may push HEAD
+          // under the
+          // task's name from a local branch named otherwise, leaving that local ref moved by
+          // nobody.
+          String source = remote.track(sourceBranch);
+          requireWorkToDeploy(remote, projectPath, source, sourceBranch, targetBranch);
+          // A registration outlives a directory deleted by hand, and the add then refuses the
+          // branch as
+          // still checked out.
+          git.clearWorktreePath(projectPath, deployWorktree);
+          git.run(
+                  projectPath,
+                  List.of(
+                      "git",
+                      "worktree",
+                      "add",
+                      "-B",
+                      deployBranch,
+                      deployWorktree.toString(),
+                      remote.track(targetBranch)))
+              .expectSuccess("git worktree add (deploy) " + targetBranch);
+          // The message is explicit because git's default would name the throwaway branch, not the
+          // target.
+          // --no-ff ALWAYS: that one merge commit is what `revert` undoes; a fast-forward leaves
+          // them loose.
+          var merge =
+              git.run(
+                  deployWorktree,
+                  List.of(
+                      "git",
+                      "merge",
+                      "--no-ff",
+                      "--no-edit",
+                      "-m",
+                      "Merge branch '" + sourceBranch + "' into " + targetBranch,
+                      source));
+          if (merge.exitCode() != 0) {
+            throw mergeFailure(
+                projectPath,
+                deployWorktree,
+                deployBranch,
+                sourceBranch,
+                targetBranch,
+                merge.stderr().isBlank() ? merge.stdout() : merge.stderr());
+          }
+          return pushAndRemoveDeploy(
+              remote, projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
         });
-    }
+  }
 
-    /**
-     * Cuts the deploy worktree from the deploy branch as it stands, where a fix of what already landed is made and
-     * finished by the next deploy; work waiting in a leftover one is kept.
-     */
-    public void openFixWorktree(Path projectPath, String sourceBranch, String targetBranch) {
-        Remote remote = git.remote(projectPath);
-        git.locked(projectPath, () -> {
-            Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
-            String deployBranch = deployBranch(sourceBranch);
-            git.fetchPruning(remote, projectPath).expectSuccess("git fetch in " + projectPath);
-            if (Files.isDirectory(deployWorktree)
-                    && settleLeftover(remote, projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch)) {
-                return;
-            }
-            git.clearWorktreePath(projectPath, deployWorktree);
-            git.run(projectPath, List.of("git", "worktree", "add",
-                            "-B", deployBranch, deployWorktree.toString(), remote.track(targetBranch)))
-                    .expectSuccess("git worktree add (deploy fix) " + targetBranch);
-        });
-    }
-
-    /** Whether human work waits in the leftover worktree; otherwise it is cleared, or refused when not this repository's. */
-    private boolean settleLeftover(Remote remote, Path projectPath, Path deployWorktree, String deployBranch,
-                                   String sourceBranch, String targetBranch) {
-        if (hasDeployWorktree(projectPath, sourceBranch)) {
-            if (humanWorkWaiting(remote, deployWorktree, targetBranch)) {
-                return true;
-            }
-            discardDeployWorktree(remote, projectPath, deployWorktree, deployBranch, targetBranch);
-        } else if (git.worktreeOwner(deployWorktree).isPresent()) {
-            throw new ForeignDeployWorktreeException(deployWorktree, projectPath);
-        } else {
-            requireOnlyEditorResidue(deployWorktree);
-        }
-        return false;
-    }
-
-    private void requireWorkToDeploy(Remote remote, Path projectPath, String source, String sourceBranch,
-                                     String targetBranch) {
-        if (git.run(projectPath,
-                List.of("git", "rev-parse", "--verify", "--quiet", source)).exitCode() != 0) {
-            throw new NothingToDeployException("Nothing to deploy: branch '" + sourceBranch
-                    + "' was never " + (remote.local() ? "committed" : "pushed") + " — ship it first.");
-        }
-        String ahead = git.run(projectPath,
-                        List.of("git", "rev-list", "--count", remote.track(targetBranch) + ".." + source))
-                .expectSuccess("git rev-list count " + source).stdout().trim();
-        if ("0".equals(ahead)) {
-            throw new NothingToDeployException(sourceBranch, targetBranch);
-        }
-    }
-
-    private RuntimeException mergeFailure(Path projectPath, Path deployWorktree, String deployBranch,
-                                          String sourceBranch, String targetBranch, String details) {
-        // Only UNMERGED PATHS mean a conflict. git also exits non-zero for a missing committer identity
-        // or a refusing hook, and calling those a conflict leaves a worktree the next deploy pushes.
-        if (unmergedPaths(deployWorktree).isBlank()) {
-            git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
-            return new IllegalStateException("Could not merge " + sourceBranch + " into " + targetBranch
-                    + " — nothing was pushed and no conflict is waiting for you; git said: " + details);
-        }
-        return new MergeConflictException(sourceBranch, targetBranch, details, deployWorktree);
-    }
-
-    /**
-     * Whether the leftover worktree holds work of the human's: a resolution staged, committed, or part done. One
-     * still exactly as the conflict left it, or one the merge was aborted in, holds none.
-     */
-    private boolean humanWorkWaiting(Remote remote, Path deployWorktree, String targetBranch) {
-        if (!unmergedPaths(deployWorktree).isBlank()) {
-            return partlyResolved(deployWorktree);
-        }
-        return mergeInProgress(deployWorktree) || resolutionCommitted(remote, deployWorktree, targetBranch)
-                || stagedFix(deployWorktree);
-    }
-
-    /** A change staged on the deploy branch as it stands, which no merge is in progress to own. */
-    private boolean stagedFix(Path deployWorktree) {
-        return git.run(deployWorktree, List.of("git", "diff", "--cached", "--quiet")).exitCode() != 0;
-    }
-
-    /**
-     * Whether the conflict left in this task's deploy worktree is resolved in full: nothing unmerged, nothing
-     * edited past what was staged, and the merge still standing or committed.
-     */
-    public boolean deployResolved(Path projectPath, String sourceBranch, String targetBranch) {
-        Remote remote = git.remote(projectPath);
-        Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
-        return hasDeployWorktree(projectPath, sourceBranch) && unmergedPaths(deployWorktree).isBlank()
-                && git.run(deployWorktree, List.of("git", "diff", "--quiet")).exitCode() == 0
-                && (mergeInProgress(deployWorktree) || resolutionCommitted(remote, deployWorktree, targetBranch)
-                || stagedFix(deployWorktree));
-    }
-
-    /** Where the resolution in this task's deploy worktree stands; any edit, staged or not, changes the digest. */
-    public Conflict.Progress deployProgress(Path projectPath, String sourceBranch) {
-        return progress(deployWorktreePath(projectPath, sourceBranch));
-    }
-
-    private Conflict.Progress progress(Path worktree) {
-        String status = git.run(worktree, List.of("git", "status", "--porcelain"))
-                .expectSuccess("git status in " + worktree).stdout();
-        String diff = git.run(worktree, List.of("git", "diff"))
-                .expectSuccess("git diff in " + worktree).stdout();
-        List<String> paths = status.lines().filter(line -> line.length() > 2).toList();
-        int unmerged = (int) paths.stream().filter(GitDeploy::unmerged).count();
-        int staged = (int) paths.stream().filter(line -> !unmerged(line) && "MADRC".indexOf(line.charAt(0)) >= 0)
-                .count();
-        return new Conflict.Progress(unmerged, staged, sha256(status + "\0" + diff));
-    }
-
-    private static boolean unmerged(String statusLine) {
-        String code = statusLine.substring(0, 2);
-        return code.indexOf('U') >= 0 || code.equals("AA") || code.equals("DD");
-    }
-
-    private static String sha256(String text) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                    .digest(text.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException missing) {
-            throw new IllegalStateException(missing);
-        }
-    }
-
-    /** A conflicted path already added is the human's work, and no press of theirs throws it away. */
-    private boolean partlyResolved(Path deployWorktree) {
-        return git.run(deployWorktree, List.of("git", "status", "--porcelain"))
-                .expectSuccess("git status in " + deployWorktree).stdout().lines()
-                .anyMatch(line -> !line.isBlank() && "MADRC".indexOf(line.charAt(0)) >= 0);
-    }
-
-    /**
-     * A resolution committed by hand. The first parent must sit on the target: a worktree cut for a DIFFERENT
-     * branch carries that branch's whole line, and pushing it would dump it into this one.
-     */
-    private boolean resolutionCommitted(Remote remote, Path deployWorktree, String targetBranch) {
-        boolean ahead = !"0".equals(git.run(deployWorktree,
-                        List.of("git", "rev-list", "--count", remote.track(targetBranch) + "..HEAD"))
-                .expectSuccess("git rev-list count HEAD in " + deployWorktree).stdout().trim());
-        return ahead && git.run(deployWorktree, List.of("git", "merge-base",
-                "--is-ancestor", "HEAD^1", remote.track(targetBranch))).exitCode() == 0;
-    }
-
-    private void discardDeployWorktree(Remote remote, Path projectPath, Path deployWorktree, String deployBranch,
-                                       String targetBranch) {
-        log.atInfo().setMessage("deploy worktree discarded")
-                .addKeyValue("worktree", deployWorktree)
-                .addKeyValue("cause", "no resolution staged, committed or part done in it")
-                .addKeyValue("effect", "merged again from " + remote.track(targetBranch))
-                .log();
-        git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
-    }
-
-    private boolean mergeInProgress(Path deployWorktree) {
-        return git.run(deployWorktree,
-                List.of("git", "rev-parse", "-q", "--verify", "MERGE_HEAD")).exitCode() == 0;
-    }
-
-    private String finishDeploy(Remote remote, Path projectPath, Path deployWorktree, String deployBranch,
-                                String sourceBranch, String targetBranch) {
-        String unmerged = unmergedPaths(deployWorktree);
-        if (!unmerged.isBlank()) {
-            throw new MergeConflictException(sourceBranch, targetBranch,
-                    "still unresolved (git add them):\n" + unmerged, deployWorktree);
-        }
-        if (mergeInProgress(deployWorktree)) {
-            git.run(deployWorktree, List.of("git", "commit", "--no-edit"))
-                    .expectSuccess("git commit (deploy resolution) " + deployWorktree);
-        } else if (stagedFix(deployWorktree)) {
-            git.run(deployWorktree, List.of("git", "commit", "-m", "Fix " + targetBranch + " after merging " + sourceBranch))
-                    .expectSuccess("git commit (deploy fix) " + deployWorktree);
-        }
-        return pushAndRemoveDeploy(remote, projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
-    }
-
-    /** KEEPS the worktree on a rejected push (the target moved under the merge) so the resolution isn't lost.
-     *  Returns the pushed merge commit — what `revert` undoes, and knowable only before the worktree is gone. */
-    private String pushAndRemoveDeploy(Remote remote, Path projectPath, Path deployWorktree, String deployBranch,
-                                       String sourceBranch, String targetBranch) {
-        var push = git.publish(remote, deployWorktree, targetBranch);
-        if (push.exitCode() != 0) {
-            if (nothingLeftToPush(remote, deployWorktree, targetBranch)) {
-                git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
-                throw new NothingToDeployException("Nothing left to push: what the deploy worktree held is"
-                        + " already on " + targetBranch + ", which has moved on since. That worktree is gone —"
-                        + " deploy again if '" + sourceBranch + "' still holds work " + targetBranch + " lacks.");
-            }
-            String d = push.stderr().isBlank() ? push.stdout() : push.stderr();
-            throw new IllegalStateException("Deploy push to " + targetBranch + " was rejected. In " + deployWorktree
-                    + " run `git merge " + remote.track(targetBranch) + "`, resolve, then deploy again. Details: " + d);
-        }
-        String merged = git.run(deployWorktree, List.of("git", "rev-parse", "HEAD"))
-                .expectSuccess("git rev-parse HEAD in " + deployWorktree).stdout().trim();
-        git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
-        return merged;
-    }
-
-    /**
-     * Whether the worktree holds nothing the target lacks. The merge is NOT claimed as this task's: the commit
-     * reached here may be the target tip the worktree was cut from.
-     */
-    private boolean nothingLeftToPush(Remote remote, Path deployWorktree, String targetBranch) {
-        boolean fetched = git.fetchBranch(remote, deployWorktree, targetBranch).exitCode() == 0;
-        return fetched && git.run(deployWorktree,
-                List.of("git", "merge-base", "--is-ancestor", "HEAD", remote.track(targetBranch))).exitCode() == 0;
-    }
-
-    private String unmergedPaths(Path worktree) {
-        return git.run(worktree,
-                        List.of("git", "diff", "--name-only", "--diff-filter=U"))
-                .expectSuccess("git unmerged paths in " + worktree).stdout().trim();
-    }
-
-    /** Throws away the deploy this repository has waiting, a conflicted merge included; none of it was pushed. */
-    public void discardDeploy(Path projectPath, String sourceBranch) {
-        git.locked(projectPath, () -> {
-            if (!hasDeployWorktree(projectPath, sourceBranch)) {
-                return;
-            }
-            Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
-            log.atInfo().setMessage("deploy worktree discarded")
-                    .addKeyValue("worktree", deployWorktree)
-                    .addKeyValue("cause", "the deploy was reverted")
-                    .log();
-            git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch(sourceBranch));
-        });
-    }
-
-    /**
-     * Undoes ONE deploy: reverts {@code mergeCommit} on {@code targetBranch} and pushes, returning the revert
-     * commit. Only ever ADDS a commit — no rewrite, no force-push — and leaves the task branch alone. Refuses
-     * rather than guess when the commit is not on the branch, is not a merge, or was already reverted. A revert
-     * that conflicts LEAVES its worktree with the markers; the next call continues a resolution waiting there,
-     * reverts what is still to revert and pushes.
-     */
-    public String revertMergeAndPush(Path projectPath, String sourceBranch, String targetBranch,
-                                     String mergeCommit, List<String> fixesNewestFirst) {
-        Remote remote = git.remote(projectPath);
-        return git.locked(projectPath, () -> {
-            Path revertWorktree = revertWorktreePath(projectPath, sourceBranch);
-            String revertBranch = "jagt-revert-" + sourceBranch;
-            git.fetchPruning(remote, projectPath).expectSuccess("git fetch in " + projectPath);
-            boolean resuming = Files.isDirectory(revertWorktree)
-                    && revertWaiting(remote, projectPath, revertWorktree, sourceBranch, targetBranch);
-            if (!resuming) {
-                cutRevertWorktree(remote, projectPath, revertWorktree, revertBranch, targetBranch);
-            }
-            try {
-                String commit = revertAndPush(remote, revertWorktree, targetBranch, mergeCommit, fixesNewestFirst,
-                        resuming);
-                removeRevertWorktree(projectPath, revertWorktree, revertBranch);
-                return commit;
-            } catch (RevertConflictException kept) {
-                throw kept;
-            } catch (RuntimeException failed) {
-                if (!resuming) {
-                    removeRevertWorktree(projectPath, revertWorktree, revertBranch);
-                }
-                throw failed;
-            }
-        });
-    }
-
-    private void cutRevertWorktree(Remote remote, Path projectPath, Path revertWorktree, String revertBranch,
-                                   String targetBranch) {
-        if (Files.exists(revertWorktree)) {
-            git.clearWorktreePath(projectPath, revertWorktree);
-        }
-        git.run(projectPath, List.of("git", "worktree", "add",
-                        "-B", revertBranch, revertWorktree.toString(), remote.track(targetBranch)))
-                .expectSuccess("git worktree add (revert) " + targetBranch);
-    }
-
-    private String revertAndPush(Remote remote, Path revertWorktree, String targetBranch, String mergeCommit,
-                                 List<String> fixesNewestFirst, boolean resuming) {
-        if (resuming) {
-            continuePendingRevert(revertWorktree, targetBranch, mergeCommit);
-        } else {
-            requireRevertable(revertWorktree, targetBranch, mergeCommit);
-            requireMergeCommit(revertWorktree, mergeCommit, targetBranch);
-        }
-        fixesNewestFirst.forEach(fix -> revertOnce(revertWorktree, targetBranch, fix, resuming, List.of()));
-        revertOnce(revertWorktree, targetBranch, mergeCommit, resuming, List.of("-m", "1"));
-        var push = git.publish(remote, revertWorktree, targetBranch);
-        if (push.exitCode() != 0) {
-            String details = push.stderr().isBlank() ? push.stdout() : push.stderr();
-            throw new IllegalStateException("Revert push to " + targetBranch + " was rejected — it moved while the"
-                    + " revert was being made. " + (resuming ? "In " + revertWorktree + " run `git merge "
-                    + remote.track(targetBranch) + "`, then revert again" : "Try revert again") + ". Details: " + details);
-        }
-        return git.run(revertWorktree, List.of("git", "rev-parse", "HEAD"))
-                .expectSuccess("git rev-parse HEAD in " + revertWorktree).stdout().trim();
-    }
-
-    /**
-     * A fix goes first, newest first, so the merge below it reverts onto the tree it made. {@code -m 1} on a merge
-     * keeps the target's own line: reverting it means undoing what the SECOND parent brought in.
-     */
-    private void revertOnce(Path revertWorktree, String targetBranch, String commit, boolean resuming,
-                            List<String> mainline) {
-        if (resuming && !revertOf(revertWorktree, commit).isBlank()) {
+  /**
+   * Cuts the deploy worktree from the deploy branch as it stands, where a fix of what already
+   * landed is made and finished by the next deploy; work waiting in a leftover one is kept.
+   */
+  public void openFixWorktree(Path projectPath, String sourceBranch, String targetBranch) {
+    Remote remote = git.remote(projectPath);
+    git.locked(
+        projectPath,
+        () -> {
+          Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
+          String deployBranch = deployBranch(sourceBranch);
+          git.fetchPruning(remote, projectPath).expectSuccess("git fetch in " + projectPath);
+          if (Files.isDirectory(deployWorktree)
+              && settleLeftover(
+                  remote, projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch)) {
             return;
-        }
-        requireRevertable(revertWorktree, targetBranch, commit);
-        List<String> command = new ArrayList<>(List.of("git", "revert"));
-        command.addAll(mainline);
-        command.addAll(List.of("--no-edit", commit));
-        var revert = git.run(revertWorktree, command);
-        if (revert.exitCode() != 0) {
-            throw revertFailure(revertWorktree, targetBranch, commit,
-                    revert.stderr().isBlank() ? revert.stdout() : revert.stderr());
-        }
+          }
+          git.clearWorktreePath(projectPath, deployWorktree);
+          git.run(
+                  projectPath,
+                  List.of(
+                      "git",
+                      "worktree",
+                      "add",
+                      "-B",
+                      deployBranch,
+                      deployWorktree.toString(),
+                      remote.track(targetBranch)))
+              .expectSuccess("git worktree add (deploy fix) " + targetBranch);
+        });
+  }
+
+  /**
+   * Whether human work waits in the leftover worktree; otherwise it is cleared, or refused when not
+   * this repository's.
+   */
+  private boolean settleLeftover(
+      Remote remote,
+      Path projectPath,
+      Path deployWorktree,
+      String deployBranch,
+      String sourceBranch,
+      String targetBranch) {
+    if (hasDeployWorktree(projectPath, sourceBranch)) {
+      if (humanWorkWaiting(remote, deployWorktree, targetBranch)) {
+        return true;
+      }
+      discardDeployWorktree(remote, projectPath, deployWorktree, deployBranch, targetBranch);
+    } else if (git.worktreeOwner(deployWorktree).isPresent()) {
+      throw new ForeignDeployWorktreeException(deployWorktree, projectPath);
+    } else {
+      requireOnlyEditorResidue(deployWorktree);
+    }
+    return false;
+  }
+
+  private void requireWorkToDeploy(
+      Remote remote, Path projectPath, String source, String sourceBranch, String targetBranch) {
+    if (git.run(projectPath, List.of("git", "rev-parse", "--verify", "--quiet", source)).exitCode()
+        != 0) {
+      throw new NothingToDeployException(
+          "Nothing to deploy: branch '"
+              + sourceBranch
+              + "' was never "
+              + (remote.local() ? "committed" : "pushed")
+              + " — ship it first.");
+    }
+    String ahead =
+        git.run(
+                projectPath,
+                List.of("git", "rev-list", "--count", remote.track(targetBranch) + ".." + source))
+            .expectSuccess("git rev-list count " + source)
+            .stdout()
+            .trim();
+    if ("0".equals(ahead)) {
+      throw new NothingToDeployException(sourceBranch, targetBranch);
+    }
+  }
+
+  private RuntimeException mergeFailure(
+      Path projectPath,
+      Path deployWorktree,
+      String deployBranch,
+      String sourceBranch,
+      String targetBranch,
+      String details) {
+    // Only UNMERGED PATHS mean a conflict. git also exits non-zero for a missing committer identity
+    // or a refusing hook, and calling those a conflict leaves a worktree the next deploy pushes.
+    if (unmergedPaths(deployWorktree).isBlank()) {
+      git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
+      return new IllegalStateException(
+          "Could not merge "
+              + sourceBranch
+              + " into "
+              + targetBranch
+              + " — nothing was pushed and no conflict is waiting for you; git said: "
+              + details);
+    }
+    return new MergeConflictException(sourceBranch, targetBranch, details, deployWorktree);
+  }
+
+  /**
+   * Whether the leftover worktree holds work of the human's: a resolution staged, committed, or
+   * part done. One still exactly as the conflict left it, or one the merge was aborted in, holds
+   * none.
+   */
+  private boolean humanWorkWaiting(Remote remote, Path deployWorktree, String targetBranch) {
+    if (!unmergedPaths(deployWorktree).isBlank()) {
+      return partlyResolved(deployWorktree);
+    }
+    return mergeInProgress(deployWorktree)
+        || resolutionCommitted(remote, deployWorktree, targetBranch)
+        || stagedFix(deployWorktree);
+  }
+
+  /** A change staged on the deploy branch as it stands, which no merge is in progress to own. */
+  private boolean stagedFix(Path deployWorktree) {
+    return git.run(deployWorktree, List.of("git", "diff", "--cached", "--quiet")).exitCode() != 0;
+  }
+
+  /**
+   * Whether the conflict left in this task's deploy worktree is resolved in full: nothing unmerged,
+   * nothing edited past what was staged, and the merge still standing or committed.
+   */
+  public boolean deployResolved(Path projectPath, String sourceBranch, String targetBranch) {
+    Remote remote = git.remote(projectPath);
+    Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
+    return hasDeployWorktree(projectPath, sourceBranch)
+        && unmergedPaths(deployWorktree).isBlank()
+        && git.run(deployWorktree, List.of("git", "diff", "--quiet")).exitCode() == 0
+        && (mergeInProgress(deployWorktree)
+            || resolutionCommitted(remote, deployWorktree, targetBranch)
+            || stagedFix(deployWorktree));
+  }
+
+  /**
+   * Where the resolution in this task's deploy worktree stands; any edit, staged or not, changes
+   * the digest.
+   */
+  public Conflict.Progress deployProgress(Path projectPath, String sourceBranch) {
+    return progress(deployWorktreePath(projectPath, sourceBranch));
+  }
+
+  private Conflict.Progress progress(Path worktree) {
+    String status =
+        git.run(worktree, List.of("git", "status", "--porcelain"))
+            .expectSuccess("git status in " + worktree)
+            .stdout();
+    String diff =
+        git.run(worktree, List.of("git", "diff")).expectSuccess("git diff in " + worktree).stdout();
+    List<String> paths = status.lines().filter(line -> line.length() > 2).toList();
+    int unmerged = (int) paths.stream().filter(GitDeploy::unmerged).count();
+    int staged =
+        (int)
+            paths.stream()
+                .filter(line -> !unmerged(line) && "MADRC".indexOf(line.charAt(0)) >= 0)
+                .count();
+    return new Conflict.Progress(unmerged, staged, sha256(status + "\0" + diff));
+  }
+
+  private static boolean unmerged(String statusLine) {
+    String code = statusLine.substring(0, 2);
+    return code.indexOf('U') >= 0 || code.equals("AA") || code.equals("DD");
+  }
+
+  private static String sha256(String text) {
+    try {
+      return HexFormat.of()
+          .formatHex(
+              MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8)));
+    } catch (NoSuchAlgorithmException missing) {
+      throw new IllegalStateException(missing);
+    }
+  }
+
+  /** A conflicted path already added is the human's work, and no press of theirs throws it away. */
+  private boolean partlyResolved(Path deployWorktree) {
+    return git.run(deployWorktree, List.of("git", "status", "--porcelain"))
+        .expectSuccess("git status in " + deployWorktree)
+        .stdout()
+        .lines()
+        .anyMatch(line -> !line.isBlank() && "MADRC".indexOf(line.charAt(0)) >= 0);
+  }
+
+  /**
+   * A resolution committed by hand. The first parent must sit on the target: a worktree cut for a
+   * DIFFERENT branch carries that branch's whole line, and pushing it would dump it into this one.
+   */
+  private boolean resolutionCommitted(Remote remote, Path deployWorktree, String targetBranch) {
+    boolean ahead =
+        !"0"
+            .equals(
+                git.run(
+                        deployWorktree,
+                        List.of(
+                            "git", "rev-list", "--count", remote.track(targetBranch) + "..HEAD"))
+                    .expectSuccess("git rev-list count HEAD in " + deployWorktree)
+                    .stdout()
+                    .trim());
+    return ahead
+        && git.run(
+                    deployWorktree,
+                    List.of(
+                        "git", "merge-base", "--is-ancestor", "HEAD^1", remote.track(targetBranch)))
+                .exitCode()
+            == 0;
+  }
+
+  private void discardDeployWorktree(
+      Remote remote,
+      Path projectPath,
+      Path deployWorktree,
+      String deployBranch,
+      String targetBranch) {
+    log.atInfo()
+        .setMessage("deploy worktree discarded")
+        .addKeyValue("worktree", deployWorktree)
+        .addKeyValue("cause", "no resolution staged, committed or part done in it")
+        .addKeyValue("effect", "merged again from " + remote.track(targetBranch))
+        .log();
+    git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
+  }
+
+  private boolean mergeInProgress(Path deployWorktree) {
+    return git.run(deployWorktree, List.of("git", "rev-parse", "-q", "--verify", "MERGE_HEAD"))
+            .exitCode()
+        == 0;
+  }
+
+  private String finishDeploy(
+      Remote remote,
+      Path projectPath,
+      Path deployWorktree,
+      String deployBranch,
+      String sourceBranch,
+      String targetBranch) {
+    String unmerged = unmergedPaths(deployWorktree);
+    if (!unmerged.isBlank()) {
+      throw new MergeConflictException(
+          sourceBranch,
+          targetBranch,
+          "still unresolved (git add them):\n" + unmerged,
+          deployWorktree);
+    }
+    if (mergeInProgress(deployWorktree)) {
+      git.run(deployWorktree, List.of("git", "commit", "--no-edit"))
+          .expectSuccess("git commit (deploy resolution) " + deployWorktree);
+    } else if (stagedFix(deployWorktree)) {
+      git.run(
+              deployWorktree,
+              List.of(
+                  "git", "commit", "-m", "Fix " + targetBranch + " after merging " + sourceBranch))
+          .expectSuccess("git commit (deploy fix) " + deployWorktree);
+    }
+    return pushAndRemoveDeploy(
+        remote, projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
+  }
+
+  /**
+   * KEEPS the worktree on a rejected push (the target moved under the merge) so the resolution
+   * isn't lost. Returns the pushed merge commit — what `revert` undoes, and knowable only before
+   * the worktree is gone.
+   */
+  private String pushAndRemoveDeploy(
+      Remote remote,
+      Path projectPath,
+      Path deployWorktree,
+      String deployBranch,
+      String sourceBranch,
+      String targetBranch) {
+    var push = git.publish(remote, deployWorktree, targetBranch);
+    if (push.exitCode() != 0) {
+      if (nothingLeftToPush(remote, deployWorktree, targetBranch)) {
+        git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
+        throw new NothingToDeployException(
+            "Nothing left to push: what the deploy worktree held is"
+                + " already on "
+                + targetBranch
+                + ", which has moved on since. That worktree is gone —"
+                + " deploy again if '"
+                + sourceBranch
+                + "' still holds work "
+                + targetBranch
+                + " lacks.");
+      }
+      String d = push.stderr().isBlank() ? push.stdout() : push.stderr();
+      throw new IllegalStateException(
+          "Deploy push to "
+              + targetBranch
+              + " was rejected. In "
+              + deployWorktree
+              + " run `git merge "
+              + remote.track(targetBranch)
+              + "`, resolve, then deploy again. Details: "
+              + d);
+    }
+    String merged =
+        git.run(deployWorktree, List.of("git", "rev-parse", "HEAD"))
+            .expectSuccess("git rev-parse HEAD in " + deployWorktree)
+            .stdout()
+            .trim();
+    git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
+    return merged;
+  }
+
+  /**
+   * Whether the worktree holds nothing the target lacks. The merge is NOT claimed as this task's:
+   * the commit reached here may be the target tip the worktree was cut from.
+   */
+  private boolean nothingLeftToPush(Remote remote, Path deployWorktree, String targetBranch) {
+    boolean fetched = git.fetchBranch(remote, deployWorktree, targetBranch).exitCode() == 0;
+    return fetched
+        && git.run(
+                    deployWorktree,
+                    List.of(
+                        "git", "merge-base", "--is-ancestor", "HEAD", remote.track(targetBranch)))
+                .exitCode()
+            == 0;
+  }
+
+  private String unmergedPaths(Path worktree) {
+    return git.run(worktree, List.of("git", "diff", "--name-only", "--diff-filter=U"))
+        .expectSuccess("git unmerged paths in " + worktree)
+        .stdout()
+        .trim();
+  }
+
+  /**
+   * Throws away the deploy this repository has waiting, a conflicted merge included; none of it was
+   * pushed.
+   */
+  public void discardDeploy(Path projectPath, String sourceBranch) {
+    git.locked(
+        projectPath,
+        () -> {
+          if (!hasDeployWorktree(projectPath, sourceBranch)) {
+            return;
+          }
+          Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
+          log.atInfo()
+              .setMessage("deploy worktree discarded")
+              .addKeyValue("worktree", deployWorktree)
+              .addKeyValue("cause", "the deploy was reverted")
+              .log();
+          git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch(sourceBranch));
+        });
+  }
+
+  /**
+   * Undoes ONE deploy: reverts {@code mergeCommit} on {@code targetBranch} and pushes, returning
+   * the revert commit. Only ever ADDS a commit — no rewrite, no force-push — and leaves the task
+   * branch alone. Refuses rather than guess when the commit is not on the branch, is not a merge,
+   * or was already reverted. A revert that conflicts LEAVES its worktree with the markers; the next
+   * call continues a resolution waiting there, reverts what is still to revert and pushes.
+   */
+  public String revertMergeAndPush(
+      Path projectPath,
+      String sourceBranch,
+      String targetBranch,
+      String mergeCommit,
+      List<String> fixesNewestFirst) {
+    Remote remote = git.remote(projectPath);
+    return git.locked(
+        projectPath,
+        () -> {
+          Path revertWorktree = revertWorktreePath(projectPath, sourceBranch);
+          String revertBranch = "jagt-revert-" + sourceBranch;
+          git.fetchPruning(remote, projectPath).expectSuccess("git fetch in " + projectPath);
+          boolean resuming =
+              Files.isDirectory(revertWorktree)
+                  && revertWaiting(remote, projectPath, revertWorktree, sourceBranch, targetBranch);
+          if (!resuming) {
+            cutRevertWorktree(remote, projectPath, revertWorktree, revertBranch, targetBranch);
+          }
+          try {
+            String commit =
+                revertAndPush(
+                    remote, revertWorktree, targetBranch, mergeCommit, fixesNewestFirst, resuming);
+            removeRevertWorktree(projectPath, revertWorktree, revertBranch);
+            return commit;
+          } catch (RevertConflictException kept) {
+            throw kept;
+          } catch (RuntimeException failed) {
+            if (!resuming) {
+              removeRevertWorktree(projectPath, revertWorktree, revertBranch);
+            }
+            throw failed;
+          }
+        });
+  }
+
+  private void cutRevertWorktree(
+      Remote remote,
+      Path projectPath,
+      Path revertWorktree,
+      String revertBranch,
+      String targetBranch) {
+    if (Files.exists(revertWorktree)) {
+      git.clearWorktreePath(projectPath, revertWorktree);
+    }
+    git.run(
+            projectPath,
+            List.of(
+                "git",
+                "worktree",
+                "add",
+                "-B",
+                revertBranch,
+                revertWorktree.toString(),
+                remote.track(targetBranch)))
+        .expectSuccess("git worktree add (revert) " + targetBranch);
+  }
+
+  private String revertAndPush(
+      Remote remote,
+      Path revertWorktree,
+      String targetBranch,
+      String mergeCommit,
+      List<String> fixesNewestFirst,
+      boolean resuming) {
+    if (resuming) {
+      continuePendingRevert(revertWorktree, targetBranch, mergeCommit);
+    } else {
+      requireRevertable(revertWorktree, targetBranch, mergeCommit);
+      requireMergeCommit(revertWorktree, mergeCommit, targetBranch);
+    }
+    fixesNewestFirst.forEach(
+        fix -> revertOnce(revertWorktree, targetBranch, fix, resuming, List.of()));
+    revertOnce(revertWorktree, targetBranch, mergeCommit, resuming, List.of("-m", "1"));
+    var push = git.publish(remote, revertWorktree, targetBranch);
+    if (push.exitCode() != 0) {
+      String details = push.stderr().isBlank() ? push.stdout() : push.stderr();
+      throw new IllegalStateException(
+          "Revert push to "
+              + targetBranch
+              + " was rejected — it moved while the"
+              + " revert was being made. "
+              + (resuming
+                  ? "In "
+                      + revertWorktree
+                      + " run `git merge "
+                      + remote.track(targetBranch)
+                      + "`, then revert again"
+                  : "Try revert again")
+              + ". Details: "
+              + details);
+    }
+    return git.run(revertWorktree, List.of("git", "rev-parse", "HEAD"))
+        .expectSuccess("git rev-parse HEAD in " + revertWorktree)
+        .stdout()
+        .trim();
+  }
+
+  /**
+   * A fix goes first, newest first, so the merge below it reverts onto the tree it made. {@code -m
+   * 1} on a merge keeps the target's own line: reverting it means undoing what the SECOND parent
+   * brought in.
+   */
+  private void revertOnce(
+      Path revertWorktree,
+      String targetBranch,
+      String commit,
+      boolean resuming,
+      List<String> mainline) {
+    if (resuming && !revertOf(revertWorktree, commit).isBlank()) {
+      return;
+    }
+    requireRevertable(revertWorktree, targetBranch, commit);
+    List<String> command = new ArrayList<>(List.of("git", "revert"));
+    command.addAll(mainline);
+    command.addAll(List.of("--no-edit", commit));
+    var revert = git.run(revertWorktree, command);
+    if (revert.exitCode() != 0) {
+      throw revertFailure(
+          revertWorktree,
+          targetBranch,
+          commit,
+          revert.stderr().isBlank() ? revert.stdout() : revert.stderr());
+    }
+  }
+
+  /**
+   * Only UNMERGED PATHS mean a conflict; any other refusal is aborted, with nothing left to
+   * resolve.
+   */
+  private RuntimeException revertFailure(
+      Path revertWorktree, String targetBranch, String commit, String details) {
+    if (!unmergedPaths(revertWorktree).isBlank()) {
+      return new RevertConflictException(commit, targetBranch, details, revertWorktree);
+    }
+    git.run(revertWorktree, List.of("git", "revert", "--abort"));
+    return new IllegalStateException(
+        "Could not revert "
+            + shortSha(commit)
+            + " on "
+            + targetBranch
+            + " — nothing was pushed and no conflict is waiting for you; git said: "
+            + details);
+  }
+
+  private void continuePendingRevert(Path revertWorktree, String targetBranch, String mergeCommit) {
+    String unmerged = unmergedPaths(revertWorktree);
+    if (!unmerged.isBlank()) {
+      throw new RevertConflictException(
+          mergeCommit,
+          targetBranch,
+          "still unresolved (git add them):\n" + unmerged,
+          revertWorktree);
+    }
+    if (revertInProgress(revertWorktree)) {
+      git.run(revertWorktree, List.of("git", "-c", "core.editor=true", "revert", "--continue"))
+          .expectSuccess("git revert --continue in " + revertWorktree);
+    }
+  }
+
+  private boolean revertInProgress(Path revertWorktree) {
+    return git.run(revertWorktree, List.of("git", "rev-parse", "-q", "--verify", "REVERT_HEAD"))
+            .exitCode()
+        == 0;
+  }
+
+  /**
+   * A worktree this repository cut that holds a revert: one begun and conflicted, or begun and
+   * committed.
+   */
+  private boolean revertWaiting(
+      Remote remote,
+      Path projectPath,
+      Path revertWorktree,
+      String sourceBranch,
+      String targetBranch) {
+    return hasRevertWorktree(projectPath, sourceBranch)
+        && (revertInProgress(revertWorktree)
+            || !"0"
+                .equals(
+                    git.run(
+                            revertWorktree,
+                            List.of(
+                                "git",
+                                "rev-list",
+                                "--count",
+                                remote.track(targetBranch) + "..HEAD"))
+                        .expectSuccess("git rev-list count HEAD in " + revertWorktree)
+                        .stdout()
+                        .trim()));
+  }
+
+  public boolean hasRevertWorktree(Path projectPath, String sourceBranch) {
+    return git.worktreeOwner(revertWorktreePath(projectPath, sourceBranch))
+        .filter(owner -> GitCommands.sameDirectory(owner, projectPath))
+        .isPresent();
+  }
+
+  /**
+   * Whether the conflict left in this task's revert worktree is resolved in full: nothing unmerged
+   * or edited past what was staged.
+   */
+  public boolean revertResolved(Path projectPath, String sourceBranch) {
+    Path revertWorktree = revertWorktreePath(projectPath, sourceBranch);
+    return hasRevertWorktree(projectPath, sourceBranch)
+        && unmergedPaths(revertWorktree).isBlank()
+        && git.run(revertWorktree, List.of("git", "diff", "--quiet")).exitCode() == 0;
+  }
+
+  /**
+   * The paths still unmerged in this task's revert worktree, one per line; blank when none, or when
+   * it is gone.
+   */
+  public String revertUnmerged(Path projectPath, String sourceBranch) {
+    return hasRevertWorktree(projectPath, sourceBranch)
+        ? unmergedPaths(revertWorktreePath(projectPath, sourceBranch))
+        : "";
+  }
+
+  public Conflict.Progress revertProgress(Path projectPath, String sourceBranch) {
+    return progress(revertWorktreePath(projectPath, sourceBranch));
+  }
+
+  private void removeRevertWorktree(Path projectPath, Path revertWorktree, String revertBranch) {
+    git.run(
+        projectPath, List.of("git", "worktree", "remove", "--force", revertWorktree.toString()));
+    git.run(projectPath, List.of("git", "branch", "-D", revertBranch));
+  }
+
+  /**
+   * Whether the commit pushed to the deploy branch is a fix on top of it rather than a deploy
+   * merge.
+   */
+  public boolean isFix(Path projectPath, String commit) {
+    return git.run(projectPath, List.of("git", "rev-list", "--parents", "-n", "1", commit))
+            .expectSuccess("git rev-list --parents " + commit)
+            .stdout()
+            .trim()
+            .split("\\s+")
+            .length
+        < 3;
+  }
+
+  /**
+   * Only a merge reverts as ONE unit; a non-merge would undo one commit of a task instead of the
+   * deploy.
+   */
+  private void requireMergeCommit(Path revertWorktree, String mergeCommit, String targetBranch) {
+    String parents =
+        git.run(revertWorktree, List.of("git", "rev-list", "--parents", "-n", "1", mergeCommit))
+            .expectSuccess("git rev-list --parents " + mergeCommit)
+            .stdout()
+            .trim();
+    if (parents.split("\\s+").length < 3) {
+      throw new IllegalStateException(
+          "Commit "
+              + shortSha(mergeCommit)
+              + " on "
+              + targetBranch
+              + " is not a merge, so reverting it would undo only part of what was deployed. Revert"
+              + " by hand after deciding what should come out. Nothing was reverted.");
+    }
+  }
+
+  private void requireRevertable(Path revertWorktree, String targetBranch, String mergeCommit) {
+    boolean onBranch =
+        git.run(revertWorktree, List.of("git", "merge-base", "--is-ancestor", mergeCommit, "HEAD"))
+                .exitCode()
+            == 0;
+    if (!onBranch) {
+      throw new IllegalStateException(
+          "Commit "
+              + shortSha(mergeCommit)
+              + " is not on "
+              + targetBranch
+              + " — it was never deployed there, or that history was rewritten. Nothing was"
+              + " reverted.");
+    }
+    String existing = revertOf(revertWorktree, mergeCommit);
+    if (!existing.isBlank()) {
+      throw new IllegalStateException(
+          "Commit "
+              + shortSha(mergeCommit)
+              + " was already reverted on "
+              + targetBranch
+              + " by "
+              + shortSha(existing)
+              + ". Nothing to do.");
+    }
+  }
+
+  /**
+   * git's own revert message is the marker, so a revert made by hand counts too; blank when none.
+   */
+  private String revertOf(Path revertWorktree, String commit) {
+    return git.run(
+            revertWorktree,
+            List.of(
+                "git",
+                "log",
+                "--fixed-strings",
+                "--grep=This reverts commit " + commit,
+                "--format=%H",
+                "-1"))
+        .expectSuccess("git log (revert search) in " + revertWorktree)
+        .stdout()
+        .trim();
+  }
+
+  public static String shortSha(@Nullable String sha) {
+    return sha == null || sha.length() < 8 ? String.valueOf(sha) : sha.substring(0, 8);
+  }
+
+  public static String deployBranch(String sourceBranch) {
+    return "jagt-deploy-" + sourceBranch;
+  }
+
+  /** Every deploy worktree a task of these repositories can stand in, each once. */
+  public static List<Path> deployWorktreePaths(List<NewRepo> repos, String sourceBranch) {
+    return repos.stream()
+        .filter(
+            repo -> repo.config().deployBranch() != null && !repo.config().deployBranch().isBlank())
+        .map(repo -> deployWorktreePath(repo.projectPath(), sourceBranch))
+        .distinct()
+        .toList();
+  }
+
+  public static Path deployWorktreePath(Path projectPath, String sourceBranch) {
+    return Objects.requireNonNull(projectPath.toAbsolutePath().normalize().getParent())
+        .resolve(TaskName.slug(sourceBranch) + "-deploy");
+  }
+
+  /**
+   * Whether a deploy worktree for this task is waiting in THIS repository. The path is derived from
+   * the repository's PARENT, so siblings derive the SAME one and finishing another's merge here
+   * would push to the wrong remote.
+   */
+  public boolean hasDeployWorktree(Path projectPath, String sourceBranch) {
+    return git.worktreeOwner(deployWorktreePath(projectPath, sourceBranch))
+        .filter(owner -> GitCommands.sameDirectory(owner, projectPath))
+        .isPresent();
+  }
+
+  /**
+   * A path that is no checkout cannot be another repository's conflict: it is jagt's own leftover,
+   * an editor having written its project files back into a directory git had emptied. The deploy
+   * goes on and the path is cleared before the add; anything else found there is left untouched and
+   * named.
+   */
+  private void requireOnlyEditorResidue(Path path) {
+    List<String> kept;
+    try (var entries = Files.list(path)) {
+      kept =
+          entries
+              .map(entry -> entry.getFileName().toString())
+              .filter(name -> !WorktreeNoise.isResidue(name))
+              .sorted()
+              .toList();
+    } catch (IOException e) {
+      throw new UncheckedIOException("Could not read the deploy worktree path " + path, e);
+    }
+    if (!kept.isEmpty()) {
+      throw new StaleDeployPathException(path, kept);
+    }
+  }
+
+  /**
+   * Where a revert is staged — separate from the deploy worktree, which may be sitting in a
+   * conflict.
+   */
+  public static Path revertWorktreePath(Path projectPath, String sourceBranch) {
+    return Objects.requireNonNull(projectPath.toAbsolutePath().normalize().getParent())
+        .resolve(TaskName.slug(sourceBranch) + "-revert");
+  }
+
+  /**
+   * The deploy worktree path this repository derives is occupied by a checkout it did not cut, so
+   * nothing was attempted. Typed so a caller landing SEVERAL repositories can come back to this one
+   * once the path is free.
+   */
+  public static class StaleDeployPathException extends IllegalStateException {
+
+    public StaleDeployPathException(Path deployWorktree, List<String> kept) {
+      super(
+          "The deploy worktree path "
+              + deployWorktree
+              + " is not a checkout but holds "
+              + String.join(", ", kept)
+              + ", so nothing can be deployed from there. Move or delete that"
+              + " directory, then deploy again.");
+    }
+  }
+
+  public static class ForeignDeployWorktreeException extends IllegalStateException {
+
+    public ForeignDeployWorktreeException(Path deployWorktree, Path projectPath) {
+      super(
+          "The deploy worktree path "
+              + deployWorktree
+              + " holds a checkout "
+              + projectPath.getFileName()
+              + " did not cut, so its merge cannot be finished here. Deal with that checkout first"
+              + " — finish its deploy, or `git worktree remove --force` it if it is stale.");
+    }
+  }
+
+  /**
+   * The branch holds nothing the target does not already have; typed so a caller can tell it from a
+   * failure.
+   */
+  public static class NothingToDeployException extends IllegalStateException {
+
+    public NothingToDeployException(String sourceBranch, String targetBranch) {
+      super(
+          "Nothing to deploy: branch '"
+              + sourceBranch
+              + "' has no commits beyond "
+              + targetBranch
+              + " (commit work first, or it is already deployed).");
     }
 
-    /** Only UNMERGED PATHS mean a conflict; any other refusal is aborted, with nothing left to resolve. */
-    private RuntimeException revertFailure(Path revertWorktree, String targetBranch, String commit, String details) {
-        if (!unmergedPaths(revertWorktree).isBlank()) {
-            return new RevertConflictException(commit, targetBranch, details, revertWorktree);
-        }
-        git.run(revertWorktree, List.of("git", "revert", "--abort"));
-        return new IllegalStateException("Could not revert " + shortSha(commit) + " on " + targetBranch
-                + " — nothing was pushed and no conflict is waiting for you; git said: " + details);
+    NothingToDeployException(String message) {
+      super(message);
+    }
+  }
+
+  /**
+   * A revert hit conflicts, or one left in its worktree is not resolved yet. The checkout is LEFT
+   * at {@link #revertWorktree} for the human to resolve and revert again.
+   */
+  public static class RevertConflictException extends IllegalStateException {
+    private final transient Path revertWorktree;
+
+    public RevertConflictException(
+        String commit, String targetBranch, String details, Path revertWorktree) {
+      super(
+          "Revert CONFLICT reverting "
+              + shortSha(commit)
+              + " on "
+              + targetBranch
+              + " — nothing was pushed."
+              + " Resolve it in the revert worktree "
+              + revertWorktree
+              + ": fix the conflicts, `git add`"
+              + " them, then revert again to finish. Details: "
+              + details);
+      this.revertWorktree = revertWorktree;
     }
 
-    private void continuePendingRevert(Path revertWorktree, String targetBranch, String mergeCommit) {
-        String unmerged = unmergedPaths(revertWorktree);
-        if (!unmerged.isBlank()) {
-            throw new RevertConflictException(mergeCommit, targetBranch,
-                    "still unresolved (git add them):\n" + unmerged, revertWorktree);
-        }
-        if (revertInProgress(revertWorktree)) {
-            git.run(revertWorktree, List.of("git", "-c", "core.editor=true", "revert", "--continue"))
-                    .expectSuccess("git revert --continue in " + revertWorktree);
-        }
+    public Path revertWorktree() {
+      return revertWorktree;
+    }
+  }
+
+  /**
+   * A deploy merge hit conflicts. The checkout is LEFT at {@link #deployWorktree} for the human to
+   * resolve and deploy again.
+   */
+  public static class MergeConflictException extends IllegalStateException {
+    private final transient Path deployWorktree;
+
+    public MergeConflictException(
+        String sourceBranch, String targetBranch, String details, Path deployWorktree) {
+      super(
+          "Merge CONFLICT merging "
+              + sourceBranch
+              + " into "
+              + targetBranch
+              + " — nothing was pushed."
+              + " Resolve it in the deploy worktree "
+              + deployWorktree
+              + " (this is the "
+              + targetBranch
+              + " side; the "
+              + sourceBranch
+              + " branch and its review request are untouched): fix"
+              + " the conflicts, `git add` them, then deploy again to finish. Details: "
+              + details);
+      this.deployWorktree = deployWorktree;
     }
 
-    private boolean revertInProgress(Path revertWorktree) {
-        return git.run(revertWorktree, List.of("git", "rev-parse", "-q", "--verify", "REVERT_HEAD")).exitCode() == 0;
+    public Path deployWorktree() {
+      return deployWorktree;
     }
-
-    /** A worktree this repository cut that holds a revert: one begun and conflicted, or begun and committed. */
-    private boolean revertWaiting(Remote remote, Path projectPath, Path revertWorktree, String sourceBranch,
-                                  String targetBranch) {
-        return hasRevertWorktree(projectPath, sourceBranch)
-                && (revertInProgress(revertWorktree) || !"0".equals(git.run(revertWorktree,
-                        List.of("git", "rev-list", "--count", remote.track(targetBranch) + "..HEAD"))
-                .expectSuccess("git rev-list count HEAD in " + revertWorktree).stdout().trim()));
-    }
-
-    public boolean hasRevertWorktree(Path projectPath, String sourceBranch) {
-        return git.worktreeOwner(revertWorktreePath(projectPath, sourceBranch))
-                .filter(owner -> GitCommands.sameDirectory(owner, projectPath))
-                .isPresent();
-    }
-
-    /** Whether the conflict left in this task's revert worktree is resolved in full: nothing unmerged or edited past what was staged. */
-    public boolean revertResolved(Path projectPath, String sourceBranch) {
-        Path revertWorktree = revertWorktreePath(projectPath, sourceBranch);
-        return hasRevertWorktree(projectPath, sourceBranch) && unmergedPaths(revertWorktree).isBlank()
-                && git.run(revertWorktree, List.of("git", "diff", "--quiet")).exitCode() == 0;
-    }
-
-    /** The paths still unmerged in this task's revert worktree, one per line; blank when none, or when it is gone. */
-    public String revertUnmerged(Path projectPath, String sourceBranch) {
-        return hasRevertWorktree(projectPath, sourceBranch)
-                ? unmergedPaths(revertWorktreePath(projectPath, sourceBranch)) : "";
-    }
-
-    public Conflict.Progress revertProgress(Path projectPath, String sourceBranch) {
-        return progress(revertWorktreePath(projectPath, sourceBranch));
-    }
-
-    private void removeRevertWorktree(Path projectPath, Path revertWorktree, String revertBranch) {
-        git.run(projectPath, List.of("git", "worktree", "remove", "--force", revertWorktree.toString()));
-        git.run(projectPath, List.of("git", "branch", "-D", revertBranch));
-    }
-
-    /** Whether the commit pushed to the deploy branch is a fix on top of it rather than a deploy merge. */
-    public boolean isFix(Path projectPath, String commit) {
-        return git.run(projectPath, List.of("git", "rev-list", "--parents", "-n", "1", commit))
-                .expectSuccess("git rev-list --parents " + commit).stdout().trim().split("\\s+").length < 3;
-    }
-
-    /** Only a merge reverts as ONE unit; a non-merge would undo one commit of a task instead of the deploy. */
-    private void requireMergeCommit(Path revertWorktree, String mergeCommit, String targetBranch) {
-        String parents = git.run(revertWorktree,
-                        List.of("git", "rev-list", "--parents", "-n", "1", mergeCommit))
-                .expectSuccess("git rev-list --parents " + mergeCommit).stdout().trim();
-        if (parents.split("\\s+").length < 3) {
-            throw new IllegalStateException("Commit " + shortSha(mergeCommit) + " on " + targetBranch
-                    + " is not a merge, so reverting it would undo only part of what was deployed. Revert by"
-                    + " hand after deciding what should come out. Nothing was reverted.");
-        }
-    }
-
-    private void requireRevertable(Path revertWorktree, String targetBranch, String mergeCommit) {
-        boolean onBranch = git.run(revertWorktree,
-                List.of("git", "merge-base", "--is-ancestor", mergeCommit, "HEAD")).exitCode() == 0;
-        if (!onBranch) {
-            throw new IllegalStateException("Commit " + shortSha(mergeCommit) + " is not on " + targetBranch
-                    + " — it was never deployed there, or that history was rewritten. Nothing was reverted.");
-        }
-        String existing = revertOf(revertWorktree, mergeCommit);
-        if (!existing.isBlank()) {
-            throw new IllegalStateException("Commit " + shortSha(mergeCommit) + " was already reverted on "
-                    + targetBranch + " by " + shortSha(existing) + ". Nothing to do.");
-        }
-    }
-
-    /** git's own revert message is the marker, so a revert made by hand counts too; blank when none. */
-    private String revertOf(Path revertWorktree, String commit) {
-        return git.run(revertWorktree, List.of("git", "log",
-                        "--fixed-strings", "--grep=This reverts commit " + commit, "--format=%H", "-1"))
-                .expectSuccess("git log (revert search) in " + revertWorktree).stdout().trim();
-    }
-
-    public static String shortSha(@Nullable String sha) {
-        return sha == null || sha.length() < 8 ? String.valueOf(sha) : sha.substring(0, 8);
-    }
-
-    public static String deployBranch(String sourceBranch) {
-        return "jagt-deploy-" + sourceBranch;
-    }
-
-    /** Every deploy worktree a task of these repositories can stand in, each once. */
-    public static List<Path> deployWorktreePaths(List<NewRepo> repos, String sourceBranch) {
-        return repos.stream()
-                .filter(repo -> repo.config().deployBranch() != null && !repo.config().deployBranch().isBlank())
-                .map(repo -> deployWorktreePath(repo.projectPath(), sourceBranch))
-                .distinct().toList();
-    }
-
-    public static Path deployWorktreePath(Path projectPath, String sourceBranch) {
-        return Objects.requireNonNull(projectPath.toAbsolutePath().normalize().getParent())
-                .resolve(TaskName.slug(sourceBranch) + "-deploy");
-    }
-
-    /**
-     * Whether a deploy worktree for this task is waiting in THIS repository. The path is derived from the
-     * repository's PARENT, so siblings derive the SAME one and finishing another's merge here would push to the
-     * wrong remote.
-     */
-    public boolean hasDeployWorktree(Path projectPath, String sourceBranch) {
-        return git.worktreeOwner(deployWorktreePath(projectPath, sourceBranch))
-                .filter(owner -> GitCommands.sameDirectory(owner, projectPath))
-                .isPresent();
-    }
-
-    /**
-     * A path that is no checkout cannot be another repository's conflict: it is jagt's own leftover, an editor
-     * having written its project files back into a directory git had emptied. The deploy goes on and the
-     * path is cleared before the add; anything else found there is left untouched and named.
-     */
-    private void requireOnlyEditorResidue(Path path) {
-        List<String> kept;
-        try (var entries = Files.list(path)) {
-            kept = entries.map(entry -> entry.getFileName().toString())
-                    .filter(name -> !WorktreeNoise.isResidue(name))
-                    .sorted().toList();
-        } catch (IOException e) {
-            throw new UncheckedIOException("Could not read the deploy worktree path " + path, e);
-        }
-        if (!kept.isEmpty()) {
-            throw new StaleDeployPathException(path, kept);
-        }
-    }
-
-    /** Where a revert is staged — separate from the deploy worktree, which may be sitting in a conflict. */
-    public static Path revertWorktreePath(Path projectPath, String sourceBranch) {
-        return Objects.requireNonNull(projectPath.toAbsolutePath().normalize().getParent())
-                .resolve(TaskName.slug(sourceBranch) + "-revert");
-    }
-
-    /**
-     * The deploy worktree path this repository derives is occupied by a checkout it did not cut, so nothing was
-     * attempted. Typed so a caller landing SEVERAL repositories can come back to this one once the path is free.
-     */
-    public static class StaleDeployPathException extends IllegalStateException {
-
-        public StaleDeployPathException(Path deployWorktree, List<String> kept) {
-            super("The deploy worktree path " + deployWorktree + " is not a checkout but holds "
-                    + String.join(", ", kept) + ", so nothing can be deployed from there. Move or delete that"
-                    + " directory, then deploy again.");
-        }
-    }
-
-    public static class ForeignDeployWorktreeException extends IllegalStateException {
-
-        public ForeignDeployWorktreeException(Path deployWorktree, Path projectPath) {
-            super("The deploy worktree path " + deployWorktree + " holds a checkout "
-                    + projectPath.getFileName() + " did not cut, so its merge cannot be finished here. Deal with"
-                    + " that checkout first — finish its deploy, or `git worktree remove --force` it if it is"
-                    + " stale.");
-        }
-    }
-
-    /** The branch holds nothing the target does not already have; typed so a caller can tell it from a failure. */
-    public static class NothingToDeployException extends IllegalStateException {
-
-        public NothingToDeployException(String sourceBranch, String targetBranch) {
-            super("Nothing to deploy: branch '" + sourceBranch + "' has no commits beyond " + targetBranch
-                    + " (commit work first, or it is already deployed).");
-        }
-
-        NothingToDeployException(String message) {
-            super(message);
-        }
-    }
-
-    /**
-     * A revert hit conflicts, or one left in its worktree is not resolved yet. The checkout is LEFT at
-     * {@link #revertWorktree} for the human to resolve and revert again.
-     */
-    public static class RevertConflictException extends IllegalStateException {
-        private final transient Path revertWorktree;
-
-        public RevertConflictException(String commit, String targetBranch, String details, Path revertWorktree) {
-            super("Revert CONFLICT reverting " + shortSha(commit) + " on " + targetBranch + " — nothing was pushed."
-                    + " Resolve it in the revert worktree " + revertWorktree + ": fix the conflicts, `git add`"
-                    + " them, then revert again to finish. Details: " + details);
-            this.revertWorktree = revertWorktree;
-        }
-
-        public Path revertWorktree() {
-            return revertWorktree;
-        }
-    }
-
-    /**
-     * A deploy merge hit conflicts. The checkout is LEFT at {@link #deployWorktree} for the human to resolve and
-     * deploy again.
-     */
-    public static class MergeConflictException extends IllegalStateException {
-        private final transient Path deployWorktree;
-
-        public MergeConflictException(String sourceBranch, String targetBranch, String details, Path deployWorktree) {
-            super("Merge CONFLICT merging " + sourceBranch + " into " + targetBranch + " — nothing was pushed."
-                    + " Resolve it in the deploy worktree " + deployWorktree + " (this is the " + targetBranch
-                    + " side; the " + sourceBranch + " branch and its review request are untouched): fix"
-                    + " the conflicts, `git add` them, then deploy again to finish. Details: " + details);
-            this.deployWorktree = deployWorktree;
-        }
-
-        public Path deployWorktree() {
-            return deployWorktree;
-        }
-    }
+  }
 }

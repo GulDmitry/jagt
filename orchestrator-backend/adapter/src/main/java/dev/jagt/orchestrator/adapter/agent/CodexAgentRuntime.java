@@ -1,113 +1,136 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import dev.jagt.orchestrator.port.AgentWorktree;
-import dev.jagt.orchestrator.port.Sandbox;
+import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.adapter.Executables;
+import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.port.Problem;
+import dev.jagt.orchestrator.port.Sandbox;
 import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.task.Step;
-import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
-import org.jspecify.annotations.Nullable;
-import tools.jackson.databind.json.JsonMapper;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Codex reads {@code AGENTS.md} natively, so there is no alias to create. {@code $CODEX_HOME} points at a
- * jagt-owned directory inside the worktree, so the human's {@code ~/.codex} is neither read nor modified — and
- * their other MCP servers are not inherited either. Not the worktree's own {@code .codex/}: Codex reads a
- * project config layer from there, so a repository may ship one, and writing over a tracked file is a change.
+ * Codex reads {@code AGENTS.md} natively, so there is no alias to create. {@code $CODEX_HOME}
+ * points at a jagt-owned directory inside the worktree, so the human's {@code ~/.codex} is neither
+ * read nor modified — and their other MCP servers are not inherited either. Not the worktree's own
+ * {@code .codex/}: Codex reads a project config layer from there, so a repository may ship one, and
+ * writing over a tracked file is a change.
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "codex")
 @RequiredArgsConstructor
 public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCheck {
 
-    private static final String CODEX_HOME_DIR = ".jagt/codex";
-    private static final JsonMapper JSON = new JsonMapper();
+  private static final String CODEX_HOME_DIR = ".jagt/codex";
+  private static final JsonMapper JSON = new JsonMapper();
 
-    private final SessionBrief brief;
-    private final CodexProperties codex;
-    private final OrchestratorPaths paths;
-    private final McpEndpoint mcp;
+  private final SessionBrief brief;
+  private final CodexProperties codex;
+  private final OrchestratorPaths paths;
+  private final McpEndpoint mcp;
 
-    @Override
-    public List<Problem> problems() {
-        List<Problem> problems = new ArrayList<>();
-        Path bridge = paths.root().resolve("mcp_client.js");
-        if (!Files.isRegularFile(bridge)) {
-            problems.add(new Problem("orchestrator.agent.cli", "orchestrator.agent.cli=codex needs " + bridge
-                    + ", which is not there — the agent reaches jagt through it."));
-        }
-        if (!Executables.onPath("node")) {
-            problems.add(new Problem("node",
-                    "orchestrator.agent.cli=codex needs node on PATH — it spawns the bridge itself."));
-        }
-        return problems;
+  @Override
+  public List<Problem> problems() {
+    List<Problem> problems = new ArrayList<>();
+    Path bridge = paths.root().resolve("mcp_client.js");
+    if (!Files.isRegularFile(bridge)) {
+      problems.add(
+          new Problem(
+              "orchestrator.agent.cli",
+              "orchestrator.agent.cli=codex needs "
+                  + bridge
+                  + ", which is not there — the agent reaches jagt through it."));
     }
-
-    @Override
-    public String displayName() {
-        return "Codex";
+    if (!Executables.onPath("node")) {
+      problems.add(
+          new Problem(
+              "node",
+              "orchestrator.agent.cli=codex needs node on PATH — it spawns the bridge itself."));
     }
+    return problems;
+  }
 
-    @Override
-    public String launchCommand(Path worktree, boolean planMode) {
-        return launchCommand(worktree, planMode, "", brief.line(Step.START));
-    }
+  @Override
+  public String displayName() {
+    return "Codex";
+  }
 
-    @Override
-    public String launchCommand(Path worktree, boolean planMode, String model, @Nullable String prompt) {
-        // A read-only sandbox IS plan mode here: the agent can reason but cannot touch the files.
-        return "CODEX_HOME=" + shellQuote(worktree.resolve(CODEX_HOME_DIR).toString()) + " " + codex.command()
-                + (planMode ? " --sandbox read-only" : "")
-                + (model == null || model.isBlank() ? "" : " -m " + shellQuote(model.strip()))
-                + " " + shellQuote(prompt);
-    }
+  @Override
+  public String launchCommand(Path worktree, boolean planMode) {
+    return launchCommand(worktree, planMode, "", brief.line(Step.START));
+  }
 
-    @Override
-    public Optional<Path> sessionLogOf(Path worktree) {
-        return CodexRollouts.newest(worktree.resolve(CODEX_HOME_DIR));
-    }
+  @Override
+  public String launchCommand(
+      Path worktree, boolean planMode, String model, @Nullable String prompt) {
+    // A read-only sandbox IS plan mode here: the agent can reason but cannot touch the files.
+    return "CODEX_HOME="
+        + shellQuote(worktree.resolve(CODEX_HOME_DIR).toString())
+        + " "
+        + codex.command()
+        + (planMode ? " --sandbox read-only" : "")
+        + (model == null || model.isBlank() ? "" : " -m " + shellQuote(model.strip()))
+        + " "
+        + shellQuote(prompt);
+  }
 
-    @Override
-    protected void wireAgent(AgentWorktree worktree) {
-        // Codex's config has no verified remote-server form with custom headers, and the header is what tells
-        // the backend which task is calling — hence the stdio bridge, and with it Node.
-        linkStdioProxy(worktree);
-        write(worktree.path().resolve(CODEX_HOME_DIR).resolve("config.toml"),
-                configToml(worktree.path(), mcp.url(), worktree.sandbox()));
-    }
+  @Override
+  public Optional<Path> sessionLogOf(Path worktree) {
+    return CodexRollouts.newest(worktree.resolve(CODEX_HOME_DIR));
+  }
 
-    /**
-     * {@code approval_policy = "never"}: nobody sits in the tmux window to approve a command, so an asking agent
-     * is a frozen agent.
-     */
-    static String configToml(Path worktree, String mcpUrl, Sandbox sandbox) {
-        String writable = sandbox.enabled() ? """
+  @Override
+  protected void wireAgent(AgentWorktree worktree) {
+    // Codex's config has no verified remote-server form with custom headers, and the header is what
+    // tells
+    // the backend which task is calling — hence the stdio bridge, and with it Node.
+    linkStdioProxy(worktree);
+    write(
+        worktree.path().resolve(CODEX_HOME_DIR).resolve("config.toml"),
+        configToml(worktree.path(), mcp.url(), worktree.sandbox()));
+  }
 
-                [sandbox_workspace_write]
-                network_access = true
-                writable_roots = %s
-                """.formatted(JSON.writeValueAsString(sandbox.writable().stream().map(Path::toString).toList())) : "";
-        return """
-                # Generated by jagt for this worktree; CODEX_HOME points here, so ~/.codex stays untouched.
-                approval_policy = "never"
-                sandbox_mode = "%s"
+  /**
+   * {@code approval_policy = "never"}: nobody sits in the tmux window to approve a command, so an
+   * asking agent is a frozen agent.
+   */
+  static String configToml(Path worktree, String mcpUrl, Sandbox sandbox) {
+    String writable =
+        sandbox.enabled()
+            ? """
 
-                [mcp_servers.jagt-orchestrator]
-                command = "node"
-                args = ["%s"]
-                env = { MCP_SERVER_URL = "%s" }
-                """.formatted(sandbox.enabled() ? "workspace-write" : "danger-full-access",
-                worktree.resolve("mcp_client.js"), mcpUrl) + writable;
-    }
+            [sandbox_workspace_write]
+            network_access = true
+            writable_roots = %s
+            """
+                .formatted(
+                    JSON.writeValueAsString(
+                        sandbox.writable().stream().map(Path::toString).toList()))
+            : "";
+    return """
+    # Generated by jagt for this worktree; CODEX_HOME points here, so ~/.codex stays untouched.
+    approval_policy = "never"
+    sandbox_mode = "%s"
+
+    [mcp_servers.jagt-orchestrator]
+    command = "node"
+    args = ["%s"]
+    env = { MCP_SERVER_URL = "%s" }
+    """
+            .formatted(
+                sandbox.enabled() ? "workspace-write" : "danger-full-access",
+                worktree.resolve("mcp_client.js"),
+                mcpUrl)
+        + writable;
+  }
 }

@@ -1,80 +1,85 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.RoundReviewer;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.service.TrustedGitState;
-import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.TokenUsage;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
-
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.RoundReviewer;
+import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.service.TrustedGitState;
+import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.task.TokenUsage;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
 class ChargedReviewsTest {
 
-    private final RoundReviewer reviewer = mock(RoundReviewer.class);
-    private final UsageTracker usage = mock(UsageTracker.class);
-    private final TrustedGitState trusted = mock(TrustedGitState.class);
+  private final RoundReviewer reviewer = mock(RoundReviewer.class);
+  private final UsageTracker usage = mock(UsageTracker.class);
+  private final TrustedGitState trusted = mock(TrustedGitState.class);
 
-    @Test
-    void chargesTheTaskWhatItsReadSpent() {
-        RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
-        TokenUsage spent = TokenUsage.ofCall(1_000, 0, 10, 0.01);
-        when(reviewer.review(round)).thenReturn(new Answer<>(Optional.empty(), spent));
+  @Test
+  void chargesTheTaskWhatItsReadSpent() {
+    RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
+    TokenUsage spent = TokenUsage.ofCall(1_000, 0, 10, 0.01);
+    when(reviewer.review(round)).thenReturn(new Answer<>(Optional.empty(), spent));
 
+    new ChargedReviews(reviewer, usage, trusted, List::of).review("ABC-1", round);
+
+    verify(usage).chargeTask("ABC-1", spent);
+  }
+
+  @Test
+  void failsAReadThatAnsweredNothing() {
+    RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
+    when(reviewer.review(round)).thenReturn(Answer.unavailable());
+
+    Judgement judged =
         new ChargedReviews(reviewer, usage, trusted, List::of).review("ABC-1", round);
 
-        verify(usage).chargeTask("ABC-1", spent);
-    }
+    assertThat(judged.failure()).isEqualTo("the review answered nothing");
+  }
 
-    @Test
-    void failsAReadThatAnsweredNothing() {
-        RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
-        when(reviewer.review(round)).thenReturn(Answer.unavailable());
+  @Test
+  void readsNothingWhileWhatTheTasksGitObeysIsNotTrusted() {
+    RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
+    when(trusted.distrust("ABC-1"))
+        .thenReturn(Optional.of("core.fsmonitor in /r/.git/config added"));
 
-        Judgement judged = new ChargedReviews(reviewer, usage, trusted, List::of).review("ABC-1", round);
+    Judgement judged =
+        new ChargedReviews(reviewer, usage, trusted, List::of).review("ABC-1", round);
 
-        assertThat(judged.failure()).isEqualTo("the review answered nothing");
-    }
+    assertThat(judged.failure()).isEqualTo("core.fsmonitor in /r/.git/config added");
+    verifyNoInteractions(reviewer);
+  }
 
-    @Test
-    void readsNothingWhileWhatTheTasksGitObeysIsNotTrusted() {
-        RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
-        when(trusted.distrust("ABC-1")).thenReturn(Optional.of("core.fsmonitor in /r/.git/config added"));
+  @Test
+  void readsWhatTheSessionMayWriteBesideItsWorktrees() {
+    RoundReviewer.Round round =
+        new RoundReviewer.Round("", "prompt", List.of(Path.of("/wt/ABC-1")), "");
+    RoundReviewer.Round reaching =
+        new RoundReviewer.Round("", "prompt", List.of(Path.of("/wt/ABC-1"), Path.of("/specs")), "");
+    when(reviewer.review(reaching)).thenReturn(Answer.unavailable());
 
-        Judgement judged = new ChargedReviews(reviewer, usage, trusted, List::of).review("ABC-1", round);
+    new ChargedReviews(reviewer, usage, trusted, () -> List.of(Path.of("/specs")))
+        .review("ABC-1", round);
 
-        assertThat(judged.failure()).isEqualTo("core.fsmonitor in /r/.git/config added");
-        verifyNoInteractions(reviewer);
-    }
+    verify(reviewer).review(reaching);
+  }
 
-    @Test
-    void readsWhatTheSessionMayWriteBesideItsWorktrees() {
-        RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(Path.of("/wt/ABC-1")), "");
-        RoundReviewer.Round reaching = new RoundReviewer.Round("", "prompt",
-                List.of(Path.of("/wt/ABC-1"), Path.of("/specs")), "");
-        when(reviewer.review(reaching)).thenReturn(Answer.unavailable());
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void saysWhetherTheReaderLoadsAnMcpServerAsTheReaderDoes(boolean loads) {
+    when(reviewer.loadsMcpServer()).thenReturn(loads);
 
-        new ChargedReviews(reviewer, usage, trusted, () -> List.of(Path.of("/specs"))).review("ABC-1", round);
-
-        verify(reviewer).review(reaching);
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void saysWhetherTheReaderLoadsAnMcpServerAsTheReaderDoes(boolean loads) {
-        when(reviewer.loadsMcpServer()).thenReturn(loads);
-
-        assertThat(new ChargedReviews(reviewer, usage, trusted, List::of).loadsMcpServer()).isEqualTo(loads);
-    }
+    assertThat(new ChargedReviews(reviewer, usage, trusted, List::of).loadsMcpServer())
+        .isEqualTo(loads);
+  }
 }

@@ -8,96 +8,114 @@ import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 /**
- * Asks the Master's panel to read a round that has been handed back and not yet judged. The trigger is
- * deterministic — a status and a stamp, never a model's opinion that something looks ready — and the judgement
- * is the only part that is a model's.
+ * Asks the Master's panel to read a round that has been handed back and not yet judged. The trigger
+ * is deterministic — a status and a stamp, never a model's opinion that something looks ready — and
+ * the judgement is the only part that is a model's.
  */
 @Service
 @RequiredArgsConstructor
 public class MasterReviewJob implements Job {
 
-    private final StateService stateService;
-    private final ConfigService configService;
-    private final MasterPanel panel;
-    private final MasterReview reviews;
-    private final MasterVerdicts verdicts;
+  private final StateService stateService;
+  private final ConfigService configService;
+  private final MasterPanel panel;
+  private final MasterReview reviews;
+  private final MasterVerdicts verdicts;
 
-    @Override
-    public String id() {
-        return "master-review";
+  @Override
+  public String id() {
+    return "master-review";
+  }
+
+  @Override
+  public Serves serves() {
+    return Serves.MASTER;
+  }
+
+  @Override
+  public String describe() {
+    return "hand the Master session each plan and each round that came back, and act on what it"
+               + " answered";
+  }
+
+  @Override
+  public Duration every() {
+    return Duration.ofSeconds(2);
+  }
+
+  @Override
+  public void run() {
+    ConfigService.ConfigFile.MasterConfig config = configService.load().master();
+    if (!config.running()) {
+      return;
     }
-
-    @Override
-    public Serves serves() {
-        return Serves.MASTER;
-    }
-
-    @Override
-    public String describe() {
-        return "hand the Master session each plan and each round that came back, and act on what it answered";
-    }
-
-    @Override
-    public Duration every() {
-        return Duration.ofSeconds(2);
-    }
-
-    @Override
-    public void run() {
-        ConfigService.ConfigFile.MasterConfig config = configService.load().master();
-        if (!config.running()) {
-            return;
-        }
-        Map<String, Optional<MasterReview.Verdict>> read = new HashMap<>();
-        stateService.tasks().forEach((taskId, task) -> {
-            if (!FlowRules.readByTheMaster(task.status()) || task.stopped()) {
+    Map<String, Optional<MasterReview.Verdict>> read = new HashMap<>();
+    stateService
+        .tasks()
+        .forEach(
+            (taskId, task) -> {
+              if (!FlowRules.readByTheMaster(task.status()) || task.stopped()) {
                 return;
-            }
-            reviews.settle(taskId, task);
-            Optional<MasterReview.Verdict> verdict = reviews.of(task);
-            read.put(taskId, verdict);
-            verdict.filter(written -> written.answers(task))
-                    .ifPresent(written -> act(taskId, task, written, config));
-        });
-        boolean questionsAnswered = config.may(MasterRight.ANSWER);
-        // Asked LAST: a round holds this thread until every role answered, and verdicts already written go first.
-        stateService.tasks().entrySet().stream()
-                .filter(entry -> reviewable(entry.getValue(), read.getOrDefault(entry.getKey(), Optional.empty())
-                        .filter(written -> written.answers(entry.getValue())).isPresent(), questionsAnswered))
-                .findFirst()
-                .ifPresent(entry -> ask(entry.getKey(), entry.getValue(), config));
-    }
+              }
+              reviews.settle(taskId, task);
+              Optional<MasterReview.Verdict> verdict = reviews.of(task);
+              read.put(taskId, verdict);
+              verdict
+                  .filter(written -> written.answers(task))
+                  .ifPresent(written -> act(taskId, task, written, config));
+            });
+    boolean questionsAnswered = config.may(MasterRight.ANSWER);
+    // Asked LAST: a round holds this thread until every role answered, and verdicts already written
+    // go first.
+    stateService.tasks().entrySet().stream()
+        .filter(
+            entry ->
+                reviewable(
+                    entry.getValue(),
+                    read.getOrDefault(entry.getKey(), Optional.empty())
+                        .filter(written -> written.answers(entry.getValue()))
+                        .isPresent(),
+                    questionsAnswered))
+        .findFirst()
+        .ifPresent(entry -> ask(entry.getKey(), entry.getValue(), config));
+  }
 
-    private void act(String taskId, TaskState task, MasterReview.Verdict written,
-                     ConfigService.ConfigFile.MasterConfig config) {
-        try {
-            verdicts.act(taskId, task, written, config);
-        } catch (TaskMovedOn dropped) {
-            return;
-        }
+  private void act(
+      String taskId,
+      TaskState task,
+      MasterReview.Verdict written,
+      ConfigService.ConfigFile.MasterConfig config) {
+    try {
+      verdicts.act(taskId, task, written, config);
+    } catch (TaskMovedOn dropped) {
+      return;
     }
+  }
 
-    /** A question on a round the Master answers is the answer job's; a plan's question is read with the plan. */
-    static boolean reviewable(TaskState task, boolean judged, boolean questionsAnswered) {
-        return FlowRules.readByTheMaster(task.status()) && !judged && !task.stopped()
-                && (FlowRules.holdsAPlan(task.status())
-                || !(questionsAnswered && task.report().asks()));
-    }
+  /**
+   * A question on a round the Master answers is the answer job's; a plan's question is read with
+   * the plan.
+   */
+  static boolean reviewable(TaskState task, boolean judged, boolean questionsAnswered) {
+    return FlowRules.readByTheMaster(task.status())
+        && !judged
+        && !task.stopped()
+        && (FlowRules.holdsAPlan(task.status()) || !(questionsAnswered && task.report().asks()));
+  }
 
-    private void ask(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
-        if (FlowRules.holdsAPlan(task.status())) {
-            panel.plan(taskId, task, config);
-        } else {
-            panel.review(taskId, task, config);
-        }
+  private void ask(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
+    if (FlowRules.holdsAPlan(task.status())) {
+      panel.plan(taskId, task, config);
+    } else {
+      panel.review(taskId, task, config);
     }
+  }
 }

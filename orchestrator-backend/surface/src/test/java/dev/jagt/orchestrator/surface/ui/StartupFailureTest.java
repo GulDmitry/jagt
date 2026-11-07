@@ -1,42 +1,45 @@
 package dev.jagt.orchestrator.surface.ui;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.startup.Misconfigured;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.web.server.PortInUseException;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 class StartupFailureTest {
 
-    @Test
-    void namesThePortAndTheOtherWayToStartWhenTheAddressIsTaken() {
-        IllegalStateException wrapped = new IllegalStateException("context failed",
-                new PortInUseException(8290));
+  @Test
+  void namesThePortAndTheOtherWayToStartWhenTheAddressIsTaken() {
+    IllegalStateException wrapped =
+        new IllegalStateException("context failed", new PortInUseException(8290));
 
-        assertThat(StartupFailure.describe(wrapped))
-                .contains("port 8290 is in use")
-                .contains("--server.port=<port>");
-    }
+    assertThat(StartupFailure.describe(wrapped))
+        .contains("port 8290 is in use")
+        .contains("--server.port=<port>");
+  }
 
-    @Test
-    void handsBackTheWholeListWhenTheInstallationIsIncompleteRatherThanPointingAtALog() {
-        IllegalStateException wrapped = new IllegalStateException("startup failed",
-                new Misconfigured(List.of(new Problem("git", "git is not on PATH"),
-                        new Problem("orchestrator.projects", "jagt.yml defines no projects"))));
+  @Test
+  void handsBackTheWholeListWhenTheInstallationIsIncompleteRatherThanPointingAtALog() {
+    IllegalStateException wrapped =
+        new IllegalStateException(
+            "startup failed",
+            new Misconfigured(
+                List.of(
+                    new Problem("git", "git is not on PATH"),
+                    new Problem("orchestrator.projects", "jagt.yml defines no projects"))));
 
-        assertThat(StartupFailure.describe(wrapped))
-                .contains("1. git is not on PATH")
-                .contains("2. jagt.yml defines no projects")
-                .doesNotContain("logging.file.name");
-    }
+    assertThat(StartupFailure.describe(wrapped))
+        .contains("1. git is not on PATH")
+        .contains("2. jagt.yml defines no projects")
+        .doesNotContain("logging.file.name");
+  }
 
-    @Test
-    void pointsAtTheLogFileForAnyOtherFailure() {
-        assertThat(StartupFailure.describe(new IllegalStateException("jagt.yml is unreadable")))
-                .contains("jagt.yml is unreadable")
-                .contains("logging.file.name");
-    }
+  @Test
+  void pointsAtTheLogFileForAnyOtherFailure() {
+    assertThat(StartupFailure.describe(new IllegalStateException("jagt.yml is unreadable")))
+        .contains("jagt.yml is unreadable")
+        .contains("logging.file.name");
+  }
 }

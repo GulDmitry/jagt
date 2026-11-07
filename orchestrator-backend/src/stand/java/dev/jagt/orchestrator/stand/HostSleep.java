@@ -5,12 +5,11 @@ import java.time.Instant;
 
 final class HostSleep {
 
-    static final Duration GAP = Duration.ofSeconds(90);
+  static final Duration GAP = Duration.ofSeconds(90);
 
-    private HostSleep() {
-    }
+  private HostSleep() {}
 
-    static boolean between(Instant before, Instant after) {
-        return Duration.between(before, after).compareTo(GAP) > 0;
-    }
+  static boolean between(Instant before, Instant after) {
+    return Duration.between(before, after).compareTo(GAP) > 0;
+  }
 }

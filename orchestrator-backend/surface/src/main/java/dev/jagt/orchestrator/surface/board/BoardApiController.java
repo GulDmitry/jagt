@@ -1,110 +1,131 @@
 package dev.jagt.orchestrator.surface.board;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import dev.jagt.orchestrator.flow.Phase;
-import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.command.CommandReference;
 import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
+import dev.jagt.orchestrator.flow.Phase;
+import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.AssistantHealth;
 import dev.jagt.orchestrator.port.ReachLost;
-import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.service.ActStop;
 import dev.jagt.orchestrator.service.TaskViews;
+import dev.jagt.orchestrator.task.BranchStrategy;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
-import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class BoardApiController {
 
-    public record Board(List<TaskView> tasks, List<String> projects, Map<String, List<String>> offers,
-                        String masterMode, @JsonUnwrapped Cadence cadence, @JsonUnwrapped Header header,
-                        @JsonUnwrapped Choices choices) {
+  public record Board(
+      List<TaskView> tasks,
+      List<String> projects,
+      Map<String, List<String>> offers,
+      String masterMode,
+      @JsonUnwrapped Cadence cadence,
+      @JsonUnwrapped Header header,
+      @JsonUnwrapped Choices choices) {
 
-        public record Cadence(String autoReview, boolean autoReviewEnabled) {
-        }
+    public record Cadence(String autoReview, boolean autoReviewEnabled) {}
 
-        public record Header(Jobs.Summary jobs, @Nullable ActStop actStop, AssistantHealth.@Nullable Outage assistant,
-                             List<ReachLost> reach) {
-        }
+    public record Header(
+        Jobs.Summary jobs,
+        @Nullable ActStop actStop,
+        AssistantHealth.@Nullable Outage assistant,
+        List<ReachLost> reach) {}
 
-        public record Choices(List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases) {
-        }
+    public record Choices(
+        List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases) {}
+  }
+
+  private final TaskViews taskViews;
+  private final TaskEventStream events;
+  private final GlobalCommands globals;
+  private final HeaderState header;
+
+  @GetMapping("/tasks")
+  public Board tasks() {
+    var snapshot = taskViews.snapshot();
+    return new Board(
+        snapshot.tasks(),
+        snapshot.projects(),
+        offers(snapshot.tasks()),
+        snapshot.masterMode(),
+        new Board.Cadence(snapshot.cadence().summary(), snapshot.cadence().enabled()),
+        new Board.Header(
+            header.summary(),
+            snapshot.actStop(),
+            header.assistantOutage().orElse(null),
+            header.reachLost()),
+        new Board.Choices(BranchStrategy.choices(), Phase.choices()));
+  }
+
+  private Map<String, List<String>> offers(List<TaskView> tasks) {
+    Map<String, List<String>> offers = new LinkedHashMap<>();
+    for (TaskView task : tasks) {
+      List<String> ids =
+          globals.all().stream()
+              .filter(command -> command.offeredOn(task))
+              .map(GlobalCommand::id)
+              .toList();
+      if (!ids.isEmpty()) {
+        offers.put(task.id(), ids);
+      }
     }
+    return offers;
+  }
 
-    private final TaskViews taskViews;
-    private final TaskEventStream events;
-    private final GlobalCommands globals;
-    private final HeaderState header;
+  @GetMapping("/jobs")
+  public List<Jobs.Status> jobs() {
+    return header.statuses();
+  }
 
-    @GetMapping("/tasks")
-    public Board tasks() {
-        var snapshot = taskViews.snapshot();
-        return new Board(snapshot.tasks(), snapshot.projects(), offers(snapshot.tasks()), snapshot.masterMode(),
-                new Board.Cadence(snapshot.cadence().summary(), snapshot.cadence().enabled()),
-                new Board.Header(header.summary(), snapshot.actStop(), header.assistantOutage().orElse(null),
-                        header.reachLost()),
-                new Board.Choices(BranchStrategy.choices(), Phase.choices()));
-    }
+  @GetMapping("/commands")
+  public List<CommandReference.Verb> commands() {
+    return CommandReference.verbs(globals.all());
+  }
 
-    private Map<String, List<String>> offers(List<TaskView> tasks) {
-        Map<String, List<String>> offers = new LinkedHashMap<>();
-        for (TaskView task : tasks) {
-            List<String> ids = globals.all().stream().filter(command -> command.offeredOn(task))
-                    .map(GlobalCommand::id).toList();
-            if (!ids.isEmpty()) {
-                offers.put(task.id(), ids);
-            }
-        }
-        return offers;
-    }
+  /**
+   * Reports only: a GET must not start work. {@code about} is what a typed line puts after the
+   * verb.
+   */
+  @GetMapping(value = "/commands/{id}", produces = MediaType.TEXT_PLAIN_VALUE)
+  public String report(@PathVariable String id, @RequestParam(required = false) String about) {
+    return globals
+        .byId(id)
+        .filter(GlobalCommand::report)
+        .orElseThrow(() -> new IllegalArgumentException("No report '" + id + "'"))
+        .run(about == null ? "" : about);
+  }
 
-    @GetMapping("/jobs")
-    public List<Jobs.Status> jobs() {
-        return header.statuses();
-    }
+  public record Ran(String message) {}
 
-    @GetMapping("/commands")
-    public List<CommandReference.Verb> commands() {
-        return CommandReference.verbs(globals.all());
-    }
+  @PostMapping("/commands/{id}")
+  public Ran execute(@PathVariable String id, @RequestParam(required = false) String about) {
+    return new Ran(
+        globals
+            .byId(id)
+            .filter(command -> !command.report())
+            .orElseThrow(() -> new IllegalArgumentException("No command '" + id + "' to run"))
+            .run(about == null ? "" : about));
+  }
 
-    /** Reports only: a GET must not start work. {@code about} is what a typed line puts after the verb. */
-    @GetMapping(value = "/commands/{id}", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String report(@PathVariable String id, @RequestParam(required = false) String about) {
-        return globals.byId(id).filter(GlobalCommand::report)
-                .orElseThrow(() -> new IllegalArgumentException("No report '" + id + "'"))
-                .run(about == null ? "" : about);
-    }
-
-    public record Ran(String message) {
-    }
-
-    @PostMapping("/commands/{id}")
-    public Ran execute(@PathVariable String id, @RequestParam(required = false) String about) {
-        return new Ran(globals.byId(id).filter(command -> !command.report())
-                .orElseThrow(() -> new IllegalArgumentException("No command '" + id + "' to run"))
-                .run(about == null ? "" : about));
-    }
-
-    @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter events() {
-        return events.open();
-    }
-
+  @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  public SseEmitter events() {
+    return events.open();
+  }
 }

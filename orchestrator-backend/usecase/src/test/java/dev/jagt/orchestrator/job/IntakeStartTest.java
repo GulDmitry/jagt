@@ -1,5 +1,14 @@
 package dev.jagt.orchestrator.job;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
@@ -10,109 +19,109 @@ import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 class IntakeStartTest {
 
-    private final ProjectRouting routing = mock(ProjectRouting.class);
-    private final IntakeHistory history = mock(IntakeHistory.class);
-    private final TaskLauncher launcher = mock(TaskLauncher.class);
-    private final IntakeStart starts = new IntakeStart(routing, history, launcher);
+  private final ProjectRouting routing = mock(ProjectRouting.class);
+  private final IntakeHistory history = mock(IntakeHistory.class);
+  private final TaskLauncher launcher = mock(TaskLauncher.class);
+  private final IntakeStart starts = new IntakeStart(routing, history, launcher);
 
-    @Test
-    void startsTheTaskInTheProjectTheItemWasPlacedIn() {
-        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42").withLabels(List.of("backend"));
-        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
-        when(launcher.launch(any(), any())).thenReturn(Launched.created("ABC-42", "started"));
+  @Test
+  void startsTheTaskInTheProjectTheItemWasPlacedIn() {
+    TicketFacts item =
+        TicketFacts.defaults().withExists(true).withKey("ABC-42").withLabels(List.of("backend"));
+    when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
+    when(launcher.launch(any(), any())).thenReturn(Launched.created("ABC-42", "started"));
 
-        boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
+    boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
 
-        assertThat(goesOn).isTrue();
-        verify(launcher).launch(LaunchRequest.of("ABC-42").withProject("api"),
-                new Answer<>(Optional.of(item), TokenUsage.NONE));
-    }
+    assertThat(goesOn).isTrue();
+    verify(launcher)
+        .launch(
+            LaunchRequest.of("ABC-42").withProject("api"),
+            new Answer<>(Optional.of(item), TokenUsage.NONE));
+  }
 
-    @Test
-    void turnsAwayAnItemNothingCouldPlaceInAProject() {
-        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42");
-        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Undecided("placed in no configured project"));
+  @Test
+  void turnsAwayAnItemNothingCouldPlaceInAProject() {
+    TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42");
+    when(routing.projectFor(item))
+        .thenReturn(new ProjectRouting.Undecided("placed in no configured project"));
 
-        boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
+    boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
 
-        assertThat(goesOn).isTrue();
-        verify(history).turnAway(eq("ABC-42"), anyString());
-        verify(launcher, never()).launch(any(), any());
-    }
+    assertThat(goesOn).isTrue();
+    verify(history).turnAway(eq("ABC-42"), anyString());
+    verify(launcher, never()).launch(any(), any());
+  }
 
-    @Test
-    void stopsThePollWhereTheBoardRefusedTheLaunch() {
-        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1");
-        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
-        when(launcher.launch(any(), any()))
-                .thenThrow(new IllegalArgumentException("24 tasks are already open, which is the limit"));
+  @Test
+  void stopsThePollWhereTheBoardRefusedTheLaunch() {
+    TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1");
+    when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
+    when(launcher.launch(any(), any()))
+        .thenThrow(new IllegalArgumentException("24 tasks are already open, which is the limit"));
 
-        boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
+    boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
 
-        assertThat(goesOn).isFalse();
-    }
+    assertThat(goesOn).isFalse();
+  }
 
-    @Test
-    @ResourceLock(Resources.GLOBAL)
-    void namesTheFailuresTypeAndKeepsItsStackWhereTheLaunchFailedWithoutAMessage() {
-        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1");
-        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
-        when(launcher.launch(any(), any())).thenThrow(new NullPointerException());
-        ListAppender<ILoggingEvent> log = new ListAppender<>();
-        log.start();
-        ((Logger) LoggerFactory.getLogger(IntakeStart.class)).addAppender(log);
+  @Test
+  @ResourceLock(Resources.GLOBAL)
+  void namesTheFailuresTypeAndKeepsItsStackWhereTheLaunchFailedWithoutAMessage() {
+    TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1");
+    when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
+    when(launcher.launch(any(), any())).thenThrow(new NullPointerException());
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    ((Logger) LoggerFactory.getLogger(IntakeStart.class)).addAppender(log);
 
-        starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
+    starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
 
-        ILoggingEvent failed = assertThat(List.copyOf(log.list))
-                .filteredOn(ILoggingEvent::getMessage, "intake could not start a task").singleElement().actual();
-        assertThat(failed.getKeyValuePairs()).anySatisfy(pair -> {
-            assertThat(pair.key).isEqualTo("cause");
-            assertThat(pair.value).isEqualTo("NullPointerException");
-        });
-        assertThat(failed.getThrowableProxy()).isNotNull();
-    }
+    ILoggingEvent failed =
+        assertThat(List.copyOf(log.list))
+            .filteredOn(ILoggingEvent::getMessage, "intake could not start a task")
+            .singleElement()
+            .actual();
+    assertThat(failed.getKeyValuePairs())
+        .anySatisfy(
+            pair -> {
+              assertThat(pair.key).isEqualTo("cause");
+              assertThat(pair.value).isEqualTo("NullPointerException");
+            });
+    assertThat(failed.getThrowableProxy()).isNotNull();
+  }
 
-    @Test
-    void leavesAnItemTheRouterCouldNotAnswerForTheNextPollInsteadOfTurningItAway() {
-        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42");
-        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Unreadable("the router answered nothing"));
+  @Test
+  void leavesAnItemTheRouterCouldNotAnswerForTheNextPollInsteadOfTurningItAway() {
+    TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42");
+    when(routing.projectFor(item))
+        .thenReturn(new ProjectRouting.Unreadable("the router answered nothing"));
 
-        boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
+    boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
 
-        assertThat(goesOn).isFalse();
-        verify(history, never()).turnAway(anyString(), anyString());
-        verify(launcher, never()).launch(any(), any());
-    }
+    assertThat(goesOn).isFalse();
+    verify(history, never()).turnAway(anyString(), anyString());
+    verify(launcher, never()).launch(any(), any());
+  }
 
-    @Test
-    void turnsAwayAnItemTheLauncherDeclinedAndGoesOnToTheNext() {
-        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42");
-        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
-        when(launcher.launch(any(), any())).thenReturn(Launched.refused("ABC-42 is already a task"));
+  @Test
+  void turnsAwayAnItemTheLauncherDeclinedAndGoesOnToTheNext() {
+    TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42");
+    when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
+    when(launcher.launch(any(), any())).thenReturn(Launched.refused("ABC-42 is already a task"));
 
-        boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
+    boolean goesOn = starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
 
-        assertThat(goesOn).isTrue();
-        verify(history).turnAway("ABC-42", "ABC-42 is already a task");
-    }
+    assertThat(goesOn).isTrue();
+    verify(history).turnAway("ABC-42", "ABC-42 is already a task");
+  }
 }

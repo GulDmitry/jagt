@@ -12,16 +12,16 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PauseCapability implements TaskCapability {
 
-    private final TaskStops stops;
+  private final TaskStops stops;
 
-    @Override
-    public TaskAction action() {
-        return TaskAction.PAUSE;
-    }
+  @Override
+  public TaskAction action() {
+    return TaskAction.PAUSE;
+  }
 
-    @Override
-    public Outcome run(String taskId) {
-        stops.stop(taskId, TaskStop.Trigger.PAUSE, "you paused it");
-        return Outcome.ok("pause " + taskId + ": nothing of jagt moves it until you lift the stop");
-    }
+  @Override
+  public Outcome run(String taskId) {
+    stops.stop(taskId, TaskStop.Trigger.PAUSE, "you paused it");
+    return Outcome.ok("pause " + taskId + ": nothing of jagt moves it until you lift the stop");
+  }
 }

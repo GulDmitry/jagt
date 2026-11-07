@@ -7,30 +7,31 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class StatsCommand implements GlobalCommand {
 
-    private final StatsReport stats;
+  private final StatsReport stats;
 
-    @Override
-    public String id() {
-        return "stats";
-    }
+  @Override
+  public String id() {
+    return "stats";
+  }
 
-    @Override
-    public int rank() {
-        return 100;
-    }
+  @Override
+  public int rank() {
+    return 100;
+  }
 
-    @Override
-    public String hint() {
-        return "the subscription's limits, what jagt's own model calls cost, and where each task's time went";
-    }
+  @Override
+  public String hint() {
+    return "the subscription's limits, what jagt's own model calls cost, and where each task's time"
+               + " went";
+  }
 
-    @Override
-    public boolean report() {
-        return true;
-    }
+  @Override
+  public boolean report() {
+    return true;
+  }
 
-    @Override
-    public String run(String tail) {
-        return stats.render();
-    }
+  @Override
+  public String run(String tail) {
+    return stats.render();
+  }
 }

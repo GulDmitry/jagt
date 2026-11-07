@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.capability;
 
-import dev.jagt.orchestrator.flow.TaskCapability;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.TaskCapability;
 import dev.jagt.orchestrator.service.ReviewSweepService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -12,15 +12,15 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SweepCapability implements TaskCapability {
 
-    private final ReviewSweepService sweeps;
+  private final ReviewSweepService sweeps;
 
-    @Override
-    public TaskAction action() {
-        return TaskAction.SWEEP;
-    }
+  @Override
+  public TaskAction action() {
+    return TaskAction.SWEEP;
+  }
 
-    @Override
-    public Outcome run(String taskId) {
-        return Outcome.ok(sweeps.sweep(taskId).message());
-    }
+  @Override
+  public Outcome run(String taskId) {
+    return Outcome.ok(sweeps.sweep(taskId).message());
+  }
 }

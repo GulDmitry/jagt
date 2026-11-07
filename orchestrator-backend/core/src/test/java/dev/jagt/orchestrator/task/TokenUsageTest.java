@@ -1,118 +1,126 @@
 package dev.jagt.orchestrator.task;
 
-import tools.jackson.databind.json.JsonMapper;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import tools.jackson.databind.json.JsonMapper;
 
 class TokenUsageTest {
 
-    @Test
-    void doesNotCountACallThatNeverReachedAModel() {
-        assertThat(TokenUsage.ofCall(0, 0, 0, 0)).isEqualTo(TokenUsage.NONE);
-    }
+  @Test
+  void doesNotCountACallThatNeverReachedAModel() {
+    assertThat(TokenUsage.ofCall(0, 0, 0, 0)).isEqualTo(TokenUsage.NONE);
+  }
 
-    @ParameterizedTest
-    @CsvSource({"1,0,0", "0,1,0", "0,0,1"})
-    void countsACallAsSoonAsAnyTokenWasSpent(long input, long cached, long output) {
-        assertThat(TokenUsage.ofCall(input, cached, output, 0).calls()).isEqualTo(1);
-    }
+  @ParameterizedTest
+  @CsvSource({"1,0,0", "0,1,0", "0,0,1"})
+  void countsACallAsSoonAsAnyTokenWasSpent(long input, long cached, long output) {
+    assertThat(TokenUsage.ofCall(input, cached, output, 0).calls()).isEqualTo(1);
+  }
 
-    @Test
-    void addsUpEveryDimensionOfRepeatedCalls() {
-        TokenUsage total = TokenUsage.ofCall(25_000, 100, 170, 0.05)
-                .plus(TokenUsage.ofCall(26_000, 400, 130, 0.06));
+  @Test
+  void addsUpEveryDimensionOfRepeatedCalls() {
+    TokenUsage total =
+        TokenUsage.ofCall(25_000, 100, 170, 0.05).plus(TokenUsage.ofCall(26_000, 400, 130, 0.06));
 
-        assertThat(total.calls()).isEqualTo(2);
-        assertThat(total.inputTokens()).isEqualTo(51_000);
-        assertThat(total.cachedInputTokens()).isEqualTo(500);
-        assertThat(total.outputTokens()).isEqualTo(300);
-        assertThat(total.total()).isEqualTo(51_800);
-    }
+    assertThat(total.calls()).isEqualTo(2);
+    assertThat(total.inputTokens()).isEqualTo(51_000);
+    assertThat(total.cachedInputTokens()).isEqualTo(500);
+    assertThat(total.outputTokens()).isEqualTo(300);
+    assertThat(total.total()).isEqualTo(51_800);
+  }
 
-    @ParameterizedTest
-    @CsvSource({"500,0,1,0", "500,9000,0,1", "0,9000,0,1"})
-    void callsAStartColdOnlyWhenItHadInputAndReadNothingFromTheCache(long input, long cached, int cold, int warm) {
-        TokenUsage start = TokenUsage.ofCall(input, cached, 10, 0).asStart();
+  @ParameterizedTest
+  @CsvSource({"500,0,1,0", "500,9000,0,1", "0,9000,0,1"})
+  void callsAStartColdOnlyWhenItHadInputAndReadNothingFromTheCache(
+      long input, long cached, int cold, int warm) {
+    TokenUsage start = TokenUsage.ofCall(input, cached, 10, 0).asStart();
 
-        assertThat(start.coldStarts()).isEqualTo(cold);
-        assertThat(start.warmStarts()).isEqualTo(warm);
-    }
+    assertThat(start.coldStarts()).isEqualTo(cold);
+    assertThat(start.warmStarts()).isEqualTo(warm);
+  }
 
-    @Test
-    void leavesACallWithoutCacheFieldsOutOfBothStartCounts() {
-        TokenUsage total = TokenUsage.ofCall(500, 0, 10, 0).asStart().plus(TokenUsage.ofCall(500, 0, 10, 0));
+  @Test
+  void leavesACallWithoutCacheFieldsOutOfBothStartCounts() {
+    TokenUsage total =
+        TokenUsage.ofCall(500, 0, 10, 0).asStart().plus(TokenUsage.ofCall(500, 0, 10, 0));
 
-        assertThat(total.calls()).isEqualTo(2);
-        assertThat(total.measuredStarts()).isEqualTo(1);
-    }
+    assertThat(total.calls()).isEqualTo(2);
+    assertThat(total.measuredStarts()).isEqualTo(1);
+  }
 
-    @Test
-    void addsUpCostAndStartCountsOfRepeatedCalls() {
-        TokenUsage total = TokenUsage.ofCall(500, 0, 10, 0.25).asStart()
-                .plus(TokenUsage.ofCall(500, 9_000, 10, 0.5).asStart())
-                .plus(TokenUsage.ofCall(500, 0, 10, 0.25).asStart());
+  @Test
+  void addsUpCostAndStartCountsOfRepeatedCalls() {
+    TokenUsage total =
+        TokenUsage.ofCall(500, 0, 10, 0.25)
+            .asStart()
+            .plus(TokenUsage.ofCall(500, 9_000, 10, 0.5).asStart())
+            .plus(TokenUsage.ofCall(500, 0, 10, 0.25).asStart());
 
-        assertThat(total.costUsd()).isEqualTo(1.0);
-        assertThat(total.coldStarts()).isEqualTo(2);
-        assertThat(total.warmStarts()).isEqualTo(1);
-        assertThat(total.measuredStarts()).isEqualTo(3);
-    }
+    assertThat(total.costUsd()).isEqualTo(1.0);
+    assertThat(total.coldStarts()).isEqualTo(2);
+    assertThat(total.warmStarts()).isEqualTo(1);
+    assertThat(total.measuredStarts()).isEqualTo(3);
+  }
 
-    @Test
-    void marksNothingAsAStartWhenNoCallWasMade() {
-        assertThat(TokenUsage.NONE.asStart()).isEqualTo(TokenUsage.NONE);
-    }
+  @Test
+  void marksNothingAsAStartWhenNoCallWasMade() {
+    assertThat(TokenUsage.NONE.asStart()).isEqualTo(TokenUsage.NONE);
+  }
 
-    @Test
-    void callsAStartWarmWhenItSpentOnlyOutputTokens() {
-        TokenUsage start = TokenUsage.ofCall(0, 0, 10, 0).asStart();
+  @Test
+  void callsAStartWarmWhenItSpentOnlyOutputTokens() {
+    TokenUsage start = TokenUsage.ofCall(0, 0, 10, 0).asStart();
 
-        assertThat(start.coldStarts()).isZero();
-        assertThat(start.warmStarts()).isEqualTo(1);
-    }
+    assertThat(start.coldStarts()).isZero();
+    assertThat(start.warmStarts()).isEqualTo(1);
+  }
 
-    @Test
-    void readsAnUnpricedCallAsALowerBoundOnceSummedWithAPricedOne() {
-        TokenUsage total = TokenUsage.ofCall(500, 0, 10, 0.25).plus(TokenUsage.ofUnpricedCall(500, 0, 10));
+  @Test
+  void readsAnUnpricedCallAsALowerBoundOnceSummedWithAPricedOne() {
+    TokenUsage total =
+        TokenUsage.ofCall(500, 0, 10, 0.25).plus(TokenUsage.ofUnpricedCall(500, 0, 10));
 
-        assertThat(total.calls()).isEqualTo(2);
-        assertThat(total.costUsd()).isEqualTo(0.25);
-        assertThat(total.unpricedCalls()).isEqualTo(1);
-        assertThat(total.costIsLowerBound()).isTrue();
-    }
+    assertThat(total.calls()).isEqualTo(2);
+    assertThat(total.costUsd()).isEqualTo(0.25);
+    assertThat(total.unpricedCalls()).isEqualTo(1);
+    assertThat(total.costIsLowerBound()).isTrue();
+  }
 
-    @Test
-    void keepsACostCompleteWhileEveryCallIsPriced() {
-        TokenUsage total = TokenUsage.ofCall(500, 0, 10, 0).plus(TokenUsage.ofCall(500, 0, 10, 0.25));
+  @Test
+  void keepsACostCompleteWhileEveryCallIsPriced() {
+    TokenUsage total = TokenUsage.ofCall(500, 0, 10, 0).plus(TokenUsage.ofCall(500, 0, 10, 0.25));
 
-        assertThat(total.costIsLowerBound()).isFalse();
-    }
+    assertThat(total.costIsLowerBound()).isFalse();
+  }
 
-    @Test
-    void doesNotCountAnUnpricedCallThatNeverReachedAModel() {
-        assertThat(TokenUsage.ofUnpricedCall(0, 0, 0)).isEqualTo(TokenUsage.NONE);
-    }
+  @Test
+  void doesNotCountAnUnpricedCallThatNeverReachedAModel() {
+    assertThat(TokenUsage.ofUnpricedCall(0, 0, 0)).isEqualTo(TokenUsage.NONE);
+  }
 
-    @Test
-    void keepsTheLowerBoundWhenACallIsMarkedAsAStart() {
-        assertThat(TokenUsage.ofUnpricedCall(500, 0, 10).asStart().costIsLowerBound()).isTrue();
-    }
+  @Test
+  void keepsTheLowerBoundWhenACallIsMarkedAsAStart() {
+    assertThat(TokenUsage.ofUnpricedCall(500, 0, 10).asStart().costIsLowerBound()).isTrue();
+  }
 
-    @Test
-    void readsARecordWrittenBeforeUnpricedCallsWereCountedAsComplete() throws Exception {
-        TokenUsage read = new JsonMapper().readValue(
+  @Test
+  void readsARecordWrittenBeforeUnpricedCallsWereCountedAsComplete() throws Exception {
+    TokenUsage read =
+        new JsonMapper()
+            .readValue(
                 "{\"calls\":2,\"inputTokens\":300,\"cachedInputTokens\":0,\"outputTokens\":0,\"costUsd\":0.5,"
-                        + "\"coldStarts\":0,\"warmStarts\":0}", TokenUsage.class);
+                    + "\"coldStarts\":0,\"warmStarts\":0}",
+                TokenUsage.class);
 
-        assertThat(read.costIsLowerBound()).isFalse();
-    }
+    assertThat(read.costIsLowerBound()).isFalse();
+  }
 
-    @Test
-    void writesNoFieldForACompleteCost() {
-        assertThat(new JsonMapper().writeValueAsString(TokenUsage.ofCall(500, 0, 10, 0.25)))
-                .doesNotContain("unpricedCalls");
-    }
+  @Test
+  void writesNoFieldForACompleteCost() {
+    assertThat(new JsonMapper().writeValueAsString(TokenUsage.ofCall(500, 0, 10, 0.25)))
+        .doesNotContain("unpricedCalls");
+  }
 }

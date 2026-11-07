@@ -1,23 +1,22 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.port.SessionHost;
+import java.util.concurrent.ScheduledFuture;
 import org.jspecify.annotations.Nullable;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
-import java.util.concurrent.ScheduledFuture;
-
 /** Every run it fires reads the session host's windows once, whatever the job asks of them. */
 public class TickScheduler extends ThreadPoolTaskScheduler {
 
-    private final transient SessionHost sessions;
+  private final transient SessionHost sessions;
 
-    public TickScheduler(SessionHost sessions) {
-        this.sessions = sessions;
-    }
+  public TickScheduler(SessionHost sessions) {
+    this.sessions = sessions;
+  }
 
-    @Override
-    public @Nullable ScheduledFuture<?> schedule(Runnable task, Trigger trigger) {
-        return super.schedule(() -> sessions.readingOnce(task), trigger);
-    }
+  @Override
+  public @Nullable ScheduledFuture<?> schedule(Runnable task, Trigger trigger) {
+    return super.schedule(() -> sessions.readingOnce(task), trigger);
+  }
 }

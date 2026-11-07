@@ -1,50 +1,49 @@
 package dev.jagt.orchestrator.surface.board;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import jakarta.servlet.FilterChain;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import java.util.concurrent.atomic.AtomicReference;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 class OriginFilterTest {
 
-    private final AtomicReference<ActionOrigin> seen = new AtomicReference<>();
-    private final FilterChain chain = (request, response) -> seen.set(OriginContext.current());
+  private final AtomicReference<ActionOrigin> seen = new AtomicReference<>();
+  private final FilterChain chain = (request, response) -> seen.set(OriginContext.current());
 
-    @Test
-    void attributesAnUnmarkedCallToWhoeverIsAtTheKeyboard() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/mcp");
-        request.setServletPath("/mcp");
+  @Test
+  void attributesAnUnmarkedCallToWhoeverIsAtTheKeyboard() throws Exception {
+    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/mcp");
+    request.setServletPath("/mcp");
 
-        new OriginFilter().doFilter(request, new MockHttpServletResponse(), chain);
+    new OriginFilter().doFilter(request, new MockHttpServletResponse(), chain);
 
-        assertThat(seen.get()).isEqualTo(ActionOrigin.MCP);
-    }
+    assertThat(seen.get()).isEqualTo(ActionOrigin.MCP);
+  }
 
-    @Test
-    void leavesACallOutsideTheBoardAndTheAgentsEndpointUnattributed() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/state");
-        request.setServletPath("/state");
-        MockFilterChain passed = new MockFilterChain();
+  @Test
+  void leavesACallOutsideTheBoardAndTheAgentsEndpointUnattributed() throws Exception {
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/state");
+    request.setServletPath("/state");
+    MockFilterChain passed = new MockFilterChain();
 
-        new OriginFilter().doFilter(request, new MockHttpServletResponse(), passed);
+    new OriginFilter().doFilter(request, new MockHttpServletResponse(), passed);
 
-        assertThat(passed.getRequest()).isSameAs(request);
-    }
+    assertThat(passed.getRequest()).isSameAs(request);
+  }
 
-    @Test
-    void booksAWriteToTheBoardHoweverItsPathIsSpelled() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api;x/tasks/say");
-        request.setServletPath("/api/tasks/say");
+  @Test
+  void booksAWriteToTheBoardHoweverItsPathIsSpelled() throws Exception {
+    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api;x/tasks/say");
+    request.setServletPath("/api/tasks/say");
 
-        new OriginFilter().doFilter(request, new MockHttpServletResponse(), chain);
+    new OriginFilter().doFilter(request, new MockHttpServletResponse(), chain);
 
-        assertThat(seen.get()).isEqualTo(ActionOrigin.BOARD);
-    }
+    assertThat(seen.get()).isEqualTo(ActionOrigin.BOARD);
+  }
 }

@@ -1,11 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.Artifact;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.FileSystemUtils;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystems;
@@ -18,223 +14,274 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.FileSystemUtils;
 
-/** The files a fresh worktree needs that git does not carry, and jagt's own plumbing kept out of git status. */
+/**
+ * The files a fresh worktree needs that git does not carry, and jagt's own plumbing kept out of git
+ * status.
+ */
 @Slf4j
 public final class WorktreeFiles {
 
-    /** Written into every worktree jagt cuts, whatever the runtime: a checkout carrying none is not jagt's. */
-    public static final List<String> OWN_FILES =
-            Stream.concat(Stream.of(".jagt"), Artifact.fileNames().stream()).toList();
+  /**
+   * Written into every worktree jagt cuts, whatever the runtime: a checkout carrying none is not
+   * jagt's.
+   */
+  public static final List<String> OWN_FILES =
+      Stream.concat(Stream.of(".jagt"), Artifact.fileNames().stream()).toList();
 
-    /** Kept out of git by the project, so a fresh worktree lacks them; copied when present, never over a tracked file. */
-    public static final List<String> PROJECT_FILES = List.of(".run", ".idea/runConfigurations",
-            ".idea/dataSources.xml", ".idea/dataSources.local.xml", ".idea/dataSources",
-            ".vscode/launch.json", ".vscode/settings.json", ".vscode/tasks.json");
+  /**
+   * Kept out of git by the project, so a fresh worktree lacks them; copied when present, never over
+   * a tracked file.
+   */
+  public static final List<String> PROJECT_FILES =
+      List.of(
+          ".run",
+          ".idea/runConfigurations",
+          ".idea/dataSources.xml",
+          ".idea/dataSources.local.xml",
+          ".idea/dataSources",
+          ".vscode/launch.json",
+          ".vscode/settings.json",
+          ".vscode/tasks.json");
 
-    private WorktreeFiles() {
+  private WorktreeFiles() {}
+
+  /**
+   * What jagt writes into a worktree whatever the checkout already holds, the active runtime's own
+   * files included. The copy is that worktree's, not the project's, so a commit must not carry it
+   * back.
+   */
+  public static List<String> generated(AgentRuntime runtime) {
+    return Stream.concat(OWN_FILES.stream(), runtime.generatedFiles().stream()).distinct().toList();
+  }
+
+  /**
+   * Keeps orchestrator plumbing out of `git status` in every worktree of the project. info/exclude
+   * only affects untracked files, so a project's own tracked instruction files are unaffected.
+   */
+  public static void excludeOrchestratorPlumbing(Path gitCommonDir, AgentRuntime runtime) {
+    Stream<String> plumbing =
+        Stream.of("mcp_client.js", AgentRuntime.SYSTEM_KNOWLEDGE_FILE, ".jagt/");
+    List<String> entries =
+        Stream.of(
+                plumbing,
+                Artifact.fileNames().stream(),
+                runtime.statusExclusions().stream(),
+                PROJECT_FILES.stream())
+            .flatMap(names -> names)
+            .distinct()
+            .toList();
+    try {
+      Path exclude = gitCommonDir.resolve("info").resolve("exclude");
+      Files.createDirectories(exclude.getParent());
+      String current = Files.exists(exclude) ? Files.readString(exclude) : "";
+      StringBuilder additions = new StringBuilder();
+      for (String entry : entries) {
+        if (current.lines().noneMatch(entry::equals)) {
+          additions.append(entry).append('\n');
+        }
+      }
+      if (!additions.isEmpty()) {
+        Files.writeString(
+            exclude,
+            current.isEmpty() || current.endsWith("\n")
+                ? current + additions
+                : current + "\n" + additions);
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException("Cannot update git info/exclude in " + gitCommonDir, e);
     }
+  }
 
-    /**
-     * What jagt writes into a worktree whatever the checkout already holds, the active runtime's own files
-     * included. The copy is that worktree's, not the project's, so a commit must not carry it back.
-     */
-    public static List<String> generated(AgentRuntime runtime) {
-        return Stream.concat(OWN_FILES.stream(), runtime.generatedFiles().stream()).distinct().toList();
+  /**
+   * Best-effort; an absent path is a no-op, and a file the worktree already holds is tracked, so it
+   * stays.
+   */
+  public static void copyProjectFiles(Path projectPath, Path worktreePath, List<String> paths) {
+    for (String path : paths) {
+      copyTree(projectPath.resolve(path), worktreePath.resolve(path), worktreePath);
     }
+  }
 
-    /**
-     * Keeps orchestrator plumbing out of `git status` in every worktree of the project. info/exclude only
-     * affects untracked files, so a project's own tracked instruction files are unaffected.
-     */
-    public static void excludeOrchestratorPlumbing(Path gitCommonDir, AgentRuntime runtime) {
-        Stream<String> plumbing = Stream.of("mcp_client.js", AgentRuntime.SYSTEM_KNOWLEDGE_FILE, ".jagt/");
-        List<String> entries = Stream.of(plumbing, Artifact.fileNames().stream(),
-                runtime.statusExclusions().stream(), PROJECT_FILES.stream())
-                .flatMap(names -> names).distinct().toList();
-        try {
-            Path exclude = gitCommonDir.resolve("info").resolve("exclude");
-            Files.createDirectories(exclude.getParent());
-            String current = Files.exists(exclude) ? Files.readString(exclude) : "";
-            StringBuilder additions = new StringBuilder();
-            for (String entry : entries) {
-                if (current.lines().noneMatch(entry::equals)) {
-                    additions.append(entry).append('\n');
-                }
+  /**
+   * Gitignored local files the run configs reference but git omits. Best-effort; heavy directories
+   * skipped.
+   */
+  public static void copyLocalFiles(Path projectPath, Path worktreePath, List<String> globs) {
+    var matchers = localFileMatchers(globs);
+    if (matchers.isEmpty()) {
+      return;
+    }
+    try {
+      Files.walkFileTree(
+          projectPath,
+          new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+              String name = dir.getFileName().toString();
+              return WorktreeNoise.UNWALKED.contains(name) || WorktreeNoise.isResidue(name)
+                  ? FileVisitResult.SKIP_SUBTREE
+                  : FileVisitResult.CONTINUE;
             }
-            if (!additions.isEmpty()) {
-                Files.writeString(exclude, current.isEmpty() || current.endsWith("\n")
-                        ? current + additions
-                        : current + "\n" + additions);
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+              Path relative = projectPath.relativize(file);
+              Path target = worktreePath.resolve(relative);
+              // Anything already in a fresh worktree came out of the checkout, so git TRACKS it and
+              // this
+              // is not the file the app is missing; overwriting starts the worktree dirty.
+              if (!Files.exists(target) && matchers.stream().anyMatch(m -> m.matches(relative))) {
+                copyFile(file, target);
+              }
+              return FileVisitResult.CONTINUE;
             }
-        } catch (IOException e) {
-            throw new UncheckedIOException("Cannot update git info/exclude in " + gitCommonDir, e);
-        }
+          });
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("local file scan failed")
+          .addKeyValue("path", projectPath)
+          .addKeyValue("cause", Causes.of(e))
+          .log();
     }
+  }
 
-    /** Best-effort; an absent path is a no-op, and a file the worktree already holds is tracked, so it stays. */
-    public static void copyProjectFiles(Path projectPath, Path worktreePath, List<String> paths) {
-        for (String path : paths) {
-            copyTree(projectPath.resolve(path), worktreePath.resolve(path), worktreePath);
-        }
-    }
-
-    /** Gitignored local files the run configs reference but git omits. Best-effort; heavy directories skipped. */
-    public static void copyLocalFiles(Path projectPath, Path worktreePath, List<String> globs) {
-        var matchers = localFileMatchers(globs);
-        if (matchers.isEmpty()) {
-            return;
-        }
-        try {
-            Files.walkFileTree(projectPath, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    String name = dir.getFileName().toString();
-                    return WorktreeNoise.UNWALKED.contains(name) || WorktreeNoise.isResidue(name)
-                            ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    Path relative = projectPath.relativize(file);
-                    Path target = worktreePath.resolve(relative);
-                    // Anything already in a fresh worktree came out of the checkout, so git TRACKS it and this
-                    // is not the file the app is missing; overwriting starts the worktree dirty.
-                    if (!Files.exists(target) && matchers.stream().anyMatch(m -> m.matches(relative))) {
-                        copyFile(file, target);
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (IOException e) {
-            log.atWarn().setMessage("local file scan failed")
-                    .addKeyValue("path", projectPath)
-                    .addKeyValue("cause", Causes.of(e))
-                    .log();
-        }
-    }
-
-    /**
-     * The patterns as matchers against a repository-relative path. A {@code **}{@code /} prefix ALSO matches at the
-     * root: Java's glob wants a directory component there, so "any .env" would skip a single-module repository's.
-     */
-    public static List<PathMatcher> localFileMatchers(List<String> globs) {
-        return (globs == null ? List.<String>of() : globs).stream()
-                .filter(glob -> glob != null && !glob.isBlank())
-                .map(String::strip)
-                .flatMap(glob -> glob.startsWith("**/")
+  /**
+   * The patterns as matchers against a repository-relative path. A {@code **}{@code /} prefix ALSO
+   * matches at the root: Java's glob wants a directory component there, so "any .env" would skip a
+   * single-module repository's.
+   */
+  public static List<PathMatcher> localFileMatchers(List<String> globs) {
+    return (globs == null ? List.<String>of() : globs)
+        .stream()
+            .filter(glob -> glob != null && !glob.isBlank())
+            .map(String::strip)
+            .flatMap(
+                glob ->
+                    glob.startsWith("**/")
                         ? Stream.of(glob, glob.substring("**/".length()))
                         : Stream.of(glob))
-                .map(glob -> FileSystems.getDefault().getPathMatcher("glob:" + glob))
-                .toList();
-    }
+            .map(glob -> FileSystems.getDefault().getPathMatcher("glob:" + glob))
+            .toList();
+  }
 
-    public static java.util.Optional<String> firstMatching(List<String> globs, List<String> paths) {
-        List<PathMatcher> matchers = localFileMatchers(globs);
-        return paths.stream().filter(path -> matchers.stream().anyMatch(glob -> glob.matches(Path.of(path))))
-                .findFirst();
-    }
+  public static java.util.Optional<String> firstMatching(List<String> globs, List<String> paths) {
+    List<PathMatcher> matchers = localFileMatchers(globs);
+    return paths.stream()
+        .filter(path -> matchers.stream().anyMatch(glob -> glob.matches(Path.of(path))))
+        .findFirst();
+  }
 
-    /** The file's content, or empty when it is not there — an absent relay file is the normal first case. */
-    public static java.util.Optional<String> read(Path file) {
-        if (!Files.isRegularFile(file)) {
-            return java.util.Optional.empty();
-        }
+  /**
+   * The file's content, or empty when it is not there — an absent relay file is the normal first
+   * case.
+   */
+  public static java.util.Optional<String> read(Path file) {
+    if (!Files.isRegularFile(file)) {
+      return java.util.Optional.empty();
+    }
+    try {
+      return java.util.Optional.of(Files.readString(file));
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("file read failed")
+          .addKeyValue("path", file)
+          .addKeyValue("cause", Causes.of(e))
+          .log();
+      return java.util.Optional.empty();
+    }
+  }
+
+  /** Fails loudly: unlike a read, a write that did not happen is not something to shrug at. */
+  public static void write(Path file, String content) {
+    try {
+      Files.writeString(file, content);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Cannot write " + file, e);
+    }
+  }
+
+  /** Fails loudly: the folder these come from may be deleted next. */
+  public static void copyFiles(Path from, Path to, List<String> names) {
+    for (String name : names) {
+      if (Files.isRegularFile(from.resolve(name))) {
         try {
-            return java.util.Optional.of(Files.readString(file));
+          Files.copy(from.resolve(name), to.resolve(name), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            log.atWarn().setMessage("file read failed")
-                    .addKeyValue("path", file)
-                    .addKeyValue("cause", Causes.of(e))
-                    .log();
-            return java.util.Optional.empty();
+          throw new UncheckedIOException("Cannot copy " + name + " to " + to, e);
         }
+      }
     }
+  }
 
-    /** Fails loudly: unlike a read, a write that did not happen is not something to shrug at. */
-    public static void write(Path file, String content) {
-        try {
-            Files.writeString(file, content);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Cannot write " + file, e);
-        }
+  /** Fails loudly: a folder that stays is a task's leftover nobody else will delete. */
+  public static void deleteTree(Path dir) {
+    try {
+      FileSystemUtils.deleteRecursively(dir);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Cannot delete " + dir, e);
     }
+  }
 
-    /** Fails loudly: the folder these come from may be deleted next. */
-    public static void copyFiles(Path from, Path to, List<String> names) {
-        for (String name : names) {
-            if (Files.isRegularFile(from.resolve(name))) {
-                try {
-                    Files.copy(from.resolve(name), to.resolve(name), StandardCopyOption.REPLACE_EXISTING);
-                } catch (IOException e) {
-                    throw new UncheckedIOException("Cannot copy " + name + " to " + to, e);
-                }
+  private static void copyTree(Path source, Path target, Path worktreePath) {
+    if (Files.isRegularFile(source)) {
+      copyAbsent(source, target);
+      return;
+    }
+    if (!Files.isDirectory(source)) {
+      return;
+    }
+    try (var files = Files.walk(source)) {
+      files.forEach(
+          from -> {
+            Path to = target.resolve(source.relativize(from));
+            if (Files.isDirectory(from)) {
+              mkdirs(to);
+            } else {
+              copyAbsent(from, to);
             }
-        }
+          });
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("file copy failed")
+          .addKeyValue("from", source)
+          .addKeyValue("to", worktreePath)
+          .addKeyValue("cause", Causes.of(e))
+          .log();
     }
+  }
 
-    /** Fails loudly: a folder that stays is a task's leftover nobody else will delete. */
-    public static void deleteTree(Path dir) {
-        try {
-            FileSystemUtils.deleteRecursively(dir);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Cannot delete " + dir, e);
-        }
+  private static void copyAbsent(Path from, Path to) {
+    if (!Files.exists(to)) {
+      copyFile(from, to);
     }
+  }
 
-    private static void copyTree(Path source, Path target, Path worktreePath) {
-        if (Files.isRegularFile(source)) {
-            copyAbsent(source, target);
-            return;
-        }
-        if (!Files.isDirectory(source)) {
-            return;
-        }
-        try (var files = Files.walk(source)) {
-            files.forEach(from -> {
-                Path to = target.resolve(source.relativize(from));
-                if (Files.isDirectory(from)) {
-                    mkdirs(to);
-                } else {
-                    copyAbsent(from, to);
-                }
-            });
-        } catch (IOException e) {
-            log.atWarn().setMessage("file copy failed")
-                    .addKeyValue("from", source)
-                    .addKeyValue("to", worktreePath)
-                    .addKeyValue("cause", Causes.of(e))
-                    .log();
-        }
+  private static void copyFile(Path from, Path to) {
+    try {
+      Files.createDirectories(to.getParent());
+      Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("file copy failed")
+          .addKeyValue("from", from)
+          .addKeyValue("to", to)
+          .addKeyValue("cause", Causes.of(e))
+          .log();
     }
+  }
 
-    private static void copyAbsent(Path from, Path to) {
-        if (!Files.exists(to)) {
-            copyFile(from, to);
-        }
+  private static void mkdirs(Path dir) {
+    try {
+      Files.createDirectories(dir);
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("directory create failed")
+          .addKeyValue("path", dir)
+          .addKeyValue("cause", Causes.of(e))
+          .log();
     }
-
-    private static void copyFile(Path from, Path to) {
-        try {
-            Files.createDirectories(to.getParent());
-            Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            log.atWarn().setMessage("file copy failed")
-                    .addKeyValue("from", from)
-                    .addKeyValue("to", to)
-                    .addKeyValue("cause", Causes.of(e))
-                    .log();
-        }
-    }
-
-    private static void mkdirs(Path dir) {
-        try {
-            Files.createDirectories(dir);
-        } catch (IOException e) {
-            log.atWarn().setMessage("directory create failed")
-                    .addKeyValue("path", dir)
-                    .addKeyValue("cause", Causes.of(e))
-                    .log();
-        }
-    }
+  }
 }

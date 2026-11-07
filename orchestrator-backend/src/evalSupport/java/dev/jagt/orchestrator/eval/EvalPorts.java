@@ -9,21 +9,20 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class EvalPorts {
 
-    private static final Set<Integer> HANDED_OUT = ConcurrentHashMap.newKeySet();
+  private static final Set<Integer> HANDED_OUT = ConcurrentHashMap.newKeySet();
 
-    private EvalPorts() {
-    }
+  private EvalPorts() {}
 
-    public static int free() {
-        while (true) {
-            try (ServerSocket probe = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
-                int port = probe.getLocalPort();
-                if (HANDED_OUT.add(port)) {
-                    return port;
-                }
-            } catch (IOException noSocket) {
-                throw new UncheckedIOException("no free loopback port", noSocket);
-            }
+  public static int free() {
+    while (true) {
+      try (ServerSocket probe = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
+        int port = probe.getLocalPort();
+        if (HANDED_OUT.add(port)) {
+          return port;
         }
+      } catch (IOException noSocket) {
+        throw new UncheckedIOException("no free loopback port", noSocket);
+      }
     }
+  }
 }

@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.capability.deploy;
 
-import dev.jagt.orchestrator.flow.TaskCapability;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.TaskCapability;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -10,15 +10,15 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RevertCapability implements TaskCapability {
 
-    private final RevertService reverts;
+  private final RevertService reverts;
 
-    @Override
-    public TaskAction action() {
-        return TaskAction.REVERT;
-    }
+  @Override
+  public TaskAction action() {
+    return TaskAction.REVERT;
+  }
 
-    @Override
-    public Outcome run(String taskId) {
-        return reverts.revert(taskId);
-    }
+  @Override
+  public Outcome run(String taskId) {
+    return reverts.revert(taskId);
+  }
 }

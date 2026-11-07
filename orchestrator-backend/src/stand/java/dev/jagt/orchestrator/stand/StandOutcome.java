@@ -4,67 +4,95 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 
-public record StandOutcome(String status, String owner, Duration took, List<String> tail, Path root, Ending ending,
-                           String detail, String stopTrigger, String report, int unfired) {
+public record StandOutcome(
+    String status,
+    String owner,
+    Duration took,
+    List<String> tail,
+    Path root,
+    Ending ending,
+    String detail,
+    String stopTrigger,
+    String report,
+    int unfired) {
 
-    public enum Ending {
-        REACHED("reached"), HELD("held by the human"), STALLED("stalled"), TIMED_OUT("timed out"),
-        SUSPENDED("host suspended"), STOPPED("stopped, human needed"), WAITING_ON_THE_REVIEWER("waiting on the reviewer");
+  public enum Ending {
+    REACHED("reached"),
+    HELD("held by the human"),
+    STALLED("stalled"),
+    TIMED_OUT("timed out"),
+    SUSPENDED("host suspended"),
+    STOPPED("stopped, human needed"),
+    WAITING_ON_THE_REVIEWER("waiting on the reviewer");
 
-        private final String words;
+    private final String words;
 
-        Ending(String words) {
-            this.words = words;
-        }
-
-        public String words() {
-            return words;
-        }
-
-        static Ending of(boolean reached, boolean suspended, boolean stopped, boolean held,
-                      boolean waitingOnTheReviewer, boolean stalled) {
-            if (reached) {
-                return REACHED;
-            }
-            if (suspended) {
-                return SUSPENDED;
-            }
-            if (stopped) {
-                return STOPPED;
-            }
-            if (held) {
-                return HELD;
-            }
-            if (waitingOnTheReviewer) {
-                return WAITING_ON_THE_REVIEWER;
-            }
-            return stalled ? STALLED : TIMED_OUT;
-        }
+    Ending(String words) {
+      this.words = words;
     }
 
-    public boolean withTheHuman() {
-        return owner.equals("YOU");
+    public String words() {
+      return words;
     }
 
-    public boolean withTheCodeHost() {
-        return owner.equals("CI");
+    static Ending of(
+        boolean reached,
+        boolean suspended,
+        boolean stopped,
+        boolean held,
+        boolean waitingOnTheReviewer,
+        boolean stalled) {
+      if (reached) {
+        return REACHED;
+      }
+      if (suspended) {
+        return SUSPENDED;
+      }
+      if (stopped) {
+        return STOPPED;
+      }
+      if (held) {
+        return HELD;
+      }
+      if (waitingOnTheReviewer) {
+        return WAITING_ON_THE_REVIEWER;
+      }
+      return stalled ? STALLED : TIMED_OUT;
     }
+  }
 
-    public boolean asked() {
-        return report.equals("QUESTION") || report.equals("PERMISSION");
-    }
+  public boolean withTheHuman() {
+    return owner.equals("YOU");
+  }
 
-    public boolean stopped() {
-        return ending == Ending.STOPPED;
-    }
+  public boolean withTheCodeHost() {
+    return owner.equals("CI");
+  }
 
-    public boolean suspended() {
-        return ending == Ending.SUSPENDED;
-    }
+  public boolean asked() {
+    return report.equals("QUESTION") || report.equals("PERMISSION");
+  }
 
-    public String describe() {
-        return ending.words() + (detail.isEmpty() ? "" : " (" + detail + ")") + ": last status " + status + " owned by "
-                + owner + " after " + took.toSeconds() + "s, root " + root + ", timeline tail:\n"
-                + String.join("\n", tail);
-    }
+  public boolean stopped() {
+    return ending == Ending.STOPPED;
+  }
+
+  public boolean suspended() {
+    return ending == Ending.SUSPENDED;
+  }
+
+  public String describe() {
+    return ending.words()
+        + (detail.isEmpty() ? "" : " (" + detail + ")")
+        + ": last status "
+        + status
+        + " owned by "
+        + owner
+        + " after "
+        + took.toSeconds()
+        + "s, root "
+        + root
+        + ", timeline tail:\n"
+        + String.join("\n", tail);
+  }
 }

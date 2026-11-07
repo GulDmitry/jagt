@@ -18,45 +18,66 @@ import org.junit.jupiter.params.provider.MethodSource;
 @Tag("model")
 class MutationStandTest {
 
-    private static final String SEED_TICKET = """
-            Called without an argument, ./greet.sh prints "Hello, " today. It must print exactly "Hello, World" \
-            instead; with an argument it stays "Hello, <name>". Add a check for the no-argument case to ./check.sh, \
-            which must keep passing.""";
+  private static final String SEED_TICKET =
+      """
+      Called without an argument, ./greet.sh prints "Hello, " today. It must print exactly "Hello, World" \
+      instead; with an argument it stays "Hello, <name>". Add a check for the no-argument case to ./check.sh, \
+      which must keep passing.\
+      """;
 
-    @ParameterizedTest(allowZeroInvocations = true)
-    @MethodSource("runs")
-    @Execution(ExecutionMode.CONCURRENT)
-    void aMutatedRunKeepsTheFrame(String name, long seed, StandMode mode, int run) throws Exception {
-        Mutation mutation = MutationBook.shipped().named(name).getFirst();
-        try (StandRun stand = StandRun.start("mutation-" + name, mode)) {
-            Files.writeString(stand.root().resolve("mutation.txt"), name + " seed " + seed + "\nholds: " + mutation.holds());
-            Files.writeString(stand.root().resolve("ticket-seed.md"), SEED_TICKET);
-            MutationPlan.Applied applied = new MutationPlan(LocalRewrite.fromEnvironment(stand.root())).apply(mutation, SEED_TICKET);
-            Files.writeString(stand.root().resolve("ticket.md"), applied.ticket());
-            stand.store().seedTicket("ABC-5", "Greet the world by default", applied.ticket(), "To Do");
+  @ParameterizedTest(allowZeroInvocations = true)
+  @MethodSource("runs")
+  @Execution(ExecutionMode.CONCURRENT)
+  void aMutatedRunKeepsTheFrame(String name, long seed, StandMode mode, int run) throws Exception {
+    Mutation mutation = MutationBook.shipped().named(name).getFirst();
+    try (StandRun stand = StandRun.start("mutation-" + name, mode)) {
+      Files.writeString(
+          stand.root().resolve("mutation.txt"),
+          name + " seed " + seed + "\nholds: " + mutation.holds());
+      Files.writeString(stand.root().resolve("ticket-seed.md"), SEED_TICKET);
+      MutationPlan.Applied applied =
+          new MutationPlan(LocalRewrite.fromEnvironment(stand.root())).apply(mutation, SEED_TICKET);
+      Files.writeString(stand.root().resolve("ticket.md"), applied.ticket());
+      stand.store().seedTicket("ABC-5", "Greet the world by default", applied.ticket(), "To Do");
 
-            Script script = applied.events().stream().reduce(Script.to("ABC-5", "DEPLOYED"), Script::with,
-                    (first, second) -> second);
-            StandOutcome outcome = stand.drive(applied.expectsDeployConflict()
-                    ? script.expectingDeployConflict(mutation.relaysIn(mode)) : script);
+      Script script =
+          applied.events().stream()
+              .reduce(Script.to("ABC-5", "DEPLOYED"), Script::with, (first, second) -> second);
+      StandOutcome outcome =
+          stand.drive(
+              applied.expectsDeployConflict()
+                  ? script.expectingDeployConflict(mutation.relaysIn(mode))
+                  : script);
 
-            RunRecord record = stand.record();
-            SoftAssertions.assertSoftly(soft -> {
-                soft.assertThat(MutationProgress.lacking(mutation.kind(), outcome, record.history("ABC-5"),
-                        record.misses().size(), stand.store().awaitsTheReviewer(), conflictRelayed(record), applied.expectsDeployConflict(),
+      RunRecord record = stand.record();
+      SoftAssertions.assertSoftly(
+          soft -> {
+            soft.assertThat(
+                    MutationProgress.lacking(
+                        mutation.kind(),
+                        outcome,
+                        record.history("ABC-5"),
+                        record.misses().size(),
+                        stand.store().awaitsTheReviewer(),
+                        conflictRelayed(record),
+                        applied.expectsDeployConflict(),
                         mutation.relaysIn(mode)))
-                        .as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
-                soft.assertThat(stand.violations()).as(mutation.holds() + "\n" + outcome.describe()).isEmpty();
-            });
-            stand.passed();
-        }
+                .as(mutation.holds() + "\n" + outcome.describe())
+                .isEmpty();
+            soft.assertThat(stand.violations())
+                .as(mutation.holds() + "\n" + outcome.describe())
+                .isEmpty();
+          });
+      stand.passed();
     }
+  }
 
-    private static boolean conflictRelayed(RunRecord record) {
-        return record.timeline().relays().stream().anyMatch(relay -> relay.steps().contains("conflict"));
-    }
+  private static boolean conflictRelayed(RunRecord record) {
+    return record.timeline().relays().stream()
+        .anyMatch(relay -> relay.steps().contains("conflict"));
+  }
 
-    static Stream<Arguments> runs() {
-        return MutationRuns.of("mutation");
-    }
+  static Stream<Arguments> runs() {
+    return MutationRuns.of("mutation");
+  }
 }

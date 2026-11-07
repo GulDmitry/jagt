@@ -1,38 +1,38 @@
 package dev.jagt.orchestrator.surface.board;
 
-import org.jspecify.annotations.Nullable;
-import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.service.OriginContext;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.io.IOException;
 
 @Component
 public class OriginFilter extends OncePerRequestFilter {
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-            throws ServletException, IOException {
-        ActionOrigin origin = originOf(request);
-        if (origin == null) {
-            chain.doFilter(request, response);
-            return;
-        }
-        try (var ignored = OriginContext.open(origin)) {
-            chain.doFilter(request, response);
-        }
+  @Override
+  protected void doFilterInternal(
+      HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+      throws ServletException, IOException {
+    ActionOrigin origin = originOf(request);
+    if (origin == null) {
+      chain.doFilter(request, response);
+      return;
     }
+    try (var ignored = OriginContext.open(origin)) {
+      chain.doFilter(request, response);
+    }
+  }
 
-    private static @Nullable ActionOrigin originOf(HttpServletRequest request) {
-        String path = request.getServletPath();
-        if (path.equals("/mcp")) {
-            return ActionOrigin.MCP;
-        }
-        return path.startsWith("/api/") ? ActionOrigin.BOARD : null;
+  private static @Nullable ActionOrigin originOf(HttpServletRequest request) {
+    String path = request.getServletPath();
+    if (path.equals("/mcp")) {
+      return ActionOrigin.MCP;
     }
+    return path.startsWith("/api/") ? ActionOrigin.BOARD : null;
+  }
 }

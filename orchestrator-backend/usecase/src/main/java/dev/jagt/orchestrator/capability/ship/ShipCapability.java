@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.capability.ship;
 
-import dev.jagt.orchestrator.flow.TaskCapability;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.TaskCapability;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -10,15 +10,15 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ShipCapability implements TaskCapability {
 
-    private final ShipService ships;
+  private final ShipService ships;
 
-    @Override
-    public TaskAction action() {
-        return TaskAction.SHIP;
-    }
+  @Override
+  public TaskAction action() {
+    return TaskAction.SHIP;
+  }
 
-    @Override
-    public Outcome run(String taskId) {
-        return ships.ship(taskId);
-    }
+  @Override
+  public Outcome run(String taskId) {
+    return ships.ship(taskId);
+  }
 }

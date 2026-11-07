@@ -7,13 +7,16 @@ import java.util.List;
 
 public record HaikuRewrite(Path directory) implements TicketRewrite {
 
-    @Override
-    public String rewrite(String ask, String ticket) {
-        StandShell.Result result = StandShell.run(directory, List.of("claude", "-p", "--model", "haiku",
-                TicketRewrite.prompt(ask, ticket)));
-        if (result.exit() != 0 || result.output().isBlank()) {
-            throw new StandFailure("the ticket rewrite failed with exit " + result.exit() + ": " + result.output());
-        }
-        return result.output().strip();
+  @Override
+  public String rewrite(String ask, String ticket) {
+    StandShell.Result result =
+        StandShell.run(
+            directory,
+            List.of("claude", "-p", "--model", "haiku", TicketRewrite.prompt(ask, ticket)));
+    if (result.exit() != 0 || result.output().isBlank()) {
+      throw new StandFailure(
+          "the ticket rewrite failed with exit " + result.exit() + ": " + result.output());
     }
+    return result.output().strip();
+  }
 }

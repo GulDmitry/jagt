@@ -1,67 +1,77 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import java.nio.file.Path;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.nio.file.Path;
-
 /**
- * A hook is run by the harness rather than by the model, so what arrives here costs no tokens and still arrives
- * from a session that has run out of them. Which session it is comes from what jagt wrote into the line, not
- * from what the vendor hands the hook.
+ * A hook is run by the harness rather than by the model, so what arrives here costs no tokens and
+ * still arrives from a session that has run out of them. Which session it is comes from what jagt
+ * wrote into the line, not from what the vendor hands the hook.
  */
 @Component
 @RequiredArgsConstructor
 public class HookEndpoint {
 
-    static final int PROMPT_GATE_SECONDS = 10;
+  static final int PROMPT_GATE_SECONDS = 10;
 
-    @Value("${orchestrator.hook-url:http://127.0.0.1:${server.port:8290}/api/agent/session}")
-    private final String url;
-    @Value("${orchestrator.gate-url:http://127.0.0.1:${server.port:8290}/api/agent}")
-    private final String gateUrl;
+  @Value("${orchestrator.hook-url:http://127.0.0.1:${server.port:8290}/api/agent/session}")
+  private final String url;
 
-    /** Same shape, another address; the answer is a verdict, and refusing it when jagt is unreachable would make
-     *  a stopped backend look like a rule. */
-    public String gateCommand(Path worktree) {
-        return command(worktree, "tool", gateUrl);
-    }
+  @Value("${orchestrator.gate-url:http://127.0.0.1:${server.port:8290}/api/agent}")
+  private final String gateUrl;
 
-    /** A prompt hook waits for a fresh session to launch before it answers, so it is allowed longer than the rest. */
-    public String promptCommand(Path worktree) {
-        return command(worktree, "prompt", url, PROMPT_GATE_SECONDS);
-    }
+  /**
+   * Same shape, another address; the answer is a verdict, and refusing it when jagt is unreachable
+   * would make a stopped backend look like a rule.
+   */
+  public String gateCommand(Path worktree) {
+    return command(worktree, "tool", gateUrl);
+  }
 
-    public String readGateUrl(String fence) {
-        return gateUrl + "/read/" + fence;
-    }
+  /**
+   * A prompt hook waits for a fresh session to launch before it answers, so it is allowed longer
+   * than the rest.
+   */
+  public String promptCommand(Path worktree) {
+    return command(worktree, "prompt", url, PROMPT_GATE_SECONDS);
+  }
 
-    /** A headless read's gate fails closed: exit 2 refuses the call when jagt cannot answer. */
-    public String readGateCommand(String fence) {
-        return "curl -sf -m 5 -X POST --data-binary @- -H 'Content-Type: application/json' "
-                + AbstractAgentRuntime.shellQuote(readGateUrl(fence))
-                + " || { echo 'jagt could not judge this call' >&2; exit 2; }";
-    }
+  public String readGateUrl(String fence) {
+    return gateUrl + "/read/" + fence;
+  }
 
-    /**
-     * Capped and always successful: a hook reporting a failure would put jagt's plumbing in front of the human,
-     * and one that hung would hold up the session. A harness adds a hook's stdout to the session's context, so
-     * the answer is printed; {@code -f} keeps an error page out of that context by printing nothing on failure.
-     * Whatever the harness hands the hook rides along on stdin, unparsed by the shell.
-     */
-    public String command(Path worktree, String state) {
-        return command(worktree, state, url);
-    }
+  /** A headless read's gate fails closed: exit 2 refuses the call when jagt cannot answer. */
+  public String readGateCommand(String fence) {
+    return "curl -sf -m 5 -X POST --data-binary @- -H 'Content-Type: application/json' "
+        + AbstractAgentRuntime.shellQuote(readGateUrl(fence))
+        + " || { echo 'jagt could not judge this call' >&2; exit 2; }";
+  }
 
-    private String command(Path worktree, String state, String base) {
-        return command(worktree, state, base, 2);
-    }
+  /**
+   * Capped and always successful: a hook reporting a failure would put jagt's plumbing in front of
+   * the human, and one that hung would hold up the session. A harness adds a hook's stdout to the
+   * session's context, so the answer is printed; {@code -f} keeps an error page out of that context
+   * by printing nothing on failure. Whatever the harness hands the hook rides along on stdin,
+   * unparsed by the shell.
+   */
+  public String command(Path worktree, String state) {
+    return command(worktree, state, url);
+  }
 
-    private String command(Path worktree, String state, String base, int seconds) {
-        return "curl -sf -m " + seconds + " -X POST --data-binary @- -H 'Content-Type: application/json' -H "
-                + AbstractAgentRuntime.shellQuote(McpEndpoint.CALLER_HEADER + ": "
-                        + McpEndpoint.callerHeaderValue(worktree))
-                + " " + AbstractAgentRuntime.shellQuote(base + "/" + state) + " || true";
-    }
+  private String command(Path worktree, String state, String base) {
+    return command(worktree, state, base, 2);
+  }
+
+  private String command(Path worktree, String state, String base, int seconds) {
+    return "curl -sf -m "
+        + seconds
+        + " -X POST --data-binary @- -H 'Content-Type: application/json' -H "
+        + AbstractAgentRuntime.shellQuote(
+            McpEndpoint.CALLER_HEADER + ": " + McpEndpoint.callerHeaderValue(worktree))
+        + " "
+        + AbstractAgentRuntime.shellQuote(base + "/" + state)
+        + " || true";
+  }
 }

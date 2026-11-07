@@ -1,15 +1,21 @@
 package dev.jagt.orchestrator.surface.mcp;
 
-import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.flow.SessionSign;
-import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.Turn;
 import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
 import dev.jagt.orchestrator.service.KeepAlive;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Turn;
+import java.time.Clock;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiFunction;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.event.Level;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
@@ -17,195 +23,240 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.time.Clock;
-import java.util.Optional;
-import java.util.function.BiFunction;
-
 @Service
 @Slf4j
 public class McpProtocolService implements McpToolRegistry {
 
-    private static final String DEFAULT_PROTOCOL_VERSION = "2025-06-18";
-    /** Answered on a 401, so a client minting its header anew asks again. */
-    public static final int UNKNOWN_CALLER = -32001;
+  private static final String DEFAULT_PROTOCOL_VERSION = "2025-06-18";
 
-    private record ToolSpec(String name, Audience audience, Effect effect, JsonNode schema, ToolHandler handler) {
+  /** Answered on a 401, so a client minting its header anew asks again. */
+  public static final int UNKNOWN_CALLER = -32001;
+
+  private record ToolSpec(
+      String name, Audience audience, Effect effect, JsonNode schema, ToolHandler handler) {}
+
+  private final ObjectMapper mapper;
+  private final StateService stateService;
+  private final Clock clock;
+  private final Map<String, ToolSpec> tools = new LinkedHashMap<>();
+
+  public McpProtocolService(
+      ObjectMapper mapper, StateService stateService, Clock clock, List<McpTools> groups) {
+    this.mapper = mapper;
+    this.stateService = stateService;
+    this.clock = clock;
+    groups.forEach(group -> group.declare(this));
+  }
+
+  private void register(
+      String name, Audience audience, Effect effect, String schemaJson, ToolHandler handler) {
+    if (tools.putIfAbsent(
+            name, new ToolSpec(name, audience, effect, mapper.readTree(schemaJson), handler))
+        != null) {
+      throw new IllegalStateException("Two MCP tool groups both declare '" + name + "'");
     }
+  }
 
-    private final ObjectMapper mapper;
-    private final StateService stateService;
-    private final Clock clock;
-    private final Map<String, ToolSpec> tools = new LinkedHashMap<>();
-
-    public McpProtocolService(ObjectMapper mapper, StateService stateService, Clock clock, List<McpTools> groups) {
-        this.mapper = mapper;
-        this.stateService = stateService;
-        this.clock = clock;
-        groups.forEach(group -> group.declare(this));
+  /**
+   * {@code master}: the call presented the Master's token; a worktree of a registered task outranks
+   * it.
+   */
+  public Optional<JsonNode> handle(JsonNode message, @Nullable String callerCwd, boolean master) {
+    String method = message.path("method").asString(null);
+    JsonNode id = message.get("id");
+    if (method == null) {
+      // A response from the client to a server-initiated request; we never send those.
+      return Optional.empty();
     }
-
-    private void register(String name, Audience audience, Effect effect, String schemaJson, ToolHandler handler) {
-        if (tools.putIfAbsent(name,
-                new ToolSpec(name, audience, effect, mapper.readTree(schemaJson), handler)) != null) {
-            throw new IllegalStateException("Two MCP tool groups both declare '" + name + "'");
-        }
+    boolean isNotification = id == null || id.isNull();
+    try {
+      String callerTaskId = keepAlive(callerCwd);
+      if (callerTaskId == null && !master) {
+        return Optional.of(
+            error(
+                id == null ? mapper.nullNode() : id,
+                UNKNOWN_CALLER,
+                "Unknown caller: no registered task's worktree in X-Working-Directory, and no"
+                    + " Master token"));
+      }
+      JsonNode result =
+          switch (method) {
+            case "initialize" -> initializeResult(message);
+            case "ping" -> mapper.createObjectNode();
+            case "tools/list" -> toolsList(callerTaskId);
+            case "tools/call" -> callTool(message, callerTaskId);
+            default -> null;
+          };
+      if (isNotification) {
+        return Optional.empty();
+      }
+      if (result == null) {
+        return Optional.of(error(id, -32601, "Method not found: " + method));
+      }
+      ObjectNode response = mapper.createObjectNode();
+      response.put("jsonrpc", "2.0");
+      response.set("id", id);
+      response.set("result", result);
+      return Optional.of(response);
+    } catch (Exception e) {
+      log.atError()
+          .setMessage("mcp request failed")
+          .addKeyValue("method", method)
+          .addKeyValue("cause", e.toString())
+          .setCause(e)
+          .log();
+      return isNotification ? Optional.empty() : Optional.of(error(id, -32603, describe(e)));
     }
+  }
 
-    /** {@code master}: the call presented the Master's token; a worktree of a registered task outranks it. */
-    public Optional<JsonNode> handle(JsonNode message, @Nullable String callerCwd, boolean master) {
-        String method = message.path("method").asString(null);
-        JsonNode id = message.get("id");
-        if (method == null) {
-            // A response from the client to a server-initiated request; we never send those.
-            return Optional.empty();
-        }
-        boolean isNotification = id == null || id.isNull();
-        try {
-            String callerTaskId = keepAlive(callerCwd);
-            if (callerTaskId == null && !master) {
-                return Optional.of(error(id == null ? mapper.nullNode() : id, UNKNOWN_CALLER, "Unknown caller:"
-                        + " no registered task's worktree in X-Working-Directory, and no Master token"));
-            }
-            JsonNode result = switch (method) {
-                case "initialize" -> initializeResult(message);
-                case "ping" -> mapper.createObjectNode();
-                case "tools/list" -> toolsList(callerTaskId);
-                case "tools/call" -> callTool(message, callerTaskId);
-                default -> null;
-            };
-            if (isNotification) {
-                return Optional.empty();
-            }
-            if (result == null) {
-                return Optional.of(error(id, -32601, "Method not found: " + method));
-            }
-            ObjectNode response = mapper.createObjectNode();
-            response.put("jsonrpc", "2.0");
-            response.set("id", id);
-            response.set("result", result);
-            return Optional.of(response);
-        } catch (Exception e) {
-            log.atError().setMessage("mcp request failed")
-                    .addKeyValue("method", method)
-                    .addKeyValue("cause", e.toString())
-                    .setCause(e)
-                    .log();
-            return isNotification ? Optional.empty() : Optional.of(error(id, -32603, describe(e)));
-        }
-    }
+  public ObjectNode parseError(@Nullable String message) {
+    return error(mapper.nullNode(), -32700, "Parse error: " + message);
+  }
 
-    public ObjectNode parseError(@Nullable String message) {
-        return error(mapper.nullNode(), -32700, "Parse error: " + message);
-    }
-
-    /** Any MCP traffic from a registered worktree proves the agent is alive. */
-    private @Nullable String keepAlive(@Nullable String callerCwd) {
-        var caller = stateService.findByWorktree(callerCwd);
-        long now = clock.millis();
-        caller.ifPresent(entry -> {
-            KeepAlive.beat(stateService, entry, new SessionSign.Called(), now);
+  /** Any MCP traffic from a registered worktree proves the agent is alive. */
+  private @Nullable String keepAlive(@Nullable String callerCwd) {
+    var caller = stateService.findByWorktree(callerCwd);
+    long now = clock.millis();
+    caller.ifPresent(
+        entry -> {
+          KeepAlive.beat(stateService, entry, new SessionSign.Called(), now);
         });
-        return caller.map(Map.Entry::getKey).orElse(null);
-    }
+    return caller.map(Map.Entry::getKey).orElse(null);
+  }
 
-    private JsonNode initializeResult(JsonNode message) {
-        String requestedVersion = message.path("params").path("protocolVersion").asString(DEFAULT_PROTOCOL_VERSION);
-        ObjectNode result = mapper.createObjectNode();
-        result.put("protocolVersion", requestedVersion);
-        result.putObject("capabilities").putObject("tools");
-        ObjectNode serverInfo = result.putObject("serverInfo");
-        serverInfo.put("name", "jagt-orchestrator");
-        serverInfo.put("version", "0.1.0");
-        return result;
-    }
+  private JsonNode initializeResult(JsonNode message) {
+    String requestedVersion =
+        message.path("params").path("protocolVersion").asString(DEFAULT_PROTOCOL_VERSION);
+    ObjectNode result = mapper.createObjectNode();
+    result.put("protocolVersion", requestedVersion);
+    result.putObject("capabilities").putObject("tools");
+    ObjectNode serverInfo = result.putObject("serverInfo");
+    serverInfo.put("name", "jagt-orchestrator");
+    serverInfo.put("version", "0.1.0");
+    return result;
+  }
 
-    private JsonNode toolsList(@Nullable String callerTaskId) {
-        ObjectNode result = mapper.createObjectNode();
-        ArrayNode list = result.putArray("tools");
-        tools.values().stream().filter(spec -> spec.audience().admits(callerTaskId)).forEach(spec -> {
-            ObjectNode tool = list.addObject();
-            tool.put("name", spec.name());
-            tool.put("description", spec.schema().path("description").asString(""));
-            tool.putObject("annotations").put("readOnlyHint", spec.effect() == Effect.REPORTS);
-            ObjectNode schema = (ObjectNode) spec.schema().deepCopy();
-            schema.remove("description");
-            tool.set("inputSchema", schema);
-        });
-        return result;
-    }
+  private JsonNode toolsList(@Nullable String callerTaskId) {
+    ObjectNode result = mapper.createObjectNode();
+    ArrayNode list = result.putArray("tools");
+    tools.values().stream()
+        .filter(spec -> spec.audience().admits(callerTaskId))
+        .forEach(
+            spec -> {
+              ObjectNode tool = list.addObject();
+              tool.put("name", spec.name());
+              tool.put("description", spec.schema().path("description").asString(""));
+              tool.putObject("annotations").put("readOnlyHint", spec.effect() == Effect.REPORTS);
+              ObjectNode schema = (ObjectNode) spec.schema().deepCopy();
+              schema.remove("description");
+              tool.set("inputSchema", schema);
+            });
+    return result;
+  }
 
-    /** The one place a message is read off the wire and judged, so no tool can be the one that forgot. */
-    @Override
-    public <T extends Message> void tool(String name, Audience audience, Effect effect, Schema schema,
-                                         Class<T> message, BiFunction<T, @Nullable String, MessageContext> context,
-                                         MessageHandler<T> handler) {
-        register(name, audience, effect, schema.json(),
-                MessageTool.of(mapper, name, audience, message, context, handler));
-    }
+  /**
+   * The one place a message is read off the wire and judged, so no tool can be the one that forgot.
+   */
+  @Override
+  public <T extends Message> void tool(
+      String name,
+      Audience audience,
+      Effect effect,
+      Schema schema,
+      Class<T> message,
+      BiFunction<T, @Nullable String, MessageContext> context,
+      MessageHandler<T> handler) {
+    register(
+        name,
+        audience,
+        effect,
+        schema.json(),
+        MessageTool.of(mapper, name, audience, message, context, handler));
+  }
 
-    private JsonNode callTool(JsonNode message, @Nullable String callerTaskId) {
-        String name = message.path("params").path("name").asString("");
-        JsonNode args = message.path("params").path("arguments");
-        ToolSpec spec = tools.get(name);
-        if (spec == null) {
-            return failed(ToolFailure.VALIDATION, "Unknown tool: " + name + ". Yours: " + String.join(", ",
-                    tools.values().stream().filter(tool -> tool.audience().admits(callerTaskId))
-                            .map(ToolSpec::name).toList()));
-        }
-        if (callerTaskId != null) {
-            Turn turn = stateService.task(callerTaskId).map(TaskState::turnOrNone).orElse(Turn.none());
-            log.atDebug().setMessage("mcp tool called").addKeyValue("task", callerTaskId).addKeyValue("tool", name)
-                    .addKeyValue("turn", turn.id()).addKeyValue("step", turn.step())
-                    .addKeyValue("arguments", args.toString()).log();
-        }
-        try {
-            return toolResult(spec.handler().call(args, callerTaskId));
-        } catch (Exception e) {
-            ToolFailure failure = ToolFailure.of(e);
-            // A refused message is the caller's mistake, already answered on the wire, not a fault of jagt's.
-            log.atLevel(failure == ToolFailure.VALIDATION ? Level.INFO : Level.WARN).setMessage("mcp tool failed")
-                    .addKeyValue("tool", name)
-                    .addKeyValue("note", failure.wire())
-                    .addKeyValue("cause", e.toString())
-                    .log();
-            return failed(failure, describe(e));
-        }
+  private JsonNode callTool(JsonNode message, @Nullable String callerTaskId) {
+    String name = message.path("params").path("name").asString("");
+    JsonNode args = message.path("params").path("arguments");
+    ToolSpec spec = tools.get(name);
+    if (spec == null) {
+      return failed(
+          ToolFailure.VALIDATION,
+          "Unknown tool: "
+              + name
+              + ". Yours: "
+              + String.join(
+                  ", ",
+                  tools.values().stream()
+                      .filter(tool -> tool.audience().admits(callerTaskId))
+                      .map(ToolSpec::name)
+                      .toList()));
     }
-
-    private ObjectNode toolResult(String text) {
-        ObjectNode result = mapper.createObjectNode();
-        ObjectNode content = result.putArray("content").addObject();
-        content.put("type", "text");
-        content.put("text", text);
-        return result;
+    if (callerTaskId != null) {
+      Turn turn = stateService.task(callerTaskId).map(TaskState::turnOrNone).orElse(Turn.none());
+      log.atDebug()
+          .setMessage("mcp tool called")
+          .addKeyValue("task", callerTaskId)
+          .addKeyValue("tool", name)
+          .addKeyValue("turn", turn.id())
+          .addKeyValue("step", turn.step())
+          .addKeyValue("arguments", args.toString())
+          .log();
     }
-
-    /** The category rides in the text too: a CLI may hand the model the text and drop the structured half. */
-    private JsonNode failed(ToolFailure failure, String why) {
-        ObjectNode result = toolResult("Error (" + failure.wire() + ", "
-                + (failure.retryable() ? "retryable" : "not retryable") + "): " + why);
-        result.put("isError", true);
-        ObjectNode structured = result.putObject("structuredContent");
-        structured.put("category", failure.wire());
-        structured.put("retryable", failure.retryable());
-        return result;
+    try {
+      return toolResult(spec.handler().call(args, callerTaskId));
+    } catch (Exception e) {
+      ToolFailure failure = ToolFailure.of(e);
+      // A refused message is the caller's mistake, already answered on the wire, not a fault of
+      // jagt's.
+      log.atLevel(failure == ToolFailure.VALIDATION ? Level.INFO : Level.WARN)
+          .setMessage("mcp tool failed")
+          .addKeyValue("tool", name)
+          .addKeyValue("note", failure.wire())
+          .addKeyValue("cause", e.toString())
+          .log();
+      return failed(failure, describe(e));
     }
+  }
 
-    private ObjectNode error(JsonNode id, int code, String message) {
-        ObjectNode response = mapper.createObjectNode();
-        response.put("jsonrpc", "2.0");
-        response.set("id", id);
-        ObjectNode error = response.putObject("error");
-        error.put("code", code);
-        error.put("message", message);
-        return response;
-    }
+  private ObjectNode toolResult(String text) {
+    ObjectNode result = mapper.createObjectNode();
+    ObjectNode content = result.putArray("content").addObject();
+    content.put("type", "text");
+    content.put("text", text);
+    return result;
+  }
 
-    private String describe(Exception e) {
-        return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
-    }
+  /**
+   * The category rides in the text too: a CLI may hand the model the text and drop the structured
+   * half.
+   */
+  private JsonNode failed(ToolFailure failure, String why) {
+    ObjectNode result =
+        toolResult(
+            "Error ("
+                + failure.wire()
+                + ", "
+                + (failure.retryable() ? "retryable" : "not retryable")
+                + "): "
+                + why);
+    result.put("isError", true);
+    ObjectNode structured = result.putObject("structuredContent");
+    structured.put("category", failure.wire());
+    structured.put("retryable", failure.retryable());
+    return result;
+  }
 
+  private ObjectNode error(JsonNode id, int code, String message) {
+    ObjectNode response = mapper.createObjectNode();
+    response.put("jsonrpc", "2.0");
+    response.set("id", id);
+    ObjectNode error = response.putObject("error");
+    error.put("code", code);
+    error.put("message", message);
+    return response;
+  }
+
+  private String describe(Exception e) {
+    return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+  }
 }

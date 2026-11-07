@@ -5,7 +5,7 @@ import java.util.OptionalDouble;
 @FunctionalInterface
 public interface EvalSpend {
 
-    EvalSpend UNMETERED = OptionalDouble::empty;
+  EvalSpend UNMETERED = OptionalDouble::empty;
 
-    OptionalDouble costUsd();
+  OptionalDouble costUsd();
 }

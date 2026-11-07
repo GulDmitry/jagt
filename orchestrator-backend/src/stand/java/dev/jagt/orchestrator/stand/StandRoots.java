@@ -11,50 +11,52 @@ import java.util.stream.Stream;
 
 public final class StandRoots {
 
-    public static final String PREFIX = "jagt-stand-";
-    private static final Pattern NAME = Pattern.compile(Pattern.quote(PREFIX) + "(\\d+)-(\\d+)");
+  public static final String PREFIX = "jagt-stand-";
+  private static final Pattern NAME = Pattern.compile(Pattern.quote(PREFIX) + "(\\d+)-(\\d+)");
 
-    public record Found(Path root, StandMarker marker) {
-    }
+  public record Found(Path root, StandMarker marker) {}
 
-    public record Plan(List<Found> dead) {
-    }
+  public record Plan(List<Found> dead) {}
 
-    private StandRoots() {
-    }
+  private StandRoots() {}
 
-    public static Plan plan(Path base, LongPredicate alive) {
-        List<Found> dead = under(base).stream().filter(found -> !alive.test(found.marker().pid())).toList();
-        return new Plan(dead);
-    }
+  public static Plan plan(Path base, LongPredicate alive) {
+    List<Found> dead =
+        under(base).stream().filter(found -> !alive.test(found.marker().pid())).toList();
+    return new Plan(dead);
+  }
 
-    public static long pidOf(String rootName) {
-        Matcher name = NAME.matcher(rootName);
-        if (!name.matches()) {
-            throw new StandFailure("not a stand root name: " + rootName);
-        }
-        return Long.parseLong(name.group(1));
+  public static long pidOf(String rootName) {
+    Matcher name = NAME.matcher(rootName);
+    if (!name.matches()) {
+      throw new StandFailure("not a stand root name: " + rootName);
     }
+    return Long.parseLong(name.group(1));
+  }
 
-    public static boolean named(Path directory) {
-        return NAME.matcher(directory.getFileName().toString()).matches();
-    }
+  public static boolean named(Path directory) {
+    return NAME.matcher(directory.getFileName().toString()).matches();
+  }
 
-    private static List<Found> under(Path base) {
-        try (Stream<Path> entries = Files.list(base)) {
-            return entries.filter(Files::isDirectory).filter(dir -> !Files.isSymbolicLink(dir))
-                    .map(StandRoots::found).flatMap(Stream::ofNullable).sorted((a, b) -> a.root().compareTo(b.root()))
-                    .toList();
-        } catch (IOException e) {
-            throw new StandFailure("cannot list " + base, e);
-        }
+  private static List<Found> under(Path base) {
+    try (Stream<Path> entries = Files.list(base)) {
+      return entries
+          .filter(Files::isDirectory)
+          .filter(dir -> !Files.isSymbolicLink(dir))
+          .map(StandRoots::found)
+          .flatMap(Stream::ofNullable)
+          .sorted((a, b) -> a.root().compareTo(b.root()))
+          .toList();
+    } catch (IOException e) {
+      throw new StandFailure("cannot list " + base, e);
     }
+  }
 
-    private static Found found(Path dir) {
-        Matcher name = NAME.matcher(dir.getFileName().toString());
-        if (!name.matches()) {
-            return null;
-        }
-        return new Found(dir, StandMarker.read(dir, Long.parseLong(name.group(1))));
+  private static Found found(Path dir) {
+    Matcher name = NAME.matcher(dir.getFileName().toString());
+    if (!name.matches()) {
+      return null;
     }
+    return new Found(dir, StandMarker.read(dir, Long.parseLong(name.group(1))));
+  }
 }

@@ -1,13 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import org.springframework.util.FileSystemUtils;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.WorktreeProcesses;
 import dev.jagt.orchestrator.task.Remote;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,152 +13,191 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import org.springframework.util.FileSystemUtils;
 
-/** Serialized per repository: index.lock races are per-repository, and a slow fetch must not block another. */
+/**
+ * Serialized per repository: index.lock races are per-repository, and a slow fetch must not block
+ * another.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class GitCommands {
 
-    private static final Duration GIT_TIMEOUT = Duration.ofMinutes(3);
+  private static final Duration GIT_TIMEOUT = Duration.ofMinutes(3);
 
-    private final ConcurrentHashMap<String, ReentrantLock> repoLocks = new ConcurrentHashMap<>();
-    private final Processes processRunner;
-    private final WorktreeProcesses worktreeProcesses;
-    private final Remotes remotes;
+  private final ConcurrentHashMap<String, ReentrantLock> repoLocks = new ConcurrentHashMap<>();
+  private final Processes processRunner;
+  private final WorktreeProcesses worktreeProcesses;
+  private final Remotes remotes;
 
-    /** The remote of the configured project this repository or checkout belongs to; origin where none is configured. */
-    Remote remote(Path repository) {
-        return remotes.of(repository).or(() -> worktreeOwner(repository).flatMap(remotes::of)).orElse(Remote.ORIGIN);
+  /**
+   * The remote of the configured project this repository or checkout belongs to; origin where none
+   * is configured.
+   */
+  Remote remote(Path repository) {
+    return remotes
+        .of(repository)
+        .or(() -> worktreeOwner(repository).flatMap(remotes::of))
+        .orElse(Remote.ORIGIN);
+  }
+
+  /** A repository kept on this machine has nothing to fetch, which is no failure. */
+  Processes.Result fetchPruning(Remote remote, Path workingDir) {
+    if (remote.local()) {
+      return new Processes.Result(0, "", "");
     }
+    return run(workingDir, List.of("git", "fetch", "--prune", remote.name()));
+  }
 
-    /** A repository kept on this machine has nothing to fetch, which is no failure. */
-    Processes.Result fetchPruning(Remote remote, Path workingDir) {
-        if (remote.local()) {
-            return new Processes.Result(0, "", "");
-        }
-        return run(workingDir, List.of("git", "fetch", "--prune", remote.name()));
+  Processes.Result fetchBranch(Remote remote, Path workingDir, String branch) {
+    if (remote.local()) {
+      return new Processes.Result(0, "", "");
     }
+    return run(
+        workingDir,
+        List.of(
+            "git",
+            "fetch",
+            remote.name(),
+            "+refs/heads/" + branch + ":" + remote.trackingRef(branch)));
+  }
 
-    Processes.Result fetchBranch(Remote remote, Path workingDir, String branch) {
-        if (remote.local()) {
-            return new Processes.Result(0, "", "");
-        }
-        return run(workingDir, List.of("git", "fetch", remote.name(),
-                "+refs/heads/" + branch + ":" + remote.trackingRef(branch)));
+  /**
+   * Pushes the worktree's HEAD to the target; where nothing is shared, a checked-out target takes
+   * it where it stands.
+   */
+  Processes.Result publish(Remote remote, Path worktree, String target) {
+    Optional<Path> holder = remote.local() ? checkoutOf(worktree, target) : Optional.empty();
+    if (holder.isEmpty()) {
+      return run(worktree, List.of("git", "push", remote.pushTarget(), "HEAD:" + target));
     }
+    String head =
+        run(worktree, List.of("git", "rev-parse", "HEAD"))
+            .expectSuccess("git rev-parse HEAD in " + worktree)
+            .stdout()
+            .trim();
+    return run(holder.get(), List.of("git", "merge", "--ff-only", head));
+  }
 
-    /** Pushes the worktree's HEAD to the target; where nothing is shared, a checked-out target takes it where it stands. */
-    Processes.Result publish(Remote remote, Path worktree, String target) {
-        Optional<Path> holder = remote.local() ? checkoutOf(worktree, target) : Optional.empty();
-        if (holder.isEmpty()) {
-            return run(worktree, List.of("git", "push", remote.pushTarget(), "HEAD:" + target));
-        }
-        String head = run(worktree, List.of("git", "rev-parse", "HEAD"))
-                .expectSuccess("git rev-parse HEAD in " + worktree).stdout().trim();
-        return run(holder.get(), List.of("git", "merge", "--ff-only", head));
+  private Optional<Path> checkoutOf(Path worktree, String branch) {
+    Processes.Result listing = run(worktree, List.of("git", "worktree", "list", "--porcelain"));
+    Path holder = null;
+    for (String line : listing.stdout().split("\n", 0)) {
+      if (line.startsWith("worktree ")) {
+        holder = Path.of(line.substring("worktree ".length()));
+      } else if (line.equals("branch refs/heads/" + branch)) {
+        return Optional.ofNullable(holder);
+      }
     }
+    return Optional.empty();
+  }
 
-    private Optional<Path> checkoutOf(Path worktree, String branch) {
-        Processes.Result listing = run(worktree, List.of("git", "worktree", "list", "--porcelain"));
-        Path holder = null;
-        for (String line : listing.stdout().split("\n", 0)) {
-            if (line.startsWith("worktree ")) {
-                holder = Path.of(line.substring("worktree ".length()));
-            } else if (line.equals("branch refs/heads/" + branch)) {
-                return Optional.ofNullable(holder);
-            }
-        }
-        return Optional.empty();
+  Processes.Result run(Path workingDir, List<String> command) {
+    return processRunner.run(workingDir, GIT_TIMEOUT, command);
+  }
+
+  Processes.Result run(Path workingDir, Map<String, String> env, List<String> command) {
+    return processRunner.run(workingDir, GIT_TIMEOUT, env, command);
+  }
+
+  void reap(Path worktree) {
+    worktreeProcesses.reap(worktree);
+  }
+
+  /** The repository a checkout belongs to, empty when it is not a checkout at all. */
+  Optional<Path> worktreeOwner(Path worktree) {
+    // Without its own `.git`, git would answer for whatever repository encloses the directory.
+    if (!Files.isDirectory(worktree) || !Files.exists(worktree.resolve(".git"))) {
+      return Optional.empty();
     }
-
-    Processes.Result run(Path workingDir, List<String> command) {
-        return processRunner.run(workingDir, GIT_TIMEOUT, command);
+    var gitDir =
+        processRunner.run(worktree, GIT_TIMEOUT, List.of("git", "rev-parse", "--git-common-dir"));
+    if (gitDir.exitCode() != 0) {
+      return Optional.empty();
     }
+    // Answered relative to the checkout in the main repository, absolute from a linked worktree.
+    return Optional.ofNullable(worktree.resolve(gitDir.stdout().trim()).normalize().getParent());
+  }
 
-    Processes.Result run(Path workingDir, Map<String, String> env, List<String> command) {
-        return processRunner.run(workingDir, GIT_TIMEOUT, env, command);
+  /**
+   * Symlinked temp and home directories are the norm, and git answers with the path they resolve
+   * to.
+   */
+  static boolean sameDirectory(Path one, Path other) {
+    try {
+      return Files.isSameFile(one, other);
+    } catch (IOException e) {
+      return one.toAbsolutePath().normalize().equals(other.toAbsolutePath().normalize());
     }
+  }
 
-    void reap(Path worktree) {
-        worktreeProcesses.reap(worktree);
+  /**
+   * A path a prior run left behind makes `git worktree add` fail, so registration and the directory
+   * both go.
+   */
+  void clearWorktreePath(Path projectPath, Path temp) {
+    processRunner.run(
+        projectPath, GIT_TIMEOUT, List.of("git", "worktree", "remove", "--force", temp.toString()));
+    processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
+    forceDeleteDir(temp);
+  }
+
+  /** Best-effort: the checkout and its branch are scaffolding, not state. */
+  void removeWorktreeAndBranch(Path projectPath, Path worktree, String branch) {
+    run(projectPath, List.of("git", "worktree", "remove", "--force", worktree.toString()));
+    run(projectPath, List.of("git", "worktree", "prune"));
+    run(projectPath, List.of("git", "branch", "-D", branch));
+  }
+
+  /**
+   * A process rooted in the directory can keep recreating files, so every pass kills it before
+   * deleting.
+   */
+  void forceDeleteDir(Path dir) {
+    for (int attempt = 0; attempt < 4 && Files.exists(dir); attempt++) {
+      worktreeProcesses.reap(dir);
+      try {
+        FileSystemUtils.deleteRecursively(dir);
+      } catch (IOException e) {
+        log.atWarn()
+            .setMessage("directory delete failed")
+            .addKeyValue("path", dir)
+            .addKeyValue("attempt", attempt + 1)
+            .addKeyValue("cause", e.toString())
+            .log();
+      }
     }
-
-    /** The repository a checkout belongs to, empty when it is not a checkout at all. */
-    Optional<Path> worktreeOwner(Path worktree) {
-        // Without its own `.git`, git would answer for whatever repository encloses the directory.
-        if (!Files.isDirectory(worktree) || !Files.exists(worktree.resolve(".git"))) {
-            return Optional.empty();
-        }
-        var gitDir = processRunner.run(worktree, GIT_TIMEOUT,
-                List.of("git", "rev-parse", "--git-common-dir"));
-        if (gitDir.exitCode() != 0) {
-            return Optional.empty();
-        }
-        // Answered relative to the checkout in the main repository, absolute from a linked worktree.
-        return Optional.ofNullable(worktree.resolve(gitDir.stdout().trim()).normalize().getParent());
+    if (Files.exists(dir)) {
+      log.atWarn()
+          .setMessage("directory still present after delete")
+          .addKeyValue("path", dir)
+          .addKeyValue("cause", "a live process repopulates it")
+          .log();
     }
+  }
 
-    /** Symlinked temp and home directories are the norm, and git answers with the path they resolve to. */
-    static boolean sameDirectory(Path one, Path other) {
-        try {
-            return Files.isSameFile(one, other);
-        } catch (IOException e) {
-            return one.toAbsolutePath().normalize().equals(other.toAbsolutePath().normalize());
-        }
-    }
-
-    /** A path a prior run left behind makes `git worktree add` fail, so registration and the directory both go. */
-    void clearWorktreePath(Path projectPath, Path temp) {
-        processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "remove", "--force", temp.toString()));
-        processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
-        forceDeleteDir(temp);
-    }
-
-    /** Best-effort: the checkout and its branch are scaffolding, not state. */
-    void removeWorktreeAndBranch(Path projectPath, Path worktree, String branch) {
-        run(projectPath, List.of("git", "worktree", "remove", "--force", worktree.toString()));
-        run(projectPath, List.of("git", "worktree", "prune"));
-        run(projectPath, List.of("git", "branch", "-D", branch));
-    }
-
-    /** A process rooted in the directory can keep recreating files, so every pass kills it before deleting. */
-    void forceDeleteDir(Path dir) {
-        for (int attempt = 0; attempt < 4 && Files.exists(dir); attempt++) {
-            worktreeProcesses.reap(dir);
-            try {
-                FileSystemUtils.deleteRecursively(dir);
-            } catch (IOException e) {
-                log.atWarn().setMessage("directory delete failed")
-                        .addKeyValue("path", dir)
-                        .addKeyValue("attempt", attempt + 1)
-                        .addKeyValue("cause", e.toString())
-                        .log();
-            }
-        }
-        if (Files.exists(dir)) {
-            log.atWarn().setMessage("directory still present after delete")
-                    .addKeyValue("path", dir)
-                    .addKeyValue("cause", "a live process repopulates it")
-                    .log();
-        }
-    }
-
-    void locked(Path projectPath, Runnable action) {
-        locked(projectPath, () -> {
-            action.run();
-            return null;
+  void locked(Path projectPath, Runnable action) {
+    locked(
+        projectPath,
+        () -> {
+          action.run();
+          return null;
         });
-    }
+  }
 
-    <T> T locked(Path projectPath, Supplier<T> action) {
-        ReentrantLock lock = repoLocks.computeIfAbsent(
-                projectPath.toAbsolutePath().normalize().toString(), k -> new ReentrantLock());
-        lock.lock();
-        try {
-            return action.get();
-        } finally {
-            lock.unlock();
-        }
+  <T> T locked(Path projectPath, Supplier<T> action) {
+    ReentrantLock lock =
+        repoLocks.computeIfAbsent(
+            projectPath.toAbsolutePath().normalize().toString(), k -> new ReentrantLock());
+    lock.lock();
+    try {
+      return action.get();
+    } finally {
+      lock.unlock();
     }
+  }
 }

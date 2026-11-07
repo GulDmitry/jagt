@@ -1,21 +1,5 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
-import dev.jagt.orchestrator.port.Processes;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
-
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -24,127 +8,186 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
+import dev.jagt.orchestrator.config.AssistantProperties;
+import dev.jagt.orchestrator.port.Processes;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.slf4j.LoggerFactory;
+
 class ClaudeMcpHealthProbeTest {
 
-    @Test
-    void namesEveryServerAReadCannotUseAndNoneItCan() {
-        ProcessRunner runner = mock(ProcessRunner.class);
-        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
+  @Test
+  void namesEveryServerAReadCannotUseAndNoneItCan() {
+    ProcessRunner runner = mock(ProcessRunner.class);
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                """
                 Checking MCP server health...
                 context7: npx -y @upstash/context7-mcp - ✔ Connected
                 plugin:acme:gitlab: sh -c exec docker run -i --rm acme/gitlab-mcp - ✘ Failed to connect \
                 — -32000: Connection closed
                 acme tracker: https://mcp.example.com/mcp (HTTP) - ! Needs authentication
-                """, ""));
+                """,
+                ""));
 
-        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
-                .brokenServers();
+    var broken =
+        new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+            .brokenServers();
 
-        assertThat(broken).contains(List.of("plugin:acme:gitlab (Failed to connect)",
-                "acme tracker (Needs authentication)"));
-    }
+    assertThat(broken)
+        .contains(
+            List.of(
+                "plugin:acme:gitlab (Failed to connect)", "acme tracker (Needs authentication)"));
+  }
 
-    @Test
-    void reportsAProbeThatFailedAsUnknownRatherThanAsNothingBeingDown() {
-        ProcessRunner runner = mock(ProcessRunner.class);
-        when(runner.run(any(Path.class), any(Duration.class), any()))
-                .thenReturn(new Processes.Result(1, "", "claude: command not found"));
+  @Test
+  void reportsAProbeThatFailedAsUnknownRatherThanAsNothingBeingDown() {
+    ProcessRunner runner = mock(ProcessRunner.class);
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(new Processes.Result(1, "", "claude: command not found"));
 
-        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
-                .brokenServers();
+    var broken =
+        new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+            .brokenServers();
 
-        assertThat(broken).isEmpty();
-    }
+    assertThat(broken).isEmpty();
+  }
 
-    @Test
-    void reportsOutputThatNamesNoServerAsUnknownRatherThanAsNothingBeingDown() {
-        ProcessRunner runner = mock(ProcessRunner.class);
-        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
-                "No MCP servers configured. Use `claude mcp add` to add one.", ""));
+  @Test
+  void reportsOutputThatNamesNoServerAsUnknownRatherThanAsNothingBeingDown() {
+    ProcessRunner runner = mock(ProcessRunner.class);
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(
+                0, "No MCP servers configured. Use `claude mcp add` to add one.", ""));
 
-        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
-                .brokenServers();
+    var broken =
+        new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+            .brokenServers();
 
-        assertThat(broken).isEmpty();
-    }
+    assertThat(broken).isEmpty();
+  }
 
-    @Test
-    @ResourceLock(Resources.GLOBAL)
-    void namesTheLoginADeclaredServerNeedsWhereItCannotJudgeOne() {
-        ListAppender<ILoggingEvent> log = new ListAppender<>();
-        log.start();
-        Logger probeLog = (Logger) LoggerFactory.getLogger(ClaudeMcpHealthProbe.class);
-        probeLog.addAppender(log);
+  @Test
+  @ResourceLock(Resources.GLOBAL)
+  void namesTheLoginADeclaredServerNeedsWhereItCannotJudgeOne() {
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    Logger probeLog = (Logger) LoggerFactory.getLogger(ClaudeMcpHealthProbe.class);
+    probeLog.addAppender(log);
 
-        new ClaudeMcpHealthProbe(mock(ProcessRunner.class), ClaudeProperties.defaults(),
-                AssistantProperties.empty().withMcpConfig("/opt/acme/servers.json")).brokenServers();
+    new ClaudeMcpHealthProbe(
+            mock(ProcessRunner.class),
+            ClaudeProperties.defaults(),
+            AssistantProperties.empty().withMcpConfig("/opt/acme/servers.json"))
+        .brokenServers();
 
-        assertThat(List.copyOf(log.list)).filteredOn(event -> "mcp probe skipped".equals(event.getMessage()))
-                .flatExtracting(ILoggingEvent::getKeyValuePairs)
-                .extracting(pair -> pair.key + "=" + pair.value)
-                .contains("fix=claude --strict-mcp-config --mcp-config /opt/acme/servers.json"
-                        + " --setting-sources user,project,local, then /mcp: a declared server carries its"
-                        + " own login");
-        probeLog.detachAppender(log);
-    }
+    assertThat(List.copyOf(log.list))
+        .filteredOn(event -> "mcp probe skipped".equals(event.getMessage()))
+        .flatExtracting(ILoggingEvent::getKeyValuePairs)
+        .extracting(pair -> pair.key + "=" + pair.value)
+        .contains(
+            "fix=claude --strict-mcp-config --mcp-config /opt/acme/servers.json"
+                + " --setting-sources user,project,local, then /mcp: a declared server carries its"
+                + " own login");
+    probeLog.detachAppender(log);
+  }
 
-    @Test
-    void refusesToJudgeServersThatAreDeclaredRatherThanResolvedByTheCli() {
-        ProcessRunner runner = mock(ProcessRunner.class);
+  @Test
+  void refusesToJudgeServersThatAreDeclaredRatherThanResolvedByTheCli() {
+    ProcessRunner runner = mock(ProcessRunner.class);
 
-        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty()
-                .withMcpConfig("{\"mcpServers\":{\"acme\":{\"command\":\"x\"}}}")).brokenServers();
+    var broken =
+        new ClaudeMcpHealthProbe(
+                runner,
+                ClaudeProperties.defaults(),
+                AssistantProperties.empty()
+                    .withMcpConfig("{\"mcpServers\":{\"acme\":{\"command\":\"x\"}}}"))
+            .brokenServers();
 
-        assertThat(broken).isEmpty();
-        verifyNoInteractions(runner);
-    }
+    assertThat(broken).isEmpty();
+    verifyNoInteractions(runner);
+  }
 
-    @Test
-    void listsEveryServerTheCliKnowsByNameConnectedOrNot() {
-        ProcessRunner runner = mock(ProcessRunner.class);
-        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
+  @Test
+  void listsEveryServerTheCliKnowsByNameConnectedOrNot() {
+    ProcessRunner runner = mock(ProcessRunner.class);
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                """
                 context7: npx -y @upstash/context7-mcp - ✔ Connected
                 acme tracker: https://mcp.example.com/mcp (HTTP) - ! Needs authentication
-                """, ""));
+                """,
+                ""));
 
-        var servers = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
-                .servers();
+    var servers =
+        new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+            .servers();
 
-        assertThat(servers).contains(List.of("context7", "acme tracker"));
-    }
+    assertThat(servers).contains(List.of("context7", "acme tracker"));
+  }
 
-    @Test
-    void readsTheVerdictOfAServerWhoseFailureDetailItselfHoldsADash() {
-        ProcessRunner runner = mock(ProcessRunner.class);
-        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
+  @Test
+  void readsTheVerdictOfAServerWhoseFailureDetailItselfHoldsADash() {
+    ProcessRunner runner = mock(ProcessRunner.class);
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                """
                 acme tracker: https://mcp.example.com/mcp (HTTP) - ✘ Failed to connect — HTTP 401 - unauthorized
-                """, ""));
+                """,
+                ""));
 
-        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
-                .brokenServers();
+    var broken =
+        new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+            .brokenServers();
 
-        assertThat(broken).contains(List.of("acme tracker (Failed to connect)"));
-    }
+    assertThat(broken).contains(List.of("acme tracker (Failed to connect)"));
+  }
 
-    @Test
-    void asksTheCliOnlyOnceWhileItsAnswerIsFresh() {
-        ProcessRunner runner = mock(ProcessRunner.class);
-        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
+  @Test
+  void asksTheCliOnlyOnceWhileItsAnswerIsFresh() {
+    ProcessRunner runner = mock(ProcessRunner.class);
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                """
                 context7: npx -y @upstash/context7-mcp - ✔ Connected
-                """, ""));
-        var probe = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty());
+                """,
+                ""));
+    var probe =
+        new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty());
 
-        probe.brokenServers();
-        var servers = probe.servers();
+    probe.brokenServers();
+    var servers = probe.servers();
 
-        assertThat(servers).contains(List.of("context7"));
-        verify(runner, times(1)).run(any(Path.class), any(Duration.class), any());
-    }
+    assertThat(servers).contains(List.of("context7"));
+    verify(runner, times(1)).run(any(Path.class), any(Duration.class), any());
+  }
 
-    @Test
-    void listsAllEightBrokenServersWithoutAMoreLine() {
-        ProcessRunner runner = mock(ProcessRunner.class);
-        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
+  @Test
+  void listsAllEightBrokenServersWithoutAMoreLine() {
+    ProcessRunner runner = mock(ProcessRunner.class);
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                """
                 s1: cmd - ✘ Failed to connect
                 s2: cmd - ✘ Failed to connect
                 s3: cmd - ✘ Failed to connect
@@ -153,20 +196,34 @@ class ClaudeMcpHealthProbeTest {
                 s6: cmd - ✘ Failed to connect
                 s7: cmd - ✘ Failed to connect
                 s8: cmd - ✘ Failed to connect
-                """, ""));
+                """,
+                ""));
 
-        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
-                .brokenServers();
+    var broken =
+        new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+            .brokenServers();
 
-        assertThat(broken).contains(List.of("s1 (Failed to connect)", "s2 (Failed to connect)",
-                "s3 (Failed to connect)", "s4 (Failed to connect)", "s5 (Failed to connect)",
-                "s6 (Failed to connect)", "s7 (Failed to connect)", "s8 (Failed to connect)"));
-    }
+    assertThat(broken)
+        .contains(
+            List.of(
+                "s1 (Failed to connect)",
+                "s2 (Failed to connect)",
+                "s3 (Failed to connect)",
+                "s4 (Failed to connect)",
+                "s5 (Failed to connect)",
+                "s6 (Failed to connect)",
+                "s7 (Failed to connect)",
+                "s8 (Failed to connect)"));
+  }
 
-    @Test
-    void capsTheBrokenListAtEightAndCountsTheRest() {
-        ProcessRunner runner = mock(ProcessRunner.class);
-        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0, """
+  @Test
+  void capsTheBrokenListAtEightAndCountsTheRest() {
+    ProcessRunner runner = mock(ProcessRunner.class);
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                """
                 s1: cmd - ✘ Failed to connect
                 s2: cmd - ✘ Failed to connect
                 s3: cmd - ✘ Failed to connect
@@ -177,13 +234,24 @@ class ClaudeMcpHealthProbeTest {
                 s8: cmd - ✘ Failed to connect
                 s9: cmd - ✘ Failed to connect
                 s10: cmd - ✘ Failed to connect
-                """, ""));
+                """,
+                ""));
 
-        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
-                .brokenServers();
+    var broken =
+        new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+            .brokenServers();
 
-        assertThat(broken).contains(List.of("s1 (Failed to connect)", "s2 (Failed to connect)",
-                "s3 (Failed to connect)", "s4 (Failed to connect)", "s5 (Failed to connect)",
-                "s6 (Failed to connect)", "s7 (Failed to connect)", "s8 (Failed to connect)", "and 2 more"));
-    }
+    assertThat(broken)
+        .contains(
+            List.of(
+                "s1 (Failed to connect)",
+                "s2 (Failed to connect)",
+                "s3 (Failed to connect)",
+                "s4 (Failed to connect)",
+                "s5 (Failed to connect)",
+                "s6 (Failed to connect)",
+                "s7 (Failed to connect)",
+                "s8 (Failed to connect)",
+                "and 2 more"));
+  }
 }

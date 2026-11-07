@@ -1,17 +1,20 @@
 package dev.jagt.orchestrator.e2e;
 
-import dev.jagt.orchestrator.port.AgentRuntime;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import dev.jagt.orchestrator.capability.done.TaskRetirement;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.job.Jobs;
-import dev.jagt.orchestrator.service.TaskProvisioning;
-import dev.jagt.orchestrator.capability.done.TaskRetirement;
-import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskProvisioning;
+import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.TaskStatus;
+import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,90 +28,89 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import java.nio.file.Path;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 @Tag("e2e")
-@SpringBootTest(properties = {"spring.config.import=",
-        "orchestrator.agent.cli=stub", "orchestrator.open-terminal-window=false",
-        "orchestrator.startup-checks=false"})
+@SpringBootTest(
+    properties = {
+      "spring.config.import=",
+      "orchestrator.agent.cli=stub",
+      "orchestrator.open-terminal-window=false",
+      "orchestrator.startup-checks=false"
+    })
 class TaskFlowMatrixTest {
 
-    @TempDir
-    static Path workspace;
+  @TempDir static Path workspace;
 
-    @DynamicPropertySource
-    static void orchestratorLivesInTheTempWorkspace(DynamicPropertyRegistry registry) {
-        registry.add("orchestrator.root", () -> workspace.resolve("root").toString());
-        registry.add("orchestrator.config-file", () -> workspace.resolve("root/jagt.yml").toString());
-        registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
-    }
+  @DynamicPropertySource
+  static void orchestratorLivesInTheTempWorkspace(DynamicPropertyRegistry registry) {
+    registry.add("orchestrator.root", () -> workspace.resolve("root").toString());
+    registry.add("orchestrator.config-file", () -> workspace.resolve("root/jagt.yml").toString());
+    registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
+  }
 
-    @MockitoBean
-    private TerminalDriver terminalDriver;
-    @MockitoBean
-    private EditorDriver editorDriver;
-    @MockitoBean
-    private UserNotifier userNotifier;
+  @MockitoBean private TerminalDriver terminalDriver;
+  @MockitoBean private EditorDriver editorDriver;
+  @MockitoBean private UserNotifier userNotifier;
 
-    @Autowired
-    private Jobs jobs;
-    @Autowired
-    private TaskProvisioning provisioning;
-    @Autowired
-    private TaskRetirement retirement;
-    @Autowired
-    private StateService stateService;
-    @Autowired
-    private OrchestratorPaths paths;
-    @Autowired
-    private ToolchainProperties properties;
+  @Autowired private Jobs jobs;
+  @Autowired private TaskProvisioning provisioning;
+  @Autowired private TaskRetirement retirement;
+  @Autowired private StateService stateService;
+  @Autowired private OrchestratorPaths paths;
+  @Autowired private ToolchainProperties properties;
 
-    @BeforeAll
-    static void createTheThrowawayOutsideWorld() throws Exception {
-        E2eWorkspace.createRootMarker(workspace.resolve("root"));
-        E2eWorkspace.createRepositoryWithOrigin(workspace.resolve("origin.git"), workspace.resolve("proj"));
-    }
+  @BeforeAll
+  static void createTheThrowawayOutsideWorld() throws Exception {
+    E2eWorkspace.createRootMarker(workspace.resolve("root"));
+    E2eWorkspace.createRepositoryWithOrigin(
+        workspace.resolve("origin.git"), workspace.resolve("proj"));
+  }
 
-    @BeforeEach
-    void startFromNoneOfThisRunsSessions() {
-        E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
-    }
+  @BeforeEach
+  void startFromNoneOfThisRunsSessions() {
+    E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
+  }
 
-    @AfterEach
-    void leaveNothingBehindForTheNextCombinationEvenOneThatFailedEarly() {
-        E2eWorkspace.forgetTask(workspace.resolve("proj"), workspace.resolve("ABC-1-proj"), "ABC-1");
-        E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
-        stateService.removeTask("ABC-1");
-    }
+  @AfterEach
+  void leaveNothingBehindForTheNextCombinationEvenOneThatFailedEarly() {
+    E2eWorkspace.forgetTask(workspace.resolve("proj"), workspace.resolve("ABC-1-proj"), "ABC-1");
+    E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
+    stateService.removeTask("ABC-1");
+  }
 
-    @ParameterizedTest(name = "[{index}] {0}")
-    @MethodSource("dev.jagt.orchestrator.e2e.TaskFlowCase#matrix")
-    void aTaskIsCreatedProvisionedAndThenTornDownLeavingOnlyItsBranch(TaskFlowCase flowCase) throws Exception {
-        E2eWorkspace.writeConfig(paths.configFile(), workspace.resolve("proj"), flowCase);
-        Path worktree = workspace.resolve("ABC-1-proj");
+  @ParameterizedTest(name = "[{index}] {0}")
+  @MethodSource("dev.jagt.orchestrator.e2e.TaskFlowCase#matrix")
+  void aTaskIsCreatedProvisionedAndThenTornDownLeavingOnlyItsBranch(TaskFlowCase flowCase)
+      throws Exception {
+    E2eWorkspace.writeConfig(paths.configFile(), workspace.resolve("proj"), flowCase);
+    Path worktree = workspace.resolve("ABC-1-proj");
 
-        String created = provisioning.initializeTask(NewTask.builder("ABC-1", "proj")
-                .instructions("Fix the widget").title("Widget layout is off").build());
+    String created =
+        provisioning.initializeTask(
+            NewTask.builder("ABC-1", "proj")
+                .instructions("Fix the widget")
+                .title("Widget layout is off")
+                .build());
 
-        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-feed");
-        assertThat(created).contains("ABC-1 is a1", "agent running on ABC-1");
-        assertThat(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)).exists();
-        assertThat(worktree.resolve("task_context.md")).exists();
-        assertThat(worktree.resolve("mcp_client.js")).doesNotExist();
-        assertThat(worktree.resolve(".mcp.json")).doesNotExist();
-        assertThat(worktree.resolve(".claude")).doesNotExist();
-        assertThat(E2eWorkspace.tmuxSessions(properties.tmuxCommand()))
-                .containsExactly(flowCase.agentSession());
-        assertThat(stateService.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.NEW);
-        assertThat(stateService.task("ABC-1").orElseThrow().autoReview()).isEqualTo(flowCase.autoReview());
-        assertThat(E2eWorkspace.git(workspace.resolve("proj"), "branch", "--list", "ABC-1")).contains("ABC-1");
+    E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-feed");
+    assertThat(created).contains("ABC-1 is a1", "agent running on ABC-1");
+    assertThat(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)).exists();
+    assertThat(worktree.resolve("task_context.md")).exists();
+    assertThat(worktree.resolve("mcp_client.js")).doesNotExist();
+    assertThat(worktree.resolve(".mcp.json")).doesNotExist();
+    assertThat(worktree.resolve(".claude")).doesNotExist();
+    assertThat(E2eWorkspace.tmuxSessions(properties.tmuxCommand()))
+        .containsExactly(flowCase.agentSession());
+    assertThat(stateService.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.NEW);
+    assertThat(stateService.task("ABC-1").orElseThrow().autoReview())
+        .isEqualTo(flowCase.autoReview());
+    assertThat(E2eWorkspace.git(workspace.resolve("proj"), "branch", "--list", "ABC-1"))
+        .contains("ABC-1");
 
-        retirement.retire("ABC-1");
+    retirement.retire("ABC-1");
 
-        assertThat(worktree).doesNotExist();
-        assertThat(stateService.task("ABC-1")).isEmpty();
-        assertThat(E2eWorkspace.git(workspace.resolve("proj"), "branch", "--list", "ABC-1")).contains("ABC-1");
-    }
+    assertThat(worktree).doesNotExist();
+    assertThat(stateService.task("ABC-1")).isEmpty();
+    assertThat(E2eWorkspace.git(workspace.resolve("proj"), "branch", "--list", "ABC-1"))
+        .contains("ABC-1");
+  }
 }

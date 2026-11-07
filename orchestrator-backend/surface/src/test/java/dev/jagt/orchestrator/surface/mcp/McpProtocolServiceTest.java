@@ -1,472 +1,900 @@
 package dev.jagt.orchestrator.surface.mcp;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.Turn;
-import dev.jagt.orchestrator.service.CommandService;
-import dev.jagt.orchestrator.surface.mcp.tools.DeployTools;
-import dev.jagt.orchestrator.surface.mcp.tools.IdeTools;
-import dev.jagt.orchestrator.surface.mcp.tools.SessionTools;
-import dev.jagt.orchestrator.surface.mcp.tools.StatusTools;
-import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.AgentStatusReports;
-import dev.jagt.orchestrator.service.OwnStatusReports;
-import dev.jagt.orchestrator.protocol.MessageContext;
-import dev.jagt.orchestrator.protocol.NoArguments;
-import dev.jagt.orchestrator.service.StateService;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.notify.Notifications;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
-import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
-
+import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.protocol.NoArguments;
+import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.AgentStatusReports;
+import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.OwnStatusReports;
+import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.surface.mcp.tools.DeployTools;
+import dev.jagt.orchestrator.surface.mcp.tools.IdeTools;
+import dev.jagt.orchestrator.surface.mcp.tools.SessionTools;
+import dev.jagt.orchestrator.surface.mcp.tools.StatusTools;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.Turn;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.stream.StreamSupport;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.LoggerFactory;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 class McpProtocolServiceTest {
 
-    @Test
-    void offersASessionOnlyTheStatusesItMayReport(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(new StatusTools(
-                mock(AgentStatusReports.class), mock(OwnStatusReports.class), new CallerScope(state), new Notifications(List.of(), state, Runnable::run))));
+  @Test
+  void offersASessionOnlyTheStatusesItMayReport(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            state,
+            Clock.systemUTC(),
+            List.of(
+                new StatusTools(
+                    mock(AgentStatusReports.class),
+                    mock(OwnStatusReports.class),
+                    new CallerScope(state),
+                    new Notifications(List.of(), state, Runnable::run))));
 
-        JsonNode response = protocol.handle(
-                mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"), null, true).orElseThrow();
+    JsonNode response =
+        protocol
+            .handle(
+                mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"),
+                null,
+                true)
+            .orElseThrow();
 
-        JsonNode statusEnum = StreamSupport.stream(response.path("result").path("tools").spliterator(), false)
-                .filter(tool -> "update_agent_status".equals(tool.path("name").asString()))
-                .findFirst().orElseThrow()
-                .path("inputSchema").path("properties").path("status").path("enum");
-        assertThat(statusEnum).extracting(JsonNode::asString).containsExactly(
-                "PLAN_PENDING", "IN_PROGRESS", "REVIEW_PENDING", "SHIPPING", "CI_POLLING", "CI_FAILED");
-    }
+    JsonNode statusEnum =
+        StreamSupport.stream(response.path("result").path("tools").spliterator(), false)
+            .filter(tool -> "update_agent_status".equals(tool.path("name").asString()))
+            .findFirst()
+            .orElseThrow()
+            .path("inputSchema")
+            .path("properties")
+            .path("status")
+            .path("enum");
+    assertThat(statusEnum)
+        .extracting(JsonNode::asString)
+        .containsExactly(
+            "PLAN_PENDING", "IN_PROGRESS", "REVIEW_PENDING", "SHIPPING", "CI_POLLING", "CI_FAILED");
+  }
 
-    @Test
-    void rejectsToolCallWhenRequiredArgumentIsMissing(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(),
-                List.of(new SessionTools(mock(AgentSessions.class), mock(CommandService.class))));
+  @Test
+  void rejectsToolCallWhenRequiredArgumentIsMissing(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            state,
+            Clock.systemUTC(),
+            List.of(new SessionTools(mock(AgentSessions.class), mock(CommandService.class))));
 
-        JsonNode response = protocol.handle(mapper.readTree(
-                "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\","
+    JsonNode response =
+        protocol
+            .handle(
+                mapper.readTree(
+                    "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\","
                         + "\"params\":{\"name\":\"write_task_context\",\"arguments\":{\"taskId\":\"X\"}}}"),
-                null, true).orElseThrow();
+                null,
+                true)
+            .orElseThrow();
 
-        JsonNode result = response.path("result");
-        assertThat(result.path("isError").asBoolean()).isTrue();
-        assertThat(result.path("content").get(0).path("text").asString())
-                .contains("instructions").contains("required");
-    }
+    JsonNode result = response.path("result");
+    assertThat(result.path("isError").asBoolean()).isTrue();
+    assertThat(result.path("content").get(0).path("text").asString())
+        .contains("instructions")
+        .contains("required");
+  }
 
-    @Test
-    void answersParseErrorWithJsonRpcCode32700(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+  @Test
+  void answersParseErrorWithJsonRpcCode32700(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
-        JsonNode error = protocol.parseError("unexpected character");
+    JsonNode error = protocol.parseError("unexpected character");
 
-        assertThat(error.path("error").path("code").asInt()).isEqualTo(-32700);
-    }
+    assertThat(error.path("error").path("code").asInt()).isEqualTo(-32700);
+  }
 
-    @Test
-    void namesTheFailureKindWhenTheCauseCarriesNoMessage() {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = mock(StateService.class);
-        when(state.findByWorktree(any())).thenThrow(new IllegalStateException());
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+  @Test
+  void namesTheFailureKindWhenTheCauseCarriesNoMessage() {
+    JsonMapper mapper = new JsonMapper();
+    StateService state = mock(StateService.class);
+    when(state.findByWorktree(any())).thenThrow(new IllegalStateException());
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
-        JsonNode error = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"ping\"}"),
-                "/nowhere", true).orElseThrow().path("error");
+    JsonNode error =
+        protocol
+            .handle(
+                mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"ping\"}"),
+                "/nowhere",
+                true)
+            .orElseThrow()
+            .path("error");
 
-        assertThat(error.path("code").asInt()).isEqualTo(-32603);
-        assertThat(error.path("message").asString()).isEqualTo("IllegalStateException");
-    }
+    assertThat(error.path("code").asInt()).isEqualTo(-32603);
+    assertThat(error.path("message").asString()).isEqualTo("IllegalStateException");
+  }
 
-    @Test
-    void namesTheFailureKindWhenAToolThrowsWithoutAMessage(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpTools failing = tools -> tools.tool("boom", Audience.ANYONE, Effect.CHANGES, NoArguments.schema("throws"),
-                NoArguments.class, (said, caller) -> MessageContext.NONE,
-                (said, caller) -> { throw new IllegalStateException(); });
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
+  @Test
+  void namesTheFailureKindWhenAToolThrowsWithoutAMessage(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpTools failing =
+        tools ->
+            tools.tool(
+                "boom",
+                Audience.ANYONE,
+                Effect.CHANGES,
+                NoArguments.schema("throws"),
+                NoArguments.class,
+                (said, caller) -> MessageContext.NONE,
+                (said, caller) -> {
+                  throw new IllegalStateException();
+                });
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
 
-        JsonNode response = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":6,\"method\":\"tools/call\","
-                + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"), null, true).orElseThrow();
+    JsonNode response =
+        protocol
+            .handle(
+                mapper.readTree(
+                    "{\"jsonrpc\":\"2.0\",\"id\":6,\"method\":\"tools/call\","
+                        + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"),
+                null,
+                true)
+            .orElseThrow();
 
-        assertThat(response.path("result").path("content").get(0).path("text").asString())
-                .endsWith(": IllegalStateException");
-    }
+    assertThat(response.path("result").path("content").get(0).path("text").asString())
+        .endsWith(": IllegalStateException");
+  }
 
-    @Test
-    @ResourceLock(Resources.GLOBAL)
-    void logsASessionsCallWithItsArgumentsAndTheTurnItAnswers(@TempDir Path root) {
-        ListAppender<ILoggingEvent> log = new ListAppender<>();
-        log.start();
-        Logger protocolLog = (Logger) LoggerFactory.getLogger(McpProtocolService.class);
-        protocolLog.addAppender(log);
-        protocolLog.setLevel(Level.DEBUG);
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build()
-                .withTurn(Turn.none().relayed("ship", "d1", "", 0)));
-        McpTools noting = tools -> tools.tool("note", Audience.ANYONE, Effect.REPORTS, NoArguments.schema("notes"),
-                NoArguments.class, (said, caller) -> MessageContext.NONE, (said, caller) -> "noted");
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(noting));
+  @Test
+  @ResourceLock(Resources.GLOBAL)
+  void logsASessionsCallWithItsArgumentsAndTheTurnItAnswers(@TempDir Path root) {
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    Logger protocolLog = (Logger) LoggerFactory.getLogger(McpProtocolService.class);
+    protocolLog.addAppender(log);
+    protocolLog.setLevel(Level.DEBUG);
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS)
+            .build()
+            .withTurn(Turn.none().relayed("ship", "d1", "", 0)));
+    McpTools noting =
+        tools ->
+            tools.tool(
+                "note",
+                Audience.ANYONE,
+                Effect.REPORTS,
+                NoArguments.schema("notes"),
+                NoArguments.class,
+                (said, caller) -> MessageContext.NONE,
+                (said, caller) -> "noted");
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(noting));
 
-        protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\","
-                + "\"params\":{\"name\":\"note\",\"arguments\":{\"why\":\"pushed\"}}}"), "/wt/ABC-1-proj", false);
+    protocol.handle(
+        mapper.readTree(
+            "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\","
+                + "\"params\":{\"name\":\"note\",\"arguments\":{\"why\":\"pushed\"}}}"),
+        "/wt/ABC-1-proj",
+        false);
 
-        assertThat(List.copyOf(log.list)).filteredOn(event -> "mcp tool called".equals(event.getMessage()))
-                .singleElement().satisfies(event -> assertThat(event.getKeyValuePairs()).extracting(pair -> pair.key + "="
-                        + pair.value).containsExactly("task=ABC-1", "tool=note", "turn=1", "step=ship",
+    assertThat(List.copyOf(log.list))
+        .filteredOn(event -> "mcp tool called".equals(event.getMessage()))
+        .singleElement()
+        .satisfies(
+            event ->
+                assertThat(event.getKeyValuePairs())
+                    .extracting(pair -> pair.key + "=" + pair.value)
+                    .containsExactly(
+                        "task=ABC-1",
+                        "tool=note",
+                        "turn=1",
+                        "step=ship",
                         "arguments={\"why\":\"pushed\"}"));
-        protocolLog.detachAppender(log);
-        protocolLog.setLevel(null);
-    }
+    protocolLog.detachAppender(log);
+    protocolLog.setLevel(null);
+  }
 
-    @Test
-    @ResourceLock(Resources.GLOBAL)
-    void logsARefusedMessageAsInfoBecauseTheCallerAlreadyHasTheAnswer(@TempDir Path root) {
-        ListAppender<ILoggingEvent> log = new ListAppender<>();
-        log.start();
-        Logger protocolLog = (Logger) LoggerFactory.getLogger(McpProtocolService.class);
-        protocolLog.addAppender(log);
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpTools refusing = tools -> tools.tool("boom", Audience.ANYONE, Effect.CHANGES, NoArguments.schema("throws"),
-                NoArguments.class, (said, caller) -> MessageContext.NONE,
-                (said, caller) -> { throw new IllegalArgumentException("CI_POLLING cannot be reported"); });
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(refusing));
+  @Test
+  @ResourceLock(Resources.GLOBAL)
+  void logsARefusedMessageAsInfoBecauseTheCallerAlreadyHasTheAnswer(@TempDir Path root) {
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    Logger protocolLog = (Logger) LoggerFactory.getLogger(McpProtocolService.class);
+    protocolLog.addAppender(log);
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpTools refusing =
+        tools ->
+            tools.tool(
+                "boom",
+                Audience.ANYONE,
+                Effect.CHANGES,
+                NoArguments.schema("throws"),
+                NoArguments.class,
+                (said, caller) -> MessageContext.NONE,
+                (said, caller) -> {
+                  throw new IllegalArgumentException("CI_POLLING cannot be reported");
+                });
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(refusing));
 
-        protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\","
-                + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"), null, true);
+    protocol.handle(
+        mapper.readTree(
+            "{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\","
+                + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"),
+        null,
+        true);
 
-        assertThat(List.copyOf(log.list))
-                .filteredOn(event -> "mcp tool failed".equals(event.getMessage()))
-                .extracting(ILoggingEvent::getLevel)
-                .containsExactly(Level.INFO);
-        protocolLog.detachAppender(log);
-    }
+    assertThat(List.copyOf(log.list))
+        .filteredOn(event -> "mcp tool failed".equals(event.getMessage()))
+        .extracting(ILoggingEvent::getLevel)
+        .containsExactly(Level.INFO);
+    protocolLog.detachAppender(log);
+  }
 
-    @Test
-    void tellsTheAgentAFailedCallIsNotWorthRepeating(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpTools failing = tools -> tools.tool("boom", Audience.ANYONE, Effect.CHANGES, NoArguments.schema("throws"),
-                NoArguments.class, (said, caller) -> MessageContext.NONE,
-                (said, caller) -> { throw new IllegalStateException("branch ABC-1 is checked out elsewhere"); });
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
+  @Test
+  void tellsTheAgentAFailedCallIsNotWorthRepeating(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpTools failing =
+        tools ->
+            tools.tool(
+                "boom",
+                Audience.ANYONE,
+                Effect.CHANGES,
+                NoArguments.schema("throws"),
+                NoArguments.class,
+                (said, caller) -> MessageContext.NONE,
+                (said, caller) -> {
+                  throw new IllegalStateException("branch ABC-1 is checked out elsewhere");
+                });
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
 
-        JsonNode result = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/call\","
-                + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"), null, true).orElseThrow().path("result");
+    JsonNode result =
+        protocol
+            .handle(
+                mapper.readTree(
+                    "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/call\","
+                        + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"),
+                null,
+                true)
+            .orElseThrow()
+            .path("result");
 
-        assertThat(result.path("isError").asBoolean()).isTrue();
-        assertThat(result.path("structuredContent").path("category").asString()).isEqualTo("business");
-        assertThat(result.path("structuredContent").path("retryable").asBoolean()).isFalse();
-        assertThat(result.path("content").get(0).path("text").asString())
-                .isEqualTo("Error (business, not retryable): branch ABC-1 is checked out elsewhere");
-    }
+    assertThat(result.path("isError").asBoolean()).isTrue();
+    assertThat(result.path("structuredContent").path("category").asString()).isEqualTo("business");
+    assertThat(result.path("structuredContent").path("retryable").asBoolean()).isFalse();
+    assertThat(result.path("content").get(0).path("text").asString())
+        .isEqualTo("Error (business, not retryable): branch ABC-1 is checked out elsewhere");
+  }
 
-    @Test
-    void tellsTheAgentATransientFailureIsWorthRepeating(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpTools failing = tools -> tools.tool("boom", Audience.ANYONE, Effect.CHANGES, NoArguments.schema("throws"),
-                NoArguments.class, (said, caller) -> MessageContext.NONE,
-                (said, caller) -> { throw new UncheckedIOException(new IOException("state.json locked")); });
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
+  @Test
+  void tellsTheAgentATransientFailureIsWorthRepeating(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpTools failing =
+        tools ->
+            tools.tool(
+                "boom",
+                Audience.ANYONE,
+                Effect.CHANGES,
+                NoArguments.schema("throws"),
+                NoArguments.class,
+                (said, caller) -> MessageContext.NONE,
+                (said, caller) -> {
+                  throw new UncheckedIOException(new IOException("state.json locked"));
+                });
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
 
-        JsonNode result = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/call\","
-                + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"), null, true).orElseThrow().path("result");
+    JsonNode result =
+        protocol
+            .handle(
+                mapper.readTree(
+                    "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/call\","
+                        + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"),
+                null,
+                true)
+            .orElseThrow()
+            .path("result");
 
-        assertThat(result.path("structuredContent").path("retryable").asBoolean()).isTrue();
-        assertThat(result.path("content").get(0).path("text").asString()).startsWith("Error (transient, retryable): ");
-    }
+    assertThat(result.path("structuredContent").path("retryable").asBoolean()).isTrue();
+    assertThat(result.path("content").get(0).path("text").asString())
+        .startsWith("Error (transient, retryable): ");
+  }
 
-    @Test
-    void answersWhatAToolReturnedAsTheTextOfItsResult(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpTools echoing = tools -> tools.tool("echo", Audience.ANYONE, Effect.CHANGES, NoArguments.schema("answers"),
-                NoArguments.class, (said, caller) -> MessageContext.NONE, (said, caller) -> "all done");
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(echoing));
+  @Test
+  void answersWhatAToolReturnedAsTheTextOfItsResult(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpTools echoing =
+        tools ->
+            tools.tool(
+                "echo",
+                Audience.ANYONE,
+                Effect.CHANGES,
+                NoArguments.schema("answers"),
+                NoArguments.class,
+                (said, caller) -> MessageContext.NONE,
+                (said, caller) -> "all done");
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(echoing));
 
-        JsonNode result = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\","
-                + "\"params\":{\"name\":\"echo\",\"arguments\":{}}}"), null, true).orElseThrow().path("result");
+    JsonNode result =
+        protocol
+            .handle(
+                mapper.readTree(
+                    "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\","
+                        + "\"params\":{\"name\":\"echo\",\"arguments\":{}}}"),
+                null,
+                true)
+            .orElseThrow()
+            .path("result");
 
-        assertThat(result.path("content").get(0).path("text").asString()).isEqualTo("all done");
-    }
+    assertThat(result.path("content").get(0).path("text").asString()).isEqualTo("all done");
+  }
 
-    @Test
-    void answersAnInitializeWithTheProtocolVersionTheClientAsked(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+  @Test
+  void answersAnInitializeWithTheProtocolVersionTheClientAsked(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
-        JsonNode result = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\","
-                + "\"params\":{\"protocolVersion\":\"2025-03-26\"}}"), null, true).orElseThrow().path("result");
+    JsonNode result =
+        protocol
+            .handle(
+                mapper.readTree(
+                    "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\","
+                        + "\"params\":{\"protocolVersion\":\"2025-03-26\"}}"),
+                null,
+                true)
+            .orElseThrow()
+            .path("result");
 
-        assertThat(result.path("protocolVersion").asString()).isEqualTo("2025-03-26");
-        assertThat(result.path("serverInfo").path("name").asString()).isEqualTo("jagt-orchestrator");
-    }
+    assertThat(result.path("protocolVersion").asString()).isEqualTo("2025-03-26");
+    assertThat(result.path("serverInfo").path("name").asString()).isEqualTo("jagt-orchestrator");
+  }
 
-    @Test
-    void answersAMethodItDoesNotKnowWithMethodNotFound(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+  @Test
+  void answersAMethodItDoesNotKnowWithMethodNotFound(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
-        JsonNode error = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"resources/list\"}"),
-                null, true).orElseThrow().path("error");
+    JsonNode error =
+        protocol
+            .handle(
+                mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"resources/list\"}"),
+                null,
+                true)
+            .orElseThrow()
+            .path("error");
 
-        assertThat(error.path("code").asInt()).isEqualTo(-32601);
-        assertThat(error.path("message").asString()).contains("resources/list");
-    }
+    assertThat(error.path("code").asInt()).isEqualTo(-32601);
+    assertThat(error.path("message").asString()).contains("resources/list");
+  }
 
-    @Test
-    void refusesAnUnknownCallersNotificationWithAnErrorCarryingNoId(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+  @Test
+  void refusesAnUnknownCallersNotificationWithAnErrorCarryingNoId(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
-        JsonNode response = protocol.handle(mapper.readTree(
-                "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}"), "/nowhere", false).orElseThrow();
+    JsonNode response =
+        protocol
+            .handle(
+                mapper.readTree("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}"),
+                "/nowhere",
+                false)
+            .orElseThrow();
 
-        assertThat(response.path("error").path("code").asInt()).isEqualTo(McpProtocolService.UNKNOWN_CALLER);
-        assertThat(response.path("id").isNull()).isTrue();
-    }
+    assertThat(response.path("error").path("code").asInt())
+        .isEqualTo(McpProtocolService.UNKNOWN_CALLER);
+    assertThat(response.path("id").isNull()).isTrue();
+  }
 
-    @Test
-    void listsASubAgentNoToolThatWritesOutsideItsWorktree(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-                .alias("a1").build());
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(),
-                List.of(new DeployTools(mock(CommandService.class))));
+  @Test
+  void listsASubAgentNoToolThatWritesOutsideItsWorktree(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
 
-        JsonNode listed = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/list\"}"),
-                root.toString(), false).orElseThrow().path("result").path("tools");
+    JsonNode listed =
+        protocol
+            .handle(
+                mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/list\"}"),
+                root.toString(),
+                false)
+            .orElseThrow()
+            .path("result")
+            .path("tools");
 
-        assertThat(listed).isEmpty();
-    }
+    assertThat(listed).isEmpty();
+  }
 
-    @Test
-    void keepsATaskToItsOwnToolsThoughItPresentsTheMastersToken(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-                .alias("a1").build());
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(),
-                List.of(new DeployTools(mock(CommandService.class))));
+  @Test
+  void keepsATaskToItsOwnToolsThoughItPresentsTheMastersToken(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
 
-        JsonNode listed = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/list\"}"),
-                root.toString(), true).orElseThrow().path("result").path("tools");
+    JsonNode listed =
+        protocol
+            .handle(
+                mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/list\"}"),
+                root.toString(),
+                true)
+            .orElseThrow()
+            .path("result")
+            .path("tools");
 
-        assertThat(listed).isEmpty();
-    }
+    assertThat(listed).isEmpty();
+  }
 
-    @Test
-    void listsTheMasterTheToolsThatWriteASharedBranch(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(),
-                List.of(new DeployTools(mock(CommandService.class))));
+  @Test
+  void listsTheMasterTheToolsThatWriteASharedBranch(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
 
-        JsonNode listed = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}"),
-                null, true).orElseThrow().path("result").path("tools");
+    JsonNode listed =
+        protocol
+            .handle(
+                mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}"),
+                null,
+                true)
+            .orElseThrow()
+            .path("result")
+            .path("tools");
 
-        assertThat(listed).extracting(tool -> tool.path("name").asString())
-                .containsExactly("deploy_task", "revert_task");
-    }
+    assertThat(listed)
+        .extracting(tool -> tool.path("name").asString())
+        .containsExactly("deploy_task", "revert_task");
+  }
 
-    @Test
-    void marksEveryToolATaskSeesReadOnlySoAReadOnlyClientLetsItReport(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-                .alias("a1").build());
-        CallerScope scope = new CallerScope(state);
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(),
-                List.of(new StatusTools(mock(AgentStatusReports.class), mock(OwnStatusReports.class), scope, new Notifications(List.of(), state, Runnable::run)),
-                        new IdeTools(mock(CommandService.class), scope),
-                        new DeployTools(mock(CommandService.class))));
+  @Test
+  void marksEveryToolATaskSeesReadOnlySoAReadOnlyClientLetsItReport(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
+    CallerScope scope = new CallerScope(state);
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            state,
+            Clock.systemUTC(),
+            List.of(
+                new StatusTools(
+                    mock(AgentStatusReports.class),
+                    mock(OwnStatusReports.class),
+                    scope,
+                    new Notifications(List.of(), state, Runnable::run)),
+                new IdeTools(mock(CommandService.class), scope),
+                new DeployTools(mock(CommandService.class))));
 
-        JsonNode listed = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}"),
-                root.toString(), false).orElseThrow().path("result").path("tools");
+    JsonNode listed =
+        protocol
+            .handle(
+                mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}"),
+                root.toString(),
+                false)
+            .orElseThrow()
+            .path("result")
+            .path("tools");
 
-        assertThat(listed).extracting(tool -> tool.path("name").asString())
-                .containsExactlyInAnyOrder("update_agent_status", "notify_user", "open_in_ide");
-        assertThat(listed).extracting(tool -> tool.path("annotations").path("readOnlyHint").asBoolean(false))
-                .containsOnly(true);
-    }
+    assertThat(listed)
+        .extracting(tool -> tool.path("name").asString())
+        .containsExactlyInAnyOrder("update_agent_status", "notify_user", "open_in_ide");
+    assertThat(listed)
+        .extracting(tool -> tool.path("annotations").path("readOnlyHint").asBoolean(false))
+        .containsOnly(true);
+  }
 
-    @Test
-    void marksATaskThatWritesASharedBranchAsChangingSomething(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(),
-                List.of(new DeployTools(mock(CommandService.class))));
+  @Test
+  void marksATaskThatWritesASharedBranchAsChangingSomething(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
 
-        JsonNode listed = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}"),
-                null, true).orElseThrow().path("result").path("tools");
+    JsonNode listed =
+        protocol
+            .handle(
+                mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}"),
+                null,
+                true)
+            .orElseThrow()
+            .path("result")
+            .path("tools");
 
-        assertThat(listed).filteredOn(tool -> tool.path("name").asString().equals("deploy_task"))
-                .extracting(tool -> tool.path("annotations").path("readOnlyHint").asBoolean(true))
-                .containsExactly(false);
-    }
+    assertThat(listed)
+        .filteredOn(tool -> tool.path("name").asString().equals("deploy_task"))
+        .extracting(tool -> tool.path("annotations").path("readOnlyHint").asBoolean(true))
+        .containsExactly(false);
+  }
 
-    @Test
-    void countsAnyRequestFromWorktreeAsKeepAlive(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-                .lastActiveTimestamp(1000).alias("a1").build());
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+  @Test
+  void countsAnyRequestFromWorktreeAsKeepAlive(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .lastActiveTimestamp(1000)
+            .alias("a1")
+            .build());
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
-        protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"), root.toString(), false);
+    protocol.handle(
+        mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"),
+        root.toString(),
+        false);
 
-        assertThat(state.task("ABC-1").orElseThrow().lastActiveTimestamp()).isGreaterThan(1000);
-    }
+    assertThat(state.task("ABC-1").orElseThrow().lastActiveTimestamp()).isGreaterThan(1000);
+  }
 
-    @Test
-    void signsTheSessionCalledWhenTheKeepAliveWrites(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-                .lastActiveTimestamp(1000).alias("a1").build());
-        McpProtocolService protocol = new McpProtocolService(mapper, state,
-                Clock.fixed(java.time.Instant.ofEpochMilli(100_000), java.time.ZoneOffset.UTC), List.of());
+  @Test
+  void signsTheSessionCalledWhenTheKeepAliveWrites(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .lastActiveTimestamp(1000)
+            .alias("a1")
+            .build());
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            state,
+            Clock.fixed(java.time.Instant.ofEpochMilli(100_000), java.time.ZoneOffset.UTC),
+            List.of());
 
-        protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"), root.toString(), false);
+    protocol.handle(
+        mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"),
+        root.toString(),
+        false);
 
-        assertThat(state.task("ABC-1").orElseThrow().session().movedAt()).isEqualTo(100_000);
-    }
+    assertThat(state.task("ABC-1").orElseThrow().session().movedAt()).isEqualTo(100_000);
+  }
 
-    @Test
-    void leavesTheSessionAloneWhenTheKeepAliveIsThrottled(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-                .lastActiveTimestamp(95_000).alias("a1").build());
-        McpProtocolService protocol = new McpProtocolService(mapper, state,
-                Clock.fixed(java.time.Instant.ofEpochMilli(100_000), java.time.ZoneOffset.UTC), List.of());
+  @Test
+  void leavesTheSessionAloneWhenTheKeepAliveIsThrottled(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .lastActiveTimestamp(95_000)
+            .alias("a1")
+            .build());
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            state,
+            Clock.fixed(java.time.Instant.ofEpochMilli(100_000), java.time.ZoneOffset.UTC),
+            List.of());
 
-        protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"), root.toString(), false);
+    protocol.handle(
+        mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"),
+        root.toString(),
+        false);
 
-        assertThat(state.task("ABC-1").orElseThrow().session().movedAt()).isZero();
-    }
+    assertThat(state.task("ABC-1").orElseThrow().session().movedAt()).isZero();
+  }
 
-    @Test
-    void skipsKeepAliveRewriteWhenAgentWasActiveSecondsAgo(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        long freshTimestamp = System.currentTimeMillis();
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-                .lastActiveTimestamp(freshTimestamp).alias("a1").build());
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
+  @Test
+  void skipsKeepAliveRewriteWhenAgentWasActiveSecondsAgo(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    long freshTimestamp = System.currentTimeMillis();
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .lastActiveTimestamp(freshTimestamp)
+            .alias("a1")
+            .build());
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
-        protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"), root.toString(), false);
+    protocol.handle(
+        mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"),
+        root.toString(),
+        false);
 
-        assertThat(state.task("ABC-1").orElseThrow().lastActiveTimestamp()).isEqualTo(freshTimestamp);
-    }
+    assertThat(state.task("ABC-1").orElseThrow().lastActiveTimestamp()).isEqualTo(freshTimestamp);
+  }
 
-    @Test
-    void skipsKeepAliveRewriteWhenAgentWasActiveExactlyTheThrottleAgo(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-                .lastActiveTimestamp(85_000).alias("a1").build());
-        McpProtocolService protocol = new McpProtocolService(mapper, state,
-                Clock.fixed(java.time.Instant.ofEpochMilli(100_000), java.time.ZoneOffset.UTC), List.of());
+  @Test
+  void skipsKeepAliveRewriteWhenAgentWasActiveExactlyTheThrottleAgo(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .lastActiveTimestamp(85_000)
+            .alias("a1")
+            .build());
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            state,
+            Clock.fixed(java.time.Instant.ofEpochMilli(100_000), java.time.ZoneOffset.UTC),
+            List.of());
 
-        protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"), root.toString(), false);
+    protocol.handle(
+        mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"),
+        root.toString(),
+        false);
 
-        assertThat(state.task("ABC-1").orElseThrow().lastActiveTimestamp()).isEqualTo(85_000);
-    }
+    assertThat(state.task("ABC-1").orElseThrow().lastActiveTimestamp()).isEqualTo(85_000);
+  }
 
-    @Test
-    void answersAnUnknownToolWithTheToolsThisCallerHas(@TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-                .lastActiveTimestamp(System.currentTimeMillis()).alias("a1").build());
-        CallerScope scope = new CallerScope(state);
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(
-                new DeployTools(mock(CommandService.class)), new StatusTools(mock(AgentStatusReports.class),
-                mock(OwnStatusReports.class), scope, new Notifications(List.of(), state, Runnable::run))));
+  @Test
+  void answersAnUnknownToolWithTheToolsThisCallerHas(@TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .lastActiveTimestamp(System.currentTimeMillis())
+            .alias("a1")
+            .build());
+    CallerScope scope = new CallerScope(state);
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            state,
+            Clock.systemUTC(),
+            List.of(
+                new DeployTools(mock(CommandService.class)),
+                new StatusTools(
+                    mock(AgentStatusReports.class),
+                    mock(OwnStatusReports.class),
+                    scope,
+                    new Notifications(List.of(), state, Runnable::run))));
 
-        String text = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"tools/call\","
-                + "\"params\":{\"name\":\"report_status\",\"arguments\":{}}}"), root.toString(), false)
-                .orElseThrow().path("result").path("content").get(0).path("text").asString();
+    String text =
+        protocol
+            .handle(
+                mapper.readTree(
+                    "{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"tools/call\","
+                        + "\"params\":{\"name\":\"report_status\",\"arguments\":{}}}"),
+                root.toString(),
+                false)
+            .orElseThrow()
+            .path("result")
+            .path("content")
+            .get(0)
+            .path("text")
+            .asString();
 
-        assertThat(text).endsWith("Unknown tool: report_status. Yours: update_agent_status, notify_user");
-    }
+    assertThat(text)
+        .endsWith("Unknown tool: report_status. Yours: update_agent_status, notify_user");
+  }
 
-    @ParameterizedTest
-    @NullSource
-    @ValueSource(strings = "/no/task/here")
-    void refusesACallerThatIsNeitherATaskNorTheMaster(String cwd, @TempDir Path root) {
-        JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpProtocolService protocol = new McpProtocolService(mapper, state, Clock.systemUTC(),
-                List.of(new DeployTools(mock(CommandService.class))));
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(strings = "/no/task/here")
+  void refusesACallerThatIsNeitherATaskNorTheMaster(String cwd, @TempDir Path root) {
+    JsonMapper mapper = new JsonMapper();
+    StateService state =
+        new StateService(
+            mapper,
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
 
-        JsonNode response = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"tools/call\","
-                + "\"params\":{\"name\":\"deploy_task\",\"arguments\":{\"taskId\":\"ABC-1\"}}}"), cwd, false)
-                .orElseThrow();
+    JsonNode response =
+        protocol
+            .handle(
+                mapper.readTree(
+                    "{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"tools/call\","
+                        + "\"params\":{\"name\":\"deploy_task\",\"arguments\":{\"taskId\":\"ABC-1\"}}}"),
+                cwd,
+                false)
+            .orElseThrow();
 
-        assertThat(response.path("error").path("code").asInt()).isEqualTo(McpProtocolService.UNKNOWN_CALLER);
-        assertThat(response.path("id").asInt()).isEqualTo(10);
-    }
+    assertThat(response.path("error").path("code").asInt())
+        .isEqualTo(McpProtocolService.UNKNOWN_CALLER);
+    assertThat(response.path("id").asInt()).isEqualTo(10);
+  }
 }

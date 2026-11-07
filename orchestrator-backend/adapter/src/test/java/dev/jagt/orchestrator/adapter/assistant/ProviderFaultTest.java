@@ -1,13 +1,14 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 class ProviderFaultTest {
 
-    private static final String OVERLOADED_529 = """
+  private static final String OVERLOADED_529 =
+"""
 {"duration_api_ms":0,"stop_reason":"stop_sequence",\
 "session_id":"d638fd9d-2a7c-449d-8e68-a64542931b9c","total_cost_usd":0,\
 "usage":{"output_tokens_details":{"thinking_tokens":0},"input_tokens":0,\
@@ -24,9 +25,11 @@ class ProviderFaultTest {
 "result":"API Error: 529 Overloaded. This is a server-side issue,\
  usually temporary — try again in a moment. If it persists,\
  check your inference gateway (127.0.0.1:18529).","type":"result","duration_ms":733,\
-"uuid":"02368b97-942b-4e63-9855-74344bfb179e","queued_turn_count":0,"result_index":0}""";
+"uuid":"02368b97-942b-4e63-9855-74344bfb179e","queued_turn_count":0,"result_index":0}\
+""";
 
-    private static final String SERVER_ERROR_500 = """
+  private static final String SERVER_ERROR_500 =
+"""
 {"duration_api_ms":0,"stop_reason":"stop_sequence",\
 "session_id":"67958421-a540-4e67-b942-46e74e3c68c1","total_cost_usd":0,\
 "usage":{"output_tokens_details":{"thinking_tokens":0},"input_tokens":0,\
@@ -43,9 +46,11 @@ class ProviderFaultTest {
 "result":"API Error: 500 Internal server error. This is a server-side issue,\
  usually temporary — try again in a moment. If it persists,\
  check your inference gateway (127.0.0.1:18500).","type":"result","duration_ms":871,\
-"uuid":"a5a4a924-58e7-4630-9273-cda539689f77","queued_turn_count":0,"result_index":0}""";
+"uuid":"a5a4a924-58e7-4630-9273-cda539689f77","queued_turn_count":0,"result_index":0}\
+""";
 
-    private static final String RATE_LIMITED_429 = """
+  private static final String RATE_LIMITED_429 =
+"""
 {"duration_api_ms":0,"stop_reason":"stop_sequence",\
 "session_id":"0520d56f-4a1b-426c-9622-310623e29203","total_cost_usd":0,\
 "usage":{"output_tokens_details":{"thinking_tokens":0},"input_tokens":0,\
@@ -61,9 +66,11 @@ class ProviderFaultTest {
 "is_error":true,"num_turns":1,"subtype":"success","api_error_status":429,\
 "result":"API Error: Request rejected (429) · This request would exceed your organization's rate limit",\
 "type":"result","duration_ms":807,"uuid":"2e52fbdc-0907-4aa3-a9c3-6855aad1e9f9",\
-"queued_turn_count":0,"result_index":0}""";
+"queued_turn_count":0,"result_index":0}\
+""";
 
-    private static final String CONNECTION_REFUSED = """
+  private static final String CONNECTION_REFUSED =
+"""
 {"duration_api_ms":0,"stop_reason":"stop_sequence",\
 "session_id":"996eef52-5470-4786-a832-e736fc423f4c","total_cost_usd":0,\
 "usage":{"output_tokens_details":{"thinking_tokens":0},"input_tokens":0,\
@@ -79,57 +86,64 @@ class ProviderFaultTest {
 "is_error":true,"num_turns":1,"subtype":"success","api_error_status":null,\
 "result":"API Error: Connection refused — a firewall or proxy may be blocking it (ECONNREFUSED)",\
 "type":"result","duration_ms":721,"uuid":"57f64e41-c649-4b77-80f4-65802a3efb73",\
-"queued_turn_count":0,"result_index":0}""";
+"queued_turn_count":0,"result_index":0}\
+""";
 
-    @Test
-    void anOverloadedProviderFails() {
-        var reading = ProviderFault.of(new Processes.Result(1, OVERLOADED_529, ""));
+  @Test
+  void anOverloadedProviderFails() {
+    var reading = ProviderFault.of(new Processes.Result(1, OVERLOADED_529, ""));
 
-        assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.FAILED);
-        assertThat(reading.cause()).startsWith("API Error: 529 Overloaded");
-    }
+    assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.FAILED);
+    assertThat(reading.cause()).startsWith("API Error: 529 Overloaded");
+  }
 
-    @Test
-    void aServerErrorFails() {
-        var reading = ProviderFault.of(new Processes.Result(1, SERVER_ERROR_500, ""));
+  @Test
+  void aServerErrorFails() {
+    var reading = ProviderFault.of(new Processes.Result(1, SERVER_ERROR_500, ""));
 
-        assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.FAILED);
-    }
+    assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.FAILED);
+  }
 
-    @Test
-    void aRefusedConnectionFailsWithTheCliOwnWords() {
-        var reading = ProviderFault.of(new Processes.Result(1, CONNECTION_REFUSED, ""));
+  @Test
+  void aRefusedConnectionFailsWithTheCliOwnWords() {
+    var reading = ProviderFault.of(new Processes.Result(1, CONNECTION_REFUSED, ""));
 
-        assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.FAILED);
-        assertThat(reading.cause()).contains("ECONNREFUSED");
-    }
+    assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.FAILED);
+    assertThat(reading.cause()).contains("ECONNREFUSED");
+  }
 
-    @Test
-    void aRateLimitMeansTheProviderAnsweredAndNeverCounts() {
-        var reading = ProviderFault.of(new Processes.Result(1, RATE_LIMITED_429, ""));
+  @Test
+  void aRateLimitMeansTheProviderAnsweredAndNeverCounts() {
+    var reading = ProviderFault.of(new Processes.Result(1, RATE_LIMITED_429, ""));
 
-        assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.REACHED);
-    }
+    assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.REACHED);
+  }
 
-    @Test
-    void anAnswerMeansTheProviderAnswered() {
-        var reading = ProviderFault.of(new Processes.Result(0, "{\"type\":\"result\",\"is_error\":false}", ""));
+  @Test
+  void anAnswerMeansTheProviderAnswered() {
+    var reading =
+        ProviderFault.of(new Processes.Result(0, "{\"type\":\"result\",\"is_error\":false}", ""));
 
-        assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.REACHED);
-    }
+    assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.REACHED);
+  }
 
-    @Test
-    void noEnvelopeSaysNothingAboutTheProvider() {
-        var reading = ProviderFault.of(new Processes.Result(1, "", "Reached maximum budget"));
+  @Test
+  void noEnvelopeSaysNothingAboutTheProvider() {
+    var reading = ProviderFault.of(new Processes.Result(1, "", "Reached maximum budget"));
 
-        assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.UNKNOWN);
-    }
+    assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.UNKNOWN);
+  }
 
-    @Test
-    void aClientErrorOfTheProviderSaysNothingAboutItsHealth() {
-        var reading = ProviderFault.of(new Processes.Result(1,
-                "{\"is_error\":true,\"terminal_reason\":\"api_error\",\"api_error_status\":401,\"result\":\"bad key\"}", ""));
+  @Test
+  void aClientErrorOfTheProviderSaysNothingAboutItsHealth() {
+    var reading =
+        ProviderFault.of(
+            new Processes.Result(
+                1,
+                "{\"is_error\":true,\"terminal_reason\":\"api_error\",\"api_error_status\":401,\"result\":\"bad"
+                    + " key\"}",
+                ""));
 
-        assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.UNKNOWN);
-    }
+    assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.UNKNOWN);
+  }
 }

@@ -15,37 +15,40 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class TypedLineController {
 
-    public record InterpretRequest(String text) {
-    }
+  public record InterpretRequest(String text) {}
 
-    public record LineRequest(String line) {
-    }
+  public record LineRequest(String line) {}
 
-    private final NaturalLanguageDispatch naturalLanguage;
-    private final AgentSessions sessions;
+  private final NaturalLanguageDispatch naturalLanguage;
+  private final AgentSessions sessions;
 
-    /** A line typed where a round is read: it goes into the session, never over the brief on disk. */
-    @PostMapping("/tasks/say")
-    public ActionResult say(@RequestParam("task") String taskId, @RequestBody LineRequest request) {
-        String line = request.line() == null ? "" : request.line().strip();
-        if (line.isBlank()) {
-            throw new IllegalArgumentException("There is nothing to say");
-        }
-        return new ActionResult(sessions.say(taskId, line));
+  /** A line typed where a round is read: it goes into the session, never over the brief on disk. */
+  @PostMapping("/tasks/say")
+  public ActionResult say(@RequestParam("task") String taskId, @RequestBody LineRequest request) {
+    String line = request.line() == null ? "" : request.line().strip();
+    if (line.isBlank()) {
+      throw new IllegalArgumentException("There is nothing to say");
     }
+    return new ActionResult(sessions.say(taskId, line));
+  }
 
-    public record Screen(boolean held, String shown) {
-    }
+  public record Screen(boolean held, String shown) {}
 
-    /** The open task's session as it reads now; `held` is false when no window holds it, whatever `shown` is. */
-    @GetMapping("/tasks/screen")
-    public Screen screen(@RequestParam("task") String taskId) {
-        return sessions.screen(taskId).map(shown -> new Screen(true, shown)).orElseGet(() -> new Screen(false, ""));
-    }
+  /**
+   * The open task's session as it reads now; `held` is false when no window holds it, whatever
+   * `shown` is.
+   */
+  @GetMapping("/tasks/screen")
+  public Screen screen(@RequestParam("task") String taskId) {
+    return sessions
+        .screen(taskId)
+        .map(shown -> new Screen(true, shown))
+        .orElseGet(() -> new Screen(false, ""));
+  }
 
-    /** The model only proposes; the proposal passes the same gate as a button. */
-    @PostMapping("/interpret")
-    public ActionResult interpret(@RequestBody InterpretRequest request) {
-        return new ActionResult(naturalLanguage.interpret(request.text()));
-    }
+  /** The model only proposes; the proposal passes the same gate as a button. */
+  @PostMapping("/interpret")
+  public ActionResult interpret(@RequestBody InterpretRequest request) {
+    return new ActionResult(naturalLanguage.interpret(request.text()));
+  }
 }

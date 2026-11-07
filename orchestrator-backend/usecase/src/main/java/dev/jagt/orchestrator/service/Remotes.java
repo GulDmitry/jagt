@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.Remote;
-
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -9,5 +8,5 @@ import java.util.Optional;
 @FunctionalInterface
 public interface Remotes {
 
-    Optional<Remote> of(Path repository);
+  Optional<Remote> of(Path repository);
 }

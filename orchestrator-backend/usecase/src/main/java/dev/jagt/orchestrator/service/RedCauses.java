@@ -9,83 +9,93 @@ import dev.jagt.orchestrator.task.FailedJob;
 import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskStop;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 /**
- * Whose fault a red read is, asked of the host and never of a model: infrastructure is waited out by arming a
- * retry, anything else, a pipeline that cannot be read included, is the session's.
+ * Whose fault a red read is, asked of the host and never of a model: infrastructure is waited out
+ * by arming a retry, anything else, a pipeline that cannot be read included, is the session's.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class RedCauses {
 
-    /** {@code waiting} says what is armed, blank where nothing is; {@code stop} stands where the task was stopped. */
-    public record Verdict(RedCause cause, boolean retryLeft, String waiting, Optional<TaskStop> stop) {
+  /**
+   * {@code waiting} says what is armed, blank where nothing is; {@code stop} stands where the task
+   * was stopped.
+   */
+  public record Verdict(
+      RedCause cause, boolean retryLeft, String waiting, Optional<TaskStop> stop) {
 
-        static final Verdict CODE = new Verdict(RedCause.CODE, false, "", Optional.empty());
+    static final Verdict CODE = new Verdict(RedCause.CODE, false, "", Optional.empty());
+  }
+
+  private final PipelineRetry pipelines;
+  private final InfraRetries retries;
+  private final InfraWaitProperties properties;
+
+  public Verdict judge(String taskId, String project, ReviewFacts facts, Pipeline checks) {
+    if (checks != Pipeline.RED) {
+      if (retries.applies(taskId)) {
+        retries.clear(taskId, checks == Pipeline.GREEN);
+      }
+      return Verdict.CODE;
     }
-
-    private final PipelineRetry pipelines;
-    private final InfraRetries retries;
-    private final InfraWaitProperties properties;
-
-    public Verdict judge(String taskId, String project, ReviewFacts facts, Pipeline checks) {
-        if (checks != Pipeline.RED) {
-            if (retries.applies(taskId)) {
-                retries.clear(taskId, checks == Pipeline.GREEN);
-            }
-            return Verdict.CODE;
-        }
-        if (facts.pipeline().url().isBlank() || !retries.applies(taskId)) {
-            return Verdict.CODE;
-        }
-        return judgeRed(taskId, project, facts.pipeline().url());
+    if (facts.pipeline().url().isBlank() || !retries.applies(taskId)) {
+      return Verdict.CODE;
     }
+    return judgeRed(taskId, project, facts.pipeline().url());
+  }
 
-    /** The same ask of the pipeline a deploy commit ran, which no round of the review request carries. */
-    public Verdict judgeDeploy(String taskId, String project, String pipelineUrl) {
-        return pipelineUrl.isBlank() ? Verdict.CODE : judgeRed(taskId, project, pipelineUrl);
-    }
+  /**
+   * The same ask of the pipeline a deploy commit ran, which no round of the review request carries.
+   */
+  public Verdict judgeDeploy(String taskId, String project, String pipelineUrl) {
+    return pipelineUrl.isBlank() ? Verdict.CODE : judgeRed(taskId, project, pipelineUrl);
+  }
 
-    /** The deploy's pipeline went green: no retry is owed for it. */
-    public void deployStands(String taskId) {
-        retries.clear(taskId, true);
-    }
+  /** The deploy's pipeline went green: no retry is owed for it. */
+  public void deployStands(String taskId) {
+    retries.clear(taskId, true);
+  }
 
-    private Verdict judgeRed(String taskId, String project, String pipelineUrl) {
-        if (!properties.waits()) {
-            return Verdict.CODE;
-        }
-        Answer<List<FailedJob>> failed = pipelines.failedJobs(project, pipelineUrl);
-        if (failed.facts().isEmpty()) {
-            log.atWarn().setMessage("failed jobs unreadable").addKeyValue("task", taskId)
-                    .addKeyValue("cause", failed.failure()).log();
-            return Verdict.CODE;
-        }
-        if (RedCause.of(failed.facts().get()) == RedCause.CODE) {
-            retries.clear(taskId, true);
-            return Verdict.CODE;
-        }
-        return waitOut(taskId, project, pipelineUrl, failed.facts().get());
+  private Verdict judgeRed(String taskId, String project, String pipelineUrl) {
+    if (!properties.waits()) {
+      return Verdict.CODE;
     }
+    Answer<List<FailedJob>> failed = pipelines.failedJobs(project, pipelineUrl);
+    if (failed.facts().isEmpty()) {
+      log.atWarn()
+          .setMessage("failed jobs unreadable")
+          .addKeyValue("task", taskId)
+          .addKeyValue("cause", failed.failure())
+          .log();
+      return Verdict.CODE;
+    }
+    if (RedCause.of(failed.facts().get()) == RedCause.CODE) {
+      retries.clear(taskId, true);
+      return Verdict.CODE;
+    }
+    return waitOut(taskId, project, pipelineUrl, failed.facts().get());
+  }
 
-    private Verdict waitOut(String taskId, String project, String pipelineUrl, List<FailedJob> failed) {
-        String jobs = failed.stream().map(FailedJob::name).collect(Collectors.joining(", "));
-        String reasons = failed.stream().map(FailedJob::reason).distinct().collect(Collectors.joining(", "));
-        Optional<InfraRetry> armed = retries.arm(taskId, project, pipelineUrl, jobs, reasons);
-        return armed.isPresent()
-                ? new Verdict(RedCause.INFRASTRUCTURE, true, retries.reading(taskId), Optional.empty())
-                : stopped(retries.exhausted(taskId));
-    }
+  private Verdict waitOut(
+      String taskId, String project, String pipelineUrl, List<FailedJob> failed) {
+    String jobs = failed.stream().map(FailedJob::name).collect(Collectors.joining(", "));
+    String reasons =
+        failed.stream().map(FailedJob::reason).distinct().collect(Collectors.joining(", "));
+    Optional<InfraRetry> armed = retries.arm(taskId, project, pipelineUrl, jobs, reasons);
+    return armed.isPresent()
+        ? new Verdict(RedCause.INFRASTRUCTURE, true, retries.reading(taskId), Optional.empty())
+        : stopped(retries.exhausted(taskId));
+  }
 
-    private static Verdict stopped(Optional<TaskStop> stop) {
-        return new Verdict(RedCause.CODE, false, "", stop);
-    }
+  private static Verdict stopped(Optional<TaskStop> stop) {
+    return new Verdict(RedCause.CODE, false, "", stop);
+  }
 }

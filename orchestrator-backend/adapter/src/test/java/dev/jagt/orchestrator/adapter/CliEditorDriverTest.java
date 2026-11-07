@@ -1,13 +1,5 @@
 package dev.jagt.orchestrator.adapter;
 
-import dev.jagt.orchestrator.config.ToolchainProperties;
-import dev.jagt.orchestrator.port.Problem;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.nio.file.Path;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -15,75 +7,93 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import dev.jagt.orchestrator.config.ToolchainProperties;
+import dev.jagt.orchestrator.port.Problem;
+import java.nio.file.Path;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
 class CliEditorDriverTest {
 
-    @Test
-    void findsTheLauncherOnPathAndPassesItsArgumentsThroughUntouched() {
-        ProcessRunner runner = mock(ProcessRunner.class);
-        CliEditorDriver driver = new CliEditorDriver(runner,
-                ToolchainProperties.defaults().withEditorDiffCommand(List.of("sh", "diff")));
+  @Test
+  void findsTheLauncherOnPathAndPassesItsArgumentsThroughUntouched() {
+    ProcessRunner runner = mock(ProcessRunner.class);
+    CliEditorDriver driver =
+        new CliEditorDriver(
+            runner, ToolchainProperties.defaults().withEditorDiffCommand(List.of("sh", "diff")));
 
-        driver.openDiff(Path.of("/left"), Path.of("/right"));
+    driver.openDiff(Path.of("/left"), Path.of("/right"));
 
-        ArgumentCaptor<List<String>> spawned = ArgumentCaptor.captor();
-        verify(runner).runDetached(isNull(), spawned.capture());
-        assertThat(spawned.getValue().getFirst()).endsWith("/sh");
-        assertThat(spawned.getValue()).containsSubsequence("diff", "/left", "/right");
-    }
+    ArgumentCaptor<List<String>> spawned = ArgumentCaptor.captor();
+    verify(runner).runDetached(isNull(), spawned.capture());
+    assertThat(spawned.getValue().getFirst()).endsWith("/sh");
+    assertThat(spawned.getValue()).containsSubsequence("diff", "/left", "/right");
+  }
 
-    @Test
-    void refusesToStartNamingBothEditorKeysWhenNeitherLauncherIsInstalled() {
-        CliEditorDriver driver = new CliEditorDriver(mock(ProcessRunner.class),
-                ToolchainProperties.defaults().withEditorCommand(List.of("no-such-editor"))
-                        .withEditorDiffCommand(List.of("no-such-difftool")));
+  @Test
+  void refusesToStartNamingBothEditorKeysWhenNeitherLauncherIsInstalled() {
+    CliEditorDriver driver =
+        new CliEditorDriver(
+            mock(ProcessRunner.class),
+            ToolchainProperties.defaults()
+                .withEditorCommand(List.of("no-such-editor"))
+                .withEditorDiffCommand(List.of("no-such-difftool")));
 
-        assertThat(driver.problems()).extracting(Problem::key)
-                .containsExactly("orchestrator.editor-command", "orchestrator.editor-diff-command");
-    }
+    assertThat(driver.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.editor-command", "orchestrator.editor-diff-command");
+  }
 
-    @Test
-    void saysWhichKeyToSetWhenTheConfiguredEditorLauncherIsNowhereToBeFound() {
-        ProcessRunner processRunner = mock(ProcessRunner.class);
-        CliEditorDriver driver = new CliEditorDriver(processRunner, ToolchainProperties.defaults()
-                .withEditorCommand(List.of("no-such-editor")));
+  @Test
+  void saysWhichKeyToSetWhenTheConfiguredEditorLauncherIsNowhereToBeFound() {
+    ProcessRunner processRunner = mock(ProcessRunner.class);
+    CliEditorDriver driver =
+        new CliEditorDriver(
+            processRunner,
+            ToolchainProperties.defaults().withEditorCommand(List.of("no-such-editor")));
 
-        assertThatThrownBy(() -> driver.open(Path.of("/wt")))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("orchestrator.editor-command")
-                .hasMessageContaining("no-such-editor");
-        verifyNoInteractions(processRunner);
-    }
+    assertThatThrownBy(() -> driver.open(Path.of("/wt")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("orchestrator.editor-command")
+        .hasMessageContaining("no-such-editor");
+    verifyNoInteractions(processRunner);
+  }
 
-    @Test
-    void saysWhichKeyToSetWhenTheConfiguredEditorLauncherIsBlank() {
-        ProcessRunner processRunner = mock(ProcessRunner.class);
-        CliEditorDriver driver = new CliEditorDriver(processRunner, ToolchainProperties.defaults()
-                .withEditorCommand(List.of(" ")));
+  @Test
+  void saysWhichKeyToSetWhenTheConfiguredEditorLauncherIsBlank() {
+    ProcessRunner processRunner = mock(ProcessRunner.class);
+    CliEditorDriver driver =
+        new CliEditorDriver(
+            processRunner, ToolchainProperties.defaults().withEditorCommand(List.of(" ")));
 
-        assertThatThrownBy(() -> driver.open(Path.of("/wt")))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("orchestrator.editor-command is empty");
-        verifyNoInteractions(processRunner);
-    }
+    assertThatThrownBy(() -> driver.open(Path.of("/wt")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("orchestrator.editor-command is empty");
+    verifyNoInteractions(processRunner);
+  }
 
-    @Test
-    void startsWithoutADiffCommand() {
-        CliEditorDriver driver = new CliEditorDriver(mock(ProcessRunner.class),
-                ToolchainProperties.defaults().withEditorCommand(List.of("sh")));
+  @Test
+  void startsWithoutADiffCommand() {
+    CliEditorDriver driver =
+        new CliEditorDriver(
+            mock(ProcessRunner.class),
+            ToolchainProperties.defaults().withEditorCommand(List.of("sh")));
 
-        assertThat(driver.problems()).isEmpty();
-    }
+    assertThat(driver.problems()).isEmpty();
+  }
 
-    @Test
-    void refusesADiffNamingTheKeyAndAnExampleWhenNoDiffCommandIsSet() {
-        ProcessRunner processRunner = mock(ProcessRunner.class);
-        CliEditorDriver driver = new CliEditorDriver(processRunner, ToolchainProperties.defaults()
-                .withEditorCommand(List.of("sh")));
+  @Test
+  void refusesADiffNamingTheKeyAndAnExampleWhenNoDiffCommandIsSet() {
+    ProcessRunner processRunner = mock(ProcessRunner.class);
+    CliEditorDriver driver =
+        new CliEditorDriver(
+            processRunner, ToolchainProperties.defaults().withEditorCommand(List.of("sh")));
 
-        assertThatThrownBy(() -> driver.openDiff(Path.of("/left"), Path.of("/right")))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("orchestrator.editor-diff-command is not set")
-                .hasMessageContaining("[meld]");
-        verifyNoInteractions(processRunner);
-    }
+    assertThatThrownBy(() -> driver.openDiff(Path.of("/left"), Path.of("/right")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("orchestrator.editor-diff-command is not set")
+        .hasMessageContaining("[meld]");
+    verifyNoInteractions(processRunner);
+  }
 }

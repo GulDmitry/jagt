@@ -12,10 +12,10 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class BoardBanner implements ApplicationRunner {
 
-    private final BoardUrl boardUrl;
+  private final BoardUrl boardUrl;
 
-    @Override
-    public void run(ApplicationArguments args) {
-        Console.say("jagt board → " + boardUrl.root() + "   (Ctrl-C stops)");
-    }
+  @Override
+  public void run(ApplicationArguments args) {
+    Console.say("jagt board → " + boardUrl.root() + "   (Ctrl-C stops)");
+  }
 }

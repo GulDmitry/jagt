@@ -15,28 +15,35 @@ import tools.jackson.databind.json.JsonMapper;
 
 final class BackendLog {
 
-    private static final String OPENED = "turn opened";
-    private static final ObjectMapper MAPPER = JsonMapper.builder().build();
+  private static final String OPENED = "turn opened";
+  private static final ObjectMapper MAPPER = JsonMapper.builder().build();
 
-    private BackendLog() {
-    }
+  private BackendLog() {}
 
-    static List<RunRecord.Relay> relays(Path log) {
-        return Stream.of(log.resolveSibling(log.getFileName() + JagtProcess.BEFORE_RESTART),
-                        log.resolveSibling(log.getFileName() + ".1"), log).filter(Files::isRegularFile)
-                .flatMap(StateFiles::lines).filter(line -> line.startsWith("{") && line.contains(OPENED))
-                .flatMap(line -> relay(MAPPER.readTree(line), line).stream())
-                .sorted(Comparator.comparing(RunRecord.Relay::at))
-                .toList();
-    }
+  static List<RunRecord.Relay> relays(Path log) {
+    return Stream.of(
+            log.resolveSibling(log.getFileName() + JagtProcess.BEFORE_RESTART),
+            log.resolveSibling(log.getFileName() + ".1"),
+            log)
+        .filter(Files::isRegularFile)
+        .flatMap(StateFiles::lines)
+        .filter(line -> line.startsWith("{") && line.contains(OPENED))
+        .flatMap(line -> relay(MAPPER.readTree(line), line).stream())
+        .sorted(Comparator.comparing(RunRecord.Relay::at))
+        .toList();
+  }
 
-    private static Optional<RunRecord.Relay> relay(JsonNode event, String line) {
-        if (!event.path("message").asString().equals(OPENED)) {
-            return Optional.empty();
-        }
-        String status = event.path("status").asString("");
-        return Optional.of(new RunRecord.Relay(Instant.parse(event.path("@timestamp").asString()),
-                event.path("task").asString(), List.of(event.path("step").asString().split("\\+")),
-                status.isEmpty() ? null : TaskStatus.valueOf(status), line));
+  private static Optional<RunRecord.Relay> relay(JsonNode event, String line) {
+    if (!event.path("message").asString().equals(OPENED)) {
+      return Optional.empty();
     }
+    String status = event.path("status").asString("");
+    return Optional.of(
+        new RunRecord.Relay(
+            Instant.parse(event.path("@timestamp").asString()),
+            event.path("task").asString(),
+            List.of(event.path("step").asString().split("\\+")),
+            status.isEmpty() ? null : TaskStatus.valueOf(status),
+            line));
+  }
 }

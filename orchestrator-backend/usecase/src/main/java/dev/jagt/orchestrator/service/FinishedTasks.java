@@ -1,14 +1,9 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.AtomicFiles;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.task.AtomicFiles;
 import dev.jagt.orchestrator.task.FinishedTask;
-import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
-
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -24,120 +19,180 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 /**
- * One line per retired task, beside `state.json`. Append-only and never read back by jagt to decide anything, so
- * a line that cannot be written is logged rather than thrown: losing a measurement must not refuse a `done`.
- * Past {@link #MAX_BYTES} its older half is packed beside it, and every reader sees the newer half alone.
+ * One line per retired task, beside `state.json`. Append-only and never read back by jagt to decide
+ * anything, so a line that cannot be written is logged rather than thrown: losing a measurement
+ * must not refuse a `done`. Past {@link #MAX_BYTES} its older half is packed beside it, and every
+ * reader sees the newer half alone.
  */
 @Service
 @Slf4j
 public class FinishedTasks {
 
-    /** Roughly ten thousand records; read as one list by the `finished` report, so it is held in memory. */
-    static final long MAX_BYTES = 10L * 1024 * 1024;
+  /**
+   * Roughly ten thousand records; read as one list by the `finished` report, so it is held in
+   * memory.
+   */
+  static final long MAX_BYTES = 10L * 1024 * 1024;
 
-    private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyMMdd-HHmmss");
+  private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyMMdd-HHmmss");
 
-    private final ObjectMapper mapper;
-    private final StateService stateService;
-    private final MasterReview reviews;
-    private final Clock clock;
-    private final Path file;
+  private final ObjectMapper mapper;
+  private final StateService stateService;
+  private final MasterReview reviews;
+  private final Clock clock;
+  private final Path file;
 
-    public FinishedTasks(ObjectMapper mapper, StateService stateService, OrchestratorPaths paths,
-                         MasterReview reviews, Clock clock) {
-        this.mapper = mapper;
-        this.stateService = stateService;
-        this.reviews = reviews;
-        this.clock = clock;
-        this.file = paths.stateFile().resolveSibling("finished.jsonl");
+  public FinishedTasks(
+      ObjectMapper mapper,
+      StateService stateService,
+      OrchestratorPaths paths,
+      MasterReview reviews,
+      Clock clock) {
+    this.mapper = mapper;
+    this.stateService = stateService;
+    this.reviews = reviews;
+    this.clock = clock;
+    this.file = paths.stateFile().resolveSibling("finished.jsonl");
+  }
+
+  /**
+   * Called while the task still exists: after retirement there is nothing left to record. The
+   * reviewer's verdict is read HERE, from a worktree about to go — the kept artifacts are for a
+   * human and nothing parses them, so a verdict nobody put in this record could never be compared
+   * with what happened next.
+   */
+  public Optional<FinishedTask> record(String taskId) {
+    return stateService
+        .task(taskId)
+        .map(
+            task -> {
+              FinishedTask finished =
+                  FinishedTask.of(
+                      taskId,
+                      task,
+                      clock.millis(),
+                      reviews.of(task).map(MasterReview.Verdict::said).orElse(null));
+              append(finished);
+              return finished;
+            });
+  }
+
+  /**
+   * Newest first. A line written by an older jagt that no longer parses is skipped, never fatal.
+   */
+  public List<FinishedTask> all() {
+    if (!Files.isRegularFile(file)) {
+      return List.of();
     }
-
-    /**
-     * Called while the task still exists: after retirement there is nothing left to record. The reviewer's
-     * verdict is read HERE, from a worktree about to go — the kept artifacts are for a human and nothing
-     * parses them, so a verdict nobody put in this record could never be compared with what happened next.
-     */
-    public Optional<FinishedTask> record(String taskId) {
-        return stateService.task(taskId).map(task -> {
-            FinishedTask finished = FinishedTask.of(taskId, task, clock.millis(),
-                    reviews.of(task).map(MasterReview.Verdict::said).orElse(null));
-            append(finished);
-            return finished;
-        });
+    try {
+      List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+      return lines.reversed().stream()
+          .filter(line -> !line.isBlank())
+          .map(this::parse)
+          .filter(java.util.Objects::nonNull)
+          .toList();
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("finished log unreadable")
+          .addKeyValue("file", file)
+          .addKeyValue("cause", e.toString())
+          .log();
+      return List.of();
     }
+  }
 
-    /** Newest first. A line written by an older jagt that no longer parses is skipped, never fatal. */
-    public List<FinishedTask> all() {
-        if (!Files.isRegularFile(file)) {
-            return List.of();
-        }
-        try {
-            List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
-            return lines.reversed().stream().filter(line -> !line.isBlank()).map(this::parse)
-                    .filter(java.util.Objects::nonNull).toList();
-        } catch (IOException e) {
-            log.atWarn().setMessage("finished log unreadable").addKeyValue("file", file)
-                    .addKeyValue("cause", e.toString()).log();
-            return List.of();
-        }
+  private @Nullable FinishedTask parse(String line) {
+    try {
+      return mapper.readValue(line, FinishedTask.class);
+    } catch (RuntimeException e) {
+      log.atWarn()
+          .setMessage("finished entry unreadable")
+          .addKeyValue("file", file)
+          .addKeyValue("cause", e.toString())
+          .log();
+      return null;
     }
+  }
 
-    private @Nullable FinishedTask parse(String line) {
-        try {
-            return mapper.readValue(line, FinishedTask.class);
-        } catch (RuntimeException e) {
-            log.atWarn().setMessage("finished entry unreadable").addKeyValue("file", file)
-                    .addKeyValue("cause", e.toString()).log();
-            return null;
-        }
+  private synchronized void append(FinishedTask finished) {
+    try {
+      Files.writeString(
+          file,
+          mapper.writeValueAsString(finished) + "\n",
+          StandardCharsets.UTF_8,
+          StandardOpenOption.CREATE,
+          StandardOpenOption.APPEND);
+    } catch (IOException | RuntimeException e) {
+      log.atWarn()
+          .setMessage("finished entry not recorded")
+          .addKeyValue("task", finished.identity().id())
+          .addKeyValue("cause", e.toString())
+          .log();
+      return;
     }
+    try {
+      if (Files.size(file) > MAX_BYTES) {
+        packOlderHalf();
+      }
+    } catch (IOException | RuntimeException e) {
+      log.atWarn()
+          .setMessage("finished log not packed")
+          .addKeyValue("file", file)
+          .addKeyValue("cause", e.toString())
+          .addKeyValue("effect", "it keeps growing until the next done")
+          .log();
+    }
+  }
 
-    private synchronized void append(FinishedTask finished) {
-        try {
-            Files.writeString(file, mapper.writeValueAsString(finished) + "\n", StandardCharsets.UTF_8,
-                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        } catch (IOException | RuntimeException e) {
-            log.atWarn().setMessage("finished entry not recorded").addKeyValue("task", finished.identity().id())
-                    .addKeyValue("cause", e.toString()).log();
-            return;
-        }
-        try {
-            if (Files.size(file) > MAX_BYTES) {
-                packOlderHalf();
-            }
-        } catch (IOException | RuntimeException e) {
-            log.atWarn().setMessage("finished log not packed").addKeyValue("file", file)
-                    .addKeyValue("cause", e.toString()).addKeyValue("effect", "it keeps growing until the next done")
-                    .log();
-        }
+  /** The files {@link #packOlderHalf} wrote, oldest first. */
+  public List<Path> archives() {
+    try (Stream<Path> siblings = Files.list(file.getParent())) {
+      return siblings
+          .filter(path -> path.getFileName().toString().matches("finished-.*\\.jsonl\\.gz"))
+          .sorted()
+          .toList();
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("finished archives unlisted")
+          .addKeyValue("directory", file.getParent())
+          .addKeyValue("cause", e.toString())
+          .log();
+      return List.of();
     }
+  }
 
-    /** The files {@link #packOlderHalf} wrote, oldest first. */
-    public List<Path> archives() {
-        try (Stream<Path> siblings = Files.list(file.getParent())) {
-            return siblings.filter(path -> path.getFileName().toString().matches("finished-.*\\.jsonl\\.gz"))
-                    .sorted().toList();
-        } catch (IOException e) {
-            log.atWarn().setMessage("finished archives unlisted").addKeyValue("directory", file.getParent())
-                    .addKeyValue("cause", e.toString()).log();
-            return List.of();
-        }
+  /**
+   * The newer half stays, so whatever asks whether an item was already finished still sees the
+   * recent ones.
+   */
+  private void packOlderHalf() throws IOException {
+    List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+    int kept = lines.size() / 2;
+    Path archive =
+        file.resolveSibling("finished-" + LocalDateTime.now(clock).format(STAMP) + ".jsonl.gz");
+    try (Writer out =
+        new OutputStreamWriter(
+            new GZIPOutputStream(Files.newOutputStream(archive, StandardOpenOption.CREATE_NEW)),
+            StandardCharsets.UTF_8)) {
+      out.write(String.join("\n", lines.subList(0, lines.size() - kept)) + "\n");
     }
-
-    /** The newer half stays, so whatever asks whether an item was already finished still sees the recent ones. */
-    private void packOlderHalf() throws IOException {
-        List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
-        int kept = lines.size() / 2;
-        Path archive = file.resolveSibling("finished-" + LocalDateTime.now(clock).format(STAMP) + ".jsonl.gz");
-        try (Writer out = new OutputStreamWriter(new GZIPOutputStream(Files.newOutputStream(archive,
-                StandardOpenOption.CREATE_NEW)), StandardCharsets.UTF_8)) {
-            out.write(String.join("\n", lines.subList(0, lines.size() - kept)) + "\n");
-        }
-        AtomicFiles.write(file, lines.subList(lines.size() - kept, lines.size()).stream().map(line -> line + "\n")
-                .collect(Collectors.joining()).getBytes(StandardCharsets.UTF_8));
-        log.atInfo().setMessage("finished log packed").addKeyValue("archive", archive)
-                .addKeyValue("packed", lines.size() - kept).addKeyValue("kept", kept).log();
-    }
+    AtomicFiles.write(
+        file,
+        lines.subList(lines.size() - kept, lines.size()).stream()
+            .map(line -> line + "\n")
+            .collect(Collectors.joining())
+            .getBytes(StandardCharsets.UTF_8));
+    log.atInfo()
+        .setMessage("finished log packed")
+        .addKeyValue("archive", archive)
+        .addKeyValue("packed", lines.size() - kept)
+        .addKeyValue("kept", kept)
+        .log();
+  }
 }

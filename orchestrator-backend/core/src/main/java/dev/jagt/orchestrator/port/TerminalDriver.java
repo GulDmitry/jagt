@@ -3,32 +3,42 @@ package dev.jagt.orchestrator.port;
 import java.nio.file.Path;
 import java.util.List;
 
-/** How the agents' sessions become visible: ONE dedicated agents window, task views as tabs inside it. */
+/**
+ * How the agents' sessions become visible: ONE dedicated agents window, task views as tabs inside
+ * it.
+ */
 public interface TerminalDriver {
 
-    /**
-     * Adds a tab to the window titled {@code dedicatedTitle}, creating that window when it is absent, attached to
-     * running {@code attachCommand}, the argv that shows the session. Debounce internally per title — opening takes
-     * seconds and this may be called again meanwhile. Logs failures, never throws.
-     */
-    void openViewer(List<String> attachCommand, String dedicatedTitle, Path tabCwd);
+  /**
+   * Adds a tab to the window titled {@code dedicatedTitle}, creating that window when it is absent,
+   * attached to running {@code attachCommand}, the argv that shows the session. Debounce internally
+   * per title — opening takes seconds and this may be called again meanwhile. Logs failures, never
+   * throws.
+   */
+  void openViewer(List<String> attachCommand, String dedicatedTitle, Path tabCwd);
 
-    /** Brings the terminal application to the foreground. Best-effort. */
-    void bringToFront();
+  /** Brings the terminal application to the foreground. Best-effort. */
+  void bringToFront();
 
-    /** What a {@link #reveal(String)} achieved. */
-    enum Revealed {
-        /** The agents window is in front. */
-        WINDOW,
-        /** The viewer is a TAB behind another one, and this terminal has no API to select a tab. */
-        UNREACHABLE_TAB,
-        /** No viewer is open at all. */
-        NOT_RUNNING
-    }
+  /** What a {@link #reveal(String)} achieved. */
+  enum Revealed {
+    /** The agents window is in front. */
+    WINDOW,
+    /** The viewer is a TAB behind another one, and this terminal has no API to select a tab. */
+    UNREACHABLE_TAB,
+    /** No viewer is open at all. */
+    NOT_RUNNING
+  }
 
-    /** Raises the window titled {@code dedicatedTitle}, addressed rather than by keystroke. Never throws. */
-    Revealed reveal(String dedicatedTitle);
+  /**
+   * Raises the window titled {@code dedicatedTitle}, addressed rather than by keystroke. Never
+   * throws.
+   */
+  Revealed reveal(String dedicatedTitle);
 
-    /** Closes the agents window(s) titled {@code dedicatedTitle}; tabs need not close, some terminals cannot. */
-    void closeViewerWindow(String dedicatedTitle);
+  /**
+   * Closes the agents window(s) titled {@code dedicatedTitle}; tabs need not close, some terminals
+   * cannot.
+   */
+  void closeViewerWindow(String dedicatedTitle);
 }

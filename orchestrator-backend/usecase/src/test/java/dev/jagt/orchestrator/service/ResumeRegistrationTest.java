@@ -1,162 +1,230 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.Launched;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.TicketFacts;
-import dev.jagt.orchestrator.task.TokenUsage;
-import dev.jagt.orchestrator.task.Remote;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.task.Launched;
+import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.Remote;
+import dev.jagt.orchestrator.task.TicketFacts;
+import dev.jagt.orchestrator.task.TokenUsage;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
 class ResumeRegistrationTest {
 
-    @BeforeEach
-    void theProjectSharesItsBranchesThroughOrigin() {
-        when(provisioning.remoteOf("proj")).thenReturn(Remote.ORIGIN);
-    }
+  @BeforeEach
+  void theProjectSharesItsBranchesThroughOrigin() {
+    when(provisioning.remoteOf("proj")).thenReturn(Remote.ORIGIN);
+  }
 
-    private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
-    private final TicketReader tickets = mock(TicketReader.class);
-    private final ResumeRegistration registration = new ResumeRegistration(provisioning,
-            mock(AgentStatusReports.class), tickets, new KeyedTracker("ABC-42", "ABC-43"));
+  private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
+  private final TicketReader tickets = mock(TicketReader.class);
+  private final ResumeRegistration registration =
+      new ResumeRegistration(
+          provisioning,
+          mock(AgentStatusReports.class),
+          tickets,
+          new KeyedTracker("ABC-42", "ABC-43"));
 
-    @Test
-    void storesTheRequestsTitleBareAndItsTargetAsTheTasksBase() {
-        when(tickets.read("PROJ-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("PROJ-1").withTitle("Excel export").withTrackerProject("PROJ")
-                .withUrl("https://tracker/PROJ-1")), TokenUsage.NONE));
+  @Test
+  void storesTheRequestsTitleBareAndItsTargetAsTheTasksBase() {
+    when(tickets.read("PROJ-1"))
+        .thenReturn(
+            new Answer<>(
+                Optional.of(
+                    TicketFacts.defaults()
+                        .withExists(true)
+                        .withKey("PROJ-1")
+                        .withTitle("Excel export")
+                        .withTrackerProject("PROJ")
+                        .withUrl("https://tracker/PROJ-1")),
+                TokenUsage.NONE));
 
-        registration.register("PROJ-1", "proj", "https://host/mr/425", "PROJ-1 Excel export", "release/2");
+    registration.register(
+        "PROJ-1", "proj", "https://host/mr/425", "PROJ-1 Excel export", "release/2");
 
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue())
-                .extracting(NewTask::taskId, NewTask::projectKey, NewTask::title, NewTask::baseBranch)
-                .containsExactly("PROJ-1", "proj", "Excel export", "release/2");
-    }
+    ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+    verify(provisioning).initializeTask(created.capture());
+    assertThat(created.getValue())
+        .extracting(NewTask::taskId, NewTask::projectKey, NewTask::title, NewTask::baseBranch)
+        .containsExactly("PROJ-1", "proj", "Excel export", "release/2");
+  }
 
-    @Test
-    void titlesTheCardFromTheTicketWhenTheRequestIsNamedAfterNothingButItsKey() {
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-42").withTitle("Excel export drops the last row").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
+  @Test
+  void titlesTheCardFromTheTicketWhenTheRequestIsNamedAfterNothingButItsKey() {
+    when(tickets.read("ABC-42"))
+        .thenReturn(
+            new Answer<>(
+                Optional.of(
+                    TicketFacts.defaults()
+                        .withExists(true)
+                        .withKey("ABC-42")
+                        .withTitle("Excel export drops the last row")
+                        .withTrackerProject("ABC")
+                        .withUrl("https://tracker/ABC-42")),
+                TokenUsage.NONE));
 
-        registration.register("ABC-42", "proj", "https://host/mr/450", "ABC-42", "release/2");
+    registration.register("ABC-42", "proj", "https://host/mr/450", "ABC-42", "release/2");
 
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue()).extracting(NewTask::title, NewTask::ticketUrl)
-                .containsExactly("Excel export drops the last row", "https://tracker/ABC-42");
-    }
+    ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+    verify(provisioning).initializeTask(created.capture());
+    assertThat(created.getValue())
+        .extracting(NewTask::title, NewTask::ticketUrl)
+        .containsExactly("Excel export drops the last row", "https://tracker/ABC-42");
+  }
 
-    @Test
-    void linksTheCardToTheTicketWhereTheRequestTitledItself() {
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-42").withTitle("Excel export is broken").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
+  @Test
+  void linksTheCardToTheTicketWhereTheRequestTitledItself() {
+    when(tickets.read("ABC-42"))
+        .thenReturn(
+            new Answer<>(
+                Optional.of(
+                    TicketFacts.defaults()
+                        .withExists(true)
+                        .withKey("ABC-42")
+                        .withTitle("Excel export is broken")
+                        .withTrackerProject("ABC")
+                        .withUrl("https://tracker/ABC-42")),
+                TokenUsage.NONE));
 
-        registration.register("ABC-42", "proj", "https://host/mr/451", "ABC-42 Excel export drops the last row",
-                "release/2");
+    registration.register(
+        "ABC-42",
+        "proj",
+        "https://host/mr/451",
+        "ABC-42 Excel export drops the last row",
+        "release/2");
 
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue()).extracting(NewTask::title, NewTask::ticketUrl)
-                .containsExactly("Excel export drops the last row", "https://tracker/ABC-42");
-    }
+    ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+    verify(provisioning).initializeTask(created.capture());
+    assertThat(created.getValue())
+        .extracting(NewTask::title, NewTask::ticketUrl)
+        .containsExactly("Excel export drops the last row", "https://tracker/ABC-42");
+  }
 
-    @Test
-    void asksNoTrackerForASourceBranchThatIsNoTicketKey() {
-        registration.register("feature/widget-layout", "proj", "https://host/mr/455", "Widget layout is off",
-                "main");
+  @Test
+  void asksNoTrackerForASourceBranchThatIsNoTicketKey() {
+    registration.register(
+        "feature/widget-layout", "proj", "https://host/mr/455", "Widget layout is off", "main");
 
-        verifyNoInteractions(tickets);
-    }
+    verifyNoInteractions(tickets);
+  }
 
-    @Test
-    void refusesARequestWhoseTicketTheTrackerNeverAnswersAbout() {
-        when(tickets.read("ABC-42")).thenReturn(Answer.unavailable());
+  @Test
+  void refusesARequestWhoseTicketTheTrackerNeverAnswersAbout() {
+    when(tickets.read("ABC-42")).thenReturn(Answer.unavailable());
 
-        String result = registration.register("ABC-42", "proj", "https://host/mr/456",
-                "ABC-42 Excel export drops the last row", "release/2").message();
+    String result =
+        registration
+            .register(
+                "ABC-42",
+                "proj",
+                "https://host/mr/456",
+                "ABC-42 Excel export drops the last row",
+                "release/2")
+            .message();
 
-        assertThat(result).contains("ticket read failed").contains("ABC-42");
-        verifyNoInteractions(provisioning);
-    }
+    assertThat(result).contains("ticket read failed").contains("ABC-42");
+    verifyNoInteractions(provisioning);
+  }
 
-    @Test
-    void refusesToOpenACardWhenTheTrackerAnswersAboutAnotherItem() {
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-43").withTitle("Invoice totals are wrong").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-43")), TokenUsage.NONE));
+  @Test
+  void refusesToOpenACardWhenTheTrackerAnswersAboutAnotherItem() {
+    when(tickets.read("ABC-42"))
+        .thenReturn(
+            new Answer<>(
+                Optional.of(
+                    TicketFacts.defaults()
+                        .withExists(true)
+                        .withKey("ABC-43")
+                        .withTitle("Invoice totals are wrong")
+                        .withTrackerProject("ABC")
+                        .withUrl("https://tracker/ABC-43")),
+                TokenUsage.NONE));
 
-        String result = registration.register("ABC-42", "proj", "https://host/mr/453", "ABC-42", "release/2")
-                .message();
+    String result =
+        registration
+            .register("ABC-42", "proj", "https://host/mr/453", "ABC-42", "release/2")
+            .message();
 
-        assertThat(result).isEqualTo("error: asked for ABC-42 and got ABC-43 back — no task created");
-        verifyNoInteractions(provisioning);
-    }
+    assertThat(result).isEqualTo("error: asked for ABC-42 and got ABC-43 back — no task created");
+    verifyNoInteractions(provisioning);
+  }
 
-    @Test
-    void chargesTheTicketReadThatTitledTheCardToTheTaskItTitled() {
-        TokenUsage spent = TokenUsage.ofCall(9_000, 0, 80, 0.02);
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-42").withTitle("Excel export drops the last row").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-42")), spent));
+  @Test
+  void chargesTheTicketReadThatTitledTheCardToTheTaskItTitled() {
+    TokenUsage spent = TokenUsage.ofCall(9_000, 0, 80, 0.02);
+    when(tickets.read("ABC-42"))
+        .thenReturn(
+            new Answer<>(
+                Optional.of(
+                    TicketFacts.defaults()
+                        .withExists(true)
+                        .withKey("ABC-42")
+                        .withTitle("Excel export drops the last row")
+                        .withTrackerProject("ABC")
+                        .withUrl("https://tracker/ABC-42")),
+                spent));
 
-        registration.register("ABC-42", "proj", "https://host/mr/452", "ABC-42", "release/2");
+    registration.register("ABC-42", "proj", "https://host/mr/452", "ABC-42", "release/2");
 
-        verify(tickets).charge("ABC-42", spent);
-    }
+    verify(tickets).charge("ABC-42", spent);
+  }
 
-    @Test
-    void answersTheTaskItResumedAndWhereItStands() {
-        Launched launched = registration.register("feature/widget-layout", "proj", "https://host/mr/455",
-                "Widget layout is off", "main");
+  @Test
+  void answersTheTaskItResumedAndWhereItStands() {
+    Launched launched =
+        registration.register(
+            "feature/widget-layout", "proj", "https://host/mr/455", "Widget layout is off", "main");
 
-        assertThat(launched).isEqualTo(Launched.created("feature/widget-layout", "Resumed feature/widget-layout on its"
-                + " existing branch, linked https://host/mr/455; CI_POLLING — `sweep` or `deploy`."));
-    }
+    assertThat(launched)
+        .isEqualTo(
+            Launched.created(
+                "feature/widget-layout",
+                "Resumed feature/widget-layout on its existing branch, linked https://host/mr/455;"
+                    + " CI_POLLING — `sweep` or `deploy`."));
+  }
 
-    @Test
-    void asksNoTrackerForAKeyShapedBranchWhereTheInstallsTrackerDoesNotKnowItAsAnItem() {
-        ResumeRegistration untracked = new ResumeRegistration(provisioning, mock(AgentStatusReports.class), tickets,
-                new NoTracker());
+  @Test
+  void asksNoTrackerForAKeyShapedBranchWhereTheInstallsTrackerDoesNotKnowItAsAnItem() {
+    ResumeRegistration untracked =
+        new ResumeRegistration(
+            provisioning, mock(AgentStatusReports.class), tickets, new NoTracker());
 
-        untracked.register("ABC-42", "proj", "https://host/mr/455", "Widget layout is off", "main");
+    untracked.register("ABC-42", "proj", "https://host/mr/455", "Widget layout is off", "main");
 
-        verifyNoInteractions(tickets);
-    }
+    verifyNoInteractions(tickets);
+  }
 
-    @Test
-    void tellsTheSessionToPushItsBranchToTheRemoteTheProjectSharesThrough() {
-        when(provisioning.remoteOf("proj")).thenReturn(new Remote("upstream"));
+  @Test
+  void tellsTheSessionToPushItsBranchToTheRemoteTheProjectSharesThrough() {
+    when(provisioning.remoteOf("proj")).thenReturn(new Remote("upstream"));
 
-        registration.register("widget-fix", "proj", "https://host/mr/455", "Widget layout is off", "main");
+    registration.register(
+        "widget-fix", "proj", "https://host/mr/455", "Widget layout is off", "main");
 
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue().instructions()).contains("--force-with-lease upstream widget-fix")
-                .doesNotContain("origin");
-    }
+    ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+    verify(provisioning).initializeTask(created.capture());
+    assertThat(created.getValue().instructions())
+        .contains("--force-with-lease upstream widget-fix")
+        .doesNotContain("origin");
+  }
 
-    @Test
-    void tellsASessionOfARepositoryKeptOnThisMachineToPushNothing() {
-        when(provisioning.remoteOf("proj")).thenReturn(Remote.LOCAL);
+  @Test
+  void tellsASessionOfARepositoryKeptOnThisMachineToPushNothing() {
+    when(provisioning.remoteOf("proj")).thenReturn(Remote.LOCAL);
 
-        registration.register("feature/widget-layout", "proj", "https://host/mr/455", "Widget layout is off", "main");
+    registration.register(
+        "feature/widget-layout", "proj", "https://host/mr/455", "Widget layout is off", "main");
 
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue().instructions()).doesNotContain("git push");
-    }
+    ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+    verify(provisioning).initializeTask(created.capture());
+    assertThat(created.getValue().instructions()).doesNotContain("git push");
+  }
 }

@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.board;
 
-import dev.jagt.orchestrator.port.UserNotifier;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Playwright;
@@ -8,11 +7,16 @@ import dev.jagt.orchestrator.command.ReviewRepliesReport;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.SessionHost;
+import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.surface.board.NaturalLanguageDispatch;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -28,132 +32,125 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Duration;
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"spring.config.import=",
-                "orchestrator.open-terminal-window=false", "orchestrator.startup-checks=false",
-                "orchestrator.usage-limits.enabled=false"})
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = {
+      "spring.config.import=",
+      "orchestrator.open-terminal-window=false",
+      "orchestrator.startup-checks=false",
+      "orchestrator.usage-limits.enabled=false"
+    })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Import(BoardPageContext.BreakableJob.class)
 abstract class BoardPageContext {
 
-    @MockitoBean
-    UserNotifier userNotifier;
+  @MockitoBean UserNotifier userNotifier;
 
-    static class BreakableJob implements Job {
-        private volatile boolean broken;
+  static class BreakableJob implements Job {
+    private volatile boolean broken;
 
-        void breakIt() {
-            broken = true;
-        }
-
-        @Override
-        public String id() {
-            return "breakable";
-        }
-
-        @Override
-        public String describe() {
-            return "fails once broken";
-        }
-
-        @Override
-        public Duration every() {
-            return Duration.ofMinutes(1);
-        }
-
-        @Override
-        public void run() {
-            if (broken) {
-                throw new IllegalStateException("job broken");
-            }
-        }
+    void breakIt() {
+      broken = true;
     }
 
-    @Autowired
-    BreakableJob breakable;
-
-    @TempDir
-    static Path root;
-
-    private static Playwright playwright;
-    private static Browser browser;
-
-    @LocalServerPort
-    int port;
-
-    @Autowired
-    StateService state;
-
-    @MockitoBean
-    CommandService commands;
-    @MockitoBean
-    TaskLauncher launcher;
-    @MockitoBean
-    NaturalLanguageDispatch naturalLanguage;
-    @MockitoBean
-    EditorDriver editorDriver;
-    @MockitoBean
-    AgentSessions sessions;
-    @MockitoBean
-    SessionHost sessionHost;
-    @MockitoSpyBean
-    ReviewRepliesReport replies;
-
-    BrowserContext session;
-
-    @DynamicPropertySource
-    static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) {
-        registry.add("orchestrator.root", () -> root.toString());
-        registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
-        registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
-        registry.add("logging.file.name", () -> root.resolve("jagt.log").toString());
+    @Override
+    public String id() {
+      return "breakable";
     }
 
-    @BeforeAll
-    static void startTheBrowserAndNameTheProjectsTheBoardOffers() throws IOException {
-        try (var shipped = Files.newDirectoryStream(Path.of(".."), "*.dist")) {
-            for (Path file : shipped) {
-                Files.copy(file, root.resolve(file.getFileName()), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-        try (var shipped = Files.walk(Path.of("..", "roles"))) {
-            for (Path file : shipped.filter(path -> path.toString().endsWith(".dist")).toList()) {
-                Path target = root.resolve(Path.of("..").relativize(file));
-                Files.createDirectories(target.getParent());
-                Files.copy(file, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-        Files.writeString(root.resolve("jagt.yml"), """
-                orchestrator:
-                  projects:
-                    beta: {path: "%s", baseBranch: origin/main, deployBranch: dev}
-                    alpha: {path: "%s", baseBranch: origin/main, deployBranch: dev}
-                  autoReview: {enabled: true}
-                """.formatted(root.resolve("beta"), root.resolve("alpha")));
-        playwright = Playwright.create();
-        browser = playwright.chromium().launch();
+    @Override
+    public String describe() {
+      return "fails once broken";
     }
 
-    @AfterAll
-    static void stopTheBrowser() {
-        browser.close();
-        playwright.close();
+    @Override
+    public Duration every() {
+      return Duration.ofMinutes(1);
     }
 
-    @BeforeEach
-    void emptyTheBoard() throws IOException {
-        Files.deleteIfExists(root.resolve("state.json"));
-        Files.deleteIfExists(root.resolve("state.json.bak"));
-        session = browser.newContext();
+    @Override
+    public void run() {
+      if (broken) {
+        throw new IllegalStateException("job broken");
+      }
     }
+  }
 
-    @AfterEach
-    void closeTheTab() {
-        session.close();
+  @Autowired BreakableJob breakable;
+
+  @TempDir static Path root;
+
+  private static Playwright playwright;
+  private static Browser browser;
+
+  @LocalServerPort int port;
+
+  @Autowired StateService state;
+
+  @MockitoBean CommandService commands;
+  @MockitoBean TaskLauncher launcher;
+  @MockitoBean NaturalLanguageDispatch naturalLanguage;
+  @MockitoBean EditorDriver editorDriver;
+  @MockitoBean AgentSessions sessions;
+  @MockitoBean SessionHost sessionHost;
+  @MockitoSpyBean ReviewRepliesReport replies;
+
+  BrowserContext session;
+
+  @DynamicPropertySource
+  static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) {
+    registry.add("orchestrator.root", () -> root.toString());
+    registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
+    registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
+    registry.add("logging.file.name", () -> root.resolve("jagt.log").toString());
+  }
+
+  @BeforeAll
+  static void startTheBrowserAndNameTheProjectsTheBoardOffers() throws IOException {
+    try (var shipped = Files.newDirectoryStream(Path.of(".."), "*.dist")) {
+      for (Path file : shipped) {
+        Files.copy(
+            file,
+            root.resolve(file.getFileName()),
+            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+      }
     }
+    try (var shipped = Files.walk(Path.of("..", "roles"))) {
+      for (Path file : shipped.filter(path -> path.toString().endsWith(".dist")).toList()) {
+        Path target = root.resolve(Path.of("..").relativize(file));
+        Files.createDirectories(target.getParent());
+        Files.copy(file, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+      }
+    }
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        """
+        orchestrator:
+          projects:
+            beta: {path: "%s", baseBranch: origin/main, deployBranch: dev}
+            alpha: {path: "%s", baseBranch: origin/main, deployBranch: dev}
+          autoReview: {enabled: true}
+        """
+            .formatted(root.resolve("beta"), root.resolve("alpha")));
+    playwright = Playwright.create();
+    browser = playwright.chromium().launch();
+  }
+
+  @AfterAll
+  static void stopTheBrowser() {
+    browser.close();
+    playwright.close();
+  }
+
+  @BeforeEach
+  void emptyTheBoard() throws IOException {
+    Files.deleteIfExists(root.resolve("state.json"));
+    Files.deleteIfExists(root.resolve("state.json.bak"));
+    session = browser.newContext();
+  }
+
+  @AfterEach
+  void closeTheTab() {
+    session.close();
+  }
 }

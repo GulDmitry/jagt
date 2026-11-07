@@ -1,7 +1,5 @@
 package dev.jagt.orchestrator.flow;
 
-import lombok.RequiredArgsConstructor;
-
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -9,188 +7,269 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 
 /**
- * Something a human can do to one task, named once so every surface offers exactly the same set. {@code id} is the
- * wire name AND the CLI verb: one string, so a button and a typed command cannot drift apart.
+ * Something a human can do to one task, named once so every surface offers exactly the same set.
+ * {@code id} is the wire name AND the CLI verb: one string, so a button and a typed command cannot
+ * drift apart.
  */
 @RequiredArgsConstructor
 public enum TaskAction {
+  APPROVE_PLAN(
+      85,
+      Group.FLOW,
+      "approve-plan",
+      "Approve plan",
+      "tell the session the plan holds: it starts on the change the plan lists"),
+  SHIP(30, Group.FLOW, "ship", "Ship", "commit, push, open or update the review request"),
+  ADD_REPO(
+      95,
+      Group.FLOW,
+      "add-repo",
+      "Add repo",
+      "add a repository to the task, the one the session asked for or the project you name: its"
+          + " worktree is cut and the session told",
+      "add-repo <ticket> [project]"),
+  REMOVE_REPO(
+      96,
+      Group.FLOW,
+      "remove-repo",
+      "Remove repo",
+      "close the request of a repository of the task on its host and take the repository out of the"
+          + " task",
+      "remove-repo <ticket> <project>"),
+  SWEEP(
+      10,
+      Group.FLOW,
+      "sweep",
+      "Check review",
+      "read what the pipeline and the reviewers said, the checks and open threads, relay them to"
+          + " the agent"),
+  DEPLOY(
+      90, Group.FLOW, "deploy", "Deploy", "merge the task branch into the deploy branch and push"),
+  REVERT(
+      120,
+      Group.FLOW,
+      "revert",
+      "Revert",
+      "revert the last deploy's merge commit and push; earlier deploys stay live"),
+  TRUST(
+      125,
+      Group.FLOW,
+      "trust",
+      "Trust git",
+      "adopt the git config and hooks jagt found changed, as they are now"),
+  LIFT(
+      127,
+      Group.FLOW,
+      "lift",
+      "Lift stop",
+      "lift the stop on this task: auto-review and the Master may move it again"),
+  PAUSE(
+      126,
+      Group.FLOW,
+      "pause",
+      "Pause",
+      "pause this task: nothing of jagt runs on it until you lift the stop"),
+  DONE(
+      130,
+      Group.FLOW,
+      "done",
+      "Done",
+      "kill the session, delete the worktree, drop the task; the branch is kept"),
+  FOCUS(70, Group.TOOL, "focus", "Focus", "open the agent's terminal window"),
+  IDE(
+      50,
+      Group.TOOL,
+      "ide",
+      "Open IDE",
+      "open every worktree in the IDE; its uncommitted-changes view is the live diff",
+      "ide <ticket> [diff]"),
+  DIFF(
+      60,
+      Group.TOOL,
+      "diff",
+      "Diff",
+      "show every repository's diff against the branch its request targets"),
+  RESPAWN(
+      110,
+      Group.TOOL,
+      "respawn",
+      "Restart agent",
+      "start a new agent session in the same worktree");
 
-    APPROVE_PLAN(85, Group.FLOW, "approve-plan", "Approve plan",
-            "tell the session the plan holds: it starts on the change the plan lists"),
-    SHIP(30, Group.FLOW, "ship", "Ship", "commit, push, open or update the review request"),
-    ADD_REPO(95, Group.FLOW, "add-repo", "Add repo",
-            "add a repository to the task, the one the session asked for or the project you name: its worktree is cut and the session told",
-            "add-repo <ticket> [project]"),
-    REMOVE_REPO(96, Group.FLOW, "remove-repo", "Remove repo",
-            "close the request of a repository of the task on its host and take the repository out of the task",
-            "remove-repo <ticket> <project>"),
-    SWEEP(10, Group.FLOW, "sweep", "Check review",
-            "read what the pipeline and the reviewers said, the checks and open threads, relay them to the agent"),
-    DEPLOY(90, Group.FLOW, "deploy", "Deploy", "merge the task branch into the deploy branch and push"),
-    REVERT(120, Group.FLOW, "revert", "Revert",
-            "revert the last deploy's merge commit and push; earlier deploys stay live"),
-    TRUST(125, Group.FLOW, "trust", "Trust git",
-            "adopt the git config and hooks jagt found changed, as they are now"),
-    LIFT(127, Group.FLOW, "lift", "Lift stop",
-            "lift the stop on this task: auto-review and the Master may move it again"),
-    PAUSE(126, Group.FLOW, "pause", "Pause",
-            "pause this task: nothing of jagt runs on it until you lift the stop"),
-    DONE(130, Group.FLOW, "done", "Done", "kill the session, delete the worktree, drop the task; the branch is kept"),
-    FOCUS(70, Group.TOOL, "focus", "Focus", "open the agent's terminal window"),
-    IDE(50, Group.TOOL, "ide", "Open IDE", "open every worktree in the IDE; its uncommitted-changes view is the live diff",
-            "ide <ticket> [diff]"),
-    DIFF(60, Group.TOOL, "diff", "Diff", "show every repository's diff against the branch its request targets"),
-    RESPAWN(110, Group.TOOL, "respawn", "Restart agent",
-            "start a new agent session in the same worktree");
+  /**
+   * Which half of a card an action belongs to: FLOW moves the task along its life, closing it
+   * included; TOOL only looks at what is already there, or starts the same agent again.
+   */
+  public enum Group {
+    FLOW("flow"),
+    TOOL("tool");
 
-    /**
-     * Which half of a card an action belongs to: FLOW moves the task along its life, closing it included; TOOL
-     * only looks at what is already there, or starts the same agent again.
-     */
-    public enum Group {
-
-        FLOW("flow"), TOOL("tool");
-
-        private final String id;
-
-        Group(String id) {
-            this.id = id;
-        }
-
-        public String id() {
-            return id;
-        }
-    }
-
-    /** Actions that only LOOK at a task — not the same question as which half of the card renders them. */
-    private static final Set<TaskAction> READ_ONLY = EnumSet.of(FOCUS, IDE, DIFF);
-
-    /**
-     * Verbs a human keeps even where the Master session acts for them. A task is opened by a person and closed
-     * by one; what happens in between is the work, and the work is what the reviewer stands in for.
-     */
-    private static final Set<TaskAction> HUMAN_ONLY = EnumSet.of(TRUST, LIFT, PAUSE, DONE, REMOVE_REPO);
-
-    private static final Set<TaskAction> NAMES_A_PROJECT = EnumSet.of(ADD_REPO, REMOVE_REPO);
-
-    /** Verbs a human types with what they act on, so no card carries a button for them. */
-    private static final Set<TaskAction> TYPED = EnumSet.of(REMOVE_REPO);
-
-    /** The verb a task needs most often. */
-    private static final Set<TaskAction> ON_ROW = EnumSet.of(FOCUS);
-
-    /** The verb that ends the task. */
-    private static final Set<TaskAction> APART = EnumSet.of(DONE);
-
-    /** One letter a key runs the verb by on an open task; a verb that cannot be taken back has none. */
-    private static final Map<TaskAction, String> KEYS = Map.of(SWEEP, "r", SHIP, "s", DEPLOY, "d", REVERT, "v",
-            FOCUS, "f", IDE, "o", DIFF, "g");
-
-    /** Spellings a verb was renamed from: accepted wherever one is typed, advertised nowhere. */
-    private static final Map<String, TaskAction> RENAMED = Map.of("review", SWEEP);
-
-    private final int rank;
-    private final Group group;
     private final String id;
-    private final String label;
-    private final String hint;
-    private final String usage;
 
-    TaskAction(int rank, Group group, String id, String label, String hint) {
-        this(rank, group, id, label, hint, id + " <ticket>");
-    }
-
-    public Group group() {
-        return group;
-    }
-
-    /** Where the verb sorts among every verb, global commands included: most-used lowest. */
-    public int rank() {
-        return rank;
-    }
-
-    /** Whether this verb stays a human's however much else is delegated. */
-    public boolean humanOnly() {
-        return HUMAN_ONLY.contains(this);
-    }
-
-    /**
-     * What a surface asks before sending this press, or empty: only a press that cannot be taken back is asked.
-     * {@code targets} names, one line per repository, the branch the press writes.
-     */
-    public Optional<String> confirmation(String taskId, List<String> targets) {
-        String lines = String.join("\n", targets);
-        return switch (this) {
-            case DEPLOY -> Optional.of("Deploy " + taskId + "?\n\nThis merges and pushes:\n" + lines);
-            case REVERT -> Optional.of("Revert " + taskId + "?\n\nThis pushes a revert commit to:\n" + lines
-                    + "\n\nOnly the LAST deploy comes out; earlier rounds stay live and need reverting by hand."
-                    + " The task branch keeps every commit.");
-            case DONE -> Optional.of(label + " " + taskId + "?\n\n" + hint);
-            default -> Optional.empty();
-        };
-    }
-
-    /** Whether this action changes nothing, so nothing else being in flight is a reason to refuse it. */
-    public boolean readOnly() {
-        return READ_ONLY.contains(this);
-    }
-
-    /** Whether a human may type a project after the ticket. */
-    public boolean takesProject() {
-        return NAMES_A_PROJECT.contains(this);
-    }
-
-    /** Whether this verb is only ever typed: a card offers no button for it. */
-    public boolean typed() {
-        return TYPED.contains(this);
-    }
-
-    public boolean onRow() {
-        return ON_ROW.contains(this);
-    }
-
-    public boolean apart() {
-        return APART.contains(this);
-    }
-
-    /** Empty where no key runs the verb. */
-    public String key() {
-        return KEYS.getOrDefault(this, "");
+    Group(String id) {
+      this.id = id;
     }
 
     public String id() {
-        return id;
+      return id;
     }
+  }
 
-    public String label() {
-        return label;
-    }
+  /**
+   * Actions that only LOOK at a task — not the same question as which half of the card renders
+   * them.
+   */
+  private static final Set<TaskAction> READ_ONLY = EnumSet.of(FOCUS, IDE, DIFF);
 
-    public String hint() {
-        return hint;
-    }
+  /**
+   * Verbs a human keeps even where the Master session acts for them. A task is opened by a person
+   * and closed by one; what happens in between is the work, and the work is what the reviewer
+   * stands in for.
+   */
+  private static final Set<TaskAction> HUMAN_ONLY =
+      EnumSet.of(TRUST, LIFT, PAUSE, DONE, REMOVE_REPO);
 
-    /** What a human types: the verb and its argument, not prose. */
-    public String usage() {
-        return usage;
-    }
+  private static final Set<TaskAction> NAMES_A_PROJECT = EnumSet.of(ADD_REPO, REMOVE_REPO);
 
-    /** The action for a wire id, or empty — an unknown id from a URL must never resolve to something else. */
-    public static Optional<TaskAction> byId(String id) {
-        return Arrays.stream(values()).filter(action -> action.id.equals(id)).findFirst();
-    }
+  /** Verbs a human types with what they act on, so no card carries a button for them. */
+  private static final Set<TaskAction> TYPED = EnumSet.of(REMOVE_REPO);
 
-    /** The action a retired spelling names, or empty. Case and padding are normalized HERE, never per surface. */
-    public static Optional<TaskAction> byRetiredVerb(String verb) {
-        return verb == null ? Optional.empty()
-                : Optional.ofNullable(RENAMED.get(verb.strip().toLowerCase(Locale.ROOT)));
-    }
+  /** The verb a task needs most often. */
+  private static final Set<TaskAction> ON_ROW = EnumSet.of(FOCUS);
 
-    /** What this action also answers to, for a surface that must accept what it does not offer. */
-    public List<String> retiredVerbs() {
-        return RENAMED.entrySet().stream().filter(renamed -> renamed.getValue() == this)
-                .map(Map.Entry::getKey).sorted().toList();
-    }
+  /** The verb that ends the task. */
+  private static final Set<TaskAction> APART = EnumSet.of(DONE);
+
+  /**
+   * One letter a key runs the verb by on an open task; a verb that cannot be taken back has none.
+   */
+  private static final Map<TaskAction, String> KEYS =
+      Map.of(SWEEP, "r", SHIP, "s", DEPLOY, "d", REVERT, "v", FOCUS, "f", IDE, "o", DIFF, "g");
+
+  /** Spellings a verb was renamed from: accepted wherever one is typed, advertised nowhere. */
+  private static final Map<String, TaskAction> RENAMED = Map.of("review", SWEEP);
+
+  private final int rank;
+  private final Group group;
+  private final String id;
+  private final String label;
+  private final String hint;
+  private final String usage;
+
+  TaskAction(int rank, Group group, String id, String label, String hint) {
+    this(rank, group, id, label, hint, id + " <ticket>");
+  }
+
+  public Group group() {
+    return group;
+  }
+
+  /** Where the verb sorts among every verb, global commands included: most-used lowest. */
+  public int rank() {
+    return rank;
+  }
+
+  /** Whether this verb stays a human's however much else is delegated. */
+  public boolean humanOnly() {
+    return HUMAN_ONLY.contains(this);
+  }
+
+  /**
+   * What a surface asks before sending this press, or empty: only a press that cannot be taken back
+   * is asked. {@code targets} names, one line per repository, the branch the press writes.
+   */
+  public Optional<String> confirmation(String taskId, List<String> targets) {
+    String lines = String.join("\n", targets);
+    return switch (this) {
+      case DEPLOY -> Optional.of("Deploy " + taskId + "?\n\nThis merges and pushes:\n" + lines);
+      case REVERT ->
+          Optional.of(
+              "Revert "
+                  + taskId
+                  + "?\n\nThis pushes a revert commit to:\n"
+                  + lines
+                  + "\n\n"
+                  + "Only the LAST deploy comes out; earlier rounds stay live and need reverting by"
+                  + " hand. The task branch keeps every commit.");
+      case DONE -> Optional.of(label + " " + taskId + "?\n\n" + hint);
+      default -> Optional.empty();
+    };
+  }
+
+  /**
+   * Whether this action changes nothing, so nothing else being in flight is a reason to refuse it.
+   */
+  public boolean readOnly() {
+    return READ_ONLY.contains(this);
+  }
+
+  /** Whether a human may type a project after the ticket. */
+  public boolean takesProject() {
+    return NAMES_A_PROJECT.contains(this);
+  }
+
+  /** Whether this verb is only ever typed: a card offers no button for it. */
+  public boolean typed() {
+    return TYPED.contains(this);
+  }
+
+  public boolean onRow() {
+    return ON_ROW.contains(this);
+  }
+
+  public boolean apart() {
+    return APART.contains(this);
+  }
+
+  /** Empty where no key runs the verb. */
+  public String key() {
+    return KEYS.getOrDefault(this, "");
+  }
+
+  public String id() {
+    return id;
+  }
+
+  public String label() {
+    return label;
+  }
+
+  public String hint() {
+    return hint;
+  }
+
+  /** What a human types: the verb and its argument, not prose. */
+  public String usage() {
+    return usage;
+  }
+
+  /**
+   * The action for a wire id, or empty — an unknown id from a URL must never resolve to something
+   * else.
+   */
+  public static Optional<TaskAction> byId(String id) {
+    return Arrays.stream(values()).filter(action -> action.id.equals(id)).findFirst();
+  }
+
+  /**
+   * The action a retired spelling names, or empty. Case and padding are normalized HERE, never per
+   * surface.
+   */
+  public static Optional<TaskAction> byRetiredVerb(String verb) {
+    return verb == null
+        ? Optional.empty()
+        : Optional.ofNullable(RENAMED.get(verb.strip().toLowerCase(Locale.ROOT)));
+  }
+
+  /** What this action also answers to, for a surface that must accept what it does not offer. */
+  public List<String> retiredVerbs() {
+    return RENAMED.entrySet().stream()
+        .filter(renamed -> renamed.getValue() == this)
+        .map(Map.Entry::getKey)
+        .sorted()
+        .toList();
+  }
 }

@@ -1,88 +1,87 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import java.util.List;
 import java.util.stream.IntStream;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class ReadScopesTest {
 
-    @Test
-    void cutsACallWhoseArgumentsRunPastTwoHundredCharacters() {
-        ReadScopes scopes = new ReadScopes();
-        scopes.open("f1", new ReadScope(List.of(), List.of(), false));
+  @Test
+  void cutsACallWhoseArgumentsRunPastTwoHundredCharacters() {
+    ReadScopes scopes = new ReadScopes();
+    scopes.open("f1", new ReadScope(List.of(), List.of(), false));
 
-        scopes.hear("f1", "mcp__acme__search", "x".repeat(300));
+    scopes.hear("f1", "mcp__acme__search", "x".repeat(300));
 
-        assertThat(scopes.heard("f1")).singleElement().asString().hasSize(201).endsWith("x…");
-    }
+    assertThat(scopes.heard("f1")).singleElement().asString().hasSize(201).endsWith("x…");
+  }
 
-    @Test
-    void keepsACallWhoseArgumentsAreExactlyTwoHundredCharacters() {
-        ReadScopes scopes = new ReadScopes();
-        scopes.open("f1", new ReadScope(List.of(), List.of(), false));
+  @Test
+  void keepsACallWhoseArgumentsAreExactlyTwoHundredCharacters() {
+    ReadScopes scopes = new ReadScopes();
+    scopes.open("f1", new ReadScope(List.of(), List.of(), false));
 
-        scopes.hear("f1", "t", "x".repeat(198));
+    scopes.hear("f1", "t", "x".repeat(198));
 
-        assertThat(scopes.heard("f1")).singleElement().asString().hasSize(200).doesNotEndWith("…");
-    }
+    assertThat(scopes.heard("f1")).singleElement().asString().hasSize(200).doesNotEndWith("…");
+  }
 
-    @Test
-    void keepsAtMostFiftyCallsOfARun() {
-        ReadScopes scopes = new ReadScopes();
-        scopes.open("f1", new ReadScope(List.of(), List.of(), false));
+  @Test
+  void keepsAtMostFiftyCallsOfARun() {
+    ReadScopes scopes = new ReadScopes();
+    scopes.open("f1", new ReadScope(List.of(), List.of(), false));
 
-        IntStream.range(0, 51).forEach(call -> scopes.hear("f1", "tool", call));
+    IntStream.range(0, 51).forEach(call -> scopes.hear("f1", "tool", call));
 
-        assertThat(scopes.heard("f1")).hasSize(50).doesNotContain("tool 50");
-    }
+    assertThat(scopes.heard("f1")).hasSize(50).doesNotContain("tool 50");
+  }
 
-    @Test
-    void handsOutTheScopeOpenedUnderAFenceAndCountsTheAsk() {
-        ReadScopes scopes = new ReadScopes();
-        ReadScope scope = new ReadScope(List.of(), List.of("Read"), false);
-        scopes.open("f1", scope);
+  @Test
+  void handsOutTheScopeOpenedUnderAFenceAndCountsTheAsk() {
+    ReadScopes scopes = new ReadScopes();
+    ReadScope scope = new ReadScope(List.of(), List.of("Read"), false);
+    scopes.open("f1", scope);
 
-        assertThat(scopes.ask("f1")).contains(scope);
-        assertThat(scopes.close("f1")).isTrue();
-    }
+    assertThat(scopes.ask("f1")).contains(scope);
+    assertThat(scopes.close("f1")).isTrue();
+  }
 
-    @Test
-    void reportsAFenceNobodyAskedUnderAsOneWhoseHookNeverRan() {
-        ReadScopes scopes = new ReadScopes();
-        scopes.open("f1", new ReadScope(List.of(), List.of("Read"), false));
+  @Test
+  void reportsAFenceNobodyAskedUnderAsOneWhoseHookNeverRan() {
+    ReadScopes scopes = new ReadScopes();
+    scopes.open("f1", new ReadScope(List.of(), List.of("Read"), false));
 
-        assertThat(scopes.close("f1")).isFalse();
-    }
+    assertThat(scopes.close("f1")).isFalse();
+  }
 
-    @Test
-    void handsOutNoScopeForAFenceThatWasNeverOpened() {
-        ReadScopes scopes = new ReadScopes();
+  @Test
+  void handsOutNoScopeForAFenceThatWasNeverOpened() {
+    ReadScopes scopes = new ReadScopes();
 
-        assertThat(scopes.ask("unknown")).isEmpty();
-        assertThat(scopes.ask(null)).isEmpty();
-    }
+    assertThat(scopes.ask("unknown")).isEmpty();
+    assertThat(scopes.ask(null)).isEmpty();
+  }
 
-    @Test
-    void forgetsTheCallsOfAClosedRun() {
-        ReadScopes scopes = new ReadScopes();
-        scopes.open("f1", new ReadScope(List.of(), List.of(), false));
-        scopes.hear("f1", "tool", "{}");
+  @Test
+  void forgetsTheCallsOfAClosedRun() {
+    ReadScopes scopes = new ReadScopes();
+    scopes.open("f1", new ReadScope(List.of(), List.of(), false));
+    scopes.hear("f1", "tool", "{}");
 
-        scopes.close("f1");
+    scopes.close("f1");
 
-        assertThat(scopes.heard("f1")).isEmpty();
-    }
+    assertThat(scopes.heard("f1")).isEmpty();
+  }
 
-    @Test
-    void keepsNoCallOfARunAlreadyOver() {
-        ReadScopes scopes = new ReadScopes();
+  @Test
+  void keepsNoCallOfARunAlreadyOver() {
+    ReadScopes scopes = new ReadScopes();
 
-        scopes.hear("gone", "mcp__acme__get_issue", "{}");
+    scopes.hear("gone", "mcp__acme__get_issue", "{}");
 
-        assertThat(scopes.heard("gone")).isEmpty();
-    }
+    assertThat(scopes.heard("gone")).isEmpty();
+  }
 }

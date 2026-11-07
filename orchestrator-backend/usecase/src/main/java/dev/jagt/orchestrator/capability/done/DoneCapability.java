@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.capability.done;
 
-import dev.jagt.orchestrator.flow.TaskCapability;
-import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.TaskCapability;
+import dev.jagt.orchestrator.service.FinishedTasks;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -11,19 +11,19 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DoneCapability implements TaskCapability {
 
-    private final TaskRetirement retirement;
-    private final FinishedTasks finished;
-    private final FinishedArtifacts artifacts;
+  private final TaskRetirement retirement;
+  private final FinishedTasks finished;
+  private final FinishedArtifacts artifacts;
 
-    @Override
-    public TaskAction action() {
-        return TaskAction.DONE;
-    }
+  @Override
+  public TaskAction action() {
+    return TaskAction.DONE;
+  }
 
-    @Override
-    public Outcome run(String taskId) {
-        // Before retirement: it drops the state entry, and the record is built from it.
-        finished.record(taskId).ifPresent(artifacts::keep);
-        return Outcome.gone(retirement.retire(taskId));
-    }
+  @Override
+  public Outcome run(String taskId) {
+    // Before retirement: it drops the state entry, and the record is built from it.
+    finished.record(taskId).ifPresent(artifacts::keep);
+    return Outcome.gone(retirement.retire(taskId));
+  }
 }

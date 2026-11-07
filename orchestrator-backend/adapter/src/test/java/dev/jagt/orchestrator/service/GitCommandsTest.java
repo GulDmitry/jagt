@@ -1,64 +1,69 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.port.WorktreeProcesses;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.WorktreeProcesses;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
 class GitCommandsTest {
 
-    @Test
-    void readsTwoSpellingsOfAPathThatDoesNotExistAsTheSameDirectory(@TempDir Path dir) {
-        boolean same = GitCommands.sameDirectory(dir.resolve("a/../missing"), dir.resolve("missing"));
+  @Test
+  void readsTwoSpellingsOfAPathThatDoesNotExistAsTheSameDirectory(@TempDir Path dir) {
+    boolean same = GitCommands.sameDirectory(dir.resolve("a/../missing"), dir.resolve("missing"));
 
-        assertThat(same).isTrue();
-    }
+    assertThat(same).isTrue();
+  }
 
-    @Test
-    void readsTwoDifferentPathsThatDoNotExistAsDifferentDirectories(@TempDir Path dir) {
-        boolean same = GitCommands.sameDirectory(dir.resolve("one"), dir.resolve("other"));
+  @Test
+  void readsTwoDifferentPathsThatDoNotExistAsDifferentDirectories(@TempDir Path dir) {
+    boolean same = GitCommands.sameDirectory(dir.resolve("one"), dir.resolve("other"));
 
-        assertThat(same).isFalse();
-    }
+    assertThat(same).isFalse();
+  }
 
-    @Test
-    void killsTheProcessesRootedInADirectoryOnEveryOfFourPassesWhenItWillNotGo(@TempDir Path root)
-            throws Exception {
-        Path dir = Files.createDirectories(root.resolve("held"));
-        Files.writeString(dir.resolve("kept.txt"), "held by a process");
-        Files.setPosixFilePermissions(dir, PosixFilePermissions.fromString("r-xr-xr-x"));
-        assumeFalse(Files.isWritable(dir));
-        WorktreeProcesses reaper = mock(WorktreeProcesses.class);
-        GitCommands git = new GitCommands(mock(Processes.class), reaper, path -> java.util.Optional.empty());
+  @Test
+  void killsTheProcessesRootedInADirectoryOnEveryOfFourPassesWhenItWillNotGo(@TempDir Path root)
+      throws Exception {
+    Path dir = Files.createDirectories(root.resolve("held"));
+    Files.writeString(dir.resolve("kept.txt"), "held by a process");
+    Files.setPosixFilePermissions(dir, PosixFilePermissions.fromString("r-xr-xr-x"));
+    assumeFalse(Files.isWritable(dir));
+    WorktreeProcesses reaper = mock(WorktreeProcesses.class);
+    GitCommands git =
+        new GitCommands(mock(Processes.class), reaper, path -> java.util.Optional.empty());
 
-        git.forceDeleteDir(dir);
+    git.forceDeleteDir(dir);
 
-        verify(reaper, times(4)).reap(dir);
-    }
+    verify(reaper, times(4)).reap(dir);
+  }
 
-    @Test
-    void letsASecondCallerIntoARepositoryOnceTheFirstActionReturned(@TempDir Path repo) throws Exception {
-        GitCommands git = new GitCommands(mock(Processes.class), mock(WorktreeProcesses.class), path -> java.util.Optional.empty());
-        CompletableFuture<String> first = new CompletableFuture<>();
-        Thread.startVirtualThread(() -> first.complete(git.locked(repo, () -> "first")));
-        first.get(5, TimeUnit.SECONDS);
-        CompletableFuture<String> second = new CompletableFuture<>();
-        Thread.startVirtualThread(() -> second.complete(git.locked(repo, () -> "second")));
+  @Test
+  void letsASecondCallerIntoARepositoryOnceTheFirstActionReturned(@TempDir Path repo)
+      throws Exception {
+    GitCommands git =
+        new GitCommands(
+            mock(Processes.class),
+            mock(WorktreeProcesses.class),
+            path -> java.util.Optional.empty());
+    CompletableFuture<String> first = new CompletableFuture<>();
+    Thread.startVirtualThread(() -> first.complete(git.locked(repo, () -> "first")));
+    first.get(5, TimeUnit.SECONDS);
+    CompletableFuture<String> second = new CompletableFuture<>();
+    Thread.startVirtualThread(() -> second.complete(git.locked(repo, () -> "second")));
 
-        String answered = second.get(5, TimeUnit.SECONDS);
+    String answered = second.get(5, TimeUnit.SECONDS);
 
-        assertThat(answered).isEqualTo("second");
-    }
+    assertThat(answered).isEqualTo("second");
+  }
 }

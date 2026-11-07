@@ -11,35 +11,39 @@ import java.util.Set;
 
 public final class TimelineFile {
 
-    public static final String RELAY = "relay";
-    public static final String WROTE_DEPLOY_BRANCH = "wrote-deploy-branch";
-    private static final String STAND = "stand";
+  public static final String RELAY = "relay";
+  public static final String WROTE_DEPLOY_BRANCH = "wrote-deploy-branch";
+  private static final String STAND = "stand";
 
-    private TimelineFile() {
-    }
+  private TimelineFile() {}
 
-    public static String relayLine(String task, List<String> steps) {
-        return RELAY + " " + task + " " + String.join(",", steps);
-    }
+  public static String relayLine(String task, List<String> steps) {
+    return RELAY + " " + task + " " + String.join(",", steps);
+  }
 
-    public static String wroteLine(String sha) {
-        return WROTE_DEPLOY_BRANCH + " " + sha;
-    }
+  public static String wroteLine(String sha) {
+    return WROTE_DEPLOY_BRANCH + " " + sha;
+  }
 
-    static RunRecord.Timeline read(Path file) {
-        List<RunRecord.Sample> samples = new ArrayList<>();
-        Set<String> wrote = new HashSet<>();
-        if (Files.isRegularFile(file)) {
-            StateFiles.lines(file).map(line -> line.split(" ")).filter(words -> words.length >= 3).forEach(words -> {
+  static RunRecord.Timeline read(Path file) {
+    List<RunRecord.Sample> samples = new ArrayList<>();
+    Set<String> wrote = new HashSet<>();
+    if (Files.isRegularFile(file)) {
+      StateFiles.lines(file)
+          .map(line -> line.split(" "))
+          .filter(words -> words.length >= 3)
+          .forEach(
+              words -> {
                 Instant at = Instant.parse(words[0]);
                 String line = String.join(" ", words);
                 if (!words[1].equals(STAND)) {
-                    samples.add(new RunRecord.Sample(at, words[1], TaskStatus.valueOf(words[2]), line));
+                  samples.add(
+                      new RunRecord.Sample(at, words[1], TaskStatus.valueOf(words[2]), line));
                 } else if (words[2].equals(WROTE_DEPLOY_BRANCH) && words.length >= 4) {
-                    wrote.add(words[3]);
+                  wrote.add(words[3]);
                 }
-            });
-        }
-        return new RunRecord.Timeline(List.copyOf(samples), List.of(), Set.copyOf(wrote));
+              });
     }
+    return new RunRecord.Timeline(List.copyOf(samples), List.of(), Set.copyOf(wrote));
+  }
 }

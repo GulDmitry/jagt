@@ -1,13 +1,7 @@
 package dev.jagt.orchestrator.surface.board;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,115 +12,142 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import javax.imageio.ImageIO;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 class BoardAssetsTest {
 
-    private static final Path STATIC = Path.of("src/main/resources/static");
-    private static final Pattern LOADED_FROM_OUTSIDE = Pattern.compile(
-            "(src|href)=[\"'](https?:)?//|import\\s*\\(?\\s*[\"'](https?:)?//|from\\s+[\"'](https?:)?//"
-                    + "|@import\\s+(url\\()?[\"']?(https?:)?//|url\\(\\s*[\"']?(https?:)?//|\"(https?:)?//[^\"]*\\.m?js\"");
+  private static final Path STATIC = Path.of("src/main/resources/static");
+  private static final Pattern LOADED_FROM_OUTSIDE =
+      Pattern.compile(
+          "(src|href)=[\"'](https?:)?//|import\\s*\\(?\\s*[\"'](https?:)?//|from\\s+[\"'](https?:)?//"
+              + "|@import\\s+(url\\()?[\"']?(https?:)?//|url\\(\\s*[\"']?(https?:)?//|\"(https?:)?//[^\"]*\\.m?js\"");
 
-    @ParameterizedTest
-    @CsvSource({
-            "preact.mjs, 3a3201e9ccef7d30ef1273427f1b17ef8323e464b2c8d73b4fd5636af730433e",
-            "hooks.mjs, 6cb79fe9959ad185b8b86134aff47c12fd20216b24837597b19be59a133d9947",
-            "htm.mjs, ab33dd3f38059b9be4d5f5350128eefb2356639c4e0bbe9d9e8b3ba75847e9e4",
-            "mermaid.min.js, 6484afc32872a3aa16cac9a76ba1816a1ed4cc870a6593cc2e17757750f518b2"})
-    void aVendoredLibraryIsTheExactFileTheRegistryServed(String file, String sha256)
-            throws IOException, NoSuchAlgorithmException {
-        byte[] bytes = Files.readAllBytes(STATIC.resolve("vendor").resolve(file));
+  @ParameterizedTest
+  @CsvSource({
+    "preact.mjs, 3a3201e9ccef7d30ef1273427f1b17ef8323e464b2c8d73b4fd5636af730433e",
+    "hooks.mjs, 6cb79fe9959ad185b8b86134aff47c12fd20216b24837597b19be59a133d9947",
+    "htm.mjs, ab33dd3f38059b9be4d5f5350128eefb2356639c4e0bbe9d9e8b3ba75847e9e4",
+    "mermaid.min.js, 6484afc32872a3aa16cac9a76ba1816a1ed4cc870a6593cc2e17757750f518b2"
+  })
+  void aVendoredLibraryIsTheExactFileTheRegistryServed(String file, String sha256)
+      throws IOException, NoSuchAlgorithmException {
+    byte[] bytes = Files.readAllBytes(STATIC.resolve("vendor").resolve(file));
 
-        String digest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+    String digest = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
 
-        assertThat(digest).isEqualTo(sha256);
-    }
+    assertThat(digest).isEqualTo(sha256);
+  }
 
-    @Test
-    void theBoardInstallsAsAStandaloneAppStartingAtItsOwnRoot() throws IOException {
-        JsonNode manifest = JsonMapper.builder().build().readTree(STATIC.resolve("manifest.webmanifest").toFile());
+  @Test
+  void theBoardInstallsAsAStandaloneAppStartingAtItsOwnRoot() throws IOException {
+    JsonNode manifest =
+        JsonMapper.builder().build().readTree(STATIC.resolve("manifest.webmanifest").toFile());
 
-        assertThat(manifest.path("name").asString()).isEqualTo("jagt");
-        assertThat(manifest.path("start_url").asString()).isEqualTo("/");
-        assertThat(manifest.path("display").asString()).isEqualTo("standalone");
-        assertThat(manifest.path("background_color").asString()).isEqualTo("#f6f7f9");
-        assertThat(manifest.path("theme_color").asString()).isEqualTo("#1d4ed8");
-    }
+    assertThat(manifest.path("name").asString()).isEqualTo("jagt");
+    assertThat(manifest.path("start_url").asString()).isEqualTo("/");
+    assertThat(manifest.path("display").asString()).isEqualTo("standalone");
+    assertThat(manifest.path("background_color").asString()).isEqualTo("#f6f7f9");
+    assertThat(manifest.path("theme_color").asString()).isEqualTo("#1d4ed8");
+  }
 
-    @ParameterizedTest
-    @CsvSource({"icon-192.png, 192", "icon-512.png, 512"})
-    void theManifestNamesAnIconOfTheSizeItDeclares(String file, int side) throws IOException {
-        JsonNode manifest = JsonMapper.builder().build().readTree(STATIC.resolve("manifest.webmanifest").toFile());
-        BufferedImage icon = ImageIO.read(STATIC.resolve(file).toFile());
+  @ParameterizedTest
+  @CsvSource({"icon-192.png, 192", "icon-512.png, 512"})
+  void theManifestNamesAnIconOfTheSizeItDeclares(String file, int side) throws IOException {
+    JsonNode manifest =
+        JsonMapper.builder().build().readTree(STATIC.resolve("manifest.webmanifest").toFile());
+    BufferedImage icon = ImageIO.read(STATIC.resolve(file).toFile());
 
-        assertThat(manifest.path("icons").valueStream().map(entry -> entry.path("src").asString())).contains(file);
-        assertThat(manifest.path("icons").valueStream()
+    assertThat(manifest.path("icons").valueStream().map(entry -> entry.path("src").asString()))
+        .contains(file);
+    assertThat(
+            manifest
+                .path("icons")
+                .valueStream()
                 .filter(entry -> file.equals(entry.path("src").asString()))
-                .map(entry -> entry.path("sizes").asString())).containsExactly(side + "x" + side);
-        assertThat(icon.getWidth()).isEqualTo(side);
-        assertThat(icon.getHeight()).isEqualTo(side);
+                .map(entry -> entry.path("sizes").asString()))
+        .containsExactly(side + "x" + side);
+    assertThat(icon.getWidth()).isEqualTo(side);
+    assertThat(icon.getHeight()).isEqualTo(side);
+  }
+
+  @Test
+  void theBoardsPageLinksItsManifest() throws IOException {
+    String index = Files.readString(STATIC.resolve("index.html"));
+
+    assertThat(index).contains("<link rel=\"manifest\" href=\"manifest.webmanifest\">");
+  }
+
+  @Test
+  void theBoardsCodeAndStylesWeighUnderOneHundredSixtyKilobytes() throws IOException {
+    long bytes;
+    try (Stream<Path> files = Files.walk(STATIC)) {
+      bytes =
+          files
+              .filter(Files::isRegularFile)
+              .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html|svg)$"))
+              .filter(path -> !path.endsWith("mermaid.min.js"))
+              .mapToLong(BoardAssetsTest::size)
+              .sum();
     }
 
-    @Test
-    void theBoardsPageLinksItsManifest() throws IOException {
-        String index = Files.readString(STATIC.resolve("index.html"));
+    assertThat(bytes).isLessThan(160 * 1024);
+  }
 
-        assertThat(index).contains("<link rel=\"manifest\" href=\"manifest.webmanifest\">");
+  @Test
+  void noPageScriptOrStyleLoadsAnythingFromOutsideTheJar() throws IOException {
+    List<Path> sources;
+    try (Stream<Path> files = Files.walk(STATIC)) {
+      sources =
+          files
+              .filter(Files::isRegularFile)
+              .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html)$"))
+              .toList();
     }
 
-    @Test
-    void theBoardsCodeAndStylesWeighUnderOneHundredSixtyKilobytes() throws IOException {
-        long bytes;
-        try (Stream<Path> files = Files.walk(STATIC)) {
-            bytes = files.filter(Files::isRegularFile)
-                    .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html|svg)$"))
-                    .filter(path -> !path.endsWith("mermaid.min.js"))
-                    .mapToLong(BoardAssetsTest::size).sum();
-        }
+    assertThat(sources)
+        .isNotEmpty()
+        .noneMatch(source -> LOADED_FROM_OUTSIDE.matcher(read(source)).find());
+  }
 
-        assertThat(bytes).isLessThan(160 * 1024);
+  @Test
+  void noBoardScriptFormatsATimeInTheBrowsersLocaleOrZone() throws IOException {
+    List<Path> scripts;
+    try (Stream<Path> files = Files.walk(STATIC)) {
+      scripts =
+          files
+              .filter(Files::isRegularFile)
+              .filter(path -> path.toString().matches(".*\\.m?js$"))
+              .filter(path -> !path.startsWith(STATIC.resolve("vendor")))
+              .toList();
     }
 
-    @Test
-    void noPageScriptOrStyleLoadsAnythingFromOutsideTheJar() throws IOException {
-        List<Path> sources;
-        try (Stream<Path> files = Files.walk(STATIC)) {
-            sources = files.filter(Files::isRegularFile)
-                    .filter(path -> path.toString().matches(".*\\.(js|mjs|css|html)$")).toList();
-        }
+    assertThat(scripts)
+        .isNotEmpty()
+        .noneMatch(script -> read(script).contains("toLocale"))
+        .noneMatch(
+            script ->
+                read(script).contains("Intl.DateTimeFormat")
+                    && !read(script).contains("timeZone: 'UTC'"));
+  }
 
-        assertThat(sources).isNotEmpty().noneMatch(source -> LOADED_FROM_OUTSIDE.matcher(read(source)).find());
+  private static long size(Path path) {
+    try {
+      return Files.size(path);
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
     }
+  }
 
-    @Test
-    void noBoardScriptFormatsATimeInTheBrowsersLocaleOrZone() throws IOException {
-        List<Path> scripts;
-        try (Stream<Path> files = Files.walk(STATIC)) {
-            scripts = files.filter(Files::isRegularFile)
-                    .filter(path -> path.toString().matches(".*\\.m?js$"))
-                    .filter(path -> !path.startsWith(STATIC.resolve("vendor"))).toList();
-        }
-
-        assertThat(scripts).isNotEmpty()
-                .noneMatch(script -> read(script).contains("toLocale"))
-                .noneMatch(script -> read(script).contains("Intl.DateTimeFormat")
-                        && !read(script).contains("timeZone: 'UTC'"));
+  private static String read(Path path) {
+    try {
+      return Files.readString(path);
+    } catch (IOException e) {
+      throw new IllegalStateException(e);
     }
-
-    private static long size(Path path) {
-        try {
-            return Files.size(path);
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    private static String read(Path path) {
-        try {
-            return Files.readString(path);
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-    }
+  }
 }

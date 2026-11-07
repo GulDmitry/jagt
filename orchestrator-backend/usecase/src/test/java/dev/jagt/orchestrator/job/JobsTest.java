@@ -1,35 +1,33 @@
 package dev.jagt.orchestrator.job;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.Answers.CALLS_REAL_METHODS;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
+
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import org.slf4j.LoggerFactory;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.mockito.ArgumentCaptor;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.Trigger;
-import org.springframework.scheduling.support.SimpleTriggerContext;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.type.filter.AssignableTypeFilter;
-import org.springframework.util.ClassUtils;
-
-import tools.jackson.databind.json.JsonMapper;
-
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
@@ -40,464 +38,582 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Stream;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Answers.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.withSettings;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AssignableTypeFilter;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.Trigger;
+import org.springframework.scheduling.support.SimpleTriggerContext;
+import org.springframework.util.ClassUtils;
+import tools.jackson.databind.json.JsonMapper;
 
 class JobsTest {
 
-    @Test
-    void schedulesNoJobBeforeTheStartHasPassedItsChecks() {
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("master-feed");
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
+  @Test
+  void schedulesNoJobBeforeTheStartHasPassedItsChecks() {
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("master-feed");
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
 
-        verify(scheduler, never()).schedule(any(Runnable.class), any(Trigger.class));
+    verify(scheduler, never()).schedule(any(Runnable.class), any(Trigger.class));
+  }
+
+  @Test
+  void runsJobsOnTheScheduleOnceTheStartHasPassedItsChecks() {
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("master-feed");
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
+    ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
+
+    jobs.start();
+    verify(scheduler).schedule(work.capture(), any(Trigger.class));
+    work.getValue().run();
+
+    verify(job).run();
+  }
+
+  @Test
+  void dueAtOnceTheFirstTimeItIsAsked() {
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("poll-reviews");
+    when(job.every()).thenReturn(Duration.ofMinutes(1));
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs =
+        new Jobs(
+            List.of(job),
+            scheduler,
+            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
+            mock(StateService.class));
+    ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
+    jobs.start();
+    verify(scheduler).schedule(any(Runnable.class), trigger.capture());
+
+    Instant next = trigger.getValue().nextExecution(new SimpleTriggerContext());
+
+    assertThat(next).isEqualTo(Instant.ofEpochMilli(1_000));
+  }
+
+  @Test
+  void stampsTheNextRunFromTheStartOfTheLastOne() {
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("poll-reviews");
+    when(job.every()).thenReturn(Duration.ofMinutes(1));
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
+    ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
+    jobs.start();
+    verify(scheduler).schedule(any(Runnable.class), trigger.capture());
+
+    Instant next =
+        trigger
+            .getValue()
+            .nextExecution(
+                new SimpleTriggerContext(
+                    Instant.ofEpochMilli(1_000),
+                    Instant.ofEpochMilli(1_000),
+                    Instant.ofEpochMilli(90_000)));
+
+    assertThat(next).isEqualTo(Instant.ofEpochMilli(61_000));
+  }
+
+  @Test
+  void reportsTheLastIntervalAJobNamedWhenItCanNoLongerSayIt() {
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("poll-reviews");
+    when(job.every())
+        .thenReturn(Duration.ofMinutes(1))
+        .thenThrow(new IllegalStateException("config unreadable"));
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
+    ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
+    jobs.start();
+    verify(scheduler).schedule(any(Runnable.class), trigger.capture());
+    trigger
+        .getValue()
+        .nextExecution(
+            new SimpleTriggerContext(
+                Instant.ofEpochMilli(1_000),
+                Instant.ofEpochMilli(1_000),
+                Instant.ofEpochMilli(1_500)));
+
+    assertThat(jobs.statuses(2_000))
+        .extracting(Jobs.Status::every)
+        .containsExactly(Duration.ofMinutes(1));
+  }
+
+  @Test
+  void runsAJobWithNoIntervalOnceAndThenReportsNoNextRun() {
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("scan-orphans");
+    when(job.every()).thenReturn(null);
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
+    ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
+    jobs.start();
+    verify(scheduler).schedule(any(Runnable.class), trigger.capture());
+
+    Instant next =
+        trigger
+            .getValue()
+            .nextExecution(
+                new SimpleTriggerContext(
+                    Instant.ofEpochMilli(1_000),
+                    Instant.ofEpochMilli(1_000),
+                    Instant.ofEpochMilli(1_500)));
+
+    assertThat(next).isNull();
+    assertThat(jobs.statuses(5_000_000))
+        .singleElement()
+        .extracting(Jobs.Status::nextRunAt)
+        .isNull();
+  }
+
+  @Test
+  void booksAFailedRunAgainstItsOwnJobAndStillRunsTheRest() {
+    Job failing = mock(Job.class);
+    when(failing.id()).thenReturn("archive-logs");
+    doThrow(new IllegalStateException("disk full")).when(failing).run();
+    Job healthy = mock(Job.class);
+    when(healthy.id()).thenReturn("poll-reviews");
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs =
+        new Jobs(List.of(failing, healthy), scheduler, Clock.systemUTC(), mock(StateService.class));
+    ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
+    jobs.start();
+    verify(scheduler, times(2)).schedule(work.capture(), any(Trigger.class));
+
+    work.getAllValues().forEach(Runnable::run);
+
+    verify(healthy).run();
+    assertThat(jobs.statuses(1_000))
+        .extracting(Jobs.Status::id, Jobs.Status::lastError)
+        .containsExactly(
+            tuple("archive-logs", "java.lang.IllegalStateException: disk full"),
+            tuple("poll-reviews", null));
+  }
+
+  @Test
+  @ResourceLock(Resources.GLOBAL)
+  void logsNoErrorForARunWhoseCommandStoppedWithJagt() {
+    Job stopping = mock(Job.class);
+    when(stopping.id()).thenReturn("master-review");
+    doThrow(new dev.jagt.orchestrator.port.Processes.Stopped(List.of("claude")))
+        .when(stopping)
+        .run();
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs = new Jobs(List.of(stopping), scheduler, Clock.systemUTC(), mock(StateService.class));
+    ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
+    jobs.start();
+    verify(scheduler).schedule(work.capture(), any(Trigger.class));
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    Logger jobsLog = (Logger) LoggerFactory.getLogger(Jobs.class);
+    jobsLog.addAppender(log);
+
+    work.getValue().run();
+
+    jobsLog.detachAppender(log);
+    assertThat(log.list).filteredOn(event -> event.getLevel() == Level.ERROR).isEmpty();
+  }
+
+  @Test
+  @ResourceLock(Resources.GLOBAL)
+  void logsAJobFailingTheSameWayOnEveryRunAsAnErrorOnce() {
+    Job failing = mock(Job.class);
+    when(failing.id()).thenReturn("feed-every-tick");
+    doThrow(new IllegalStateException("no tmux server")).when(failing).run();
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs = new Jobs(List.of(failing), scheduler, Clock.systemUTC(), mock(StateService.class));
+    ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
+    jobs.start();
+    verify(scheduler).schedule(work.capture(), any(Trigger.class));
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    Logger jobsLog = (Logger) LoggerFactory.getLogger(Jobs.class);
+    jobsLog.addAppender(log);
+
+    work.getValue().run();
+    work.getValue().run();
+    work.getValue().run();
+
+    jobsLog.detachAppender(log);
+    assertThat(log.list).filteredOn(event -> event.getLevel() == Level.ERROR).hasSize(1);
+  }
+
+  @Test
+  @ResourceLock(Resources.GLOBAL)
+  void reportsAFailingJobRecoveredOnItsFirstRunThatDoesNotThrow() {
+    Job flaky = mock(Job.class);
+    when(flaky.id()).thenReturn("feed-recovering");
+    doThrow(new IllegalStateException("no tmux server")).doNothing().when(flaky).run();
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs = new Jobs(List.of(flaky), scheduler, Clock.systemUTC(), mock(StateService.class));
+    ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
+    jobs.start();
+    verify(scheduler).schedule(work.capture(), any(Trigger.class));
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    Logger jobsLog = (Logger) LoggerFactory.getLogger(Jobs.class);
+    jobsLog.addAppender(log);
+
+    work.getValue().run();
+    work.getValue().run();
+
+    jobsLog.detachAppender(log);
+    assertThat(log.list)
+        .extracting(ILoggingEvent::getMessage)
+        .containsExactly("job failed", "job recovered");
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "TASKS,your tasks",
+    "MASTER,the master",
+    "TRACKER,the tracker",
+    "HOUSEKEEPING,housekeeping"
+  })
+  void reportsWhomAJobWorksForByTheLabelOfWhatItDeclares(Job.Serves serves, String label) {
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("poll-reviews");
+    when(job.serves()).thenReturn(serves);
+    Jobs jobs =
+        new Jobs(
+            List.of(job), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class));
+
+    assertThat(jobs.statuses(1_000))
+        .singleElement()
+        .extracting(Jobs.Status::serves)
+        .isEqualTo(label);
+  }
+
+  @Test
+  void refusesTwoJobsDeclaringTheSameId() {
+    Job first = mock(Job.class);
+    when(first.id()).thenReturn("poll-reviews");
+    Job second = mock(Job.class);
+    when(second.id()).thenReturn("poll-reviews");
+
+    assertThatThrownBy(
+            () ->
+                new Jobs(
+                    List.of(first, second),
+                    mock(TaskScheduler.class),
+                    Clock.systemUTC(),
+                    mock(StateService.class)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Two jobs declare the id 'poll-reviews'");
+  }
+
+  @Test
+  void refusesToStartWithAJobThatNamesItselfNothing() {
+    Job nameless = mock(Job.class);
+    when(nameless.id()).thenReturn(" ");
+
+    assertThatThrownBy(
+            () ->
+                new Jobs(
+                    List.of(nameless),
+                    mock(TaskScheduler.class),
+                    Clock.systemUTC(),
+                    mock(StateService.class)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("declares no id");
+  }
+
+  @Test
+  void reportsAJobThatHasNeverRunAsSuch() {
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("poll-reviews");
+    when(job.describe()).thenReturn("reads open review requests");
+    when(job.every()).thenReturn(Duration.ofMinutes(1));
+    Jobs jobs =
+        new Jobs(
+            List.of(job), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class));
+
+    assertThat(jobs.statuses(1_000))
+        .extracting(
+            Jobs.Status::id,
+            Jobs.Status::describe,
+            Jobs.Status::every,
+            Jobs.Status::lastStartedAt,
+            Jobs.Status::lastError,
+            Jobs.Status::running)
+        .containsExactly(
+            tuple(
+                "poll-reviews",
+                "reads open review requests",
+                Duration.ofMinutes(1),
+                null,
+                null,
+                false));
+  }
+
+  @Test
+  void summarisesTheSoonestRunOfAnythingUnattended() {
+    Job soon = mock(Job.class);
+    when(soon.id()).thenReturn("poll-reviews");
+    when(soon.every()).thenReturn(Duration.ofMinutes(1));
+    Job later = mock(Job.class);
+    when(later.id()).thenReturn("clean-recents");
+    when(later.every()).thenReturn(Duration.ofHours(1));
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs =
+        new Jobs(List.of(soon, later), scheduler, Clock.systemUTC(), mock(StateService.class));
+    ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
+    jobs.start();
+    verify(scheduler, times(2)).schedule(any(Runnable.class), trigger.capture());
+    SimpleTriggerContext ranAtOneSecond =
+        new SimpleTriggerContext(
+            Instant.ofEpochMilli(1_000), Instant.ofEpochMilli(1_000), Instant.ofEpochMilli(1_500));
+
+    trigger.getAllValues().forEach(each -> each.nextExecution(ranAtOneSecond));
+
+    assertThat(jobs.summary(1_000)).isEqualTo(new Jobs.Summary(2, 61_000L, 0));
+  }
+
+  @Test
+  void summaryCountsAJobWhoseLastRunThrew() {
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("poll-reviews");
+    doThrow(new IllegalStateException("host unreachable")).when(job).run();
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
+    ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
+    jobs.start();
+    verify(scheduler).schedule(work.capture(), any(Trigger.class));
+
+    work.getValue().run();
+
+    assertThat(jobs.summary(1_000).failing()).isEqualTo(1);
+  }
+
+  @Test
+  void retriesAJobThatCouldNotSayHowOftenItWantsToRunOneSecondAfterItsStart() {
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("poll-reviews");
+    when(job.every()).thenThrow(new IllegalStateException("config unreadable"));
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
+    ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
+    jobs.start();
+    verify(scheduler).schedule(any(Runnable.class), trigger.capture());
+
+    Instant next =
+        trigger
+            .getValue()
+            .nextExecution(
+                new SimpleTriggerContext(
+                    Instant.ofEpochMilli(1_000),
+                    Instant.ofEpochMilli(1_000),
+                    Instant.ofEpochMilli(1_500)));
+
+    assertThat(next).isEqualTo(Instant.ofEpochMilli(2_000));
+    assertThat(jobs.statuses(1_000))
+        .singleElement()
+        .extracting(Jobs.Status::lastError)
+        .isEqualTo("java.lang.IllegalStateException: config unreadable");
+  }
+
+  @Test
+  void reportsAJobThatCannotSayHowOftenItWantsToRunAlongsideTheRest() {
+    Job mute = mock(Job.class);
+    when(mute.id()).thenReturn("poll-reviews");
+    when(mute.every()).thenThrow(new IllegalStateException("config unreadable"));
+    Job healthy = mock(Job.class);
+    when(healthy.id()).thenReturn("clean-recents");
+    when(healthy.every()).thenReturn(Duration.ofHours(1));
+    Jobs jobs =
+        new Jobs(
+            List.of(mute, healthy),
+            mock(TaskScheduler.class),
+            Clock.systemUTC(),
+            mock(StateService.class));
+
+    assertThat(jobs.statuses(1_000))
+        .extracting(Jobs.Status::id, Jobs.Status::every)
+        .containsExactly(tuple("poll-reviews", null), tuple("clean-recents", Duration.ofHours(1)));
+  }
+
+  @Test
+  void runsAJobAskedForNowAtOnceInsteadOfAtItsInterval(@TempDir Path root) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("poll-reviews");
+    when(job.every()).thenReturn(Duration.ofMinutes(10));
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    ScheduledFuture<?> waiting = mock(ScheduledFuture.class);
+    doReturn(waiting).when(scheduler).schedule(any(Runnable.class), any(Trigger.class));
+    Jobs jobs =
+        new Jobs(
+            List.of(job),
+            scheduler,
+            Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC),
+            state);
+    jobs.start();
+
+    jobs.runNow("poll-reviews");
+
+    ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
+    verify(waiting).cancel(false);
+    verify(scheduler, times(2)).schedule(any(Runnable.class), trigger.capture());
+    assertThat(trigger.getValue().nextExecution(new SimpleTriggerContext()))
+        .isEqualTo(Instant.ofEpochMilli(5_000));
+  }
+
+  @Test
+  void refusesToRunNowAJobNobodyDeclared() {
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("poll-reviews");
+    Jobs jobs =
+        new Jobs(
+            List.of(job), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class));
+
+    assertThatThrownBy(() -> jobs.runNow("archive-logs"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("No job 'archive-logs'")
+        .hasMessageContaining("poll-reviews");
+  }
+
+  @Test
+  void refusesToRunNowAJobThatIsAlreadyRunningAndLeavesItsScheduleAlone() {
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("poll-reviews");
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
+    ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
+    jobs.start();
+    verify(scheduler).schedule(work.capture(), any(Trigger.class));
+    doAnswer(
+            running -> {
+              assertThatThrownBy(() -> jobs.runNow("poll-reviews"))
+                  .isInstanceOf(IllegalStateException.class)
+                  .hasMessageContaining("'poll-reviews' is running now");
+              return null;
+            })
+        .when(job)
+        .run();
+
+    work.getValue().run();
+
+    verify(job).run();
+    verify(scheduler, times(1)).schedule(any(Runnable.class), any(Trigger.class));
+  }
+
+  @Test
+  void neverStartsAJobWhileItsPreviousRunIsStillGoing() {
+    Job job = mock(Job.class);
+    when(job.id()).thenReturn("poll-reviews");
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
+    ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
+    jobs.start();
+    verify(scheduler).schedule(work.capture(), any(Trigger.class));
+    doAnswer(
+            running -> {
+              work.getValue().run();
+              return null;
+            })
+        .when(job)
+        .run();
+
+    work.getValue().run();
+
+    verify(job, times(1)).run();
+  }
+
+  @ParameterizedTest
+  @MethodSource("taskJobs")
+  void neverHandsATaskJobATaskInAStatusItsWatchLeavesOut(Class<? extends TaskJob> type) {
+    TaskJob job = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
+    Map<String, TaskState> tasks = new LinkedHashMap<>();
+    for (TaskStatus status : TaskStatus.values()) {
+      tasks.put("ABC-" + status.ordinal(), TaskState.builder("proj", "/wt", status).build());
     }
 
-    @Test
-    void runsJobsOnTheScheduleOnceTheStartHasPassedItsChecks() {
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("master-feed");
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
-        ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
-
-        jobs.start();
-        verify(scheduler).schedule(work.capture(), any(Trigger.class));
-        work.getValue().run();
-
-        verify(job).run();
-    }
-
-    @Test
-    void dueAtOnceTheFirstTimeItIsAsked() {
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("poll-reviews");
-        when(job.every()).thenReturn(Duration.ofMinutes(1));
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), mock(StateService.class));
-        ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
-        jobs.start();
-        verify(scheduler).schedule(any(Runnable.class), trigger.capture());
-
-        Instant next = trigger.getValue().nextExecution(new SimpleTriggerContext());
-
-        assertThat(next).isEqualTo(Instant.ofEpochMilli(1_000));
-    }
-
-    @Test
-    void stampsTheNextRunFromTheStartOfTheLastOne() {
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("poll-reviews");
-        when(job.every()).thenReturn(Duration.ofMinutes(1));
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
-        ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
-        jobs.start();
-        verify(scheduler).schedule(any(Runnable.class), trigger.capture());
-
-        Instant next = trigger.getValue().nextExecution(new SimpleTriggerContext(Instant.ofEpochMilli(1_000),
-                Instant.ofEpochMilli(1_000), Instant.ofEpochMilli(90_000)));
-
-        assertThat(next).isEqualTo(Instant.ofEpochMilli(61_000));
-    }
-
-    @Test
-    void reportsTheLastIntervalAJobNamedWhenItCanNoLongerSayIt() {
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("poll-reviews");
-        when(job.every()).thenReturn(Duration.ofMinutes(1)).thenThrow(new IllegalStateException("config unreadable"));
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
-        ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
-        jobs.start();
-        verify(scheduler).schedule(any(Runnable.class), trigger.capture());
-        trigger.getValue().nextExecution(new SimpleTriggerContext(Instant.ofEpochMilli(1_000),
-                Instant.ofEpochMilli(1_000), Instant.ofEpochMilli(1_500)));
-
-        assertThat(jobs.statuses(2_000)).extracting(Jobs.Status::every).containsExactly(Duration.ofMinutes(1));
-    }
-
-    @Test
-    void runsAJobWithNoIntervalOnceAndThenReportsNoNextRun() {
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("scan-orphans");
-        when(job.every()).thenReturn(null);
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
-        ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
-        jobs.start();
-        verify(scheduler).schedule(any(Runnable.class), trigger.capture());
-
-        Instant next = trigger.getValue().nextExecution(new SimpleTriggerContext(Instant.ofEpochMilli(1_000),
-                Instant.ofEpochMilli(1_000), Instant.ofEpochMilli(1_500)));
-
-        assertThat(next).isNull();
-        assertThat(jobs.statuses(5_000_000)).singleElement().extracting(Jobs.Status::nextRunAt).isNull();
-    }
-
-    @Test
-    void booksAFailedRunAgainstItsOwnJobAndStillRunsTheRest() {
-        Job failing = mock(Job.class);
-        when(failing.id()).thenReturn("archive-logs");
-        doThrow(new IllegalStateException("disk full")).when(failing).run();
-        Job healthy = mock(Job.class);
-        when(healthy.id()).thenReturn("poll-reviews");
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(failing, healthy), scheduler, Clock.systemUTC(), mock(StateService.class));
-        ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
-        jobs.start();
-        verify(scheduler, times(2)).schedule(work.capture(), any(Trigger.class));
-
-        work.getAllValues().forEach(Runnable::run);
-
-        verify(healthy).run();
-        assertThat(jobs.statuses(1_000)).extracting(Jobs.Status::id, Jobs.Status::lastError)
-                .containsExactly(tuple("archive-logs", "java.lang.IllegalStateException: disk full"),
-                        tuple("poll-reviews", null));
-    }
-
-    @Test
-    @ResourceLock(Resources.GLOBAL)
-    void logsNoErrorForARunWhoseCommandStoppedWithJagt() {
-        Job stopping = mock(Job.class);
-        when(stopping.id()).thenReturn("master-review");
-        doThrow(new dev.jagt.orchestrator.port.Processes.Stopped(List.of("claude"))).when(stopping).run();
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(stopping), scheduler, Clock.systemUTC(), mock(StateService.class));
-        ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
-        jobs.start();
-        verify(scheduler).schedule(work.capture(), any(Trigger.class));
-        ListAppender<ILoggingEvent> log = new ListAppender<>();
-        log.start();
-        Logger jobsLog = (Logger) LoggerFactory.getLogger(Jobs.class);
-        jobsLog.addAppender(log);
-
-        work.getValue().run();
-
-        jobsLog.detachAppender(log);
-        assertThat(log.list).filteredOn(event -> event.getLevel() == Level.ERROR).isEmpty();
-    }
-
-    @Test
-    @ResourceLock(Resources.GLOBAL)
-    void logsAJobFailingTheSameWayOnEveryRunAsAnErrorOnce() {
-        Job failing = mock(Job.class);
-        when(failing.id()).thenReturn("feed-every-tick");
-        doThrow(new IllegalStateException("no tmux server")).when(failing).run();
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(failing), scheduler, Clock.systemUTC(), mock(StateService.class));
-        ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
-        jobs.start();
-        verify(scheduler).schedule(work.capture(), any(Trigger.class));
-        ListAppender<ILoggingEvent> log = new ListAppender<>();
-        log.start();
-        Logger jobsLog = (Logger) LoggerFactory.getLogger(Jobs.class);
-        jobsLog.addAppender(log);
-
-        work.getValue().run();
-        work.getValue().run();
-        work.getValue().run();
-
-        jobsLog.detachAppender(log);
-        assertThat(log.list).filteredOn(event -> event.getLevel() == Level.ERROR).hasSize(1);
-    }
-
-    @Test
-    @ResourceLock(Resources.GLOBAL)
-    void reportsAFailingJobRecoveredOnItsFirstRunThatDoesNotThrow() {
-        Job flaky = mock(Job.class);
-        when(flaky.id()).thenReturn("feed-recovering");
-        doThrow(new IllegalStateException("no tmux server")).doNothing().when(flaky).run();
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(flaky), scheduler, Clock.systemUTC(), mock(StateService.class));
-        ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
-        jobs.start();
-        verify(scheduler).schedule(work.capture(), any(Trigger.class));
-        ListAppender<ILoggingEvent> log = new ListAppender<>();
-        log.start();
-        Logger jobsLog = (Logger) LoggerFactory.getLogger(Jobs.class);
-        jobsLog.addAppender(log);
-
-        work.getValue().run();
-        work.getValue().run();
-
-        jobsLog.detachAppender(log);
-        assertThat(log.list).extracting(ILoggingEvent::getMessage).containsExactly("job failed", "job recovered");
-    }
-
-    @ParameterizedTest
-    @CsvSource({"TASKS,your tasks", "MASTER,the master", "TRACKER,the tracker", "HOUSEKEEPING,housekeeping"})
-    void reportsWhomAJobWorksForByTheLabelOfWhatItDeclares(Job.Serves serves, String label) {
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("poll-reviews");
-        when(job.serves()).thenReturn(serves);
-        Jobs jobs = new Jobs(List.of(job), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class));
-
-        assertThat(jobs.statuses(1_000)).singleElement().extracting(Jobs.Status::serves).isEqualTo(label);
-    }
-
-    @Test
-    void refusesTwoJobsDeclaringTheSameId() {
-        Job first = mock(Job.class);
-        when(first.id()).thenReturn("poll-reviews");
-        Job second = mock(Job.class);
-        when(second.id()).thenReturn("poll-reviews");
-
-        assertThatThrownBy(() -> new Jobs(List.of(first, second), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class)))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Two jobs declare the id 'poll-reviews'");
-    }
-
-    @Test
-    void refusesToStartWithAJobThatNamesItselfNothing() {
-        Job nameless = mock(Job.class);
-        when(nameless.id()).thenReturn(" ");
-
-        assertThatThrownBy(() -> new Jobs(List.of(nameless), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class)))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("declares no id");
-    }
-
-    @Test
-    void reportsAJobThatHasNeverRunAsSuch() {
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("poll-reviews");
-        when(job.describe()).thenReturn("reads open review requests");
-        when(job.every()).thenReturn(Duration.ofMinutes(1));
-        Jobs jobs = new Jobs(List.of(job), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class));
-
-        assertThat(jobs.statuses(1_000))
-                .extracting(Jobs.Status::id, Jobs.Status::describe, Jobs.Status::every,
-                        Jobs.Status::lastStartedAt,
-                        Jobs.Status::lastError, Jobs.Status::running)
-                .containsExactly(tuple("poll-reviews", "reads open review requests", Duration.ofMinutes(1), null,
-                        null, false));
-    }
-
-    @Test
-    void summarisesTheSoonestRunOfAnythingUnattended() {
-        Job soon = mock(Job.class);
-        when(soon.id()).thenReturn("poll-reviews");
-        when(soon.every()).thenReturn(Duration.ofMinutes(1));
-        Job later = mock(Job.class);
-        when(later.id()).thenReturn("clean-recents");
-        when(later.every()).thenReturn(Duration.ofHours(1));
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(soon, later), scheduler, Clock.systemUTC(), mock(StateService.class));
-        ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
-        jobs.start();
-        verify(scheduler, times(2)).schedule(any(Runnable.class), trigger.capture());
-        SimpleTriggerContext ranAtOneSecond = new SimpleTriggerContext(Instant.ofEpochMilli(1_000),
-                Instant.ofEpochMilli(1_000), Instant.ofEpochMilli(1_500));
-
-        trigger.getAllValues().forEach(each -> each.nextExecution(ranAtOneSecond));
-
-        assertThat(jobs.summary(1_000)).isEqualTo(new Jobs.Summary(2, 61_000L, 0));
-    }
-
-    @Test
-    void summaryCountsAJobWhoseLastRunThrew() {
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("poll-reviews");
-        doThrow(new IllegalStateException("host unreachable")).when(job).run();
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
-        ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
-        jobs.start();
-        verify(scheduler).schedule(work.capture(), any(Trigger.class));
-
-        work.getValue().run();
-
-        assertThat(jobs.summary(1_000).failing()).isEqualTo(1);
-    }
-
-    @Test
-    void retriesAJobThatCouldNotSayHowOftenItWantsToRunOneSecondAfterItsStart() {
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("poll-reviews");
-        when(job.every()).thenThrow(new IllegalStateException("config unreadable"));
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
-        ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
-        jobs.start();
-        verify(scheduler).schedule(any(Runnable.class), trigger.capture());
-
-        Instant next = trigger.getValue().nextExecution(new SimpleTriggerContext(Instant.ofEpochMilli(1_000),
-                Instant.ofEpochMilli(1_000), Instant.ofEpochMilli(1_500)));
-
-        assertThat(next).isEqualTo(Instant.ofEpochMilli(2_000));
-        assertThat(jobs.statuses(1_000)).singleElement().extracting(Jobs.Status::lastError)
-                .isEqualTo("java.lang.IllegalStateException: config unreadable");
-    }
-
-    @Test
-    void reportsAJobThatCannotSayHowOftenItWantsToRunAlongsideTheRest() {
-        Job mute = mock(Job.class);
-        when(mute.id()).thenReturn("poll-reviews");
-        when(mute.every()).thenThrow(new IllegalStateException("config unreadable"));
-        Job healthy = mock(Job.class);
-        when(healthy.id()).thenReturn("clean-recents");
-        when(healthy.every()).thenReturn(Duration.ofHours(1));
-        Jobs jobs = new Jobs(List.of(mute, healthy), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class));
-
-        assertThat(jobs.statuses(1_000)).extracting(Jobs.Status::id, Jobs.Status::every)
-                .containsExactly(tuple("poll-reviews", null), tuple("clean-recents", Duration.ofHours(1)));
-    }
-
-    @Test
-    void runsAJobAskedForNowAtOnceInsteadOfAtItsInterval(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("poll-reviews");
-        when(job.every()).thenReturn(Duration.ofMinutes(10));
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        ScheduledFuture<?> waiting = mock(ScheduledFuture.class);
-        doReturn(waiting).when(scheduler).schedule(any(Runnable.class), any(Trigger.class));
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC), state);
-        jobs.start();
-
-        jobs.runNow("poll-reviews");
-
-        ArgumentCaptor<Trigger> trigger = ArgumentCaptor.captor();
-        verify(waiting).cancel(false);
-        verify(scheduler, times(2)).schedule(any(Runnable.class), trigger.capture());
-        assertThat(trigger.getValue().nextExecution(new SimpleTriggerContext()))
-                .isEqualTo(Instant.ofEpochMilli(5_000));
-    }
-
-    @Test
-    void refusesToRunNowAJobNobodyDeclared() {
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("poll-reviews");
-        Jobs jobs = new Jobs(List.of(job), mock(TaskScheduler.class), Clock.systemUTC(), mock(StateService.class));
-
-        assertThatThrownBy(() -> jobs.runNow("archive-logs"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("No job 'archive-logs'")
-                .hasMessageContaining("poll-reviews");
-    }
-
-    @Test
-    void refusesToRunNowAJobThatIsAlreadyRunningAndLeavesItsScheduleAlone() {
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("poll-reviews");
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
-        ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
-        jobs.start();
-        verify(scheduler).schedule(work.capture(), any(Trigger.class));
-        doAnswer(running -> {
-            assertThatThrownBy(() -> jobs.runNow("poll-reviews"))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("'poll-reviews' is running now");
-            return null;
-        }).when(job).run();
-
-        work.getValue().run();
-
-        verify(job).run();
-        verify(scheduler, times(1)).schedule(any(Runnable.class), any(Trigger.class));
-    }
-
-    @Test
-    void neverStartsAJobWhileItsPreviousRunIsStillGoing() {
-        Job job = mock(Job.class);
-        when(job.id()).thenReturn("poll-reviews");
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), mock(StateService.class));
-        ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
-        jobs.start();
-        verify(scheduler).schedule(work.capture(), any(Trigger.class));
-        doAnswer(running -> {
-            work.getValue().run();
-            return null;
-        }).when(job).run();
-
-        work.getValue().run();
-
-        verify(job, times(1)).run();
-    }
-
-    @ParameterizedTest
-    @MethodSource("taskJobs")
-    void neverHandsATaskJobATaskInAStatusItsWatchLeavesOut(Class<? extends TaskJob> type) {
-        TaskJob job = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
-        Map<String, TaskState> tasks = new LinkedHashMap<>();
-        for (TaskStatus status : TaskStatus.values()) {
-            tasks.put("ABC-" + status.ordinal(), TaskState.builder("proj", "/wt", status).build());
-        }
-
-        List<TaskState> reached = reachedBy(job, tasks);
-
-        assertThat(reached).allMatch(task -> job.watch().statuses().contains(task.status()));
-    }
-
-    @ParameterizedTest
-    @MethodSource("taskJobsByStop")
-    void handsAStoppedTaskOnlyToATaskJobWhoseWatchNamesItsStopKind(Class<? extends TaskJob> type,
-                                                                    TaskStop.Trigger trigger) {
-        TaskJob job = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
-        Map<String, TaskState> tasks = Map.of("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .stop(new TaskStop(trigger, 1, "evidence")).build());
-
-        List<TaskState> reached = reachedBy(job, tasks);
-
-        assertThat(reached).allMatch(task -> job.watch().stops().contains(StopKind.of(task.stop())));
-    }
-
-    @ParameterizedTest
-    @MethodSource("taskJobs")
-    void neverAdmitsAPausedTaskToATaskJob(Class<? extends TaskJob> type) {
-        TaskJob job = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
-        TaskState paused = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .stop(new TaskStop(TaskStop.Trigger.PAUSE, 1, "you paused it")).build();
-
-        assertThat(job.watch().admits(paused)).isFalse();
-    }
-
-    private static List<TaskState> reachedBy(TaskJob job, Map<String, TaskState> tasks) {
-        doReturn("job").when(job).id();
-        doNothing().when(job).run(any(String.class), any(TaskState.class));
-        StateService state = mock(StateService.class);
-        when(state.tasks()).thenReturn(tasks);
-        TaskScheduler scheduler = mock(TaskScheduler.class);
-        ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
-        Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), state);
-        jobs.start();
-        verify(scheduler).schedule(work.capture(), any(Trigger.class));
-        work.getValue().run();
-        ArgumentCaptor<TaskState> reached = ArgumentCaptor.captor();
-        verify(job, atLeast(0)).run(any(String.class), reached.capture());
-        return reached.getAllValues();
-    }
-
-    static Stream<Class<?>> taskJobs() {
-        ClassPathScanningCandidateComponentProvider scan = new ClassPathScanningCandidateComponentProvider(false);
-        scan.addIncludeFilter(new AssignableTypeFilter(TaskJob.class));
-        return scan.findCandidateComponents("dev.jagt.orchestrator.job").stream()
-                .map(found -> ClassUtils.resolveClassName(found.getBeanClassName(), null));
-    }
-
-    static Stream<Arguments> taskJobsByStop() {
-        return taskJobs().flatMap(type -> Stream.of(TaskStop.Trigger.CHECKS, TaskStop.Trigger.UNDELIVERED,
-                TaskStop.Trigger.WAIT, TaskStop.Trigger.PACE).map(trigger -> Arguments.of(type, trigger)));
-    }
+    List<TaskState> reached = reachedBy(job, tasks);
+
+    assertThat(reached).allMatch(task -> job.watch().statuses().contains(task.status()));
+  }
+
+  @ParameterizedTest
+  @MethodSource("taskJobsByStop")
+  void handsAStoppedTaskOnlyToATaskJobWhoseWatchNamesItsStopKind(
+      Class<? extends TaskJob> type, TaskStop.Trigger trigger) {
+    TaskJob job = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
+    Map<String, TaskState> tasks =
+        Map.of(
+            "ABC-42",
+            TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .stop(new TaskStop(trigger, 1, "evidence"))
+                .build());
+
+    List<TaskState> reached = reachedBy(job, tasks);
+
+    assertThat(reached).allMatch(task -> job.watch().stops().contains(StopKind.of(task.stop())));
+  }
+
+  @ParameterizedTest
+  @MethodSource("taskJobs")
+  void neverAdmitsAPausedTaskToATaskJob(Class<? extends TaskJob> type) {
+    TaskJob job = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
+    TaskState paused =
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .stop(new TaskStop(TaskStop.Trigger.PAUSE, 1, "you paused it"))
+            .build();
+
+    assertThat(job.watch().admits(paused)).isFalse();
+  }
+
+  private static List<TaskState> reachedBy(TaskJob job, Map<String, TaskState> tasks) {
+    doReturn("job").when(job).id();
+    doNothing().when(job).run(any(String.class), any(TaskState.class));
+    StateService state = mock(StateService.class);
+    when(state.tasks()).thenReturn(tasks);
+    TaskScheduler scheduler = mock(TaskScheduler.class);
+    ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
+    Jobs jobs = new Jobs(List.of(job), scheduler, Clock.systemUTC(), state);
+    jobs.start();
+    verify(scheduler).schedule(work.capture(), any(Trigger.class));
+    work.getValue().run();
+    ArgumentCaptor<TaskState> reached = ArgumentCaptor.captor();
+    verify(job, atLeast(0)).run(any(String.class), reached.capture());
+    return reached.getAllValues();
+  }
+
+  static Stream<Class<?>> taskJobs() {
+    ClassPathScanningCandidateComponentProvider scan =
+        new ClassPathScanningCandidateComponentProvider(false);
+    scan.addIncludeFilter(new AssignableTypeFilter(TaskJob.class));
+    return scan.findCandidateComponents("dev.jagt.orchestrator.job").stream()
+        .map(found -> ClassUtils.resolveClassName(found.getBeanClassName(), null));
+  }
+
+  static Stream<Arguments> taskJobsByStop() {
+    return taskJobs()
+        .flatMap(
+            type ->
+                Stream.of(
+                        TaskStop.Trigger.CHECKS,
+                        TaskStop.Trigger.UNDELIVERED,
+                        TaskStop.Trigger.WAIT,
+                        TaskStop.Trigger.PACE)
+                    .map(trigger -> Arguments.of(type, trigger)));
+  }
 }

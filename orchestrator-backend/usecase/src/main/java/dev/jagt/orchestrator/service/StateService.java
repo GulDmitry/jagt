@@ -1,376 +1,412 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.AtomicFiles;
-import java.nio.charset.StandardCharsets;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.AtomicFiles;
 import dev.jagt.orchestrator.task.ForeignLinks;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
-
 /**
- * SSOT for all active tasks. Every mutation rewrites the file atomically, which protects against a TORN file and
- * not against a bad one, so every write keeps the previous version as {@code state.json.bak} and a read that cannot
- * parse the primary recovers from it. It NEVER starts empty over an existing file.
+ * SSOT for all active tasks. Every mutation rewrites the file atomically, which protects against a
+ * TORN file and not against a bad one, so every write keeps the previous version as {@code
+ * state.json.bak} and a read that cannot parse the primary recovers from it. It NEVER starts empty
+ * over an existing file.
  */
 @Service
 @Slf4j
 public class StateService implements dev.jagt.orchestrator.port.TaskStore {
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record StateFile(Map<String, TaskState> tasks) {
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record StateFile(Map<String, TaskState> tasks) {
 
-        public StateFile {
-            tasks = tasks == null ? new LinkedHashMap<>() : new LinkedHashMap<>(tasks);
-        }
+    public StateFile {
+      tasks = tasks == null ? new LinkedHashMap<>() : new LinkedHashMap<>(tasks);
     }
+  }
 
-    private final ObjectMapper mapper;
-    private final Path stateFile;
-    private final Path backupFile;
-    private final Path corruptFile;
-    private final Object lock = new Object();
-    private final List<Consumer<StateFile>> changeListeners = new CopyOnWriteArrayList<>();
-    /**
-     * The last parse, keyed by the file version it came from: re-parsing per accessor lets one decision straddle
-     * two versions of the file. Handed out as a COPY, always — callers mutate the task map in place.
-     */
-    private @Nullable StateFile cached;
-    private @Nullable FileVersion cachedVersion;
+  private final ObjectMapper mapper;
+  private final Path stateFile;
+  private final Path backupFile;
+  private final Path corruptFile;
+  private final Object lock = new Object();
+  private final List<Consumer<StateFile>> changeListeners = new CopyOnWriteArrayList<>();
 
-    public StateService(ObjectMapper mapper, OrchestratorPaths paths) {
-        // A missing primitive defaults to 0/false instead of failing the whole load: adding a `long` to
-        // TaskState would otherwise make every older state.json unreadable.
-        this.mapper = mapper.rebuild()
-                .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
-                .build();
-        this.stateFile = paths.stateFile();
-        this.backupFile = sibling(paths.stateFile(), ".bak");
-        this.corruptFile = sibling(paths.stateFile(), ".corrupt");
+  /**
+   * The last parse, keyed by the file version it came from: re-parsing per accessor lets one
+   * decision straddle two versions of the file. Handed out as a COPY, always — callers mutate the
+   * task map in place.
+   */
+  private @Nullable StateFile cached;
+
+  private @Nullable FileVersion cachedVersion;
+
+  public StateService(ObjectMapper mapper, OrchestratorPaths paths) {
+    // A missing primitive defaults to 0/false instead of failing the whole load: adding a `long` to
+    // TaskState would otherwise make every older state.json unreadable.
+    this.mapper =
+        mapper.rebuild().disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES).build();
+    this.stateFile = paths.stateFile();
+    this.backupFile = sibling(paths.stateFile(), ".bak");
+    this.corruptFile = sibling(paths.stateFile(), ".corrupt");
+  }
+
+  private static Path sibling(Path file, String suffix) {
+    return file.resolveSibling(file.getFileName() + suffix);
+  }
+
+  /**
+   * Registers a listener for "state changed", called with the state as it was just written. It
+   * fires AFTER the file is on disk and OUTSIDE the write lock, not at all when a mutation changed
+   * nothing, and one listener throwing neither fails the mutation nor stops the others. Coalescing
+   * is the LISTENER's business.
+   */
+  public void onChange(Consumer<StateFile> listener) {
+    changeListeners.add(listener);
+  }
+
+  public StateFile read() {
+    synchronized (lock) {
+      return readUnlocked();
     }
+  }
 
-    private static Path sibling(Path file, String suffix) {
-        return file.resolveSibling(file.getFileName() + suffix);
+  public Map<String, TaskState> tasks() {
+    return read().tasks();
+  }
+
+  @Override
+  public Optional<TaskState> task(String taskId) {
+    return Optional.ofNullable(tasks().get(taskId));
+  }
+
+  /**
+   * The task id behind an id OR its short alias. An unknown value is returned UNCHANGED, so callers
+   * still produce their own "not found" error.
+   */
+  @Override
+  public String canonicalTaskId(String idOrAlias) {
+    if (idOrAlias == null || task(idOrAlias).isPresent()) {
+      return idOrAlias;
     }
+    return tasks().entrySet().stream()
+        .filter(e -> idOrAlias.equalsIgnoreCase(e.getValue().alias()))
+        .map(Map.Entry::getKey)
+        .findFirst()
+        .orElse(idOrAlias);
+  }
 
-    /**
-     * Registers a listener for "state changed", called with the state as it was just written. It fires AFTER the
-     * file is on disk and OUTSIDE the write lock, not at all when a mutation changed nothing, and one listener
-     * throwing neither fails the mutation nor stops the others. Coalescing is the LISTENER's business.
-     */
-    public void onChange(Consumer<StateFile> listener) {
-        changeListeners.add(listener);
-    }
-
-    public StateFile read() {
-        synchronized (lock) {
-            return readUnlocked();
-        }
-    }
-
-    public Map<String, TaskState> tasks() {
-        return read().tasks();
-    }
-
-    @Override
-    public Optional<TaskState> task(String taskId) {
-        return Optional.ofNullable(tasks().get(taskId));
-    }
-
-    /**
-     * The task id behind an id OR its short alias. An unknown value is returned UNCHANGED, so callers still
-     * produce their own "not found" error.
-     */
-    @Override
-    public String canonicalTaskId(String idOrAlias) {
-        if (idOrAlias == null || task(idOrAlias).isPresent()) {
-            return idOrAlias;
-        }
-        return tasks().entrySet().stream()
-                .filter(e -> idOrAlias.equalsIgnoreCase(e.getValue().alias()))
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .orElse(idOrAlias);
-    }
-
-    public void putTask(String taskId, TaskState state) {
-        mutate(file -> {
-            file.tasks().put(taskId, stamped(file.tasks().get(taskId), state));
-            return file;
+  public void putTask(String taskId, TaskState state) {
+    mutate(
+        file -> {
+          file.tasks().put(taskId, stamped(file.tasks().get(taskId), state));
+          return file;
         });
-    }
+  }
 
-    @Override
-    public boolean updateTask(String taskId, UnaryOperator<TaskState> update) {
-        AtomicBoolean found = new AtomicBoolean();
-        mutate(file -> {
-            TaskState current = file.tasks().get(taskId);
-            if (current != null) {
-                file.tasks().put(taskId, stamped(current, update.apply(current)));
-                found.set(true);
-            }
-            return file;
+  @Override
+  public boolean updateTask(String taskId, UnaryOperator<TaskState> update) {
+    AtomicBoolean found = new AtomicBoolean();
+    mutate(
+        file -> {
+          TaskState current = file.tasks().get(taskId);
+          if (current != null) {
+            file.tasks().put(taskId, stamped(current, update.apply(current)));
+            found.set(true);
+          }
+          return file;
         });
-        return found.get();
-    }
+    return found.get();
+  }
 
-    public boolean removeTask(String taskId) {
-        AtomicBoolean found = new AtomicBoolean();
-        mutate(file -> {
-            found.set(file.tasks().remove(taskId) != null);
-            return file;
+  public boolean removeTask(String taskId) {
+    AtomicBoolean found = new AtomicBoolean();
+    mutate(
+        file -> {
+          found.set(file.tasks().remove(taskId) != null);
+          return file;
         });
-        return found.get();
-    }
+    return found.get();
+  }
 
-    /** The task a caller's working directory belongs to. ANY of its repositories answers, not just the first. */
-    public Optional<Map.Entry<String, TaskState>> findByWorktree(@Nullable String cwd) {
-        if (cwd == null || cwd.isBlank()) {
-            return Optional.empty();
-        }
-        Map<String, TaskState> tasks = tasks();
-        // Resolving every worktree on disk costs a walk per path; most callers match without it.
-        return holder(tasks, lexical(Path.of(cwd)), StateService::lexical)
-                .or(() -> holder(tasks, canonical(Path.of(cwd)), StateService::canonical));
+  /**
+   * The task a caller's working directory belongs to. ANY of its repositories answers, not just the
+   * first.
+   */
+  public Optional<Map.Entry<String, TaskState>> findByWorktree(@Nullable String cwd) {
+    if (cwd == null || cwd.isBlank()) {
+      return Optional.empty();
     }
+    Map<String, TaskState> tasks = tasks();
+    // Resolving every worktree on disk costs a walk per path; most callers match without it.
+    return holder(tasks, lexical(Path.of(cwd)), StateService::lexical)
+        .or(() -> holder(tasks, canonical(Path.of(cwd)), StateService::canonical));
+  }
 
-    private static Optional<Map.Entry<String, TaskState>> holder(Map<String, TaskState> tasks, Path callerPath,
-                                                                 UnaryOperator<Path> resolve) {
-        return tasks.entrySet().stream()
-                .filter(e -> e.getValue().repos().stream().anyMatch(repo -> holds(repo, callerPath, resolve)))
-                .findFirst();
+  private static Optional<Map.Entry<String, TaskState>> holder(
+      Map<String, TaskState> tasks, Path callerPath, UnaryOperator<Path> resolve) {
+    return tasks.entrySet().stream()
+        .filter(
+            e -> e.getValue().repos().stream().anyMatch(repo -> holds(repo, callerPath, resolve)))
+        .findFirst();
+  }
+
+  private static boolean holds(TaskRepo repo, Path callerPath, UnaryOperator<Path> resolve) {
+    if (repo.worktreePath() == null || repo.worktreePath().isBlank()) {
+      return false;
     }
+    return callerPath.startsWith(resolve.apply(Path.of(repo.worktreePath())));
+  }
 
-    private static boolean holds(TaskRepo repo, Path callerPath, UnaryOperator<Path> resolve) {
-        if (repo.worktreePath() == null || repo.worktreePath().isBlank()) {
-            return false;
-        }
-        return callerPath.startsWith(resolve.apply(Path.of(repo.worktreePath())));
+  private static Path lexical(Path path) {
+    return path.toAbsolutePath().normalize();
+  }
+
+  /**
+   * A caller may report the physical path (symlinks resolved, e.g. /private/tmp) where configured
+   * paths are logical (/tmp) — compare physical to physical.
+   */
+  private static Path canonical(Path path) {
+    try {
+      return path.toRealPath();
+    } catch (IOException e) {
+      return path.toAbsolutePath().normalize();
     }
+  }
 
-    private static Path lexical(Path path) {
-        return path.toAbsolutePath().normalize();
+  /**
+   * Names the asker on a step that was just taken. The only layer that sees both the step and
+   * {@link OriginContext}.
+   */
+  private static TaskState stamped(@Nullable TaskState before, TaskState after) {
+    if (after.history().isEmpty() || !tookAStep(before, after)) {
+      return after;
     }
+    ActionOrigin origin = OriginContext.current();
+    String why = OriginContext.why();
+    TaskState byOrigin = origin == null ? after : after.withLastChangeOrigin(origin);
+    return why == null ? byOrigin : byOrigin.withLastChangeWhy(why);
+  }
 
-    /**
-     * A caller may report the physical path (symlinks resolved, e.g. /private/tmp) where configured paths are
-     * logical (/tmp) — compare physical to physical.
-     */
-    private static Path canonical(Path path) {
-        try {
-            return path.toRealPath();
-        } catch (IOException e) {
-            return path.toAbsolutePath().normalize();
-        }
+  private static boolean tookAStep(@Nullable TaskState before, TaskState after) {
+    if (before == null) {
+      return true;
     }
-
-    /**
-     * Names the asker on a step that was just taken. The only layer that sees both the step and
-     * {@link OriginContext}.
-     */
-    private static TaskState stamped(@Nullable TaskState before, TaskState after) {
-        if (after.history().isEmpty() || !tookAStep(before, after)) {
-            return after;
-        }
-        ActionOrigin origin = OriginContext.current();
-        String why = OriginContext.why();
-        TaskState byOrigin = origin == null ? after : after.withLastChangeOrigin(origin);
-        return why == null ? byOrigin : byOrigin.withLastChangeWhy(why);
+    if (before.history().isEmpty()) {
+      // A task written before history existed has its status reconstructed on the next write. That
+      // is not
+      // a step anyone just took, so a keep-alive must not sign it.
+      return after.history().size() > 1;
     }
+    return !before.history().getLast().equals(after.history().getLast());
+  }
 
-    private static boolean tookAStep(@Nullable TaskState before, TaskState after) {
-        if (before == null) {
-            return true;
-        }
-        if (before.history().isEmpty()) {
-            // A task written before history existed has its status reconstructed on the next write. That is not
-            // a step anyone just took, so a keep-alive must not sign it.
-            return after.history().size() > 1;
-        }
-        return !before.history().getLast().equals(after.history().getLast());
+  private void mutate(UnaryOperator<StateFile> mutation) {
+    StateFile written;
+    synchronized (lock) {
+      StateFile before = readUnlocked();
+      // The map is mutated in place by the callers' operators, so snapshot BEFORE applying it —
+      // otherwise "did anything change?" compares the new state with itself.
+      StateFile unchanged = new StateFile(before.tasks());
+      written = mutation.apply(before);
+      if (unchanged.equals(written)) {
+        return;
+      }
+      writeUnlocked(written);
     }
+    publish(written); // outside the lock: a listener must never block a tool call
+  }
 
-    private void mutate(UnaryOperator<StateFile> mutation) {
-        StateFile written;
-        synchronized (lock) {
-            StateFile before = readUnlocked();
-            // The map is mutated in place by the callers' operators, so snapshot BEFORE applying it —
-            // otherwise "did anything change?" compares the new state with itself.
-            StateFile unchanged = new StateFile(before.tasks());
-            written = mutation.apply(before);
-            if (unchanged.equals(written)) {
-                return;
-            }
-            writeUnlocked(written);
-        }
-        publish(written);                      // outside the lock: a listener must never block a tool call
+  private void publish(StateFile written) {
+    StateFile snapshot = new StateFile(written.tasks()); // listeners cannot disturb each other
+    for (Consumer<StateFile> listener : changeListeners) {
+      try {
+        listener.accept(snapshot);
+      } catch (RuntimeException e) {
+        log.atWarn()
+            .setMessage("state listener failed")
+            .addKeyValue("cause", e.toString())
+            .addKeyValue("effect", "write completed")
+            .log();
+      }
     }
+  }
 
-    private void publish(StateFile written) {
-        StateFile snapshot = new StateFile(written.tasks());   // listeners cannot disturb each other
-        for (Consumer<StateFile> listener : changeListeners) {
-            try {
-                listener.accept(snapshot);
-            } catch (RuntimeException e) {
-                log.atWarn().setMessage("state listener failed")
-                        .addKeyValue("cause", e.toString())
-                        .addKeyValue("effect", "write completed")
-                        .log();
-            }
-        }
+  private StateFile readUnlocked() {
+    if (!Files.exists(stateFile)) {
+      cache(null, null);
+      return new StateFile(Map.of());
     }
-
-    private StateFile readUnlocked() {
-        if (!Files.exists(stateFile)) {
-            cache(null, null);
-            return new StateFile(Map.of());
-        }
-        FileVersion version = FileVersion.of(stateFile);
-        if (cached != null && cachedVersion != null && cachedVersion.equals(version)) {
-            return new StateFile(cached.tasks());
-        }
-        StateFile parsed;
-        try {
-            parsed = parse(stateFile);
-        } catch (RuntimeException | IOException primaryFailure) {
-            cache(null, null);
-            return putBack(recoverFromBackup(primaryFailure));
-        }
-        cache(parsed, version);
-        return parsed;
+    FileVersion version = FileVersion.of(stateFile);
+    if (cached != null && cachedVersion != null && cachedVersion.equals(version)) {
+      return new StateFile(cached.tasks());
     }
+    StateFile parsed;
+    try {
+      parsed = parse(stateFile);
+    } catch (RuntimeException | IOException primaryFailure) {
+      cache(null, null);
+      return putBack(recoverFromBackup(primaryFailure));
+    }
+    cache(parsed, version);
+    return parsed;
+  }
 
-    /**
-     * A recovery has just moved the unreadable primary aside, so the next read would answer "no tasks" over a
-     * backup that still holds them. Best effort: a recovery that cannot be persisted is still worth returning.
-     */
-    private StateFile putBack(StateFile recovered) {
-        if (Files.exists(stateFile)) {
-            // The unreadable file could not be moved aside; writing now would copy it over the backup first.
-            return recovered;
-        }
-        try {
-            writeUnlocked(recovered);
-        } catch (RuntimeException e) {
-            log.atError().setMessage("state writeback failed")
-                    .addKeyValue("file", stateFile)
-                    .addKeyValue("tasks", recovered.tasks().size())
-                    .addKeyValue("cause", e.toString())
-                    .log();
-        }
+  /**
+   * A recovery has just moved the unreadable primary aside, so the next read would answer "no
+   * tasks" over a backup that still holds them. Best effort: a recovery that cannot be persisted is
+   * still worth returning.
+   */
+  private StateFile putBack(StateFile recovered) {
+    if (Files.exists(stateFile)) {
+      // The unreadable file could not be moved aside; writing now would copy it over the backup
+      // first.
+      return recovered;
+    }
+    try {
+      writeUnlocked(recovered);
+    } catch (RuntimeException e) {
+      log.atError()
+          .setMessage("state writeback failed")
+          .addKeyValue("file", stateFile)
+          .addKeyValue("tasks", recovered.tasks().size())
+          .addKeyValue("cause", e.toString())
+          .log();
+    }
+    return recovered;
+  }
+
+  private void cache(@Nullable StateFile state, @Nullable FileVersion version) {
+    cached = state == null || version == null ? null : new StateFile(state.tasks());
+    cachedVersion = version;
+  }
+
+  private StateFile parse(Path file) throws IOException {
+    StateFile read = mapper.readValue(Files.readString(file), StateFile.class);
+    Map<String, TaskState> kept = new LinkedHashMap<>();
+    read.tasks().forEach((id, task) -> kept.put(id, withoutForeignRequests(id, task)));
+    return new StateFile(kept);
+  }
+
+  private static TaskState withoutForeignRequests(String taskId, TaskState task) {
+    ForeignLinks.foreignIn(task)
+        .forEach(
+            foreign ->
+                log.atInfo()
+                    .setMessage("foreign request cleared")
+                    .addKeyValue("task", taskId)
+                    .addKeyValue("project", foreign.project())
+                    .addKeyValue("request", foreign.url())
+                    .addKeyValue("cause", "not under the repository's remote")
+                    .log());
+    return ForeignLinks.cleared(task);
+  }
+
+  /**
+   * The primary is unreadable: fall back to the backup and keep the bad file for inspection, but
+   * only when the backup actually parses. With nothing to fall back to, FAILING is the safe
+   * outcome.
+   */
+  private StateFile recoverFromBackup(Exception primaryFailure) {
+    if (Files.exists(backupFile)) {
+      try {
+        StateFile recovered = parse(backupFile);
+        log.atError()
+            .setMessage("state file unreadable")
+            .addKeyValue("file", stateFile)
+            .addKeyValue("cause", primaryFailure.toString())
+            .addKeyValue("tasks", recovered.tasks().size())
+            .addKeyValue("from", backupFile)
+            .addKeyValue("kept", corruptFile)
+            .log();
+        setAsideCorruptFile();
         return recovered;
+      } catch (RuntimeException | IOException backupFailure) {
+        log.atError()
+            .setMessage("state backup unreadable")
+            .addKeyValue("file", backupFile)
+            .addKeyValue("cause", backupFailure.toString())
+            .log();
+      }
     }
+    throw new UncheckedIOException(
+        "Cannot read state file "
+            + stateFile
+            + " and no usable backup at "
+            + backupFile
+            + " — fix or remove the file; jagt will not start with an empty task list over"
+            + " an existing state file",
+        asIoException(primaryFailure));
+  }
 
-    private void cache(@Nullable StateFile state, @Nullable FileVersion version) {
-        cached = state == null || version == null ? null : new StateFile(state.tasks());
-        cachedVersion = version;
+  private void setAsideCorruptFile() {
+    try {
+      Files.move(stateFile, corruptFile, StandardCopyOption.REPLACE_EXISTING);
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("state file move aside failed")
+          .addKeyValue("from", stateFile)
+          .addKeyValue("to", corruptFile)
+          .addKeyValue("cause", e.toString())
+          .log();
     }
+  }
 
-    private StateFile parse(Path file) throws IOException {
-        StateFile read = mapper.readValue(Files.readString(file), StateFile.class);
-        Map<String, TaskState> kept = new LinkedHashMap<>();
-        read.tasks().forEach((id, task) -> kept.put(id, withoutForeignRequests(id, task)));
-        return new StateFile(kept);
-    }
+  private static IOException asIoException(Exception e) {
+    return e instanceof IOException io ? io : new IOException(e);
+  }
 
-    private static TaskState withoutForeignRequests(String taskId, TaskState task) {
-        ForeignLinks.foreignIn(task).forEach(foreign -> log.atInfo().setMessage("foreign request cleared")
-                .addKeyValue("task", taskId).addKeyValue("project", foreign.project())
-                .addKeyValue("request", foreign.url()).addKeyValue("cause", "not under the repository's remote").log());
-        return ForeignLinks.cleared(task);
+  private void writeUnlocked(StateFile state) {
+    String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(state);
+    backUpCurrentVersion();
+    try {
+      AtomicFiles.write(stateFile, json.getBytes(StandardCharsets.UTF_8));
+    } catch (IOException e) {
+      cache(null, null);
+      throw new UncheckedIOException("Cannot write state file " + stateFile, e);
     }
+    // Own writes never rely on the version key: two within one filesystem timestamp tick are the
+    // same by it.
+    cache(state, FileVersion.of(stateFile));
+  }
 
-    /**
-     * The primary is unreadable: fall back to the backup and keep the bad file for inspection, but only when the
-     * backup actually parses. With nothing to fall back to, FAILING is the safe outcome.
-     */
-    private StateFile recoverFromBackup(Exception primaryFailure) {
-        if (Files.exists(backupFile)) {
-            try {
-                StateFile recovered = parse(backupFile);
-                log.atError().setMessage("state file unreadable")
-                        .addKeyValue("file", stateFile)
-                        .addKeyValue("cause", primaryFailure.toString())
-                        .addKeyValue("tasks", recovered.tasks().size())
-                        .addKeyValue("from", backupFile)
-                        .addKeyValue("kept", corruptFile)
-                        .log();
-                setAsideCorruptFile();
-                return recovered;
-            } catch (RuntimeException | IOException backupFailure) {
-                log.atError().setMessage("state backup unreadable")
-                        .addKeyValue("file", backupFile)
-                        .addKeyValue("cause", backupFailure.toString())
-                        .log();
-            }
-        }
-        throw new UncheckedIOException("Cannot read state file " + stateFile + " and no usable backup at "
-                + backupFile + " — fix or remove the file; jagt will not start with an empty task list over"
-                + " an existing state file", asIoException(primaryFailure));
+  /**
+   * Best-effort: a failed backup must not stop the write — the live file matters more than its
+   * copy.
+   */
+  private void backUpCurrentVersion() {
+    if (!Files.exists(stateFile)) {
+      return;
     }
-
-    private void setAsideCorruptFile() {
-        try {
-            Files.move(stateFile, corruptFile, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            log.atWarn().setMessage("state file move aside failed")
-                    .addKeyValue("from", stateFile)
-                    .addKeyValue("to", corruptFile)
-                    .addKeyValue("cause", e.toString())
-                    .log();
-        }
+    try {
+      Files.copy(stateFile, backupFile, StandardCopyOption.REPLACE_EXISTING);
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("state backup failed")
+          .addKeyValue("from", stateFile)
+          .addKeyValue("to", backupFile)
+          .addKeyValue("cause", e.toString())
+          .log();
     }
-
-    private static IOException asIoException(Exception e) {
-        return e instanceof IOException io ? io : new IOException(e);
-    }
-
-    private void writeUnlocked(StateFile state) {
-        String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(state);
-        backUpCurrentVersion();
-        try {
-            AtomicFiles.write(stateFile, json.getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            cache(null, null);
-            throw new UncheckedIOException("Cannot write state file " + stateFile, e);
-        }
-        // Own writes never rely on the version key: two within one filesystem timestamp tick are the same by it.
-        cache(state, FileVersion.of(stateFile));
-    }
-
-    /** Best-effort: a failed backup must not stop the write — the live file matters more than its copy. */
-    private void backUpCurrentVersion() {
-        if (!Files.exists(stateFile)) {
-            return;
-        }
-        try {
-            Files.copy(stateFile, backupFile, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            log.atWarn().setMessage("state backup failed")
-                    .addKeyValue("from", stateFile)
-                    .addKeyValue("to", backupFile)
-                    .addKeyValue("cause", e.toString())
-                    .log();
-        }
-    }
+  }
 }

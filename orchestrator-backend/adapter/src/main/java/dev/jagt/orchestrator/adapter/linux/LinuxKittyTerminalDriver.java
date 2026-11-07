@@ -1,35 +1,39 @@
 package dev.jagt.orchestrator.adapter.linux;
 
-import dev.jagt.orchestrator.adapter.KittyOptions;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.AbstractKittyTerminalDriver;
+import dev.jagt.orchestrator.adapter.KittyOptions;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import java.time.Clock;
+import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import java.time.Clock;
-import java.util.List;
-
 /**
- * Both platform hooks are EMPTY by design: {@code kitty @ focus-window} already raises the window, and kitty's
- * own {@code ascii} shortcut fallback handles a non-Latin layout here.
+ * Both platform hooks are EMPTY by design: {@code kitty @ focus-window} already raises the window,
+ * and kitty's own {@code ascii} shortcut fallback handles a non-Latin layout here.
  */
 @Component
-@ConditionalOnProperty(name = "orchestrator.platform", havingValue = "linux", matchIfMissing = false)
+@ConditionalOnProperty(
+    name = "orchestrator.platform",
+    havingValue = "linux",
+    matchIfMissing = false)
 @ConditionalOnProperty(name = "orchestrator.terminal", havingValue = "kitty", matchIfMissing = true)
 public class LinuxKittyTerminalDriver extends AbstractKittyTerminalDriver {
 
-    public LinuxKittyTerminalDriver(ProcessRunner processRunner, OrchestratorProperties properties,
-                                    KittyOptions options, Clock clock) {
-        super(processRunner, properties, options, clock);
-    }
+  public LinuxKittyTerminalDriver(
+      ProcessRunner processRunner,
+      OrchestratorProperties properties,
+      KittyOptions options,
+      Clock clock) {
+    super(processRunner, properties, options, clock);
+  }
 
-    @Override
-    protected List<String> platformOptions() {
-        return List.of();
-    }
+  @Override
+  protected List<String> platformOptions() {
+    return List.of();
+  }
 
-    @Override
-    public void bringToFront() {
-    }
+  @Override
+  public void bringToFront() {}
 }

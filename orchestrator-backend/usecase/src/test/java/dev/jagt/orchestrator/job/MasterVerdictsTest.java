@@ -1,63 +1,5 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.Arbiter;
-import dev.jagt.orchestrator.task.Step;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.config.MasterCases;
-import dev.jagt.orchestrator.config.SessionCases;
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.service.CaseDoor;
-import dev.jagt.orchestrator.service.MissLog;
-import dev.jagt.orchestrator.service.OriginContext;
-import dev.jagt.orchestrator.service.ApprovedRepos;
-import dev.jagt.orchestrator.service.PlanPlacement;
-import dev.jagt.orchestrator.service.UnaffectedRepos;
-import dev.jagt.orchestrator.service.NewTaskWorktrees;
-import dev.jagt.orchestrator.service.PlanApproval;
-import dev.jagt.orchestrator.port.LineChange;
-import dev.jagt.orchestrator.service.PlanBaseline;
-import dev.jagt.orchestrator.service.TaskArtifacts;
-import dev.jagt.orchestrator.service.StepRelay;
-import dev.jagt.orchestrator.service.TaskMovedOn;
-import dev.jagt.orchestrator.service.TaskTurns;
-import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.StopAnnouncements;
-import dev.jagt.orchestrator.service.StopLog;
-import dev.jagt.orchestrator.service.TaskStops;
-import dev.jagt.orchestrator.port.RoundReviewer.Finding;
-import dev.jagt.orchestrator.service.WorktreeChanges;
-import dev.jagt.orchestrator.service.master.MasterDecisions;
-import dev.jagt.orchestrator.service.master.MasterPanel;
-import dev.jagt.orchestrator.service.master.MasterReview;
-import dev.jagt.orchestrator.flow.FlowReports;
-import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.task.TaskStop;
-import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.task.PlanGate;
-import dev.jagt.orchestrator.task.ActionOrigin;
-import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.TaskRepo;
-import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.Turn;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.EnumSource;
-import tools.jackson.databind.json.JsonMapper;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Clock;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -72,1288 +14,3633 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.config.MasterCases;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.SessionCases;
+import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.port.LineChange;
+import dev.jagt.orchestrator.port.RoundReviewer.Finding;
+import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.ApprovedRepos;
+import dev.jagt.orchestrator.service.CaseDoor;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.MissLog;
+import dev.jagt.orchestrator.service.NewTaskWorktrees;
+import dev.jagt.orchestrator.service.OriginContext;
+import dev.jagt.orchestrator.service.PlanApproval;
+import dev.jagt.orchestrator.service.PlanBaseline;
+import dev.jagt.orchestrator.service.PlanPlacement;
+import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.StepRelay;
+import dev.jagt.orchestrator.service.StopAnnouncements;
+import dev.jagt.orchestrator.service.StopLog;
+import dev.jagt.orchestrator.service.TaskArtifacts;
+import dev.jagt.orchestrator.service.TaskMovedOn;
+import dev.jagt.orchestrator.service.TaskStops;
+import dev.jagt.orchestrator.service.TaskTurns;
+import dev.jagt.orchestrator.service.UnaffectedRepos;
+import dev.jagt.orchestrator.service.WorktreeChanges;
+import dev.jagt.orchestrator.service.master.MasterDecisions;
+import dev.jagt.orchestrator.service.master.MasterPanel;
+import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.PlanGate;
+import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.Turn;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Clock;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import tools.jackson.databind.json.JsonMapper;
+
 class MasterVerdictsTest {
 
-    private final AgentSessions sessions = mock(AgentSessions.class);
-    private final MasterShip ship = mock(MasterShip.class);
-    private final MasterDecisions decisions = spy(new MasterDecisions(mock(WorktreeChanges.class)));
+  private final AgentSessions sessions = mock(AgentSessions.class);
+  private final MasterShip ship = mock(MasterShip.class);
+  private final MasterDecisions decisions = spy(new MasterDecisions(mock(WorktreeChanges.class)));
 
-    @Test
-    void sendsARoundThatIsNotReadyBackToWhoeverWroteTheCode(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void sendsARoundThatIsNotReadyBackToWhoeverWroteTheCode(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
+    verdicts.act(
+        "ABC-1",
+        task,
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "developer",
+                    new Finding(
+                        "Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+            List.of(),
+            List.of(),
+            1,
+            ""),
+        acting);
 
-        verify(sessions).writeTaskContext(eq("ABC-1"), contains("the guard is inverted"));
-        verify(ship, never()).ship(anyString(), any());
-    }
+    verify(sessions).writeTaskContext(eq("ABC-1"), contains("the guard is inverted"));
+    verify(ship, never()).ship(anyString(), any());
+  }
 
-    @ParameterizedTest
-    @EnumSource(value = MasterReview.Kind.class, names = {"NOT_READY", "QUESTION"})
-    void dropsAVerdictOfATaskTheHumanShippedWhileTheMasterRead(MasterReview.Kind kind, @TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @ParameterizedTest
+  @EnumSource(
+      value = MasterReview.Kind.class,
+      names = {"NOT_READY", "QUESTION"})
+  void dropsAVerdictOfATaskTheHumanShippedWhileTheMasterRead(
+      MasterReview.Kind kind, @TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", read);
-        state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.SHIPPING, null, 6_000)
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState read =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", read);
+    state.updateTask(
+        "ABC-1",
+        live ->
+            live.withStatus(TaskStatus.SHIPPING, null, 6_000)
                 .withTurn(new Turn("ship", 6, "d", 6_000, Map.of(), List.of())));
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
-        MasterReview.Verdict verdict = new MasterReview.Verdict(kind,
-                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
-                List.of(), List.of("override the gate?"), 0, "");
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    MasterReview.Verdict verdict =
+        new MasterReview.Verdict(
+            kind,
+            List.of(
+                new MasterReview.Said(
+                    "developer",
+                    new Finding(
+                        "Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+            List.of(),
+            List.of("override the gate?"),
+            0,
+            "");
 
-        assertThatThrownBy(() -> verdicts.act("ABC-1", read, verdict, acting)).isInstanceOf(TaskMovedOn.class);
+    assertThatThrownBy(() -> verdicts.act("ABC-1", read, verdict, acting))
+        .isInstanceOf(TaskMovedOn.class);
 
-        verify(sessions, never()).writeTaskContext(anyString(), anyString());
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.SHIPPING);
-    }
+    verify(sessions, never()).writeTaskContext(anyString(), anyString());
+    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.SHIPPING);
+  }
 
-    @Test
-    void dropsTheAnswerToAQuestionTheSessionMovedOnFromWhileTheMasterRead(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void dropsTheAnswerToAQuestionTheSessionMovedOnFromWhileTheMasterRead(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", read);
-        state.updateTask("ABC-1", live -> live.withTurn(live.turnOrNone().closed(2_000)));
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState read =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", read);
+    state.updateTask("ABC-1", live -> live.withTurn(live.turnOrNone().closed(2_000)));
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        assertThatThrownBy(() -> verdicts.answered("ABC-1", read, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", "")))
-                .isInstanceOf(TaskMovedOn.class);
+    assertThatThrownBy(
+            () ->
+                verdicts.answered(
+                    "ABC-1", read, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", "")))
+        .isInstanceOf(TaskMovedOn.class);
 
-        verify(sessions, never()).writeTaskContext(anyString(), anyString());
-        verify(decisions, never()).answered(any());
-    }
+    verify(sessions, never()).writeTaskContext(anyString(), anyString());
+    verify(decisions, never()).answered(any());
+  }
 
-    @Test
-    void putsTheTaskBackAndStopsItWhenTheSessionCouldNotBeTold(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void putsTheTaskBackAndStopsItWhenTheSessionCouldNotBeTold(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
-        when(sessions.writeTaskContext(eq("ABC-1"), anyString())).thenThrow(new IllegalStateException("no window"));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    when(sessions.writeTaskContext(eq("ABC-1"), anyString()))
+        .thenThrow(new IllegalStateException("no window"));
 
-        assertThatThrownBy(() -> verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 0, ""),
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)))
-                .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(
+            () ->
+                verdicts.act(
+                    "ABC-1",
+                    task,
+                    new MasterReview.Verdict(
+                        MasterReview.Kind.NOT_READY,
+                        List.of(
+                            new MasterReview.Said(
+                                "developer",
+                                new Finding(
+                                    "Foo.java",
+                                    "the guard is inverted",
+                                    "",
+                                    "blocking",
+                                    "",
+                                    "behaviour"))),
+                        List.of(),
+                        List.of(),
+                        0,
+                        ""),
+                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)))
+        .isInstanceOf(IllegalStateException.class);
 
-        assertThat(state.task("ABC-1").orElseThrow())
-                .returns(TaskStatus.REVIEW_PENDING, TaskState::status)
-                .returns(TaskStop.Trigger.UNDELIVERED, live -> live.stop().trigger());
-    }
+    assertThat(state.task("ABC-1").orElseThrow())
+        .returns(TaskStatus.REVIEW_PENDING, TaskState::status)
+        .returns(TaskStop.Trigger.UNDELIVERED, live -> live.stop().trigger());
+  }
 
-    @Test
-    void leavesATaskThatMovedOnWhenTheSessionCouldNotBeTold(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void leavesATaskThatMovedOnWhenTheSessionCouldNotBeTold(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
-        when(sessions.writeTaskContext(eq("ABC-1"), anyString())).thenAnswer(told -> {
-            state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.SHIPPING, null, 7_000)
-                    .withTurn(new Turn("ship", 9, "d", 7_000, Map.of(), List.of())));
-            throw new IllegalStateException("no window");
-        });
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    when(sessions.writeTaskContext(eq("ABC-1"), anyString()))
+        .thenAnswer(
+            told -> {
+              state.updateTask(
+                  "ABC-1",
+                  live ->
+                      live.withStatus(TaskStatus.SHIPPING, null, 7_000)
+                          .withTurn(new Turn("ship", 9, "d", 7_000, Map.of(), List.of())));
+              throw new IllegalStateException("no window");
+            });
 
-        assertThatThrownBy(() -> verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 0, ""),
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)))
-                .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(
+            () ->
+                verdicts.act(
+                    "ABC-1",
+                    task,
+                    new MasterReview.Verdict(
+                        MasterReview.Kind.NOT_READY,
+                        List.of(
+                            new MasterReview.Said(
+                                "developer",
+                                new Finding(
+                                    "Foo.java",
+                                    "the guard is inverted",
+                                    "",
+                                    "blocking",
+                                    "",
+                                    "behaviour"))),
+                        List.of(),
+                        List.of(),
+                        0,
+                        ""),
+                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)))
+        .isInstanceOf(IllegalStateException.class);
 
-        assertThat(state.task("ABC-1").orElseThrow())
-                .returns(TaskStatus.SHIPPING, TaskState::status)
-                .returns(false, TaskState::stopped);
-    }
+    assertThat(state.task("ABC-1").orElseThrow())
+        .returns(TaskStatus.SHIPPING, TaskState::status)
+        .returns(false, TaskState::stopped);
+  }
 
-    @Test
-    void countsNoRoundForAVerdictDroppedBecauseTheTaskMovedOn(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void countsNoRoundForAVerdictDroppedBecauseTheTaskMovedOn(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", read);
-        state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.SHIPPING, null, 6_000)
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState read =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", read);
+    state.updateTask(
+        "ABC-1",
+        live ->
+            live.withStatus(TaskStatus.SHIPPING, null, 6_000)
                 .withTurn(new Turn("ship", 6, "d", 6_000, Map.of(), List.of())));
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        assertThatThrownBy(() -> verdicts.act("ABC-1", read, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 0, ""),
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)))
-                .isInstanceOf(TaskMovedOn.class);
+    assertThatThrownBy(
+            () ->
+                verdicts.act(
+                    "ABC-1",
+                    read,
+                    new MasterReview.Verdict(
+                        MasterReview.Kind.NOT_READY,
+                        List.of(
+                            new MasterReview.Said(
+                                "developer",
+                                new Finding(
+                                    "Foo.java",
+                                    "the guard is inverted",
+                                    "",
+                                    "blocking",
+                                    "",
+                                    "behaviour"))),
+                        List.of(),
+                        List.of(),
+                        0,
+                        ""),
+                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)))
+        .isInstanceOf(TaskMovedOn.class);
 
-        verify(decisions, never()).returned(any(), anyLong(), any());
-    }
+    verify(decisions, never()).returned(any(), anyLong(), any());
+  }
 
-    @Test
-    void relaysNothingOfAPlanTheHumanMovedWhileTheMasterRead(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void relaysNothingOfAPlanTheHumanMovedWhileTheMasterRead(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
-        state.putTask("ABC-1", read);
-        state.updateTask("ABC-1", live -> live.withStatus(TaskStatus.IN_PROGRESS, null, 6_000)
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
+    state.putTask("ABC-1", read);
+    state.updateTask(
+        "ABC-1",
+        live ->
+            live.withStatus(TaskStatus.IN_PROGRESS, null, 6_000)
                 .withTurn(new Turn("plan", 6, "d", 6_000, Map.of(), List.of())));
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        assertThatThrownBy(() -> verdicts.act("ABC-1", read, new MasterReview.Verdict(MasterReview.Kind.READY,
-                List.of(), List.of(), List.of(), 0, ""),
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null)))
-                .isInstanceOf(TaskMovedOn.class);
+    assertThatThrownBy(
+            () ->
+                verdicts.act(
+                    "ABC-1",
+                    read,
+                    new MasterReview.Verdict(
+                        MasterReview.Kind.READY, List.of(), List.of(), List.of(), 0, ""),
+                    new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null)))
+        .isInstanceOf(TaskMovedOn.class);
 
-        verify(sessions, never()).writeTaskContext(anyString(), anyString());
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
-    }
+    verify(sessions, never()).writeTaskContext(anyString(), anyString());
+    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+  }
 
-    @Test
-    void writesNoStateWhileTheSessionIsBeingTold(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void writesNoStateWhileTheSessionIsBeingTold(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        state.putTask("ABC-2", task);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
-        when(sessions.writeTaskContext(eq("ABC-1"), anyString())).thenAnswer(told ->
-                CompletableFuture.supplyAsync(() -> state.updateTask("ABC-2", other -> other)).get(2, TimeUnit.SECONDS)
-                        ? "told" : "not told");
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    state.putTask("ABC-2", task);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    when(sessions.writeTaskContext(eq("ABC-1"), anyString()))
+        .thenAnswer(
+            told ->
+                CompletableFuture.supplyAsync(() -> state.updateTask("ABC-2", other -> other))
+                        .get(2, TimeUnit.SECONDS)
+                    ? "told"
+                    : "not told");
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 0, ""),
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            task,
+            new MasterReview.Verdict(
+                MasterReview.Kind.NOT_READY,
+                List.of(
+                    new MasterReview.Said(
+                        "developer",
+                        new Finding(
+                            "Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+                List.of(),
+                List.of(),
+                0,
+                ""),
+            new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
-        assertThat(moved).isTrue();
-    }
+    assertThat(moved).isTrue();
+  }
 
-    @Test
-    void takesANotReadyRoundBackToWorkSoTheFixedOneIsReadAgain(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void takesANotReadyRoundBackToWorkSoTheFixedOneIsReadAgain(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            task,
+            new MasterReview.Verdict(
+                MasterReview.Kind.NOT_READY,
+                List.of(
+                    new MasterReview.Said(
+                        "developer",
+                        new Finding(
+                            "Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+                List.of(),
+                List.of(),
+                1,
+                ""),
+            acting);
 
-        assertThat(moved).isTrue();
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
-    }
+    assertThat(moved).isTrue();
+    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+  }
 
-    @Test
-    void signsTheMoveItsVerdictTookAsTheMasters(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void signsTheMoveItsVerdictTookAsTheMasters(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
+    verdicts.act(
+        "ABC-1",
+        task,
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "developer",
+                    new Finding(
+                        "Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+            List.of(),
+            List.of(),
+            1,
+            ""),
+        acting);
 
-        assertThat(state.task("ABC-1").orElseThrow().history().getLast().origin()).isEqualTo(ActionOrigin.MASTER);
-    }
+    assertThat(state.task("ABC-1").orElseThrow().history().getLast().origin())
+        .isEqualTo(ActionOrigin.MASTER);
+  }
 
-    @Test
-    void recordsAMissItsVerdictSetOffAsTheMasters(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void recordsAMissItsVerdictSetOffAsTheMasters(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.CI_POLLING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.CI_POLLING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
+    verdicts.act(
+        "ABC-1",
+        task,
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "developer",
+                    new Finding(
+                        "Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+            List.of(),
+            List.of(),
+            1,
+            ""),
+        acting);
 
-        assertThat(Files.readString(root.resolve("misses.jsonl")))
-                .contains("\"step\":\"round-not-ready\"", "\"by\":\"master\"");
-    }
+    assertThat(Files.readString(root.resolve("misses.jsonl")))
+        .contains("\"step\":\"round-not-ready\"", "\"by\":\"master\"");
+  }
 
-    @Test
-    void putsTheSessionBackToWorkOnTheAnswerTheMasterGaveIt(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void putsTheSessionBackToWorkOnTheAnswerTheMasterGaveIt(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
+    boolean moved =
+        verdicts.answered(
+            "ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
 
-        assertThat(moved).isTrue();
-        assertThat(state.task("ABC-1").orElseThrow())
-                .returns(TaskStatus.IN_PROGRESS, TaskState::status)
-                .returns("master answered the question", TaskState::message);
-    }
+    assertThat(moved).isTrue();
+    assertThat(state.task("ABC-1").orElseThrow())
+        .returns(TaskStatus.IN_PROGRESS, TaskState::status)
+        .returns("master answered the question", TaskState::message);
+  }
 
-    @Test
-    void tellsTheSessionTheInstructionOfAStopTheMasterLiftedAndLeavesItAtWork(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void tellsTheSessionTheInstructionOfAStopTheMasterLiftedAndLeavesItAtWork(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean told = verdicts.stopReturned("ABC-1", task, "fix the fixture, not the test");
+    boolean told = verdicts.stopReturned("ABC-1", task, "fix the fixture, not the test");
 
-        assertThat(told).isTrue();
-        verify(sessions).writeTaskContext(eq("ABC-1"), contains("fix the fixture, not the test"));
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
-    }
+    assertThat(told).isTrue();
+    verify(sessions).writeTaskContext(eq("ABC-1"), contains("fix the fixture, not the test"));
+    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
+  }
 
-    @Test
-    void keepsTheDeployConflictHandOffStandingUnderTheAnswerToAQuestion(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void keepsTheDeployConflictHandOffStandingUnderTheAnswerToAQuestion(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).alias("a1").build();
-        state.putTask("ABC-42", task);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).alias("a1").build();
+    state.putTask("ABC-42", task);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.answered("ABC-42", task, "keep both imports?", new MasterPanel.Decision("keep both imports", ""));
+    verdicts.answered(
+        "ABC-42", task, "keep both imports?", new MasterPanel.Decision("keep both imports", ""));
 
-        verify(sessions).relayUnder(eq("ABC-42"), contains("keep both imports"), eq(false));
-        verify(sessions, never()).writeTaskContext(eq("ABC-42"), anyString());
-    }
+    verify(sessions).relayUnder(eq("ABC-42"), contains("keep both imports"), eq(false));
+    verify(sessions, never()).writeTaskContext(eq("ABC-42"), anyString());
+  }
 
-    @Test
-    void keepsTheSessionOfAStageCheckAnsweredAgainOverTheSameTree(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void keepsTheSessionOfAStageCheckAnsweredAgainOverTheSameTree(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.answered("ABC-1", task, "override the gate?", new MasterPanel.Decision("refactor the shared block", ""));
+    verdicts.answered(
+        "ABC-1",
+        task,
+        "override the gate?",
+        new MasterPanel.Decision("refactor the shared block", ""));
 
-        verify(sessions).writeTaskContext(eq("ABC-1"), contains("refactor the shared block"));
-        verify(sessions, never()).relayFresh(anyString(), anyString());
-    }
+    verify(sessions).writeTaskContext(eq("ABC-1"), contains("refactor the shared block"));
+    verify(sessions, never()).relayFresh(anyString(), anyString());
+  }
 
-    @Test
-    void settlesWhatANotReadyRoundSentBackSoTheNextRoundDoesNotReopenIt(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void settlesWhatANotReadyRoundSentBackSoTheNextRoundDoesNotReopenIt(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
+    verdicts.act(
+        "ABC-1",
+        task,
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "developer",
+                    new Finding(
+                        "Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+            List.of(),
+            List.of(),
+            1,
+            ""),
+        acting);
 
-        verify(decisions).record(task, "- [developer] Foo.java — the guard is inverted (behaviour)");
-    }
+    verify(decisions).record(task, "- [developer] Foo.java — the guard is inverted (behaviour)");
+  }
 
-    @Test
-    void relaysAFindingAnEarlierRoundMadeMarkedAsARepeat(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void relaysAFindingAnEarlierRoundMadeMarkedAsARepeat(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        decisions.returned(task, 3, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))));
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    decisions.returned(
+        task,
+        3,
+        List.of(
+            new MasterReview.Said(
+                "qa",
+                new Finding(
+                    "Foo.java",
+                    "the delay is never pinned",
+                    "unguarded delay",
+                    "blocking",
+                    "delay",
+                    "test"))));
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))), List.of(), List.of(), 7, ""), acting);
+    verdicts.act(
+        "ABC-1",
+        task,
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "qa",
+                    new Finding(
+                        "Foo.java",
+                        "the delay is never pinned",
+                        "unguarded delay",
+                        "blocking",
+                        "delay",
+                        "test"))),
+            List.of(),
+            List.of(),
+            7,
+            ""),
+        acting);
 
-        verify(sessions).writeTaskContext(eq("ABC-1"),
-                contains("- [qa] Foo.java delay — the delay is never pinned (unguarded delay, test) [repeat]"));
-    }
+    verify(sessions)
+        .writeTaskContext(
+            eq("ABC-1"),
+            contains(
+                "- [qa] Foo.java delay — the delay is never pinned (unguarded delay, test)"
+                    + " [repeat]"));
+  }
 
-    @Test
-    void returnsASecondRoundOfRepeatsToTheSessionInsteadOfAskingAnyone(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void returnsASecondRoundOfRepeatsToTheSessionInsteadOfAskingAnyone(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        decisions.returned(task, 3, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))));
-        decisions.returned(task, 5, List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))));
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    decisions.returned(
+        task,
+        3,
+        List.of(
+            new MasterReview.Said(
+                "qa",
+                new Finding(
+                    "Foo.java",
+                    "the delay is never pinned",
+                    "unguarded delay",
+                    "blocking",
+                    "delay",
+                    "test"))));
+    decisions.returned(
+        task,
+        5,
+        List.of(
+            new MasterReview.Said(
+                "qa",
+                new Finding(
+                    "Foo.java",
+                    "the delay is never pinned",
+                    "unguarded delay",
+                    "blocking",
+                    "delay",
+                    "test"))));
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "unguarded delay", "blocking", "delay", "test"))), List.of(), List.of(), 7, ""), acting);
+    verdicts.act(
+        "ABC-1",
+        task,
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "qa",
+                    new Finding(
+                        "Foo.java",
+                        "the delay is never pinned",
+                        "unguarded delay",
+                        "blocking",
+                        "delay",
+                        "test"))),
+            List.of(),
+            List.of(),
+            7,
+            ""),
+        acting);
 
-        assertThat(state.task("ABC-1").orElseThrow())
-                .returns(AgentReport.PLAIN, TaskState::report)
-                .returns(TaskStatus.IN_PROGRESS, TaskState::status);
-    }
+    assertThat(state.task("ABC-1").orElseThrow())
+        .returns(AgentReport.PLAIN, TaskState::report)
+        .returns(TaskStatus.IN_PROGRESS, TaskState::status);
+  }
 
-    @Test
-    void stopsTheTaskOnAFourthRoundRunningThatOnlyRepeatsTheFirst(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void stopsTheTaskOnAFourthRoundRunningThatOnlyRepeatsTheFirst(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))), List.of(), List.of(), 1, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is still never pinned", "", "blocking", "delay", "test"))), List.of(), List.of(), 2, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "no test pins the delay", "", "blocking", "delay", "test"))), List.of(), List.of(), 3, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 3));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "qa",
+                    new Finding(
+                        "Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))),
+            List.of(),
+            List.of(),
+            1,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "qa",
+                    new Finding(
+                        "Foo.java",
+                        "the delay is still never pinned",
+                        "",
+                        "blocking",
+                        "delay",
+                        "test"))),
+            List.of(),
+            List.of(),
+            2,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "qa",
+                    new Finding(
+                        "Foo.java", "no test pins the delay", "", "blocking", "delay", "test"))),
+            List.of(),
+            List.of(),
+            3,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 3));
 
-        boolean moved = verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))), List.of(), List.of(), 4, ""), acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            state.task("ABC-1").orElseThrow(),
+            new MasterReview.Verdict(
+                MasterReview.Kind.NOT_READY,
+                List.of(
+                    new MasterReview.Said(
+                        "qa",
+                        new Finding(
+                            "Foo.java",
+                            "the delay is never pinned",
+                            "",
+                            "blocking",
+                            "delay",
+                            "test"))),
+                List.of(),
+                List.of(),
+                4,
+                ""),
+            acting);
 
-        assertThat(moved).isFalse();
-        assertThat(state.task("ABC-1").orElseThrow())
-                .extracting(TaskState::report, done -> done.stop().trigger())
-                .containsExactly(AgentReport.PLAIN, TaskStop.Trigger.ROUNDS);
-    }
+    assertThat(moved).isFalse();
+    assertThat(state.task("ABC-1").orElseThrow())
+        .extracting(TaskState::report, done -> done.stop().trigger())
+        .containsExactly(AgentReport.PLAIN, TaskStop.Trigger.ROUNDS);
+  }
 
-    @Test
-    void relaysAFourthReturnWhereEachSessionReportItAnsweredWasReworked(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void relaysAFourthReturnWhereEachSessionReportItAnsweredWasReworked(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 1)
-                .withLastChangeOrigin(ActionOrigin.MCP).withLastChangeWhy("plan 1"));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))), List.of(), List.of(), 1, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 2)
-                .withLastChangeOrigin(ActionOrigin.MCP).withLastChangeWhy("plan 2"));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is still never pinned", "", "blocking", "delay", "test"))), List.of(), List.of(), 2, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 3)
-                .withLastChangeOrigin(ActionOrigin.MCP).withLastChangeWhy("plan 3"));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "no test pins the delay", "", "blocking", "delay", "test"))), List.of(), List.of(), 3, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 4)
-                .withLastChangeOrigin(ActionOrigin.MCP).withLastChangeWhy("plan 4"));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 1)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 1"));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "qa",
+                    new Finding(
+                        "Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))),
+            List.of(),
+            List.of(),
+            1,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 2)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 2"));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "qa",
+                    new Finding(
+                        "Foo.java",
+                        "the delay is still never pinned",
+                        "",
+                        "blocking",
+                        "delay",
+                        "test"))),
+            List.of(),
+            List.of(),
+            2,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 3)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 3"));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "qa",
+                    new Finding(
+                        "Foo.java", "no test pins the delay", "", "blocking", "delay", "test"))),
+            List.of(),
+            List.of(),
+            3,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 4)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 4"));
 
-        boolean moved = verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))), List.of(), List.of(), 4, ""), acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            state.task("ABC-1").orElseThrow(),
+            new MasterReview.Verdict(
+                MasterReview.Kind.NOT_READY,
+                List.of(
+                    new MasterReview.Said(
+                        "qa",
+                        new Finding(
+                            "Foo.java",
+                            "the delay is never pinned",
+                            "",
+                            "blocking",
+                            "delay",
+                            "test"))),
+                List.of(),
+                List.of(),
+                4,
+                ""),
+            acting);
 
-        assertThat(moved).isEqualTo(true);
-        assertThat(state.task("ABC-1").orElseThrow().stop()).isNull();
-    }
+    assertThat(moved).isEqualTo(true);
+    assertThat(state.task("ABC-1").orElseThrow().stop()).isNull();
+  }
 
-    @Test
-    void stopsTheTaskOnAFourthReturnWhereTheSessionReportedTheSameEachTime(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void stopsTheTaskOnAFourthReturnWhereTheSessionReportedTheSameEachTime(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 1)
-                .withLastChangeOrigin(ActionOrigin.MCP).withLastChangeWhy("plan 1"));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))), List.of(), List.of(), 1, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 2)
-                .withLastChangeOrigin(ActionOrigin.MCP).withLastChangeWhy("plan 1"));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is still never pinned", "", "blocking", "delay", "test"))), List.of(), List.of(), 2, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 3)
-                .withLastChangeOrigin(ActionOrigin.MCP).withLastChangeWhy("plan 1"));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "no test pins the delay", "", "blocking", "delay", "test"))), List.of(), List.of(), 3, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 4)
-                .withLastChangeOrigin(ActionOrigin.MCP).withLastChangeWhy("plan 1"));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 1)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 1"));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "qa",
+                    new Finding(
+                        "Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))),
+            List.of(),
+            List.of(),
+            1,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 2)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 1"));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "qa",
+                    new Finding(
+                        "Foo.java",
+                        "the delay is still never pinned",
+                        "",
+                        "blocking",
+                        "delay",
+                        "test"))),
+            List.of(),
+            List.of(),
+            2,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 3)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 1"));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "qa",
+                    new Finding(
+                        "Foo.java", "no test pins the delay", "", "blocking", "delay", "test"))),
+            List.of(),
+            List.of(),
+            3,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 4)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 1"));
 
-        boolean moved = verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("qa", new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))), List.of(), List.of(), 4, ""), acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            state.task("ABC-1").orElseThrow(),
+            new MasterReview.Verdict(
+                MasterReview.Kind.NOT_READY,
+                List.of(
+                    new MasterReview.Said(
+                        "qa",
+                        new Finding(
+                            "Foo.java",
+                            "the delay is never pinned",
+                            "",
+                            "blocking",
+                            "delay",
+                            "test"))),
+                List.of(),
+                List.of(),
+                4,
+                ""),
+            acting);
 
-        assertThat(moved).isEqualTo(false);
-        assertThat(state.task("ABC-1").orElseThrow().stop()).isNotNull();
-    }
+    assertThat(moved).isEqualTo(false);
+    assertThat(state.task("ABC-1").orElseThrow().stop()).isNotNull();
+  }
 
-    @Test
-    void settlesNoRequestForEvidenceSoTheSessionsAnswerCanStillChangeIt(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void settlesNoRequestForEvidenceSoTheSessionsAnswerCanStillChangeIt(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("chaplain", new Finding("Api.java", "which caller still reads v2", "",
-                        "unproven", "", "behaviour")), new MasterReview.Said("developer", new Finding("Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
+    verdicts.act(
+        "ABC-1",
+        task,
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "chaplain",
+                    new Finding(
+                        "Api.java",
+                        "which caller still reads v2",
+                        "",
+                        "unproven",
+                        "",
+                        "behaviour")),
+                new MasterReview.Said(
+                    "developer",
+                    new Finding(
+                        "Foo.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+            List.of(),
+            List.of(),
+            1,
+            ""),
+        acting);
 
-        verify(decisions).record(task, "- [developer] Foo.java — the guard is inverted (behaviour)");
-    }
+    verify(decisions).record(task, "- [developer] Foo.java — the guard is inverted (behaviour)");
+  }
 
-    @Test
-    void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        when(ship.ship("ABC-1", task)).thenReturn(true);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    when(ship.ship("ABC-1", task)).thenReturn(true);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-                acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            task,
+            new MasterReview.Verdict(
+                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+            acting);
 
-        assertThat(moved).isTrue();
-        verify(ship).ship("ABC-1", task);
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
-    }
+    assertThat(moved).isTrue();
+    verify(ship).ship("ABC-1", task);
+    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+  }
 
-    @Test
-    void shipsNothingWhereTheHumanKeptThatStep(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void shipsNothingWhereTheHumanKeptThatStep(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("ship"), null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("ship"), null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-                kept);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            task,
+            new MasterReview.Verdict(
+                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+            kept);
 
-        assertThat(moved).isFalse();
-        verify(ship, never()).ship(anyString(), any());
-    }
+    assertThat(moved).isFalse();
+    verify(ship, never()).ship(anyString(), any());
+  }
 
-    @Test
-    void leavesAReadyRoundForTheHumanWhileTheReviewerOnlyJudges(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void leavesAReadyRoundForTheHumanWhileTheReviewerOnlyJudges(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-                judging);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            task,
+            new MasterReview.Verdict(
+                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+            judging);
 
-        assertThat(moved).isFalse();
-        verify(ship, never()).ship(anyString(), any());
-    }
+    assertThat(moved).isFalse();
+    verify(ship, never()).ship(anyString(), any());
+  }
 
-    @Test
-    void startsTheSessionOnAPlanTheMasterFoundHolds(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void startsTheSessionOnAPlanTheMasterFoundHolds(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
-        state.putTask("ABC-1", planned);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
+    state.putTask("ABC-1", planned);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-                acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            planned,
+            new MasterReview.Verdict(
+                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+            acting);
 
-        assertThat(moved).isTrue();
-        assertThat(state.task("ABC-1").orElseThrow())
-                .returns(TaskStatus.IN_PROGRESS, TaskState::status)
-                .returns("master: the plan holds", TaskState::message);
-        verify(ship, never()).ship(anyString(), any());
-    }
+    assertThat(moved).isTrue();
+    assertThat(state.task("ABC-1").orElseThrow())
+        .returns(TaskStatus.IN_PROGRESS, TaskState::status)
+        .returns("master: the plan holds", TaskState::message);
+    verify(ship, never()).ship(anyString(), any());
+  }
 
-    @Test
-    void returnsToTheSessionAPlanNamingAProjectJagtLacksInsteadOfAskingTheHuman(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void returnsToTheSessionAPlanNamingAProjectJagtLacksInsteadOfAskingTheHuman(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects:\n    api:\n      path: /srv/api\n  master:\n    mode: judge\n");
-        Files.writeString(root.resolve("plan.md"), "## Repositories\n- [changed] billing\n");
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState planned = TaskState.builder(List.of(TaskRepo.of(null, root.toString())), TaskStatus.PLAN_PENDING).alias("a1").build();
-        state.putTask("ABC-1", planned);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        ConfigService config = new ConfigService(paths, null, null);
-        PlanPlacement placement = new PlanPlacement(state, new TaskArtifacts(state), config,
-                new NewTaskWorktrees(config, state, null, null), null);
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                        new ApprovedRepos(placement, new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  projects:\n    api:\n      path: /srv/api\n  master:\n    mode: judge\n");
+    Files.writeString(root.resolve("plan.md"), "## Repositories\n- [changed] billing\n");
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState planned =
+        TaskState.builder(List.of(TaskRepo.of(null, root.toString())), TaskStatus.PLAN_PENDING)
+            .alias("a1")
+            .build();
+    state.putTask("ABC-1", planned);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    ConfigService config = new ConfigService(paths, null, null);
+    PlanPlacement placement =
+        new PlanPlacement(
+            state,
+            new TaskArtifacts(state),
+            config,
+            new NewTaskWorktrees(config, state, null, null),
+            null);
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    placement,
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-                acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            planned,
+            new MasterReview.Verdict(
+                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+            acting);
 
-        assertThat(moved).isTrue();
-        assertThat(state.task("ABC-1").orElseThrow())
-                .returns(AgentReport.PLAIN, TaskState::report)
-                .returns(true, TaskState::unplaced);
-        verify(sessions).writeTaskContext(eq("ABC-1"), contains("billing, which jagt cannot place; registered: api"));
-    }
+    assertThat(moved).isTrue();
+    assertThat(state.task("ABC-1").orElseThrow())
+        .returns(AgentReport.PLAIN, TaskState::report)
+        .returns(true, TaskState::unplaced);
+    verify(sessions)
+        .writeTaskContext(
+            eq("ABC-1"), contains("billing, which jagt cannot place; registered: api"));
+  }
 
-    @Test
-    void opensTheGateOfAnAutoplannedTaskWhenTheMasterFindsThePlanHolds(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void opensTheGateOfAnAutoplannedTaskWhenTheMasterFindsThePlanHolds(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
-                .planGate(PlanGate.CLOSED).build();
-        state.putTask("ABC-1", planned);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState planned =
+        TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
+            .planGate(PlanGate.CLOSED)
+            .build();
+    state.putTask("ABC-1", planned);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""), acting);
+    verdicts.act(
+        "ABC-1",
+        planned,
+        new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+        acting);
 
-        assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
-    }
+    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
+  }
 
-    @Test
-    void leavesAPlanAskedForInPlanModeForTheHumanThoughTheMasterMayApprovePlans(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void leavesAPlanAskedForInPlanModeForTheHumanThoughTheMasterMayApprovePlans(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
-                .planGate(PlanGate.REQUIRED).build();
-        state.putTask("ABC-1", planned);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState planned =
+        TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
+            .planGate(PlanGate.REQUIRED)
+            .build();
+    state.putTask("ABC-1", planned);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.act("ABC-1", planned,
-                new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""), acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            planned,
+            new MasterReview.Verdict(
+                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+            acting);
 
-        assertThat(moved).isFalse();
-        assertThat(state.task("ABC-1").orElseThrow())
-                .returns(TaskStatus.PLAN_PENDING, TaskState::status)
-                .returns(PlanGate.REQUIRED, TaskState::planGate);
-    }
+    assertThat(moved).isFalse();
+    assertThat(state.task("ABC-1").orElseThrow())
+        .returns(TaskStatus.PLAN_PENDING, TaskState::status)
+        .returns(PlanGate.REQUIRED, TaskState::planGate);
+  }
 
-    @Test
-    void keepsThePlanGateClosedWhenTheMasterSendsThePlanBack(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void keepsThePlanGateClosedWhenTheMasterSendsThePlanBack(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
-                .planGate(PlanGate.REQUIRED).build();
-        state.putTask("ABC-1", planned);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState planned =
+        TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
+            .planGate(PlanGate.REQUIRED)
+            .build();
+    state.putTask("ABC-1", planned);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("planner", new Finding("plan.md", "misses the migration", "", "wrong", "",
-                        "missing"))), List.of(), List.of(), 1, ""), acting);
+    verdicts.act(
+        "ABC-1",
+        planned,
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "planner",
+                    new Finding("plan.md", "misses the migration", "", "wrong", "", "missing"))),
+            List.of(),
+            List.of(),
+            1,
+            ""),
+        acting);
 
-        assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
-    }
+    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
+  }
 
-    @Test
-    void leavesAPlanThatHoldsForTheHumanWhoKeptThatStep(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void leavesAPlanThatHoldsForTheHumanWhoKeptThatStep(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
-        state.putTask("ABC-1", planned);
-        var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
+    state.putTask("ABC-1", planned);
+    var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-                kept);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            planned,
+            new MasterReview.Verdict(
+                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+            kept);
 
-        assertThat(moved).isFalse();
-        verify(sessions, never()).writeTaskContext(anyString(), anyString());
-    }
+    assertThat(moved).isFalse();
+    verify(sessions, never()).writeTaskContext(anyString(), anyString());
+  }
 
-    @Test
-    void answersThePlansQuestionWithTheDecisionBeforeStartingTheSession(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void answersThePlansQuestionWithTheDecisionBeforeStartingTheSession(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
-                .message("admins only or every user?").report(AgentReport.QUESTION).build();
-        state.putTask("ABC-1", planned);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState planned =
+        TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
+            .message("admins only or every user?")
+            .report(AgentReport.QUESTION)
+            .build();
+    state.putTask("ABC-1", planned);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(),
-                List.of(new MasterReview.Said("planner", new Finding("", "the endpoint is for admins only, as the ticket says",
-                        "decided", "noise", "", "scope"))), List.of(), 1, ""), acting);
+    verdicts.act(
+        "ABC-1",
+        planned,
+        new MasterReview.Verdict(
+            MasterReview.Kind.READY,
+            List.of(),
+            List.of(
+                new MasterReview.Said(
+                    "planner",
+                    new Finding(
+                        "",
+                        "the endpoint is for admins only, as the ticket says",
+                        "decided",
+                        "noise",
+                        "",
+                        "scope"))),
+            List.of(),
+            1,
+            ""),
+        acting);
 
-        verify(sessions).writeTaskContext(eq("ABC-1"), contains("answered your question"));
-        verify(sessions).writeTaskContext(eq("ABC-1"), contains("the endpoint is for admins only, as the ticket says"));
-        verify(sessions).writeTaskContext(eq("ABC-1"), contains("the plan holds."));
-    }
+    verify(sessions).writeTaskContext(eq("ABC-1"), contains("answered your question"));
+    verify(sessions)
+        .writeTaskContext(
+            eq("ABC-1"), contains("the endpoint is for admins only, as the ticket says"));
+    verify(sessions).writeTaskContext(eq("ABC-1"), contains("the plan holds."));
+  }
 
-    @Test
-    void sendsAPlanThatMissesTheTicketBackToBeReworked(@TempDir Path root) throws Exception {
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.writeString(root.resolve("roles/session/brief.md.dist"), "## plan-not-ready\n\nrework the plan\n");
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void sendsAPlanThatMissesTheTicketBackToBeReworked(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(
+        root.resolve("roles/session/brief.md.dist"), "## plan-not-ready\n\nrework the plan\n");
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
-        state.putTask("ABC-1", planned);
-        var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
+    state.putTask("ABC-1", planned);
+    var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("planner", new Finding("plan.md", "drops the v2 route the ticket keeps", "",
-                        "wrong", "", "missing"))), List.of(), List.of(), 1, ""), judging);
+    verdicts.act(
+        "ABC-1",
+        planned,
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "planner",
+                    new Finding(
+                        "plan.md",
+                        "drops the v2 route the ticket keeps",
+                        "",
+                        "wrong",
+                        "",
+                        "missing"))),
+            List.of(),
+            List.of(),
+            1,
+            ""),
+        judging);
 
-        verify(sessions).writeTaskContext("ABC-1", "- [planner] plan.md — drops the v2 route the ticket keeps (missing)\n\nrework the plan");
-    }
+    verify(sessions)
+        .writeTaskContext(
+            "ABC-1",
+            "- [planner] plan.md — drops the v2 route the ticket keeps (missing)\n\n"
+                + "rework the plan");
+  }
 
-    @Test
-    void putsTheReviewersQuestionToTheHumanThroughTheSessionThatWaitsOnTheAnswer(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void putsTheReviewersQuestionToTheHumanThroughTheSessionThatWaitsOnTheAnswer(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION, List.of(), List.of(),
-                List.of("Add v3 beside v2, or replace it?"), 1, ""), acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            task,
+            new MasterReview.Verdict(
+                MasterReview.Kind.QUESTION,
+                List.of(),
+                List.of(),
+                List.of("Add v3 beside v2, or replace it?"),
+                1,
+                ""),
+            acting);
 
-        assertThat(moved).isTrue();
-        assertThat(state.task("ABC-1").orElseThrow())
-                .returns(TaskStatus.IN_PROGRESS, TaskState::status)
-                .returns(AgentReport.QUESTION, TaskState::report)
-                .returns("reviewer: Add v3 beside v2, or replace it?", TaskState::message);
-        verify(ship, never()).ship(anyString(), any());
-    }
+    assertThat(moved).isTrue();
+    assertThat(state.task("ABC-1").orElseThrow())
+        .returns(TaskStatus.IN_PROGRESS, TaskState::status)
+        .returns(AgentReport.QUESTION, TaskState::report)
+        .returns("reviewer: Add v3 beside v2, or replace it?", TaskState::message);
+    verify(ship, never()).ship(anyString(), any());
+  }
 
-    @Test
-    void asksTheSameQuestionOnce(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void asksTheSameQuestionOnce(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
-        OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", Step.ASKED_HUMAN,
-                "The reviewer asked the human: Add v3 beside v2, or replace it?", Standing.of(task)));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    OriginContext.as(
+        ActionOrigin.MASTER,
+        () ->
+            relay.relay(
+                "ABC-1",
+                Step.ASKED_HUMAN,
+                "The reviewer asked the human: Add v3 beside v2, or replace it?",
+                Standing.of(task)));
 
-        boolean moved = verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.QUESTION, List.of(), List.of(),
-                List.of("Add v3 beside v2, or replace it?"), 1, ""), acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            state.task("ABC-1").orElseThrow(),
+            new MasterReview.Verdict(
+                MasterReview.Kind.QUESTION,
+                List.of(),
+                List.of(),
+                List.of("Add v3 beside v2, or replace it?"),
+                1,
+                ""),
+            acting);
 
-        assertThat(moved).isFalse();
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
-    }
+    assertThat(moved).isFalse();
+    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+  }
 
-    @Test
-    void recordsWhatTheMasterDecidedSoALaterRoundDoesNotReopenIt(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void recordsWhatTheMasterDecidedSoALaterRoundDoesNotReopenIt(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2\nbeside v3", ""));
+    verdicts.answered(
+        "ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2\nbeside v3", ""));
 
-        verify(decisions).record(task, "- asked: keep v2? — decided: keep v2 beside v3");
-        verify(decisions).answered(task);
-    }
+    verify(decisions).record(task, "- asked: keep v2? — decided: keep v2 beside v3");
+    verify(decisions).answered(task);
+  }
 
-    @Test
-    void answersNothingAndRecordsNothingWhenTheSessionAlreadyHoldsThatAnswer(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void answersNothingAndRecordsNothingWhenTheSessionAlreadyHoldsThatAnswer(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
-        OriginContext.as(ActionOrigin.MASTER, () -> relay.relay("ABC-1", Step.ANSWERED,
-                "The Master answered your question, standing in for the human:\nkeep v2 beside v3", Standing.of(task)));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    OriginContext.as(
+        ActionOrigin.MASTER,
+        () ->
+            relay.relay(
+                "ABC-1",
+                Step.ANSWERED,
+                "The Master answered your question, standing in for the human:\nkeep v2 beside v3",
+                Standing.of(task)));
 
-        boolean moved = verdicts.answered("ABC-1", state.task("ABC-1").orElseThrow(), "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
+    boolean moved =
+        verdicts.answered(
+            "ABC-1",
+            state.task("ABC-1").orElseThrow(),
+            "keep v2?",
+            new MasterPanel.Decision("keep v2 beside v3", ""));
 
-        assertThat(moved).isFalse();
-        verify(decisions, never()).record(any(), anyString());
-    }
+    assertThat(moved).isFalse();
+    verify(decisions, never()).record(any(), anyString());
+  }
 
-    @Test
-    void opensNoTaskWhenTheMastersAnswerHoldsADoLine(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void opensNoTaskWhenTheMastersAnswerHoldsADoLine(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        verdicts.answered("ABC-1", task, "a second request?",
-                new MasterPanel.Decision("drop the old keys here", "do proj drop the old keys from main"));
+    verdicts.answered(
+        "ABC-1",
+        task,
+        "a second request?",
+        new MasterPanel.Decision("drop the old keys here", "do proj drop the old keys from main"));
 
-        verify(sessions).writeTaskContext(eq("ABC-1"), contains("Not opened: only the human opens a task."));
-    }
+    verify(sessions)
+        .writeTaskContext(eq("ABC-1"), contains("Not opened: only the human opens a task."));
+  }
 
-    @Test
-    void reportsAnAnswerCountOverTheTreeAsTheDecisionsHoldIt(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void reportsAnAnswerCountOverTheTreeAsTheDecisionsHoldIt(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        doReturn(3).when(decisions).answersOverThisTree(task);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    doReturn(3).when(decisions).answersOverThisTree(task);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        assertThat(verdicts.answersOverThisTree(task)).isEqualTo(3);
-    }
+    assertThat(verdicts.answersOverThisTree(task)).isEqualTo(3);
+  }
 
-    @ParameterizedTest
-    @CsvSource({"NOT_READY,REVIEW_PENDING", "QUESTION,REVIEW_PENDING", "READY,PLAN_PENDING"})
-    void movesNothingOfATaskThatIsGoneFromTheState(MasterReview.Kind kind, TaskStatus status, @TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @ParameterizedTest
+  @CsvSource({"NOT_READY,REVIEW_PENDING", "QUESTION,REVIEW_PENDING", "READY,PLAN_PENDING"})
+  void movesNothingOfATaskThatIsGoneFromTheState(
+      MasterReview.Kind kind, TaskStatus status, @TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), status).alias("a1").build();
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task = TaskState.builder("proj", root.toString(), status).alias("a1").build();
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(kind, List.of(new MasterReview.Said("developer",
-                new Finding("Foo.java", "wrong", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""),
-                acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            task,
+            new MasterReview.Verdict(
+                kind,
+                List.of(
+                    new MasterReview.Said(
+                        "developer",
+                        new Finding("Foo.java", "wrong", "", "blocking", "", "behaviour"))),
+                List.of(),
+                List.of(),
+                1,
+                ""),
+            acting);
 
-        assertThat(moved).isFalse();
-    }
+    assertThat(moved).isFalse();
+  }
 
-    @Test
-    void movesNothingOfAnAnsweredTaskThatIsGoneFromTheState(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void movesNothingOfAnAnsweredTaskThatIsGoneFromTheState(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.answered("ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
+    boolean moved =
+        verdicts.answered(
+            "ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2 beside v3", ""));
 
-        assertThat(moved).isFalse();
-    }
+    assertThat(moved).isFalse();
+  }
 
-    @Test
-    void movesNothingWhenTheShipWasNotOpened(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void movesNothingWhenTheShipWasNotOpened(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-        state.putTask("ABC-1", task);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState task =
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    state.putTask("ABC-1", task);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-                acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            task,
+            new MasterReview.Verdict(
+                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+            acting);
 
-        assertThat(moved).isFalse();
-    }
+    assertThat(moved).isFalse();
+  }
 
-    @Test
-    void startsNothingOnAPlanTheSessionWasAlreadyToldHolds(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void startsNothingOnAPlanTheSessionWasAlreadyToldHolds(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
-        state.putTask("ABC-1", planned);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
+    state.putTask("ABC-1", planned);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-                acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            planned,
+            new MasterReview.Verdict(
+                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+            acting);
 
-        assertThat(moved).isFalse();
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);
-    }
+    assertThat(moved).isFalse();
+    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);
+  }
 
-    @Test
-    void stopsTheTaskInsteadOfReturningAFourthRoundOfFreshFindingsRunning(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void stopsTheTaskInsteadOfReturningAFourthRoundOfFreshFindingsRunning(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Cart.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Order.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 2, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Payment.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 3, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 3));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "developer",
+                    new Finding(
+                        "Cart.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+            List.of(),
+            List.of(),
+            1,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "developer",
+                    new Finding(
+                        "Order.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+            List.of(),
+            List.of(),
+            2,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "developer",
+                    new Finding(
+                        "Payment.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+            List.of(),
+            List.of(),
+            3,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 3));
 
-        boolean moved = verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Invoice.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 4, ""), acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            state.task("ABC-1").orElseThrow(),
+            new MasterReview.Verdict(
+                MasterReview.Kind.NOT_READY,
+                List.of(
+                    new MasterReview.Said(
+                        "developer",
+                        new Finding(
+                            "Invoice.java",
+                            "the guard is inverted",
+                            "",
+                            "blocking",
+                            "",
+                            "behaviour"))),
+                List.of(),
+                List.of(),
+                4,
+                ""),
+            acting);
 
-        assertThat(moved).isFalse();
-        assertThat(state.task("ABC-1").orElseThrow())
-                .extracting(TaskState::status, done -> done.stop().trigger())
-                .containsExactly(TaskStatus.REVIEW_PENDING, TaskStop.Trigger.ROUNDS);
-    }
+    assertThat(moved).isFalse();
+    assertThat(state.task("ABC-1").orElseThrow())
+        .extracting(TaskState::status, done -> done.stop().trigger())
+        .containsExactly(TaskStatus.REVIEW_PENDING, TaskStop.Trigger.ROUNDS);
+  }
 
-    @Test
-    void returnsAThirdRoundOfFreshFindingsRunning(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void returnsAThirdRoundOfFreshFindingsRunning(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.copy(Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Cart.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 1, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Order.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 2, ""), acting);
-        state.updateTask("ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build());
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "developer",
+                    new Finding(
+                        "Cart.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+            List.of(),
+            List.of(),
+            1,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
+    verdicts.act(
+        "ABC-1",
+        state.task("ABC-1").orElseThrow(),
+        new MasterReview.Verdict(
+            MasterReview.Kind.NOT_READY,
+            List.of(
+                new MasterReview.Said(
+                    "developer",
+                    new Finding(
+                        "Order.java", "the guard is inverted", "", "blocking", "", "behaviour"))),
+            List.of(),
+            List.of(),
+            2,
+            ""),
+        acting);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
 
-        boolean moved = verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of(new MasterReview.Said("developer", new Finding("Payment.java", "the guard is inverted", "", "blocking", "", "behaviour"))), List.of(), List.of(), 3, ""), acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            state.task("ABC-1").orElseThrow(),
+            new MasterReview.Verdict(
+                MasterReview.Kind.NOT_READY,
+                List.of(
+                    new MasterReview.Said(
+                        "developer",
+                        new Finding(
+                            "Payment.java",
+                            "the guard is inverted",
+                            "",
+                            "blocking",
+                            "",
+                            "behaviour"))),
+                List.of(),
+                List.of(),
+                3,
+                ""),
+            acting);
 
-        assertThat(moved).isTrue();
-        assertThat(state.task("ABC-1").orElseThrow().stopped()).isFalse();
-    }
+    assertThat(moved).isTrue();
+    assertThat(state.task("ABC-1").orElseThrow().stopped()).isFalse();
+  }
 
-    @Test
-    void startsNoSessionOnAPlanWhereNoMasterCaseAllowsTheApproval(@TempDir Path root) throws Exception {
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void startsNoSessionOnAPlanWhereNoMasterCaseAllowsTheApproval(@TempDir Path root)
+      throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-        Files.createDirectories(root.resolve("roles/session"));
-        Files.copy(Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-        StateService state = new StateService(new JsonMapper(), paths);
-        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
-        state.putTask("ABC-1", planned);
-        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-        CaseDoor door = new CaseDoor(new SessionCases(paths), new MasterCases(paths), state, new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(ignored -> Arbiter.Profile.OFF, state, ConfigService.ConfigFile.defaults()::loopBreakerOrDefault, new StopAnnouncements(new Notifications(List.of(), state, Runnable::run), new StopLog(new JsonMapper(), paths)), Clock.systemUTC()));
-        StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door,
-                new TaskTurns(state, Clock.systemUTC()));
-        MasterVerdicts verdicts = new MasterVerdicts(relay, ship, new FlowReports(state, Clock.systemUTC()), decisions,
-                new PlanApproval(state, relay, door, new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()), new ApprovedRepos(new PlanPlacement(state, null, null, null, null), new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
+    state.putTask("ABC-1", planned);
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
+    CaseDoor door =
+        new CaseDoor(
+            new SessionCases(paths),
+            new MasterCases(paths),
+            state,
+            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+            new TaskStops(
+                ignored -> Arbiter.Profile.OFF,
+                state,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths)),
+                Clock.systemUTC()));
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+    MasterVerdicts verdicts =
+        new MasterVerdicts(
+            relay,
+            ship,
+            new FlowReports(state, Clock.systemUTC()),
+            decisions,
+            new PlanApproval(
+                state,
+                relay,
+                door,
+                new PlanBaseline(
+                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
+                new ApprovedRepos(
+                    new PlanPlacement(state, null, null, null, null),
+                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
 
-        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-                acting);
+    boolean moved =
+        verdicts.act(
+            "ABC-1",
+            planned,
+            new MasterReview.Verdict(
+                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+            acting);
 
-        assertThat(moved).isFalse();
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);
-    }
+    assertThat(moved).isFalse();
+    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);
+  }
 }

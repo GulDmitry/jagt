@@ -8,26 +8,27 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ActCommand implements GlobalCommand {
 
-    private final ActStops actStops;
+  private final ActStops actStops;
 
-    @Override
-    public String id() {
-        return "act";
-    }
+  @Override
+  public String id() {
+    return "act";
+  }
 
-    @Override
-    public int rank() {
-        return 185;
-    }
+  @Override
+  public int rank() {
+    return 185;
+  }
 
-    @Override
-    public String hint() {
-        return "give the Master back the buttons it stopped pressing";
-    }
+  @Override
+  public String hint() {
+    return "give the Master back the buttons it stopped pressing";
+  }
 
-    @Override
-    public String run(String tail) {
-        return actStops.lift() ? "act restored: the Master presses again where `roles.master.mode` is act"
-                : "act was not stopped";
-    }
+  @Override
+  public String run(String tail) {
+    return actStops.lift()
+        ? "act restored: the Master presses again where `roles.master.mode` is act"
+        : "act was not stopped";
+  }
 }

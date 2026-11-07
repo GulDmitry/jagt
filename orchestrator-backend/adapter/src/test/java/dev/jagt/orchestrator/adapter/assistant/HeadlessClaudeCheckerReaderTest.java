@@ -1,26 +1,5 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.config.RoleDefinitions;
-import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
-import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.config.RoleDefinition;
-import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.port.CheckerReader;
-import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
-import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.QaDecline;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.mockito.ArgumentCaptor;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.Clock;
-import java.time.Duration;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,130 +8,283 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
+import dev.jagt.orchestrator.config.AssistantProperties;
+import dev.jagt.orchestrator.config.RoleDefinitions;
+import dev.jagt.orchestrator.port.CheckerReader;
+import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
+import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.task.QaDecline;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Duration;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
+
 class HeadlessClaudeCheckerReaderTest {
 
-    private final ProcessRunner runner = mock(ProcessRunner.class);
-    private final ReadOnlyTools reads = mock(ReadOnlyTools.class);
-    private final UsageTracker usage = mock(UsageTracker.class);
-    private final HeadlessClaudeCheckerReader reader = new HeadlessClaudeCheckerReader(new HeadlessClaude(
-            new AssistantProcess(runner, new AssistantBreaker(AssistantProperties.empty(), Clock.systemUTC())),
-            ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
-            AssistantProperties.empty(), List.of(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))));
+  private final ProcessRunner runner = mock(ProcessRunner.class);
+  private final ReadOnlyTools reads = mock(ReadOnlyTools.class);
+  private final UsageTracker usage = mock(UsageTracker.class);
+  private final HeadlessClaudeCheckerReader reader =
+      new HeadlessClaudeCheckerReader(
+          new HeadlessClaude(
+              new AssistantProcess(
+                  runner, new AssistantBreaker(AssistantProperties.empty(), Clock.systemUTC())),
+              ClaudeProperties.defaults(),
+              AssistantProperties.empty(),
+              usage,
+              reads),
+          ClaudeProperties.defaults(),
+          AssistantProperties.empty(),
+          List.of(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))));
 
-    @TempDir
-    Path worktree;
+  @TempDir Path worktree;
 
-    @Test
-    void holdsNoWriteToolAndCurlOnlyAsAQuietGetSoNothingItReadsCanChangeTheEnvironmentOrTheTree() {
-        when(runner.run(any(Path.class), any(Duration.class), any()))
-                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
+  @Test
+  void holdsNoWriteToolAndCurlOnlyAsAQuietGetSoNothingItReadsCanChangeTheEnvironmentOrTheTree() {
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
-        reader.read(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", List.of(),
-                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).replies().answer().json(), "qa"));
+    reader.read(
+        new CheckerReader.Run(
+            "",
+            "check ABC-42",
+            worktree,
+            "abc123",
+            "",
+            List.of(),
+            RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                .replies()
+                .answer()
+                .json(),
+            "qa"));
 
-        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
-        List<String> argv = command.getValue();
-        assertThat(argv.get(argv.indexOf("--tools") + 1)).isEqualTo("Read,Grep,Glob,Bash,WebFetch");
-        assertThat(argv.subList(argv.indexOf("--allowedTools"), argv.size()))
-                .contains("WebFetch", "Bash(curl -sS:*)", "Bash(git log:*)")
-                .noneMatch(tool -> tool.startsWith("Write") || tool.startsWith("Bash(curl") && !tool.equals("Bash(curl -sS:*)"));
-        assertThat(argv.subList(argv.indexOf("--disallowedTools"), argv.indexOf("--allowedTools")))
-                .contains("Write", "Edit", "Bash(git * --output*)");
-    }
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+    List<String> argv = command.getValue();
+    assertThat(argv.get(argv.indexOf("--tools") + 1)).isEqualTo("Read,Grep,Glob,Bash,WebFetch");
+    assertThat(argv.subList(argv.indexOf("--allowedTools"), argv.size()))
+        .contains("WebFetch", "Bash(curl -sS:*)", "Bash(git log:*)")
+        .noneMatch(
+            tool ->
+                tool.startsWith("Write")
+                    || tool.startsWith("Bash(curl") && !tool.equals("Bash(curl -sS:*)"));
+    assertThat(argv.subList(argv.indexOf("--disallowedTools"), argv.indexOf("--allowedTools")))
+        .contains("Write", "Edit", "Bash(git * --output*)");
+  }
 
-    @Test
-    void letsAWebFetchReachOnlyTheEnvironmentsTheRunNames() {
-        when(runner.run(any(Path.class), any(Duration.class), any()))
-                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
+  @Test
+  void letsAWebFetchReachOnlyTheEnvironmentsTheRunNames() {
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
-        reader.read(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "",
-                List.of("https://dev.example.test", "https://dev.example.test/version"), RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).replies().answer().json(), "qa"));
+    reader.read(
+        new CheckerReader.Run(
+            "",
+            "check ABC-42",
+            worktree,
+            "abc123",
+            "",
+            List.of("https://dev.example.test", "https://dev.example.test/version"),
+            RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                .replies()
+                .answer()
+                .json(),
+            "qa"));
 
-        verify(reads).fence(any(), eq(new ReadScope(List.of(worktree), List.of("StructuredOutput"), true, List.of(),
-                List.of("https://dev.example.test", "https://dev.example.test/version"))));
-    }
+    verify(reads)
+        .fence(
+            any(),
+            eq(
+                new ReadScope(
+                    List.of(worktree),
+                    List.of("StructuredOutput"),
+                    true,
+                    List.of(),
+                    List.of("https://dev.example.test", "https://dev.example.test/version"))));
+  }
 
-    @Test
-    void writesQaReportFromTheRowsTheModelAnswered() throws IOException {
-        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+  @Test
+  void writesQaReportFromTheRowsTheModelAnswered() throws IOException {
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(
+                0,
                 "{\"structured_output\":{\"failure\":\"\",\"rows\":[{\"criterion\":\"page opens\","
-                        + "\"status\":\"met\",\"evidence\":\"GET answered 200\"}]}}", ""));
+                    + "\"status\":\"met\",\"evidence\":\"GET answered 200\"}]}}",
+                ""));
 
-        var answer = reader.read(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", List.of(),
-                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).replies().answer().json(), "qa"));
+    var answer =
+        reader.read(
+            new CheckerReader.Run(
+                "",
+                "check ABC-42",
+                worktree,
+                "abc123",
+                "",
+                List.of(),
+                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                    .replies()
+                    .answer()
+                    .json(),
+                "qa"));
 
-        assertThat(Files.readString(worktree.resolve("qa-report.md")))
-                .contains("abc123", "page opens", "GET answered 200");
-        assertThat(answer.facts().orElseThrow().rows()).extracting(row -> row.criterion()).containsExactly("page opens");
-    }
+    assertThat(Files.readString(worktree.resolve("qa-report.md")))
+        .contains("abc123", "page opens", "GET answered 200");
+    assertThat(answer.facts().orElseThrow().rows())
+        .extracting(row -> row.criterion())
+        .containsExactly("page opens");
+  }
 
-    @Test
-    void readsTheDisputeQaFilledAgainstASessionsDecline() {
-        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
-                "{\"structured_output\":{\"failure\":\"\",\"dispute\":\"GET /list is unsorted\"}}", ""));
+  @Test
+  void readsTheDisputeQaFilledAgainstASessionsDecline() {
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                "{\"structured_output\":{\"failure\":\"\",\"dispute\":\"GET /list is unsorted\"}}",
+                ""));
 
-        QaDecline decline = reader.reconsider(new CheckerReader.Run("", "decide", worktree, "abc123", "", List.of(),
-                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).replies().decline().json(), "qa")).facts()
-                .orElseThrow();
+    QaDecline decline =
+        reader
+            .reconsider(
+                new CheckerReader.Run(
+                    "",
+                    "decide",
+                    worktree,
+                    "abc123",
+                    "",
+                    List.of(),
+                    RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                        .replies()
+                        .decline()
+                        .json(),
+                    "qa"))
+            .facts()
+            .orElseThrow();
 
-        assertThat(decline).isEqualTo(new QaDecline("abc123", "", "GET /list is unsorted"));
-    }
+    assertThat(decline).isEqualTo(new QaDecline("abc123", "", "GET /list is unsorted"));
+  }
 
-    @Test
-    void passesTheSharedPromptAndTheModelAndPinsNoMcpServerWhereNoneIsListed() {
-        when(runner.run(any(Path.class), any(Duration.class), any()))
-                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
+  @Test
+  void passesTheSharedPromptAndTheModelAndPinsNoMcpServerWhereNoneIsListed() {
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
-        reader.read(new CheckerReader.Run("be brief", "check ABC-42", worktree, "abc123", "opus", List.of(),
-                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).replies().answer().json(), "qa"));
+    reader.read(
+        new CheckerReader.Run(
+            "be brief",
+            "check ABC-42",
+            worktree,
+            "abc123",
+            "opus",
+            List.of(),
+            RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                .replies()
+                .answer()
+                .json(),
+            "qa"));
 
-        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
-        assertThat(command.getValue()).containsSequence("--append-system-prompt", "be brief")
-                .containsSequence("--model", "opus")
-                .containsSequence("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}");
-    }
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+    assertThat(command.getValue())
+        .containsSequence("--append-system-prompt", "be brief")
+        .containsSequence("--model", "opus")
+        .containsSequence("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}");
+  }
 
-    @Test
-    void passesNeitherASharedPromptNorAModelWhereTheRunNamesNone() {
-        when(runner.run(any(Path.class), any(Duration.class), any()))
-                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
+  @Test
+  void passesNeitherASharedPromptNorAModelWhereTheRunNamesNone() {
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
-        reader.read(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", List.of(),
-                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).replies().answer().json(), "qa"));
+    reader.read(
+        new CheckerReader.Run(
+            "",
+            "check ABC-42",
+            worktree,
+            "abc123",
+            "",
+            List.of(),
+            RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                .replies()
+                .answer()
+                .json(),
+            "qa"));
 
-        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
-        assertThat(command.getValue()).doesNotContain("--append-system-prompt", "--model");
-    }
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+    assertThat(command.getValue()).doesNotContain("--append-system-prompt", "--model");
+  }
 
-    @Test
-    void refusesARunOfARoleNoInstalledDefinitionNames() {
-        var run = new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", List.of(), "{}", "nope");
+  @Test
+  void refusesARunOfARoleNoInstalledDefinitionNames() {
+    var run =
+        new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", List.of(), "{}", "nope");
 
-        assertThatThrownBy(() -> reader.read(run)).isInstanceOf(IllegalStateException.class);
-    }
+    assertThatThrownBy(() -> reader.read(run)).isInstanceOf(IllegalStateException.class);
+  }
 
-    @Test
-    void failsTheVerdictNamingTheCauseWhenTheCheckAnsweredNoEnvelope() {
-        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(1, "", "boom"));
+  @Test
+  void failsTheVerdictNamingTheCauseWhenTheCheckAnsweredNoEnvelope() {
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(new Processes.Result(1, "", "boom"));
 
-        var verdict = reader.read(new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", List.of(),
-                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).replies().answer().json(), "qa")).facts()
-                .orElseThrow();
+    var verdict =
+        reader
+            .read(
+                new CheckerReader.Run(
+                    "",
+                    "check ABC-42",
+                    worktree,
+                    "abc123",
+                    "",
+                    List.of(),
+                    RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                        .replies()
+                        .answer()
+                        .json(),
+                    "qa"))
+            .facts()
+            .orElseThrow();
 
-        assertThat(verdict.failure()).startsWith("the check failed");
-    }
+    assertThat(verdict.failure()).startsWith("the check failed");
+  }
 
-    @Test
-    void failsTheDeclineNamingTheCauseWhenTheCheckAnsweredNoEnvelope() {
-        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(1, "", "boom"));
+  @Test
+  void failsTheDeclineNamingTheCauseWhenTheCheckAnsweredNoEnvelope() {
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(new Processes.Result(1, "", "boom"));
 
-        QaDecline decline = reader.reconsider(new CheckerReader.Run("", "decide", worktree, "abc123", "", List.of(),
-                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).replies().decline().json(), "qa")).facts()
-                .orElseThrow();
+    QaDecline decline =
+        reader
+            .reconsider(
+                new CheckerReader.Run(
+                    "",
+                    "decide",
+                    worktree,
+                    "abc123",
+                    "",
+                    List.of(),
+                    RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                        .replies()
+                        .decline()
+                        .json(),
+                    "qa"))
+            .facts()
+            .orElseThrow();
 
-        assertThat(decline.failure()).startsWith("the check failed");
-    }
+    assertThat(decline.failure()).startsWith("the check failed");
+  }
 }

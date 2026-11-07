@@ -4,19 +4,20 @@ import dev.jagt.statechart.ChartBuilder;
 
 interface Role {
 
-    enum Kind {
-        ARBITER, CHECKER
-    }
+  enum Kind {
+    ARBITER,
+    CHECKER
+  }
 
-    String id();
+  String id();
 
-    Kind kind();
+  Kind kind();
 
-    void declareRegion(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart);
+  void declareRegion(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart);
 
-    void declareBeneath(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart);
+  void declareBeneath(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart);
 
-    void declareTurnEdge(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, TurnKind from);
+  void declareTurnEdge(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, TurnKind from);
 
-    void declareLifecycleEdge(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart);
+  void declareLifecycleEdge(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart);
 }

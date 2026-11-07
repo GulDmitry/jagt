@@ -1,5 +1,10 @@
 package dev.jagt.orchestrator.command;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.task.LaunchRequest;
@@ -8,41 +13,39 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 class DoCommandTest {
 
-    private final TaskLauncher launcher = mock(TaskLauncher.class);
-    private final DoCommand command = new DoCommand(launcher);
+  private final TaskLauncher launcher = mock(TaskLauncher.class);
+  private final DoCommand command = new DoCommand(launcher);
 
-    @Test
-    void answersWithTheLaunchersSentenceWhenATaskIsCreated() {
-        when(launcher.launchLine("ABC-9")).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+  @Test
+  void answersWithTheLaunchersSentenceWhenATaskIsCreated() {
+    when(launcher.launchLine("ABC-9")).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
-        assertThat(command.run("ABC-9")).isEqualTo("Started ABC-9.");
-    }
+    assertThat(command.run("ABC-9")).isEqualTo("Started ABC-9.");
+  }
 
-    @Test
-    void refusesALaunchThatCreatedNoTaskSoTheTypedLineIsKept() {
-        when(launcher.launchLine("ABC-9")).thenReturn(Launched.refused("branch 'ABC-9' already exists in alpha"));
+  @Test
+  void refusesALaunchThatCreatedNoTaskSoTheTypedLineIsKept() {
+    when(launcher.launchLine("ABC-9"))
+        .thenReturn(Launched.refused("branch 'ABC-9' already exists in alpha"));
 
-        assertThatThrownBy(() -> command.run("ABC-9"))
-                .isInstanceOfSatisfying(Refusal.class,
-                        refused -> assertThat(refused.code()).isEqualTo(Refusal.Code.STATE))
-                .hasMessage("branch 'ABC-9' already exists in alpha");
-    }
+    assertThatThrownBy(() -> command.run("ABC-9"))
+        .isInstanceOfSatisfying(
+            Refusal.class, refused -> assertThat(refused.code()).isEqualTo(Refusal.Code.STATE))
+        .hasMessage("branch 'ABC-9' already exists in alpha");
+  }
 
-    @ParameterizedTest
-    @EnumSource(value = Launched.Reason.class, names = {"NOTHING_TO_DO", "NO_BRANCH_NAME"})
-    void teachesTheDoGrammarWhenTheLineNeedsSayingWhatTheTaskIs(Launched.Reason reason) {
-        when(launcher.launchLine("demo")).thenReturn(Launched.refused(reason, "error: refused"));
+  @ParameterizedTest
+  @EnumSource(
+      value = Launched.Reason.class,
+      names = {"NOTHING_TO_DO", "NO_BRANCH_NAME"})
+  void teachesTheDoGrammarWhenTheLineNeedsSayingWhatTheTaskIs(Launched.Reason reason) {
+    when(launcher.launchLine("demo")).thenReturn(Launched.refused(reason, "error: refused"));
 
-        assertThatThrownBy(() -> command.run("demo"))
-                .isInstanceOf(Refusal.class)
-                .hasMessageContaining("error: refused")
-                .hasMessageContaining(LaunchRequest.OWN_GRAMMAR);
-    }
+    assertThatThrownBy(() -> command.run("demo"))
+        .isInstanceOf(Refusal.class)
+        .hasMessageContaining("error: refused")
+        .hasMessageContaining(LaunchRequest.OWN_GRAMMAR);
+  }
 }

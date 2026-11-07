@@ -5,129 +5,149 @@ import dev.jagt.orchestrator.service.ReviewDrafts;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.WorktreeFiles;
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Artifact;
-import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
-import org.springframework.stereotype.Service;
-
+import dev.jagt.orchestrator.task.TaskState;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
+import org.springframework.stereotype.Service;
 
-/** Drafted review replies, read from the file the agent owns. Text the shape does not fit is printed as it stands. */
+/**
+ * Drafted review replies, read from the file the agent owns. Text the shape does not fit is printed
+ * as it stands.
+ */
 @Service
 @RequiredArgsConstructor
 public class ReviewRepliesReport {
 
-    /** The shape the round brief prescribes; anything else is text this cannot separate. */
-    private static final Pattern BLOCK = Pattern.compile("^##+\\s*(.*)$");
-    private static final Pattern VERDICT = Pattern.compile("^(FIXED|NO CHANGE|QUESTION)\\s*[-–—:]?\\s*(.*)$");
+  /** The shape the round brief prescribes; anything else is text this cannot separate. */
+  private static final Pattern BLOCK = Pattern.compile("^##+\\s*(.*)$");
 
-    private final TaskViews views;
-    private final StateService state;
-    private final ReviewDrafts drafts;
+  private static final Pattern VERDICT =
+      Pattern.compile("^(FIXED|NO CHANGE|QUESTION)\\s*[-–—:]?\\s*(.*)$");
 
-    public String render(String tail) {
-        String asked = tail == null ? "" : tail.strip();
-        return asked.isEmpty() ? everything() : one(asked);
+  private final TaskViews views;
+  private final StateService state;
+  private final ReviewDrafts drafts;
+
+  public String render(String tail) {
+    String asked = tail == null ? "" : tail.strip();
+    return asked.isEmpty() ? everything() : one(asked);
+  }
+
+  private String one(String asked) {
+    String id = state.canonicalTaskId(asked);
+    Optional<TaskView> view = views.all().stream().filter(task -> task.id().equals(id)).findFirst();
+    if (view.isEmpty()) {
+      return "no task `" + asked + "`.";
     }
-
-    private String one(String asked) {
-        String id = state.canonicalTaskId(asked);
-        Optional<TaskView> view = views.all().stream().filter(task -> task.id().equals(id)).findFirst();
-        if (view.isEmpty()) {
-            return "no task `" + asked + "`.";
-        }
-        return section(view.get()).orElse(reference(view.get())
+    return section(view.get())
+        .orElse(
+            reference(view.get())
                 + " has no drafted replies — review_replies.md is not in its worktree.");
-    }
+  }
 
-    private String everything() {
-        List<String> sections = views.all().stream().map(this::section).flatMap(Optional::stream).toList();
-        return sections.isEmpty()
-                ? "no drafted review replies: no task is carrying a review_replies.md."
-                : String.join("\n\n", sections);
-    }
+  private String everything() {
+    List<String> sections =
+        views.all().stream().map(this::section).flatMap(Optional::stream).toList();
+    return sections.isEmpty()
+        ? "no drafted review replies: no task is carrying a review_replies.md."
+        : String.join("\n\n", sections);
+  }
 
-    /** Keyed on the file, never the card's badge: the badge is dropped once the status moves on. */
-    private Optional<String> section(TaskView task) {
-        Optional<TaskState> state = this.state.task(task.id());
-        return state.map(TaskState::worktreePath)
-                .filter(worktree -> !worktree.isBlank())
-                .flatMap(worktree -> WorktreeFiles.read(Path.of(worktree)
-                        .resolve(Artifact.REPLIES.fileName())))
-                .filter(text -> !text.isBlank())
-                .map(text -> header(task, state.filter(drafts::spent).isPresent()) + "\n\n" + body(text));
-    }
+  /** Keyed on the file, never the card's badge: the badge is dropped once the status moves on. */
+  private Optional<String> section(TaskView task) {
+    Optional<TaskState> state = this.state.task(task.id());
+    return state
+        .map(TaskState::worktreePath)
+        .filter(worktree -> !worktree.isBlank())
+        .flatMap(
+            worktree -> WorktreeFiles.read(Path.of(worktree).resolve(Artifact.REPLIES.fileName())))
+        .filter(text -> !text.isBlank())
+        .map(text -> header(task, state.filter(drafts::spent).isPresent()) + "\n\n" + body(text));
+  }
 
-    /** A spent file is still printed — it is the only record of what was answered. */
-    private static String header(TaskView task, boolean spent) {
-        return spent
-                ? "review replies for " + name(task) + " — drafted in a round already shipped, so these were"
-                        + " posted; nothing here is waiting to go out"
-                : "review replies drafted for " + name(task) + " — nothing is posted until `ship "
-                        + reference(task) + "`";
-    }
+  /** A spent file is still printed — it is the only record of what was answered. */
+  private static String header(TaskView task, boolean spent) {
+    return spent
+        ? "review replies for "
+            + name(task)
+            + " — drafted in a round already shipped, so these were"
+            + " posted; nothing here is waiting to go out"
+        : "review replies drafted for "
+            + name(task)
+            + " — nothing is posted until `ship "
+            + reference(task)
+            + "`";
+  }
 
-    private static String name(TaskView task) {
-        String reference = reference(task);
-        return task.title() == null || task.title().isBlank() ? reference
-                : reference + " · " + task.title();
-    }
+  private static String name(TaskView task) {
+    String reference = reference(task);
+    return task.title() == null || task.title().isBlank()
+        ? reference
+        : reference + " · " + task.title();
+  }
 
-    private static String reference(TaskView task) {
-        return task.alias() == null || task.alias().isBlank() ? task.id() : task.alias();
-    }
+  private static String reference(TaskView task) {
+    return task.alias() == null || task.alias().isBlank() ? task.id() : task.alias();
+  }
 
-    /** Numbered as rendered, never counted up front: only the host can say how many comments a round had. */
-    private static String body(String file) {
-        List<String> out = new ArrayList<>();
-        List<String> block = new ArrayList<>();
-        String heading = null;
-        int number = 0;
-        for (String line : file.strip().lines().toList()) {
-            Matcher start = BLOCK.matcher(line);
-            if (!start.matches()) {
-                block.add(line);
-                continue;
-            }
-            out.add(rendered(heading, block, heading == null ? 0 : ++number));
-            heading = start.group(1).strip();
-            block = new ArrayList<>();
+  /**
+   * Numbered as rendered, never counted up front: only the host can say how many comments a round
+   * had.
+   */
+  private static String body(String file) {
+    List<String> out = new ArrayList<>();
+    List<String> block = new ArrayList<>();
+    String heading = null;
+    int number = 0;
+    for (String line : file.strip().lines().toList()) {
+      Matcher start = BLOCK.matcher(line);
+      if (!start.matches()) {
+        block.add(line);
+        continue;
+      }
+      out.add(rendered(heading, block, heading == null ? 0 : ++number));
+      heading = start.group(1).strip();
+      block = new ArrayList<>();
+    }
+    out.add(rendered(heading, block, heading == null ? 0 : ++number));
+    return String.join("\n\n", out.stream().filter(part -> !part.isBlank()).toList());
+  }
+
+  /**
+   * {@code number} 0 for text that stands outside every block — it is printed where it was written.
+   */
+  private static String rendered(@Nullable String heading, List<String> lines, int number) {
+    List<String> kept = new ArrayList<>(lines.stream().dropWhile(String::isBlank).toList());
+    while (!kept.isEmpty() && kept.get(kept.size() - 1).isBlank()) {
+      kept.remove(kept.size() - 1);
+    }
+    if (heading == null) {
+      return String.join("\n", kept);
+    }
+    String verdict = null;
+    List<String> rest = new ArrayList<>();
+    for (String line : kept) {
+      Matcher said = VERDICT.matcher(line.strip());
+      if (said.matches() && verdict == null) {
+        verdict = said.group(1);
+        if (!said.group(2).isBlank()) {
+          rest.add(said.group(2).strip());
         }
-        out.add(rendered(heading, block, heading == null ? 0 : ++number));
-        return String.join("\n\n", out.stream().filter(part -> !part.isBlank()).toList());
+        continue;
+      }
+      rest.add(line.strip());
     }
-
-    /** {@code number} 0 for text that stands outside every block — it is printed where it was written. */
-    private static String rendered(@Nullable String heading, List<String> lines, int number) {
-        List<String> kept = new ArrayList<>(lines.stream().dropWhile(String::isBlank).toList());
-        while (!kept.isEmpty() && kept.get(kept.size() - 1).isBlank()) {
-            kept.remove(kept.size() - 1);
-        }
-        if (heading == null) {
-            return String.join("\n", kept);
-        }
-        String verdict = null;
-        List<String> rest = new ArrayList<>();
-        for (String line : kept) {
-            Matcher said = VERDICT.matcher(line.strip());
-            if (said.matches() && verdict == null) {
-                verdict = said.group(1);
-                if (!said.group(2).isBlank()) {
-                    rest.add(said.group(2).strip());
-                }
-                continue;
-            }
-            rest.add(line.strip());
-        }
-        StringBuilder paragraph = new StringBuilder("  %d · %s · %s"
-                .formatted(number, verdict == null ? "no verdict" : verdict, heading));
-        rest.forEach(line -> paragraph.append("\n      ").append(line));
-        return paragraph.toString();
-    }
+    StringBuilder paragraph =
+        new StringBuilder(
+            "  %d · %s · %s".formatted(number, verdict == null ? "no verdict" : verdict, heading));
+    rest.forEach(line -> paragraph.append("\n      ").append(line));
+    return paragraph.toString();
+  }
 }

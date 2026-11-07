@@ -1,186 +1,251 @@
 package dev.jagt.orchestrator.port;
 
-import org.jspecify.annotations.Nullable;
-
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /** One implementation per agent CLI, selected by {@code orchestrator.agent.cli}. */
 public interface AgentRuntime {
 
-    /** The cross-agent system-knowledge file written into every worktree; another name is aliased, never copied. */
-    String SYSTEM_KNOWLEDGE_FILE = "AGENTS.md";
+  /**
+   * The cross-agent system-knowledge file written into every worktree; another name is aliased,
+   * never copied.
+   */
+  String SYSTEM_KNOWLEDGE_FILE = "AGENTS.md";
 
-    String displayName();
+  String displayName();
 
-    /** A bare shell command to run with {@code worktree} as its working directory, bootstrap prompt inside it. */
-    String launchCommand(Path worktree, boolean planMode);
+  /**
+   * A bare shell command to run with {@code worktree} as its working directory, bootstrap prompt
+   * inside it.
+   */
+  String launchCommand(Path worktree, boolean planMode);
 
-    /**
-     * The same, run by a named model. A runtime that cannot be told offers no {@link #models()}, and a
-     * configured model is refused at startup rather than ignored here.
-     */
-    default String launchCommand(Path worktree, boolean planMode, String model) {
-        return launchCommand(worktree, planMode);
-    }
+  /**
+   * The same, run by a named model. A runtime that cannot be told offers no {@link #models()}, and
+   * a configured model is refused at startup rather than ignored here.
+   */
+  default String launchCommand(Path worktree, boolean planMode, String model) {
+    return launchCommand(worktree, planMode);
+  }
 
-    /**
-     * The same session started on a brief of its own rather than on the sub-agent bootstrap. A runtime that
-     * cannot be told what to start on falls back to that bootstrap, which is wrong for a session owning no task.
-     */
-    default String launchCommand(Path worktree, boolean planMode, String model, @Nullable String prompt) {
-        return launchCommand(worktree, planMode, model);
-    }
+  /**
+   * The same session started on a brief of its own rather than on the sub-agent bootstrap. A
+   * runtime that cannot be told what to start on falls back to that bootstrap, which is wrong for a
+   * session owning no task.
+   */
+  default String launchCommand(
+      Path worktree, boolean planMode, String model, @Nullable String prompt) {
+    return launchCommand(worktree, planMode, model);
+  }
 
-    /**
-     * The command re-entering the session this worktree last held, for a window jagt revives on its own rather
-     * than one a human restarted; the fresh {@link #launchCommand} where the runtime keeps nothing to re-enter.
-     */
-    default String reviveCommand(Path worktree) {
-        return launchCommand(worktree, false);
-    }
+  /**
+   * The command re-entering the session this worktree last held, for a window jagt revives on its
+   * own rather than one a human restarted; the fresh {@link #launchCommand} where the runtime keeps
+   * nothing to re-enter.
+   */
+  default String reviveCommand(Path worktree) {
+    return launchCommand(worktree, false);
+  }
 
-    /** Whether a conversation last active at {@code lastActiveMillis} has lost its cache; false where none expires. */
-    default boolean pastCacheLifetime(long lastActiveMillis, Duration cacheLifetime) {
-        return false;
-    }
+  /**
+   * Whether a conversation last active at {@code lastActiveMillis} has lost its cache; false where
+   * none expires.
+   */
+  default boolean pastCacheLifetime(long lastActiveMillis, Duration cacheLifetime) {
+    return false;
+  }
 
-    /** The model names a session may ask for, a closed list of aliases; EMPTY where this runtime cannot be told. */
-    default List<String> models() {
-        return List.of();
-    }
+  /**
+   * The model names a session may ask for, a closed list of aliases; EMPTY where this runtime
+   * cannot be told.
+   */
+  default List<String> models() {
+    return List.of();
+  }
 
-    /** The log a session in {@code worktree} is appending to, where this runtime keeps one jagt can find. */
-    default Optional<Path> sessionLogOf(Path worktree) {
-        return Optional.empty();
-    }
+  /**
+   * The log a session in {@code worktree} is appending to, where this runtime keeps one jagt can
+   * find.
+   */
+  default Optional<Path> sessionLogOf(Path worktree) {
+    return Optional.empty();
+  }
 
-    /**
-     * What a human typed into the session in {@code worktree}, oldest first, with this runtime's own launch prompts
-     * and every {@code typedByJagt} cut out. Empty where the record could not be read, which is not "said nothing".
-     */
-    default Optional<List<String>> humanSaid(Path worktree, Set<String> typedByJagt) {
-        return Optional.empty();
-    }
+  /**
+   * What a human typed into the session in {@code worktree}, oldest first, with this runtime's own
+   * launch prompts and every {@code typedByJagt} cut out. Empty where the record could not be read,
+   * which is not "said nothing".
+   */
+  default Optional<List<String>> humanSaid(Path worktree, Set<String> typedByJagt) {
+    return Optional.empty();
+  }
 
-    /** Whether the session's newest prompt is the human's and its answer has not ended. */
-    default boolean humanExchangeOpen(Path worktree, Set<String> typedByJagt) {
-        return false;
-    }
+  /** Whether the session's newest prompt is the human's and its answer has not ended. */
+  default boolean humanExchangeOpen(Path worktree, Set<String> typedByJagt) {
+    return false;
+  }
 
-    /** Whether {@link #humanSaid} can answer at all. */
-    default boolean readsWhatTheHumanTyped() {
-        return false;
-    }
+  /** Whether {@link #humanSaid} can answer at all. */
+  default boolean readsWhatTheHumanTyped() {
+    return false;
+  }
 
-    /** Whether {@code screen}, a session's window as shown, holds input typed and not yet sent. */
-    default boolean holdsDraft(String screen) {
-        return draft(screen).isPresent();
-    }
+  /** Whether {@code screen}, a session's window as shown, holds input typed and not yet sent. */
+  default boolean holdsDraft(String screen) {
+    return draft(screen).isPresent();
+  }
 
-    /** The unsent input {@code screen} shows on its input line, as far as that line goes; empty where none. */
-    default Optional<String> draft(String screen) {
-        return Optional.empty();
-    }
+  /**
+   * The unsent input {@code screen} shows on its input line, as far as that line goes; empty where
+   * none.
+   */
+  default Optional<String> draft(String screen) {
+    return Optional.empty();
+  }
 
-    /** Whether {@code screen} shows a turn running, which keys sent now would be lost to. */
-    default boolean working(String screen) {
-        return false;
-    }
+  /** Whether {@code screen} shows a turn running, which keys sent now would be lost to. */
+  default boolean working(String screen) {
+    return false;
+  }
 
-    /** Why {@code screen}, a session's window as shown, waits at a prompt jagt never answers; empty where it does not. */
-    default Optional<String> unansweredPrompt(String screen) {
-        return Optional.empty();
-    }
+  /**
+   * Why {@code screen}, a session's window as shown, waits at a prompt jagt never answers; empty
+   * where it does not.
+   */
+  default Optional<String> unansweredPrompt(String screen) {
+    return Optional.empty();
+  }
 
-    /** Where this agent's system knowledge goes; a name the checkout already uses is the project's own, never taken. */
-    Path systemKnowledgeFile(Path worktree);
+  /**
+   * Where this agent's system knowledge goes; a name the checkout already uses is the project's
+   * own, never taken.
+   */
+  Path systemKnowledgeFile(Path worktree);
 
-    /** Where the briefing stands in a worktree jagt already provisioned, whose names its own files now take. */
-    default Path briefedFile(Path worktree) {
-        return systemKnowledgeFile(worktree);
-    }
+  /**
+   * Where the briefing stands in a worktree jagt already provisioned, whose names its own files now
+   * take.
+   */
+  default Path briefedFile(Path worktree) {
+    return systemKnowledgeFile(worktree);
+  }
 
-    /** Writes what this agent needs to run in a fresh worktree, once per task, before the agent starts. */
-    void provisionWorktree(AgentWorktree worktree);
+  /**
+   * Writes what this agent needs to run in a fresh worktree, once per task, before the agent
+   * starts.
+   */
+  void provisionWorktree(AgentWorktree worktree);
 
-    /**
-     * Lets the session of {@code worktree} read and edit {@code directory} as well, a session already running
-     * included; a directory not there yet is granted as far as this CLI allows.
-     */
-    default Admission admit(Path worktree, Path directory) {
-        return Admission.UNSUPPORTED;
-    }
+  /**
+   * Lets the session of {@code worktree} read and edit {@code directory} as well, a session already
+   * running included; a directory not there yet is granted as far as this CLI allows.
+   */
+  default Admission admit(Path worktree, Path directory) {
+    return Admission.UNSUPPORTED;
+  }
 
-    /** {@code UNPROVISIONED}: the worktree holds none of this CLI's settings to widen. */
-    enum Admission { GRANTED, UNSUPPORTED, UNPROVISIONED }
+  /** {@code UNPROVISIONED}: the worktree holds none of this CLI's settings to widen. */
+  enum Admission {
+    GRANTED,
+    UNSUPPORTED,
+    UNPROVISIONED
+  }
 
-    /** Restores, right before a session starts in {@code worktree}, what {@link #provisionWorktree} wrote OUTSIDE it
-     *  and another writer may since have undone. */
-    default void beforeLaunch(Path worktree) {
-    }
+  /**
+   * Restores, right before a session starts in {@code worktree}, what {@link #provisionWorktree}
+   * wrote OUTSIDE it and another writer may since have undone.
+   */
+  default void beforeLaunch(Path worktree) {}
 
-    /** Undoes what {@link #provisionWorktree} wrote OUTSIDE the worktree; the worktree itself is deleted for it. */
-    default void retireWorktree(Path worktree) {
-    }
+  /**
+   * Undoes what {@link #provisionWorktree} wrote OUTSIDE the worktree; the worktree itself is
+   * deleted for it.
+   */
+  default void retireWorktree(Path worktree) {}
 
-    /** Worktree-relative paths {@link #provisionWorktree} writes, so a commit of the agent's work leaves them out. */
-    default List<String> generatedFiles() {
-        return List.of();
-    }
+  /**
+   * Worktree-relative paths {@link #provisionWorktree} writes, so a commit of the agent's work
+   * leaves them out.
+   */
+  default List<String> generatedFiles() {
+    return List.of();
+  }
 
-    /** The files a repository keeps for this agent to read, where a task records a gap the next one would hit. */
-    default List<String> projectAgentFiles() {
-        return List.of(SYSTEM_KNOWLEDGE_FILE);
-    }
+  /**
+   * The files a repository keeps for this agent to read, where a task records a gap the next one
+   * would hit.
+   */
+  default List<String> projectAgentFiles() {
+    return List.of(SYSTEM_KNOWLEDGE_FILE);
+  }
 
-    /** Worktree-relative paths of this agent's own files, in git exclude syntax: a directory ends with {@code /}. */
-    default List<String> statusExclusions() {
-        return List.of();
-    }
+  /**
+   * Worktree-relative paths of this agent's own files, in git exclude syntax: a directory ends with
+   * {@code /}.
+   */
+  default List<String> statusExclusions() {
+    return List.of();
+  }
 
-    /** Epoch millis of the last entry in the session's own record; 0 while it holds none, EMPTY where there is none. */
-    OptionalLong lastSessionActivity(Path worktree);
+  /**
+   * Epoch millis of the last entry in the session's own record; 0 while it holds none, EMPTY where
+   * there is none.
+   */
+  OptionalLong lastSessionActivity(Path worktree);
 
-    /** What this CLI calls a start that follows a COMPACTION, the one start that lost the brief; blank when silent. */
-    default String compactedStart() {
-        return "";
-    }
+  /**
+   * What this CLI calls a start that follows a COMPACTION, the one start that lost the brief; blank
+   * when silent.
+   */
+  default String compactedStart() {
+    return "";
+  }
 
-    /** The error word this CLI gives a turn that ended on a usage limit; blank when it names none. */
-    default String rateLimitError() {
-        return "";
-    }
+  /** The error word this CLI gives a turn that ended on a usage limit; blank when it names none. */
+  default String rateLimitError() {
+    return "";
+  }
 
-    /** The reasons a session ends that a new start follows at once, so they are not an end. */
-    default Set<String> continuingEnds() {
-        return Set.of();
-    }
+  /** The reasons a session ends that a new start follows at once, so they are not an end. */
+  default Set<String> continuingEnds() {
+    return Set.of();
+  }
 
-    /** The answer that keeps this CLI's turn going with {@code reason} as its next input; blank where it cannot. */
-    default String refusedTurnEnd(String reason) {
-        return "";
-    }
+  /**
+   * The answer that keeps this CLI's turn going with {@code reason} as its next input; blank where
+   * it cannot.
+   */
+  default String refusedTurnEnd(String reason) {
+    return "";
+  }
 
-    /** The answer that stops a typed prompt from reaching the model, {@code reason} shown; blank where it cannot. */
-    default String blockedPrompt(String reason) {
-        return "";
-    }
+  /**
+   * The answer that stops a typed prompt from reaching the model, {@code reason} shown; blank where
+   * it cannot.
+   */
+  default String blockedPrompt(String reason) {
+    return "";
+  }
 
-    /**
-     * What the conversation in {@code worktree} last said, newest kept within {@code maxChars}: the human's prompts
-     * and the model's own text, never a tool's input or output. Empty where this runtime keeps no record to read.
-     */
-    default Optional<String> conversationTail(Path worktree, int maxChars) {
-        return Optional.empty();
-    }
+  /**
+   * What the conversation in {@code worktree} last said, newest kept within {@code maxChars}: the
+   * human's prompts and the model's own text, never a tool's input or output. Empty where this
+   * runtime keeps no record to read.
+   */
+  default Optional<String> conversationTail(Path worktree, int maxChars) {
+    return Optional.empty();
+  }
 
-    /** The answer that shows {@code line} to the human and not to the model; blank where this CLI cannot. */
-    default String toldTheHuman(String line) {
-        return "";
-    }
+  /**
+   * The answer that shows {@code line} to the human and not to the model; blank where this CLI
+   * cannot.
+   */
+  default String toldTheHuman(String line) {
+    return "";
+  }
 }

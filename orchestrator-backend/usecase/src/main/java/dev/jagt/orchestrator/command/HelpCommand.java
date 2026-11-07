@@ -8,36 +8,39 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class HelpCommand implements GlobalCommand {
 
-    /** Deferred: the reference lists every command, and this is one of them — injected directly it would be a cycle. */
-    private final ObjectProvider<GlobalCommands> commands;
+  /**
+   * Deferred: the reference lists every command, and this is one of them — injected directly it
+   * would be a cycle.
+   */
+  private final ObjectProvider<GlobalCommands> commands;
 
-    @Override
-    public String id() {
-        return "help";
-    }
+  @Override
+  public String id() {
+    return "help";
+  }
 
-    @Override
-    public int rank() {
-        return 160;
-    }
+  @Override
+  public int rank() {
+    return 160;
+  }
 
-    @Override
-    public String hint() {
-        return "how jagt works";
-    }
+  @Override
+  public String hint() {
+    return "how jagt works";
+  }
 
-    @Override
-    public boolean report() {
-        return true;
-    }
+  @Override
+  public boolean report() {
+    return true;
+  }
 
-    @Override
-    public String part() {
-        return "legend";
-    }
+  @Override
+  public String part() {
+    return "legend";
+  }
 
-    @Override
-    public String run(String tail) {
-        return CommandReference.text(commands.getObject().all());
-    }
+  @Override
+  public String run(String tail) {
+    return CommandReference.text(commands.getObject().all());
+  }
 }

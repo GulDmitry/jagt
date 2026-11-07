@@ -1,121 +1,121 @@
 package dev.jagt.orchestrator.task;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.Set;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+
 class LaunchRequestTest {
 
-    @Test
-    void treatsFreeTextAfterPlanAsNotesNotAProject() {
-        LaunchRequest typed = LaunchRequest.ofLine("ABC-42 plan walk me through it", Set.of("demo", "widgets"));
+  @Test
+  void treatsFreeTextAfterPlanAsNotesNotAProject() {
+    LaunchRequest typed =
+        LaunchRequest.ofLine("ABC-42 plan walk me through it", Set.of("demo", "widgets"));
 
-        assertThat(typed.ref()).isEqualTo("ABC-42");
-        assertThat(typed.project()).isNull();
-        assertThat(typed.mode()).isEqualTo("plan");
-        assertThat(typed.notes()).isEqualTo("walk me through it");
-    }
+    assertThat(typed.ref()).isEqualTo("ABC-42");
+    assertThat(typed.project()).isNull();
+    assertThat(typed.mode()).isEqualTo("plan");
+    assertThat(typed.notes()).isEqualTo("walk me through it");
+  }
 
-    @Test
-    void readsTheBaseBranchAfterFromAndKeepsTheRestAsNotes() {
-        LaunchRequest typed = LaunchRequest.ofLine("ABC-1 from feature/parent demo keep the API stable",
-                Set.of("demo"));
+  @Test
+  void readsTheBaseBranchAfterFromAndKeepsTheRestAsNotes() {
+    LaunchRequest typed =
+        LaunchRequest.ofLine("ABC-1 from feature/parent demo keep the API stable", Set.of("demo"));
 
-        assertThat(typed.baseBranch()).isEqualTo("feature/parent");
-        assertThat(typed.project()).isEqualTo("demo");
-        assertThat(typed.notes()).isEqualTo("keep the API stable");
-    }
+    assertThat(typed.baseBranch()).isEqualTo("feature/parent");
+    assertThat(typed.project()).isEqualTo("demo");
+    assertThat(typed.notes()).isEqualTo("keep the API stable");
+  }
 
-    @Test
-    void readsALineOpeningOnAProjectAsATaskTheHumanWroteThemselves() {
-        LaunchRequest typed = LaunchRequest.ofLine("demo split the invoice mailer in two",
-                Set.of("demo", "widgets"));
+  @Test
+  void readsALineOpeningOnAProjectAsATaskTheHumanWroteThemselves() {
+    LaunchRequest typed =
+        LaunchRequest.ofLine("demo split the invoice mailer in two", Set.of("demo", "widgets"));
 
-        assertThat(typed.ref()).isNull();
-        assertThat(typed.project()).isEqualTo("demo");
-        assertThat(typed.notes()).isEqualTo("split the invoice mailer in two");
-    }
+    assertThat(typed.ref()).isNull();
+    assertThat(typed.project()).isEqualTo("demo");
+    assertThat(typed.notes()).isEqualTo("split the invoice mailer in two");
+  }
 
-    @Test
-    void sendsAMistypedTicketKeyToTheTrackerRatherThanMakingATaskOfIt() {
-        LaunchRequest typed = LaunchRequest.ofLine("ABC42 demo tighten the parser", Set.of("demo"));
+  @Test
+  void sendsAMistypedTicketKeyToTheTrackerRatherThanMakingATaskOfIt() {
+    LaunchRequest typed = LaunchRequest.ofLine("ABC42 demo tighten the parser", Set.of("demo"));
 
-        assertThat(typed.ref()).isEqualTo("ABC42");
-        assertThat(typed.notes()).isEqualTo("tighten the parser");
-    }
+    assertThat(typed.ref()).isEqualTo("ABC42");
+    assertThat(typed.notes()).isEqualTo("tighten the parser");
+  }
 
-    @Test
-    void refusesFromWithoutABranchInsteadOfSwallowingTheNextWord() {
-        assertThatThrownBy(() -> LaunchRequest.ofLine("ABC-1 from", Set.of()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("`from` needs the branch");
-    }
+  @Test
+  void refusesFromWithoutABranchInsteadOfSwallowingTheNextWord() {
+    assertThatThrownBy(() -> LaunchRequest.ofLine("ABC-1 from", Set.of()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("`from` needs the branch");
+  }
 
-    @Test
-    void readsSeveralProjectsFromOneTokenForWorkThatSpansThem() {
-        LaunchRequest typed = LaunchRequest.ofLine("ABC-1 demo,widgets keep them in step",
-                Set.of("demo", "widgets"));
+  @Test
+  void readsSeveralProjectsFromOneTokenForWorkThatSpansThem() {
+    LaunchRequest typed =
+        LaunchRequest.ofLine("ABC-1 demo,widgets keep them in step", Set.of("demo", "widgets"));
 
-        assertThat(typed.project()).isEqualTo("demo,widgets");
-        assertThat(typed.notes()).isEqualTo("keep them in step");
-    }
+    assertThat(typed.project()).isEqualTo("demo,widgets");
+    assertThat(typed.notes()).isEqualTo("keep them in step");
+  }
 
-    @Test
-    void keepsATokenAsNotesWhenOnlySomeOfItsCommaPartsAreProjects() {
-        LaunchRequest typed = LaunchRequest.ofLine("ABC-1 demo,whatever", Set.of("demo"));
+  @Test
+  void keepsATokenAsNotesWhenOnlySomeOfItsCommaPartsAreProjects() {
+    LaunchRequest typed = LaunchRequest.ofLine("ABC-1 demo,whatever", Set.of("demo"));
 
-        assertThat(typed.project()).isNull();
-        assertThat(typed.notes()).isEqualTo("demo,whatever");
-    }
+    assertThat(typed.project()).isNull();
+    assertThat(typed.notes()).isEqualTo("demo,whatever");
+  }
 
-    @Test
-    void readsTheBranchStrategyAsAModifierRatherThanAsNotes() {
-        LaunchRequest typed = LaunchRequest.ofLine("ABC-1 recreate", Set.of("demo"));
+  @Test
+  void readsTheBranchStrategyAsAModifierRatherThanAsNotes() {
+    LaunchRequest typed = LaunchRequest.ofLine("ABC-1 recreate", Set.of("demo"));
 
-        assertThat(typed.strategy()).isEqualTo("recreate");
-        assertThat(typed.notes()).isNull();
-    }
+    assertThat(typed.strategy()).isEqualTo("recreate");
+    assertThat(typed.notes()).isNull();
+  }
 
-    @Test
-    void namesTheUsageWhenNoTicketWasTyped() {
-        assertThatThrownBy(() -> LaunchRequest.ofLine("", Set.of()))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("usage: do <ticket|url>");
-    }
+  @Test
+  void namesTheUsageWhenNoTicketWasTyped() {
+    assertThatThrownBy(() -> LaunchRequest.ofLine("", Set.of()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("usage: do <ticket|url>");
+  }
 
-    @Test
-    void readsABranchAfterFromEvenWhenNothingFollowsIt() {
-        LaunchRequest typed = LaunchRequest.ofLine("ABC-1 from release", Set.of("demo"));
+  @Test
+  void readsABranchAfterFromEvenWhenNothingFollowsIt() {
+    LaunchRequest typed = LaunchRequest.ofLine("ABC-1 from release", Set.of("demo"));
 
-        assertThat(typed.baseBranch()).isEqualTo("release");
-        assertThat(typed.notes()).isNull();
-    }
+    assertThat(typed.baseBranch()).isEqualTo("release");
+    assertThat(typed.notes()).isNull();
+  }
 
-    @Test
-    void readsAProjectTokenWithATrailingCommaAsThatProject() {
-        LaunchRequest typed = LaunchRequest.ofLine("ABC-1 demo, keep going", Set.of("demo"));
+  @Test
+  void readsAProjectTokenWithATrailingCommaAsThatProject() {
+    LaunchRequest typed = LaunchRequest.ofLine("ABC-1 demo, keep going", Set.of("demo"));
 
-        assertThat(typed.project()).isEqualTo("demo,");
-        assertThat(typed.notes()).isEqualTo("keep going");
-    }
+    assertThat(typed.project()).isEqualTo("demo,");
+    assertThat(typed.notes()).isEqualTo("keep going");
+  }
 
-    @Test
-    void readsAProjectTokenWithAnEmptyPartBetweenTwoCommasAsTheProjectsItNames() {
-        LaunchRequest typed = LaunchRequest.ofLine("ABC-1 demo,,php keep going", Set.of("demo", "php"));
+  @Test
+  void readsAProjectTokenWithAnEmptyPartBetweenTwoCommasAsTheProjectsItNames() {
+    LaunchRequest typed = LaunchRequest.ofLine("ABC-1 demo,,php keep going", Set.of("demo", "php"));
 
-        assertThat(typed.project()).isEqualTo("demo,,php");
-        assertThat(typed.notes()).isEqualTo("keep going");
-    }
+    assertThat(typed.project()).isEqualTo("demo,,php");
+    assertThat(typed.notes()).isEqualTo("keep going");
+  }
 
-    @Test
-    void startsFromTheTicketReferenceAloneWithNothingElseChosen() {
-        LaunchRequest request = LaunchRequest.of("ABC-1");
+  @Test
+  void startsFromTheTicketReferenceAloneWithNothingElseChosen() {
+    LaunchRequest request = LaunchRequest.of("ABC-1");
 
-        assertThat(request.ref()).isEqualTo("ABC-1");
-        assertThat(request.project()).isNull();
-        assertThat(request.notes()).isNull();
-    }
+    assertThat(request.ref()).isEqualTo("ABC-1");
+    assertThat(request.project()).isNull();
+    assertThat(request.notes()).isNull();
+  }
 }

@@ -1,199 +1,231 @@
 package dev.jagt.orchestrator.command;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import tools.jackson.databind.json.JsonMapper;
 
 class ActivityReportTest {
 
-    @Test
-    void showsTheNewestTaskEntriesFirst(@TempDir Path root) throws IOException {
-        Path log = root.resolve("jagt.log");
-        Files.writeString(log, """
-                {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep ABC-1: 2 thread(s) relayed","task":"ABC-1","alias":"a1"}
-                {"@timestamp":"2026-08-18T09:00:00Z","message":"auto-review poll found nothing","task":"ABC-2","alias":null}
-                """);
+  @Test
+  void showsTheNewestTaskEntriesFirst(@TempDir Path root) throws IOException {
+    Path log = root.resolve("jagt.log");
+    Files.writeString(
+        log,
+        """
+        {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep ABC-1: 2 thread(s) relayed","task":"ABC-1","alias":"a1"}
+        {"@timestamp":"2026-08-18T09:00:00Z","message":"auto-review poll found nothing","task":"ABC-2","alias":null}
+        """);
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).containsSubsequence("auto-review poll found nothing", "2 thread(s) relayed");
-        assertThat(report).contains("a1", "ABC-2");
-    }
+    assertThat(report).containsSubsequence("auto-review poll found nothing", "2 thread(s) relayed");
+    assertThat(report).contains("a1", "ABC-2");
+  }
 
-    @Test
-    void rendersTheFieldsBecauseTheEventAloneNamesNoRequest(@TempDir Path root) throws IOException {
-        Path log = root.resolve("jagt.log");
-        Files.writeString(log, """
-                {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep done","task":"ABC-1","alias":"a1",\
-                "outcome":"UNREADABLE","said":"error: read failed"}
-                """);
+  @Test
+  void rendersTheFieldsBecauseTheEventAloneNamesNoRequest(@TempDir Path root) throws IOException {
+    Path log = root.resolve("jagt.log");
+    Files.writeString(
+        log,
+        """
+        {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep done","task":"ABC-1","alias":"a1",\
+        "outcome":"UNREADABLE","said":"error: read failed"}
+        """);
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).contains("sweep done outcome=UNREADABLE said=error: read failed");
-    }
+    assertThat(report).contains("sweep done outcome=UNREADABLE said=error: read failed");
+  }
 
-    @Test
-    void leavesOutEntriesThatNameNoTask(@TempDir Path root) throws IOException {
-        Path log = root.resolve("jagt.log");
-        Files.writeString(log, """
-                {"@timestamp":"2026-08-18T08:00:00Z","message":"Board serving on http://localhost:8290"}
-                {"@timestamp":"2026-08-18T08:00:01Z","message":"relayed a brief","task":"ABC-1"}
-                """);
+  @Test
+  void leavesOutEntriesThatNameNoTask(@TempDir Path root) throws IOException {
+    Path log = root.resolve("jagt.log");
+    Files.writeString(
+        log,
+        """
+        {"@timestamp":"2026-08-18T08:00:00Z","message":"Board serving on http://localhost:8290"}
+        {"@timestamp":"2026-08-18T08:00:01Z","message":"relayed a brief","task":"ABC-1"}
+        """);
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).contains("relayed a brief").doesNotContain("Board serving");
-    }
+    assertThat(report).contains("relayed a brief").doesNotContain("Board serving");
+  }
 
-    @Test
-    void saysTheLogIsNotStructuredInsteadOfShowingNothing(@TempDir Path root) throws IOException {
-        Path log = root.resolve("plain.log");
-        Files.writeString(log, "08:00:00 INFO  sweep ABC-1: relayed 2 comments\n");
+  @Test
+  void saysTheLogIsNotStructuredInsteadOfShowingNothing(@TempDir Path root) throws IOException {
+    Path log = root.resolve("plain.log");
+    Files.writeString(log, "08:00:00 INFO  sweep ABC-1: relayed 2 comments\n");
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).contains("not structured JSON");
-    }
+    assertThat(report).contains("not structured JSON");
+  }
 
-    @Test
-    void saysTheFormatChangedWhenTheNEWESTLineIsNoLongerJson(@TempDir Path root) throws IOException {
-        Path log = root.resolve("switched.log");
-        Files.writeString(log, """
-                {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep ABC-1: relayed","task":"ABC-1"}
-                08:30:00 INFO  the format was blanked after this line
-                """);
+  @Test
+  void saysTheFormatChangedWhenTheNEWESTLineIsNoLongerJson(@TempDir Path root) throws IOException {
+    Path log = root.resolve("switched.log");
+    Files.writeString(
+        log,
+        """
+        {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep ABC-1: relayed","task":"ABC-1"}
+        08:30:00 INFO  the format was blanked after this line
+        """);
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).contains("not structured JSON").doesNotContain("sweep ABC-1");
-    }
+    assertThat(report).contains("not structured JSON").doesNotContain("sweep ABC-1");
+  }
 
-    @Test
-    void saysOlderEntriesRolledOverInsteadOfLookingLikeJagtDidNothing(@TempDir Path root) throws IOException {
-        Path log = root.resolve("jagt.log");
-        Files.writeString(log, """
-                {"@timestamp":"2026-08-18T08:00:00Z","message":"Board serving on http://localhost:8290"}
-                """);
-        Files.writeString(root.resolve("jagt.log.2026-08-17.0.gz"), "rotated");
+  @Test
+  void saysOlderEntriesRolledOverInsteadOfLookingLikeJagtDidNothing(@TempDir Path root)
+      throws IOException {
+    Path log = root.resolve("jagt.log");
+    Files.writeString(
+        log,
+        """
+        {"@timestamp":"2026-08-18T08:00:00Z","message":"Board serving on http://localhost:8290"}
+        """);
+    Files.writeString(root.resolve("jagt.log.2026-08-17.0.gz"), "rotated");
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).contains("rolled over", "1 archived file(s)");
-    }
+    assertThat(report).contains("rolled over", "1 archived file(s)");
+  }
 
-    @Test
-    void saysWhereTheRecordWouldLiveWhenNoLogFileIsConfigured() {
-        String report = new ActivityReport("", new JsonMapper()).render();
+  @Test
+  void saysWhereTheRecordWouldLiveWhenNoLogFileIsConfigured() {
+    String report = new ActivityReport("", new JsonMapper()).render();
 
-        assertThat(report).contains("logging.file.name");
-    }
+    assertThat(report).contains("logging.file.name");
+  }
 
-    @Test
-    void saysTheLogIsNotReadableYetWhereNoFileExistsAtThePath(@TempDir Path root) {
-        Path log = root.resolve("absent.log");
+  @Test
+  void saysTheLogIsNotReadableYetWhereNoFileExistsAtThePath(@TempDir Path root) {
+    Path log = root.resolve("absent.log");
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).isEqualTo("log file " + log + " is not readable yet — nothing to show.\n");
-    }
+    assertThat(report).isEqualTo("log file " + log + " is not readable yet — nothing to show.\n");
+  }
 
-    @Test
-    void showsNoMoreThanTheFortyNewestEntries(@TempDir Path root) throws IOException {
-        Path log = root.resolve("jagt.log");
-        Files.writeString(log, "{\"@timestamp\":\"2026-08-18T08:00:00Z\",\"message\":\"relayed\",\"task\":\"ABC-1\"}\n"
-                .repeat(41));
+  @Test
+  void showsNoMoreThanTheFortyNewestEntries(@TempDir Path root) throws IOException {
+    Path log = root.resolve("jagt.log");
+    Files.writeString(
+        log,
+        "{\"@timestamp\":\"2026-08-18T08:00:00Z\",\"message\":\"relayed\",\"task\":\"ABC-1\"}\n"
+            .repeat(41));
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report.lines().filter(line -> line.contains("relayed")).count()).isEqualTo(40);
-    }
+    assertThat(report.lines().filter(line -> line.contains("relayed")).count()).isEqualTo(40);
+  }
 
-    @Test
-    void closesTheEntriesWithTheNoteThatOlderOnesRolledOver(@TempDir Path root) throws IOException {
-        Path log = root.resolve("jagt.log");
-        Files.writeString(log, """
-                {"@timestamp":"2026-08-18T08:00:00Z","message":"relayed a brief","task":"ABC-1"}
-                """);
-        Files.writeString(root.resolve("jagt.log.2026-08-17.0.gz"), "rotated");
+  @Test
+  void closesTheEntriesWithTheNoteThatOlderOnesRolledOver(@TempDir Path root) throws IOException {
+    Path log = root.resolve("jagt.log");
+    Files.writeString(
+        log,
+        """
+        {"@timestamp":"2026-08-18T08:00:00Z","message":"relayed a brief","task":"ABC-1"}
+        """);
+    Files.writeString(root.resolve("jagt.log.2026-08-17.0.gz"), "rotated");
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).endsWith("Older entries rolled over into 1 archived file(s) next to it, which this does not read.\n");
-    }
+    assertThat(report)
+        .endsWith(
+            "Older entries rolled over into 1 archived file(s) next to it, which this does not"
+                + " read.\n");
+  }
 
-    @Test
-    void leavesOutAFieldThatCarriesNoValue(@TempDir Path root) throws IOException {
-        Path log = root.resolve("jagt.log");
-        Files.writeString(log, """
-                {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep done","task":"ABC-1","outcome":null,"said":""}
-                """);
+  @Test
+  void leavesOutAFieldThatCarriesNoValue(@TempDir Path root) throws IOException {
+    Path log = root.resolve("jagt.log");
+    Files.writeString(
+        log,
+        """
+        {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep done","task":"ABC-1","outcome":null,"said":""}
+        """);
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).contains("sweep done").doesNotContain("outcome=").doesNotContain("said=");
-    }
+    assertThat(report).contains("sweep done").doesNotContain("outcome=").doesNotContain("said=");
+  }
 
-    @Test
-    void writesTheTimeOfAnEntryInPlaceOfItsRawStamp(@TempDir Path root) throws IOException {
-        Path log = root.resolve("jagt.log");
-        Files.writeString(log, """
-                {"@timestamp":"2026-08-18T08:00:00Z","message":"relayed a brief","task":"ABC-1"}
-                """);
+  @Test
+  void writesTheTimeOfAnEntryInPlaceOfItsRawStamp(@TempDir Path root) throws IOException {
+    Path log = root.resolve("jagt.log");
+    Files.writeString(
+        log,
+        """
+        {"@timestamp":"2026-08-18T08:00:00Z","message":"relayed a brief","task":"ABC-1"}
+        """);
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).containsPattern("\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d").doesNotContain("2026-08-18T08:00:00Z");
-    }
+    assertThat(report)
+        .containsPattern("\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d")
+        .doesNotContain("2026-08-18T08:00:00Z");
+  }
 
-    @Test
-    void keepsAStampItCannotParseAsItWasWritten(@TempDir Path root) throws IOException {
-        Path log = root.resolve("jagt.log");
-        Files.writeString(log, """
-                {"@timestamp":"yesterday-ish","message":"relayed a brief","task":"ABC-1"}
-                """);
+  @Test
+  void keepsAStampItCannotParseAsItWasWritten(@TempDir Path root) throws IOException {
+    Path log = root.resolve("jagt.log");
+    Files.writeString(
+        log,
+        """
+        {"@timestamp":"yesterday-ish","message":"relayed a brief","task":"ABC-1"}
+        """);
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).contains("yesterday-ish");
-    }
+    assertThat(report).contains("yesterday-ish");
+  }
 
-    @Test
-    void writesNoTimeForAnEntryWithoutAStamp(@TempDir Path root) throws IOException {
-        Path log = root.resolve("jagt.log");
-        Files.writeString(log, """
-                {"message":"relayed a brief","task":"ABC-1"}
-                """);
+  @Test
+  void writesNoTimeForAnEntryWithoutAStamp(@TempDir Path root) throws IOException {
+    Path log = root.resolve("jagt.log");
+    Files.writeString(
+        log,
+        """
+        {"message":"relayed a brief","task":"ABC-1"}
+        """);
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).contains("relayed a brief").doesNotContain("null");
-    }
+    assertThat(report).contains("relayed a brief").doesNotContain("null");
+  }
 
-    @Test
-    void saysNothingAboutAnyTaskForALogHoldingOnlyBlankLines(@TempDir Path root) throws IOException {
-        Path log = root.resolve("jagt.log");
-        Files.writeString(log, "\n\n");
+  @Test
+  void saysNothingAboutAnyTaskForALogHoldingOnlyBlankLines(@TempDir Path root) throws IOException {
+    Path log = root.resolve("jagt.log");
+    Files.writeString(log, "\n\n");
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).startsWith("nothing about any task").doesNotContain("not structured JSON");
-    }
+    assertThat(report).startsWith("nothing about any task").doesNotContain("not structured JSON");
+  }
 
-    @Test
-    void dropsTheLineTheWindowCutInTwoEvenWhereItsTailParsesAsAnEntry(@TempDir Path root) throws IOException {
-        Path log = root.resolve("jagt.log");
-        Files.writeString(log, "xxxxxxxxxx{\"message\":\"stale entry\",\"task\":\"OLD\"}\n"
-                + "{\"message\":\"" + "y".repeat(262077) + "\",\"task\":\"NEW\"}\n");
+  @Test
+  void dropsTheLineTheWindowCutInTwoEvenWhereItsTailParsesAsAnEntry(@TempDir Path root)
+      throws IOException {
+    Path log = root.resolve("jagt.log");
+    Files.writeString(
+        log,
+        "xxxxxxxxxx{\"message\":\"stale entry\",\"task\":\"OLD\"}\n"
+            + "{\"message\":\""
+            + "y".repeat(262077)
+            + "\",\"task\":\"NEW\"}\n");
 
-        String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).contains("NEW").doesNotContain("stale entry");
-    }
+    assertThat(report).contains("NEW").doesNotContain("stale entry");
+  }
 }

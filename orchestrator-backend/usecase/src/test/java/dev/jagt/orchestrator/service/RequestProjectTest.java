@@ -1,97 +1,140 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.ProjectConfig;
-import org.junit.jupiter.api.Test;
-
-import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.task.ProjectConfig;
+import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import org.junit.jupiter.api.Test;
+
 class RequestProjectTest {
 
-    private final ConfigService config = mock(ConfigService.class);
-    private final GitWorktrees worktrees = mock(GitWorktrees.class);
-    private final RequestProject projects = new RequestProject(config, worktrees);
+  private final ConfigService config = mock(ConfigService.class);
+  private final GitWorktrees worktrees = mock(GitWorktrees.class);
+  private final RequestProject projects = new RequestProject(config, worktrees);
 
-    @Test
-    void namesTheProjectWhoseOriginTheRequestUrlBelongsTo() {
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(Map.of(
-                "api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()),
-                "web", new ProjectConfig("/srv/web", "origin/main", "dev", List.of())))));
-        when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("git@host.test:group/api.git");
-        when(worktrees.remoteUrl(Path.of("/srv/web"))).thenReturn("git@host.test:group/web.git");
+  @Test
+  void namesTheProjectWhoseOriginTheRequestUrlBelongsTo() {
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    new LinkedHashMap<>(
+                        Map.of(
+                            "api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()),
+                            "web",
+                                new ProjectConfig("/srv/web", "origin/main", "dev", List.of())))));
+    when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("git@host.test:group/api.git");
+    when(worktrees.remoteUrl(Path.of("/srv/web"))).thenReturn("git@host.test:group/web.git");
 
-        assertThat(projects.of("https://host.test/group/web/-/merge_requests/4")).isEqualTo("web");
-    }
+    assertThat(projects.of("https://host.test/group/web/-/merge_requests/4")).isEqualTo("web");
+  }
 
-    @Test
-    void doesNotGiveARequestToTheProjectWhosePathIsOnlyAPrefixOfItsRepository() {
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(new TreeMap<>(Map.of(
-                "api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()),
-                "shop", new ProjectConfig("/srv/shop", "origin/main", "dev", List.of())))));
-        when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("git@host.test:group/api.git");
-        when(worktrees.remoteUrl(Path.of("/srv/shop"))).thenReturn("git@host.test:group/api-shop.git");
+  @Test
+  void doesNotGiveARequestToTheProjectWhosePathIsOnlyAPrefixOfItsRepository() {
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    new TreeMap<>(
+                        Map.of(
+                            "api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()),
+                            "shop",
+                                new ProjectConfig("/srv/shop", "origin/main", "dev", List.of())))));
+    when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("git@host.test:group/api.git");
+    when(worktrees.remoteUrl(Path.of("/srv/shop"))).thenReturn("git@host.test:group/api-shop.git");
 
-        assertThat(projects.of("https://host.test/group/api-shop/-/merge_requests/4")).isEqualTo("shop");
-    }
+    assertThat(projects.of("https://host.test/group/api-shop/-/merge_requests/4"))
+        .isEqualTo("shop");
+  }
 
-    @Test
-    void skipsAProjectWithNoRemoteWhenNamingTheOwnerOfARequest() {
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(new TreeMap<>(Map.of(
-                "local", new ProjectConfig("/srv/local", "main", "dev", List.of()),
-                "web", new ProjectConfig("/srv/web", "origin/main", "dev", List.of())))));
-        when(worktrees.remoteUrl(Path.of("/srv/local"))).thenThrow(new IllegalStateException("no such remote"));
-        when(worktrees.remoteUrl(Path.of("/srv/web"))).thenReturn("git@host.test:group/web.git");
+  @Test
+  void skipsAProjectWithNoRemoteWhenNamingTheOwnerOfARequest() {
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    new TreeMap<>(
+                        Map.of(
+                            "local", new ProjectConfig("/srv/local", "main", "dev", List.of()),
+                            "web",
+                                new ProjectConfig("/srv/web", "origin/main", "dev", List.of())))));
+    when(worktrees.remoteUrl(Path.of("/srv/local")))
+        .thenThrow(new IllegalStateException("no such remote"));
+    when(worktrees.remoteUrl(Path.of("/srv/web"))).thenReturn("git@host.test:group/web.git");
 
-        assertThat(projects.of("https://host.test/group/web/-/merge_requests/4")).isEqualTo("web");
-    }
+    assertThat(projects.of("https://host.test/group/web/-/merge_requests/4")).isEqualTo("web");
+  }
 
-    @Test
-    void refusesARequestUrlNoConfiguredProjectOwns() {
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
-                "api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()))));
-        when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("git@host.test:group/api.git");
+  @Test
+  void refusesARequestUrlNoConfiguredProjectOwns() {
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of("api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()))));
+    when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("git@host.test:group/api.git");
 
-        assertThatThrownBy(() -> projects.of("https://host.test/group/web/-/merge_requests/4"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("no configured project matches request url: https://host.test/group/web/-/merge_requests/4");
-    }
+    assertThatThrownBy(() -> projects.of("https://host.test/group/web/-/merge_requests/4"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "no configured project matches request url:"
+                + " https://host.test/group/web/-/merge_requests/4");
+  }
 
-    @Test
-    void namesTheProjectWhoseRemoteReachesTheHostByAnSshAlias() {
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
-                "api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()))));
-        when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("git@github-work:group/api.git");
+  @Test
+  void namesTheProjectWhoseRemoteReachesTheHostByAnSshAlias() {
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of("api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of()))));
+    when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("git@github-work:group/api.git");
 
-        assertThat(projects.of("https://github.com/group/api/pull/4")).isEqualTo("api");
-    }
+    assertThat(projects.of("https://github.com/group/api/pull/4")).isEqualTo("api");
+  }
 
-    @Test
-    void breaksATieBetweenProjectsOfOnePathByTheHostTheRequestIsOn() {
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(new TreeMap<>(Map.of(
-                "mirror", new ProjectConfig("/srv/mirror", "origin/main", "dev", List.of()),
-                "origin", new ProjectConfig("/srv/origin", "origin/main", "dev", List.of())))));
-        when(worktrees.remoteUrl(Path.of("/srv/mirror"))).thenReturn("git@mirror.test:group/api.git");
-        when(worktrees.remoteUrl(Path.of("/srv/origin"))).thenReturn("git@host.test:group/api.git");
+  @Test
+  void breaksATieBetweenProjectsOfOnePathByTheHostTheRequestIsOn() {
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    new TreeMap<>(
+                        Map.of(
+                            "mirror",
+                                new ProjectConfig("/srv/mirror", "origin/main", "dev", List.of()),
+                            "origin",
+                                new ProjectConfig(
+                                    "/srv/origin", "origin/main", "dev", List.of())))));
+    when(worktrees.remoteUrl(Path.of("/srv/mirror"))).thenReturn("git@mirror.test:group/api.git");
+    when(worktrees.remoteUrl(Path.of("/srv/origin"))).thenReturn("git@host.test:group/api.git");
 
-        assertThat(projects.of("https://host.test/group/api/-/merge_requests/4")).isEqualTo("origin");
-    }
+    assertThat(projects.of("https://host.test/group/api/-/merge_requests/4")).isEqualTo("origin");
+  }
 
-    @Test
-    void namesTheFirstProjectOfOnePathWhenNoneIsOnTheHostTheRequestIsOn() {
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(new TreeMap<>(Map.of(
-                "mirror", new ProjectConfig("/srv/mirror", "origin/main", "dev", List.of()),
-                "origin", new ProjectConfig("/srv/origin", "origin/main", "dev", List.of())))));
-        when(worktrees.remoteUrl(Path.of("/srv/mirror"))).thenReturn("git@mirror.test:group/api.git");
-        when(worktrees.remoteUrl(Path.of("/srv/origin"))).thenReturn("git@host.test:group/api.git");
+  @Test
+  void namesTheFirstProjectOfOnePathWhenNoneIsOnTheHostTheRequestIsOn() {
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    new TreeMap<>(
+                        Map.of(
+                            "mirror",
+                                new ProjectConfig("/srv/mirror", "origin/main", "dev", List.of()),
+                            "origin",
+                                new ProjectConfig(
+                                    "/srv/origin", "origin/main", "dev", List.of())))));
+    when(worktrees.remoteUrl(Path.of("/srv/mirror"))).thenReturn("git@mirror.test:group/api.git");
+    when(worktrees.remoteUrl(Path.of("/srv/origin"))).thenReturn("git@host.test:group/api.git");
 
-        assertThat(projects.of("https://web.test/group/api/-/merge_requests/4")).isEqualTo("mirror");
-    }
+    assertThat(projects.of("https://web.test/group/api/-/merge_requests/4")).isEqualTo("mirror");
+  }
 }

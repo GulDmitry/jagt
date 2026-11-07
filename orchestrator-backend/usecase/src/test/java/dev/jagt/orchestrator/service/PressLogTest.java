@@ -1,119 +1,159 @@
 package dev.jagt.orchestrator.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.PressLog.Interaction;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 class PressLogTest {
 
-    private static final long NOW = 1_800_000_000_000L;
+  private static final long NOW = 1_800_000_000_000L;
 
-    @TempDir
-    Path dir;
+  @TempDir Path dir;
 
-    @Test
-    void writesOneLinePerPress() throws IOException {
-        Path file = dir.resolve("interactions.jsonl");
-        PressLog presses = new PressLog(new JsonMapper(),
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
+  @Test
+  void writesOneLinePerPress() throws IOException {
+    Path file = dir.resolve("interactions.jsonl");
+    PressLog presses =
+        new PressLog(
+            new JsonMapper(),
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            true);
 
-        presses.record(List.of(new Interaction(NOW, "action:ship", "REVIEW_PENDING"),
-                new Interaction(NOW, "id:open-palette", null)), NOW);
+    presses.record(
+        List.of(
+            new Interaction(NOW, "action:ship", "REVIEW_PENDING"),
+            new Interaction(NOW, "id:open-palette", null)),
+        NOW);
 
-        assertThat(Files.readAllLines(file)).containsExactly(
-                "{\"at\":1800000000000,\"control\":\"action:ship\",\"status\":\"REVIEW_PENDING\"}",
-                "{\"at\":1800000000000,\"control\":\"id:open-palette\",\"status\":null}");
-    }
+    assertThat(Files.readAllLines(file))
+        .containsExactly(
+            "{\"at\":1800000000000,\"control\":\"action:ship\",\"status\":\"REVIEW_PENDING\"}",
+            "{\"at\":1800000000000,\"control\":\"id:open-palette\",\"status\":null}");
+  }
 
-    @Test
-    void rollsIntoOneArchiveReplacingTheLastWhenPastItsCeiling() throws IOException {
-        Path file = dir.resolve("interactions.jsonl");
-        Files.writeString(dir.resolve("interactions.jsonl.1"), "older archive\n");
-        Files.writeString(file, "#".repeat(1024 * 1024));
-        PressLog presses = new PressLog(new JsonMapper(),
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
+  @Test
+  void rollsIntoOneArchiveReplacingTheLastWhenPastItsCeiling() throws IOException {
+    Path file = dir.resolve("interactions.jsonl");
+    Files.writeString(dir.resolve("interactions.jsonl.1"), "older archive\n");
+    Files.writeString(file, "#".repeat(1024 * 1024));
+    PressLog presses =
+        new PressLog(
+            new JsonMapper(),
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            true);
 
-        presses.record(List.of(new Interaction(NOW, "action:deploy", "APPROVED")), NOW);
+    presses.record(List.of(new Interaction(NOW, "action:deploy", "APPROVED")), NOW);
 
-        assertThat(file).doesNotExist();
-        assertThat(Files.readString(dir.resolve("interactions.jsonl.1"))).contains("action:deploy").doesNotContain("older");
-    }
+    assertThat(file).doesNotExist();
+    assertThat(Files.readString(dir.resolve("interactions.jsonl.1")))
+        .contains("action:deploy")
+        .doesNotContain("older");
+  }
 
-    @ParameterizedTest
-    @CsvSource({
-            "'Ship it', REVIEW_PENDING, 1800000000000",
-            "action:ship, 'ABC-42', 1800000000000",
-            "action:ship, REVIEW_PENDING, 1700000000000"})
-    void refusesTheWholeBatchWhenOnePressCarriesMoreThanAControlAndAStatus(String control, String status, long at) {
-        Path file = dir.resolve("interactions.jsonl");
-        PressLog presses = new PressLog(new JsonMapper(),
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
+  @ParameterizedTest
+  @CsvSource({
+    "'Ship it', REVIEW_PENDING, 1800000000000",
+    "action:ship, 'ABC-42', 1800000000000",
+    "action:ship, REVIEW_PENDING, 1700000000000"
+  })
+  void refusesTheWholeBatchWhenOnePressCarriesMoreThanAControlAndAStatus(
+      String control, String status, long at) {
+    Path file = dir.resolve("interactions.jsonl");
+    PressLog presses =
+        new PressLog(
+            new JsonMapper(),
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            true);
 
-        assertThatThrownBy(() -> presses.record(List.of(new Interaction(NOW, "action:done", null),
-                new Interaction(at, control, status)), NOW)).isInstanceOf(IllegalArgumentException.class);
-        assertThat(file).doesNotExist();
-    }
+    assertThatThrownBy(
+            () ->
+                presses.record(
+                    List.of(
+                        new Interaction(NOW, "action:done", null),
+                        new Interaction(at, control, status)),
+                    NOW))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThat(file).doesNotExist();
+  }
 
-    @Test
-    void refusesABatchHoldingMoreThanFiftyPresses() {
-        PressLog presses = new PressLog(new JsonMapper(),
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
+  @Test
+  void refusesABatchHoldingMoreThanFiftyPresses() {
+    PressLog presses =
+        new PressLog(
+            new JsonMapper(),
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            true);
 
-        assertThatThrownBy(() -> presses.record(Collections.nCopies(51, new Interaction(NOW, "flag", null)), NOW))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
+    assertThatThrownBy(
+            () -> presses.record(Collections.nCopies(51, new Interaction(NOW, "flag", null)), NOW))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
 
-    @Test
-    void acceptsABatchOfExactlyFiftyPresses() throws IOException {
-        PressLog presses = new PressLog(new JsonMapper(),
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
+  @Test
+  void acceptsABatchOfExactlyFiftyPresses() throws IOException {
+    PressLog presses =
+        new PressLog(
+            new JsonMapper(),
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            true);
 
-        presses.record(Collections.nCopies(50, new Interaction(NOW, "flag", null)), NOW);
+    presses.record(Collections.nCopies(50, new Interaction(NOW, "flag", null)), NOW);
 
-        assertThat(Files.readAllLines(dir.resolve("interactions.jsonl"))).hasSize(50);
-    }
+    assertThat(Files.readAllLines(dir.resolve("interactions.jsonl"))).hasSize(50);
+  }
 
-    @Test
-    void acceptsAPressDatedExactlyADayBeforeNow() {
-        PressLog presses = new PressLog(new JsonMapper(),
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
+  @Test
+  void acceptsAPressDatedExactlyADayBeforeNow() {
+    PressLog presses =
+        new PressLog(
+            new JsonMapper(),
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            true);
 
-        presses.record(List.of(new Interaction(NOW - 24L * 60 * 60 * 1000, "flag", null)), NOW);
+    presses.record(List.of(new Interaction(NOW - 24L * 60 * 60 * 1000, "flag", null)), NOW);
 
-        assertThat(dir.resolve("interactions.jsonl")).exists();
-    }
+    assertThat(dir.resolve("interactions.jsonl")).exists();
+  }
 
-    @Test
-    void writesNothingWhenSwitchedOff() {
-        Path file = dir.resolve("interactions.jsonl");
-        PressLog presses = new PressLog(new JsonMapper(),
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), false);
+  @Test
+  void writesNothingWhenSwitchedOff() {
+    Path file = dir.resolve("interactions.jsonl");
+    PressLog presses =
+        new PressLog(
+            new JsonMapper(),
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            false);
 
-        presses.record(List.of(new Interaction(NOW, "action:ship", null)), NOW);
+    presses.record(List.of(new Interaction(NOW, "action:ship", null)), NOW);
 
-        assertThat(file).doesNotExist();
-    }
+    assertThat(file).doesNotExist();
+  }
 
-    @Test
-    void refusesABatchHoldingAnEmptyEntry() {
-        PressLog presses = new PressLog(new JsonMapper(),
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())), true);
+  @Test
+  void refusesABatchHoldingAnEmptyEntry() {
+    PressLog presses =
+        new PressLog(
+            new JsonMapper(),
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(dir.toString())),
+            true);
 
-        assertThatThrownBy(() -> presses.record(java.util.Arrays.asList(new Interaction(NOW, "flag", null), null), NOW))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
+    assertThatThrownBy(
+            () ->
+                presses.record(
+                    java.util.Arrays.asList(new Interaction(NOW, "flag", null), null), NOW))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
 }

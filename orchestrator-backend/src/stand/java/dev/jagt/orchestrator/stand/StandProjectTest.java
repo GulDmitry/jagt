@@ -14,27 +14,32 @@ import org.junit.jupiter.api.io.TempDir;
 
 class StandProjectTest {
 
-    @TempDir
-    Path root;
+  @TempDir Path root;
 
-    @Test
-    void aCommitTheStandWroteOnTheDeployBranchIsNotCountedAsAnotherWriter() throws Exception {
-        StandProject project = StandProject.create(root);
-        String sha = project.commitOnDeployBranch(root.resolve("outsider"), "greet.sh", "echo hi\n", "Greet");
-        Files.writeString(root.resolve("timeline.log"), "2026-10-24T00:00:00Z stand " + TimelineFile.wroteLine(sha) + "\n");
+  @Test
+  void aCommitTheStandWroteOnTheDeployBranchIsNotCountedAsAnotherWriter() throws Exception {
+    StandProject project = StandProject.create(root);
+    String sha =
+        project.commitOnDeployBranch(root.resolve("outsider"), "greet.sh", "echo hi\n", "Greet");
+    Files.writeString(
+        root.resolve("timeline.log"),
+        "2026-10-24T00:00:00Z stand " + TimelineFile.wroteLine(sha) + "\n");
 
-        List<Violation> violations = new DeployBranchByDeploy().check(RunRecord.read(root));
+    List<Violation> violations = new DeployBranchByDeploy().check(RunRecord.read(root));
 
-        assertThat(violations).isEmpty();
-    }
+    assertThat(violations).isEmpty();
+  }
 
-    @Test
-    void aCommitNoDeployLandedOnTheDeployBranchIsNamedByItsReflogLine() {
-        StandProject project = StandProject.create(root);
-        String sha = project.commitOnDeployBranch(root.resolve("outsider"), "greet.sh", "echo hi\n", "Greet");
+  @Test
+  void aCommitNoDeployLandedOnTheDeployBranchIsNamedByItsReflogLine() {
+    StandProject project = StandProject.create(root);
+    String sha =
+        project.commitOnDeployBranch(root.resolve("outsider"), "greet.sh", "echo hi\n", "Greet");
 
-        List<Violation> violations = new DeployBranchByDeploy().check(RunRecord.read(root));
+    List<Violation> violations = new DeployBranchByDeploy().check(RunRecord.read(root));
 
-        assertThat(violations).singleElement().satisfies(violation -> assertThat(violation.evidence()).contains(sha));
-    }
+    assertThat(violations)
+        .singleElement()
+        .satisfies(violation -> assertThat(violation.evidence()).contains(sha));
+  }
 }

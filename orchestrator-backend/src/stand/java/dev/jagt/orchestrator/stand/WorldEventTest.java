@@ -9,35 +9,35 @@ import org.junit.jupiter.api.Test;
 
 class WorldEventTest {
 
-    @Test
-    void jagtIsRestartedOnTheFirstRecognisedRelayOfAPendingStep() {
-        StandWorld world = mock(StandWorld.class);
-        when(world.relaysSeen()).thenReturn(1);
+  @Test
+  void jagtIsRestartedOnTheFirstRecognisedRelayOfAPendingStep() {
+    StandWorld world = mock(StandWorld.class);
+    when(world.relaysSeen()).thenReturn(1);
 
-        boolean fired = WorldEvent.restart().fire(world);
+    boolean fired = WorldEvent.restart().fire(world);
 
-        assertThat(fired).isTrue();
-        verify(world).restart();
-    }
+    assertThat(fired).isTrue();
+    verify(world).restart();
+  }
 
-    @Test
-    void jagtIsNotRestartedBeforeAnyRelay() {
-        StandWorld world = mock(StandWorld.class);
-        when(world.relaysSeen()).thenReturn(0);
+  @Test
+  void jagtIsNotRestartedBeforeAnyRelay() {
+    StandWorld world = mock(StandWorld.class);
+    when(world.relaysSeen()).thenReturn(0);
 
-        boolean fired = WorldEvent.restart().fire(world);
+    boolean fired = WorldEvent.restart().fire(world);
 
-        assertThat(fired).isFalse();
-    }
+    assertThat(fired).isFalse();
+  }
 
-    @Test
-    void theHumanTypesOnTheFirstRecognisedRelay() {
-        StandWorld world = mock(StandWorld.class);
-        when(world.relaysSeen()).thenReturn(1);
+  @Test
+  void theHumanTypesOnTheFirstRecognisedRelay() {
+    StandWorld world = mock(StandWorld.class);
+    when(world.relaysSeen()).thenReturn(1);
 
-        boolean fired = WorldEvent.humanLine("wait").fire(world);
+    boolean fired = WorldEvent.humanLine("wait").fire(world);
 
-        assertThat(fired).isTrue();
-        verify(world).say("wait");
-    }
+    assertThat(fired).isTrue();
+    verify(world).say("wait");
+  }
 }

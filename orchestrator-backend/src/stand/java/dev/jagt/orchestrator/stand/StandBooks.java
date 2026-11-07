@@ -14,24 +14,26 @@ import java.util.List;
 
 public final class StandBooks {
 
-    private final Path root;
-    private final OrchestratorPaths paths;
+  private final Path root;
+  private final OrchestratorPaths paths;
 
-    public StandBooks(Path root) {
-        this.root = root;
-        this.paths = new OrchestratorPaths(new OrchestratorProperties(root.toString(), null, null, null,
-                false, null));
-    }
+  public StandBooks(Path root) {
+    this.root = root;
+    this.paths =
+        new OrchestratorPaths(
+            new OrchestratorProperties(root.toString(), null, null, null, false, null));
+  }
 
-    public SessionBrief brief() {
-        return new SessionBrief(paths);
-    }
+  public SessionBrief brief() {
+    return new SessionBrief(paths);
+  }
 
-    public CaseBook cases() {
-        return new SessionCases(paths).book();
-    }
+  public CaseBook cases() {
+    return new SessionCases(paths).book();
+  }
 
-    public List<Violation> violations() {
-        return new InvariantChecker(cases(), new GitAncestry(root.resolve("origin.git"))).check(RunRecord.read(root));
-    }
+  public List<Violation> violations() {
+    return new InvariantChecker(cases(), new GitAncestry(root.resolve("origin.git")))
+        .check(RunRecord.read(root));
+  }
 }

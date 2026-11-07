@@ -11,12 +11,12 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 class ShipRecord {
 
-    private final TaskTurns turns;
-    private final WorktreeChanges changes;
-    private final ShipContent content;
+  private final TaskTurns turns;
+  private final WorktreeChanges changes;
+  private final ShipContent content;
 
-    void pressedOn(String taskId, TaskState task) {
-        content.of(task).ifPresent(shipped -> turns.mark(taskId, TaskTurns.PRESSED_SHIP, shipped));
-        changes.state(task).ifPresent(tree -> turns.shippedOn(taskId, tree));
-    }
+  void pressedOn(String taskId, TaskState task) {
+    content.of(task).ifPresent(shipped -> turns.mark(taskId, TaskTurns.PRESSED_SHIP, shipped));
+    changes.state(task).ifPresent(tree -> turns.shippedOn(taskId, tree));
+  }
 }

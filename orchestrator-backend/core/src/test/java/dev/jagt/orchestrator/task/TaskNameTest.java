@@ -1,107 +1,123 @@
 package dev.jagt.orchestrator.task;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 class TaskNameTest {
 
-    @ParameterizedTest
-    @ValueSource(strings = {"ABC-42", "feature/ABC-42-facet-options", "hotfix/but/whatever", "_under",
-            "release/2.1", "wip/ä-ünicode", "x"})
-    void acceptsEveryNameGitAcceptsAsABranch(String name) {
-        assertThat(TaskName.unusableReason(name)).isNull();
-    }
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "ABC-42",
+        "feature/ABC-42-facet-options",
+        "hotfix/but/whatever",
+        "_under",
+        "release/2.1",
+        "wip/ä-ünicode",
+        "x"
+      })
+  void acceptsEveryNameGitAcceptsAsABranch(String name) {
+    assertThat(TaskName.unusableReason(name)).isNull();
+  }
 
-    @ParameterizedTest
-    @CsvSource(quoteCharacter = '"', value = {
-            "\"a b\", \"' ' is not allowed\"",
-            "\"a~b\", \"'~' is not allowed\"",
-            "\"a:b\", \"':' is not allowed\"",
-            "\"-lead\", \"it starts with '-'\"",
-            "\"feature/\", \"it starts or ends with '/'\"",
-            "\"feature//x\", \"it has an empty part ('//')\"",
-            "\"feature/x.\", \"it ends with '.'\"",
-            "\"../escape\", \"'..' is not allowed\"",
-            "\"feature/.hidden\", \"a part of it starts with '.'\"",
-            "\"feature/x.lock\", \"a part of it ends with '.lock'\"",
-            "\"x@{1}\", \"'@{' is not allowed\"",
-            "\"HEAD\", \"git reserves that name\"",
-    })
-    void namesTheOnePartGitWouldRefuse(String name, String reason) {
-        assertThat(TaskName.unusableReason(name)).isEqualTo(reason);
-    }
+  @ParameterizedTest
+  @CsvSource(
+      quoteCharacter = '"',
+      value = {
+        "\"a b\", \"' ' is not allowed\"",
+        "\"a~b\", \"'~' is not allowed\"",
+        "\"a:b\", \"':' is not allowed\"",
+        "\"-lead\", \"it starts with '-'\"",
+        "\"feature/\", \"it starts or ends with '/'\"",
+        "\"feature//x\", \"it has an empty part ('//')\"",
+        "\"feature/x.\", \"it ends with '.'\"",
+        "\"../escape\", \"'..' is not allowed\"",
+        "\"feature/.hidden\", \"a part of it starts with '.'\"",
+        "\"feature/x.lock\", \"a part of it ends with '.lock'\"",
+        "\"x@{1}\", \"'@{' is not allowed\"",
+        "\"HEAD\", \"git reserves that name\"",
+      })
+  void namesTheOnePartGitWouldRefuse(String name, String reason) {
+    assertThat(TaskName.unusableReason(name)).isEqualTo(reason);
+  }
 
-    @Test
-    void escapesAControlCharacterInsteadOfSplicingItIntoTheAnswer() {
-        assertThat(TaskName.unusableReason("wip\tfix")).isEqualTo("'\\u0009' is not allowed");
-    }
+  @Test
+  void escapesAControlCharacterInsteadOfSplicingItIntoTheAnswer() {
+    assertThat(TaskName.unusableReason("wip\tfix")).isEqualTo("'\\u0009' is not allowed");
+  }
 
-    @Test
-    void refusesANameTooLongForOneDirectoryComponent() {
-        assertThat(TaskName.unusableReason("x".repeat(181))).isEqualTo("it is longer than 180 characters");
-    }
+  @Test
+  void refusesANameTooLongForOneDirectoryComponent() {
+    assertThat(TaskName.unusableReason("x".repeat(181)))
+        .isEqualTo("it is longer than 180 characters");
+  }
 
-    @ParameterizedTest
-    @CsvSource({"hotfix/but/whatever, hotfix-but-whatever", "ABC-42, ABC-42", "release/2.1, release-2-1",
-            "wip/o'brien, wip-o-brien"})
-    void flattensATaskIntoOneFilesystemName(String name, String slug) {
-        assertThat(TaskName.slug(name)).isEqualTo(slug);
-    }
+  @ParameterizedTest
+  @CsvSource({
+    "hotfix/but/whatever, hotfix-but-whatever",
+    "ABC-42, ABC-42",
+    "release/2.1, release-2-1",
+    "wip/o'brien, wip-o-brien"
+  })
+  void flattensATaskIntoOneFilesystemName(String name, String slug) {
+    assertThat(TaskName.slug(name)).isEqualTo(slug);
+  }
 
-    @Test
-    void namesABranchAfterTheWordsAHumanOpenedTheTaskWith() {
-        assertThat(TaskName.from("Split the invoice mailer in two")).isEqualTo("split-the-invoice-mailer-in-two");
-    }
+  @Test
+  void namesABranchAfterTheWordsAHumanOpenedTheTaskWith() {
+    assertThat(TaskName.from("Split the invoice mailer in two"))
+        .isEqualTo("split-the-invoice-mailer-in-two");
+  }
 
-    @Test
-    void cutsALongOpeningLineAtAWholeWord() {
-        assertThat(TaskName.from("rewrite the invoice mailer so that it stops retrying forever"))
-                .isEqualTo("rewrite-the-invoice-mailer-so-that-it");
-    }
+  @Test
+  void cutsALongOpeningLineAtAWholeWord() {
+    assertThat(TaskName.from("rewrite the invoice mailer so that it stops retrying forever"))
+        .isEqualTo("rewrite-the-invoice-mailer-so-that-it");
+  }
 
-    @Test
-    void namesNothingForATaskWhoseOpeningLineWasNeverGiven() {
-        assertThat(TaskName.from(null)).isNull();
-    }
+  @Test
+  void namesNothingForATaskWhoseOpeningLineWasNeverGiven() {
+    assertThat(TaskName.from(null)).isNull();
+  }
 
-    @Test
-    void namesNothingWhenTheLineCarriesNoWordABranchCanUse() {
-        assertThat(TaskName.from("!!! ???")).isNull();
-    }
+  @Test
+  void namesNothingWhenTheLineCarriesNoWordABranchCanUse() {
+    assertThat(TaskName.from("!!! ???")).isNull();
+  }
 
-    @Test
-    void keepsAnOpeningLineOfExactlyTheWrittenLengthWhole() {
-        assertThat(TaskName.from("abcdefgh abcdefgh abcdefgh abcdefgh abcd"))
-                .isEqualTo("abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcd");
-    }
+  @Test
+  void keepsAnOpeningLineOfExactlyTheWrittenLengthWhole() {
+    assertThat(TaskName.from("abcdefgh abcdefgh abcdefgh abcdefgh abcd"))
+        .isEqualTo("abcdefgh-abcdefgh-abcdefgh-abcdefgh-abcd");
+  }
 
-    @Test
-    void cutsALongOpeningWordWhereItHasNoWholeWordToCutAt() {
-        assertThat(TaskName.from("x".repeat(50))).isEqualTo("x".repeat(40));
-    }
+  @Test
+  void cutsALongOpeningWordWhereItHasNoWholeWordToCutAt() {
+    assertThat(TaskName.from("x".repeat(50))).isEqualTo("x".repeat(40));
+  }
 
-    @Test
-    void refusesToRequireANameGitWouldRefuse() {
-        assertThatThrownBy(() -> TaskName.require("a b", "task"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Argument 'task'")
-                .hasMessageContaining("' ' is not allowed")
-                .hasMessageContaining("got: a b");
-    }
+  @Test
+  void refusesToRequireANameGitWouldRefuse() {
+    assertThatThrownBy(() -> TaskName.require("a b", "task"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Argument 'task'")
+        .hasMessageContaining("' ' is not allowed")
+        .hasMessageContaining("got: a b");
+  }
 
-    @Test
-    void acceptsARequiredNameGitAccepts() {
-        assertThatCode(() -> TaskName.require("ABC-42", "task")).doesNotThrowAnyException();
-    }
+  @Test
+  void acceptsARequiredNameGitAccepts() {
+    assertThatCode(() -> TaskName.require("ABC-42", "task")).doesNotThrowAnyException();
+  }
 
-    @Test
-    void namesAnEmptyNameAsEmpty() {
-        assertThat(TaskName.unusableReason("")).isEqualTo("it is empty");
-    }
+  @Test
+  void namesAnEmptyNameAsEmpty() {
+    assertThat(TaskName.unusableReason("")).isEqualTo("it is empty");
+  }
 }

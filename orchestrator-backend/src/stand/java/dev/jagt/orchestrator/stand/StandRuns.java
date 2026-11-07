@@ -8,26 +8,31 @@ import org.junit.jupiter.params.provider.Arguments;
 
 public final class StandRuns {
 
-    public record Run(StandMode mode, int index) {
-    }
+  public record Run(StandMode mode, int index) {}
 
-    private StandRuns() {
-    }
+  private StandRuns() {}
 
-    public static Stream<Arguments> of(String scenario) {
-        return selected(scenario, System.getProperty("stand.scenario", ""), System.getProperty("stand.modes", ""),
-                Integer.getInteger("stand.runs", 1)).stream().map(run -> Arguments.of(run.mode(), run.index()));
-    }
+  public static Stream<Arguments> of(String scenario) {
+    return selected(
+            scenario,
+            System.getProperty("stand.scenario", ""),
+            System.getProperty("stand.modes", ""),
+            Integer.getInteger("stand.runs", 1))
+        .stream()
+        .map(run -> Arguments.of(run.mode(), run.index()));
+  }
 
-    public static List<Run> selected(String scenario, String scenarios, String modes, int runs) {
-        if (!chosen(scenario, scenarios)) {
-            return List.of();
-        }
-        return StandMode.selected(modes).stream()
-                .flatMap(mode -> IntStream.rangeClosed(1, runs).mapToObj(index -> new Run(mode, index))).toList();
+  public static List<Run> selected(String scenario, String scenarios, String modes, int runs) {
+    if (!chosen(scenario, scenarios)) {
+      return List.of();
     }
+    return StandMode.selected(modes).stream()
+        .flatMap(mode -> IntStream.rangeClosed(1, runs).mapToObj(index -> new Run(mode, index)))
+        .toList();
+  }
 
-    public static boolean chosen(String scenario, String scenarios) {
-        return scenarios.isBlank() || Arrays.stream(scenarios.split(",")).map(String::strip).anyMatch(scenario::equals);
-    }
+  public static boolean chosen(String scenario, String scenarios) {
+    return scenarios.isBlank()
+        || Arrays.stream(scenarios.split(",")).map(String::strip).anyMatch(scenario::equals);
+  }
 }

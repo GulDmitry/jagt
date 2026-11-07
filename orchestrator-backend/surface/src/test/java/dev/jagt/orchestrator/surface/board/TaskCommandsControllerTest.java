@@ -1,123 +1,139 @@
 package dev.jagt.orchestrator.surface.board;
 
-import static org.mockito.Mockito.never;
-import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.task.LaunchRequest;
-import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.service.CommandService;
-import dev.jagt.orchestrator.service.TaskLauncher;
-import dev.jagt.orchestrator.task.Launched;
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.TaskLauncher;
+import dev.jagt.orchestrator.task.LaunchRequest;
+import dev.jagt.orchestrator.task.Launched;
+import org.junit.jupiter.api.Test;
+
 class TaskCommandsControllerTest {
 
-    private final CommandService commands = mock(CommandService.class);
-    private final TaskLauncher launcher = mock(TaskLauncher.class);
-    private final TaskCommandsController api = new TaskCommandsController(commands, launcher);
-    private final RefusedRequests refusals = new RefusedRequests();
+  private final CommandService commands = mock(CommandService.class);
+  private final TaskLauncher launcher = mock(TaskLauncher.class);
+  private final TaskCommandsController api = new TaskCommandsController(commands, launcher);
+  private final RefusedRequests refusals = new RefusedRequests();
 
-    @Test
-    void executesAnActionByTheSameNameTheConsoleTakes() {
-        when(commands.execute("ABC-1", TaskAction.SHIP, null)).thenReturn("ship ABC-1: approval relayed");
+  @Test
+  void executesAnActionByTheSameNameTheConsoleTakes() {
+    when(commands.execute("ABC-1", TaskAction.SHIP, null))
+        .thenReturn("ship ABC-1: approval relayed");
 
-        assertThat(api.act("ABC-1", "ship", null).message()).isEqualTo("ship ABC-1: approval relayed");
-    }
+    assertThat(api.act("ABC-1", "ship", null).message()).isEqualTo("ship ABC-1: approval relayed");
+  }
 
-    @Test
-    void carriesTheProjectAHumanTypedAfterTheTicketToTheSameAction() {
-        when(commands.execute("ABC-1", TaskAction.ADD_REPO, "beta")).thenReturn("add-repo ABC-1: beta is at /wt");
+  @Test
+  void carriesTheProjectAHumanTypedAfterTheTicketToTheSameAction() {
+    when(commands.execute("ABC-1", TaskAction.ADD_REPO, "beta"))
+        .thenReturn("add-repo ABC-1: beta is at /wt");
 
-        assertThat(api.act("ABC-1", "add-repo", "beta").message()).isEqualTo("add-repo ABC-1: beta is at /wt");
-    }
+    assertThat(api.act("ABC-1", "add-repo", "beta").message())
+        .isEqualTo("add-repo ABC-1: beta is at /wt");
+  }
 
-    @Test
-    void namesTheRefusalKindSoAStalePageCanTellItselfApartFromARealRefusal() {
-        var refused = refusals.refused(new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, "Deploy is not available"));
+  @Test
+  void namesTheRefusalKindSoAStalePageCanTellItselfApartFromARealRefusal() {
+    var refused =
+        refusals.refused(new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, "Deploy is not available"));
 
-        assertThat(refused.getBody()).containsEntry("error", "Deploy is not available")
-                .containsEntry("code", "ACTION_NOT_AVAILABLE");
-    }
+    assertThat(refused.getBody())
+        .containsEntry("error", "Deploy is not available")
+        .containsEntry("code", "ACTION_NOT_AVAILABLE");
+  }
 
-    @Test
-    void carriesNoCodeForARefusalNothingOnThePageBranchesOn() {
-        var refused = refusals.refused(new IllegalStateException("ship: ABC-1 is DEPLOYED"));
+  @Test
+  void carriesNoCodeForARefusalNothingOnThePageBranchesOn() {
+    var refused = refusals.refused(new IllegalStateException("ship: ABC-1 is DEPLOYED"));
 
-        assertThat(refused.getBody()).containsOnlyKeys("error");
-    }
+    assertThat(refused.getBody()).containsOnlyKeys("error");
+  }
 
-    @Test
-    void refusesAnUnknownActionIdRatherThanMappingItToSomethingNear() {
-        assertThatThrownBy(() -> api.act("ABC-1", "shipit", null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unknown action 'shipit'");
-        verifyNoInteractions(commands);
-    }
+  @Test
+  void refusesAnUnknownActionIdRatherThanMappingItToSomethingNear() {
+    assertThatThrownBy(() -> api.act("ABC-1", "shipit", null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Unknown action 'shipit'");
+    verifyNoInteractions(commands);
+  }
 
-    @Test
-    void startsATaskThroughTheSameLauncherTheTypedCommandUses() {
-        LaunchRequest posted = LaunchRequest.of("ABC-42").withProject("demo").withMode("plan")
-                .withBaseBranch("feature/parent").withNotes("with tests");
-        when(launcher.launch(posted)).thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
+  @Test
+  void startsATaskThroughTheSameLauncherTheTypedCommandUses() {
+    LaunchRequest posted =
+        LaunchRequest.of("ABC-42")
+            .withProject("demo")
+            .withMode("plan")
+            .withBaseBranch("feature/parent")
+            .withNotes("with tests");
+    when(launcher.launch(posted)).thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
 
-        var result = api.launch(posted);
+    var result = api.launch(posted);
 
-        assertThat(result.message()).isEqualTo("Task ABC-42 initialized");
-    }
+    assertThat(result.message()).isEqualTo("Task ABC-42 initialized");
+  }
 
-    @Test
-    void refusesALaunchThatCreatedNoTaskLikeTheTypedDo() {
-        LaunchRequest posted = LaunchRequest.of("ABC-42").withProject("demo");
-        when(launcher.launch(posted)).thenReturn(Launched.refused("error: read failed: ABC-42"));
+  @Test
+  void refusesALaunchThatCreatedNoTaskLikeTheTypedDo() {
+    LaunchRequest posted = LaunchRequest.of("ABC-42").withProject("demo");
+    when(launcher.launch(posted)).thenReturn(Launched.refused("error: read failed: ABC-42"));
 
-        assertThatThrownBy(() -> api.launch(posted))
-                .isInstanceOfSatisfying(Refusal.class,
-                        refused -> assertThat(refused.code()).isEqualTo(Refusal.Code.STATE))
-                .hasMessage("error: read failed: ABC-42");
-    }
+    assertThatThrownBy(() -> api.launch(posted))
+        .isInstanceOfSatisfying(
+            Refusal.class, refused -> assertThat(refused.code()).isEqualTo(Refusal.Code.STATE))
+        .hasMessage("error: read failed: ABC-42");
+  }
 
-    @Test
-    void treatsBlankModifiersAsAbsentSoAnEmptyFormFieldIsNotAProjectNamedEmptyString() {
-        when(launcher.launchUnplaced(any())).thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
+  @Test
+  void treatsBlankModifiersAsAbsentSoAnEmptyFormFieldIsNotAProjectNamedEmptyString() {
+    when(launcher.launchUnplaced(any()))
+        .thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
 
-        api.launch(new LaunchRequest("  ABC-42 ", "", "", "", "", ""));
+    api.launch(new LaunchRequest("  ABC-42 ", "", "", "", "", ""));
 
-        verify(launcher).launchUnplaced(LaunchRequest.of("ABC-42"));
-    }
+    verify(launcher).launchUnplaced(LaunchRequest.of("ABC-42"));
+  }
 
-    @Test
-    void takesAFormWithNoTicketToTheLauncherRatherThanHoldingARuleOfItsOwn() {
-        LaunchRequest written = LaunchRequest.defaults().withProject("demo").withNotes("split the invoice mailer");
-        when(launcher.launch(written)).thenReturn(Launched.created("split-the-invoice-mailer", "initialized"));
+  @Test
+  void takesAFormWithNoTicketToTheLauncherRatherThanHoldingARuleOfItsOwn() {
+    LaunchRequest written =
+        LaunchRequest.defaults().withProject("demo").withNotes("split the invoice mailer");
+    when(launcher.launch(written))
+        .thenReturn(Launched.created("split-the-invoice-mailer", "initialized"));
 
-        var result = api.launch(LaunchRequest.of(" ").withProject("demo").withNotes("split the invoice mailer"));
+    var result =
+        api.launch(LaunchRequest.of(" ").withProject("demo").withNotes("split the invoice mailer"));
 
-        assertThat(result.message()).isEqualTo("initialized");
-    }
+    assertThat(result.message()).isEqualTo("initialized");
+  }
 
-    @Test
-    void turnsARefusalIntoA400WithTheSentenceTheHumanShouldRead() {
-        var response = refusals.refused(new IllegalStateException("ship: ABC-1 is DONE — nothing to ship onto"));
+  @Test
+  void turnsARefusalIntoA400WithTheSentenceTheHumanShouldRead() {
+    var response =
+        refusals.refused(new IllegalStateException("ship: ABC-1 is DONE — nothing to ship onto"));
 
-        assertThat(response.getStatusCode().value()).isEqualTo(400);
-        assertThat(response.getBody()).containsEntry("error", "ship: ABC-1 is DONE — nothing to ship onto");
-    }
+    assertThat(response.getStatusCode().value()).isEqualTo(400);
+    assertThat(response.getBody())
+        .containsEntry("error", "ship: ABC-1 is DONE — nothing to ship onto");
+  }
 
-    @Test
-    void startsAPlanFirstFormWithNoProjectWithoutTheRouterBeingAsked() {
-        LaunchRequest posted = LaunchRequest.of("ABC-42").withMode("plan");
-        when(launcher.launchUnplaced(posted)).thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
+  @Test
+  void startsAPlanFirstFormWithNoProjectWithoutTheRouterBeingAsked() {
+    LaunchRequest posted = LaunchRequest.of("ABC-42").withMode("plan");
+    when(launcher.launchUnplaced(posted))
+        .thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
 
-        var result = api.launch(posted);
+    var result = api.launch(posted);
 
-        assertThat(result.message()).isEqualTo("Task ABC-42 initialized");
-        verify(launcher, never()).launch(any());
-    }
+    assertThat(result.message()).isEqualTo("Task ABC-42 initialized");
+    verify(launcher, never()).launch(any());
+  }
 }

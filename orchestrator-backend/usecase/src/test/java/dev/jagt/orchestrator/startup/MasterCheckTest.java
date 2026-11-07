@@ -1,276 +1,419 @@
 package dev.jagt.orchestrator.startup;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.CodeReviewConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.service.master.MasterBriefs;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class MasterCheckTest {
 
-    private final ConfigService configService = mock(ConfigService.class);
-    private final AgentRuntime agentRuntime = mock(AgentRuntime.class);
+  private final ConfigService configService = mock(ConfigService.class);
+  private final AgentRuntime agentRuntime = mock(AgentRuntime.class);
 
-    @Test
-    void findsNothingWrongWithTheSettingEveryInstallShipsWith(@TempDir Path root) throws Exception {
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.writeString(root.resolve("roles/master/brief.md.dist"), "the shipped standards");
-        when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults()));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+  @Test
+  void findsNothingWrongWithTheSettingEveryInstallShipsWith(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md.dist"), "the shipped standards");
+    when(configService.load())
+        .thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults()));
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems()).isEmpty();
-    }
+    assertThat(check.problems()).isEmpty();
+  }
 
-    @Test
-    void anUnknownModeUnderTheRolesKeyIsRefusedByItsNewName(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    master:\n      mode: supervise\n");
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+  @Test
+  void anUnknownModeUnderTheRolesKeyIsRefusedByItsNewName(@TempDir Path root) throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    master:\n      mode: supervise\n");
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
                 .withConfigFile(root.resolve("jagt.yml").toString()));
-        ConfigService real = new ConfigService(paths, agentRuntime, mock(dev.jagt.orchestrator.service.ActStops.class));
+    ConfigService real =
+        new ConfigService(paths, agentRuntime, mock(dev.jagt.orchestrator.service.ActStops.class));
 
-        MasterCheck check = new MasterCheck(real, new MasterBriefs(paths, new SessionBrief(paths)), agentRuntime);
+    MasterCheck check =
+        new MasterCheck(real, new MasterBriefs(paths, new SessionBrief(paths)), agentRuntime);
 
-        assertThat(check.problems()).singleElement().satisfies(problem -> {
-            assertThat(problem.key()).isEqualTo("orchestrator.roles.master.mode");
-            assertThat(problem.text()).startsWith("orchestrator.roles.master.mode: 'supervise'");
-        });
-    }
+    assertThat(check.problems())
+        .singleElement()
+        .satisfies(
+            problem -> {
+              assertThat(problem.key()).isEqualTo("orchestrator.roles.master.mode");
+              assertThat(problem.text()).startsWith("orchestrator.roles.master.mode: 'supervise'");
+            });
+  }
 
-    @Test
-    void refusesAModeThisMachineDoesNotHave(@TempDir Path root) {
-        when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("supervise")));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+  @Test
+  void refusesAModeThisMachineDoesNotHave(@TempDir Path root) {
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("supervise")));
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.roles.master.mode");
-    }
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.roles.master.mode");
+  }
 
-    @Test
-    void refusesAMasterThatShipsWhileEveryDraftedReplyStillWaitsForYouToPostIt(@TempDir Path root)
-            throws Exception {
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
-        when(configService.load()).thenReturn(ConfigFile.defaults()
+  @Test
+  void refusesAMasterThatShipsWhileEveryDraftedReplyStillWaitsForYouToPostIt(@TempDir Path root)
+      throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("act"))
                 .withCodeReview(new CodeReviewConfig(null, false, null)));
 
-        assertThat(new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime).problems())
-                .extracting(Problem::key).containsExactly("orchestrator.roles.master.mode");
-    }
+    assertThat(
+            new MasterCheck(
+                    configService,
+                    new MasterBriefs(
+                        new OrchestratorPaths(
+                            OrchestratorProperties.defaults().withRoot(root.toString())),
+                        new SessionBrief(
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString())))),
+                    agentRuntime)
+                .problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.roles.master.mode");
+  }
 
-    @Test
-    void refusesTheRetiredNameRatherThanSilentlyGivingTheMasterEveryStep(@TempDir Path root) throws Exception {
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
-        when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("act").withWithhold(List.of("reply"))));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+  @Test
+  void refusesTheRetiredNameRatherThanSilentlyGivingTheMasterEveryStep(@TempDir Path root)
+      throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withMaster(
+                    MasterConfig.defaults().withMode("act").withWithhold(List.of("reply"))));
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.roles.master.withhold");
-    }
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.roles.master.withhold");
+  }
 
-    @Test
-    void refusesKeepingTheDeployWhileLeavingItsUndoToTheMaster(@TempDir Path root) throws Exception {
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
-        when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
-                .withMine(List.of("reply", "deploy"))));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+  @Test
+  void refusesKeepingTheDeployWhileLeavingItsUndoToTheMaster(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withMaster(
+                    MasterConfig.defaults().withMode("act").withMine(List.of("reply", "deploy"))));
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.roles.master.mine");
-    }
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.roles.master.mine");
+  }
 
-    @Test
-    void refusesKeepingTheRevertWhileLeavingItsDoToTheMaster(@TempDir Path root) throws Exception {
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
-        when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
-                .withMine(List.of("reply", "revert"))));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+  @Test
+  void refusesKeepingTheRevertWhileLeavingItsDoToTheMaster(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withMaster(
+                    MasterConfig.defaults().withMode("act").withMine(List.of("reply", "revert"))));
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.roles.master.mine");
-    }
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.roles.master.mine");
+  }
 
-    @Test
-    void findsNothingWrongWithShippingUnattendedWhileRepliesAndTheSharedBranchStayYours(@TempDir Path root)
-            throws Exception {
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
-        when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
-                .withMine(List.of("reply", "deploy", "revert"))));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+  @Test
+  void findsNothingWrongWithShippingUnattendedWhileRepliesAndTheSharedBranchStayYours(
+      @TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withMaster(
+                    MasterConfig.defaults()
+                        .withMode("act")
+                        .withMine(List.of("reply", "deploy", "revert"))));
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems()).isEmpty();
-    }
+    assertThat(check.problems()).isEmpty();
+  }
 
-    @Test
-    void refusesKeepingEveryStepWhereSayingJudgeMeansTheSame(@TempDir Path root) throws Exception {
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
-        when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
-                .withMine(List.of("ship", "deploy", "revert", "reply", "answer", "plan", "repo", "lift"))));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+  @Test
+  void refusesKeepingEveryStepWhereSayingJudgeMeansTheSame(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withMaster(
+                    MasterConfig.defaults()
+                        .withMode("act")
+                        .withMine(
+                            List.of(
+                                "ship", "deploy", "revert", "reply", "answer", "plan", "repo",
+                                "lift"))));
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.roles.master.mine");
-    }
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.roles.master.mine");
+  }
 
-    @Test
-    void refusesToRunAReviewerWhoseBriefWasNeverCopiedFromTheShippedOne(@TempDir Path root) {
-        when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("judge")));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+  @Test
+  void refusesToRunAReviewerWhoseBriefWasNeverCopiedFromTheShippedOne(@TempDir Path root) {
+    when(configService.load())
+        .thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("judge")));
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.roles.master.brief");
-    }
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.roles.master.brief");
+  }
 
-    @Test
-    void judgesByTheShippedBriefWhereNoneWasCopied(@TempDir Path root) throws Exception {
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.writeString(root.resolve("roles/master/brief.md.dist"), "the shipped standards");
-        when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("judge")));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+  @Test
+  void judgesByTheShippedBriefWhereNoneWasCopied(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md.dist"), "the shipped standards");
+    when(configService.load())
+        .thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("judge")));
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems()).isEmpty();
-    }
+    assertThat(check.problems()).isEmpty();
+  }
 
-    @Test
-    void refusesABriefNamedByHandThatIsNotThere(@TempDir Path root) {
-        when(configService.load()).thenReturn(ConfigFile.defaults()
+  @Test
+  void refusesABriefNamedByHandThatIsNotThere(@TempDir Path root) {
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("judge").withBrief("mine.md")));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.roles.master.brief");
-    }
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.roles.master.brief");
+  }
 
-    @Test
-    void refusesAModelTheRuntimeRunningTheSessionsCannotBeTold(@TempDir Path root) throws Exception {
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
-        when(agentRuntime.displayName()).thenReturn("Codex");
-        when(configService.load()).thenReturn(ConfigFile.defaults()
+  @Test
+  void refusesAModelTheRuntimeRunningTheSessionsCannotBeTold(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
+    when(agentRuntime.displayName()).thenReturn("Codex");
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("judge").withModel("fable")));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems())
-                .extracting(Problem::key).containsExactly("orchestrator.roles.master.model");
-    }
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.roles.master.model");
+  }
 
-    @Test
-    void acceptsAMasterModelWhenTheConfigListsModelsForARuntimeListingNone(@TempDir Path root) throws Exception {
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
-        when(configService.load()).thenReturn(ConfigFile.defaults()
+  @Test
+  void acceptsAMasterModelWhenTheConfigListsModelsForARuntimeListingNone(@TempDir Path root)
+      throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
                 .withAgent(ConfigFile.AgentConfig.defaults().withModels(List.of("gpt-5")))
                 .withMaster(MasterConfig.defaults().withMode("judge").withModel("gpt-5")));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems()).isEmpty();
-    }
+    assertThat(check.problems()).isEmpty();
+  }
 
-    @Test
-    void acceptsAModeWhoseBriefTheInstallActuallyCarries(@TempDir Path root) throws Exception {
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
-        when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("act")));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+  @Test
+  void acceptsAModeWhoseBriefTheInstallActuallyCarries(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
+    when(configService.load())
+        .thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")));
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems()).isEmpty();
-    }
+    assertThat(check.problems()).isEmpty();
+  }
 
-    @Test
-    void refusesAStepKeptForYourselfThatNamesNoStepTheMasterHolds(@TempDir Path root) throws Exception {
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.writeString(root.resolve("roles/master/brief.md.dist"), "the shipped standards");
-        when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(new MasterConfig("judge", null, null, List.of("ship", "teleport"), null)));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+  @Test
+  void refusesAStepKeptForYourselfThatNamesNoStepTheMasterHolds(@TempDir Path root)
+      throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md.dist"), "the shipped standards");
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withMaster(
+                    new MasterConfig("judge", null, null, List.of("ship", "teleport"), null)));
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems()).singleElement().satisfies(problem -> {
-            assertThat(problem.key()).isEqualTo("orchestrator.roles.master.mine");
-            assertThat(problem.text()).contains("'teleport'").doesNotContain("'ship'");
-        });
-    }
+    assertThat(check.problems())
+        .singleElement()
+        .satisfies(
+            problem -> {
+              assertThat(problem.key()).isEqualTo("orchestrator.roles.master.mine");
+              assertThat(problem.text()).contains("'teleport'").doesNotContain("'ship'");
+            });
+  }
 
-    @Test
-    void acceptsKeepingTheAttachingOfARepositoryForYourself(@TempDir Path root) throws Exception {
-        Files.createDirectories(root.resolve("roles/master"));
-        Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
-        when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")
-                .withMine(List.of("plan", "repo"))));
-        MasterCheck check = new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())))),
-                agentRuntime);
+  @Test
+  void acceptsKeepingTheAttachingOfARepositoryForYourself(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withMaster(
+                    MasterConfig.defaults().withMode("act").withMine(List.of("plan", "repo"))));
+    MasterCheck check =
+        new MasterCheck(
+            configService,
+            new MasterBriefs(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString())))),
+            agentRuntime);
 
-        assertThat(check.problems()).isEmpty();
-    }
+    assertThat(check.problems()).isEmpty();
+  }
 }
