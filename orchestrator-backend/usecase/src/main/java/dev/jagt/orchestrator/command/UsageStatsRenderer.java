@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.service.UsageLimits;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.CostPerAcceptedTask;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -12,6 +13,8 @@ import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
@@ -40,6 +43,7 @@ public class UsageStatsRenderer {
     private final UsageTracker usageTracker;
     private final UsageLimits limits;
     private final FinishedTasks finished;
+    private final Clock clock;
 
     public String render(Map<String, TaskState> tasks) {
         StringBuilder out = new StringBuilder(limits(limits.last()))
@@ -98,7 +102,10 @@ public class UsageStatsRenderer {
                     .append(" tokens — most of that is fixed per-process overhead, so making FEWER calls"
                             + " beats shortening a prompt.\n");
         }
-        return out.append(costPerDeployed(finished.all())).toString();
+        List<FinishedTask> done = finished.all();
+        long weekStart = clock.millis() - Duration.ofDays(7).toMillis() + 1;
+        return out.append(costPerDeployed(done)).append(costPerAccepted(CostPerAcceptedTask.over(done, weekStart)))
+                .toString();
     }
 
     /** Over the tasks that reached DEPLOYED; one whose session spend was never read is left out, not counted as 0. */
@@ -113,6 +120,14 @@ public class UsageStatsRenderer {
         String bound = deployed.stream().anyMatch(task -> task.spend().costIsLowerBound()) ? "≥ " : "";
         return String.format(Locale.ROOT, "median cost per deployed task: " + bound + "%.2f USD (%d of %d deployed with a known spend)%n",
                 median, costs.length, deployed.size());
+    }
+
+    static String costPerAccepted(CostPerAcceptedTask week) {
+        String counts = "(" + week.shipped() + " shipped of " + week.finished() + " finished)";
+        return week.perAccepted()
+                .map(cost -> String.format(Locale.ROOT, "cost per accepted task, last 7 days: %s%.2f USD %s%n",
+                        week.lowerBound() ? "≥ " : "", cost, counts))
+                .orElse("cost per accepted task, last 7 days: unknown " + counts + "\n");
     }
 
     static String limits(Optional<UsageLimits.Reading> reading) {

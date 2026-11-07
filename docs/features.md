@@ -195,6 +195,6 @@
 - **Limits** — Warned once per period, never gating; a stopped session wakes once at reset. Key: `orchestrator.usageLimits.wakeOnReset`, off.
   [spec](../openspec/specs/usage-limits/spec.md#requirement-a-limit-is-told-once-per-period-never-gated)
   [spec](../openspec/specs/usage-limits/spec.md#requirement-a-stop-on-a-full-window-arms-one-wake)
-- **Spend** — A headless read stops at a spend ceiling or outage; a finished task keeps its cost, `stats` ends with the median, `≥` if unpriced.
-  [spec](../openspec/specs/usage-limits/spec.md#requirement-a-finished-task-keeps-what-it-cost) [spec](../openspec/specs/unpriced-cost/spec.md)
+- **Spend** — A headless read stops at a spend ceiling or outage; `stats` ends with the median and the week's cost per accepted task, `≥` if unpriced.
+  [spec](../openspec/specs/usage-limits/spec.md) [spec](../openspec/specs/unpriced-cost/spec.md) [spec](../openspec/specs/cost-per-accepted/spec.md)
   [spec](../openspec/specs/usage-limits/spec.md#requirement-headless-reads-stop-after-repeated-provider-failures)
