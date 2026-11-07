@@ -8,7 +8,5 @@ paths:
   - "**/adapter/ProcessRunner.java"
 ---
 
-No GUI or keystroke automation, ever. A detached launch gets its own session, never an ignored signal.
-
-Full rules for terminals, sessions and spawned processes: **[`openspec/specs/runtime/spec.md`](../../openspec/specs/runtime/spec.md)** —
-read it before changing behaviour here.
+Terminals, sessions and spawned processes: read **[`openspec/specs/runtime/spec.md`](../../openspec/specs/runtime/spec.md)**
+before changing behaviour here.

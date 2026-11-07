@@ -11,7 +11,5 @@ paths:
   - "**/adapter/assistant/ReadOnlyTools.java"
 ---
 
-A new spelling of a class the guards already pass is not a finding; a new class joins the list with its Reopen condition.
-
-Full list of what each guard stops and passes: **[`docs/rules/guards.md`](../../docs/rules/guards.md)** —
-read it before changing behaviour here.
+What each guard stops and passes: read **[`docs/rules/guards.md`](../../docs/rules/guards.md)** before changing
+behaviour here.

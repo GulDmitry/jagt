@@ -12,7 +12,5 @@ paths:
   - "**/service/master/**"
 ---
 
-The loop only reads and drafts. It never ships, deploys, pushes or posts.
-
-Full rules for review rounds and unattended work: **[`openspec/specs/review/spec.md`](../../openspec/specs/review/spec.md)** —
-read it before changing behaviour here.
+Review rounds and unattended work: read **[`openspec/specs/review/spec.md`](../../openspec/specs/review/spec.md)** before
+changing behaviour here.

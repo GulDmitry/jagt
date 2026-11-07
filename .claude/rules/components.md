@@ -10,8 +10,5 @@ paths:
   - "**/task/TaskState.java"
 ---
 
-A task is created with its item's own facts or not at all. `state.json` never fails soft.
-
-Full rules for state, task creation, MCP scoping and startup checks:
-**[`docs/rules/components.md`](../../docs/rules/components.md)** —
-read it before changing behaviour here.
+State, task creation, MCP scoping and startup checks: read **[`docs/rules/components.md`](../../docs/rules/components.md)**
+before changing behaviour here.

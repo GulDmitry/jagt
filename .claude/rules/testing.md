@@ -9,7 +9,4 @@ paths:
   - ".gitlab-ci.yml"
 ---
 
-Before touching a test file, load the unit-testing skill your setup provides, if any. Every fixed bug gets a regression test, verified RED.
-
-Full rules for testing etiquette: **[`docs/rules/testing.md`](../../docs/rules/testing.md)** —
-read it before changing behaviour here.
+Testing etiquette: read **[`docs/rules/testing.md`](../../docs/rules/testing.md)** before changing behaviour here.
