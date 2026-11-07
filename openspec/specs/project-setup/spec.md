@@ -11,6 +11,8 @@ from, the remote's other branches as last fetched, a key no project holds. It fi
 It writes one entry under `projects:` in
 `jagt.yml`, leaving every other line as it was. A path that is not ready is refused and nothing is written.
 Nothing is fetched.
+A repository listing no remote at all is read from its local branches: `main` or `master` is the base, the rest are deploy branches.
+It is saved with `remote: none`. A repository with a remote is read as before.
 
 #### Scenario: A folder that is no repository
 - **WHEN** the human types the path of a plain folder and adds it
@@ -23,6 +25,10 @@ Nothing is fetched.
 #### Scenario: A verify command the repository carries
 - **WHEN** the repository holds `mvnw`, or a `Makefile` with a `test:` target and no wrapper script
 - **THEN** the verify field is `./mvnw test`, or `make test`; a `Makefile` without a `test:` target suggests nothing
+
+#### Scenario: A repository with no remote
+- **WHEN** the human adds a repository with no remote, holding `main` and `dev`
+- **THEN** the base is `main`, `dev` is offered as deploy branch, and the entry holds `remote: "none"`
 
 ### Requirement: The path field and the verb reach the form
 The path field SHALL offer the folders under what is typed, repositories first.

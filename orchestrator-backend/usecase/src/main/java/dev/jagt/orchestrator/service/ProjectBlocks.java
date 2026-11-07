@@ -29,12 +29,13 @@ final class ProjectBlocks {
     }
 
     /** The file with the entry first under the {@code projects:} that is a direct child of {@code orchestrator:}. */
-    static String inserted(String file, ProjectSetup.Entry entry, Path path) {
+    static String inserted(String file, ProjectSetup.Entry entry, Path path, boolean keptLocally) {
         Located at = locate(file);
         String[] lines = at.lines();
         String step = at.entryIndent().substring(at.parent().length());
         lines[at.projectsAt()] = at.parent() + "projects:\n"
-                + (at.entryIndent() + entry.key() + ":\n" + managed(at.entryIndent() + step, entry, path)).stripTrailing();
+                + (at.entryIndent() + entry.key() + ":\n" + managed(at.entryIndent() + step, entry, path)
+                + (keptLocally ? at.entryIndent() + step + "remote: \"none\"\n" : "")).stripTrailing();
         return at.head() + String.join("\n", lines);
     }
 

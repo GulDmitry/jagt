@@ -115,7 +115,7 @@ class ProjectBlocksTest {
         ProjectSetup.Entry typed = new ProjectSetup.Entry("billing", "/p", "origin/main", null, null, null,
                 List.of("bill", "pay"), List.of("**/auth/**"));
 
-        String edited = ProjectBlocks.inserted(file, typed, Path.of("/p"));
+        String edited = ProjectBlocks.inserted(file, typed, Path.of("/p"), false);
 
         assertThat(edited).isEqualTo("""
                 orchestrator:

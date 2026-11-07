@@ -78,11 +78,12 @@ public class ProjectSetup {
             return new Reading(List.of(new Line(false, notARepositoryRoot.get())), key, "", "", List.of(), List.of());
         }
         List<Line> lines = new ArrayList<>();
-        lines.add(remoteLine(path));
-        String base = baseBranch(path);
-        lines.add(new Line(!base.isBlank(), base.isBlank() ? "no origin/main or origin/master to cut tasks from"
-                : "tasks are cut from " + base));
-        List<String> offered = deployBranches(path, base);
+        boolean local = keptLocally(path);
+        lines.add(local ? new Line(true, "a git repository with no remote, kept on this machine") : remoteLine(path));
+        String base = local ? localBase(path) : baseBranch(path);
+        lines.add(new Line(!base.isBlank(), base.isBlank() ? "no " + (local ? "main or master" : "origin/main or origin/master")
+                + " to cut tasks from" : "tasks are cut from " + base));
+        List<String> offered = local ? localBranches(path, base) : deployBranches(path, base);
         String deploy = DEPLOY_NAMES.stream().filter(offered::contains).findFirst().orElse("");
         boolean taken = taken(path, own);
         lines.add(new Line(!taken, taken ? "a project already points here" : "no project points here yet"));
@@ -114,6 +115,23 @@ public class ProjectSetup {
             return new Line(false, "no remote named origin");
         }
         return new Line(false, "git could not read the remote of " + path + ": " + firstLine(remote.stderr()));
+    }
+
+    private boolean keptLocally(Path path) {
+        Processes.Result remotes = git(path, "remote");
+        return remotes.exitCode() == 0 && remotes.stdout().isBlank();
+    }
+
+    private String localBase(Path path) {
+        return exists(path, "main") ? "main" : exists(path, "master") ? "master" : "";
+    }
+
+    private List<String> localBranches(Path path, String base) {
+        return gitOut(path, "for-each-ref", "--format=%(refname:short)", "refs/heads").stream()
+                .flatMap(String::lines)
+                .map(String::strip)
+                .filter(ref -> !ref.isEmpty() && !ref.equals(base))
+                .toList();
     }
 
     private String baseBranch(Path path) {
@@ -148,7 +166,7 @@ public class ProjectSetup {
             throw new IllegalArgumentException("The key " + entry.key() + " is taken: pick another");
         }
         check(entry);
-        return rewrite(entry.key(), file -> ProjectBlocks.inserted(file, entry, normalized(entry)),
+        return rewrite(entry.key(), file -> ProjectBlocks.inserted(file, entry, normalized(entry), keptLocally(normalized(entry))),
                 "Added " + entry.key() + " to jagt.yml");
     }
 

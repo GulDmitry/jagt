@@ -359,6 +359,71 @@ class ProjectSetupTest {
     }
 
     @Test
+    void readsARepositoryWithNoRemoteFromItsLocalBranches() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
+        doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
+        doReturn(new Processes.Result(0, "", "")).when(git).run(any(), any(), argThat(command -> command.contains("remote") && command.size() == 4));
+        doReturn(new Processes.Result(0, "main\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("main")));
+        doReturn(new Processes.Result(0, "main\ndev\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("for-each-ref")));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
+
+        ProjectSetup.Reading reading = setup.read(repo.toString());
+
+        assertThat(reading.ready()).isTrue();
+        assertThat(reading.baseBranch()).isEqualTo("main");
+        assertThat(reading.deployBranches()).containsExactly("dev");
+    }
+
+    @Test
+    void cutsTasksFromLocalMasterWhereARepositoryWithNoRemoteHasNoMain() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
+        doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
+        doReturn(new Processes.Result(0, "", "")).when(git).run(any(), any(), argThat(command -> command.contains("remote") && command.size() == 4));
+        doReturn(new Processes.Result(0, "master\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("master")));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
+
+        ProjectSetup.Reading reading = setup.read(repo.toString());
+
+        assertThat(reading.baseBranch()).isEqualTo("master");
+    }
+
+    @Test
+    void addsARepositoryWithNoRemoteAndWritesRemoteNone() throws Exception {
+        Path repo = Files.createDirectories(root.resolve("billing"));
+        Files.createDirectories(repo.resolve(".git"));
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+        Processes git = mock(Processes.class);
+        when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
+        doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
+        doReturn(new Processes.Result(0, "", "")).when(git).run(any(), any(), argThat(command -> command.contains("remote") && command.size() == 4));
+        doReturn(new Processes.Result(0, "main\n", "")).when(git).run(any(), any(), argThat(command -> command.contains("main")));
+        ProjectSetup setup = new ProjectSetup(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths, git, checkout -> List.of());
+
+        setup.add(new ProjectSetup.Entry("billing", repo.toString(), "main", null, null, null, null, null));
+
+        assertThat(Files.readString(configFile)).isEqualTo("""
+                orchestrator:
+                  projects:
+                    billing:
+                      path: "%s"
+                      baseBranch: "main"
+                      remote: "none"
+                """.formatted(repo));
+    }
+
+    @Test
     void saysGitCouldNotReadTheRemoteWhereItFailsForAnotherReason() throws Exception {
         Path repo = Files.createDirectories(root.resolve("billing"));
         Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
