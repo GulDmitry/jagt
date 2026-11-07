@@ -2,6 +2,7 @@ state.json
 state.json.bak
 state.json.corrupt
 state*.json.tmp
+opencode-gate/
 .omc/
 .idea/
 *.iml
