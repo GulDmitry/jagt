@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -47,7 +48,7 @@ class RepoRemoval {
     String request = repo.mrUrl();
     boolean closed = false;
     if (request != null && repo.hasReviewRequest() && !repo.wasMerged()) {
-      close(taskId, project, request);
+      close(taskId, project, repo.remoteUrl(), request);
       closed = true;
     }
     departure.leave(taskId, repo, "you removed it");
@@ -59,8 +60,9 @@ class RepoRemoval {
         + (closed ? ", its request closed" : "");
   }
 
-  private void close(String taskId, String project, String requestUrl) {
-    Answer<String> closed = codeHost.closeRequest(project, requestUrl);
+  private void close(
+      String taskId, String project, @Nullable String remoteUrl, String requestUrl) {
+    Answer<String> closed = codeHost.closeRequest(project, remoteUrl, requestUrl);
     if (closed.facts().isEmpty()) {
       throw new IllegalStateException(
           "the host did not close the request of " + project + ": " + closed.failure());

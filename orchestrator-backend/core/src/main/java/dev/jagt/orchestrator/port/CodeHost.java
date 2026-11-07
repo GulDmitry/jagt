@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.port;
 
 import dev.jagt.orchestrator.task.FailedJob;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * jagt's code-host writes, the re-run of a pipeline's failed jobs and the closing of a request, and
@@ -22,10 +23,11 @@ public interface CodeHost {
   Answer<String> retryFailed(String project, String pipelineUrl);
 
   /**
-   * Closes the open request at {@code requestUrl} unmerged; the failure carries the host's or the
-   * tool's own words for a refusal.
+   * Closes the open request at {@code requestUrl} unmerged, where it is on the host the repository
+   * at {@code remoteUrl} lives on; the failure carries the host's or the tool's own words for a
+   * refusal, or says the address is on no such host.
    */
-  Answer<String> closeRequest(String project, String requestUrl);
+  Answer<String> closeRequest(String project, @Nullable String remoteUrl, String requestUrl);
 
   /**
    * The host's id of the newest note of each unresolved thread of the request at {@code requestUrl}

@@ -194,10 +194,36 @@ class ChosenCodeHostTest {
         .thenReturn(new Processes.Result(0, "", "Closed"));
 
     Answer<String> answer =
-        pipelines.closeRequest("shop", "https://git.example.invalid/shop/web/-/merge_requests/7");
+        pipelines.closeRequest(
+            "shop", REMOTE, "https://git.example.invalid/shop/web/-/merge_requests/7");
 
     assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
     assertThat(answer.facts()).isPresent();
+  }
+
+  @Test
+  void noRequestIsClosedWhereTheRemoteIsALocalPath() {
+    when(configService.load())
+        .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("github", null))));
+
+    Answer<String> answer =
+        pipelines.closeRequest(
+            "shop", "/srv/repos/web", "https://github.example.invalid/other-org/other-repo/pull/9");
+
+    assertThat(answer.failure()).isEqualTo(LinkRefusal.HOSTLESS_REMOTE.said());
+    verifyNoInteractions(processes);
+  }
+
+  @Test
+  void noRequestIsClosedOnAHostOtherThanTheRemotesWhateverItsPath() {
+    when(configService.load())
+        .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("github", null))));
+
+    Answer<String> answer =
+        pipelines.closeRequest("shop", REMOTE, "https://other.example.invalid/shop/web/pull/9");
+
+    assertThat(answer.failure()).isEqualTo(LinkRefusal.OTHER_HOST.said());
+    verifyNoInteractions(processes);
   }
 
   @Test

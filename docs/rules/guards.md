@@ -56,5 +56,6 @@ The CLI's `onFailure: "block"` (2.1.309) would close it, and stays off for that 
 | An excluded command, the Edit tool, an MCP server, a Unix socket | a write lands outside the task so |
 | A file written through the shell while the plan waits: `tee`, `sed -i`, a redirect | shell writes during planning are seen in practice |
 | A runtime declaring no `gate` event: Codex keeps its read-only sandbox for a plan | its CLI gains a hook jagt can answer |
+| A host write on an address no read of the host returned: only `closeRequest` is judged against the remote's host | a `retryFailed` address comes from a session, or a write is added that takes one |
 
 Known to refuse: `git -C` on a worktree whose path holds a space. Reopen when a round's second worktree has one.

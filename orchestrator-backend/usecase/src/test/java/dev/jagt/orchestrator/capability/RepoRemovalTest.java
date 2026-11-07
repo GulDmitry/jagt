@@ -50,7 +50,7 @@ class RepoRemovalTest {
                 List.of(new TaskRepo("api", "/api-wt", "git@host:g/api.git", "http://mr/api"), web),
                 TaskStatus.REVIEWED)
             .build());
-    when(host.closeRequest("web", "http://mr/web"))
+    when(host.closeRequest("web", "git@host:g/web.git", "http://mr/web"))
         .thenReturn(new Answer<>(Optional.of("closed"), TokenUsage.NONE));
 
     String said = new RepoRemoval(state, host, departure).remove("ABC-42", "web");
@@ -98,7 +98,7 @@ class RepoRemovalTest {
                     new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web")),
                 TaskStatus.REVIEWED)
             .build());
-    when(host.closeRequest("web", "http://mr/web"))
+    when(host.closeRequest("web", "git@host:g/web.git", "http://mr/web"))
         .thenReturn(Answer.failed(TokenUsage.NONE, "gh exited 1: no permission"));
 
     assertThatThrownBy(() -> new RepoRemoval(state, host, departure).remove("ABC-42", "web"))
