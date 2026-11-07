@@ -43,7 +43,7 @@ class VerificationTest {
     void stopsTheVerifyCommandAfterTheMinutesTheProjectConfigures() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
-                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("./gradlew", "test"), null, null, null, null, null, null, null, null, null, 5))));
+                new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of("./gradlew", "test"), 5)))));
         Processes processes = mock(Processes.class);
         when(processes.run(Path.of("/wt"), Duration.ofMinutes(5), List.of("./gradlew", "test")))
                 .thenReturn(new Processes.Result(1, "", "red"));
@@ -58,7 +58,7 @@ class VerificationTest {
     void stopsTheVerifyCommandAfterTwentyMinutesWhereTheProjectConfiguresNone() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
-                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("./gradlew", "test"), null, null, null, null, null, null, null, null, null, null))));
+                new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of("./gradlew", "test"), null)))));
         Processes processes = mock(Processes.class);
         when(processes.run(Path.of("/wt"), Duration.ofMinutes(20), List.of("./gradlew", "test")))
                 .thenReturn(new Processes.Result(1, "", "red"));
@@ -73,7 +73,7 @@ class VerificationTest {
     void namesTheProjectTheCommandAndTheExitOfAFailedRunWithTheTailOfItsErrors() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
-                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("./gradlew", "test"), null, null, null, null, null, null, null, null, null, null))));
+                new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of("./gradlew", "test"), null)))));
         Processes processes = mock(Processes.class);
         String errors = IntStream.rangeClosed(1, 45).mapToObj(n -> "e" + n).collect(Collectors.joining("\n"));
         when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("./gradlew", "test"))))
@@ -90,7 +90,7 @@ class VerificationTest {
     void keepsAnErrorTailOfExactlyFortyLinesWhole() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
-                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("./gradlew", "test"), null, null, null, null, null, null, null, null, null, null))));
+                new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of("./gradlew", "test"), null)))));
         Processes processes = mock(Processes.class);
         String errors = IntStream.rangeClosed(1, 40).mapToObj(n -> "e" + n).collect(Collectors.joining("\n"));
         when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("./gradlew", "test"))))
@@ -106,7 +106,7 @@ class VerificationTest {
     void relaysTheStandardOutputOfAFailedRunThatSaidNothingOnTheErrorStream() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
-                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("npm", "test"), null, null, null, null, null, null, null, null, null, null))));
+                new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of("npm", "test"), null)))));
         Processes processes = mock(Processes.class);
         when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("npm", "test"))))
                 .thenReturn(new Processes.Result(2, "2 tests failed", ""));
@@ -121,7 +121,7 @@ class VerificationTest {
     void reportsNoFailureWhereTheCommandPassed() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
-                new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("npm", "test"), null, null, null, null, null, null, null, null, null, null))));
+                new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of("npm", "test"), null)))));
         Processes processes = mock(Processes.class);
         when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("npm", "test"))))
                 .thenReturn(new Processes.Result(0, "ok", ""));
@@ -136,8 +136,8 @@ class VerificationTest {
     void reportsOnlyTheFirstOfTwoFailingRepositories() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
-                "proj", new ProjectConfig("/repo", "origin/main", "dev", List.of(), List.of("npm", "test"), null, null, null, null, null, null, null, null, null, null),
-                "web", new ProjectConfig("/web", "origin/main", "dev", List.of(), List.of("npm", "test"), null, null, null, null, null, null, null, null, null, null))));
+                "proj", new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of("npm", "test"), null)),
+                "web", new ProjectConfig(new ProjectConfig.Repository("/web", List.of(), null, null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of("npm", "test"), null)))));
         Processes processes = mock(Processes.class);
         when(processes.run(any(), any(), eq(List.of("npm", "test")))).thenReturn(new Processes.Result(1, "", "red"));
 
@@ -177,8 +177,7 @@ class VerificationTest {
     void namesTheProjectsOwnRemoteWhereAProbeIsRefusedForAPushThatCouldSkipItsCheck() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
-                new ProjectConfig("/repo", "upstream/main", "dev", List.of(), List.of(), null, null, null, null, null, null,
-                        null, "upstream", null, null))));
+                new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, null), new ProjectConfig.Branches("upstream/main", "dev", "upstream"), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null)))));
         Processes processes = mock(Processes.class);
 
         List<Probe> probed = new Verification(config, processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))
@@ -212,8 +211,7 @@ class VerificationTest {
     void namesTheNamedRepositorysOwnRemoteWhereItsProbeIsRefused() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("front",
-                new ProjectConfig("/front", "upstream/main", "dev", List.of(), List.of(), null, null, null, null, null, null,
-                        null, "upstream", null, null))));
+                new ProjectConfig(new ProjectConfig.Repository("/front", List.of(), null, null), new ProjectConfig.Branches("upstream/main", "dev", "upstream"), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null)))));
         Processes processes = mock(Processes.class);
 
         List<Probe> probed = new Verification(config, processes, new AcceptanceProbing(processes, 8290), mock(WorktreeChanges.class))

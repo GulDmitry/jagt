@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.ProjectConfig;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -27,9 +29,24 @@ class ProjectCardsTest {
         ProjectCards.Card card = cards.of("api");
 
         assertThat(card.remoteUrl()).isEqualTo("git@host.test:group/api.git");
-        assertThat(card.baseBranch()).isEqualTo("origin/main");
-        assertThat(card.deployBranch()).isEqualTo("dev");
-        assertThat(card.labels()).containsExactly("billing");
+        assertThat(card.branches().baseBranch()).isEqualTo("origin/main");
+        assertThat(card.branches().deployBranch()).isEqualTo("dev");
+        assertThat(card.repository().labels()).containsExactly("billing");
+    }
+
+    @Test
+    void servesTheFlatKeysTheBoardReads() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/srv/api", "origin/main", "dev", List.of("billing")))));
+        when(worktrees.remoteUrl(Path.of("/srv/api"))).thenReturn("host.test:group/api");
+
+        JsonNode served = JsonMapper.builder().build().valueToTree(cards.of("api"));
+
+        assertThat(served.get("key").asString()).isEqualTo("api");
+        assertThat(served.get("path").asString()).isEqualTo("/srv/api");
+        assertThat(served.get("baseBranch").asString()).isEqualTo("origin/main");
+        assertThat(served.get("labels").get(0).asString()).isEqualTo("billing");
+        assertThat(served.get("remoteUrl").asString()).isEqualTo("host.test:group/api");
     }
 
     @Test

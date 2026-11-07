@@ -24,8 +24,7 @@ class HumanPathsTest {
     @Test
     void namesTheFirstChangedPathTheProjectKeepsForTheHuman() {
         TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
-        when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of(),
-                null, null, List.of("**/auth/**"), null, null, null, null, null, null, null, null));
+        when(configService.project("demo")).thenReturn(new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, List.of("**/auth/**")), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(null, null)));
         when(changes.paths(task)).thenReturn(Optional.of(Map.of("demo", List.of("README.md", "src/auth/Login.java"))));
 
         Optional<String> touched = new HumanPaths(configService, changes).touched(task);
@@ -36,8 +35,7 @@ class HumanPathsTest {
     @Test
     void namesNothingWhereNoChangedPathIsKept() {
         TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
-        when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of(),
-                null, null, List.of("**/auth/**"), null, null, null, null, null, null, null, null));
+        when(configService.project("demo")).thenReturn(new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, List.of("**/auth/**")), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(null, null)));
         when(changes.paths(task)).thenReturn(Optional.of(Map.of("demo", List.of("README.md"))));
 
         Optional<String> touched = new HumanPaths(configService, changes).touched(task);
@@ -48,8 +46,7 @@ class HumanPathsTest {
     @Test
     void keepsTheStepWithTheHumanWhereTheChangedPathsCouldNotBeRead() {
         TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
-        when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of(),
-                null, null, List.of("**/auth/**"), null, null, null, null, null, null, null, null));
+        when(configService.project("demo")).thenReturn(new ProjectConfig(new ProjectConfig.Repository("/repo", List.of(), null, List.of("**/auth/**")), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(null, null)));
         when(changes.paths(task)).thenReturn(Optional.empty());
 
         Optional<String> touched = new HumanPaths(configService, changes).touched(task);

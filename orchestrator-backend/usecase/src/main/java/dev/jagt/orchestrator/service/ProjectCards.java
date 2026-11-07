@@ -1,12 +1,15 @@
 package dev.jagt.orchestrator.service;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.ProjectConfig.Branches;
+import dev.jagt.orchestrator.task.ProjectConfig.CodeHost;
+import dev.jagt.orchestrator.task.ProjectConfig.Repository;
+import dev.jagt.orchestrator.task.ProjectConfig.Verify;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
-import java.util.List;
 
 /** A project's whole jagt.yml entry, with the address of the repository it points at. */
 @Service
@@ -14,11 +17,9 @@ import java.util.List;
 public class ProjectCards {
 
     /** {@code remoteUrl} is blank where the repository has no remote to read. */
-    public record Card(String key, String path, String remoteUrl, @Nullable String remote, String baseBranch,
-                       String deployBranch, List<String> labels, @Nullable String about,
-                       @Nullable List<String> verifyCommand, @Nullable List<String> humanPaths,
-                       @Nullable String codeHost, @Nullable String codeHostName,
-                       @Nullable List<String> pipelineCommand, @Nullable List<String> retryCommand) {
+    public record Card(String key, String remoteUrl, @JsonUnwrapped Repository repository,
+                       @JsonUnwrapped Branches branches, @JsonUnwrapped CodeHost host,
+                       @JsonUnwrapped Verify verify) {
     }
 
     private final ConfigService configService;
@@ -29,10 +30,8 @@ public class ProjectCards {
         if (project == null) {
             throw new IllegalArgumentException("No project " + key + " in jagt.yml");
         }
-        return new Card(key, project.path(), remoteUrl(project), project.remote(), project.baseBranch(),
-                project.deployBranch(), project.labels(), project.about(), project.verifyCommand(),
-                project.humanPaths(), project.codeHost(), project.codeHostName(), project.pipelineCommand(),
-                project.retryCommand());
+        return new Card(key, remoteUrl(project), project.repository(), project.branches(), project.host(),
+                project.verify());
     }
 
     private String remoteUrl(ProjectConfig project) {

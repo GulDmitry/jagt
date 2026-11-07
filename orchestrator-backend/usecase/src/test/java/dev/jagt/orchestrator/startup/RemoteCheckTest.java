@@ -24,8 +24,7 @@ class RemoteCheckTest {
     private final RemoteCheck check = new RemoteCheck(configService, processes);
 
     private static ProjectConfig project(String codeHost, String remote) {
-        return new ProjectConfig("/repo/shop", "main", "dev", List.of(), List.of(), null, null, codeHost, null, null,
-                null, null, remote, null, null);
+        return new ProjectConfig(new ProjectConfig.Repository("/repo/shop", List.of(), null, null), new ProjectConfig.Branches("main", "dev", remote), new ProjectConfig.CodeHost(codeHost, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null));
     }
 
     @Test

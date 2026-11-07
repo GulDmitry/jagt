@@ -20,8 +20,7 @@ class ConfigRemotesTest {
     @Test
     void namesTheRemoteOfTheConfiguredProjectAtThatRepository() {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("shop",
-                new ProjectConfig("/repo/shop", "main", "dev", List.of(), List.of(), null, null, null, null, null,
-                        null, null, "none", null, null))));
+                new ProjectConfig(new ProjectConfig.Repository("/repo/shop", List.of(), null, null), new ProjectConfig.Branches("main", "dev", "none"), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null)))));
 
         assertThat(remotes.of(Path.of("/repo/shop"))).contains(Remote.LOCAL);
     }

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.board;
 
 import dev.jagt.orchestrator.service.ProjectCards;
+import dev.jagt.orchestrator.task.ProjectConfig;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -16,8 +17,11 @@ class ProjectCardControllerTest {
 
     @Test
     void servesTheCardOfTheProjectTheHumanHovers() {
-        ProjectCards.Card card = new ProjectCards.Card("demo", "/work/demo", "git@code.example:acme/demo.git", null,
-                "origin/main", "dev", List.of("web"), null, null, null, null, null, null, null);
+        ProjectCards.Card card = new ProjectCards.Card("demo", "code.example:acme/demo",
+                new ProjectConfig.Repository("/work/demo", List.of("web"), null, null),
+                new ProjectConfig.Branches("origin/main", "dev", null),
+                new ProjectConfig.CodeHost(null, null, null, null, null, null),
+                new ProjectConfig.Verify(null, null));
         when(cards.of("demo")).thenReturn(card);
 
         assertThat(controller.card("demo")).isSameAs(card);

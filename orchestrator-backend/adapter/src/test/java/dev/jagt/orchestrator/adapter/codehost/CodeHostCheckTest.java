@@ -22,8 +22,7 @@ class CodeHostCheckTest {
             List.of(new CommandPipeline(mock(Processes.class), new ReachLedger()), new NoCodeHost()));
 
     private static ProjectConfig project(String codeHost, List<String> pipelineCommand) {
-        return new ProjectConfig("/repo/shop", "origin/main", "dev", List.of(), List.of(), null, null, codeHost, null,
-                pipelineCommand, null, null, null, null, null);
+        return new ProjectConfig(new ProjectConfig.Repository("/repo/shop", List.of(), null, null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(codeHost, null, pipelineCommand, null, null, null), new ProjectConfig.Verify(List.of(), null));
     }
 
     @Test

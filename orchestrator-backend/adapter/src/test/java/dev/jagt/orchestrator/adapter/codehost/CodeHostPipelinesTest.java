@@ -34,8 +34,7 @@ class CodeHostPipelinesTest {
             List.of(new GitHubCli(processes, reach), new GitLabCli(processes, reach), new CommandPipeline(processes, reach), new NoCodeHost()));
 
     private static ProjectConfig project(String codeHost, List<String> pipelineCommand) {
-        return new ProjectConfig("/repo/shop", "origin/main", "dev", List.of(), List.of(), null, null, codeHost, null,
-                pipelineCommand, null, null, null, null, null);
+        return new ProjectConfig(new ProjectConfig.Repository("/repo/shop", List.of(), null, null), new ProjectConfig.Branches("origin/main", "dev", null), new ProjectConfig.CodeHost(codeHost, null, pipelineCommand, null, null, null), new ProjectConfig.Verify(List.of(), null));
     }
 
     private String firstWordOfTheCommandRun() {
@@ -140,8 +139,7 @@ class CodeHostPipelinesTest {
     @Test
     void settlesADeployWithNoPipelineForAProjectWithNoRemoteAndNoCodeHostKey() {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("shop",
-                new ProjectConfig("/repo/shop", "main", "dev", List.of(), List.of(), null, null, null, null, null,
-                        null, null, "none", null, null))));
+                new ProjectConfig(new ProjectConfig.Repository("/repo/shop", List.of(), null, null), new ProjectConfig.Branches("main", "dev", "none"), new ProjectConfig.CodeHost(null, null, null, null, null, null), new ProjectConfig.Verify(List.of(), null)))));
 
         Answer<CommitPipeline> answer = pipelines.onCommit("shop", "", "0123abc");
 

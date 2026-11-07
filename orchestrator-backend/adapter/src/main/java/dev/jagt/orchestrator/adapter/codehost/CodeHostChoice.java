@@ -3,10 +3,8 @@ package dev.jagt.orchestrator.adapter.codehost;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.task.ProjectConfig;
 
-import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Locale;
 
 /** The kind of code host a project reads, the project's key over the orchestrator's over {@link #DEFAULT}. */
@@ -26,12 +24,8 @@ record CodeHostChoice(String kind, HostSettings host) {
             kind = declared.gitRemote().local() ? ProjectConfig.NO_CODE_HOST : DEFAULT;
         }
         return new CodeHostChoice(kind.strip().toLowerCase(Locale.ROOT), new HostSettings(project, selectedBy,
-                declared.codeHostName(), Path.of(String.valueOf(declared.path())),
-                orNone(declared.pipelineCommand()), orNone(declared.retryCommand()), orNone(declared.loginCommand()),
-                orNone(declared.closeCommand())));
-    }
-
-    private static List<String> orNone(@Nullable List<String> command) {
-        return command == null ? List.of() : command;
+                declared.host().name(), Path.of(String.valueOf(declared.path())),
+                declared.host().pipelineCommand(), declared.host().retryCommand(), declared.host().loginCommand(),
+                declared.host().closeCommand()));
     }
 }
