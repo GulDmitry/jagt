@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.capability;
 
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.PipelineRetry;
+import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.service.RepoDeparture;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 class RepoRemoval {
 
   private final StateService stateService;
-  private final PipelineRetry host;
+  private final CodeHost codeHost;
   private final RepoDeparture departure;
 
   /** Refuses a project the task does not hold, its primary repository and one already deployed. */
@@ -60,7 +60,7 @@ class RepoRemoval {
   }
 
   private void close(String taskId, String project, String requestUrl) {
-    Answer<String> closed = host.closeRequest(project, requestUrl);
+    Answer<String> closed = codeHost.closeRequest(project, requestUrl);
     if (closed.facts().isEmpty()) {
       throw new IllegalStateException(
           "the host did not close the request of " + project + ": " + closed.failure());

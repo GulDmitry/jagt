@@ -22,15 +22,15 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-class CodeHostPipelinesTest {
+class ChosenCodeHostTest {
 
   private static final String REMOTE = "https://git.example.invalid/shop/web.git";
 
   private final ConfigService configService = mock(ConfigService.class);
   private final Processes processes = mock(Processes.class);
   private final ReachLedger reach = new ReachLedger();
-  private final CodeHostPipelines pipelines =
-      new CodeHostPipelines(
+  private final ChosenCodeHost pipelines =
+      new ChosenCodeHost(
           configService,
           List.of(
               new GitHubCli(processes, reach),

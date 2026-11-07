@@ -12,7 +12,7 @@ import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.PipelineRetry;
+import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.task.FailedJob;
 import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.ReviewFacts;
@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 
 class RedCausesTest {
 
-  private final PipelineRetry pipelines = mock(PipelineRetry.class);
+  private final CodeHost pipelines = mock(CodeHost.class);
   private final InfraRetries retries = mock(InfraRetries.class);
   private final RedCauses causes =
       new RedCauses(pipelines, retries, InfraWaitProperties.defaults());

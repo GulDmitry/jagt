@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.PipelineRetry;
+import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class ReviewRound {
 
   private final ReviewReader reader;
-  private final PipelineRetry host;
+  private final CodeHost codeHost;
 
   public Answer<ReviewFacts> read(String taskId, String project, String reviewRequestUrl) {
     Answer<ReviewFacts> answer = reader.read(taskId, reviewRequestUrl);
@@ -24,7 +24,7 @@ public class ReviewRound {
     if (read.isEmpty() || !read.get().request().exists()) {
       return answer;
     }
-    Answer<List<String>> notes = host.unresolvedNotes(project, reviewRequestUrl);
+    Answer<List<String>> notes = codeHost.unresolvedNotes(project, reviewRequestUrl);
     if (notes.facts().isEmpty()) {
       log.atWarn()
           .setMessage("note ids not read")

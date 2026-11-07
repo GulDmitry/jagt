@@ -8,7 +8,7 @@ import java.util.List;
  * its reads: why they failed, what ran on a commit or after it, and which notes of a request still
  * await an answer. {@code project} is the key in {@code jagt.yml} whose code host answers.
  */
-public interface PipelineRetry {
+public interface CodeHost {
 
   /**
    * The failed jobs of the pipeline at {@code pipelineUrl}, each told apart as infrastructure or

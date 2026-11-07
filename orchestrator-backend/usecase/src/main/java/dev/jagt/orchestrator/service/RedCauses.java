@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.PipelineRetry;
+import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.task.FailedJob;
 import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.ReviewFacts;
@@ -35,7 +35,7 @@ public class RedCauses {
     static final Verdict CODE = new Verdict(RedCause.CODE, false, "", Optional.empty());
   }
 
-  private final PipelineRetry pipelines;
+  private final CodeHost codeHost;
   private final InfraRetries retries;
   private final InfraWaitProperties properties;
 
@@ -68,7 +68,7 @@ public class RedCauses {
     if (!properties.waits()) {
       return Verdict.CODE;
     }
-    Answer<List<FailedJob>> failed = pipelines.failedJobs(project, pipelineUrl);
+    Answer<List<FailedJob>> failed = codeHost.failedJobs(project, pipelineUrl);
     if (failed.facts().isEmpty()) {
       log.atWarn()
           .setMessage("failed jobs unreadable")

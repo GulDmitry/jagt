@@ -13,8 +13,8 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.port.CommitPipeline;
-import dev.jagt.orchestrator.port.PipelineRetry;
 import dev.jagt.orchestrator.service.RedCauses;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Deployment;
@@ -40,7 +40,7 @@ class DeployPipelinesRetryTest {
   private static final Clock CLOCK =
       Clock.fixed(Instant.parse("2026-11-04T12:00:00Z"), ZoneOffset.UTC);
 
-  private final PipelineRetry pipelines = mock(PipelineRetry.class);
+  private final CodeHost pipelines = mock(CodeHost.class);
   private final RedCauses causes = mock(RedCauses.class);
   private final DeployFixWorktrees fixes = mock(DeployFixWorktrees.class);
 

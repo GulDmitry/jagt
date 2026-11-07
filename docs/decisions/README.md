@@ -161,3 +161,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0145 jagt's own records roll themselves](0145-jagts-own-records-roll-themselves.md)
 - [0146 Error Prone gates its default checks in main](0146-error-prone-gates-its-default-checks-in-main.md) (extends 0143)
 - [0147 The tick scope is its own port](0147-the-tick-scope-is-its-own-port.md)
+- [0148 jagt reaches the code host through its CLI login](0148-jagt-reaches-the-code-host-through-its-cli-login.md) (supersedes in part 0003, 0020)

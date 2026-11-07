@@ -11,8 +11,8 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.port.CommitPipeline;
-import dev.jagt.orchestrator.port.PipelineRetry;
 import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.service.RedCauses;
 import dev.jagt.orchestrator.service.StateService;
@@ -38,7 +38,7 @@ class DeployPipelinesTest {
   private static final String SHA = "0123456789abcdef";
   private static final Instant NOW = Instant.parse("2026-10-29T12:00:00Z");
 
-  private final PipelineRetry pipelines = mock(PipelineRetry.class);
+  private final CodeHost pipelines = mock(CodeHost.class);
   private final RedCauses causes = mock(RedCauses.class);
   private final DeployFixWorktrees fixes = mock(DeployFixWorktrees.class);
   private final DeployPipelines deploys =

@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.PipelineRetry;
+import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.InfraRetries;
 import dev.jagt.orchestrator.service.OriginContext;
@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 public class InfraRetryJob implements Job {
 
   private final InfraRetries retries;
-  private final PipelineRetry pipelines;
+  private final CodeHost codeHost;
   private final TaskStops stops;
 
   @Override
@@ -72,7 +72,7 @@ public class InfraRetryJob implements Job {
       return;
     }
     String project = armed.project();
-    Answer<List<FailedJob>> failed = pipelines.failedJobs(project, armed.pipelineUrl());
+    Answer<List<FailedJob>> failed = codeHost.failedJobs(project, armed.pipelineUrl());
     if (failed.reach().isPresent()) {
       return;
     }
@@ -86,7 +86,7 @@ public class InfraRetryJob implements Job {
   }
 
   private void send(String taskId, String project, InfraRetry armed) {
-    Answer<String> sent = pipelines.retryFailed(project, armed.pipelineUrl());
+    Answer<String> sent = codeHost.retryFailed(project, armed.pipelineUrl());
     if (sent.facts().isPresent()) {
       retries.sent(taskId, armed);
       log.atInfo()

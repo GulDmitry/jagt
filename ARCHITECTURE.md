@@ -159,7 +159,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `Specs` | `adapter/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Codex,OpenCode,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/replay/ReplayAgentRuntime` |
 | `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `ClaudeMcpHealthProbe`; `Replay<port>` for tracker and code host |
-| `PipelineRetry` | `adapter/codehost/CodeHostPipelines` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`, `ReplayCodeHost`) by `codeHost`; re-running a pipeline is jagt's one code-host write |
+| `CodeHost` | `adapter/codehost/ChosenCodeHost` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`, `ReplayCodeHost`) by `codeHost`; re-running a pipeline is jagt's one code-host write |
 | `CodeHostCommands` | `adapter/codehost/{GitHub,GitLab}Commands` — each code-host CLI's word, read verbs and command groups; `service/ToolGate` judges every one wherever it stands |
 | `RoundReviewer` | `adapter/assistant/ChosenRoundReviewer` choosing a driver by config (`HeadlessClaudeRoundReviewer`, OpenCode), `ReplayRoundReviewer` (a stand recording played back) |
 | `CheckerReader` | `adapter/assistant/ChosenCheckerReader` choosing a driver by config (`HeadlessClaudeCheckerReader`, `OpenCodeCheckerReader`), `ReplayCheckerReader` |

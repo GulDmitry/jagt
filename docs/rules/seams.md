@@ -10,7 +10,7 @@ Linux and macOS, with terminals, notifiers, editors and agent runtimes (any MCP-
 - Selected by config: `UserNotifier` by `orchestrator.platform` (macos default, linux). `TerminalDriver` by
   `orchestrator.terminal` (kitty default, ghostty on macOS only). `EditorDriver` by `orchestrator.editor-command`.
   `AgentRuntime` and `SubscriptionUsage` by `orchestrator.agent.cli` (claude default, codex, opencode).
-  `PipelineRetry` by `orchestrator.codeHost`, or a project's own (github default, gitlab, command, none, replay), never by `agent.cli`.
+  `CodeHost` by `orchestrator.codeHost`, or a project's own (github default, gitlab, command, none, replay), never by `agent.cli`.
 - **A seam selected for the wrong OS is refused at startup, never degraded** (`adapter/PlatformCheck`);
   a notifier reaching nothing logs and returns.
 - **Every third-party service or technology is a seam** ([0130](../decisions/0130-every-third-party-is-a-configured-seam.md)):

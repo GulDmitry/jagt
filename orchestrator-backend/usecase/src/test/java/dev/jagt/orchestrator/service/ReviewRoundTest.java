@@ -6,7 +6,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.PipelineRetry;
+import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import java.util.List;
@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 class ReviewRoundTest {
 
   private final ReviewReader reader = mock(ReviewReader.class);
-  private final PipelineRetry host = mock(PipelineRetry.class);
+  private final CodeHost host = mock(CodeHost.class);
   private final ReviewRound round = new ReviewRound(reader, host);
 
   @Test

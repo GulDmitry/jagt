@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
 import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.port.CommitPipeline;
-import dev.jagt.orchestrator.port.PipelineRetry;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.task.FailedJob;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 /** Asks the driver of the code host the project's {@code jagt.yml} chose, read on every call. */
 @Component
 @RequiredArgsConstructor
-public class CodeHostPipelines implements PipelineRetry {
+public class ChosenCodeHost implements CodeHost {
 
   private final ConfigService configService;
   private final List<CodeHostDriver> drivers;

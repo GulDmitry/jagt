@@ -16,7 +16,7 @@ Accepted 2026-11-04.
 
 ## Decision
 
-- A deploy pipeline red on the code is re-run once per pushed commit (`PipelineRetry.retryFailed`) before it is handed back.
+- A deploy pipeline red on the code is re-run once per pushed commit (`CodeHost.retryFailed`) before it is handed back.
 - The re-run is recorded on the deployment's target (`retried`, the commit's sha) before it is sent, so a restart never sends it again;
   a fix pushed after it is a new commit and owes its own.
 - A host that refuses the re-run hands the red back as it stands, with no second try.

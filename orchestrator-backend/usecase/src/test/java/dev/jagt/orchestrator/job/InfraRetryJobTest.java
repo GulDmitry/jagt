@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.PipelineRetry;
+import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.service.InfraRetries;
 import dev.jagt.orchestrator.service.TaskStops;
@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 class InfraRetryJobTest {
 
   private final InfraRetries retries = mock(InfraRetries.class);
-  private final PipelineRetry pipelines = mock(PipelineRetry.class);
+  private final CodeHost pipelines = mock(CodeHost.class);
   private final TaskStops stops = mock(TaskStops.class);
   private final InfraRetryJob job = new InfraRetryJob(retries, pipelines, stops);
   private final InfraRetry armed =

@@ -14,7 +14,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.PipelineRetry;
+import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.service.RepoDeparture;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Deployment;
@@ -31,7 +31,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class RepoRemovalTest {
 
-  private final PipelineRetry host = mock(PipelineRetry.class);
+  private final CodeHost host = mock(CodeHost.class);
   private final RepoDeparture departure = mock(RepoDeparture.class);
 
   @Test

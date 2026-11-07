@@ -16,7 +16,7 @@ Accepted 2026-10-29. Supersedes in part [0011](0011-a-red-run-is-the-sessions-to
 
 - jagt re-runs a pipeline the host says died on infrastructure, bounded by `infraWait.backoff` (default 5m, 15m, 45m); `[]` turns it off.
 - It is jagt's one code-host write, so AGENTS.md names it as the exception to "nothing else acts unasked".
-- The reasons are read by the adapter (`PipelineRetry`, the host's CLI), never by the sweep's model: the verdict is deterministic.
+- The reasons are read by the adapter (`CodeHost`, the host's CLI), never by the sweep's model: the verdict is deterministic.
 - Infrastructure: `runner_system_failure`, `stuck_or_timeout_failure`, `api_failure`, `scheduler_failure`, `data_integrity_failure`;
   for a run `startup_failure`. Not `unknown_failure`; any other reason, a mix, or none is the code's.
 - Every infrastructure red keeps the task's status and tells the session nothing; open threads are still relayed, without the checks.

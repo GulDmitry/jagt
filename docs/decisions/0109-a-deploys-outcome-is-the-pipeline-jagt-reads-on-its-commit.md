@@ -17,7 +17,7 @@ Superseded in part by [0113](0113-the-deployment-record-is-the-only-deploy-store
 ## Decision
 
 - A deploy is settled when the host's pipeline on each repository's `deployCommit` is green, read by jagt through the host's own CLI
-  (`PipelineRetry.onCommit`), never by a model.
+  (`CodeHost.onCommit`), never by a model.
 - Until then the deploy stays open: the session is not asked, and the status line says `waiting on its pipeline` with the repository and commit.
 - `DeployCheckJob` reads it every `READ_EVERY` (1 minute), and only for a deploy not yet asked.
 - A pipeline red on infrastructure follows [0105](0105-infrastructure-failures-are-waited-out.md): `RedCauses.judgeDeploy` arms the same retry,

@@ -4,8 +4,8 @@ import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.port.CommitPipeline;
-import dev.jagt.orchestrator.port.PipelineRetry;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.RedCauses;
@@ -71,7 +71,7 @@ public class DeployPipelines {
    */
   public static final Duration NO_PIPELINE_AFTER = Duration.ofMinutes(10);
 
-  private final PipelineRetry pipelines;
+  private final CodeHost codeHost;
   private final RedCauses causes;
   private final DeployFixWorktrees fixes;
   private final Clock clock;
@@ -100,7 +100,7 @@ public class DeployPipelines {
     if (!held.landed() || remoteUrl == null || remoteUrl.isBlank()) {
       return false;
     }
-    return pipelines
+    return codeHost
         .onBranchSince(
             held.project(), remoteUrl, held.deployBranch(), Objects.requireNonNull(held.tip()))
         .facts()
@@ -136,7 +136,7 @@ public class DeployPipelines {
     if (remoteUrl == null || remoteUrl.isBlank()) {
       return withoutPipeline(taskId, label, "no remote recorded");
     }
-    Answer<CommitPipeline> read = pipelines.onCommit(project, remoteUrl, commit);
+    Answer<CommitPipeline> read = codeHost.onCommit(project, remoteUrl, commit);
     if (read.facts().isEmpty() && read.reach().isPresent()) {
       return new Reading(
           Kind.UNREACHED, at + "unreached, " + read.failure(), project, "", List.of());
@@ -247,7 +247,7 @@ public class DeployPipelines {
    */
   private boolean retried(String taskId, String project, String url, String tip) {
     reports.deployRetried(taskId, project, tip);
-    Answer<String> sent = pipelines.retryFailed(project, url);
+    Answer<String> sent = codeHost.retryFailed(project, url);
     if (sent.facts().isPresent()) {
       log.atInfo()
           .setMessage("deploy pipeline retried")
