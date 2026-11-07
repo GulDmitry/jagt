@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
+import org.yaml.snakeyaml.Yaml;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import java.time.Clock;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -20,6 +22,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
@@ -740,5 +743,68 @@ class ConfigServiceTest {
                         null, null, null, null, null, null, null, "none", null, null)));
 
         assertThat(config.hasNoCodeHost("demo")).isTrue();
+    }
+
+    @Test
+    void writesEveryKeyOfAFlatConfigFileBackAsTheSameTree(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        String written = """
+                orchestrator:
+                  projects:
+                    api:
+                      path: /repo
+                      baseBranch: origin/main
+                      deployBranch: dev
+                      labels: [backend]
+                  viewer:
+                    tmuxSession: alt
+                  archive:
+                    maxMegabytes: 5
+                  agent:
+                    model: acme-model
+                    models: [acme-model, other-model]
+                    probeSeconds: 120
+                    cacheLifetime: 30m
+                    notesEvery: 10m
+                    sandbox:
+                      enabled: true
+                    autoplan:
+                      files: 12
+                  worktree:
+                    copyGlobs: ["**/.env"]
+                  roles:
+                    reviewer:
+                      enabled: true
+                  loopBreaker:
+                    ships: 6
+                  conflictStallMinutes: 15
+                  codeReview:
+                    mrTitlePattern: "{title}"
+                  autoReview:
+                    windowHours: 12
+                  master:
+                    mode: judge
+                  qa:
+                    enabled: true
+                  tracker:
+                    mode: intake
+                  codeHost: gitlab
+                  notifications:
+                    desktop: [stopped]
+                    channel:
+                      events: [deployed]
+                """;
+        Files.writeString(configFile, written);
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+        JsonMapper mapper = JsonMapper.builder().changeDefaultPropertyInclusion(
+                inclusion -> inclusion.withValueInclusion(JsonInclude.Include.NON_NULL)).build();
+
+        ConfigFile config = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class),
+                mock(ActStops.class)).load();
+
+        Object expected = new Yaml().<java.util.Map<String, Object>>load(written).get("orchestrator");
+        JsonNode actual = mapper.valueToTree(config);
+        assertThat(actual).isEqualTo(mapper.<JsonNode>valueToTree(expected));
     }
 }

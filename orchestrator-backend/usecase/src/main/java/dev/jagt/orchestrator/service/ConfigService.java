@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.With;
 import org.jspecify.annotations.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Turns;
@@ -61,15 +63,30 @@ import java.util.stream.Stream;
 public class ConfigService implements LoopBreaker.Current, SessionReach {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @With
     public record ConfigFile(Map<String, ProjectConfig> projects, @Nullable ViewerConfig viewer,
-                             @Nullable CodeReviewConfig codeReview, @Nullable AgentConfig agent,
-                             @Nullable WorktreeConfig worktree, @Nullable AutoReviewConfig autoReview,
-                             @Nullable MasterConfig master, @Nullable TrackerConfig tracker,
-                             @Nullable LoopBreakerConfig loopBreaker,
-                             @Nullable Integer conflictStallMinutes, @Nullable ArchiveConfig archive,
-                             @Nullable QaConfig qa, @Nullable Map<String, RoleConfig> roles,
-                             @Nullable String codeHost, @Nullable NotificationsConfig notifications) {
+                             @Nullable ArchiveConfig archive, @JsonUnwrapped Sessions sessions,
+                             @JsonUnwrapped Reviewing reviewing, @JsonUnwrapped Outside outside) {
+
+        @With
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public record Sessions(@Nullable AgentConfig agent, @Nullable WorktreeConfig worktree,
+                               @Nullable Map<String, RoleConfig> roles, @Nullable LoopBreakerConfig loopBreaker,
+                               @Nullable Integer conflictStallMinutes) {
+        }
+
+        @With
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public record Reviewing(@Nullable CodeReviewConfig codeReview, @Nullable AutoReviewConfig autoReview,
+                                @Nullable MasterConfig master, @Nullable QaConfig qa) {
+        }
+
+        @With
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        public record Outside(@Nullable TrackerConfig tracker, @Nullable String codeHost,
+                              @Nullable NotificationsConfig notifications) {
+        }
 
         /**
          * Which events raise a desktop banner, and which a team channel's command receives; unset keeps each
@@ -220,25 +237,55 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         }
 
         @JsonIgnoreProperties(ignoreUnknown = true)
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         @With
-        public record AgentConfig(@Nullable Integer probeSeconds,
+        public record AgentConfig(@JsonUnwrapped Models selection, @JsonUnwrapped Cadence cadence,
                                   @Nullable SandboxConfig sandbox, @Nullable AutoplanConfig autoplan,
-                                  @Nullable VisualizeConfig visualize, @Nullable DiagnoseConfig diagnose,
-                                  @Nullable String model, @Nullable List<String> models,
-                                  @Nullable String cacheLifetime, @Nullable String notesEvery) {
+                                  @Nullable VisualizeConfig visualize, @Nullable DiagnoseConfig diagnose) {
+
+            @With
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            public record Models(@Nullable String model, @Nullable List<String> models) {
+            }
+
+            @With
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            public record Cadence(@Nullable Integer probeSeconds, @Nullable String cacheLifetime,
+                                  @Nullable String notesEvery) {
+            }
 
             public static AgentConfig defaults() {
-                return new AgentConfig(null, null, null, null, null, null, null, null, null);
+                return new AgentConfig(new Models(null, null), new Cadence(null, null, null), null, null, null, null);
+            }
+
+            public AgentConfig withModel(@Nullable String model) {
+                return withSelection(selection.withModel(model));
+            }
+
+            public AgentConfig withModels(@Nullable List<String> names) {
+                return withSelection(selection.withModels(names));
+            }
+
+            public AgentConfig withProbeSeconds(@Nullable Integer seconds) {
+                return withCadence(cadence.withProbeSeconds(seconds));
+            }
+
+            public AgentConfig withCacheLifetime(@Nullable String lifetime) {
+                return withCadence(cadence.withCacheLifetime(lifetime));
+            }
+
+            public AgentConfig withNotesEvery(@Nullable String every) {
+                return withCadence(cadence.withNotesEvery(every));
             }
 
             /** Idle for this long, a session's prompt cache is gone; zero means a session is never judged cold. */
             public Duration cacheLifetimeOrDefault() {
-                return duration(cacheLifetime, Duration.ofHours(1));
+                return duration(cadence.cacheLifetime(), Duration.ofHours(1));
             }
 
             /** How stale task_notes.md may be at a turn end before the session is asked once to rewrite it; zero: never. */
             public Duration notesEveryOrDefault() {
-                return duration(notesEvery, Duration.ofMinutes(30));
+                return duration(cadence.notesEvery(), Duration.ofMinutes(30));
             }
 
             private static Duration duration(@Nullable String written, Duration unset) {
@@ -254,12 +301,13 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
 
             /** Written names replace the agent CLI's own list whole; none written keeps it. */
             public List<String> modelsFor(AgentRuntime runtime) {
-                return models == null || models.isEmpty() ? runtime.models() : models;
+                List<String> written = selection.models();
+                return written == null || written.isEmpty() ? runtime.models() : written;
             }
 
             /** Blank: the agent CLI's own default. */
             public String modelOrInherited() {
-                return model == null ? "" : model.strip();
+                return selection.model() == null ? "" : selection.model().strip();
             }
 
             public AutoplanConfig autoplanOrDefault() {
@@ -288,7 +336,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
 
             /** How often every running session is looked at; the cadence for one whose harness reports NOTHING. */
             public int probeSecondsOrDefault() {
-                return probeSeconds == null || probeSeconds <= 0 ? 600 : probeSeconds;
+                Integer written = cadence.probeSeconds();
+                return written == null || written <= 0 ? 600 : written;
             }
         }
 
@@ -601,34 +650,83 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         public Optional<String> codeHostNamed(String project) {
             ProjectConfig declared = projects.get(project);
             String own = declared == null ? null : declared.codeHost();
-            String kind = own == null || own.isBlank() ? codeHost : own;
+            String kind = own == null || own.isBlank() ? outside.codeHost() : own;
             return kind == null || kind.isBlank() ? Optional.empty() : Optional.of(kind.strip());
         }
 
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            return new ConfigFile(Map.of(), null, null, new Sessions(null, null, null, null, null),
+                    new Reviewing(null, null, null, null), new Outside(null, null, null));
+        }
+
+        public ConfigFile withAgent(@Nullable AgentConfig agent) {
+            return withSessions(sessions.withAgent(agent));
+        }
+
+        public ConfigFile withWorktree(@Nullable WorktreeConfig worktree) {
+            return withSessions(sessions.withWorktree(worktree));
+        }
+
+        public ConfigFile withRoles(@Nullable Map<String, RoleConfig> roles) {
+            return withSessions(sessions.withRoles(roles));
+        }
+
+        public ConfigFile withConflictStallMinutes(@Nullable Integer minutes) {
+            return withSessions(sessions.withConflictStallMinutes(minutes));
+        }
+
+        public ConfigFile withCodeReview(@Nullable CodeReviewConfig codeReview) {
+            return withReviewing(reviewing.withCodeReview(codeReview));
+        }
+
+        public ConfigFile withAutoReview(@Nullable AutoReviewConfig autoReview) {
+            return withReviewing(reviewing.withAutoReview(autoReview));
+        }
+
+        public ConfigFile withMaster(@Nullable MasterConfig master) {
+            return withReviewing(reviewing.withMaster(master));
+        }
+
+        public ConfigFile withQa(@Nullable QaConfig qa) {
+            return withReviewing(reviewing.withQa(qa));
+        }
+
+        public ConfigFile withTracker(@Nullable TrackerConfig tracker) {
+            return withOutside(outside.withTracker(tracker));
+        }
+
+        public ConfigFile withCodeHost(@Nullable String codeHost) {
+            return withOutside(outside.withCodeHost(codeHost));
+        }
+
+        public ConfigFile withNotifications(@Nullable NotificationsConfig notifications) {
+            return withOutside(outside.withNotifications(notifications));
+        }
+
+        public @Nullable String codeHost() {
+            return outside.codeHost();
         }
 
         public NotificationsConfig notifications() {
-            return notifications == null ? NotificationsConfig.defaults() : notifications;
+            return outside.notifications() == null ? NotificationsConfig.defaults() : outside.notifications();
         }
 
         public Duration conflictStallOrDefault() {
-            return Duration.ofMinutes(conflictStallMinutes == null || conflictStallMinutes <= 0 ? 20 : conflictStallMinutes);
+            Integer minutes = sessions.conflictStallMinutes();
+            return Duration.ofMinutes(minutes == null || minutes <= 0 ? 20 : minutes);
         }
 
         /** The ship ceiling counts over the auto-review window. */
         public LoopBreaker loopBreakerOrDefault() {
-            LoopBreakerConfig config = loopBreaker == null ? LoopBreakerConfig.defaults() : loopBreaker;
+            LoopBreakerConfig config = sessions.loopBreaker() == null ? LoopBreakerConfig.defaults()
+                    : sessions.loopBreaker();
             return new LoopBreaker(config.stalledRoundsOrDefault(), config.shipsOrDefault(), config.roundsOrDefault(),
                     config.perHourOrDefault(),
                     Duration.ofHours(autoReview().windowHoursOrDefault()));
         }
 
-        // The raw field is still what the withers copy, so an omitted section stays null until set.
-        @Override
         public MasterConfig master() {
-            return master == null ? MasterConfig.defaults() : master;
+            return reviewing.master() == null ? MasterConfig.defaults() : reviewing.master();
         }
 
         @Override
@@ -636,34 +734,28 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
             return viewer == null ? ViewerConfig.defaults() : viewer;
         }
 
-        @Override
         public CodeReviewConfig codeReview() {
-            return codeReview == null ? CodeReviewConfig.defaults() : codeReview;
+            return reviewing.codeReview() == null ? CodeReviewConfig.defaults() : reviewing.codeReview();
         }
 
-        @Override
         public AgentConfig agent() {
-            return agent == null ? AgentConfig.defaults() : agent;
+            return sessions.agent() == null ? AgentConfig.defaults() : sessions.agent();
         }
 
-        @Override
         public WorktreeConfig worktree() {
-            return worktree == null ? WorktreeConfig.defaults() : worktree;
+            return sessions.worktree() == null ? WorktreeConfig.defaults() : sessions.worktree();
         }
 
-        @Override
         public AutoReviewConfig autoReview() {
-            return autoReview == null ? AutoReviewConfig.defaults() : autoReview;
+            return reviewing.autoReview() == null ? AutoReviewConfig.defaults() : reviewing.autoReview();
         }
 
-        @Override
         public TrackerConfig tracker() {
-            return tracker == null ? TrackerConfig.defaults() : tracker;
+            return outside.tracker() == null ? TrackerConfig.defaults() : outside.tracker();
         }
 
-        @Override
         public QaConfig qa() {
-            return qa == null ? QaConfig.defaults() : qa;
+            return reviewing.qa() == null ? QaConfig.defaults() : reviewing.qa();
         }
 
         public boolean anyCheckerEnabled() {
@@ -671,16 +763,19 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         }
 
         public List<String> unknownRoles(Collection<String> installed) {
+            Map<String, RoleConfig> roles = sessions.roles();
             return roles == null ? List.of() : roles.keySet().stream().filter(id -> !installed.contains(id)).sorted().toList();
         }
 
         /** The role as {@code roles.<id>} writes it; where it names none, QA falls back to the old {@code qa} key. */
         public RoleConfig role(String id) {
+            Map<String, RoleConfig> roles = sessions.roles();
             RoleConfig written = roles == null ? null : roles.get(id);
             if (written != null) {
                 return written;
             }
-            return Checkers.QA.equals(id) && qa != null ? RoleConfig.of(qa) : RoleConfig.defaults();
+            QaConfig legacy = reviewing.qa();
+            return Checkers.QA.equals(id) && legacy != null ? RoleConfig.of(legacy) : RoleConfig.defaults();
         }
 
         @Override
