@@ -61,7 +61,7 @@ public class PlanApproval {
     }
 
     private static StepRelay.Claim opened(StepRelay.Claim claim) {
-        return new StepRelay.Claim(claim.read(), claim.standing(),
+        return new StepRelay.Claim(claim.read(),
                 opens -> claim.write().apply(task -> TaskReducer.planApproved(opens.apply(task))), claim.undo());
     }
 }

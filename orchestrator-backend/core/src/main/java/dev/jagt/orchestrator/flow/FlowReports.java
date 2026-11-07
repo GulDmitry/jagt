@@ -120,11 +120,6 @@ public class FlowReports {
         return undone.get();
     }
 
-    /** Whether the task is still where it was read: the same {@link Standing}, no relay, report or stop since. */
-    public boolean standing(String taskId, TaskState read) {
-        return tasks.task(taskId).map(task -> standing(task, read)).orElse(true);
-    }
-
     private static boolean standing(TaskState task, TaskState read) {
         return Standing.of(task).equals(Standing.of(read));
     }

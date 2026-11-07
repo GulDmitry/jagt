@@ -71,6 +71,12 @@ class StepRelayTest {
                 Arguments.of("relay", (Entry) (relay, read) -> relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
                 Arguments.of("relayRound", (Entry) (relay, read) -> relay.relayRound("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
                 Arguments.of("relayUnder", (Entry) (relay, read) -> relay.relayUnder("ABC-42", Step.DEPLOY, "ABC-42 is deployed", false, read)),
+                Arguments.of("relay with a claim", (Entry) (relay, read) -> relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed",
+                        new StepRelay.Claim(read, opens -> FlowReports.Claimed.LANDED, opened -> true))),
+                Arguments.of("relayRound with a claim", (Entry) (relay, read) -> relay.relayRound("ABC-42", Step.DEPLOY, "ABC-42 is deployed",
+                        new StepRelay.Claim(read, opens -> FlowReports.Claimed.LANDED, opened -> true))),
+                Arguments.of("relayUnder with a claim", (Entry) (relay, read) -> relay.relayUnder("ABC-42", Step.DEPLOY, "ABC-42 is deployed", false,
+                        new StepRelay.Claim(read, opens -> FlowReports.Claimed.LANDED, opened -> true))),
                 Arguments.of("write", (Entry) (relay, read) -> relay.write("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
                 Arguments.of("say", (Entry) (relay, read) -> relay.say("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
                 Arguments.of("relayComposed", (Entry) (relay, read) -> relay.relayComposed("ABC-42", List.of(Step.DEPLOY),
@@ -108,8 +114,8 @@ class StepRelayTest {
         StepRelay relay = new StepRelay(new SessionBrief(new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()))), sessions, door,
                 new TaskTurns(state, Clock.systemUTC()));
-        StepRelay.Claim claim = new StepRelay.Claim(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build(),
-                () -> true, opens -> FlowReports.Claimed.MOVED_ON, opened -> false);
+        StepRelay.Claim claim = new StepRelay.Claim(Standing.of(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()),
+                opens -> FlowReports.Claimed.MOVED_ON, opened -> false);
 
         assertThatThrownBy(() -> relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", claim))
                 .isInstanceOf(TaskMovedOn.class);

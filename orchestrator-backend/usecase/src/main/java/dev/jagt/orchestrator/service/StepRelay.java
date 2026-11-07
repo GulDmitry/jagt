@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.BooleanSupplier;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -42,8 +41,8 @@ public class StepRelay {
      * {@code read}; the session is told after the write, outside any lock. {@code undo} puts the task back, given the
      * turn the write opened, and answers false where the task moved on since.
      */
-    public record Claim(TaskState read, BooleanSupplier standing,
-                        Function<UnaryOperator<TaskState>, FlowReports.Claimed> write, Predicate<Turn> undo) {
+    public record Claim(Standing read, Function<UnaryOperator<TaskState>, FlowReports.Claimed> write,
+                        Predicate<Turn> undo) {
     }
 
     /** Where the task stands now, for a caller with no read of its own to decide on. */
@@ -188,7 +187,8 @@ public class StepRelay {
 
     /** Throws where the task moved on since the claim's read, before any door records a miss against it. */
     public void requireStanding(String taskId, Step step, Claim claim) {
-        if (!claim.standing().getAsBoolean()) {
+        Standing now = standing(taskId);
+        if (!now.equals(claim.read()) && !now.equals(Standing.ABSENT)) {
             throw dropped(taskId, step.id(), claim);
         }
     }
@@ -202,7 +202,7 @@ public class StepRelay {
     }
 
     private TaskMovedOn dropped(String taskId, String step, Claim claim) {
-        return dropped(taskId, step, claim.read().turnOrNone().id(), turns.of(taskId).id());
+        return dropped(taskId, step, claim.read().turn(), turns.of(taskId).id());
     }
 
     private TaskMovedOn dropped(String taskId, String step, long turn, long turnNow) {

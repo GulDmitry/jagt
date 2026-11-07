@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
@@ -83,7 +84,7 @@ public class CheckerOutcomes {
     private boolean notMet(String taskId, TaskState task, QaVerdict verdict) {
         String facts = verdict.sha() + ":\n" + verdict.notMet().stream().map(QaVerdict.Row::line)
                 .collect(Collectors.joining("\n"));
-        StepRelay.Claim claim = new StepRelay.Claim(task, () -> reports.standing(taskId, task),
+        StepRelay.Claim claim = new StepRelay.Claim(Standing.of(task),
                 opensTheTurn -> reports.reportWhileStanding(taskId, task, FlowRules.relayed(), AgentReport.PLAIN,
                         "qa: not met; relayed", opensTheTurn),
                 opened -> reports.undoClaim(taskId, task, opened));

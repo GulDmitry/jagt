@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
@@ -94,7 +95,7 @@ public class MasterVerdicts {
 
     /** Back to work in the claim itself, or the session's report is no transition and the verdict reads as this round's. */
     private StepRelay.Claim claiming(String taskId, TaskState read, AgentReport means, String message) {
-        return new StepRelay.Claim(read, () -> reports.standing(taskId, read),
+        return new StepRelay.Claim(Standing.of(read),
                 opensTheTurn -> reports.reportWhileStanding(taskId, read, FlowRules.relayed(), means, message, opensTheTurn),
                 opened -> reports.undoClaim(taskId, read, opened));
     }
@@ -134,7 +135,7 @@ public class MasterVerdicts {
         AtomicReference<TaskState> after = new AtomicReference<>(task);
         relay.relay(taskId, MasterMove.PLAN_ANSWERED.step(), PLAN_ANSWERED + verdict.advice().stream()
                         .map(MasterReview.Said::line).collect(Collectors.joining("\n")),
-                new StepRelay.Claim(task, () -> reports.standing(taskId, task),
+                new StepRelay.Claim(Standing.of(task),
                         opens -> reports.claimWhileStanding(taskId, task, live -> {
                             TaskState opened = opens.apply(live);
                             after.set(opened);

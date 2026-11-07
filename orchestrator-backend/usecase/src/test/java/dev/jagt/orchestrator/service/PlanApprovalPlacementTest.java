@@ -62,7 +62,7 @@ class PlanApprovalPlacementTest {
         when(placement.place("ABC-1")).thenReturn(true);
         when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
         when(relay.relayUnder(eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(StepRelay.Claim.class))).thenReturn(true);
-        StepRelay.Claim claim = new StepRelay.Claim(planned, () -> true, opens -> FlowReports.Claimed.LANDED, opened -> true);
+        StepRelay.Claim claim = new StepRelay.Claim(Standing.of(planned), opens -> FlowReports.Claimed.LANDED, opened -> true);
 
         boolean told = new PlanApproval(state, relay, door,
                 new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
@@ -122,7 +122,7 @@ class PlanApprovalPlacementTest {
         when(placement.place("ABC-1")).thenReturn(true);
         when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
         when(relay.relayUnder(eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(StepRelay.Claim.class))).thenReturn(false);
-        StepRelay.Claim claim = new StepRelay.Claim(planned, () -> true, opens -> FlowReports.Claimed.LANDED, opened -> true);
+        StepRelay.Claim claim = new StepRelay.Claim(Standing.of(planned), opens -> FlowReports.Claimed.LANDED, opened -> true);
 
         boolean told = new PlanApproval(state, relay, door,
                 new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
