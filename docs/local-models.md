@@ -37,6 +37,8 @@ Measured 2026-11-05 on an M4, 32 GiB (`promptEval`, 15 cases, one run; QA eval, 
 | Qwen3.5-9B Q4_K_M | 12/15 | 2.9 | 0 of 2 in 10 min | flat |
 | Qwen3.5-4B Q6_K | 11/15 | 10.8 | 10 % (before the gate) | flat |
 | Qwen3.5-35B-A3B Q3_K_XL | 11/15 | 5.6 | — | +3.5 GiB: dropped |
+| Qwen3.5-27B UD-IQ3_XXS (11.5 GB) | not run | — | 0 judged in 10 min (a run before it: 1 of 12, wrong, 595 s) | +3.3 GiB: dropped |
+| Qwen3.5-9B Q4_K_M, `--reasoning-budget 2048` | not run | — | 0 in 10 min | -0.6 GiB (swap was 5.5 GiB before) |
 
 `assistant.local.kinds: [COMMAND_MAP]` is the one kind to try; a failed or late local answer is asked of the cloud
 once ([0135](decisions/0135-tool-less-reads-may-call-a-local-model-directly.md)). Role reads on OpenCode
@@ -56,6 +58,9 @@ the read — the model made 7 calls — but its answer was prose outside the sch
 A triage read on the 9B (2026-11-08, `roleEval -Prole=triage -ProleCli=opencode`, one run per case, 7m51s, swap flat)
 answered 2 of 9 cases: one names who looped right, one advises a lift safe that is not. Six answers named no
 `who:` line, one was unreadable. Haiku: 16 of 19 runs right, none safe where unsafe.
+
+A QA read on 2026-11-08 (`roleEval -Prole=qa -ProleCli=opencode`, 10-min cap): the 27B IQ3_XXS judged no case in the capped run; its calls were gated, none refused; swap 6.9 to 10.3 GiB with other work running.
+The 9B with `--reasoning-budget 2048` judged no case in 10 min.
 
 The gate worked: refused calls were retried, none discarded as unfenced. Role reads and sessions stay on the cloud.
 A task session on OpenCode was not tried: a session asks more of the model than a QA read.
