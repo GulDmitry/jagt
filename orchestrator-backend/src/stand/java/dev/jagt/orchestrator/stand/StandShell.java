@@ -117,8 +117,18 @@ public final class StandShell {
   }
 
   public static void killTmux(Path root) {
-    sockets(root)
-        .forEach(socket -> run(root, List.of("tmux", "-S", socket.toString(), "kill-server")));
+    for (Path socket : sockets(root)) {
+      List<ProcessHandle> panes =
+          run(root, List.of("tmux", "-S", socket.toString(), "list-panes", "-a", "-F", "#{pane_pid}"))
+              .output()
+              .lines()
+              .map(String::strip)
+              .filter(pid -> pid.matches("\\d+"))
+              .flatMap(pid -> ProcessHandle.of(Long.parseLong(pid)).stream())
+              .toList();
+      run(root, List.of("tmux", "-S", socket.toString(), "kill-server"));
+      panes.forEach(StandShell::stopTree);
+    }
   }
 
   public static String windows(Path root) {
