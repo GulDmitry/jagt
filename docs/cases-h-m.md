@@ -51,6 +51,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | J16 | a flow move takes the primary repository out of a task holding others → the task keeps it: `TaskState.withoutRepo` is the one rule, its callers hold no copy | seen 2026-11-08: refresh, five places checked it and the reducer alone did not | `TaskStateTest` |
 | J17 | a sweep or the host's word takes a repository out of a task whose deploy landed it → it stays, as for `remove-repo`, so `revert` still covers it | seen 2026-11-08: refresh, the revert-first guard sat in the human verb alone | `RepoDepartureTest`, `RepoRemovalTest` |
 | J18 | the host closes the request of the repository a deploy was handed back on and that repository stays (primary, only, landed) → the job calls it gone once, naming the request, and reads the host no more | seen 2026-11-08: refresh, the host was read every minute and said nothing | `ConflictRequestReadJobTest` |
+| J19 | a deploy is handed back on a landed repository whose request then closes → its target stays in the deployment's record, its conflict cleared, so `revert` covers it | seen 2026-11-08: refresh, the scenarios contradicted and the record dropped live code | `TaskReducerTest` |
 ## K — the board
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

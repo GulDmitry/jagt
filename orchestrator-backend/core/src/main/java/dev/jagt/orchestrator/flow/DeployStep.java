@@ -92,7 +92,8 @@ public sealed interface DeployStep {
     public Deployment applyTo(Deployment deployment, long now) {
       List<Deployment.Target> kept =
           deployment.targets().stream()
-              .filter(target -> !target.project().equals(project))
+              .filter(target -> target.landed() || !target.project().equals(project))
+              .map(target -> target.project().equals(project) ? target.withConflict(null) : target)
               .toList();
       return deployment
           .withTargets(kept)

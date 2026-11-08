@@ -968,7 +968,7 @@ class TaskReducerTest {
   }
 
   @Test
-  void landsDeployedOnTheRemainingTargetsWhereTheConflictedRepositoryLeavesTheTask() {
+  void keepsTheLandedTargetInTheRecordWhereItsRepositoryLeavesTheTask() {
     TaskState task =
         TaskState.builder(
                 List.of(
@@ -1004,8 +1004,9 @@ class TaskReducerTest {
     assertThat(left.projects()).containsExactly("alpha", "gamma");
     assertThat(left.deployment().targets())
         .extracting(Deployment.Target::project)
-        .containsExactly("alpha", "gamma");
-    assertThat(left.deployment().conflictedTarget()).isEmpty();
+        .containsExactly("alpha", "beta", "gamma");
+    assertThat(left.deployment().tips()).contains("beta@b1");
+    assertThat(left.deployment().targets()).noneMatch(Deployment.Target::conflicted);
   }
 
   @Test
