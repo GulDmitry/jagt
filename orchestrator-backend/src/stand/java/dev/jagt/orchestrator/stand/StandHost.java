@@ -20,6 +20,7 @@ public class StandHost implements AutoCloseable {
     this.store = new StandStore(directory, baseUrl());
     this.rpc = new JsonRpc(new StandTools(store));
     server.createContext("/mcp", this::serve);
+    server.createContext("/app", this::page);
   }
 
   public StandHost start() {
@@ -42,6 +43,19 @@ public class StandHost implements AutoCloseable {
   @Override
   public void close() {
     server.stop(0);
+  }
+
+  public String appUrl() {
+    return baseUrl() + "/app";
+  }
+
+  private void page(HttpExchange exchange) throws IOException {
+    try (exchange) {
+      byte[] bytes = "<h1>Hello, World</h1>".getBytes(StandardCharsets.UTF_8);
+      exchange.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
+      exchange.sendResponseHeaders(200, bytes.length);
+      exchange.getResponseBody().write(bytes);
+    }
   }
 
   private void serve(HttpExchange exchange) throws IOException {

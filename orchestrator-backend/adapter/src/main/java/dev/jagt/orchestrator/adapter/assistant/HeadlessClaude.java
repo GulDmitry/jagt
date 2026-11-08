@@ -91,21 +91,21 @@ class HeadlessClaude {
   Answer<JsonNode> read(
       String prompt, String schema, String label, AssistantCallKind kind, Duration timeout) {
     Answer<JsonNode> answer = ask(prompt, schema, label, kind, timeout);
-    answer
-        .facts()
-        .ifPresent(
-            said ->
-                log.atDebug()
-                    .setMessage("assistant read answered")
-                    .addKeyValue("ref", label)
-                    .addKeyValue("kind", kind)
-                    .addKeyValue("answer", said.toString())
-                    .log());
+    answer.facts().ifPresent(said -> answered(label, kind, said));
     return reported(answer, label);
   }
 
   Answer<JsonNode> read(String prompt, String schema, String label, AssistantCallKind kind) {
     return read(prompt, schema, label, kind, TIMEOUT);
+  }
+
+  static void answered(String label, AssistantCallKind kind, JsonNode said) {
+    log.atDebug()
+        .setMessage("assistant read answered")
+        .addKeyValue("ref", label)
+        .addKeyValue("kind", kind)
+        .addKeyValue("answer", said.toString())
+        .log();
   }
 
   static Answer<JsonNode> reported(Answer<JsonNode> answer, String label) {

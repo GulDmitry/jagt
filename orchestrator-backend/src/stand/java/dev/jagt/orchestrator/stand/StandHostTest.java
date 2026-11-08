@@ -152,6 +152,20 @@ class StandHostTest {
     }
   }
 
+  @Test
+  void servesTheDeployedGreetingAtItsAppUrl() throws Exception {
+    try (StandHost host = new StandHost(directory).start()) {
+      HttpResponse<String> response =
+          HttpClient.newHttpClient()
+              .send(
+                  HttpRequest.newBuilder(URI.create(host.appUrl())).build(),
+                  HttpResponse.BodyHandlers.ofString());
+
+      assertThat(response.statusCode()).isEqualTo(200);
+      assertThat(response.body()).contains("Hello, World");
+    }
+  }
+
   private static HttpResponse<String> post(StandHost host, String body) throws Exception {
     HttpRequest request =
         HttpRequest.newBuilder(URI.create(host.mcpUrl()))

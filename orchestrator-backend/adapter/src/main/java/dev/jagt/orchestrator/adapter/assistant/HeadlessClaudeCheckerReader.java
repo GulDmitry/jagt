@@ -30,7 +30,12 @@ public class HeadlessClaudeCheckerReader {
   private final List<RoleDefinition> roles;
 
   public Answer<QaVerdict> read(CheckerReader.Run run) {
-    return CheckerAnswers.verdictOf(run, ask(run));
+    HeadlessReply reply = ask(run);
+    if (reply.envelope() != null && reply.envelope().path("structured_output").isObject()) {
+      HeadlessClaude.answered(
+          run.sha(), AssistantCallKind.QA_CHECK, reply.envelope().path("structured_output"));
+    }
+    return CheckerAnswers.verdictOf(run, reply);
   }
 
   public Answer<QaDecline> reconsider(CheckerReader.Run run) {
