@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.task;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -127,6 +128,7 @@ public record Deployment(
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
+  @JsonAutoDetect(isGetterVisibility = JsonAutoDetect.Visibility.NONE)
   @JsonInclude(JsonInclude.Include.NON_NULL)
   public record Target(
       String project,
@@ -253,12 +255,10 @@ public record Deployment(
           : this;
     }
 
-    @JsonIgnore
     public boolean isBlocked() {
       return Boolean.TRUE.equals(progress.blocked());
     }
 
-    @JsonIgnore
     public boolean isBare() {
       return Boolean.TRUE.equals(progress.bare());
     }
