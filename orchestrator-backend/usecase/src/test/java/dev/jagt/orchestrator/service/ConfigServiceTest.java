@@ -93,7 +93,7 @@ class ConfigServiceTest {
     ConfigFile config = new JsonMapper().readValue("{}", ConfigFile.class);
 
     assertThat(config.qa().enabledOrDefault()).isFalse();
-    assertThat(config.qa().allows("https://stage.example.com")).isFalse();
+    assertThat(config.role("qa").allows("https://stage.example.com")).isFalse();
   }
 
   @Test
@@ -108,8 +108,8 @@ class ConfigServiceTest {
                 ConfigFile.class);
 
     assertThat(config.qa().enabledOrDefault()).isTrue();
-    assertThat(config.qa().allows("https://stage.example.com")).isTrue();
-    assertThat(config.qa().allows("https://prod.example.com")).isFalse();
+    assertThat(config.role("qa").allows("https://stage.example.com")).isTrue();
+    assertThat(config.role("qa").allows("https://prod.example.com")).isFalse();
     assertThat(config.qa().environmentsOrEmpty().getFirst().landed())
         .isEqualTo("https://stage.example.com/health");
   }

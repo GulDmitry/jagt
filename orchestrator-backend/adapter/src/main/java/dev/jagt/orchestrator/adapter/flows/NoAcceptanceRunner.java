@@ -3,15 +3,11 @@ package dev.jagt.orchestrator.adapter.flows;
 import dev.jagt.orchestrator.port.AcceptanceRunner;
 import java.nio.file.Path;
 import java.util.List;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(
-    prefix = "orchestrator.qa.flows",
-    name = "driver",
-    havingValue = "none",
-    matchIfMissing = true)
+@ConditionalOnExpression("!'${orchestrator.roles.qa.flows.driver:none}'.equals('playwright')")
 public class NoAcceptanceRunner implements AcceptanceRunner {
 
   @Override

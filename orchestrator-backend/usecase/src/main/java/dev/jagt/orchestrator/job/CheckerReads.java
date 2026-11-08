@@ -18,11 +18,14 @@ public class CheckerReads {
   private final RoleDefinition role;
   private final CheckerReader reader;
   private final TaskTurns turns;
+  private final CheckerFlows flows;
 
   public Answer<QaVerdict> check(String taskId, String step, String digest, CheckerReader.Run run) {
     turns.opened(taskId, step, digest, TaskStatus.DEPLOYED);
     try {
-      return reader.read(run);
+      return reader
+          .read(run)
+          .map(verdict -> flows.run(verdict, run.worktree(), CheckerFlows.Ask.none()));
     } finally {
       turns.closed(taskId, role.id(), step, digest);
     }

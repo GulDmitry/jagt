@@ -91,7 +91,8 @@ class QaReadsTest {
     new CheckerReads(
             RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")),
             reader,
-            new TaskTurns(state, Clock.systemUTC()))
+            new TaskTurns(state, Clock.systemUTC()),
+            mock(CheckerFlows.class))
         .check("ABC-42", QaVerdict.ACCEPT, "digest", RUN);
 
     TaskState after = state.task("ABC-42").orElseThrow();
@@ -104,5 +105,33 @@ class QaReadsTest {
                 Checkers.of(after),
                 Arbiter.Profile.OFF))
         .isEqualTo(Turn.Holder.NOBODY);
+  }
+
+  @Test
+  void theVerdictQaAnswersIsTheOneTheFlowsAddedTheirRowsTo(@TempDir Path root) {
+    StateService state = stateIn(root);
+    state.putTask("ABC-42", deployed());
+    QaVerdict read = new QaVerdict("proj@0123", "", List.of(), "", "");
+    QaVerdict withFlows =
+        new QaVerdict(
+            "proj@0123",
+            "",
+            List.of(new QaVerdict.Row("AC-1", QaVerdict.Status.NOT_MET, "failed")),
+            "",
+            "");
+    CheckerReader reader = mock(CheckerReader.class);
+    when(reader.read(any())).thenReturn(new Answer<>(Optional.of(read), TokenUsage.NONE));
+    CheckerFlows flows = mock(CheckerFlows.class);
+    when(flows.run(read, Paths.get("/wt"), CheckerFlows.Ask.none())).thenReturn(withFlows);
+
+    Answer<QaVerdict> answer =
+        new CheckerReads(
+                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")),
+                reader,
+                new TaskTurns(state, Clock.systemUTC()),
+                flows)
+            .check("ABC-42", QaVerdict.ACCEPT, "digest", RUN);
+
+    assertThat(answer.facts()).contains(withFlows);
   }
 }

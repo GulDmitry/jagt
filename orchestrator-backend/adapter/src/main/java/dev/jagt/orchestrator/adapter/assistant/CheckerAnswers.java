@@ -9,9 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.JsonNode;
 
@@ -46,22 +44,8 @@ final class CheckerAnswers {
     if (verdict.rows().isEmpty()) {
       return;
     }
-    String rows =
-        verdict.rows().stream()
-            .map(
-                row ->
-                    "| " + row.criterion() + " | " + row.status() + " | " + row.evidence() + " |")
-            .collect(Collectors.joining("\n"));
     try {
-      Files.writeString(
-          file,
-          "# "
-              + role.toUpperCase(Locale.ROOT)
-              + " report, "
-              + verdict.sha()
-              + "\n\n| criterion | status | evidence |\n|---|---|---|\n"
-              + rows
-              + "\n");
+      Files.writeString(file, verdict.report(role));
     } catch (IOException unwritten) {
       log.atWarn()
           .setMessage("qa report not written")

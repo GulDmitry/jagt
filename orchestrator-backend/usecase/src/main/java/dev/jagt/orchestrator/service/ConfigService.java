@@ -497,11 +497,6 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       public List<QaEnvironment> environmentsOrEmpty() {
         return environments == null ? List.of() : environments;
       }
-
-      public boolean allows(String baseUrl) {
-        return environmentsOrEmpty().stream()
-            .anyMatch(environment -> baseUrl.equals(environment.url()));
-      }
     }
 
     /**
@@ -533,6 +528,11 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
 
       public List<QaEnvironment> environmentsOrEmpty() {
         return environments == null ? List.of() : environments;
+      }
+
+      public boolean allows(String baseUrl) {
+        return environmentsOrEmpty().stream()
+            .anyMatch(environment -> baseUrl.equals(environment.url()));
       }
     }
 

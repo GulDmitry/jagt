@@ -188,6 +188,11 @@ orchestrator:
       # environments:       # allow-list of base URLs the role may touch; a deploy to any other is not checked
       #   - url: https://stage.example.com
       #     landed: https://stage.example.com/health   # answers once the change is up, where the host reports no deploy job
+      # flows:              # scripted flows, run as argv on a listed environment; evidence goes under `qa/` in the worktree
+      #   driver: none      # none | playwright; any other is refused at start
+      #   path: /path/to/flows   # the flows repository, the command's working directory; it holds any login
+      #   command: ["npx", "playwright", "test"]   # jagt adds the reporter, output folder and flow filter; BASE_URL is the environment
+      #   timeout: 10m      # a run past it is unprovable
 
     triage:                 # reads each stop once, read-only: who looped, its defect family, whether a lift looks safe
       enabled: false        # off: a stop carries no triage line on its hover; on: one read per stop, charged as the Master's
@@ -201,13 +206,6 @@ orchestrator:
   # LEGACY, still read: `qa:` with the same keys as `roles.qa`. Where `roles.qa` is written it wins; unwritten, this stands.
   # qa:
   #   enabled: false
-  #   # Scripted flows, run by jagt as argv and read from the driver's JSON report; evidence goes under `qa/` in the worktree.
-  #   flows:
-  #     driver: none                       # none | playwright
-  #     path: /path/to/flows               # the flows repository, the command's working directory; it holds any login
-  #     command: ["npx", "playwright", "test"]   # jagt adds the reporter, output folder and flow filter; BASE_URL is the environment
-  #     environments: ["https://stage.example.com"]   # allow-list of base URLs; any other is refused before a run
-  #     timeout: 10m                       # a run past it is unprovable
 
   # ── The two ends the tracker drives (EXPERIMENTAL) ─────────────────────────────────────────────────────────
   # `take` turns items at your starting stage into tasks; `close` ends a task whose item reached the stage that

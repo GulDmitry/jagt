@@ -28,30 +28,14 @@ class PlaywrightRunnerTest {
   private static final String STAGE = "https://alpha.test";
 
   private static FlowsProperties configured(String command) {
-    return new FlowsProperties(
-        "/flows", List.of(command), List.of("https://alpha.test/"), Duration.ofMinutes(2));
-  }
-
-  @Test
-  void environmentOffTheAllowListIsRefusedBeforeAnyRun(@TempDir Path worktree) {
-    Processes processes = mock(Processes.class);
-
-    List<FlowResult> results =
-        new PlaywrightRunner(processes, configured("npx"))
-            .run(worktree, List.of("AC-1"), "https://prod.test");
-
-    assertThat(results).singleElement().satisfies(r -> {
-      assertThat(r.verdict()).isEqualTo(Verdict.UNPROVABLE);
-      assertThat(r.reason()).isEqualTo("the environment is not on the allow-list");
-    });
-    verify(processes, never()).run(any(), any(), anyMap(), anyList());
+    return new FlowsProperties("playwright", "/flows", List.of(command), Duration.ofMinutes(2));
   }
 
   @Test
   void flowsAreUnprovableWhenNoCommandIsConfigured(@TempDir Path worktree) {
     Processes processes = mock(Processes.class);
     FlowsProperties none =
-        new FlowsProperties("/flows", List.of(), List.of(STAGE), Duration.ofMinutes(1));
+        new FlowsProperties("playwright", "/flows", List.of(), Duration.ofMinutes(1));
 
     List<FlowResult> results =
         new PlaywrightRunner(processes, none).run(worktree, List.of("AC-1"), STAGE);

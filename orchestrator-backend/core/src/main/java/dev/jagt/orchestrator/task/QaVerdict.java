@@ -47,10 +47,33 @@ public record QaVerdict(
           + ": "
           + evidence;
     }
+
+    public String tableLine() {
+      return "| " + criterion + " | " + status + " | " + evidence + " |";
+    }
   }
 
   public QaVerdict {
     rows = List.copyOf(rows);
+  }
+
+  public QaVerdict plus(List<Row> more) {
+    return new QaVerdict(
+        sha,
+        failure,
+        java.util.stream.Stream.concat(rows.stream(), more.stream()).toList(),
+        question,
+        waitingOn);
+  }
+
+  public String report(String role) {
+    return "# "
+        + role.toUpperCase(Locale.ROOT)
+        + " report, "
+        + sha
+        + "\n\n| criterion | status | evidence |\n|---|---|---|\n"
+        + rows.stream().map(Row::tableLine).collect(java.util.stream.Collectors.joining("\n"))
+        + "\n";
   }
 
   public static QaVerdict failed(String sha, String failure) {
