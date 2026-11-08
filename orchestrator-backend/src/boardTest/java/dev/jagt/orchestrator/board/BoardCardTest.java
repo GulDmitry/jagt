@@ -1173,4 +1173,40 @@ class BoardCardTest extends BoardPageContext {
                     + " defect\\n"
                     + "stopped 14 Nov 2023, 22:13 UTC"));
   }
+
+  @Test
+  void aTriagedStopCarriesItsReadAsTheLastLineOfTheHover() {
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("alpha", root.resolve("ABC-42-alpha").toString(), TaskStatus.CI_POLLING)
+            .alias("a1")
+            .mrUrl("https://host.example/mr/7")
+            .stop(
+                new dev.jagt.orchestrator.task.TaskStop(
+                        dev.jagt.orchestrator.task.TaskStop.Trigger.SHIPS,
+                        1_700_000_000_000L,
+                        "a ship asked past 3 without a new note")
+                    .withTriage(
+                        new dev.jagt.orchestrator.task.StopTriage(
+                            dev.jagt.orchestrator.task.StopTriage.Who.JAGT,
+                            "ships counted past a merge",
+                            "H",
+                            dev.jagt.orchestrator.task.StopTriage.Lift.SAFE,
+                            "request merged",
+                            "")))
+            .lastActiveTimestamp(System.currentTimeMillis())
+            .build());
+
+    Page page = session.newPage();
+
+    page.navigate("http://localhost:" + port + "/");
+
+    assertThat(page.locator("article .badge"))
+        .hasAttribute(
+            "data-tip",
+            Pattern.compile(
+                "stopped 14 Nov 2023, 22:13 UTC\\n"
+                    + "triage reads: jagt \u2014 ships counted past a merge \\(H\\), lift looks"
+                    + " safe"));
+  }
 }

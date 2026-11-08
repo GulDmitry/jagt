@@ -237,14 +237,19 @@ public record TaskView(
 
   /**
    * {@code reason} is the stop in a few words, {@code evidence} what it saw, {@code next} what a
-   * human reads after.
+   * human reads after, {@code triage} the read of the stop as one line, blank until made.
    */
-  public record Stop(String reason, String evidence, String next, long at) {
+  public record Stop(String reason, String evidence, String next, long at, String triage) {
 
     static @Nullable Stop of(@Nullable TaskStop stop) {
       return stop == null
           ? null
-          : new Stop(stop.trigger().reason(), stop.evidence(), stop.trigger().next(), stop.at());
+          : new Stop(
+              stop.trigger().reason(),
+              stop.evidence(),
+              stop.trigger().next(),
+              stop.at(),
+              stop.triage() == null ? "" : stop.triage().line());
     }
   }
 

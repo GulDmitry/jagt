@@ -1,0 +1,16 @@
+case: reworked plans counted as a loop
+stop:
+  trigger: ROUNDS
+  evidence: plan sent back 3 rounds running in 24h
+trail: |
+  11:00 plan v1 returned: it opened the endpoint to every role
+  11:40 plan v2 restricted it to brokers; returned: the audit log is missing
+  12:20 plan v3 added the audit log; returned: the log names no actor
+  13:00 plan v4 names the actor in each log line; the plan gate stands closed by the count
+  each of the four plans differs from the one before in the file list and the test list
+commits: |
+  c7a19d4 Baseline
+expect:
+  who: none
+  lift: safe
+  family: unknown

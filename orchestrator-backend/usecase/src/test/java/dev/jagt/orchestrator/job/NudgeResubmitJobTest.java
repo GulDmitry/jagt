@@ -79,7 +79,7 @@ class NudgeResubmitJobTest {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .stop(new TaskStop(TaskStop.Trigger.PACE, 1, "evidence", null))
+            .stop(new TaskStop(TaskStop.Trigger.PACE, 1, "evidence", null, null))
             .build());
     turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
     AgentSessions sessions = mock(AgentSessions.class);

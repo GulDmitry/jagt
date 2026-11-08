@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.Session;
+import dev.jagt.orchestrator.task.StopTriage;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -51,6 +52,12 @@ public final class TaskReducer {
   /** {@code task} stopped by {@code stop}; where a stop already stands, it stands alone. */
   public static TaskState stop(TaskState task, TaskStop stop, long now) {
     return step(task, new TaskMove.StopSet(stop), now);
+  }
+
+  /** {@code task} with {@code read} on its stop, where that stop is the one keyed {@code key}. */
+  public static TaskState triaged(TaskState task, String key, StopTriage read) {
+    TaskStop stop = task.stop();
+    return stop != null && stop.key().equals(key) ? task.withStop(stop.withTriage(read)) : task;
   }
 
   /** {@code task} with its stop lifted by a human. */

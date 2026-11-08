@@ -678,7 +678,8 @@ class TaskViewTest {
                 "ships with no new note",
                 "a ship asked past 3 without a new note",
                 "Check a new note or commit waits to ship; if one does, report a jagt defect",
-                1_700_000_000_000L));
+                1_700_000_000_000L,
+                ""));
   }
 
   @Test

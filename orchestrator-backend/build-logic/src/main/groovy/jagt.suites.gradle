@@ -65,6 +65,14 @@ sourceSets {
 }
 
 sourceSets {
+    triageEval {
+        java.srcDirs = ['src/triageEval/java']
+        compileClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testRuntimeClasspath
+    }
+}
+
+sourceSets {
     boardTest {
         java.srcDirs = ['src/boardTest/java']
         compileClasspath += sourceSets.main.output + configurations.testCompileClasspath

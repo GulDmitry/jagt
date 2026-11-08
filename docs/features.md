@@ -164,8 +164,7 @@
 - **Verify before hand-back** — jagt runs the project's check command and sends a red run back to the session.
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-hand-back-waits-at-verifying)
 - **Deploy check** — A deploy is checked where it landed — by its session, or by a read-only QA run when `roles.qa.enabled` (off).
-  A green pipeline stands it, a red one is re-run once and then goes back to the session in the deploy worktree.
-  Keys: `orchestrator.roles.qa.enabled`, `codeHost`.
+  A green pipeline stands it, a red one is re-run once, then goes back to the session in the deploy worktree. Key: `codeHost`.
   [spec](../openspec/specs/deploy-check/spec.md#requirement-every-deploy-is-checked-where-it-landed) · [QA](../openspec/specs/qa/spec.md)
   · [host](../openspec/specs/deploy-check/spec.md#requirement-the-code-host-is-chosen)
 - **Stalled conflict** — A deploy conflict handed to its session that stops moving is yours: one banner, the card says why.
@@ -188,6 +187,7 @@
   [spec](../openspec/specs/task-stops/spec.md#requirement-jagt-stops-a-task-it-suspects-it-is-looping)
   [spec](../openspec/specs/cases/spec.md#requirement-what-no-case-names-is-a-miss)
   [spec](../openspec/specs/task-stops/spec.md#requirement-in-act-the-master-decides-a-stop-for-a-suspected-loop)
+- **Stop triage** — A stop's hover says who looped. [spec](../openspec/specs/task-stops/spec.md#requirement-triage-reads-a-stop-onto-its-hover)
 - **Pause** — You pause a started task to look at it, or tell the Master to: nothing of jagt runs on it until you lift.
   [spec](../openspec/specs/task-stops/spec.md#requirement-you-pause-a-started-task)
 

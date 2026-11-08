@@ -1,0 +1,20 @@
+case: ships counted past a merge
+stop:
+  trigger: SHIPS
+  evidence: "ships without a new note in 24h: 4"
+trail: |
+  08:00 session shipped, request !1 opened in beta
+  08:30 round relayed, no new note; master shipped
+  09:00 round relayed, no new note; master shipped
+  09:20 request !1 merged on the host
+  09:30 master would ship; the count read 3 ships on !1
+  09:31 a fourth ship was recorded against !1, the merged request
+  09:32 session opened follow-up request !2 on a changed tree
+commits: |
+  e40b7a6 Follow-up: validate the currency code
+  3f8c015 Add currency conversion to the quote
+  d2a6e91 Baseline
+expect:
+  who: jagt
+  lift: safe
+  family: H

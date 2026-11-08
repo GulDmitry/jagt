@@ -143,6 +143,26 @@ class RoleStartupTest {
   }
 
   @Test
+  void aRolesKeyNamingAFolderWithABriefAndNoRoleFileIsNoUnknownRole(@TempDir Path root)
+      throws Exception {
+    Files.createDirectories(root.resolve("roles/qa"));
+    Files.copy(Path.of("../../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
+    Files.createDirectories(root.resolve("roles/triage"));
+    Files.writeString(root.resolve("roles/triage/brief.md.dist"), "a brief\n");
+    Files.writeString(
+        root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    triage:\n      enabled: true\n");
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withConfigFile(root.resolve("jagt.yml").toString()));
+
+    RoleCheck check = check(new InstalledRoles(paths), paths);
+
+    assertThat(check.notes()).isEmpty();
+  }
+
+  @Test
   void aRolesKeyNamingNoInstalledRoleIsANoteNamingTheKey(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/qa"));
     Files.copy(Path.of("../../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));

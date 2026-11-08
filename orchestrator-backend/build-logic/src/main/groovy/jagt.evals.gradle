@@ -1,20 +1,22 @@
 // One harness per kind of role, each over `roles/<id>/eval/*.yml`: a checker reads its brief against deploys, the
-// arbiter against rounds. -Prole=<id> picks the role; -ProleBrief and -ProleModel read another brief or
+// arbiter against rounds, triage against stops. -Prole=<id> picks the role; -ProleBrief and -ProleModel read another brief or
 // model against the same cases, to compare cost. -ProleCli=opencode reads at -PopencodeEndpoint on -ProleModel.
 def evalRole = (project.findProperty('role') ?: 'qa').toString()
 def evalIsArbiter = evalRole == 'master'
+def evalIsTriage = evalRole == 'triage'
+def evalSet = evalIsArbiter ? sourceSets.masterEval : evalIsTriage ? sourceSets.triageEval : sourceSets.qaEval
 def evalCli = (project.findProperty('roleCli') ?: 'claude').toString()
 def evalOnOpenCode = evalCli == 'opencode'
 tasks.register('roleEval', Test) {
     description = 'Reads a role\'s shipped brief against cases whose verdict is known, -Prole=<id> (spends tokens, minutes).'
     group = 'verification'
-    testClassesDirs = evalIsArbiter ? sourceSets.masterEval.output.classesDirs : sourceSets.qaEval.output.classesDirs
-    classpath = evalIsArbiter ? sourceSets.masterEval.runtimeClasspath : sourceSets.qaEval.runtimeClasspath
+    testClassesDirs = evalSet.output.classesDirs
+    classpath = evalSet.runtimeClasspath
     useJUnitPlatform()
-    String harness = evalIsArbiter ? 'master' : 'qa'
+    String harness = evalIsArbiter ? 'master' : evalIsTriage ? 'triage' : 'qa'
     String testClass = evalIsArbiter ? 'MasterVerdictEvalShard' : 'QaVerdictEvalShard'
     // A review is one task per tick, so cases go in parallel only across JVMs: one per shard class, each a full context.
-    int shards = (project.findProperty('evalShards') ?: '3') as int
+    int shards = evalIsTriage ? 1 : (project.findProperty('evalShards') ?: '3') as int
     if (shards < 1 || shards > 6) {
         throw new GradleException("-PevalShards ${shards} must be between 1 and 6, the shard classes there are.")
     }
@@ -29,7 +31,11 @@ tasks.register('roleEval', Test) {
     reports.junitXml.outputLocation = layout.buildDirectory.dir("test-results/roleEval-${evalRole}")
     reports.html.outputLocation = layout.buildDirectory.dir("reports/tests/roleEval-${evalRole}")
     filter {
-        (0..<shards).each { includeTestsMatching "*${testClass}${it}Test" }
+        if (evalIsTriage) {
+            includeTestsMatching '*TriageEvalTest'
+        } else {
+            (0..<shards).each { includeTestsMatching "*${testClass}${it}Test" }
+        }
     }
     ['evalRuns': 'eval.runs', 'evalPasses': 'eval.passes'].each { property, key ->
         if (project.hasProperty(property)) {
@@ -68,8 +74,8 @@ tasks.register('roleEval', Test) {
         if (!(evalCli in ['claude', 'opencode'])) {
             throw new GradleException("-ProleCli ${evalCli} must be claude or opencode.")
         }
-        if (evalOnOpenCode && evalIsArbiter) {
-            throw new GradleException('-ProleCli=opencode reads a checker only: the Master\'s round runs in its own session.')
+        if (evalOnOpenCode && (evalIsArbiter || evalIsTriage)) {
+            throw new GradleException('-ProleCli=opencode reads a checker only: the Master\'s round and a stop read have their own readers.')
         }
         if (evalOnOpenCode && !openCodeNamed) {
             throw new GradleException('-ProleCli=opencode needs -PopencodeEndpoint=<base url> and -ProleModel=<the model it serves>.')
@@ -162,9 +168,9 @@ tasks.named('promptEval') {
     systemProperty 'eval.model', project.hasProperty('localModel') ? "local/${project.property('localModel')}" : 'default'
     systemProperty 'eval.brief.file', file('adapter/src/main/java/dev/jagt/orchestrator/adapter/assistant/HeadlessClaudeCommandAssistant.java').path
 }
-// The suite names stay `masterEval` and `qaEval`, so the trend a later run reads continues across the rename.
+// The suite names stay `masterEval`, `qaEval` and `triageEval`, so the trend a later run reads continues across the rename.
 tasks.named('roleEval') {
-    systemProperty 'eval.suite', evalIsArbiter ? 'masterEval' : 'qaEval'
+    systemProperty 'eval.suite', evalIsArbiter ? 'masterEval' : evalIsTriage ? 'triageEval' : 'qaEval'
     systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
     systemProperty 'eval.model', (evalOnOpenCode ? 'opencode/' : '') + (project.findProperty('roleModel') ?: 'default')
     systemProperty 'eval.brief.file', project.findProperty('roleBrief')

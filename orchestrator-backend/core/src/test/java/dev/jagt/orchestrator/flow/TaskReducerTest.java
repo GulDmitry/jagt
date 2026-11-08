@@ -311,7 +311,8 @@ class TaskReducerTest {
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
             .build()
             .withMrUrl("https://host/mr/571", 1_000)
-            .withStop(new TaskStop(TaskStop.Trigger.SHIPS, 2, "4 ships", "https://host/mr/571"))
+            .withStop(
+                new TaskStop(TaskStop.Trigger.SHIPS, 2, "4 ships", "https://host/mr/571", null))
             .withTrail(RoundTrail.none().withRound(new RoundTrail.Round(1, 4, "", "a", "")));
 
     TaskState reopened =
@@ -327,7 +328,8 @@ class TaskReducerTest {
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
             .build()
             .withMrUrl("https://host/mr/571", 1_000)
-            .withStop(new TaskStop(TaskStop.Trigger.SHIPS, 2, "4 ships", "https://host/mr/571"));
+            .withStop(
+                new TaskStop(TaskStop.Trigger.SHIPS, 2, "4 ships", "https://host/mr/571", null));
 
     TaskState again = TaskReducer.relinked(stopped.withMrUrl("https://host/mr/571", 3_000), 3_000);
 

@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.service.InstalledRoles;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -61,7 +62,8 @@ public class RoleCheck implements StartupCheck {
       return List.of();
     }
     List<String> installed = roles.definitions().stream().map(RoleDefinition::id).toList();
-    return config.load().unknownRoles(installed).stream()
+    List<String> named = Stream.concat(installed.stream(), roles.readers().stream()).toList();
+    return config.load().unknownRoles(named).stream()
         .map(
             id ->
                 new Problem(

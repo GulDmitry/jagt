@@ -28,8 +28,10 @@ public final class InstalledRoles {
 
   private final List<RoleDefinition> definitions = new ArrayList<>();
   private final List<Problem> skipped = new ArrayList<>();
+  private final List<String> readers;
 
   public InstalledRoles(OrchestratorPaths paths) {
+    readers = readersIn(paths.root().resolve("roles"));
     for (Path folder : folders(paths.root().resolve("roles"))) {
       List<String> refused = new ArrayList<>();
       Optional<RoleDefinition> standing = standingIn(folder, refused);
@@ -90,8 +92,33 @@ public final class InstalledRoles {
     return List.copyOf(skipped);
   }
 
+  /** Folders holding a brief and no {@code role.yml}: a role that reads, never a checker. */
+  public List<String> readers() {
+    return List.copyOf(readers);
+  }
+
   public Optional<RoleDefinition> find(String id) {
     return definitions.stream().filter(role -> role.id().equals(id)).findFirst();
+  }
+
+  private static List<String> readersIn(Path roles) {
+    if (!Files.isDirectory(roles)) {
+      return List.of();
+    }
+    try (Stream<Path> found = Files.list(roles)) {
+      return found
+          .filter(Files::isDirectory)
+          .filter(folder -> files(folder).isEmpty())
+          .filter(
+              folder ->
+                  Files.exists(folder.resolve("brief.md"))
+                      || Files.exists(folder.resolve("brief.md.dist")))
+          .map(folder -> folder.getFileName().toString())
+          .sorted()
+          .toList();
+    } catch (IOException unread) {
+      throw new UncheckedIOException(unread);
+    }
   }
 
   private static List<Path> files(Path folder) {

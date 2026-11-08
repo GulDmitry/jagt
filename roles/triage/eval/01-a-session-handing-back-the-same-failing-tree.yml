@@ -1,0 +1,18 @@
+case: a session handing back the same failing tree
+stop:
+  trigger: UNCHANGED_FAILURE
+  evidence: ABC-42 was handed back a third time on the tree 4f2a9c1 with `unit-tests` failing in alpha, as the two hand-backs before
+trail: |
+  09:02 session reported REVIEW_PENDING, tree 4f2a9c1
+  09:03 verification: unit-tests failed (OrderTotalTest.discountAppliesToGoodsOnly)
+  09:20 session reported REVIEW_PENDING, tree 4f2a9c1, "failure is flaky, unrelated to the change"
+  09:21 verification: unit-tests failed (OrderTotalTest.discountAppliesToGoodsOnly)
+  09:40 session reported REVIEW_PENDING, tree 4f2a9c1, "re-run, same tree"
+  09:41 verification: unit-tests failed (OrderTotalTest.discountAppliesToGoodsOnly)
+commits: |
+  4f2a9c1 Charge the discount on goods only
+  b81e0d3 Baseline
+expect:
+  who: session
+  lift: unsafe
+  family: F

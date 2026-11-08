@@ -21,6 +21,7 @@ import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.RoundTrail;
 import dev.jagt.orchestrator.task.StatusChange;
+import dev.jagt.orchestrator.task.StopTriage;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -1057,5 +1058,31 @@ class TaskStopsTest {
     stops.stop("ABC-42", TaskStop.Trigger.ROUNDS, "verify sent 3 rounds");
 
     verify(notifications, times(1)).send(any());
+  }
+
+  @Test
+  void aTriageIsWrittenOnlyWhileTheStopItWasReadForStillStands(@TempDir Path root) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    StateService state = new StateService(new JsonMapper(), paths);
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .stop(new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"))
+            .build());
+    TaskStops stops =
+        new TaskStops(
+            ignored -> Arbiter.Profile.OFF,
+            state,
+            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
+            clock);
+
+    stops.triaged("ABC-42", "ROUNDS@5", StopTriage.failed("a stop that is gone"));
+
+    assertThat(state.task("ABC-42").orElseThrow().stop().triage()).isNull();
   }
 }

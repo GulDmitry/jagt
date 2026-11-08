@@ -10,13 +10,22 @@ import org.jspecify.annotations.Nullable;
  * Why jagt stopped a task for the human, and when; a human's lift clears it, or a new request
  * replacing the one it was counted on, or, where its trigger ends on {@code HOST_READ}, a read of
  * the checks that shows the host well. {@code request} holds that request's URLs, blank-separated;
- * null where none was counted on.
+ * null where none was counted on. {@code triage} is the read of this stop alone, null until made.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record TaskStop(Trigger trigger, long at, String evidence, @Nullable String request) {
+public record TaskStop(
+    Trigger trigger,
+    long at,
+    String evidence,
+    @Nullable String request,
+    @Nullable StopTriage triage) {
 
   public TaskStop(Trigger trigger, long at, String evidence) {
-    this(trigger, at, evidence, null);
+    this(trigger, at, evidence, null, null);
+  }
+
+  public TaskStop withTriage(StopTriage read) {
+    return new TaskStop(trigger, at, evidence, request, read);
   }
 
   /**
@@ -123,7 +132,7 @@ public record TaskStop(Trigger trigger, long at, String evidence, @Nullable Stri
   /** The stop counted on {@code requests}, when its trigger counts on a request at all. */
   public TaskStop countedOn(List<String> requests) {
     return trigger.countedOnRequest && !requests.isEmpty()
-        ? new TaskStop(trigger, at, evidence, String.join(" ", requests))
+        ? new TaskStop(trigger, at, evidence, String.join(" ", requests), triage)
         : this;
   }
 

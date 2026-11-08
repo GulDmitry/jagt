@@ -1,0 +1,20 @@
+case: a master shipping the same tree again
+stop:
+  trigger: SHIPS
+  evidence: "ships without a new note in 24h: 4"
+trail: |
+  10:00 round relayed, no new note
+  10:02 master pressed ship on tree 7d03be2
+  11:00 round relayed, no new note
+  11:03 master pressed ship on tree 7d03be2
+  12:00 round relayed, no new note
+  12:01 master pressed ship on tree 7d03be2
+  13:00 round relayed, no new note
+  13:02 master would press ship on tree 7d03be2
+commits: |
+  7d03be2 Round the premium to two places
+  2c9f4a8 Baseline
+expect:
+  who: master
+  lift: unsafe
+  family: D

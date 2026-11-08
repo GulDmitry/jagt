@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.LoopBreaker;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.RoundTrail;
+import dev.jagt.orchestrator.task.StopTriage;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
@@ -167,6 +168,11 @@ public class TaskStops {
             task -> task,
             task -> breaker.beforeShip(task.trailOrNone(), task.history(), clock.millis()))
         .isEmpty();
+  }
+
+  /** Writes the read onto the standing stop only while that stop is the one it was made for. */
+  public void triaged(String taskId, String stopKey, StopTriage read) {
+    stateService.updateTask(taskId, task -> TaskReducer.triaged(task, stopKey, read));
   }
 
   public boolean stopped(String taskId) {

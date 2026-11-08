@@ -1,0 +1,17 @@
+case: a step no case names
+stop:
+  trigger: MISS
+  evidence: step `schema-review` of ABC-42 matched no case in roles/session/cases.md
+trail: |
+  14:10 session reported step schema-review, asked what to do next
+  14:10 no row of cases.md names schema-review; a miss was recorded
+  14:25 session reported step schema-review again, same question
+  14:25 no row of cases.md names schema-review; a miss was recorded
+  14:40 session reported step schema-review a third time, same question
+commits: |
+  91be7c4 Add the order schema migration
+  5a1d2f0 Baseline
+expect:
+  who: case
+  lift: unsafe
+  family: A

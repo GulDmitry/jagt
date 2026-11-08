@@ -2,13 +2,13 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-`./gradlew test` is the hermetic gate; **a cached green is not a run**: `--rerun-tasks` at a batch's end and before a push.
-Other suites live in `src/<name>/java`, none in `check`: `e2eTest` needs git + tmux, `boardTest` Playwright's Chromium,
-`linuxDriverTest` Linux binaries + a display (`JAGT_IN_CONTAINER`), `promptEval` and `roleEval -Prole=<id>` the CLI and tokens.
-**Every `test` ends in `pitestDiff`**: mutants on the `main` lines changed against `HEAD` (CI: the push's base), each
-survivor judged before the commit ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md),
-[0127](../decisions/0127-mutants-run-with-every-test.md), [0129](../decisions/0129-ci-reports-the-mutants-of-a-push.md)).
-**A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`** ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
+`./gradlew test` is the hermetic gate; **a cached green is not a run**: `--rerun-tasks` at a batch's end and before a push. Other suites live in
+`src/<name>/java`, none in `check`: `e2eTest` needs git + tmux, `boardTest` Playwright's Chromium, `linuxDriverTest` Linux binaries + a display
+(`JAGT_IN_CONTAINER`), `promptEval` and `roleEval -Prole=<id>` the CLI and tokens. **Every `test` ends in `pitestDiff`**: mutants on the `main` lines
+changed against `HEAD` (CI: the push's base), each survivor judged before the commit
+([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md), [0127](../decisions/0127-mutants-run-with-every-test.md),
+[0129](../decisions/0129-ci-reports-the-mutants-of-a-push.md)). **A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`**
+([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
 
 **Every fixed bug gets a regression unit test**, verified RED by reverting the fix. Its `docs/cases.md` row and
 `Defect-family:` trailer make defects countable per family. **A new test's run is predicted first**, outcome and message; a surprise is a
@@ -35,16 +35,14 @@ the human's. A test reading the repository's own files may keep **file-scanning*
 
 - **Every constructor in `main` is called from `main`** (`ProductionConstructorTest`), but a record's canonical one,
   a bean's or failure analyzer's only one, a private one.
-- A test **mocks a collaborator, never a constructor**: a clock, a pool, a path, a limit or a host fact that varies
-  is a collaborator, supplied by `RuntimeWiring`, `OrchestratorPaths` or `port/Host`; a limit that never varies
-  is a constant, and the test writes the volume that reaches it.
+- A test **mocks a collaborator, never a constructor**: a clock, a pool, a path, a limit or a host fact that varies is a collaborator, supplied by
+  `RuntimeWiring`, `OrchestratorPaths` or `port/Host`; a limit that never varies is a constant, and the test writes the volume that reaches it.
 - Why: a second constructor builds in tests a class production never builds, and it sidesteps `MockCeilingTest`.
 
 ### Bare binary names, and a concurrent unit suite
 
-- An external binary is configured by **bare name**; `adapter/Executables` resolves it against PATH, install
-  directories (Homebrew included), per-user script dirs, then **inside application bundles**. An absolute
-  default fails every task on Linux; `editor-command` defaults to bare `idea`.
+- An external binary is configured by **bare name**; `adapter/Executables` resolves it against PATH, install directories (Homebrew included), per-user
+  script dirs, then **inside application bundles**. An absolute default fails every task on Linux; `editor-command` defaults to bare `idea`.
 - **Do not weaken the resolver**: an IDE needs the bundle step (`/Applications/<App>.app/Contents/MacOS/<name>`).
   The agent CLI is **not** resolved: it runs under the human's PATH in its tmux window.
 - `editor-command` / `editor-diff-command` are **lists**: only the launcher is resolved, the arguments stay the
@@ -61,10 +59,9 @@ the human's. A test reading the repository's own files may keep **file-scanning*
 
 - `boardTest` drives the real page, on a random port, in headless Chromium. Only it
   proves the grid's order, a card's buttons, the SSE repaint and the palette's verdict.
-- **Run it after any change to `static/`**, asserting through the **server** (seed `StateService`, stub a
-  command), never by evaluating page JS. Its `@MockitoBean`s stub whole-app seams, never a class's
-  collaborators: `CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`, `AgentSessions`, `EditorDriver`,
-  a `ReviewRepliesReport` spy; e2e's stub only ports.
+- **Run it after any change to `static/`**, asserting through the **server** (seed `StateService`, stub a command), never by evaluating page JS. Its
+  `@MockitoBean`s stub whole-app seams, never a class's collaborators: `CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`, `AgentSessions`,
+  `EditorDriver`, a `ReviewRepliesReport` spy; e2e's stub only ports.
 - Browser libraries are one list (`scripts/linux-test-deps.sh`); geometry is an element in a sized viewport, never a screenshot.
 
 ### The e2e matrix and the model evals
@@ -81,6 +78,8 @@ the human's. A test reading the repository's own files may keep **file-scanning*
   asserting what the read gate heard. Run it when either or a model changes; a defect: `master-lesson`. `-PevalShards` 3 JVMs.
 - `roleEval -Prole=<checker>` hands the real reader a deploy of known answer (`roles/<id>/eval/*.yml`); `-ProleBrief`, `-ProleModel`. Bar (estimate):
   false met 0 per case, false not-met <= 5%, accuracy >= 90%, report and ending right; a QA step stays only if cutting it loses more than it costs.
+- `roleEval -Prole=triage` hands the stop reader a stop of known who, lift and family (`roles/triage/eval/*.yml`), one JVM. Bar (estimate): a lift
+  advised safe where unsafe 0, who right on >= 80% of answered runs; the family is recorded, not asserted.
 - Eval cases hold on `-PevalRuns` (3) / `-PevalPasses` (majority), each recording seconds, cost and stalls in `eval-stats.jsonl`.
 - `roleEval -Prole=master` reads the brief's `context` step; `SessionBriefContractTest` holds a relayed step to what it grants.
 - `standTest`: real sessions on invariants (`-Pmodelfree`: no tokens); `StandSlots` caps runs at 6; kicks jobs per second; `build/stand/failed`.
@@ -88,13 +87,11 @@ the human's. A test reading the repository's own files may keep **file-scanning*
 
 ### Linux, and one set of steps per host
 
-- `scripts/linux-suite.sh` runs `test` + `e2eTest` + `boardTest` + `linuxDriverTest` in a container
-  (`docker/linux-suite.Dockerfile`), the only place the Linux drivers meet real binaries:
-  the notifier asserted off the session bus with `dbus-monitor`, kitty under Xvfb.
+- `scripts/linux-suite.sh` runs `test` + `e2eTest` + `boardTest` + `linuxDriverTest` in a container (`docker/linux-suite.Dockerfile`), the only place
+  the Linux drivers meet real binaries: the notifier asserted off the session bus with `dbus-monitor`, kitty under Xvfb.
 - What a container cannot host — IntelliJ, the AppleScript raise, the real `claude` — stays **named as
   uncovered**, never faked; raising and closing the viewer stay `@Disabled` (`LinuxKittyTerminalDriverLinuxTest`).
-- `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites through the **same scripts**
-  (`scripts/linux-test-deps.sh` the package list, `scripts/with-linux-desktop.sh` Xvfb + session bus +
-  notification daemon). **A step in one pipeline only, or a CI-only code path, is a bug.** `linuxDriverTest` is
-  gated on **capability**, never on the harness.
+- `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites through the **same scripts** (`scripts/linux-test-deps.sh` the package list,
+  `scripts/with-linux-desktop.sh` Xvfb + session bus + notification daemon). **A step in one pipeline only, or a CI-only code path, is a bug.**
+  `linuxDriverTest` is gated on **capability**, never on the harness.
 - **Only the hermetic suite is cached**: three others prove the **machine**, three a model (`cacheIf` / `upToDateWhen` false).

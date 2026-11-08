@@ -187,6 +187,10 @@ orchestrator:
       #   - url: https://stage.example.com
       #     landed: https://stage.example.com/health   # answers once the change is up, where the host reports no deploy job
 
+    triage:                 # reads each stop once, read-only: who looped, its defect family, whether a lift looks safe
+      enabled: false        # off: a stop carries no triage line on its hover; on: one read per stop, charged as the Master's
+      # model: haiku        # the model of the read; blank inherits the agent CLI's
+
   # LEGACY, still read: `master:` with the same keys as `roles.master`. Where `roles.master` is written it wins;
   # unwritten, this stands.
   # master:

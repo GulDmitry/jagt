@@ -54,4 +54,5 @@ export const reportParts = (said) => said.trimEnd().split('\n')
 
 export const switchLines = (task) => Object.entries(task.switches || {}).map(([name, said]) => `${name}: ${said}`);
 
-export const stopLines = (task) => (task.stop ? [task.stop.evidence, task.stop.next, `stopped ${full(task.stop.at)}`] : []);
+export const stopLines = (task) =>
+  task.stop ? [task.stop.evidence, task.stop.next, `stopped ${full(task.stop.at)}`, task.stop.triage].filter(Boolean) : [];

@@ -1140,7 +1140,7 @@ class AgentStatusReportsTest {
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .alias("a1")
             .mrUrl("http://mr/1")
-            .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1_000, "4 ships", "http://mr/1"))
+            .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1_000, "4 ships", "http://mr/1", null))
             .build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
     AgentStatusReports reports =
