@@ -26,6 +26,15 @@ Accepted 2026-10-22.
 | `permissions.additionalDirectories` alone | denied |
 | `Edit(//<dir>/**)` | written |
 
+- Probe, 2026-11-08, `claude -p --permission-mode default` on 2.1.311: `blockWritesOutsideWorkingDirectories` is ignored.
+
+| setting | Write outside the working directory |
+|---------|-------------------------------------|
+| `blockWritesOutsideWorkingDirectories` alone | denied |
+| the block key + `Edit(//<dir>/**)` | written |
+| the block key + `additionalDirectories` + `Edit(//<dir>/**)` | written |
+| `Edit(//<dir>/**)` alone | written |
+
 ## Rejected
 
 - `additionalDirectories`: it did not admit the write.

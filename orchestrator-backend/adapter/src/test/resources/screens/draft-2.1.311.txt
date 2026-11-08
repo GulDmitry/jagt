@@ -1,0 +1,40 @@
+  281, 282, 283, 284, 285, 286, 287, 288, 289, 290
+  Numbers 281 to 290 are listed.
+  291, 292, 293, 294, 295, 296, 297, 298, 299, 300
+  Numbers 291 to 300 are listed.
+
+  OPEN QUESTIONS: "on one line" read as one line per ten numbers, since a comment after every ten cannot sit inside a
+  single unbroken line. Say if you wanted all 300 on one physical line with the sentences inline.
+
+[38;5;246m✻[39m [38;5;246mCrunched for 8s · done 6:02 PM[39m
+
+[38;5;246m[48;5;237m❯ [38;5;231mafter that say bye[39m
+
+[38;5;231m[49m⏺[39m bye
+
+[38;5;246m✻[39m [38;5;246mCogitated for 1s · done 6:02 PM[39m
+
+[38;5;246m[48;5;237m❯ [38;5;231mCreate a file hello.py printing hello, and tell me how to run it.[39m
+[49m
+  [38;5;246mListed [1m1[0m[38;5;246m directory [39m
+
+[38;5;114m⏺[39m [1mWrite[0m(]8;id=1ig3qqy;file:///work/demo/hello.py\hello.py]8;;\)
+[38;5;246m  ⎿  [39mWrote [1m1[0m line to [1m]8;id=1ig3qqy;file:///work/demo/hello.py\hello.py[0m]8;;\
+     [2m[38;5;231m 1 [0m[38;5;148mprint[38;5;231m([38;5;186m"hello"[38;5;231m)[39m
+
+  [38;5;246mRan [1m1[0m[38;5;246m shell command [39m
+
+[38;5;231m⏺[39m [38;5;153m/work/demo/hello.py[39m —
+  prints [38;5;153mhello[39m.
+
+  Run it with [38;5;153mpython3 hello.py[39m from that folder, or [38;5;153mpython3 [39m
+  [38;5;153m/work/demo/hello.py[39m
+  from anywhere. Verified: output [38;5;153mhello[39m.
+
+[38;5;246m✻[39m [38;5;246mWorked for 7s · done 6:02 PM[39m
+
+[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[39m❯ run it once more
+[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[39m  [38;5;246m                [39m
+  [38;5;220m⏵⏵ auto mode on[38;5;246m (shift+tab to cycle)[39m

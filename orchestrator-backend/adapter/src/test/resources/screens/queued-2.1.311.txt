@@ -1,0 +1,40 @@
+  25
+  26
+  27
+  28
+  29
+  30
+  31
+  32
+  33
+  34
+  35
+  36
+  37
+  38
+  39
+  40
+  done
+
+[38;5;246m✻[39m [38;5;246mChurned for 2s · done 6:01 PM[39m
+
+[38;5;246m[48;5;237m❯ [38;5;231mand then say bye[39m
+
+[38;5;231m[49m⏺[39m bye
+
+[38;5;246m✻[39m [38;5;246mBaked for 1s · done 6:01 PM[39m
+
+[38;5;246m[48;5;237m❯ [38;5;231mWrite the integers 1 to 300 as a comma separated list on one line, with a sentence of commentary after each ten of [39m
+  [38;5;231mthem.[39m
+
+[38;5;246m❯ after that say bye[39m
+[49m  [38;5;246mctrl+x ctrl+s to send now[39m
+
+[38;5;174m·[39m [38;5;174mBurrowing… [38;5;246m(4s · [38;5;248mthinking[38;5;246m)[39m
+[38;5;246m  ⎿  Tip: Use /memory to view and manage Claude memory[39m
+
+[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[38;5;246m❯ [2m[39mPress up to edit queued messages[0m
+[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[39m  [38;5;246m                [39m
+  [38;5;220m⏵⏵ auto mode on[38;5;246m (shift+tab to cycle)[39m

@@ -902,6 +902,33 @@ class ClaudeAgentRuntimeTest {
         .isTrue();
   }
 
+  @ParameterizedTest
+  @CsvSource({
+    "idle-2.1.311.txt,false,false",
+    "working-2.1.311.txt,true,false",
+    "queued-2.1.311.txt,true,false",
+    "draft-2.1.311.txt,false,true"
+  })
+  void readsTheScreensOfTheInstalledCliAsWorkingAndAsHoldingADraft(
+      String fixture, boolean working, boolean draft) throws Exception {
+    var runtime =
+        new ClaudeAgentRuntime(
+            new SessionBrief(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+            new ClaudeProperties("claude", "", "", List.of()),
+            new McpEndpoint("http://localhost:8290/mcp"),
+            new HookEndpoint(
+                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
+            Clock.systemUTC());
+    String screen =
+        new String(
+            getClass().getResourceAsStream("/screens/" + fixture).readAllBytes(),
+            java.nio.charset.StandardCharsets.UTF_8);
+
+    assertThat(runtime.working(screen)).isEqualTo(working);
+    assertThat(runtime.holdsDraft(screen)).isEqualTo(draft);
+  }
+
   @Test
   void readsTheFirstRowOfAWrappedInputAsTheDraft() {
     var runtime =
