@@ -72,7 +72,7 @@ public class MergedRequests {
   /**
    * The host said {@code repo}'s request was closed unmerged: where the task holds other
    * repositories, it leaves the task and this answers true; the task's primary repository, alone
-   * or not, stays, for the caller to refuse.
+   * or not, and one already deployed stay, for the caller to refuse.
    */
   public boolean hostSaidClosed(String taskId, TaskRepo repo) {
     return departure.leave(taskId, repo, "its request was closed on the host");

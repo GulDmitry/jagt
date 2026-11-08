@@ -29,9 +29,7 @@ class RepoRemoval {
     if (project.equals(task.project())) {
       throw Refusal.byState(project + " is the primary repository of " + taskId + " and stays");
     }
-    if (task.deployment() != null
-        && task.deployment().targets().stream()
-            .anyMatch(target -> target.project().equals(project) && target.landed())) {
+    if (task.landedIn(project)) {
       throw Refusal.byState(project + " is deployed on " + taskId + ": revert first");
     }
   }

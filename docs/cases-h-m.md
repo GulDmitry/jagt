@@ -49,6 +49,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | J14 | the host closes the request of a multi-repo task's primary repository → the primary stays on the task with its checkout and the sweep calls it gone as for a single repo; only a non-primary repository leaves | seen 2026-11-07: a closed primary request deleted its checkout and made the second repository the task's project | `MergedRequestsTest`, `RepoDepartureTest` |
 | J15 | a task ends and its worktree is removed while a Compose stack its session started inside it keeps running → the removal first takes the stack down with its volumes, only projects whose compose file lies in the worktree | seen 2026-11-08: a stack outlived its task for days | `GitWorktreesTest`, `DockerComposeContainersTest` |
 | J16 | a flow move takes the primary repository out of a task holding others → the task keeps it: `TaskState.withoutRepo` is the one rule, its callers hold no copy | seen 2026-11-08: refresh, five places checked it and the reducer alone did not | `TaskStateTest` |
+| J17 | a sweep or the host's word takes a repository out of a task whose deploy landed it → it stays, as for `remove-repo`, so `revert` still covers it | seen 2026-11-08: refresh, the revert-first guard sat in the human verb alone | `RepoDepartureTest`, `RepoRemovalTest` |
 ## K — the board
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

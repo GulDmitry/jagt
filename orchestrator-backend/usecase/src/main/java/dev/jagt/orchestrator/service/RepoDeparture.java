@@ -26,12 +26,12 @@ public class RepoDeparture {
 
   /**
    * Takes {@code repo} out of the task and settles what it leaves behind. The task's primary
-   * repository stays and this answers false.
+   * repository and one whose change is deployed stay, and this answers false.
    */
   public boolean leave(String taskId, TaskRepo repo, String cause) {
     String project = Objects.requireNonNull(repo.project());
     TaskState task = stateService.task(taskId).orElse(null);
-    if (task == null || !task.canLose(project)) {
+    if (task == null || !task.canLose(project) || task.landedIn(project)) {
       return false;
     }
     Set<String> trustedOnlyByIt = worktrees.trustedOnlyBy(taskId, task, repo);

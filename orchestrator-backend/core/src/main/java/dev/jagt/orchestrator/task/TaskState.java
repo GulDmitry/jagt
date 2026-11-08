@@ -915,6 +915,13 @@ public record TaskState(
     return toBuilder().repos(placed).repoRequest(null).baseBranch(baseBranch).build();
   }
 
+  /** A repository whose change is live on a deploy branch until a revert takes it out. */
+  public boolean landedIn(String project) {
+    return deployment() != null
+        && deployment().targets().stream()
+            .anyMatch(target -> target.project().equals(project) && target.landed());
+  }
+
   /** The primary repository stays, so the last one does. */
   public boolean canLose(String project) {
     return !project.equals(project());

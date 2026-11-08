@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -74,6 +75,45 @@ class RepoDepartureTest {
     assertThat(left).isFalse();
     assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api", "web");
     verifyNoInteractions(worktrees, sessions);
+  }
+
+  @Test
+  void keepsARepositoryAlreadyDeployedUntilItIsReverted(@TempDir Path root) {
+    StateService state = stateOf(root);
+    state.putTask(
+        "ABC-42",
+        TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"), web), TaskStatus.DEPLOYED)
+            .deployment(
+                Deployment.defaults()
+                    .withTargets(
+                        List.of(Deployment.Target.of("web", "dev").withMerge("abc123"))))
+            .build());
+
+    boolean left =
+        new RepoDeparture(config, worktrees, sessions, state)
+            .leave("ABC-42", web, "its request was closed on the host");
+
+    assertThat(left).isFalse();
+    assertThat(state.task("ABC-42").orElseThrow().projects()).containsExactly("api", "web");
+    verifyNoInteractions(worktrees, sessions);
+  }
+
+  @Test
+  void takesARepositoryOutWhereTheDeployNeverLandedIt(@TempDir Path root) {
+    StateService state = stateOf(root);
+    state.putTask(
+        "ABC-42",
+        TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"), web), TaskStatus.DEPLOY_CONFLICT)
+            .deployment(
+                Deployment.defaults().withTargets(List.of(Deployment.Target.of("web", "dev"))))
+            .build());
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+
+    boolean left =
+        new RepoDeparture(config, worktrees, sessions, state)
+            .leave("ABC-42", web, "its request was closed on the host");
+
+    assertThat(left).isTrue();
   }
 
   @Test
