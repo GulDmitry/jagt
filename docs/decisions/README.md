@@ -142,7 +142,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0126 A role is a folder](0126-a-role-is-a-folder.md)
 - [0127 Mutants run with every test](0127-mutants-run-with-every-test.md) (amended by 0129)
 - [0128 Cloud and local models alike](0128-cloud-and-local-models-alike.md) (amended by 0135)
-- [0129 CI reports the mutants of a push](0129-ci-reports-the-mutants-of-a-push.md)
+- [0129 CI reports the mutants of a push](0129-ci-reports-the-mutants-of-a-push.md) (superseded by 0151)
 - [0130 Every third party is a configured seam](0130-every-third-party-is-a-configured-seam.md)
 - [0131 The Master's reads reach what a session writes](0131-the-masters-reads-reach-what-a-session-writes.md)
 - [0132 Banners are chosen per event](0132-banners-are-chosen-per-event.md)
@@ -164,3 +164,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0148 jagt reaches the code host through its CLI login](0148-jagt-reaches-the-code-host-through-its-cli-login.md) (supersedes in part 0003, 0020)
 - [0149 Triage is a stop read, not a checker](0149-triage-is-a-stop-read-not-a-checker.md) (beside 0126)
 - [0150 A file tracker is read by jagt itself](0150-a-file-tracker-is-read-by-jagt-itself.md) (amends 0003)
+- [0151 Mutants are judged locally only](0151-mutants-are-judged-locally-only.md) (supersedes 0129)

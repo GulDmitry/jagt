@@ -28,11 +28,8 @@ default:
 # Runs everywhere, needs nothing: this is the gate that must stay fast.
 unit:
   stage: test
-  variables:
-    GIT_DEPTH: "0"
   script:
-    # The mutants of what this push or request changed are listed in the log and fail nothing (0129).
-    - ./gradlew --no-daemon test -PpitestDiff="$(scripts/push-base.sh "${CI_MERGE_REQUEST_DIFF_BASE_SHA:-$CI_COMMIT_BEFORE_SHA}")"
+    - ./gradlew --no-daemon test
   artifacts:
     when: on_failure
     expire_in: 1 week

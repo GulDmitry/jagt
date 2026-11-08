@@ -5,7 +5,7 @@
 
 ## Status
 
-Accepted 2026-11-02 by the owner's order.
+Superseded by [0151](0151-mutants-are-judged-locally-only.md) on 2026-11-08.
 
 ## Context
 

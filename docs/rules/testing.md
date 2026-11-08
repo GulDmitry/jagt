@@ -5,9 +5,9 @@
 `./gradlew test` is the hermetic gate; **a cached green is not a run**: `--rerun-tasks` at a batch's end and before a push. Other suites live in
 `src/<name>/java`, none in `check`: `e2eTest` needs git + tmux, `boardTest` Playwright's Chromium, `linuxDriverTest` Linux binaries + a display
 (`JAGT_IN_CONTAINER`), `promptEval` and `roleEval -Prole=<id>` the CLI and tokens. **Every `test` ends in `pitestDiff`**: mutants on the `main` lines
-changed against `HEAD` (CI: the push's base), each survivor judged before the commit
+changed against `HEAD`, each survivor judged before the commit
 ([0125](../decisions/0125-mutants-are-judged-on-the-diff-at-each-commit.md), [0127](../decisions/0127-mutants-run-with-every-test.md),
-[0129](../decisions/0129-ci-reports-the-mutants-of-a-push.md)). **A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`**
+[0151](../decisions/0151-mutants-are-judged-locally-only.md)). **A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`**
 ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
 
 **Every fixed bug gets a regression unit test**, verified RED by reverting the fix. Its `docs/cases.md` row and
