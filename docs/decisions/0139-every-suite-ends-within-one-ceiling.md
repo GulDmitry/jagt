@@ -34,7 +34,7 @@ Accepted 2026-11-05 by the owner's order: "development of jagt has to be fast".
   about 4 s sharing it; the root `:test` task 16 s to 9 s.
 - jqwik runs in `:core:propertyTest`, finalizing `:core:test`, in `check`: gate 85 s to 73 s, same 7,258 tests.
 - `e2eTest` runs its classes in parallel forks, each naming its tmux sessions by its pid: 168 s to 90 s, bounded by
-  `MasterModeFlowTest`.
+  `MasterModeFlowTest`: 92 s at load 2 on 2026-11-08, its 115 s at load 9, the same 32 tests.
 - `:core:propertyTest` runs jqwik at 200 tries: `TaskReducerProperties` 105 s to 7 s (2026-11-08, reducer grown).
 - `TaskChart.ranTargets` is computed once: each call took 2 s and `FlowCheckTest` made about 15, 31 s to 0.3 s.
 - Left: `AgentSessionsTest` `after(n).never()` and `ReplaySessionsTest`'s 500 ms tick need a test-only seam.
