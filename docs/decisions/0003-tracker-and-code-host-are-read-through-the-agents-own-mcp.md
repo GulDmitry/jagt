@@ -40,4 +40,4 @@ Amended by [0150](0150-a-file-tracker-is-read-by-jagt-itself.md): a Markdown fil
 ## Reopen when
 
 - jagt can state what it promises before it holds a token: where it is read from, what may act with it, and
-  what the board needs first (`TODO.md`).
+  what the board needs first (the local `backlog/`).

@@ -68,10 +68,6 @@ scratch/
 /.jagt/
 
 # Open ideas, collected on this machine
-TODO.md
-QUESTIONS.md
-IDEAS.md
-ORDERS.md
 TESTBED.md
 /backlog/
 DETERMINISM.md
