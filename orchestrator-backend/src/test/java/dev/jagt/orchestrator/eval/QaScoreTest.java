@@ -38,7 +38,8 @@ class QaScoreTest {
                 new QaVerdict.Row("C1", Status.MET, "page answered"),
                 new QaVerdict.Row("C2", Status.NOT_MET, "no Header line")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict));
 
@@ -57,7 +58,8 @@ class QaScoreTest {
                 new QaVerdict.Row("C1", Status.MET, "page answered"),
                 new QaVerdict.Row("C2", Status.MET, "header present")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict));
 
@@ -76,7 +78,8 @@ class QaScoreTest {
                 new QaVerdict.Row("C1", Status.NOT_MET, "columns wrong"),
                 new QaVerdict.Row("C2", Status.NOT_MET, "header missing")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict));
 
@@ -89,7 +92,8 @@ class QaScoreTest {
     QaCase expected = QaCases.parse(TWO_ROWS);
     QaVerdict verdict =
         new QaVerdict(
-            "abc1234", "", List.of(new QaVerdict.Row("C1", Status.MET, "page answered")), "", "");
+            "abc1234", "", List.of(new QaVerdict.Row("C1", Status.MET, "page answered")), "", "",
+            QaVerdict.Flows.none());
 
     QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict));
 
@@ -109,7 +113,8 @@ class QaScoreTest {
                 new QaVerdict.Row("C1", Status.MET, "page answered"),
                 new QaVerdict.Row("C2", Status.NOT_MET, "looks wrong")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict));
 
@@ -120,7 +125,7 @@ class QaScoreTest {
   @Test
   void aWaitingVerdictIsReportedAsWaitWithTheProbeItNamed() {
     QaCase expected = QaCases.parse(TWO_ROWS);
-    QaVerdict verdict = new QaVerdict("abc1234", "", List.of(), "", "GET /health");
+    QaVerdict verdict = new QaVerdict("abc1234", "", List.of(), "", "GET /health", QaVerdict.Flows.none());
 
     QaJudgement judged = QaJudgement.ofVerdict(expected, verdict);
 

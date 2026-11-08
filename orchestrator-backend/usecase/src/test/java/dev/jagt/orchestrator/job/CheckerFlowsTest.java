@@ -45,9 +45,9 @@ class CheckerFlowsTest {
 
   @Test
   void runsNothingAndAddsNoRowWhereTheReadNamedNoFlow(@TempDir Path worktree) {
-    QaVerdict read = new QaVerdict("abc", "", List.of(), "", "");
+    QaVerdict read = new QaVerdict("abc", "", List.of(), "", "", QaVerdict.Flows.none());
 
-    QaVerdict result = flows.run(read, worktree, CheckerFlows.Ask.none());
+    QaVerdict result = flows.run(read, worktree, QaVerdict.Flows.none());
 
     assertThat(result).isSameAs(read);
     verify(runner, never()).run(any(), any(), any());
@@ -71,9 +71,10 @@ class CheckerFlowsTest {
             "",
             List.of(new QaVerdict.Row("page opens", QaVerdict.Status.MET, "GET 200")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
-    QaVerdict result = flows.run(read, worktree, new CheckerFlows.Ask(List.of("AC-1"), STAGE));
+    QaVerdict result = flows.run(read, worktree, new QaVerdict.Flows(List.of("AC-1"), STAGE));
 
     assertThat(result.rows())
         .containsExactly(
@@ -92,9 +93,9 @@ class CheckerFlowsTest {
 
     QaVerdict result =
         flows.run(
-            new QaVerdict("abc", "", List.of(), "", ""),
+            new QaVerdict("abc", "", List.of(), "", "", QaVerdict.Flows.none()),
             worktree,
-            new CheckerFlows.Ask(List.of("AC-1"), STAGE));
+            new QaVerdict.Flows(List.of("AC-1"), STAGE));
 
     assertThat(result.rows()).containsExactly(new QaVerdict.Row("AC-1", QaVerdict.Status.MET, ""));
   }
@@ -105,9 +106,9 @@ class CheckerFlowsTest {
 
     QaVerdict result =
         flows.run(
-            new QaVerdict("abc", "", List.of(), "", ""),
+            new QaVerdict("abc", "", List.of(), "", "", QaVerdict.Flows.none()),
             worktree,
-            new CheckerFlows.Ask(List.of("AC-1"), "https://prod.example.com"));
+            new QaVerdict.Flows(List.of("AC-1"), "https://prod.example.com"));
 
     assertThat(result.rows())
         .extracting(QaVerdict.Row::status)

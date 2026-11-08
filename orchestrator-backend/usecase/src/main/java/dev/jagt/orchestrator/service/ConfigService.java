@@ -508,14 +508,26 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
     public record RoleConfig(
         @Nullable Boolean enabled,
         @Nullable String model,
-        @Nullable List<QaEnvironment> environments) {
+        @Nullable List<QaEnvironment> environments,
+        @Nullable FlowsConfig flows) {
 
       public static RoleConfig defaults() {
-        return new RoleConfig(null, null, null);
+        return new RoleConfig(null, null, null, null);
       }
 
       static RoleConfig of(QaConfig legacy) {
-        return new RoleConfig(legacy.enabled(), legacy.model(), legacy.environments());
+        return new RoleConfig(legacy.enabled(), legacy.model(), legacy.environments(), null);
+      }
+
+      /** The flows repository, blank while no driver is set. */
+      public String flowsPathOrBlank() {
+        FlowsConfig named = flows;
+        if (named == null || named.driver() == null || named.path() == null) {
+          return "";
+        }
+        return named.driver().isBlank() || "none".equals(named.driver().strip())
+            ? ""
+            : named.path().strip();
       }
 
       public boolean enabledOrDefault() {
@@ -535,6 +547,9 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
             .anyMatch(environment -> baseUrl.equals(environment.url()));
       }
     }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record FlowsConfig(@Nullable String driver, @Nullable String path) {}
 
     /**
      * {@code landed} is a URL whose answer proves the change is up where the host reports no deploy

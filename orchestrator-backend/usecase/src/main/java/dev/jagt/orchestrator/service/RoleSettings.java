@@ -11,7 +11,7 @@ public record RoleSettings(RoleDefinition role, ConfigService config) {
 
   public RoleConfig load() {
     RoleConfig written =
-        role.installed() ? config.load().role(role.id()) : new RoleConfig(false, null, null);
+        role.installed() ? config.load().role(role.id()) : new RoleConfig(false, null, null, null);
     return written.modelOrInherited().isEmpty() ? written.withModel(role.model()) : written;
   }
 }

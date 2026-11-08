@@ -17,7 +17,8 @@ class QaVerdictTest {
             "",
             List.of(new QaVerdict.Row("login works", QaVerdict.Status.MET, "GET /me 200")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     assertThat(verdict.ending()).isEqualTo(QaEnding.PASSED);
   }
@@ -33,7 +34,8 @@ class QaVerdictTest {
                 new QaVerdict.Row(
                     "list is sorted", QaVerdict.Status.NOT_MET, "GET /list unsorted")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     assertThat(verdict.ending()).isEqualTo(QaEnding.NOT_MET);
   }
@@ -46,20 +48,21 @@ class QaVerdictTest {
             "",
             List.of(new QaVerdict.Row("login works", QaVerdict.Status.UNPROVABLE, "no login")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     assertThat(verdict.ending()).isEqualTo(QaEnding.UNPROVABLE);
   }
 
   @Test
   void provesNothingWhereNoRowWasWritten() {
-    assertThat(new QaVerdict("abc", "", List.of(), "", "").ending()).isEqualTo(QaEnding.UNPROVABLE);
+    assertThat(new QaVerdict("abc", "", List.of(), "", "", QaVerdict.Flows.none()).ending()).isEqualTo(QaEnding.UNPROVABLE);
   }
 
   @Test
   void waitsWhereTheEnvironmentDidNotAnswer() {
     assertThat(
-            new QaVerdict("abc", "", List.of(), "", "GET https://stage.example.com/health")
+            new QaVerdict("abc", "", List.of(), "", "GET https://stage.example.com/health", QaVerdict.Flows.none())
                 .ending())
         .isEqualTo(QaEnding.WAITING);
   }
@@ -72,7 +75,8 @@ class QaVerdictTest {
             "spend ceiling",
             List.of(new QaVerdict.Row("login works", QaVerdict.Status.MET, "ok")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     assertThat(verdict.ending()).isEqualTo(QaEnding.FAILED);
   }
@@ -113,7 +117,7 @@ class QaVerdictTest {
   void listsOnlyTheRowsNotMet() {
     QaVerdict.Row met = new QaVerdict.Row("a", QaVerdict.Status.MET, "ok");
     QaVerdict.Row notMet = new QaVerdict.Row("b", QaVerdict.Status.NOT_MET, "no");
-    QaVerdict verdict = new QaVerdict("abc", "", List.of(met, notMet), "", "");
+    QaVerdict verdict = new QaVerdict("abc", "", List.of(met, notMet), "", "", QaVerdict.Flows.none());
 
     assertThat(verdict.notMet()).containsExactly(notMet);
   }

@@ -31,7 +31,7 @@ class RoleConfigOriginsTest {
     install(root, null);
     when(config.load())
         .thenReturn(
-            ConfigFile.defaults().withRoles(Map.of("qa", new RoleConfig(true, "opus", List.of()))));
+            ConfigFile.defaults().withRoles(Map.of("qa", new RoleConfig(true, "opus", List.of(), null))));
 
     List<String> lines = logged(root);
 

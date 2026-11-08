@@ -27,6 +27,8 @@ answer:
     choices: {status: [met, "not met", unprovable]}
   - text: question
   - text: waitingOn
+  - texts: flows
+  - text: environment
 decline:
   - required: failure
   - text: dispute

@@ -27,7 +27,7 @@ public class CheckerPrompts {
         qa.environmentsOrEmpty().stream()
             .map(CheckerPrompts::environment)
             .collect(Collectors.joining("\n"));
-    String facts = deployFact(taskId, sha) + "\nCheck it on:\n" + environments;
+    String facts = deployFact(taskId, sha) + "\nCheck it on:\n" + environments + flowsLine(qa);
     return new CheckerReader.Run(
         brief.text(),
         brief.section(step) + "\n\n" + facts,
@@ -66,6 +66,16 @@ public class CheckerPrompts {
         reachable(qa),
         role.replies().decline().json(),
         role.id());
+  }
+
+  private static String flowsLine(RoleConfig qa) {
+    String path = qa.flowsPathOrBlank();
+    return path.isEmpty()
+        ? ""
+        : "\nFlows: "
+            + path
+            + ". In `flows` name the ids checking a criterion: a test tagged `@AC-n`, else its"
+            + " title; in `environment` the listed URL they run on.";
   }
 
   private static String deployFact(String taskId, String sha) {

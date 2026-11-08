@@ -9,7 +9,24 @@ import java.util.Optional;
  * {@code waitingOn} names the probe of an environment that did not answer.
  */
 public record QaVerdict(
-    String sha, String failure, List<Row> rows, String question, String waitingOn) {
+    String sha,
+    String failure,
+    List<Row> rows,
+    String question,
+    String waitingOn,
+    Flows flows) {
+
+  /** The flow ids a read named and the listed base url they run on. */
+  public record Flows(List<String> ids, String environment) {
+
+    public Flows {
+      ids = List.copyOf(ids);
+    }
+
+    public static Flows none() {
+      return new Flows(List.of(), "");
+    }
+  }
 
   /**
    * The brief steps whose turn QA holds while it reads; the same check run again after a restart is
@@ -63,7 +80,12 @@ public record QaVerdict(
         failure,
         java.util.stream.Stream.concat(rows.stream(), more.stream()).toList(),
         question,
-        waitingOn);
+        waitingOn,
+        flows);
+  }
+
+  public QaVerdict withFlows(Flows named) {
+    return new QaVerdict(sha, failure, rows, question, waitingOn, named);
   }
 
   public String report(String role) {
@@ -77,7 +99,7 @@ public record QaVerdict(
   }
 
   public static QaVerdict failed(String sha, String failure) {
-    return new QaVerdict(sha, failure, List.of(), "", "");
+    return new QaVerdict(sha, failure, List.of(), "", "", Flows.none());
   }
 
   /**

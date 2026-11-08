@@ -17,6 +17,7 @@ One criterion is one row; give none the ticket does not name. jagt writes `qa-re
 `question` holds what only a human can answer: a login you lack, a criterion naming no threshold, a landing nothing
 proves. A `question` stands only behind an `unprovable` row; a met or not met row asks nothing. `waitingOn` holds what must change before a row can be checked: an environment that does not answer, or a probe
 naming another sha than the deploy's. `failure` is only for a check that could read nothing at all.
+`flows` and `environment` only when the prompt names a flows repository: jagt runs them and adds one row per flow.
 
 ## Your tools
 

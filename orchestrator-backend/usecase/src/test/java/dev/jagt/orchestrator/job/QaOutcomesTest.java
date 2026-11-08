@@ -51,7 +51,8 @@ class QaOutcomesTest {
             "",
             List.of(new QaVerdict.Row("login works", QaVerdict.Status.MET, "GET /me 200")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     QaEnding ending =
         new CheckerOutcomes(
@@ -91,7 +92,8 @@ class QaOutcomesTest {
             "",
             List.of(new QaVerdict.Row("login works", QaVerdict.Status.MET, "GET /me 200")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     QaEnding ending =
         new CheckerOutcomes(
@@ -156,7 +158,8 @@ class QaOutcomesTest {
             "",
             List.of(new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me 500")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     QaEnding ending =
         new CheckerOutcomes(
@@ -196,7 +199,8 @@ class QaOutcomesTest {
             "",
             List.of(new QaVerdict.Row("login works", QaVerdict.Status.UNPROVABLE, "no login")),
             "which user?",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")),
@@ -236,7 +240,8 @@ class QaOutcomesTest {
                 new QaVerdict.Row("page opens", QaVerdict.Status.MET, "200"),
                 new QaVerdict.Row("login works", QaVerdict.Status.UNPROVABLE, "no login")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")),
@@ -269,7 +274,7 @@ class QaOutcomesTest {
                     1,
                     "digest"));
     state.putTask("ABC-42", task);
-    QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(), "", "");
+    QaVerdict verdict = new QaVerdict("proj@0123456789abcdef", "", List.of(), "", "", QaVerdict.Flows.none());
 
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")),

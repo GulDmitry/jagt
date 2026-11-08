@@ -20,26 +20,18 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CheckerFlows {
 
-  /** The flow ids to run and the base url to run them on. */
-  public record Ask(List<String> flows, String environment) {
-
-    public static Ask none() {
-      return new Ask(List.of(), "");
-    }
-  }
-
   private final AcceptanceRunner runner;
   private final RoleDefinition role;
   private final RoleSettings settings;
 
-  public QaVerdict run(QaVerdict verdict, Path worktree, Ask ask) {
-    if (ask.flows().isEmpty()) {
+  public QaVerdict run(QaVerdict verdict, Path worktree, QaVerdict.Flows ask) {
+    if (ask.ids().isEmpty()) {
       return verdict;
     }
     List<FlowResult> results =
         settings.load().allows(ask.environment())
-            ? runner.run(worktree, ask.flows(), ask.environment())
-            : ask.flows().stream()
+            ? runner.run(worktree, ask.ids(), ask.environment())
+            : ask.ids().stream()
                 .map(
                     flow ->
                         FlowResult.defaults()

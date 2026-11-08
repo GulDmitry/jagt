@@ -60,7 +60,8 @@ class QaCheckJobTest {
         "",
         List.of(new QaVerdict.Row("login works", QaVerdict.Status.MET, "GET /me 200")),
         "",
-        "");
+        "",
+        QaVerdict.Flows.none());
   }
 
   private static QaVerdict notMet() {
@@ -70,7 +71,8 @@ class QaCheckJobTest {
         List.of(
             new QaVerdict.Row("list is sorted", QaVerdict.Status.NOT_MET, "GET /list unsorted")),
         "",
-        "");
+        "",
+        QaVerdict.Flows.none());
   }
 
   @Test

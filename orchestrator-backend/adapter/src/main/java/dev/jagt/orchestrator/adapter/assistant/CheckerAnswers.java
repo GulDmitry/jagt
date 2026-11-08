@@ -78,6 +78,16 @@ final class CheckerAnswers {
         answer.path("failure").asString(""),
         rows,
         answer.path("question").asString(""),
-        answer.path("waitingOn").asString(""));
+        answer.path("waitingOn").asString(""),
+        new QaVerdict.Flows(
+            flowIds(answer.path("flows")), answer.path("environment").asString("")));
+  }
+
+  private static List<String> flowIds(JsonNode flows) {
+    List<String> ids = new ArrayList<>();
+    for (JsonNode flow : flows) {
+      ids.add(flow.asString(""));
+    }
+    return ids;
   }
 }

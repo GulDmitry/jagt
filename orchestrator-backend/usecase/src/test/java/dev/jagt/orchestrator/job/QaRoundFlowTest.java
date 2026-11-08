@@ -112,7 +112,8 @@ class QaRoundFlowTest {
             List.of(
                 new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me answered 500")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")),
@@ -193,7 +194,8 @@ class QaRoundFlowTest {
             List.of(
                 new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me answered 500")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")),
@@ -239,7 +241,8 @@ class QaRoundFlowTest {
             "",
             List.of(new QaVerdict.Row("login works", QaVerdict.Status.UNPROVABLE, "no login")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
 
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")),
@@ -280,7 +283,8 @@ class QaRoundFlowTest {
             List.of(
                 new QaVerdict.Row("login works", QaVerdict.Status.NOT_MET, "GET /me answered 500")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
     StepRelay relay = mock(StepRelay.class);
 
     QaEnding ending =

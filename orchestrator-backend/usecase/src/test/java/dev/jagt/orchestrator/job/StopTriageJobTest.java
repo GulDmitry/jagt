@@ -85,7 +85,7 @@ class StopTriageJobTest {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withRoles(Map.of("triage", new RoleConfig(enabled, null, null))));
+                .withRoles(Map.of("triage", new RoleConfig(enabled, null, null, null))));
   }
 
   @Test

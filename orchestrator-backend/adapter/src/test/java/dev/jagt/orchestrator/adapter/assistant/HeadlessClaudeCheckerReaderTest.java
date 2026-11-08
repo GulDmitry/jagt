@@ -237,6 +237,38 @@ class HeadlessClaudeCheckerReaderTest {
   }
 
   @Test
+  void carriesTheFlowIdsAndTheEnvironmentTheCheckNamed() {
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                "{\"structured_output\":{\"failure\":\"\",\"rows\":[],"
+                    + "\"flows\":[\"AC-1\",\"AC-2\"],\"environment\":\"https://alpha.test\"}}",
+                ""));
+
+    var verdict =
+        reader
+            .read(
+                new CheckerReader.Run(
+                    "",
+                    "check ABC-42",
+                    worktree,
+                    "abc123",
+                    "",
+                    List.of(),
+                    RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                        .replies()
+                        .answer()
+                        .json(),
+                    "qa"))
+            .facts()
+            .orElseThrow();
+
+    assertThat(verdict.flows().ids()).containsExactly("AC-1", "AC-2");
+    assertThat(verdict.flows().environment()).isEqualTo("https://alpha.test");
+  }
+
+  @Test
   void failsTheVerdictNamingTheCauseWhenTheCheckAnsweredNoEnvelope() {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(1, "", "boom"));

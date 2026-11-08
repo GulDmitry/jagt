@@ -153,7 +153,8 @@ abstract class QaVerdictEvalTest {
         new RoleConfig(
             true,
             System.getProperty("qaEval.model", qaDefinition.model()),
-            List.of(new QaEnvironment(url, landedProbe)));
+            List.of(new QaEnvironment(url, landedProbe)),
+            null);
     CheckerReader.Run run =
         deployed.declines()
             ? prompts.decline(

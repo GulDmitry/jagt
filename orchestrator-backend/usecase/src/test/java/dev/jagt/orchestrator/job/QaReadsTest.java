@@ -108,21 +108,29 @@ class QaReadsTest {
   }
 
   @Test
-  void theVerdictQaAnswersIsTheOneTheFlowsAddedTheirRowsTo(@TempDir Path root) {
+  void flowsTheReadNamesRunAndTheirRowsJoinTheVerdict(@TempDir Path root) {
     StateService state = stateIn(root);
     state.putTask("ABC-42", deployed());
-    QaVerdict read = new QaVerdict("proj@0123", "", List.of(), "", "");
+    QaVerdict read =
+        new QaVerdict(
+            "proj@0123",
+            "",
+            List.of(),
+            "",
+            "",
+            new QaVerdict.Flows(List.of("AC-1"), "https://alpha.test"));
     QaVerdict withFlows =
         new QaVerdict(
             "proj@0123",
             "",
             List.of(new QaVerdict.Row("AC-1", QaVerdict.Status.NOT_MET, "failed")),
             "",
-            "");
+            "",
+            QaVerdict.Flows.none());
     CheckerReader reader = mock(CheckerReader.class);
     when(reader.read(any())).thenReturn(new Answer<>(Optional.of(read), TokenUsage.NONE));
     CheckerFlows flows = mock(CheckerFlows.class);
-    when(flows.run(read, Paths.get("/wt"), CheckerFlows.Ask.none())).thenReturn(withFlows);
+    when(flows.run(read, Paths.get("/wt"), read.flows())).thenReturn(withFlows);
 
     Answer<QaVerdict> answer =
         new CheckerReads(

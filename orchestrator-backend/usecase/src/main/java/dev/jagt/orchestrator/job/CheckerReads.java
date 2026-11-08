@@ -25,7 +25,7 @@ public class CheckerReads {
     try {
       return reader
           .read(run)
-          .map(verdict -> flows.run(verdict, run.worktree(), CheckerFlows.Ask.none()));
+          .map(verdict -> flows.run(verdict, run.worktree(), verdict.flows()));
     } finally {
       turns.closed(taskId, role.id(), step, digest);
     }

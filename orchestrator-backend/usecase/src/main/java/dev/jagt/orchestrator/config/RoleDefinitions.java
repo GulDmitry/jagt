@@ -121,12 +121,14 @@ public final class RoleDefinitions {
         schema.required(String.valueOf(field.get("required")), "string", null);
       } else if (field.containsKey("text")) {
         schema.text(String.valueOf(field.get("text")), null);
+      } else if (field.containsKey("texts")) {
+        schema.texts(String.valueOf(field.get("texts")), null);
       } else if (field.containsKey("records")) {
         schema.records(
             String.valueOf(field.get("records")), null, strings(field, "fields"), choices(field));
       } else {
         throw new RoleInvalid(
-            key + ": an entry is required, text or records, not " + field.keySet());
+            key + ": an entry is required, text, texts or records, not " + field.keySet());
       }
     }
     return schema;
