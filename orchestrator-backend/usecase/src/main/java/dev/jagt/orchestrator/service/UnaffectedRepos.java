@@ -28,12 +28,11 @@ public class UnaffectedRepos {
 
   public void leave(String taskId) {
     TaskState task = stateService.task(taskId).orElse(null);
-    if (task == null || task.repos().size() < 2) {
+    if (task == null) {
       return;
     }
     for (String project : unaffected(taskId, task.projects())) {
-      // The primary checkout holds the session's working directory and its artifacts.
-      if (!project.equals(task.project())) {
+      if (task.canLose(project)) {
         leaveUnlessOwnCommits(taskId, project);
       }
     }
@@ -49,7 +48,7 @@ public class UnaffectedRepos {
   }
 
   private void leaveUnlessOwnCommits(String taskId, String project) {
-    TaskState task = stateService.task(taskId).filter(one -> one.repos().size() > 1).orElse(null);
+    TaskState task = stateService.task(taskId).orElse(null);
     TaskRepo repo =
         task == null
             ? null

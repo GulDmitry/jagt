@@ -500,7 +500,7 @@ public final class TaskReducer {
   private static TaskMove.ConflictDrop dropOf(TaskState task, String project) {
     Deployment deployment = task.deployment();
     if (task.status() != TaskStatus.DEPLOY_CONFLICT
-        || task.repos().size() < 2
+        || !task.canLose(project)
         || deployment == null) {
       return TaskMove.ConflictDrop.NONE;
     }

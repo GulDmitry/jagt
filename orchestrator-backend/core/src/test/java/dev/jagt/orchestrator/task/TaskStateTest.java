@@ -673,6 +673,17 @@ class TaskStateTest {
   }
 
   @Test
+  void keepsThePrimaryRepositoryWhenTheTaskHoldsOthers() {
+    TaskState task =
+        TaskState.builder(
+                List.of(TaskRepo.of("api", "/wt-api"), TaskRepo.of("web", "/wt-web")),
+                TaskStatus.IN_PROGRESS)
+            .build();
+
+    assertThat(task.withoutRepo("api").projects()).containsExactly("api", "web");
+  }
+
+  @Test
   void asksForNoRepositoryUntilTheSessionNamesOne() {
     TaskState working = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
 
