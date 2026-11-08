@@ -59,7 +59,8 @@ A triage read on the 9B (2026-11-08, `roleEval -Prole=triage -ProleCli=opencode`
 answered 2 of 9 cases: one names who looped right, one advises a lift safe that is not. Six answers named no
 `who:` line, one was unreadable. Haiku: 16 of 19 runs right, none safe where unsafe.
 
-A QA read on 2026-11-08 (`roleEval -Prole=qa -ProleCli=opencode`, 10-min cap): the 27B IQ3_XXS judged no case in the capped run; its calls were gated, none refused; swap 6.9 to 10.3 GiB with other work running.
+A QA read on 2026-11-08 (`roleEval -Prole=qa -ProleCli=opencode`, 10-min cap): the 27B IQ3_XXS judged no case.
+Its calls were gated, none refused; swap 6.9 to 10.3 GiB with other work running.
 The 9B with `--reasoning-budget 2048` judged no case in 10 min.
 
 The gate worked: refused calls were retried, none discarded as unfenced. Role reads and sessions stay on the cloud.
