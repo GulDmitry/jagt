@@ -14,9 +14,10 @@ public record QaScore(
     int expectedUnprovable,
     boolean reportMatches,
     boolean endingMatches,
-    boolean namesCited) {
+    boolean namesCited,
+    boolean flowsNamed) {
 
-  public static QaScore of(QaCase expected, QaJudgement judged) {
+  public static QaScore of(QaCase expected, QaJudgement judged, String environmentUrl) {
     int correct = 0;
     int expectedMet = 0;
     int falseNotMet = 0;
@@ -43,7 +44,17 @@ public record QaScore(
         expectedUnprovable,
         expected.report().equals(judged.report()),
         expected.expectedEnding() == judged.ending(),
-        cited(expected, judged));
+        cited(expected, judged),
+        flowsNamed(expected, judged, environmentUrl));
+  }
+
+  private static boolean flowsNamed(QaCase expected, QaJudgement judged, String environmentUrl) {
+    if (!expected.hasFlows()) {
+      return true;
+    }
+    String named = String.join("\n", judged.flows().ids()).toLowerCase(Locale.ROOT);
+    return expected.flows().ids().stream().allMatch(alternatives -> anyOf(alternatives, named))
+        && environmentUrl.equals(judged.flows().environment());
   }
 
   private static boolean cited(QaCase expected, QaJudgement judged) {
@@ -70,7 +81,8 @@ public record QaScore(
   }
 
   public boolean passed() {
-    return falseMet == 0 && correct == rows && reportMatches && endingMatches && namesCited;
+    return falseMet == 0 && correct == rows && reportMatches && endingMatches && namesCited
+        && flowsNamed;
   }
 
   public String describe() {
@@ -87,6 +99,8 @@ public record QaScore(
         + ", ending "
         + endingMatches
         + ", names cited "
-        + namesCited;
+        + namesCited
+        + ", flows named "
+        + flowsNamed;
   }
 }

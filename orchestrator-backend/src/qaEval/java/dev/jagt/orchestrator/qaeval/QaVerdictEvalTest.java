@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.eval.ShippedRoot;
 import dev.jagt.orchestrator.job.CheckerPrompts;
 import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.FlowsConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaEnvironment;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.UsageTracker;
@@ -23,10 +24,12 @@ import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.QaEnding;
 import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TokenUsage;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -120,13 +123,15 @@ abstract class QaVerdictEvalTest {
     long started = System.nanoTime();
     OptionalDouble before = qaSpend();
     QaJudgement judged;
+    String fixtureUrl;
     try (QaFixtureEnvironment environment = QaFixtureEnvironment.serve(deployed.environment())) {
-      judged = judge(deployed, environment.url());
+      fixtureUrl = environment.url();
+      judged = judge(deployed, fixtureUrl);
     }
     if (judged.ending() == QaEnding.FAILED) {
       throw EvalStalled.because("the check failed: " + judged.cited());
     }
-    QaScore score = QaScore.of(deployed, judged);
+    QaScore score = QaScore.of(deployed, judged, fixtureUrl);
     SCOREBOARD.record(
         score,
         (System.nanoTime() - started) / 1e9,
@@ -154,7 +159,7 @@ abstract class QaVerdictEvalTest {
             true,
             System.getProperty("qaEval.model", qaDefinition.model()),
             List.of(new QaEnvironment(url, landedProbe)),
-            null);
+            flows(deployed));
     CheckerReader.Run run =
         deployed.declines()
             ? prompts.decline(
@@ -188,6 +193,18 @@ abstract class QaVerdictEvalTest {
     }
     return QaJudgement.ofVerdict(
         deployed, reader.read(told).facts().orElseThrow(() -> EvalStalled.because("no verdict")));
+  }
+
+  private static FlowsConfig flows(QaCase deployed) throws IOException {
+    if (!deployed.hasFlows()) {
+      return null;
+    }
+    Path directory = QaEvalWorkspace.root().resolve("repos/" + ROUND.get() + "/flows");
+    Files.createDirectories(directory);
+    for (Map.Entry<String, String> file : deployed.flows().files().entrySet()) {
+      Files.writeString(directory.resolve(file.getKey()), file.getValue());
+    }
+    return new FlowsConfig("playwright", directory.toString());
   }
 
   static List<QaCase> cases() {

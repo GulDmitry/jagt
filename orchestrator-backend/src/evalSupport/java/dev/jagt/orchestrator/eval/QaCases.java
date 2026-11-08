@@ -51,7 +51,21 @@ public final class QaCases {
         text(expect.get("report")),
         expect.get("probe") == null ? "" : text(expect.get("probe")),
         text(expect.get("ending")),
-        ((List<Object>) root.get("names")).stream().map(QaCases::text).toList());
+        ((List<Object>) root.get("names")).stream().map(QaCases::text).toList(),
+        flows(root));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static QaCase.Flows flows(Map<String, Object> root) {
+    Map<String, Object> files = (Map<String, Object>) root.getOrDefault("flows", Map.of());
+    Map<String, Object> expect = (Map<String, Object>) root.get("expect");
+    Map<String, Object> flows = (Map<String, Object>) expect.getOrDefault("flows", Map.of());
+    Map<String, String> content = new LinkedHashMap<>();
+    files.forEach((name, text) -> content.put(name, text(text)));
+    return new QaCase.Flows(
+        content,
+        ((List<Object>) flows.getOrDefault("ids", List.of()))
+            .stream().map(QaCases::text).toList());
   }
 
   @SuppressWarnings("unchecked")

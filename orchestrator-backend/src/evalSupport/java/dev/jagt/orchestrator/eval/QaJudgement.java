@@ -10,7 +10,9 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public record QaJudgement(Map<String, Status> rows, QaEnding ending, String report, String cited) {
+public record QaJudgement(Map<String, Status> rows, QaEnding ending, String report,
+    String cited,
+    QaVerdict.Flows flows) {
 
   public static QaJudgement ofVerdict(QaCase expected, QaVerdict verdict) {
     Map<String, Status> rows = new LinkedHashMap<>();
@@ -29,7 +31,11 @@ public record QaJudgement(Map<String, Status> rows, QaEnding ending, String repo
             + "\n"
             + verdict.failure();
     return new QaJudgement(
-        rows, verdict.ending(), reportOf(verdict), cited.toLowerCase(Locale.ROOT));
+        rows,
+        verdict.ending(),
+        reportOf(verdict),
+        cited.toLowerCase(Locale.ROOT),
+        verdict.flows());
   }
 
   public static QaJudgement ofDecline(QaCase expected, QaDecline decline) {
@@ -46,7 +52,8 @@ public record QaJudgement(Map<String, Status> rows, QaEnding ending, String repo
         rows,
         ending,
         report,
-        (decline.dispute() + "\n" + decline.failure()).toLowerCase(Locale.ROOT));
+        (decline.dispute() + "\n" + decline.failure()).toLowerCase(Locale.ROOT),
+        QaVerdict.Flows.none());
   }
 
   private static String reportOf(QaVerdict verdict) {

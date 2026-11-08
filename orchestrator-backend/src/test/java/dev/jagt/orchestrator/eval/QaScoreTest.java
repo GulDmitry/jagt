@@ -41,7 +41,7 @@ class QaScoreTest {
             "",
             QaVerdict.Flows.none());
 
-    QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict));
+    QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict), "");
 
     assertThat(score.passed()).isTrue();
     assertThat(score.correct()).isEqualTo(2);
@@ -61,7 +61,7 @@ class QaScoreTest {
             "",
             QaVerdict.Flows.none());
 
-    QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict));
+    QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict), "");
 
     assertThat(score.falseMet()).isEqualTo(1);
     assertThat(score.passed()).isFalse();
@@ -81,7 +81,7 @@ class QaScoreTest {
             "",
             QaVerdict.Flows.none());
 
-    QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict));
+    QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict), "");
 
     assertThat(score.falseNotMet()).isEqualTo(1);
     assertThat(score.expectedMet()).isEqualTo(1);
@@ -95,7 +95,7 @@ class QaScoreTest {
             "abc1234", "", List.of(new QaVerdict.Row("C1", Status.MET, "page answered")), "", "",
             QaVerdict.Flows.none());
 
-    QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict));
+    QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict), "");
 
     assertThat(score.rows()).isEqualTo(2);
     assertThat(score.correct()).isEqualTo(1);
@@ -116,10 +116,48 @@ class QaScoreTest {
             "",
             QaVerdict.Flows.none());
 
-    QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict));
+    QaScore score = QaScore.of(expected, QaJudgement.ofVerdict(expected, verdict), "");
 
     assertThat(score.namesCited()).isFalse();
     assertThat(score.passed()).isFalse();
+  }
+
+  @Test
+  void aVerdictNamingEveryExpectedFlowOnTheFixtureUrlPassesAndOneMissingFails() {
+    QaCase expected =
+        QaCases.parse(
+            TWO_ROWS.replace(
+                "  ending: not-met\n",
+                "  ending: not-met\n  flows: {ids: [\"AC-1|@AC-1\", \"expired notice\"]}\n"));
+    List<QaVerdict.Row> rows =
+        List.of(
+            new QaVerdict.Row("C1", Status.MET, "page answered"),
+            new QaVerdict.Row("C2", Status.NOT_MET, "no Header line"));
+    QaVerdict both =
+        new QaVerdict(
+            "abc1234",
+            "",
+            rows,
+            "",
+            "",
+            new QaVerdict.Flows(
+                List.of("@AC-1 quote shows validUntil", "shows the expired notice"),
+                "http://127.0.0.1:1"));
+    QaVerdict one =
+        new QaVerdict(
+            "abc1234",
+            "",
+            rows,
+            "",
+            "",
+            new QaVerdict.Flows(List.of("@AC-1 quote shows validUntil"), "http://127.0.0.1:1"));
+
+    QaScore named = QaScore.of(expected, QaJudgement.ofVerdict(expected, both), "http://127.0.0.1:1");
+    QaScore missing = QaScore.of(expected, QaJudgement.ofVerdict(expected, one), "http://127.0.0.1:1");
+
+    assertThat(named.flowsNamed()).isTrue();
+    assertThat(missing.flowsNamed()).isFalse();
+    assertThat(missing.passed()).isFalse();
   }
 
   @Test

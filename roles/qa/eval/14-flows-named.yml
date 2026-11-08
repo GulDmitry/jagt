@@ -1,0 +1,39 @@
+case: flows-named
+ticket:
+  key: ABC-142
+  title: Quote page shows its validity
+  criteria:
+    - {id: C1, text: "GET /quotes/sample-q1 shows validUntil as an ISO date"}
+    - {id: C2, text: "GET /quotes/sample-old shows the expired notice"}
+deploy:
+  sha: 5263748
+  tip: 5263748
+  landed: host-job
+  diff: ["web/QuotePage.tsx: validUntil", "web/ExpiredNotice.tsx: expired notice"]
+  flags: {}
+environment:
+  login: {broker-role: ok}
+  http:
+    "GET /quotes/sample-q1": {status: 200, body: {id: "sample-q1", validUntil: "2026-12-01"}}
+    "GET /quotes/sample-old": {status: 200, body: {id: "sample-old", notice: "This quote has expired"}}
+flows:
+  quote.spec.ts: |
+    import { test, expect } from '@playwright/test';
+
+    test('@AC-1 quote shows validUntil', async ({ page }) => {
+      await page.goto('/quotes/sample-q1');
+      await expect(page.getByText('2026-12-01')).toBeVisible();
+    });
+
+    test('sample-old shows the expired notice', async ({ page }) => {
+      await page.goto('/quotes/sample-old');
+      await expect(page.getByText('This quote has expired')).toBeVisible();
+    });
+expect:
+  rows: {C1: met, C2: met}
+  report: plain
+  ending: passed
+  flows:
+    ids: ["AC-1|@AC-1", "shows the expired notice"]
+names: ["validUntil", "expired"]
+note: The flows repository is named in the prompt; the read opens it and names the test checking each criterion and the URL they run on.
