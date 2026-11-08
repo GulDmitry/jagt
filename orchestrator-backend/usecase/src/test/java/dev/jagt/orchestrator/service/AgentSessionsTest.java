@@ -954,6 +954,33 @@ class AgentSessionsTest {
   }
 
   @Test
+  void startsAFreshSessionInsteadOfPressingEnterOnTheNudgeOfASessionColdPastItsCacheLifetime() {
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .build()
+            .withSession(Session.defaults().withMovedAt(5_000)));
+    String idle =
+        "\u276f task_context.md changed \u2014 re-read it now and follow the new instructions.";
+    when(tmux.sessionName(null)).thenReturn("jagt");
+    when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of(idle));
+    when(agentRuntime.draft(idle))
+        .thenReturn(
+            Optional.of(
+                "task_context.md changed \u2014 re-read it now and follow the new instructions."));
+    when(agentRuntime.pastCacheLifetime(5_000L, java.time.Duration.ofHours(1))).thenReturn(true);
+    AgentSessions sessions =
+        new AgentSessions(
+            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+
+    boolean pressed = sessions.resubmitUnsentNudge("ABC-1");
+
+    assertThat(pressed).isFalse();
+    verify(tmux, never()).submitTaskWindow(anyString(), anyString());
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+  }
+
+  @Test
   void pressesNothingOnTheHumansOwnDraft() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());

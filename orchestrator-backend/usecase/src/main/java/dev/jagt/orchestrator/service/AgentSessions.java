@@ -547,6 +547,18 @@ public class AgentSessions implements SessionLines {
               .flatMap(agentRuntime::draft)
               .filter(AgentSessions::isNudge)
               .isPresent();
+      if (unsent && cold(id)) {
+        stateService
+            .task(id)
+            .ifPresent(
+                task ->
+                    startFreshWhenFree(
+                        id,
+                        task,
+                        configService.load(),
+                        "conversation idle past its cache lifetime"));
+        return false;
+      }
       return unsent && sessions.submitTaskWindow(session, id);
     } catch (RuntimeException unread) {
       log.atDebug()

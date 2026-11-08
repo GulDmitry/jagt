@@ -19,6 +19,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | H16 | a repository's remote is a local path or `file:` URL → its request links are judged by no remote, never dropped as foreign | seen 2026-11-07: the replay stand's ship never linked, the task held in SHIPPING | `ForeignLinksTest` |
 | H17 | a session reports a request link on another host, or any link while the remote is a local path → the code-host close sends nothing, failed and logged at WARN; only a link on the repository's own host is closed | seen 2026-11-08, review: `remove-repo` ran `gh pr close` under the human's login on a link the session chose | `ChosenCodeHostTest`, `RepoRemovalTest` |
 | H18 | the Master in act presses a verb a human may (`trust`, `lift`, `escalate`, `pause`, `done`, `remove-repo`) → the door admits it where a Master case allows it; only a verb `roles.master.mine` names is refused | seen 2026-11-08: a table of human-only verbs refused the Master what AGENTS.md gives it | `CaseDoorTest`, `MasterVerbsTest`, `MasterCheckTest` |
+| H19 | jagt's own nudge sits unsent in the input of a session that idled past `cacheLifetime` → no Enter is pressed into it; a fresh session starts and reads `task_context.md` | seen 2026-11-08: 10 nudges reached sessions idle 1 h or more, each a full cache rewrite | `AgentSessionsTest` |
 ## I — vendor CLI behaviour
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
