@@ -73,6 +73,7 @@ QUESTIONS.md
 IDEAS.md
 ORDERS.md
 TESTBED.md
+/backlog/
 DETERMINISM.md
 
 # Pass/fail per eval case across runs, written by promptEval and roleEval
