@@ -178,6 +178,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `RequestlessShip` | `service/HostlessShips` |
 | `ToolGateEnvelope` | `adapter/agent/ClaudeToolGateEnvelope` |
 | `WorktreeProcesses` | `adapter/LsofWorktreeProcesses` |
+| `WorktreeContainers` | `adapter/{DockerComposeContainers,NoWorktreeContainers}` — by `orchestrator.containers` |
 | `UserNotifier` | `adapter/macos/MacNotifier`, `adapter/linux/LibNotifyNotifier` |
 | `KeepAwake` | `adapter/macos/Caffeinate`, `adapter/linux/SystemdInhibit` |
 | `TerminalDriver` | `adapter/AbstractKittyTerminalDriver` (+ one per platform) |

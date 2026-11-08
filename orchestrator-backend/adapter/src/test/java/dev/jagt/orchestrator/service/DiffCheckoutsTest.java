@@ -33,7 +33,7 @@ class DiffCheckoutsTest {
     runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
     GitCommands commands =
         new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty());
+            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {});
     GitWorktrees git = new GitWorktrees(commands);
     DiffCheckouts diffs = new DiffCheckouts(commands);
     Path wt = dir.resolve("wt");
@@ -74,7 +74,7 @@ class DiffCheckoutsTest {
     runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
     GitCommands commands =
         new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty());
+            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {});
     GitWorktrees git = new GitWorktrees(commands);
     DiffCheckouts diffs = new DiffCheckouts(commands);
     Path base = diffs.checkoutBaseForDiff(repo, "origin/main", "ABC-8", "proj");
@@ -104,7 +104,7 @@ class DiffCheckoutsTest {
     runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
     GitCommands commands =
         new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty());
+            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {});
     GitWorktrees git = new GitWorktrees(commands);
     DiffCheckouts diffs = new DiffCheckouts(commands);
     Path wt = dir.resolve("wt");
@@ -149,7 +149,7 @@ class DiffCheckoutsTest {
     runner.run(web, timeout, List.of("git", "push", "-q", "origin", "main"));
     GitCommands commands =
         new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty());
+            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {});
     GitWorktrees git = new GitWorktrees(commands);
     DiffCheckouts diffs = new DiffCheckouts(commands);
 
@@ -183,7 +183,7 @@ class DiffCheckoutsTest {
     runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
     GitCommands commands =
         new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty());
+            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {});
     GitWorktrees git = new GitWorktrees(commands);
     DiffCheckouts diffs = new DiffCheckouts(commands);
     Path wt = dir.resolve("wt");

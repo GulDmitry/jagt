@@ -555,6 +555,7 @@ public class GitWorktrees {
     git.locked(
         projectPath,
         () -> {
+          git.stopContainers(worktreePath);
           git.reap(worktreePath);
           var removed =
               git.run(

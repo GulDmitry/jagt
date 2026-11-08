@@ -4,6 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -12,6 +17,8 @@ import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.WorktreeContainers;
+import dev.jagt.orchestrator.port.WorktreeProcesses;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +57,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(
             () ->
@@ -82,7 +89,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThat(git.holdsOwnCommits(repo, "ABC-1", "origin/main")).isFalse();
 
@@ -142,7 +149,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThat(git.holdsOwnCommits(repo, "ABC-1", "origin/main")).isTrue();
   }
@@ -175,7 +182,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "main", BranchStrategy.FRESH);
 
@@ -206,7 +213,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     Path wt = dir.resolve("wt");
     git.createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
     Process rooted = new ProcessBuilder("sleep", "300").directory(wt.toFile()).start();
@@ -219,6 +226,25 @@ class GitWorktreesTest {
     } finally {
       rooted.destroyForcibly();
     }
+  }
+
+  @Test
+  void removeWorktreeStopsTheContainerStackStartedInsideIt(@TempDir Path dir) {
+    Processes runner = mock(Processes.class);
+    when(runner.run(any(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "", ""));
+    WorktreeContainers containers = mock(WorktreeContainers.class);
+    GitWorktrees git =
+        new GitWorktrees(
+            new GitCommands(
+                runner,
+                mock(WorktreeProcesses.class),
+                path -> java.util.Optional.empty(),
+                containers));
+
+    git.removeWorktree(dir.resolve("repo"), dir.resolve("alpha-wt"), null);
+
+    verify(containers).stop(dir.resolve("alpha-wt"));
   }
 
   @Test
@@ -247,7 +273,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
@@ -289,7 +315,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     Optional<Path> found = git.worktreeOf(repo, "ABC-1");
 
@@ -320,7 +346,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     Optional<Path> found = git.worktreeOf(repo.toRealPath(), "ABC-1");
 
@@ -360,7 +386,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
@@ -400,7 +426,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(
             () ->
@@ -452,7 +478,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(
             () ->
@@ -507,7 +533,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(
             () ->
@@ -555,7 +581,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
@@ -599,7 +625,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(
         repo, dir.resolve("wt"), "ABC-1", "origin/release-that-was-deleted", BranchStrategy.RESUME);
@@ -641,7 +667,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
@@ -691,7 +717,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
@@ -719,7 +745,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
@@ -751,7 +777,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(
             () ->
@@ -789,7 +815,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RECREATE);
 
@@ -824,7 +850,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(
             () ->
@@ -860,7 +886,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
@@ -889,7 +915,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(
         repo, dir.resolve("wt"), "ABC-1", "origin/deleted-base", BranchStrategy.RESUME);
@@ -927,7 +953,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     Path aFileEvenRootCannotCreateUnder = Files.writeString(dir.resolve("in-the-way"), "");
 
@@ -983,7 +1009,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
@@ -1011,7 +1037,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     String stopped = git.reattach(repo, "ABC-1");
 
@@ -1046,7 +1072,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(
             () ->
@@ -1091,7 +1117,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(
             () ->
@@ -1129,7 +1155,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RECREATE);
 
@@ -1155,7 +1181,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/release", BranchStrategy.FRESH);
 
@@ -1189,7 +1215,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
 
@@ -1217,7 +1243,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.removeWorktree(repo, leftover, null);
 
@@ -1240,7 +1266,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     Path worktree = dir.resolve("wt");
     git.createWorktree(repo, worktree, "ABC-1", "origin/main", BranchStrategy.FRESH);
 
@@ -1261,7 +1287,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     String remote = git.remoteUrl(dir);
 
@@ -1290,7 +1316,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     String stopped = git.reattach(repo, "ABC-1");
 
@@ -1327,7 +1353,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     String stopped = git.reattach(repo, "ABC-1");
 
@@ -1363,7 +1389,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     String stopped = git.reattach(repo, "ABC-1");
 
@@ -1396,7 +1422,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RECREATE);
 
@@ -1428,7 +1454,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
@@ -1470,7 +1496,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
@@ -1515,7 +1541,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(
             () ->
@@ -1555,7 +1581,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThat(git.standsOn(repo, "ABC-41")).isFalse();
 
@@ -1584,7 +1610,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThat(git.remoteBranchExists(repo, "ABC-1")).isFalse();
 
@@ -1618,7 +1644,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.removeWorktree(repo, dir.resolve("wt"), "ABC-1");
 
@@ -1659,7 +1685,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.removeDeployWorktreeIfPresent(repo, "ABC-1");
 
@@ -1680,7 +1706,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.discardDiffWorktrees("ABC-5", "gone");
 
@@ -1707,7 +1733,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     Path common = git.gitCommonDir(repo);
 
@@ -1738,7 +1764,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger worktreesLog = (Logger) LoggerFactory.getLogger(GitWorktrees.class);
@@ -1778,7 +1804,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger worktreesLog = (Logger) LoggerFactory.getLogger(GitWorktrees.class);
@@ -1833,7 +1859,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     Optional<Path> found = git.worktreeOf(repo, "ABC-1");
 
@@ -1862,7 +1888,7 @@ class GitWorktreesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     Throwable failure =
         catchThrowable(
@@ -1895,7 +1921,8 @@ class GitWorktreesTest {
             new GitCommands(
                 runner,
                 new LsofWorktreeProcesses(runner),
-                path -> Optional.of(dev.jagt.orchestrator.task.Remote.LOCAL)));
+                path -> Optional.of(dev.jagt.orchestrator.task.Remote.LOCAL),
+                stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "main", BranchStrategy.FRESH);
 
@@ -1927,7 +1954,8 @@ class GitWorktreesTest {
             new GitCommands(
                 runner,
                 new LsofWorktreeProcesses(runner),
-                path -> Optional.of(new dev.jagt.orchestrator.task.Remote("upstream"))));
+                path -> Optional.of(new dev.jagt.orchestrator.task.Remote("upstream")),
+                stopped -> {}));
 
     git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "upstream/main", BranchStrategy.FRESH);
 

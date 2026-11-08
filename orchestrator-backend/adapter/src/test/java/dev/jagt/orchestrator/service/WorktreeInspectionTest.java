@@ -36,7 +36,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     Files.writeString(repo.resolve("task_context.md"), "the round brief");
@@ -63,7 +63,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
     Files.writeString(repo.resolve("A.java"), "class A { int x; }");
     String answered = git.treeState(repo, repo);
@@ -97,7 +97,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     git.treeState(repo, repo);
@@ -143,7 +143,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     String changes = git.changesSince(repo, repo, baseBranch);
@@ -175,7 +175,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
     String before = git.ownDiffId(repo, repo, "main").orElseThrow();
 
@@ -213,7 +213,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.ownDiffId(repo, repo, "main")).isEmpty();
@@ -251,7 +251,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.commitsSince(repo, repo, "main"))
@@ -298,7 +298,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     List<String> paths = git.changedPaths(repo, repo, "main");
@@ -342,7 +342,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     int added = git.agentFileLinesAdded(repo, repo, "main");
@@ -370,7 +370,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.aheadOfTarget(repo, repo, "main")).isFalse();
@@ -413,7 +413,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.unpublished(repo, repo)).isTrue();
@@ -458,7 +458,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.pushedTip(repo, repo)).isEmpty();
@@ -496,7 +496,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.ownDiffId(repo, repo, "main")).isPresent();
@@ -522,7 +522,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     int added = git.agentFileLinesAdded(repo, repo, "main");
@@ -549,7 +549,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.hasUncommittedChanges(repo, repo)).isFalse();
@@ -599,7 +599,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.mergedIntoTarget(repo, repo, "main")).isTrue();
@@ -631,7 +631,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.mergedIntoTarget(repo, repo, "main")).isFalse();
@@ -666,7 +666,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.mergedIntoTarget(repo, repo, "main")).isFalse();
@@ -687,7 +687,7 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()),
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThatThrownBy(() -> git.mergedIntoTarget(repo, repo, "main"))
@@ -721,7 +721,8 @@ class WorktreeInspectionTest {
             new GitCommands(
                 runner,
                 new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.of(dev.jagt.orchestrator.task.Remote.LOCAL)),
+                path -> java.util.Optional.of(dev.jagt.orchestrator.task.Remote.LOCAL),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.aheadOfTarget(repo, repo, "dev")).isTrue();

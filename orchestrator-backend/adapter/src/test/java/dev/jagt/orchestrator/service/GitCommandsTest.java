@@ -41,7 +41,8 @@ class GitCommandsTest {
     assumeFalse(Files.isWritable(dir));
     WorktreeProcesses reaper = mock(WorktreeProcesses.class);
     GitCommands git =
-        new GitCommands(mock(Processes.class), reaper, path -> java.util.Optional.empty());
+        new GitCommands(
+            mock(Processes.class), reaper, path -> java.util.Optional.empty(), stopped -> {});
 
     git.forceDeleteDir(dir);
 
@@ -55,7 +56,8 @@ class GitCommandsTest {
         new GitCommands(
             mock(Processes.class),
             mock(WorktreeProcesses.class),
-            path -> java.util.Optional.empty());
+            path -> java.util.Optional.empty(),
+            stopped -> {});
     CompletableFuture<String> first = new CompletableFuture<>();
     Thread.startVirtualThread(() -> first.complete(git.locked(repo, () -> "first")));
     first.get(5, TimeUnit.SECONDS);

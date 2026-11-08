@@ -48,7 +48,7 @@ class GitDeployTest {
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
     new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()))
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}))
         .mergeIntoAndPush(repo, "ABC-1", "dev");
 
     runner.run(repo, t, List.of("git", "fetch", "-q"));
@@ -89,7 +89,7 @@ class GitDeployTest {
 
     new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()))
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}))
         .mergeIntoAndPush(repo, "ABC-1", "dev");
 
     runner.run(repo, t, List.of("git", "fetch", "-q"));
@@ -128,7 +128,7 @@ class GitDeployTest {
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
     new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()))
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}))
         .mergeIntoAndPush(repo, "ABC-1", "dev");
 
     runner.run(repo, t, List.of("git", "fetch", "-q"));
@@ -169,7 +169,7 @@ class GitDeployTest {
 
     new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()))
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}))
         .mergeIntoAndPush(repo, "ABC-1", "dev");
 
     runner.run(repo, t, List.of("git", "fetch", "-q"));
@@ -206,7 +206,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.StaleDeployPathException.class)
@@ -250,7 +250,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
@@ -308,7 +308,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(() -> git.mergeIntoAndPush(api, "ABC-1", "dev"))
         .isInstanceOf(IllegalStateException.class)
@@ -352,7 +352,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThat(git.hasDeployWorktree(web, "ABC-1")).isTrue();
     assertThat(git.hasDeployWorktree(api, "ABC-1")).isFalse();
@@ -392,7 +392,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
 
@@ -439,7 +439,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -492,7 +492,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -539,7 +539,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -588,7 +588,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -636,7 +636,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -693,7 +693,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -746,7 +746,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -799,7 +799,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -871,7 +871,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
@@ -917,7 +917,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
@@ -973,7 +973,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
@@ -1014,7 +1014,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(IllegalStateException.class)
@@ -1049,7 +1049,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(IllegalStateException.class)
@@ -1087,7 +1087,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
@@ -1135,7 +1135,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     String taskTip = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
 
@@ -1182,7 +1182,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     String neverDeployed =
         runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
 
@@ -1221,7 +1221,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     String firstRevert = git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of());
 
@@ -1262,7 +1262,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     runner.run(repo, t, List.of("git", "fetch", "-q"));
     runner.run(repo, t, List.of("git", "checkout", "-q", "-B", "_dev", "origin/dev"));
     Files.writeString(repo.resolve("unrelated.txt"), "someone else's commit");
@@ -1315,7 +1315,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     runner.run(repo, t, List.of("git", "fetch", "-q"));
     runner.run(repo, t, List.of("git", "checkout", "-q", "-B", "_dev", "origin/dev"));
@@ -1372,7 +1372,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     runner.run(repo, t, List.of("git", "fetch", "-q"));
     runner.run(repo, t, List.of("git", "checkout", "-q", "-B", "_dev", "origin/dev"));
@@ -1434,7 +1434,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     runner.run(repo, t, List.of("git", "fetch", "-q"));
     runner.run(repo, t, List.of("git", "checkout", "-q", "-B", "_dev", "origin/dev"));
@@ -1490,7 +1490,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     git.openFixWorktree(repo, "ABC-1", "dev");
     Path deployWorktree = dir.resolve("ABC-1-deploy");
@@ -1552,7 +1552,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
@@ -1600,7 +1600,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.NothingToDeployException.class)
@@ -1653,7 +1653,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(IllegalStateException.class)
@@ -1692,7 +1692,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     Files.createDirectories(dir.resolve("ABC-1-revert"));
     Files.writeString(dir.resolve("ABC-1-revert").resolve("stale.txt"), "left by a run that died");
@@ -1733,7 +1733,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     Path hook = repo.resolve(".git/hooks/pre-push");
     Files.writeString(
@@ -1787,7 +1787,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
         .isInstanceOf(GitDeploy.MergeConflictException.class);
     Path deployWorktree = dir.resolve("ABC-1-deploy");
@@ -1831,7 +1831,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
     git.openFixWorktree(repo, "ABC-1", "dev");
@@ -1873,7 +1873,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     git.openFixWorktree(repo, "ABC-1", "dev");
     Path deployWorktree = dir.resolve("ABC-1-deploy");
@@ -1923,7 +1923,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
     git.openFixWorktree(repo, "ABC-1", "dev");
     Path deployWorktree = dir.resolve("ABC-1-deploy");
@@ -1980,7 +1980,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     assertThat(git.hasRevertWorktree(web, "ABC-1")).isTrue();
     assertThat(git.hasRevertWorktree(api, "ABC-1")).isFalse();
@@ -2021,7 +2021,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
 
     git.openFixWorktree(repo, "ABC-1", "dev");
 
@@ -2064,7 +2064,7 @@ class GitDeployTest {
     GitDeploy git =
         new GitDeploy(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty()));
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
     String merge = git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
     assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of()))
@@ -2107,7 +2107,8 @@ class GitDeployTest {
             new GitCommands(
                 runner,
                 new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.of(dev.jagt.orchestrator.task.Remote.LOCAL)));
+                path -> java.util.Optional.of(dev.jagt.orchestrator.task.Remote.LOCAL),
+                stopped -> {}));
 
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
@@ -2142,7 +2143,8 @@ class GitDeployTest {
             new GitCommands(
                 runner,
                 new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.of(dev.jagt.orchestrator.task.Remote.LOCAL)));
+                path -> java.util.Optional.of(dev.jagt.orchestrator.task.Remote.LOCAL),
+                stopped -> {}));
 
     git.mergeIntoAndPush(repo, "ABC-1", "dev");
 

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.WorktreeContainers;
 import dev.jagt.orchestrator.port.WorktreeProcesses;
 import dev.jagt.orchestrator.task.Remote;
 import java.io.IOException;
@@ -33,6 +34,7 @@ public class GitCommands {
   private final Processes processRunner;
   private final WorktreeProcesses worktreeProcesses;
   private final Remotes remotes;
+  private final WorktreeContainers worktreeContainers;
 
   /**
    * The remote of the configured project this repository or checkout belongs to; origin where none
@@ -106,6 +108,10 @@ public class GitCommands {
 
   void reap(Path worktree) {
     worktreeProcesses.reap(worktree);
+  }
+
+  void stopContainers(Path worktree) {
+    worktreeContainers.stop(worktree);
   }
 
   /** The repository a checkout belongs to, empty when it is not a checkout at all. */
