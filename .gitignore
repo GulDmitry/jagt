@@ -3,7 +3,6 @@ state.json.bak
 state.json.corrupt
 state*.json.tmp
 opencode-gate/
-.omc/
 .idea/
 *.iml
 build/
@@ -18,17 +17,12 @@ config.json
 jagt.yml
 # Retired, and refused at startup: Spring auto-loads ./config/ at a precedence that outranks jagt.yml.
 orchestrator-backend/config/
-target/
 
 # Backend runtime log (logback writes to the process cwd — repo root when the jar
 # is run there, or orchestrator-backend/ — including rotated .log.<date>.<n>.gz files)
 jagt-backend.log*
 jagt-master.log*
 orchestrator-backend/*.log*
-
-# Junk empty files created in the repo root by the terminal (stray redirects/pastes)
-/BA0
-/N
 
 # Eclipse/VS Code Java output (not used by Gradle)
 orchestrator-backend/bin/
@@ -67,10 +61,8 @@ scratch/
 # The Master's MCP token, drawn by jagt at each start
 /.jagt/
 
-# Open ideas, collected on this machine
-TESTBED.md
+# Open work, kept on this machine
 /backlog/
-DETERMINISM.md
 
 # Pass/fail per eval case across runs, written by promptEval and roleEval
 orchestrator-backend/eval-stats.jsonl*
@@ -82,5 +74,3 @@ roles/*/*
 !roles/*/*.dist
 !roles/*/eval/
 
-# Held specs: text of behaviour not yet built, kept out of the tree
-openspec-held/
