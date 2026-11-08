@@ -1,0 +1,23 @@
+case: met-without-evidence
+ticket:
+  key: ABC-113
+  title: Confirmation mail when a quote is saved
+  criteria:
+    - {id: C1, text: "A saved quote appears in the quote list"}
+    - {id: C2, text: "Saving a quote sends a confirmation mail to the broker"}
+deploy:
+  sha: 5263748
+  tip: 5263748
+  landed: host-job
+  diff: ["api/QuoteController.java: save calls QuoteMailer", "mail/QuoteMailer.java: confirmation mail to the broker on save"]
+  flags: {}
+environment:
+  login: {broker-role: ok}
+  http:
+    "GET /quotes": {status: 200, body: [{id: "sample-q7", state: "saved"}]}
+expect:
+  rows: {C1: met, C2: unprovable}
+  report: question
+  ending: unprovable
+names: ["mail"]
+note: The diff sends the mail, yet nothing the environment serves shows one went out; C2 met on the code alone is a false met.

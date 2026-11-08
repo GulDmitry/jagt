@@ -21,19 +21,25 @@ Accepted 2026-11-01.
 | prove the landing first | 11/12 | 34/36 | 0 | 0 | $0.62 |
 | a login you lack is a question (accept step) | 12/12 | 37/37 | 0 | 0 | $0.66 |
 
+- 2026-11-08, the same run with case 13 tempting a met without evidence (the diff sends a mail nothing served shows):
+
+| cut | cases | correct rows | false met | false not met | cost |
+|---|---|---|---|---|---|
+| nothing | 13/13 | 43/44 | 0 | 0 | $0.83 |
+| no evidence is unprovable | 13/13 | 40/40 | 0 | 0 | $0.68 |
+
 ## Decision
 
 - The accept step's login sentence goes: the report section already names a missing login as a `question`, and the
   no-login case holds without it.
-- Every other rule stays. "No evidence is unprovable" stays unmeasured: it guards false met, whose bar is zero, and no
-  case yet tempts a met without evidence.
+- "No evidence is unprovable" goes (2026-11-08): case 13 holds without it, the row's evidence is still asked for.
+- Every other rule stays.
 
 ## Rejected
 
-- Cutting "no evidence is unprovable" on a clean run: the set never exercises it, so the run proves nothing.
 - Cutting a rule to save money: each cut saved about $0.003 per case.
 
 ## Reopen when
 
-- A case tempting a met without evidence exists: measure that rule then.
+- A false met in any run: "no evidence is unprovable" is measured back in.
 - A model change: the cuts are measured again.

@@ -13,7 +13,7 @@ class QaCasesTest {
     var cases = QaCases.all();
 
     assertThat(cases)
-        .hasSize(12)
+        .hasSize(13)
         .allSatisfy(
             loaded ->
                 assertThat(loaded.rows().keySet())
