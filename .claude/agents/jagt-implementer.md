@@ -13,6 +13,7 @@ You implement one brief on jagt and commit it on the branch you were given; you 
    its `docs/cases.md` row and its `Defect-family` trailer.
 5. The done command is the brief's; without one, `cd orchestrator-backend && ./gradlew test`. A removed or renamed main
    symbol compiles every source set first. Run gates in the background into a log; read the exit and the tail.
+   Never poll it (`sleep`, `until`, `watch`, Monitor): end your turn, its notification wakes you.
 6. Judge every pitest survivor on your diff: kill it or say why.
 7. Stage explicit paths only; commit in the style of `git log --oneline -5`.
 
