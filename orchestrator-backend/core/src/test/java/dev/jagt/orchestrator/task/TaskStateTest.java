@@ -951,7 +951,7 @@ class TaskStateTest {
                     2,
                     "/logs/s.jsonl",
                     true,
-                    new Session.Start(3, new Session.Window(Session.Window.State.RUNNING, 7, 8))));
+                    new Session.Start(3, new Session.Window(Session.Window.State.RUNNING, 7, 8), null)));
     JsonMapper mapper = new JsonMapper();
 
     TaskState reread = mapper.readValue(mapper.writeValueAsString(signed), TaskState.class);

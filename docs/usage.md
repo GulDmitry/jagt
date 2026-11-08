@@ -57,6 +57,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `respawn <ticket>` | restart a dead agent session |
 | `add-repo <ticket> [project]` | attach the repository a session asked for, or the project you name: its worktree is cut and the session told |
 | `remove-repo <ticket> <project>` | close that repository's request on its host and take it out of the task; the primary and a deployed one stay |
+| `escalate <ticket>` | lift a failure stop and start the session again on the next model of `agent.tiers`; the next start or a lift returns it |
 | `pause <ticket>` / `lift <ticket>` | stop everything of jagt on a started task to look at it, until you lift the stop (a stop jagt set lifts the same way) |
 | `trust <ticket>` | adopt the git config or hooks jagt found changed |
 | `done <ticket>` | close the task: session, worktree and state gone (the branch stays) |

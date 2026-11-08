@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.InfraRetry;
+import dev.jagt.orchestrator.task.ModelTier;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.RoundTrail;
 import dev.jagt.orchestrator.task.Session;
@@ -212,6 +213,50 @@ class TaskReducerTest {
     TaskState ended = TaskReducer.ended(stopped, TaskStop.Trigger.Ends.HOST_READ, "", 2_000);
 
     assertThat(ended.stop()).isNull();
+  }
+
+  @Test
+  void escalatingLiftsTheStopAndRaisesTheTierOneRung() {
+    TaskStop stop = new TaskStop(TaskStop.Trigger.STALLED, 1_000, "rounds bring nothing new");
+    TaskState stopped =
+        TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
+            .stop(stop)
+            .build()
+            .withTier(new ModelTier(List.of("sonnet", "opus"), 0));
+
+    TaskState escalated = TaskReducer.escalated(stopped, 3_000);
+
+    assertThat(escalated.stop()).isNull();
+    assertThat(escalated.tier().current()).isEqualTo("opus");
+    assertThat(escalated.trailOrNone()).isEqualTo(RoundTrail.liftedAt(3_000));
+  }
+
+  @Test
+  void aPlainLiftReturnsTheTierToTheModelTheSessionStartedOn() {
+    TaskStop stop = new TaskStop(TaskStop.Trigger.STALLED, 1_000, "rounds bring nothing new");
+    TaskState stopped =
+        TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
+            .stop(stop)
+            .build()
+            .withTier(new ModelTier(List.of("sonnet", "opus"), 1));
+
+    TaskState lifted = TaskReducer.lift(stopped, 3_000);
+
+    assertThat(lifted.tier().current()).isEqualTo("sonnet");
+  }
+
+  @Test
+  void aStopEndedByAReadLeavesTheTierRaised() {
+    TaskStop stop = new TaskStop(TaskStop.Trigger.CHECKS, 1_000, "unreadable");
+    TaskState stopped =
+        TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
+            .stop(stop)
+            .build()
+            .withTier(new ModelTier(List.of("sonnet", "opus"), 1));
+
+    TaskState ended = TaskReducer.ended(stopped, TaskStop.Trigger.Ends.HOST_READ, "", 2_000);
+
+    assertThat(ended.tier().current()).isEqualTo("opus");
   }
 
   @Test

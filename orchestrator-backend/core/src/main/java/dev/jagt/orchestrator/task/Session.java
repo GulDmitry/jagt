@@ -23,7 +23,7 @@ public record Session(
     @With @JsonUnwrapped Start start) {
 
   public static Session defaults() {
-    return new Session(0, 0, 0, null, 0, null, false, new Start(0, null));
+    return new Session(0, 0, 0, null, 0, null, false, new Start(0, null, null));
   }
 
   public int generation() {
@@ -35,11 +35,19 @@ public record Session(
   }
 
   public Session withGeneration(int generation) {
-    return withStart(new Start(generation, start.window()));
+    return withStart(new Start(generation, start.window(), start.tier()));
   }
 
   public Session withWindow(@Nullable Window window) {
-    return withStart(new Start(start.generation(), window));
+    return withStart(new Start(start.generation(), window, start.tier()));
+  }
+
+  public @Nullable ModelTier tier() {
+    return start.tier();
+  }
+
+  public Session withTier(@Nullable ModelTier tier) {
+    return withStart(new Start(start.generation(), start.window(), tier));
   }
 
   /**
@@ -94,10 +102,13 @@ public record Session(
     return Math.max(Math.max(movedAt, quietSince), halt == null ? 0 : halt.at());
   }
 
-  /** Which start of the session this is, and what the last read of its window made of it. */
+  /**
+   * Which start of the session this is, what the last read of its window made of it, and the model
+   * tier it runs on.
+   */
   @JsonIgnoreProperties(ignoreUnknown = true)
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  public record Start(int generation, @Nullable Window window) {}
+  public record Start(int generation, @Nullable Window window, @Nullable ModelTier tier) {}
 
   /** How a session stopped, when, and why in the words a human reads. */
   @JsonIgnoreProperties(ignoreUnknown = true)

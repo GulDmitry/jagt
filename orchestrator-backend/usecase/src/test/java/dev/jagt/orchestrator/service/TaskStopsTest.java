@@ -13,10 +13,12 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.MasterMode;
+import dev.jagt.orchestrator.task.ModelTier;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.RoundTrail;
@@ -1014,6 +1016,39 @@ class TaskStopsTest {
 
     assertThat(afterTheMasters).isEqualTo(1);
     assertThat(afterTheHumans).isZero();
+  }
+
+  @Test
+  void aHumansEscalationClearsTheStopRaisesTheTierAndRestoresTheMastersLifts(@TempDir Path root) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    StateService state = new StateService(new JsonMapper(), paths);
+    TaskStop stop = new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds");
+    state.putTask(
+        "ABC-42",
+        TaskReducer.masterLiftedStops(
+            TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .stop(stop)
+                .build()
+                .withTier(new ModelTier(List.of("sonnet", "opus"), 0)),
+            1));
+    TaskStops stops =
+        new TaskStops(
+            ignored -> Arbiter.Profile.OFF,
+            state,
+            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
+            clock);
+
+    stops.escalate("ABC-42");
+
+    TaskState escalated = state.task("ABC-42").orElseThrow();
+    assertThat(escalated.stopped()).isFalse();
+    assertThat(escalated.tier().current()).isEqualTo("opus");
+    assertThat(escalated.masterOrNone().liftedStops()).isZero();
   }
 
   @Test

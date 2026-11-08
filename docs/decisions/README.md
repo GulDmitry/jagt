@@ -165,3 +165,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0149 Triage is a stop read, not a checker](0149-triage-is-a-stop-read-not-a-checker.md) (beside 0126)
 - [0150 A file tracker is read by jagt itself](0150-a-file-tracker-is-read-by-jagt-itself.md) (amends 0003)
 - [0151 Mutants are judged locally only](0151-mutants-are-judged-locally-only.md) (supersedes 0129)
+- [0152 A stop lifts on the next model tier](0152-a-stop-lifts-on-the-next-model-tier.md) (beside 0140)

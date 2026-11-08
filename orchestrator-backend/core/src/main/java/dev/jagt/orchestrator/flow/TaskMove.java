@@ -60,6 +60,8 @@ sealed interface TaskMove {
 
   record Lifted() implements TaskMove {}
 
+  record Escalated() implements TaskMove {}
+
   record StopEnded(TaskStop.Trigger.Ends ends) implements TaskMove {}
 
   /** A request written that leaves out one the stop was counted on. */

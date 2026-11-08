@@ -149,7 +149,10 @@ public class FlowEngine {
             .withRequestMerged(task.requestsMerged())
             .withRevertConflict(Facts.revertConflicted(task))
             .withShippedWithoutRequest(requestless.stands(task)),
-        Facts.Hold.defaults().withAgentLive(() -> live(taskId)).withStopped(task.stopped()),
+        Facts.Hold.defaults()
+            .withAgentLive(() -> live(taskId))
+            .withStopped(task.stopped())
+            .withTierAbove(Facts.tierAbove(task)),
         Facts.Workspace.defaults()
             .withGitStateChanged(task.gitStateChanged())
             .withRepoRequested(task.asksForRepository())

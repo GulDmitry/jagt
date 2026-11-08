@@ -9,7 +9,7 @@ class TaskActionHandsTest {
 
   @Test
   void
-      keepsClosingATaskTrustingWhatItsGitObeysPausingAndLiftingAStopAndRemovingARepositoryInAHumansHands() {
+      keepsClosingATaskTrustingWhatItsGitObeysPausingLiftingAStopOnAnyTierAndRemovingARepositoryInAHumansHands() {
     var kept = Arrays.stream(TaskAction.values()).filter(TaskAction::humanOnly).toList();
 
     assertThat(kept)
@@ -17,6 +17,7 @@ class TaskActionHandsTest {
             TaskAction.REMOVE_REPO,
             TaskAction.TRUST,
             TaskAction.LIFT,
+            TaskAction.ESCALATE,
             TaskAction.PAUSE,
             TaskAction.DONE);
   }

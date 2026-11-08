@@ -521,6 +521,20 @@ class FlowRulesTest {
         .isEqualTo(offered);
   }
 
+  @ParameterizedTest
+  @CsvSource({"true,true,true", "true,false,false", "false,true,false", "false,false,false"})
+  void offersEscalateOnlyOnAStopWithAModelTierAbove(
+      boolean stopped, boolean tierAbove, boolean offered) {
+    assertThat(
+            FlowRules.allows(
+                TaskStatus.IN_PROGRESS,
+                TaskAction.ESCALATE,
+                Facts.defaults()
+                    .withHold(
+                        Facts.Hold.defaults().withStopped(stopped).withTierAbove(tierAbove))))
+        .isEqualTo(offered);
+  }
+
   @Test
   void parksAStoppedTaskWithTheHumanAndLiftAsTheMove() {
     Move move =

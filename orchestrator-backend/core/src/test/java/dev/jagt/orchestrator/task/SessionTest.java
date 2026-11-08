@@ -47,7 +47,7 @@ class SessionTest {
                 2,
                 "/logs/s.jsonl",
                 true,
-                new Session.Start(3, new Session.Window(Session.Window.State.RUNNING, 7, 8))));
+                new Session.Start(3, new Session.Window(Session.Window.State.RUNNING, 7, 8), null)));
   }
 
   @Test

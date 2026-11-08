@@ -41,6 +41,36 @@ class TaskViewTest {
   }
 
   @Test
+  void namesTheModelASessionRunsOnWhileItIsATierUp() {
+    TaskView view =
+        TaskView.of(
+            "ABC-1",
+            TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .build()
+                .withTier(new ModelTier(List.of("sonnet", "opus"), 1)),
+            false,
+            AutoReviewWatch.none(),
+            Map.of("proj", "dev"));
+
+    assertThat(view.identity().tier()).isEqualTo("opus");
+  }
+
+  @Test
+  void namesNoModelForASessionOnItsOwn() {
+    TaskView view =
+        TaskView.of(
+            "ABC-1",
+            TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .build()
+                .withTier(new ModelTier(List.of("sonnet", "opus"), 0)),
+            false,
+            AutoReviewWatch.none(),
+            Map.of("proj", "dev"));
+
+    assertThat(view.identity().tier()).isNull();
+  }
+
+  @Test
   void servesTheTaskAsOneFlatObjectWithoutTheDraftedRepliesFlag() {
     TaskView view =
         TaskView.of(
@@ -58,6 +88,7 @@ class TaskViewTest {
             "alias",
             "project",
             "title",
+            "tier",
             "status",
             "statusLabel",
             "phase",

@@ -397,7 +397,7 @@ final class TaskChart {
     chart.region(STOP, StopKind.NONE);
     chart
         .onMatching(STOP, StopKind.NONE, "lift", new TaskMove.Lifted()::equals)
-        .emit(new TaskEffect.ClearsStop())
+        .emit(new TaskEffect.Lifts())
         .to(StopKind.NONE);
     for (TaskStop.Trigger.Ends ends : TaskStop.Trigger.Ends.values()) {
       StopKind kind = StopKind.of(ends);
@@ -411,8 +411,14 @@ final class TaskChart {
           .to(kind);
       chart
           .onMatching(STOP, kind, "lift", new TaskMove.Lifted()::equals)
-          .emit(new TaskEffect.ClearsStop())
+          .emit(new TaskEffect.Lifts())
           .to(StopKind.NONE);
+      if (ends == TaskStop.Trigger.Ends.LIFT) {
+        chart
+            .onMatching(STOP, kind, "escalate", new TaskMove.Escalated()::equals)
+            .emit(new TaskEffect.Escalates())
+            .to(StopKind.NONE);
+      }
       if (ends == TaskStop.Trigger.Ends.PAUSE) {
         continue;
       }

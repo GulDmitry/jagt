@@ -14,6 +14,7 @@ stateDiagram-v2
         stop_NONE --> stop_NONE : lift
         stop_NONE --> stop_LIFT : stop ending on LIFT
         stop_LIFT --> stop_NONE : lift
+        stop_LIFT --> stop_NONE : escalate
         stop_LIFT --> stop_NONE : LIFT ends it
         stop_LIFT --> stop_NONE : a new request voids it
         stop_NONE --> stop_HOST_READ : stop ending on HOST_READ

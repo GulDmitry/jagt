@@ -111,6 +111,7 @@
   "grammar.ok": "wykona się tak, jak wpisano — {hint}",
   "card.flag": "oznacz jako ważne",
   "card.flag.tip": "ważne — zapamiętane tylko w tej przeglądarce",
+  "card.tier.tip": "sesja działa o poziom modelu wyżej, na {model}",
   "meta.next-poll": "następne odpytanie {when}",
   "request": "request",
   "meta.request.opened": "request do review; otwarty {at}",

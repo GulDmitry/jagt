@@ -26,6 +26,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.master.MasterBrake;
 import dev.jagt.orchestrator.task.PlanGate;
+import dev.jagt.orchestrator.task.ModelTier;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -586,6 +587,78 @@ class AgentSessionsTest {
     sessions.openTaskTab("ABC-1", "auto");
 
     verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "opus");
+  }
+
+  @Test
+  void restartsAStoppedSessionOnTheTierTheTaskWasRaisedTo() throws Exception {
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .build()
+            .withTier(new ModelTier(List.of("sonnet", "opus"), 1)));
+    when(tmux.sessionName(null)).thenReturn("jagt");
+    when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
+    when(agentRuntime.tiers()).thenReturn(List.of("sonnet", "opus"));
+    AgentSessions sessions =
+        new AgentSessions(
+            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+
+    String said = sessions.restartOnTier("ABC-1");
+
+    assertThat(said).isEqualTo("session of ABC-1 started again on opus");
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "opus");
+    assertThat(state.task("ABC-1").orElseThrow().tier().current()).isEqualTo("opus");
+  }
+
+  @Test
+  void startsTheNextSessionBackOnTheConfiguredModelAfterATierUp() throws Exception {
+    Files.writeString(
+        root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n  agent:\n    model: sonnet\n");
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
+            .build()
+            .withTier(new ModelTier(List.of("sonnet", "opus"), 1)));
+    when(tmux.sessionName(null)).thenReturn("jagt");
+    when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
+    when(agentRuntime.tiers()).thenReturn(List.of("sonnet", "opus"));
+    when(agentRuntime.displayName()).thenReturn("Claude");
+    AgentSessions sessions =
+        new AgentSessions(
+            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+
+    sessions.openTaskTab("ABC-1", "auto");
+
+    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "sonnet");
+    assertThat(state.task("ABC-1").orElseThrow().tier().raised()).isFalse();
+  }
+
+  @Test
+  void recordsTheDefaultLadderOnAStartedSessionAboveItsOwnModel() {
+    state.putTask(
+        "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+    when(tmux.sessionName(null)).thenReturn("jagt");
+    when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
+    when(agentRuntime.tiers()).thenReturn(List.of("sonnet", "opus"));
+    when(agentRuntime.displayName()).thenReturn("Claude");
+    AgentSessions sessions =
+        new AgentSessions(
+            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+
+    sessions.openTaskTab("ABC-1", "auto");
+
+    assertThat(state.task("ABC-1").orElseThrow().tier().models()).containsExactly("", "opus");
+  }
+
+  @Test
+  void refusesToRestartOnATierForASessionWithNoLadder() {
+    state.putTask(
+        "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+    AgentSessions sessions =
+        new AgentSessions(
+            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+
+    assertThatThrownBy(() -> sessions.restartOnTier("ABC-1")).isInstanceOf(Refusal.class);
   }
 
   @Test

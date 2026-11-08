@@ -205,6 +205,14 @@ public class TaskStops {
                 byTheMaster ? task.masterOrNone().liftedStops() + 1 : 0));
   }
 
+  /** A human's lift that leaves the task's session due on the next model tier. */
+  public void escalate(String taskId) {
+    stateService.updateTask(
+        taskId,
+        task ->
+            TaskReducer.masterLiftedStops(TaskReducer.escalated(task, clock.millis()), 0));
+  }
+
   /** A deploy by a human restores the Master's lifts, whether or not a stop stands. */
   public void restoreMasterLifts(String taskId) {
     stateService.updateTask(taskId, task -> TaskReducer.masterLiftedStops(task, 0));

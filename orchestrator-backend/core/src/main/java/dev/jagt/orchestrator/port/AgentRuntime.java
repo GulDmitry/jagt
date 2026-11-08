@@ -69,6 +69,14 @@ public interface AgentRuntime {
   }
 
   /**
+   * The models, lowest first, a stopped session is moved up through unless configured; EMPTY:
+   * none.
+   */
+  default List<String> tiers() {
+    return List.of();
+  }
+
+  /**
    * The log a session in {@code worktree} is appending to, where this runtime keeps one jagt can
    * find.
    */

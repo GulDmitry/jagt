@@ -1029,6 +1029,15 @@ public record TaskState(
     return toBuilder().session(session).build();
   }
 
+  @JsonIgnore
+  public @Nullable ModelTier tier() {
+    return session().tier();
+  }
+
+  public TaskState withTier(@Nullable ModelTier tier) {
+    return withSession(session().withTier(tier));
+  }
+
   public TaskState withPlanGate(PlanGate planGate) {
     return toBuilder().planGate(planGate).build();
   }

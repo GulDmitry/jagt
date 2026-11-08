@@ -36,6 +36,8 @@ const detailClass = (task) => {
   return task.detailKind === 'YOURS' && task.attention !== 'OPTIONAL' ? 'detail you' : 'detail';
 };
 
+const titleLines = (task) => [...(task.tier ? [t('card.tier.tip', {model: task.tier})] : []), ...switchLines(task)];
+
 // `blocked` holds the ids of the verbs a press in flight refuses; `now` the clock every age on it is read against.
 export function Card({task, manyProjects, flagged, blocked, now}) {
   const owner = task.owner.toLowerCase();
@@ -51,7 +53,7 @@ export function Card({task, manyProjects, flagged, blocked, now}) {
       ${task.ask ? html`<span class=${`badge ${task.attention.toLowerCase()}${task.detailKind === 'PROBLEM' ? ' problem' : ''}`} data-tip=${[task.hint, ...stopLines(task)].join('\n')}
         tabIndex=${0}>${task.ask}</span>` : ''}
     </div>
-    <div class="heading"><${Flag} taskId=${task.id} on=${flagged}/><div class="title" data-tip=${switchLines(task).join('\n') || undefined}>${task.title || ''}</div></div>
+    <div class="heading"><${Flag} taskId=${task.id} on=${flagged}/><div class="title" data-tip=${titleLines(task).join('\n') || undefined}>${task.title || ''}</div></div>
     <${Meta} task=${task} manyProjects=${manyProjects} now=${now}/>
     ${task.detail ? html`<div class=${detailClass(task)}>${task.detail}</div>` : ''}
     ${rows(task).map(({group, items}) => html`<div class=${`actions ${group}`} data-group=${group}>${

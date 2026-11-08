@@ -275,7 +275,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
 
       @With
       @JsonInclude(JsonInclude.Include.NON_NULL)
-      public record Models(@Nullable String model, @Nullable List<String> models) {}
+      public record Models(
+          @Nullable String model, @Nullable List<String> models, @Nullable List<String> tiers) {}
 
       @With
       @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -286,7 +287,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
 
       public static AgentConfig defaults() {
         return new AgentConfig(
-            new Models(null, null), new Cadence(null, null, null), null, null, null, null);
+            new Models(null, null, null), new Cadence(null, null, null), null, null, null, null);
       }
 
       public AgentConfig withModel(@Nullable String model) {
@@ -340,6 +341,16 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       public List<String> modelsFor(AgentRuntime runtime) {
         List<String> written = selection.models();
         return written == null || written.isEmpty() ? runtime.models() : written;
+      }
+
+      /**
+       * The models a stopped session may be moved up through, lowest first, the agent's own order
+       * unless written; the first stands for the one it starts on. Only names it accepts count.
+       */
+      public List<String> tiersFor(AgentRuntime runtime) {
+        List<String> accepted = modelsFor(runtime);
+        return (selection.tiers() == null ? runtime.tiers() : selection.tiers())
+            .stream().map(String::strip).filter(accepted::contains).toList();
       }
 
       /** Blank: the agent CLI's own default. */

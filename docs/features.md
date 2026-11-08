@@ -188,8 +188,8 @@
   [spec](../openspec/specs/cases/spec.md#requirement-what-no-case-names-is-a-miss)
   [spec](../openspec/specs/task-stops/spec.md#requirement-in-act-the-master-decides-a-stop-for-a-suspected-loop)
 - **Stop triage** — A stop's hover says who looped. [spec](../openspec/specs/task-stops/spec.md#requirement-triage-reads-a-stop-onto-its-hover)
-- **Pause** — You pause a started task to look at it, or tell the Master to: nothing of jagt runs on it until you lift.
-  [spec](../openspec/specs/task-stops/spec.md#requirement-you-pause-a-started-task)
+- **Pause** — Nothing of jagt runs on a paused task until you lift. [spec](../openspec/specs/task-stops/spec.md#requirement-you-pause-a-started-task)
+- **Next tier** — A failure stop lifts on a stronger model. [spec](../openspec/specs/task-stops/spec.md#requirement-a-stop-lifts-on-the-next-tier)
 
 ## Usage limits · [spec](../openspec/specs/usage-limits/spec.md)
 - **Limits** — Warned once per period, never gating; a stopped session wakes once at reset. Key: `orchestrator.usageLimits.wakeOnReset`, off.

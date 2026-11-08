@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.task.Ansi;
 import dev.jagt.orchestrator.task.Artifact;
+import dev.jagt.orchestrator.task.ModelTier;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskState;
 import java.nio.file.Path;
@@ -664,8 +665,35 @@ public class AgentSessions implements SessionLines {
     }
   }
 
+  /**
+   * The stop is lifted already and the task's tier raised: start the session again on the tier it
+   * names, the work carried over.
+   */
+  public String restartOnTier(String taskId) {
+    taskId = stateService.canonicalTaskId(taskId);
+    TaskState task = requireTask(taskId);
+    ModelTier tier = task.tier();
+    if (tier == null) {
+      throw Refusal.byState("Task " + taskId + " has no model tier to start on");
+    }
+    startFresh(taskId, task, configService.load(), "escalated to a higher model tier", tier);
+    return "session of "
+        + taskId
+        + " started again on "
+        + (tier.current().isBlank() ? "the agent's default model" : tier.current());
+  }
+
   private void startFresh(
       String taskId, TaskState task, ConfigService.ConfigFile config, String cause) {
+    startFresh(taskId, task, config, cause, null);
+  }
+
+  private void startFresh(
+      String taskId,
+      TaskState task,
+      ConfigService.ConfigFile config,
+      String cause,
+      @Nullable ModelTier at) {
     log.atInfo()
         .setMessage("agent session started fresh")
         .addKeyValue("task", taskId)
@@ -677,7 +705,7 @@ public class AgentSessions implements SessionLines {
       WorktreeFiles.read(contextFile)
           .ifPresent(held -> WorktreeFiles.write(contextFile, carried.after(held, task)));
     }
-    openTab(taskId, task.alias(), Path.of(task.worktreePath()), config, false);
+    openTab(taskId, task.alias(), Path.of(task.worktreePath()), config, false, at);
   }
 
   /**
@@ -694,7 +722,21 @@ public class AgentSessions implements SessionLines {
       Path worktreePath,
       ConfigService.ConfigFile config,
       boolean planMode) {
-    stateService.updateTask(taskId, TaskReducer::sessionStartedOver);
+    return openTab(taskId, alias, worktreePath, config, planMode, null);
+  }
+
+  /** {@code at} is the tier a stop moved the session to; without one it starts on its own model. */
+  private String openTab(
+      String taskId,
+      @Nullable String alias,
+      Path worktreePath,
+      ConfigService.ConfigFile config,
+      boolean planMode,
+      @Nullable ModelTier at) {
+    String own = modelFor(worktreePath, config);
+    ModelTier tier = at == null ? ModelTier.above(own, config.agent().tiersFor(agentRuntime)) : at;
+    stateService.updateTask(
+        taskId, task -> TaskReducer.sessionStartedOver(task).withTier(tier));
     String session = agentSession(config, taskId);
     sessions.openTaskWindow(
         session,
@@ -703,7 +745,7 @@ public class AgentSessions implements SessionLines {
         alias,
         worktreePath,
         planMode,
-        modelFor(worktreePath, config));
+        tier == null ? own : tier.current());
     return session;
   }
 

@@ -111,6 +111,7 @@
   "grammar.ok": "runs as typed — {hint}",
   "card.flag": "flag as important",
   "card.flag.tip": "important — kept in this browser only",
+  "card.tier.tip": "session runs a model tier up, on {model}",
   "meta.next-poll": "next poll {when}",
   "request": "request",
   "meta.request.opened": "review request; opened {at}",

@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.InfraRetry;
+import dev.jagt.orchestrator.task.ModelTier;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.StopTriage;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -58,6 +59,19 @@ public final class TaskReducer {
   public static TaskState triaged(TaskState task, String key, StopTriage read) {
     TaskStop stop = task.stop();
     return stop != null && stop.key().equals(key) ? task.withStop(stop.withTriage(read)) : task;
+  }
+
+  private static @Nullable ModelTier lowered(TaskState task) {
+    return task.tier() == null ? null : task.tier().lower();
+  }
+
+  private static @Nullable ModelTier raised(TaskState task) {
+    return task.tier() == null ? null : task.tier().raise();
+  }
+
+  /** {@code task} with its stop lifted and its session due on the next model tier. */
+  public static TaskState escalated(TaskState task, long now) {
+    return step(task, new TaskMove.Escalated(), now);
   }
 
   /** {@code task} with its stop lifted by a human. */
@@ -553,6 +567,8 @@ public final class TaskReducer {
       case TaskEffect.Lands lands -> task.withStatus(lands.to(), message, event, now);
       case TaskEffect.Stops stops -> task.withStop(stops.stop().countedOn(task.requests()));
       case TaskEffect.ClearsStop _ -> task.lifted(now);
+      case TaskEffect.Lifts _ -> task.lifted(now).withTier(lowered(task));
+      case TaskEffect.Escalates _ -> task.lifted(now).withTier(raised(task));
       case TaskEffect.GatesPlan gates -> task.withPlanGate(gates.gate());
       case TaskEffect.Reports reports -> reported(task, reports.report());
       case TaskEffect.OpensTurn opens ->

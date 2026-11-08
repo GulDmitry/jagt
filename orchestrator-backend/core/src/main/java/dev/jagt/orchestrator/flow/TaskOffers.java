@@ -57,6 +57,8 @@ final class TaskOffers {
 
   private static final RegionId<Fact> STOPPED = new RegionId<>("stopped", Fact.class);
 
+  private static final RegionId<Fact> TIER_ABOVE = new RegionId<>("tier above", Fact.class);
+
   private static final RegionId<Fact> REPO_REQUESTED = new RegionId<>("repo requested", Fact.class);
 
   private static final RegionId<Fact> SEVERAL_REPOS = new RegionId<>("several repos", Fact.class);
@@ -134,6 +136,7 @@ final class TaskOffers {
           offer(TaskAction.TRUST, ANY, yes(GIT_CHANGED)),
           offer(TaskAction.PAUSE, STARTED, no(STOPPED)),
           offer(TaskAction.LIFT, ANY, yes(STOPPED)),
+          offer(TaskAction.ESCALATE, ANY, yes(STOPPED), yes(TIER_ABOVE)),
           offer(TaskAction.FOCUS, ANY),
           offer(TaskAction.IDE, ANY),
           offer(TaskAction.DIFF, ANY),
@@ -153,6 +156,7 @@ final class TaskOffers {
     chart.derived(AGENT_LIVE, facts -> Fact.of(facts.facts().hold().agentLive().getAsBoolean()));
     chart.derived(GIT_CHANGED, facts -> Fact.of(facts.facts().workspace().gitStateChanged()));
     chart.derived(STOPPED, facts -> Fact.of(facts.facts().hold().stopped()));
+    chart.derived(TIER_ABOVE, facts -> Fact.of(facts.facts().hold().tierAbove()));
     chart.derived(REPO_REQUESTED, facts -> Fact.of(facts.facts().workspace().repoRequested()));
     chart.derived(SEVERAL_REPOS, facts -> Fact.of(facts.facts().workspace().severalRepos()));
     chart.derived(REQUEST_MERGED, facts -> Fact.of(facts.facts().delivery().requestMerged()));

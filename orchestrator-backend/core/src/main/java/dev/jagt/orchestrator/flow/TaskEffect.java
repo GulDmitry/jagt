@@ -23,6 +23,10 @@ sealed interface TaskEffect {
 
   record ClearsStop() implements TaskEffect {}
 
+  record Lifts() implements TaskEffect {}
+
+  record Escalates() implements TaskEffect {}
+
   record GatesPlan(PlanGate gate) implements TaskEffect {}
 
   record Reports(AgentReport report) implements TaskEffect {}

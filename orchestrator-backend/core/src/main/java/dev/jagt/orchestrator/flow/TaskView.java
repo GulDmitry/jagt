@@ -34,7 +34,8 @@ public record TaskView(
       @Nullable String alias,
       @Nullable String project,
       @Nullable String title,
-      @Nullable String ticketUrl) {}
+      @Nullable String ticketUrl,
+      @Nullable String tier) {}
 
   public record Standing(
       TaskStatus status,
@@ -348,7 +349,13 @@ public record TaskView(
                             action.group().id(), action.onRow(), action.apart())))
             .toList();
     return new TaskView(
-        new Identity(id, task.alias(), task.project(), task.title(), webLink(task.ticketUrl())),
+        new Identity(
+            id,
+            task.alias(),
+            task.project(),
+            task.title(),
+            webLink(task.ticketUrl()),
+            task.tier() != null && task.tier().raised() ? task.tier().current() : null),
         new Standing(
             task.status(),
             statusLabel(task, round),

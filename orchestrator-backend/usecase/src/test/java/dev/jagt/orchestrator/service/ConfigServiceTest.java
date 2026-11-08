@@ -53,6 +53,34 @@ class ConfigServiceTest {
   }
 
   @Test
+  void takesTheTiersTheAgentOffersWhenNoneAreWritten() {
+    AgentRuntime runtime = mock(AgentRuntime.class);
+    when(runtime.models()).thenReturn(List.of("opus", "sonnet"));
+    when(runtime.tiers()).thenReturn(List.of("sonnet", "opus"));
+
+    assertThat(AgentConfig.defaults().tiersFor(runtime)).containsExactly("sonnet", "opus");
+  }
+
+  @Test
+  void keepsWrittenTiersTheAgentAcceptsAndDropsTheRest() {
+    AgentRuntime runtime = mock(AgentRuntime.class);
+    when(runtime.models()).thenReturn(List.of("opus", "sonnet"));
+    when(runtime.tiers()).thenReturn(List.of("sonnet", "opus"));
+    AgentConfig written = AgentConfig.defaults().withSelection(
+        new AgentConfig.Models(null, null, List.of("opus", "ghost")));
+
+    assertThat(written.tiersFor(runtime)).containsExactly("opus");
+  }
+
+  @Test
+  void offersNoTierWhenTheAgentCannotBeToldAModel() {
+    AgentRuntime runtime = mock(AgentRuntime.class);
+    when(runtime.tiers()).thenReturn(List.of("sonnet", "opus"));
+
+    assertThat(AgentConfig.defaults().tiersFor(runtime)).isEmpty();
+  }
+
+  @Test
   void answersForASectionTheConfigFileNeverMentioned() {
     ConfigFile config = new JsonMapper().readValue("{}", ConfigFile.class);
 

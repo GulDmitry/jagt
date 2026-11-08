@@ -99,6 +99,7 @@ stateDiagram-v2
     %% derived agent live
     %% derived git changed
     %% derived stopped
+    %% derived tier above
     %% derived repo requested
     %% derived several repos
     %% derived request merged

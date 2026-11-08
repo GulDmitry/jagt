@@ -133,6 +133,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   }
 
   @Override
+  public List<String> tiers() {
+    return List.of("sonnet", "opus");
+  }
+
+  @Override
   public java.util.Optional<Path> sessionLogOf(Path worktree) {
     return ClaudeTranscripts.newestLog(ClaudeTranscripts.projectsDir(), worktree);
   }

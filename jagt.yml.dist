@@ -92,6 +92,7 @@ orchestrator:
     #                     # against its own CODEX_HOME, so your ~/.codex servers are not there.
     model: ""             # the model a session starts on when its notes name none; blank inherits your CLI default
     models: []            # the names a session may be told, replacing the CLI's own list; empty keeps it (Codex has none)
+    tiers: [sonnet, opus] # models a stopped session may be moved up through with `escalate`, lowest first; the first stands for the start model; []: none
     cacheLifetime: 1h     # idle past this, a prompt goes to a fresh session; 0: never (a local model)
     notesEvery: 30m       # task_notes.md older than this at a turn end: the session rewrites it once; 0: never
     probeSeconds: 600    # how often every running session's liveness is probed

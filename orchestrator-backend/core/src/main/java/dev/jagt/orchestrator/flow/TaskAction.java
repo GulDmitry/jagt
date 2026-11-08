@@ -66,6 +66,13 @@ public enum TaskAction {
       "lift",
       "Lift stop",
       "lift the stop on this task: auto-review and the Master may move it again"),
+  ESCALATE(
+      128,
+      Group.FLOW,
+      "escalate",
+      "Lift on next tier",
+      "lift the stop and start the session again on the next model tier; the next start or a lift"
+          + " returns it to its own"),
   PAUSE(
       126,
       Group.FLOW,
@@ -130,7 +137,7 @@ public enum TaskAction {
    * stands in for.
    */
   private static final Set<TaskAction> HUMAN_ONLY =
-      EnumSet.of(TRUST, LIFT, PAUSE, DONE, REMOVE_REPO);
+      EnumSet.of(TRUST, LIFT, ESCALATE, PAUSE, DONE, REMOVE_REPO);
 
   private static final Set<TaskAction> NAMES_A_PROJECT = EnumSet.of(ADD_REPO, REMOVE_REPO);
 

@@ -1239,6 +1239,7 @@ class ClaudeAgentRuntimeTest {
 
     assertThat(runtime.displayName()).isEqualTo("Claude");
     assertThat(runtime.models()).containsExactly("fable", "opus", "sonnet", "haiku");
+    assertThat(runtime.tiers()).containsExactly("sonnet", "opus");
     assertThat(runtime.readsWhatTheHumanTyped()).isTrue();
   }
 
