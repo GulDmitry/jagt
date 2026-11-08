@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.task.QaVerdict;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
@@ -82,11 +83,11 @@ public class HeadlessClaudeCheckerReader {
         TIMEOUT,
         cmd,
         new ReadScope(
-            List.of(run.worktree()),
+            Stream.concat(Stream.of(run.worktree()), run.reach().paths().stream()).toList(),
             tools,
             scope.git(),
             List.of(),
-            scope.fetch() ? run.environments() : List.of()),
+            scope.fetch() ? run.reach().urls() : List.of()),
         AssistantCallKind.QA_CHECK,
         run.worktree().toString());
   }

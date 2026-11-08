@@ -82,7 +82,7 @@ class OpenCodeCheckerReaderTest {
                 worktree,
                 "abc123",
                 "",
-                List.of(),
+                new CheckerReader.Reach(List.of(), List.of()),
                 QA.replies().answer().json(),
                 "qa"));
 
@@ -104,7 +104,7 @@ class OpenCodeCheckerReaderTest {
             worktree,
             "abc123",
             "sonnet",
-            List.of("https://dev.example.test"),
+            new CheckerReader.Reach(List.of("https://dev.example.test"), List.of()),
             QA.replies().decline().json(),
             "qa"));
 
@@ -129,7 +129,7 @@ class OpenCodeCheckerReaderTest {
                 worktree,
                 "abc123",
                 "",
-                List.of(),
+                new CheckerReader.Reach(List.of(), List.of()),
                 QA.replies().decline().json(),
                 "qa"));
 

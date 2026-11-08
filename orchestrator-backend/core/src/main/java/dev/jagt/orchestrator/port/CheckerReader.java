@@ -12,9 +12,9 @@ import java.util.List;
 public interface CheckerReader {
 
   /**
-   * {@code model} blank inherits the agent CLI's own; {@code environments} are the only URLs the
-   * read may fetch; {@code schema} is the JSON schema of the answer the role's definition declares
-   * and {@code role} the id its report is named for.
+   * {@code model} blank inherits the agent CLI's own; {@code reach} is what the read may touch
+   * beyond its worktree; {@code schema} is the JSON schema of the answer the role's definition
+   * declares and {@code role} the id its report is named for.
    */
   record Run(
       String shared,
@@ -22,9 +22,12 @@ public interface CheckerReader {
       Path worktree,
       String sha,
       String model,
-      List<String> environments,
+      Reach reach,
       String schema,
       String role) {}
+
+  /** The only URLs the read may fetch and the extra roots it may read. */
+  record Reach(List<String> urls, List<Path> paths) {}
 
   Answer<QaVerdict> read(Run run);
 

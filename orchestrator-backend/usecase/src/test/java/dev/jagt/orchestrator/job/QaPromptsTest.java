@@ -37,11 +37,31 @@ class QaPromptsTest {
                 new RoleFiles(paths, "qa"))
             .accept("ABC-42", "/wt", "abc123", qa, QaVerdict.ACCEPT);
 
-    assertThat(run.environments())
+    assertThat(run.reach().urls())
         .containsExactly(
             "https://dev.example.test",
             "https://dev.example.test/version",
             "https://stage.example.test");
+  }
+
+  @Test
+  void aRunMayReadTheFlowsRepositoryItIsToldToName(@TempDir Path root) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+    CheckerReader.Run run =
+        new CheckerPrompts(
+                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")),
+                new RoleFiles(paths, "qa"))
+            .accept(
+                "ABC-42",
+                "/wt",
+                "abc123",
+                new RoleConfig(
+                    true, null, List.of(), new FlowsConfig("playwright", "/flows/repo")),
+                QaVerdict.ACCEPT);
+
+    assertThat(run.reach().paths()).containsExactly(Path.of("/flows/repo"));
   }
 
   @Test

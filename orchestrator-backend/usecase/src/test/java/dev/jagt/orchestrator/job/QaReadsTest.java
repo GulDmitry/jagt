@@ -40,7 +40,7 @@ class QaReadsTest {
           Paths.get("/wt"),
           "proj@0123",
           "",
-          List.of(),
+          new CheckerReader.Reach(List.of(), List.of()),
           RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
               .replies()
               .answer()

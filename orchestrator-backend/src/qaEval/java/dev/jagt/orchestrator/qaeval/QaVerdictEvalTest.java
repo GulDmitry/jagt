@@ -175,7 +175,7 @@ abstract class QaVerdictEvalTest {
             run.worktree(),
             run.sha(),
             run.model(),
-            run.environments(),
+            run.reach(),
             run.schema(),
             run.role());
     if (deployed.declines()) {

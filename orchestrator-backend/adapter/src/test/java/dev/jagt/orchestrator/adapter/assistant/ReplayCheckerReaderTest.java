@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class ReplayCheckerReaderTest {
 
   private final CheckerReader.Run run =
-      new CheckerReader.Run("", "prompt", Path.of("/wt"), "abc123", "", List.of(), "{}", "qa");
+      new CheckerReader.Run("", "prompt", Path.of("/wt"), "abc123", "", new CheckerReader.Reach(List.of(), List.of()), "{}", "qa");
 
   @Test
   void saysTheRecordingHoldsNoQaCheckWhenAskedToRead() {

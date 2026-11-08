@@ -24,7 +24,7 @@ class ChosenCheckerReaderTest {
   void readsOnOpenCodeForARoleNamedUnderReads() {
     CheckerReader.Run run =
         new CheckerReader.Run(
-            "", "check ABC-42", Path.of("/wt"), "abc123", "", List.of(), "{}", "qa");
+            "", "check ABC-42", Path.of("/wt"), "abc123", "", new CheckerReader.Reach(List.of(), List.of()), "{}", "qa");
     Answer<QaVerdict> local =
         new Answer<>(Optional.of(QaVerdict.failed("abc123", "local")), TokenUsage.NONE);
     when(opencode.read(run)).thenReturn(local);
@@ -42,7 +42,7 @@ class ChosenCheckerReaderTest {
   void readsOnClaudeForARoleNotNamedUnderReads() {
     CheckerReader.Run run =
         new CheckerReader.Run(
-            "", "check ABC-42", Path.of("/wt"), "abc123", "", List.of(), "{}", "qa");
+            "", "check ABC-42", Path.of("/wt"), "abc123", "", new CheckerReader.Reach(List.of(), List.of()), "{}", "qa");
     Answer<QaVerdict> cloud =
         new Answer<>(Optional.of(QaVerdict.failed("abc123", "cloud")), TokenUsage.NONE);
     when(claude.read(run)).thenReturn(cloud);

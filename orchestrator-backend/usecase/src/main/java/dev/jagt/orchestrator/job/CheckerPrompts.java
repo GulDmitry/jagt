@@ -34,7 +34,7 @@ public class CheckerPrompts {
         Path.of(worktree),
         sha,
         qa.modelOrInherited(),
-        reachable(qa),
+        reach(qa),
         role.replies().answer().json(),
         role.id());
   }
@@ -63,7 +63,7 @@ public class CheckerPrompts {
         Path.of(worktree),
         sha,
         qa.modelOrInherited(),
-        reachable(qa),
+        reach(qa),
         role.replies().decline().json(),
         role.id());
   }
@@ -82,7 +82,13 @@ public class CheckerPrompts {
     return taskId + "'s deploy was pushed at " + sha + "; whether it landed is yours to prove.";
   }
 
-  private static List<String> reachable(RoleConfig qa) {
+  private static CheckerReader.Reach reach(RoleConfig qa) {
+    String flowsPath = qa.flowsPathOrBlank();
+    return new CheckerReader.Reach(
+        urls(qa), !flowsPath.isEmpty() ? List.of(Path.of(flowsPath)) : List.of());
+  }
+
+  private static List<String> urls(RoleConfig qa) {
     return qa.environmentsOrEmpty().stream()
         .flatMap(environment -> Stream.of(environment.url(), environment.landed()))
         .filter(url -> url != null && !url.isBlank())

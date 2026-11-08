@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.task.QaDecline;
 import dev.jagt.orchestrator.task.QaVerdict;
 import java.time.Duration;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
@@ -51,8 +52,8 @@ class OpenCodeCheckerReader {
             tools.refuseRead(),
             tools.fetch(),
             tools.git(),
-            List.of(run.worktree()),
-            run.environments());
+            Stream.concat(Stream.of(run.worktree()), run.reach().paths().stream()).toList(),
+            run.reach().urls());
     return headless.run(
         new OpenCodeRead(
             run.worktree(),
