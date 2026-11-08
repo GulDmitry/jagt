@@ -126,16 +126,13 @@ Each of these jobs SHALL do its one thing unasked:
 - **THEN** it runs at once; a job already running, or one nobody declared, is refused
 
 ### Requirement: Jobs that read the tracker
-Each of these jobs SHALL do its one thing unasked:
-- `ticket-prefetch`: reads each working task's ticket once, kept beside `state.json` so a new stint or a restart reads
-  none, booked as `TICKET_TEXT`; a failed read is asked again only in the next stint.
-- `intake`: with `tracker.mode` `take` or `both`, starts a task on every item ready for one. One it cannot
-  is tried again every poll, and told once.
-- `ticket-close`: with `tracker.mode` `close` or `both`, closes a task whose item reached `doneStatus`.
+Each job SHALL do its one thing unasked: `ticket-prefetch` reads each working task's ticket once, kept beside `state.json` and booked as
+`TICKET_TEXT`; `intake`, with `tracker.mode` `take` or `both`, starts a task on every item ready for one; `ticket-close`, with `close` or `both`,
+closes a task whose item reached `doneStatus`.
 
 #### Scenario: An item intake cannot start
 - **WHEN** nothing routes ABC-42, and a later label names its project
-- **THEN** you are told once that intake cannot start ABC-42, a restart included, and the next poll after the label starts it
+- **THEN** each poll tries ABC-42 again; you are told once, a restart included, that intake cannot start it; the poll after the label starts it
 
 #### Scenario: A finished item
 - **WHEN** an item reaches `doneStatus` under `tracker.mode: close`
@@ -148,6 +145,10 @@ Each of these jobs SHALL do its one thing unasked:
 #### Scenario: No tracker
 - **WHEN** `tracker.workflow` is `none` and a request is resumed on branch `ABC-42`
 - **THEN** no tracker is asked about it
+
+#### Scenario: A ticket read once
+- **WHEN** a new stint or a restart begins for a task whose ticket was read
+- **THEN** it reads none; a failed read is asked again only in the next stint
 
 ### Requirement: A task has a ceiling of unattended moves an hour
 jagt SHALL count, per task, its unasked moves in the last hour since its last `lift`: history steps by the Master, auto-review, the tracker or a
