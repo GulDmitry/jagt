@@ -8,18 +8,20 @@ Builds on [desktop-host.md](desktop-host.md) §3D and [0117](../decisions/0117-t
    packaging's: the first run, the session host on Windows, a restart story for self-update.
 2. **The baseline fails first.** The release jar cannot start outside a clone (`OrchestratorPaths.findRoot`), and a clone's first run
    is seven files and up to twelve refusals (§4). Whatever the shell, this is the work: tasks 1–2 in §8.
-3. **The channel that replaces the clone**: a Homebrew tap formula (macOS, Linux) and a curl line, both installing one `jagt` command over a
-   self-contained jar (24 MB plus brew's `openjdk`). Update: jagt's own hourly job swaps the jar and restarts, `brew upgrade` the manual
-   path. First run: `jagt` starts and the board opens its setup page. The clone stays for developing jagt, not for running it.
-4. **Windows** is blocked by the session host (tmux, kitty, `platform`, the notifiers), not by packaging. WSL2 runs the Linux build
-   today; a native host follows a two-day spike (§7). No Windows executable ships before it can run a session.
-5. **Later, on 0021's trigger** (a user who is not a developer): Conveyor over the same jar (§5). Overrules desktop-host §3D in one point:
-   the window is the installed PWA (0117), not `chrome --app`; 0117's "weigh Tauri against jpackage" becomes "Conveyor, with jpackage inside".
+3. **One channel for all three OS: the native installer.** One script per shell from the release's fixed URL [s57], `R` being
+   `https://github.com/GulDmitry/jagt/releases/latest/download`: `curl -fsSL R/install.sh | sh` on macOS, Linux and WSL,
+   `irm R/install.ps1 | iex` on Windows. It installs the `jagt` command, the jar and a pinned Temurin 25 JRE under a per-user
+   directory; jagt updates itself hourly from the same release, runtime included (§6.4). It is how Claude Code, Codex, Bun, Deno, uv and
+   rustup ship today (§6.9). No tap, cask or store: a manager install updates by the manager, never by itself [s28]. First run: `jagt`.
+4. **Windows gets the same line now.** `install.ps1` installs into WSL2 until the native session host lands (§7); the board reaches the
+   Windows browser on `localhost` [s55]. The same script installs natively once that host exists. No Windows build runs before it can run a session.
+5. **The window stays the installed PWA** (0117), overruling desktop-host §3D's `chrome --app`; 0117's "weigh Tauri against jpackage"
+   becomes "Conveyor, with jpackage inside", and only if a signed app bundle is ever required (a store, MDM): it is no second channel (§5).
 
 ## 2. The bar (owner, 2026-11-08)
 | condition | met today | what blocks it | fixed by |
 |---|---|---|---|
-| three executables: Linux, macOS, Windows | no: a jar for two OS, inside a clone | Windows: no `SessionHost` but tmux, no kitty build [s26][s27], `PlatformCheck` knows `macos`/`linux` only | §7 spike, then a host |
+| one way to install, on Linux, macOS and Windows alike | no: a jar for two OS, inside a clone | Windows: no `SessionHost` but tmux, no kitty build [s26][s27], `PlatformCheck` knows `macos`/`linux` only | task 3 for the line; §7 spike, then a host |
 | 100 % self-updating, downloads the latest itself | no: `git pull` + build, or a jar by hand | no updater, no checksum on the release, no restart path for a JVM that must replace its own jar | task 3 |
 | configuration and tool detection work with no issues on each OS | no: §4 | the setup is a numbered refusal list; `platform` is declared, not detected; kitty, the editor and the agent CLI fail at first use | tasks 1–2 |
 
@@ -34,8 +36,8 @@ Against the bar, today's way is not better, only the one that works, for a devel
 | first run | README steps 1–5, refusals | a setup page on the board | §4 |
 | configuration | `jagt.yml`, the `project` verb writes entries | the same file, written by the setup page | "one copied file and one command" holds |
 | tool detection | `ToolchainCheck`, `PlatformCheck`, `Executables` | the same probes, shown with the install line per OS | kitty and the editor are probed only when pressed |
-| self-update | none | a job that downloads, verifies, swaps, restarts | §6.5 |
-| logs | `jagt-backend.log` beside the working directory | a per-user log directory, set by the launcher | §6.7 |
+| self-update | none | a job that downloads, verifies, swaps, restarts | §6.4 |
+| logs | `jagt-backend.log` beside the working directory | a per-user log directory, set by the launcher | §6.6 |
 
 ## 4. Today's first run — only the release jar, a clean machine; each line names the file that stops them
 | # | step | what stops them | where |
@@ -59,27 +61,32 @@ directory (reopens 0021); 4, 13 — the setup page's `project` verb, remote prob
 override; 6–8, 11–12 — tools probed with an install line per OS; 10 — README step 1's MCP check. 9 is unchanged. Still the human's: the
 project path, the Master's mode, logging in to the agent CLI.
 
-## 5. Options scored
-| way | three OS | self-update | detection | download, JVM inside | signing on macOS | CI | licence, price | verdict |
-|---|---|---|---|---|---|---|---|---|
-| the clone (today) | 2, developers only | `git pull` + Gradle build, a JDK on the machine | refusal list | the repository, no | none | — | — | stays for developing jagt only |
-| release jar alone (today) | 2, inside a clone | none | refusal list | 24 MB, no | none | one job | — | fails §4 step 2 |
-| installed PWA (0117), the window of every row | all 3 OS | with the jar | — | 0 MB, no | none | none | free | prompt on 127.0.0.1 and localhost unverified: read it through CDP `Page.getInstallabilityErrors` on the debug Chrome (task 2, step 0) |
-| curl installer / Homebrew tap formula | 2 | `brew upgrade` by hand [s5]; jagt may run it itself as Claude Code does [s28] | task 2 | jar + `openjdk` dependency [s3] | none: no bundle | one job, JReleaser writes the formula [s17] | free | **first**, with task 3's updater |
-| homebrew-core | 2 | same | task 2 | same | none | PR review | needs 75 stars / 225 if self-submitted, 30 days [s1] | not yet eligible |
-| jpackage + own updater | 2 (+1 once §7) | own job (§6.5) | task 2 | dmg/pkg, deb/rpm, msi; ~80 MB, yes [s7] | Developer ID cert, notarize yourself [s36] | one runner per OS [s7] | JDK tool | **later**, inside Conveyor |
-| Conveyor | 2 (+1 once §7) | Sparkle 2 on mac, MSIX, apt; built in [s8][s10] | task 2 | ~80 MB (est), yes | notarization by API key, or `sign = false` [s10] | one Linux runner builds all [s8] | proprietary; free for OSI-licensed, else $45/month [s9] | **later**, on 0021's trigger |
-| Tauri / Electron shell | 2 (+1) | Tauri updater, signature mandatory [s25] | task 2 | + a webview, Rust or Node; still the JVM | same as above | per OS | MIT | rejected (0117) |
-| GraalVM native image | 2 (+1) | own job | task 2 | one binary per OS/arch, no JVM; size unknown | same | per OS with gcc / Xcode / MSVC [s16] | GraalVM for JDK 25, Liberica NIK [s15] | not now: hints for Jackson 3 and roles, untested |
-| SDKMAN | 2 | `sdk` by hand | task 2 | zip, no | none | vendor API after onboarding [s18] | cost unknown | not before the tap |
-| winget | Windows | `winget upgrade` by hand [s24] | — | msi/exe/zip | Windows signing | PR to winget-pkgs | free | after §7 only |
+## 5. Options scored against the bar
+| way | one way, three OS | self-update | JVM for the user | detection | cost: signing · CI · licence | the user types | verdict |
+|---|---|---|---|---|---|---|---|
+| the clone (today) | 2 OS, developers only | `git pull` + Gradle build | a JDK you install | refusal list | none · one Linux job · — | `git clone`, `cp`, `./gradlew` | stays for developing jagt only |
+| release jar alone (today) | 2 OS, inside a clone | none | no | refusal list | none · one job · — | `java -jar` | fails §4 step 2 |
+| installed PWA (0117), the window of every row | all 3 OS | with the jar | — | — | none · none · free | nothing | prompt on 127.0.0.1 and localhost unverified: read it through CDP `Page.getInstallabilityErrors` on the debug Chrome (task 2, step 0) |
+| **native installer**: `install.sh` + `install.ps1` on the release, `jagt` launcher, `versions/`, own updater | yes: 3 OS, WSL2 on Windows until §7 | 100 %: hourly job, runtime included (§6.4) | yes: Temurin 25 JRE pinned by the release manifest, Adoptium's fixed URL per OS and arch [s60] | task 2 | none · one Linux job for the platform-neutral jar, a Windows job testing the script, free on a public repository [s56] · — | one line per shell, then `jagt` | **first**: task 3 |
+| npm `-g`: per-OS optional dependency, postinstall fetches the JRE | one command on 3 OS | itself, if the global directory is writable [s28] | no: Node 22+ first [s28], then the JRE | task 2 | none · one job · — | `npm i -g jagt` | second: one runtime to install another; npm's permission trap [s28] |
+| jbang: `jbang app install <gav>` | one command, after jbang's own sh/ps install [s53] | none: reinstall by hand; jbang's own self-update unknown [s53] | yes: downloads a JDK [s53] | task 2 | none · one job · — | two lines, then `jbang app install …` | no: a tool between the user and jagt, no updater; a fat jar from a URL unverified |
+| Coursier: `cs install` | native `cs` per arch; Windows directory unknown [s54] | `cs update` by hand [s54] | `cs setup` installs a JVM 21 [s54] | task 2 | none · one job · — | `cs setup`, `cs install jagt` | no: Scala's launcher, manual update |
+| Homebrew tap formula + curl (the earlier pick) | 2 OS: no Homebrew on Windows | `brew upgrade` by hand [s5], or jagt runs it [s28] | brew's `openjdk` [s3] | task 2 | none · JReleaser writes the formula [s17] · free | `brew install …` | rejected by the owner: two ways, no Windows |
+| homebrew-core, SDKMAN, winget | one or two OS each | by hand [s1][s18][s24] | — | — | PR review; 75 stars / 30 days [s1]; vendor onboarding [s18] | per manager | not channels: a manager each |
+| JReleaser to every channel: tap, scoop, winget, sdkman, jbang, snap, flatpak, AppImage [s51] | many ways from one release | each by its manager, none by itself [s28] | per channel | task 2 | none · one job · Apache-2.0, v1.27.0 [s51] | per channel | no as a channel; its checksum and release steps may serve task 3 |
+| Conveyor | one config, three native packages from one Linux runner [s8][s52] | Sparkle, MSIX in the background, apt: built in; Fedora, Arch, the tarball: none [s52] | yes: a jlink JDK per target [s52] | task 2 | Apple 99 USD/yr [s11]; Windows: a CA certificate, or Azure Artifact Signing 9.99 USD/month, individuals in the US or Canada only [s58], else self-signed and SmartScreen [s59] · one Linux runner · free for OSI licences, 45 USD/month else [s9] | a download page, an installer per OS | later, only if a signed bundle is required; a headless app's update: unknown [s52] |
+| jpackage + own updater | 2 (+1 once §7) | own job (§6.4) | yes, ~80 MB [s7] | task 2 | Developer ID, notarize yourself [s36] · one runner per OS [s7] · JDK tool | an installer per OS | later, inside Conveyor |
+| Tauri / Electron shell | 2 (+1) | Tauri updater, signature mandatory [s25] | still the JVM, plus a webview | task 2 | as above · per OS · MIT | an installer per OS | rejected (0117) |
+| GraalVM native image | one binary per OS and arch, over the same scripts | own job | no JVM; size unknown | task 2 | as above · per OS with gcc / Xcode / MSVC [s16] · GraalVM for JDK 25, Liberica NIK [s15] | the same line | not now: a runtime variant of the installer, hints for Jackson 3 and roles untested |
 
 ## 6. Each aspect
-### 6.1 Window, tray, accessibility
+### 6.1 Window, tray, accessibility, notifications, instances
 - The window stays the browser's: the installed PWA starts at OS login since Chrome 91 on all three OS [s20]; it cannot start the JVM (0117).
 - A tray from Java is an experiment, not a given: the JDK 25 javadoc names no macOS location and asks for `isSupported()` [s21]; a native
   tray comes with Conveyor's launcher only if we write one — unknown until tried.
 - Accessibility: the PWA window has the browser's accessibility tree and the board's keys (`t`); a webview's is unknown. One more reason for the PWA.
+- Notifications stay native (`MacNotifier`, `LibNotifyNotifier`): the PWA's Notifications API would be a second channel for one question.
+- One instance per port: a second jagt is refused (`StartupFailure`); boards (tabs, PWA windows) share it over SSE; two need two roots and ports.
 
 ### 6.2 First run, configuration, tool detection
 - One source stays `jagt.yml`; the setup page writes it, as the `project` verb already does. No second configuration store.
@@ -87,61 +94,58 @@ project path, the Master's mode, logging in to the agent CLI.
   install line per OS instead of refusing. Startup keeps refusing only what no page can fix: the port, an unwritable root.
 - `Executables` already covers a GUI-launched process whose PATH lacks Homebrew: the launcher changes nothing there.
 
-### 6.3 Notifications, instances
-- Notifications stay native (`MacNotifier`, `LibNotifyNotifier`): the PWA's Notifications API would be a second channel for one question.
-- One instance per port: a second jagt is refused (`StartupFailure`); boards (tabs, PWA windows) share it over SSE; two need two roots and ports.
-
-### 6.4 Distribution and signing
-- A formula or a curl-installed jar is no app bundle: Gatekeeper judges app launches, and `java -jar` from a shell shows no dialog (local).
-- A bundle needs the Apple Developer Program, 99 USD per year [s11]; a dmg needs a Developer ID Application certificate, a pkg also an
-  Installer one [s36]. Unsigned: since Sequoia no Control-click override, only System Settings › Privacy & Security › Open Anyway [s12][s13].
-- Homebrew 5.0.0 deprecated `--no-quarantine` and disables casks failing Gatekeeper from September 2026 [s6]: an unsigned cask is no channel.
+### 6.3 Distribution and signing
+- A script-installed jar is no app bundle: Gatekeeper judges app launches, and `java -jar` from a shell shows no dialog (local). Windows:
+  SmartScreen judges a downloaded executable by reputation and signature [s59]; on a JRE the script unpacks: unknown, task 3 measures it.
+- A bundle needs the Apple Developer Program, 99 USD per year [s11]; a dmg a Developer ID Application certificate, a pkg also an Installer
+  one [s36]; unsigned: since Sequoia only System Settings › Privacy & Security › Open Anyway [s12][s13]. Homebrew 5.0.0 deprecated
+  `--no-quarantine` and disables casks failing Gatekeeper from September 2026 [s6]: an unsigned cask is no channel.
+- A Windows bundle needs a CA certificate (price unknown) or Azure Artifact Signing: 9.99 USD/month for 5,000 signatures, Public Trust for
+  individuals only in the US and Canada, organisations in more countries [s58]; a file without reputation gets SmartScreen's warning [s59].
 - The signing identity would be the project's CI secret, never a token jagt holds at runtime: 0020 stands.
-- Linux: deb/rpm from jpackage [s7] or Conveyor's apt repository; a formula works on Linux too. Windows: §7.
+- Linux: the script covers every distribution with `curl` and `tar`; deb/rpm come from jpackage [s7] or Conveyor's apt repository [s52]. Windows: §7.
 
-### 6.5 Self-update and restart safety
+### 6.4 Self-update and restart safety
+- Layout as Claude Code's native install [s28]: a launcher on PATH, `versions/<v>/` beside it, the launcher pointing at one. Windows locks a
+  running executable [s28], so the new version lands beside the old and the launcher switches on restart; nothing is overwritten in place.
 - Check: `releases/latest` once an hour; unauthenticated GitHub allows 60 requests per hour per IP [s19].
 - Download to a **new file name**, never the running inode: a rewritten jar kills the JVM on its next class load (`RunningJarWatch`, `stageJar`).
-- Verify: `ci.yml` attaches the jar only; a sha256 beside it is the minimum, a signature the goal.
+- Verify: `ci.yml` attaches the jar only; a manifest with a sha256 per asset is the minimum, a signature the goal (Claude Code signs its [s28]).
+- The runtime is in the manifest: the Temurin build and its sha256 per OS and arch, fetched from Adoptium's fixed URL, which today resolves
+  25 to `jdk-25.0.5+8` on GitHub [s60], or a jlink image per OS built in CI (five assets, ~53 MB each, local est): task 3 measures which.
+  Installer and updater read the same line, so a runtime bump is a release like any other.
 - Dry-run the new jar's startup checks before the swap: `ClaudeMovedKeysCheck` and `ConfigCheck` refuse renamed keys, and an update that
   leaves jagt refusing to start is worse than no update. A key rename reads the old key for one version.
 - Restart: a JVM cannot exec itself; the launcher restarts it on a named exit code, or the service manager does (`keep_alive`, `KeepAlive`).
 - What survives: tmux sessions are detached and outlive jagt by design (`runtime` spec; `ProcessRunner` stops only awaited commands);
   the board reconnects over SSE; `state.json` is written atomically with a `.bak`. A reboot costs the windows, `focus` re-enters (README).
-- Precedents agree (§6.10); update4j is archived since 2024-03-18 [s23].
+- Precedents agree (§6.9); update4j is archived since 2024-03-18 [s23].
 
-### 6.6 `state.json` across versions
+### 6.5 `state.json` across versions
 - Reads migrate on the fly: `StoredTask.Unmigrated` carries `silentSince`, `loop`, `qa`, `pipelineUnread`, `conflict`, the report marker.
 - There is no schema version field, and only `ReportMarkerMigrationTest` pins a migration; no test reads a previous release's file.
 - A self-updating jagt needs that fixture per released minor (task 4), and a field dropped only one version after it stopped being written.
 
-### 6.7 Start at login, logs
-- macOS: a LaunchAgent in the user's `Library/LaunchAgents`, `KeepAlive`, `StandardOutPath` [s33]; `brew services` writes it from the
-  formula's `service do` block, with `keep_alive` and `log_path` [s5]. Linux: a unit under `~/.config/systemd/user/` [s34].
+### 6.6 Start at login, logs
+- macOS: a LaunchAgent in the user's `Library/LaunchAgents`, `KeepAlive`, `StandardOutPath` [s33], written by the launcher (a formula's
+  `service do` would have [s5]; the tap is gone). Linux: a unit under `~/.config/systemd/user/` [s34].
 - The log moves with the launcher: `LOG_FILE` is already the switch (`logback-spring.xml`); a per-user log directory replaces the working directory.
-- Login item: default off, the page offers it (precedents §6.10).
+- Login item: default off, the page offers it (precedents §6.9).
 
-### 6.8 Security
+### 6.7 Security
 - Unchanged by any shell: `127.0.0.1` only, no password, `LoopbackFilter` on Origin and Host, `BoardWriteFilter` on every write. A local
   process can already forge an Origin with curl; a login item only lengthens the time the port is open.
-- The updater is a new trust root: it executes what it downloads, so the checksum or signature check of §6.5 is not optional.
+- The updater is a new trust root: it executes what it downloads, so the checksum or signature check of §6.4 is not optional.
 
-### 6.9 CI and release
-- Today: one Linux job builds the jar, `release` attaches it to the tag, two minors are kept. Conveyor keeps that shape: one Linux runner,
-  three images, signing and notarization from there [s8]. jpackage needs a runner per OS [s7]; GraalVM too, each with its toolchain [s16].
-- JReleaser (Apache-2.0, v1.27.0) writes the tap formula, the SDKMAN and winget entries from the release [s17]; its jpackage assembler is per OS.
+### 6.8 CI and release
+- Today: one Linux job builds the jar, `release` attaches it to the tag, two minors are kept. The installer keeps that shape: the jar is
+  platform-neutral, the scripts are text, the runtime is Adoptium's; one Windows job tests `install.ps1`. Standard runners are free on a
+  public repository; private: Linux 0.006, Windows 0.010, macOS 0.062 USD per minute [s56]. Runners per option: §5.
+- JReleaser's jlink assembler builds an image per platform from JDKs you install; its jpackage assembler is per OS [s51].
 
-### 6.10 Comparable local-server tools with a web UI
-| tool | ships as | updates | login item | source |
-|---|---|---|---|---|
-| Ollama | macOS dmg app with menu bar; Linux `curl \| sh` → systemd service | downloads itself, "Restart to update"; Linux: re-run the script | registered at install | [s29] |
-| Syncthing | one binary, or a distro package | upgrades itself within 24 h; packages via the manager; GUI button | wrappers do it | [s30] |
-| Docker Desktop | dmg | checks by default, downloads only if asked | off by default | [s31] |
-| JupyterLab Desktop | Electron: dmg, exe, deb/rpm/snap, winget | from GitHub releases; no in-app update documented | — | [s32] |
-| LM Studio | per-OS installers, headless `llmster`, `lms` daemon | unknown from its docs | unknown | [s37] |
-| Claude Code | native installer; casks, winget, apt/dnf/apk | native: background self-update; managers: by hand or on request | — | [s28] |
-
-The pattern: a native launcher owns the server, self-updates from the vendor's feed, offers a login item; a manager install updates by the manager.
+### 6.9 How comparable tools ship today
+Twenty tools, one row each, in [desktop-app-tools.md](desktop-app-tools.md). The pattern: a developer tool ships one script per shell over
+its own release feed and updates itself; a GUI app ships an installer per OS and updates itself; a manager install updates by the manager [s28].
 
 ## 7. Windows
 - Blocked in code, not in packaging: `SessionHost` has one driver, tmux; `TerminalDriver` has kitty (two OS) and Ghostty (macOS);
@@ -149,30 +153,31 @@ The pattern: a native launcher owns the server, self-updates from the vendor's f
   caffeinate or systemd-inhibit; liveness through pgrep, lsof, pkill; `Executables` searches Unix directories; jagt's git hooks run under `sh`.
 - tmux ships for Linux and macOS only [s26]; MSYS2 packages tmux 3.8 in its POSIX layer [s35], its pty behaviour under a Windows agent CLI
   unknown; kitty has no Windows build [s27]. Claude Code runs natively on Windows, PowerShell or Git Bash [s28]: the agent is not the blocker.
+- Until the host: `install.ps1` runs `install.sh` in the default WSL2 distribution; WSL's default NAT mode serves a Linux port to a Windows
+  browser on `localhost` [s55]; the agent CLI runs in WSL [s28]; tmux and the board work; `focus` raises no window (kitty [s27]), the page says so.
 - A native host: a `SessionHost` over ConPTY with detach and re-attach (the hard part: tmux's revive after a jagt restart), a Windows
   Terminal driver, a toast notifier, a keep-awake, path handling, a Windows CI runner. Cost unknown until the spike (task 5); weeks, not days (est).
+  When it lands, the same `install.ps1` installs natively; a WSL install keeps updating as the Linux one it is.
 
-## 8. Recommendation and tasks — the first run, then the command with its updater, then Windows by measurement, the image last (costs est)
+## 8. Recommendation and tasks — the first run, then the installer with its updater, then Windows by measurement, the image last (costs est)
 | # | task | replaces | done when | cost |
 |---|---|---|---|---|
 | 1 | **Self-contained jar**: `jagt.yml.dist`, `mcp_client.js`, `roles/*.dist` on the classpath; `root` = `--root`, `ORCHESTRATOR_ROOT`, else a per-user data dir; reopens 0021 | the clone, 0021 | `java -jar jagt.jar --root=$(mktemp -d)` answers `/state` 200 and shows the setup page; `./gradlew test e2eTest` exit 0 | 3–5 days |
 | 2 | **First-run page** on the board: platform read from the machine, every tool probed with its install line per OS, the first project via the `project` verb, the MCP check, `copyGlobs` hint; startup refuses only port and root; step 0: the PWA install prompt measured on 127.0.0.1 and localhost through CDP `Page.getInstallabilityErrors`, the result written into 0117 | README steps 2–4, the refusal list, 0117's open line | `boardTest` scenario: empty root → a task created on a stub project, exit 0 | 3–4 days |
-| 3 | **`jagt` command + self-update**: launcher script (tap formula with `service do`, and a curl line) that restarts on a named exit; hourly check of `releases/latest`, download to a new file, sha256 verified, dry-run checks, swap, exit; `ci.yml` attaches the sha256 | `git pull` + build, the manual jar | stand run on a fake feed v0 → v1: the tmux session and a task's state intact, board reconnected; `e2eTest` exit 0 | 3–4 days |
-| 4 | **State fixture per release**: the `state.json` of each released minor under test resources, read without loss; the release step adds it | nothing: closes §6.6's gap | `StateCompatibilityTest` exit 0 | 1 day |
+| 3 | **Native installer + `jagt` command + self-update**: `install.sh`, `install.ps1` and a manifest (jar, Temurin build, sha256 per asset) attached to the release; per-user `versions/<v>/`, `runtime/`, a launcher on PATH that restarts on a named exit; hourly check of `releases/latest`, download beside, verify, dry-run checks, switch, exit; `install.ps1` installs into WSL2 until task 5's host | `git pull` + build, the manual jar, the tap | stand run on a fake feed v0 → v1: the tmux session and a task's state intact, board reconnected; `install.sh` on a clean Linux runner and `install.ps1` on a Windows runner reach `/state` 200; `e2eTest` exit 0 | 4–5 days |
+| 4 | **State fixture per release**: the `state.json` of each released minor under test resources, read without loss; the release step adds it | nothing: closes §6.5's gap | `StateCompatibilityTest` exit 0 | 1 day |
 | 5 | **Windows host spike**: tmux under MSYS2, ConPTY + Windows Terminal, WSL2-as-Linux, against the `runtime` spec's scenarios; output is a decision record | the open question, not code | the decision merged, with measurements | 2 days |
-| 6 | **Conveyor image** (only on 0021's trigger): `conveyor.conf` over the jar, login item, tray if `isSupported()`, Sparkle/MSIX/apt; macOS and Linux until task 5 lands | `java -jar` for a non-developer | each image starts, answers `/state`, updates from a test site; `boardTest` exit 0 | 2–3 days + 99 USD/yr + the signing decision (an earlier jpackage-only sketch: 3–5 days, 0020) |
+| 6 | **Conveyor image** (only if a signed bundle is required: a store, MDM): `conveyor.conf` over the jar, login item, tray if `isSupported()`, Sparkle/MSIX/apt; macOS and Linux until task 5 lands | nothing on the board: the installer stays the channel | each image starts, answers `/state`, updates from a test site; `boardTest` exit 0 | 2–3 days + 99 USD/yr + a Windows certificate + the signing decision (an earlier jpackage-only sketch: 3–5 days, 0020) |
 | 7 | **Live Session tab** (only when a remote board or a viewer-less platform is asked for): tmux control mode in `adapter/tmux`, WebSocket under both filters, xterm.js vendored on demand | the 5 s capture-pane poll and the `say` line | `e2eTest` scenario typing a line and reading its echo; `boardTest`, `BoardAssetsTest`, all exit 0 | 4–6 days |
 | 8 | **Changes artifact** (only after diff presses are measured above zero): read-only diff of the task branch against its base in the Artifacts tab | the refusal when `editorDiffCommand` is unset | `:surface:test` and `boardTest` exit 0 | 1–2 days |
 
-Not a task: Electron, Tauri, a webview, GraalVM, homebrew-core, SDKMAN, winget — each rejected (0117), ineligible [s1], or moot before task 5.
+Not a task: Electron, Tauri, a webview, GraalVM, npm `-g`, jbang, Coursier, a tap, homebrew-core, SDKMAN, winget, JReleaser as a channel (§5).
 
 ## 9. Open questions
 - Where does `root` live by default: a per-user data directory, or beside the launcher? It also holds `worktrees/`, which are cut beside it today.
-- Does the launcher hold the restart, or the service manager (`brew services`, launchd, systemd)? One of them, never both.
-- Does the tap formula pin `openjdk` or `openjdk@25`? Homebrew asks for `openjdk` unless upstream needs a release [s3].
+- Does the launcher hold the restart, or the service manager (launchd, systemd)? One of them, never both.
+- Does Gatekeeper treat a JRE unpacked by `install.sh` as it treats `java -jar` from a shell (no dialog, local)? Task 3, on the macOS runner.
 - Is the macOS tray reachable from Java at all? Measured by one `isSupported()` run inside a jpackage image; else Conveyor's launcher only.
-- Conveyor's Linux outputs and apt repository come from a 2022 post, secondary; its current output page returned 404 today. Re-check before task 6.
-- Does WSL2's loopback reach a Windows browser for the board? Unverified.
 - Does Tauri's smaller shell matter once the JVM is bundled anyway? Unknown: needs one measured image per option.
 - Keys the project would hold: a release signing key (sha256 the minimum) and the Apple account; 0020: jagt holds none, CI secrets are the project's.
 
@@ -192,7 +197,3 @@ Not a task: Electron, Tauri, a webview, GraalVM, homebrew-core, SDKMAN, winget �
 | activity log | Built (b8d5c3a52): worth it and cheapest. Before, it was split across the Overview tab (50 steps per task, who asked, why in hover), the finished report and the activity report tailing the log (40 entries). Design: widen the activity report, never a second control: every `StatusChange` of live tasks plus `finished.jsonl`, newest first, a line opens its task, filters by kind (shipped, deployed, stopped, done) and project; a per-task filter is the Overview tab's question |
 | one surface | A shell hosting the jar's own page (same /api, same `Move.actions`) is a window like the PWA; a native UI with its own cards or verbs is the second surface 0002 removed (86 files, 3338 lines). If one survives: the browser board (banners `?task=`, `server.address` from another machine, the PWA, `boardTest` reach it) |
 | AGENTS check | One surface (0002) untouched; a shell is no seam, a terminal view would be a `SessionHost` read; no build step holds (vendored xterm.js); no GUI automation (send-keys to a named pane is what `say` does). Design changes over the first sketch: the terminal, if ever, is the Session tab made live, not a pane beside tasks; the log is one report widened; the diff is an artifact; the shell is jpackage, not a webview |
-
-## Sources
-
-`[sN]` ids resolve in [desktop-app-sources.md](desktop-app-sources.md), every one checked 2026-11-08.

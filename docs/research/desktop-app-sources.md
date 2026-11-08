@@ -1,6 +1,6 @@
 # Sources of desktop-app.md, checked 2026-11-08
 
-[← desktop-app.md](desktop-app.md)
+[← desktop-app.md](desktop-app.md) · [desktop-app-tools.md](desktop-app-tools.md)
 
 | id | source |
 |---|---|
@@ -41,3 +41,27 @@
 | s35 | <https://packages.msys2.org/base/tmux> |
 | s36 | <https://bugs.openjdk.org/browse/JDK-8242389> |
 | s37 | <https://lmstudio.ai/docs/app> |
+| s38 | <https://github.com/openai/codex>, <https://learn.chatgpt.com/docs/codex/cli> |
+| s39 | <https://docs.ollama.com/windows>, <https://docs.ollama.com/macos> |
+| s40 | <https://tailscale.com/kb/1347/installation>, <https://tailscale.com/kb/1067/update>, <https://tailscale.com/kb/1031/install-linux>, <https://tailscale.com/kb/1016/install-mac>, <https://tailscale.com/kb/1022/install-windows> |
+| s41 | <https://docs.syncthing.net/users/releases.html>, <https://syncthing.net/downloads/> |
+| s42 | <https://bun.sh/docs/installation> |
+| s43 | <https://docs.deno.com/runtime/getting_started/installation/> |
+| s44 | <https://www.rust-lang.org/tools/install>, <https://rust-lang.github.io/rustup/basics.html> |
+| s45 | <https://docs.astral.sh/uv/getting-started/installation/> |
+| s46 | <https://www.jetbrains.com/toolbox-app/>, <https://www.jetbrains.com/help/toolbox-app/frequently-asked-questions.html>, <https://www.jetbrains.com/help/rider/2025.1/Installation_guide.html> |
+| s47 | <https://code.visualstudio.com/docs/setup/setup-overview>, <https://code.visualstudio.com/docs/setup/linux>, <https://code.visualstudio.com/docs/setup/windows> |
+| s48 | <https://zed.dev/docs/macos>, <https://zed.dev/docs/linux>, <https://zed.dev/docs/windows>, <https://zed.dev/docs/configuring-zed> |
+| s49 | <https://docs.warp.dev/getting-started/getting-started-with-warp> |
+| s50 | <https://lmstudio.ai/docs/app/system-requirements> |
+| s51 | <https://jreleaser.org/guide/latest/reference/packagers/index.html>, <https://jreleaser.org/guide/latest/reference/assemble/jlink.html>, <https://github.com/jreleaser/jreleaser/releases/latest> |
+| s52 | <https://conveyor.hydraulic.dev/latest/package-formats/>, <https://conveyor.hydraulic.dev/latest/configs/update-modes/>, <https://conveyor.hydraulic.dev/latest/configs/windows/>, <https://conveyor.hydraulic.dev/latest/configs/jvm/>, <https://conveyor.hydraulic.dev/latest/continuous-integration/>, <https://conveyor.hydraulic.dev/latest/faq/signing-and-certificates/> |
+| s53 | <https://www.jbang.dev/download/>, <https://www.jbang.dev/documentation/jbang/latest/install.html>, <https://www.jbang.dev/documentation/jbang/latest/javaversions.html>, <https://www.jbang.dev/documentation/jbang/latest/faq.html> |
+| s54 | <https://get-coursier.io/docs/cli-installation>, <https://get-coursier.io/docs/cli-install> |
+| s55 | <https://learn.microsoft.com/en-us/windows/wsl/networking> |
+| s56 | <https://docs.github.com/en/billing/managing-billing-for-your-products/managing-billing-for-github-actions/about-billing-for-github-actions> |
+| s57 | <https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases> |
+| s58 | <https://learn.microsoft.com/en-us/azure/artifact-signing/quickstart>, <https://azure.microsoft.com/en-us/products/artifact-signing> |
+| s59 | <https://learn.microsoft.com/en-us/windows/security/operating-system-security/virus-and-threat-protection/microsoft-defender-smartscreen/> |
+| s60 | <https://api.adoptium.net/v3/info/available_releases>, <https://api.adoptium.net/v3/binary/latest/25/ga/linux/x64/jre/hotspot/normal/eclipse> |
+| s61 | <https://docs.docker.com/desktop/setup/install/windows-install/> |
