@@ -1,0 +1,18 @@
+case: a verification result of a round gone
+stop:
+  trigger: MISS
+  evidence: a verification result for round 2 of ABC-42 arrived at DEPLOY_CONFLICT; no case takes it
+trail: |
+  13:00 session shipped round 2, verification probes started on tree 8b1e44c
+  13:04 master pressed deploy; the merge met a conflict, task at DEPLOY_CONFLICT
+  13:09 the round 2 probes finished: passed; delivered as a step to a task now at DEPLOY_CONFLICT
+  13:09 no case takes a verification result at DEPLOY_CONFLICT; a miss was recorded and the task stopped
+  13:15 session resolved the conflict on a new tree 2c7f09a and asked for deploy again
+commits: |
+  2c7f09a Merge beta into the branch, keep both validations
+  8b1e44c Validate the broker's licence number
+  3a6d5e1 Baseline
+expect:
+  who: jagt
+  lift: safe
+  family: E

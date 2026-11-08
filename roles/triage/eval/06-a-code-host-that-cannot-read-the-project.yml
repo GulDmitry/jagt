@@ -1,0 +1,17 @@
+case: a code host that cannot read the project
+stop:
+  trigger: INFRA
+  evidence: "the code host answered 404 Project Not Found to three reads of alpha's pipeline at CI_POLLING"
+trail: |
+  16:00 session shipped, request !7 opened in alpha
+  16:01 pipeline read of alpha: 404 Project Not Found
+  16:06 pipeline read of alpha: 404 Project Not Found
+  16:11 pipeline read of alpha: 404 Project Not Found
+  16:11 the code-host CLI reports no login for the host; a signed-out read of a private project answers 404
+commits: |
+  a51c0e2 Show the quote's validity date
+  0d7b3f9 Baseline
+expect:
+  who: none
+  lift: unsafe
+  family: unknown

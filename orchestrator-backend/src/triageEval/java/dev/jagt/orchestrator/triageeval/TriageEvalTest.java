@@ -138,6 +138,10 @@ class TriageEvalTest {
     ANSWERED.incrementAndGet();
     if (read.who() == stopped.who()) {
       WHO_RIGHT.incrementAndGet();
+    } else {
+      System.out.printf(
+          "triageEval whoMissed case=\"%s\" expected=%s read=\"%s\"%n",
+          stopped.name(), stopped.who(), read.line());
     }
     if (read.family().equals(stopped.family())) {
       FAMILY_RIGHT.incrementAndGet();

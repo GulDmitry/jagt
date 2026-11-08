@@ -9,12 +9,10 @@ import org.junit.jupiter.api.Test;
 class StopTriageCasesTest {
 
   @Test
-  void everyWhoClassHasOneShippedStop() {
+  void everyWhoClassHasAShippedStop() {
     var cases = StopTriageCases.all();
 
-    assertThat(cases)
-        .extracting(StopTriageCase::who)
-        .containsExactlyInAnyOrder(StopTriage.Who.values());
+    assertThat(cases).extracting(StopTriageCase::who).contains(StopTriage.Who.values());
   }
 
   @Test

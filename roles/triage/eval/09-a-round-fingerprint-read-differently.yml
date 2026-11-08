@@ -1,0 +1,19 @@
+case: a round fingerprint read differently
+stop:
+  trigger: ROUNDS
+  evidence: round sent 3 times running in 24h at REVIEW_PENDING
+trail: |
+  09:00 code-host read: one open thread, note 4411, first line "src/Quote.java:42 rounding drops the cent"
+  09:00 round relayed to the session; session answered NO CHANGE, its reply drafted in review_replies.md, not posted
+  09:30 code-host read: one open thread, note 4411, first line "Quote.java:42 rounding drops the cent"
+  09:30 round relayed again as new
+  10:00 code-host read: one open thread, note 4411, first line "https://host/alpha/-/merge_requests/7#note_4411 rounding drops the cent"
+  10:00 round relayed again as new; the count reached 3
+  the thread is unchanged on the host since 08:55; only how the read wrote its first line differs
+commits: |
+  b7c3a90 Round the premium half-up
+  0d7b3f9 Baseline
+expect:
+  who: jagt
+  lift: unsafe
+  family: A

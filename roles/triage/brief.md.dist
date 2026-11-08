@@ -15,10 +15,10 @@ Name one, the first that fits the evidence:
 | who | it holds when |
 |-----|---------------|
 | session | the session handed back or repeated the same tree, report or round and changed nothing the evidence names |
-| master | the Master sent, shipped or returned the same thing again, or lifted a stop the evidence shows still standing |
+| master | the Master sent, shipped or returned the same thing again, lifted a stop still standing, or filed a human's action as a wait |
 | case | a case, row or step of the human's matched nothing, or matched what it should not, so the same move was asked again |
-| jagt | jagt counted, stopped or repeated against what the trail shows: a count past a merge, a result of a round that moved on |
-| none | the work moved between the counted events; the stop was set by a count the work outgrew |
+| jagt | jagt counted, stopped or repeated against what the trail shows: a count past a merge, a result delivered to a round that moved on |
+| none | the work moved between the counted events, or an outside condition (a host, a login, a network) failed every read |
 
 Where the trail cannot tell two apart, name the one the evidence proves and say what is missing in a premise.
 

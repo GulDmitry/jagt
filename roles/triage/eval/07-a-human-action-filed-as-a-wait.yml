@@ -1,0 +1,17 @@
+case: a human action filed as a wait
+stop:
+  trigger: WAIT
+  evidence: ABC-42 waited 4h on "the dependency install finishes" with nothing changing
+trail: |
+  10:00 session reported a question: the install needs the private registry login, which only the human holds
+  10:02 master (act) answered: the human runs the install with their own registry login; report outcome=wait until it is done
+  10:03 session reported outcome=wait, "waiting for the human to run the install"
+  12:03 wait re-read: install not run, no question open to the human
+  14:03 wait re-read: install not run, no question open to the human
+commits: |
+  6e2d1a8 Add the payment client dependency
+  1f90bc4 Baseline
+expect:
+  who: master
+  lift: unsafe
+  family: D
