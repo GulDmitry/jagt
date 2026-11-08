@@ -143,6 +143,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | F17 | a not-ready plan is returned after each rework → only rounds answering one unchanged report count toward `loopBreaker.rounds` | seen 2026-10-29: three reworked plans in 24h stopped a task as a loop | `LoopBreakerTest`, `MasterVerdictsTest` |
 | F18 | a Master ship answers no recorded round (first ship, a CI fix, a human's edit) → it counts toward `loopBreaker.ships` only on the tree of the ship before; new work never trips it | seen 2026-10-30: four ships of new work stopped a task as SHIPS | `LoopBreakerTest`, `ShipRecordTest` |
 | F19 | jagt says a line, relays, or asks after a restart into a session whose last sign (an open turn's included) is past the cache lifetime → the line goes to a fresh session, the restart ask skips it, and asks a warm one only if its log was written while jagt was down (`AliveStamp`) | seen 2026-11-05: a restart's ask and a relay rewrote two idle sessions' 100K+ contexts cold | `SessionPhaseTest`, `AgentSessionsTest`, `PromptGateTest`, `RestartAskJobTest`, `AliveStampTest` |
+| F20 | a push's range holds a mass reformat listed in `.git-blame-ignore-revs` → `pitestDiff` judges only lines another commit changed | seen 2026-11-08: CI's unit job mutated every class for 54 min | `jagt.pitest.gradle`, checked by a dry run (`-m`) on the reformat's range |
 ## G — prose routing
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

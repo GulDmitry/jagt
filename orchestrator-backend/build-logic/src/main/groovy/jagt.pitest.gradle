@@ -71,6 +71,21 @@ diff.eachLine { line ->
         (from..<(from + count)).each { changedLines[file] << it }
     }
 }
+// A line only a `.git-blame-ignore-revs` commit touched in the range (a mass reformat) is not a change to judge.
+def repoRoot = rootDir.parentFile
+def ignoreRevs = new File(repoRoot, '.git-blame-ignore-revs')
+def git = { List<String> args -> providers.exec { workingDir repoRoot; commandLine(['git'] + args) }.standardOutput.asText.get() }
+def ignored = ignoreRevs.exists() ? ignoreRevs.readLines().findAll { it ==~ /[0-9a-f]{40}/ } as Set : [] as Set
+def inRange = base == 'HEAD' ? [] as Set : git(['rev-list', "${base}..HEAD"]).readLines() as Set
+if (ignored.intersect(inRange)) {
+    def kept = (inRange - ignored) + ['0' * 40]
+    changedLines.keySet().each { path ->
+        def blamed = git(['blame', '--porcelain', '--ignore-revs-file', ignoreRevs.path, '--', path]).readLines()
+            .collect { it =~ /^([0-9a-f]{40}) \d+ (\d+)/ }.findAll { it }.collectEntries { [(it[0][2] as int): it[0][1]] }
+        changedLines[path].retainAll { blamed[it] in kept }
+    }
+    changedLines.keySet().removeAll { changedLines[it].isEmpty() }
+}
 def classOf = { String path -> path.replaceFirst('^.*?src/main/java/', '').replace('.java', '').replace('/', '.') }
 def moduleOf = { String path -> ':' + path.replaceFirst('^orchestrator-backend/', '').tokenize('/')[0] }
 // The root project's own main classes carry no pitest.

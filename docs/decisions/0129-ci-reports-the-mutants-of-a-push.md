@@ -16,6 +16,7 @@ Accepted 2026-11-02 by the owner's order.
 
 - Both pipelines' unit job runs `test -PpitestDiff=<base>`: a push's `before`, a request's base. `scripts/push-base.sh`
   falls back to `HEAD~1` where the clone does not hold it (a new branch, a force-push). The checkout is full depth.
+- A line only a `.git-blame-ignore-revs` commit changed in the range is not judged: a reformat mutates nothing.
 - Survivors are printed in the job log and fail nothing, as 0127 holds.
 
 ## Rejected
