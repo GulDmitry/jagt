@@ -19,6 +19,7 @@ public record ToldOnce(Map<Kind, String> entries) {
   public enum Kind {
     AUTO_REVIEW_WINDOW("windowElapsed"),
     AUTO_REVIEW_UNREADABLE("unreadable"),
+    CONFLICT_REQUEST_GONE("conflictRequestGone"),
     SILENCE("silence"),
     VERIFY_FAILED("verifyFailed");
 

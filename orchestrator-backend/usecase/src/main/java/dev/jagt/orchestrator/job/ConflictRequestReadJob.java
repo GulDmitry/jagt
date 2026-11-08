@@ -2,13 +2,18 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.StopKind;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.Watch;
+import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.MergedRequests;
 import dev.jagt.orchestrator.service.ReviewReader;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.ToldOnce;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Optional;
@@ -27,6 +32,8 @@ public class ConflictRequestReadJob implements TaskJob {
 
   private final ReviewReader reviewReader;
   private final MergedRequests mergedRequests;
+  private final StateService stateService;
+  private final Notifications notifications;
 
   @Override
   public String id() {
@@ -58,9 +65,14 @@ public class ConflictRequestReadJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    if (task.repos().size() > 1) {
-      conflictedRepo(task).ifPresent(repo -> read(taskId, repo));
-    }
+    conflictedRepo(task)
+        .filter(repo -> !toldGone(task, repo))
+        .ifPresent(repo -> read(taskId, repo));
+  }
+
+  private static boolean toldGone(TaskState task, TaskRepo repo) {
+    return task.toldOrNone()
+        .said(ToldOnce.Kind.CONFLICT_REQUEST_GONE, Objects.requireNonNull(repo.mrUrl()));
   }
 
   private static Optional<TaskRepo> conflictedRepo(TaskState task) {
@@ -79,13 +91,23 @@ public class ConflictRequestReadJob implements TaskJob {
                     .findFirst());
   }
 
+  private void reportGone(String taskId, String request) {
+    stateService.updateTask(
+        taskId, task -> TaskReducer.told(task, ToldOnce.Kind.CONFLICT_REQUEST_GONE, request));
+    notifications.send(
+        Notification.fromAgent(
+                taskId, "conflict", "error: no such request: " + request + " (the host says so)")
+            .withEvent(Notification.Event.AUTO_REVIEW));
+  }
+
   private void read(String taskId, TaskRepo repo) {
     try {
       reviewReader
           .read(taskId, Objects.requireNonNull(repo.mrUrl()))
           .facts()
           .filter(facts -> facts.request().exists() && facts.request().closed())
-          .ifPresent(closed -> mergedRequests.hostSaidClosed(taskId, repo));
+          .filter(closed -> !mergedRequests.hostSaidClosed(taskId, repo))
+          .ifPresent(closed -> reportGone(taskId, Objects.requireNonNull(repo.mrUrl())));
     } catch (RuntimeException failed) {
       log.atWarn()
           .setMessage("request of the conflicted repository not read")
