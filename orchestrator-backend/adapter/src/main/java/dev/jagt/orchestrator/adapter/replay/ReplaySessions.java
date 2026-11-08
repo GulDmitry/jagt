@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.replay;
 
+import dev.jagt.orchestrator.flow.CheckerPhase;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn;
@@ -22,7 +24,7 @@ import org.springframework.stereotype.Component;
 /**
  * Stands in for every recorded session: answers the session's launch and each turn jagt opens with
  * the moves the recording made there. A turn the recording did not open, or one it opened that jagt
- * does not, ends the replay.
+ * does not, ends the replay; a turn a checker's read holds is not the session's.
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "replay")
@@ -99,7 +101,9 @@ public class ReplaySessions {
     Path at = Path.of(worktree);
     script.launched().forEach(move -> moves.make(at, move));
     Turn turn = state.turnOrNone();
-    if (!turn.open() || answered.getOrDefault(task, 0L) >= turn.id()) {
+    if (!turn.open()
+        || answered.getOrDefault(task, 0L) >= turn.id()
+        || Checkers.of(state).containsValue(CheckerPhase.READING)) {
       return;
     }
     answered.put(task, turn.id());

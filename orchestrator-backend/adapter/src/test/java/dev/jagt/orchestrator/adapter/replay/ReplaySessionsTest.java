@@ -15,6 +15,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.TaskStore;
+import dev.jagt.orchestrator.task.RoleRecord;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
@@ -199,6 +200,37 @@ class ReplaySessionsTest {
 
     verify(tasks, timeout(WAIT_MILLIS).atLeast(FEW_TICKS)).task("ABC-1");
     assertThat(recording.diverged()).isTrue();
+    verify(moves, never()).make(any(), any());
+  }
+
+  @Test
+  void aTurnACheckersReadHoldsIsNeitherAnsweredNorADivergence(@TempDir Path root)
+      throws Exception {
+    Path file = root.resolve("recording.jsonl");
+    Files.writeString(
+        file,
+        """
+        {"type":"turn","task":"ABC-1","turn":1,"step":"ship"}
+        {"type":"push","task":"ABC-1","turn":1,"message":"Fix the widget","paths":["a.txt"]}
+        """);
+    Recording recording = new Recording(file.toString());
+    Turn checking = Turn.none().relayed("accept", "facts", "", 1);
+    TaskStore tasks = mock(TaskStore.class);
+    when(tasks.task("ABC-1"))
+        .thenReturn(
+            Optional.of(
+                TaskState.builder("p", "/work/ABC-1", TaskStatus.DEPLOYED)
+                    .turn(checking)
+                    .build()
+                    .withRole("qa", RoleRecord.defaults().withReading("accept"))));
+    ReplayMoves moves = mock(ReplayMoves.class);
+    sessions = new ReplaySessions(recording, tasks, moves);
+    sessions.launched(Path.of("/work/ABC-1"));
+
+    sessions.start();
+
+    verify(tasks, timeout(WAIT_MILLIS).atLeast(FEW_TICKS)).task("ABC-1");
+    assertThat(recording.diverged()).isFalse();
     verify(moves, never()).make(any(), any());
   }
 

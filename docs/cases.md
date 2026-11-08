@@ -74,6 +74,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | C13 | a session reports a question and opens the CLI's question dialog → the dialog is denied in its settings and the question, options and pick are in `task_notes.md`, so the Master's or the human's answer reaches the session | seen 2026-11-02: the Master's answer to a session's question was relayed at 09:24:55Z and held (`nudge waits, the human is typing`) behind the dialog | `ClaudeAgentRuntimeTest` |
 | C14 | the human pauses a task while a session wake is due or a deploy conflict waits → the wake stays pending until the lift and the conflict is neither handed to the session nor finished | seen 2026-11-05: two jobs not reading the pause would still write into a paused task | `SessionWakesTest`, `DeployConflictsTest` |
 | C15 | the root session, holding the Master token, moves a task → the step reads `root`, so the task session's turn never takes it as the session's own answer | seen 2026-11-07: a root call was recorded `mcp` | `McpProtocolServiceTest`, `TaskTurnsTest` |
+| C16 | a replayed task passes QA → the turn the QA read holds is left to the read, so the replay neither answers it as the session's nor ends on it | seen 2026-11-08: the stand's QA replay diverged when its tick fell inside the read | `ReplaySessionsTest` |
 ## D — model overreach
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
