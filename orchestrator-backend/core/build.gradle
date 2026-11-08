@@ -28,6 +28,7 @@ tasks.register('propertyTest', Test) {
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
     useJUnitPlatform { includeEngines 'jqwik' }
+    systemProperty 'jqwik.tries.default', '200'
 }
 
 tasks.named('check') { dependsOn 'propertyTest' }

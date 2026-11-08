@@ -27,6 +27,7 @@ import dev.jagt.statechart.Configuration;
 import dev.jagt.statechart.EdgeBuilder;
 import dev.jagt.statechart.RegionId;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The lifecycle region, one edge per status move; the stop region, one way out per way a stop ends;
@@ -137,6 +139,8 @@ final class TaskChart {
 
   private static boolean installed;
 
+  private static volatile @Nullable Set<TaskStatus> ranTargets;
+
   private TaskChart() {}
 
   static Chart<TaskMove, ChartFacts, TaskEffect> chart() {
@@ -165,6 +169,7 @@ final class TaskChart {
     }
     if (!installed) {
       current = Assembled.of(composition);
+      ranTargets = null;
       installed = true;
     }
   }
@@ -239,6 +244,15 @@ final class TaskChart {
 
   /** Every status some action's outcome leads to; a task that is gone is written nothing. */
   static Set<TaskStatus> ranTargets() {
+    Set<TaskStatus> kept = ranTargets;
+    if (kept == null) {
+      kept = Collections.unmodifiableSet(compute());
+      ranTargets = kept;
+    }
+    return kept;
+  }
+
+  private static Set<TaskStatus> compute() {
     Set<TaskStatus> targets = EnumSet.noneOf(TaskStatus.class);
     for (TaskAction action : TaskAction.values()) {
       for (TaskStatus from : TaskStatus.values()) {
