@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.flow.TaskView;
 import java.util.List;
+import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -49,6 +50,11 @@ public interface GlobalCommand {
    */
   default @Nullable String part() {
     return null;
+  }
+
+  /** Why the Master never runs this command; empty where it may. */
+  default Optional<String> whyNotTheMaster() {
+    return Optional.empty();
   }
 
   /** {@code tail} is what was typed after the verb, blank when nothing was. */

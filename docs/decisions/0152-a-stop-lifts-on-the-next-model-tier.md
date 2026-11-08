@@ -4,6 +4,8 @@
 
 ## Status
 
+Superseded in part by [0153](0153-mine-names-what-the-master-leaves.md): the Master's door no longer refuses `escalate`.
+
 Accepted 2026-11-08 by the owner's order. Beside
 [0140](0140-in-act-the-master-decides-a-stop-for-a-suspected-loop.md): a fourth answer to a stop.
 

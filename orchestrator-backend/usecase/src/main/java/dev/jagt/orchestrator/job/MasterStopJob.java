@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.StopHold;
 import dev.jagt.orchestrator.flow.StopKind;
+import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.Rounds;
@@ -68,7 +69,7 @@ public class MasterStopJob implements TaskJob {
     TaskStop stop = Objects.requireNonNull(task.stop());
     turns.askedStop(taskId, stop.key());
     Optional<MasterStopAnswer> answer =
-        panel.ask(taskId, task, config).filter(said -> decides(task, said));
+        panel.ask(taskId, task, config).filter(said -> decides(task, said, config));
     if (answer.isEmpty()) {
       log.atInfo()
           .setMessage("master leaves the stop")
@@ -88,16 +89,32 @@ public class MasterStopJob implements TaskJob {
     lift(taskId, answer.get());
   }
 
-  /** A plan waiting is answered by its review, so a task there is not sent back to work. */
-  private static boolean decides(TaskState task, MasterStopAnswer answer) {
+  /**
+   * A plan waiting is answered by its review, so a task there is not sent back to work; a tier up
+   * is the Master's only where {@code mine} does not keep it.
+   */
+  private static boolean decides(
+      TaskState task, MasterStopAnswer answer, ConfigService.ConfigFile.MasterConfig config) {
     return switch (answer.kind()) {
       case LIFT -> true;
+      case ESCALATE -> !config.profile().keeps(TaskAction.ESCALATE);
       case RETURN -> !FlowRules.holdsPlan(task.status());
       case HUMAN -> false;
     };
   }
 
   private void lift(String taskId, MasterStopAnswer answer) {
+    if (answer.kind() == MasterStopAnswer.Kind.ESCALATE) {
+      if (!moves.escalate(taskId)) {
+        log.atWarn()
+            .setMessage("master escalate refused")
+            .addKeyValue("task", taskId)
+            .addKeyValue("cause", "the move is not offered on this stop, or no case allows it")
+            .addKeyValue("effect", "the stop is the human's to lift")
+            .log();
+      }
+      return;
+    }
     if (moves.lift(taskId)
         && answer.kind() == MasterStopAnswer.Kind.RETURN
         && !moves.returned(taskId, answer.text())) {

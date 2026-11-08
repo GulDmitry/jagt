@@ -21,20 +21,14 @@ a round SHALL cost one heavy read per role it applies to, charged as `master`, l
 - **WHEN** `roles.master.mode` is `judge`, or unset where the human's words are readable
 - **THEN** each round is read into the worktree's `master-review.md`; it presses nothing
 - **AND** a verdict answers only the hand-back it was asked about, however late it is written; a file jagt did not write answers none
-
-#### Scenario: The Master is reading a round
 - **WHEN** it is under review
 - **THEN** the chip says `master review` and nothing asks you; the session was told to end its turn
 
-#### Scenario: A role worth a lighter model
+#### Scenario: Which roles read, and on what model
 - **WHEN** a role's row names a `model`
 - **THEN** it runs on it; blank keeps `roles.master.model`
-
-#### Scenario: A role the diff does not touch
 - **WHEN** the diff touches none of a role's `applies` globs, or only paths its `!` globs name
 - **THEN** a `# skipped` line replaces its read; unread paths, or no role left, read every role
-
-#### Scenario: Whose roles read a round
 - **WHEN** a session hands back a round
 - **THEN** its `<self_review>` reads it first, then the Master by the same roles unless its brief names others
 
@@ -68,8 +62,10 @@ It SHALL decide a stop for a suspected loop ([task-stops](../task-stops/spec.md)
 - **THEN** it presses nothing, and the task waits for you; an unpushed commit, uncommitted work or replies drafted since the last ship make it due
 
 ### Requirement: The human keeps what mine and humanPaths name
-`roles.master.mine` SHALL keep named steps (`task/MasterRight`) the human's, `[plan]` while unset; a project's `humanPaths`
-a task's ship and deploy where it changes a path they name (`HumanPaths`). Closing SHALL stay the human's: the Master's `done` is refused.
+`roles.master.mine` SHALL keep named steps (`task/MasterRight`) and verbs (any `TaskAction` or `GlobalCommand` id) the human's, `[plan]`
+while unset; a project's `humanPaths` keeps a task's ship and deploy where it changes a path they name (`HumanPaths`). Every other verb the
+Master SHALL press through `press_task` and `run_command`, as a human's press, held to a Master case; `plan` keeps `approve-plan`, `repo` `add-repo`.
+A command SHALL declare `whyNotTheMaster` where the Master never runs it, whatever `mine` says.
 
 #### Scenario: A ship, a reply or a path kept for you
 - **WHEN** a round is `ready` and `mine: [ship]`, or the Master ships and `mine: [reply]`
@@ -77,11 +73,18 @@ a task's ship and deploy where it changes a path they name (`HumanPaths`). Closi
 - **WHEN** `humanPaths: ["**/auth/**"]` names a changed path, or the paths are unread
 - **THEN** it presses neither; the `master` window names the path
 
+#### Scenario: A verb pressed or kept
+- **WHEN** the Master presses `trust`, `lift`, `escalate`, `pause`, `done` or `remove-repo` and a Master case allows it at the status
+- **THEN** it runs as a human's press, stamped the Master's; where `mine` names the verb it is refused with `ACTION_NOT_AVAILABLE`
+
+#### Scenario: A command is closed to the Master
+- **WHEN** the Master runs `do`, `resume`, `act` or `jobs`
+- **THEN** the first three are refused with their own reason, `jobs` runs as the Master's
+
 #### Scenario: A session asks for a repository, or it is kept for you
 - **WHEN** a session names a configured project it lacks and the Master holds `repo`
 - **THEN** it presses `add-repo` once per request, answers in no prose and pings nobody
-- **WHEN** `mine: [repo]`
-- **THEN** it presses and answers nothing; you are pinged once and `add-repo` is yours
+- **AND** with `mine: [repo]` it presses and answers nothing; you are pinged once and `add-repo` is yours
 
 #### Scenario: A session stops to ask
 - **WHEN** a session asks a question
@@ -103,10 +106,7 @@ a task's ship and deploy where it changes a path they name (`HumanPaths`). Closi
 #### Scenario: A session asks for a permission
 - **WHEN** it reports `outcome=permission`, stopped on a call its CLI denied
 - **THEN** the Master never answers: no model grants a right, so the question is yours
-
-#### Scenario: Questions repeat over an unchanged tree
-- **WHEN** they repeat
-- **THEN** after three, an answer that changes the approach, in the same session; the ninth is a runaway, yours
+- **AND** when they repeat, after three an answer that changes the approach, in the same session; the ninth is a runaway, yours
 
 #### Scenario: It is unsure what the ticket asks
 - **WHEN** the ticket could mean "switch" or "add beside"

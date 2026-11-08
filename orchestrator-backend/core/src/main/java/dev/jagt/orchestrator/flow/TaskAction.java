@@ -131,14 +131,6 @@ public enum TaskAction {
    */
   private static final Set<TaskAction> READ_ONLY = EnumSet.of(FOCUS, IDE, DIFF);
 
-  /**
-   * Verbs a human keeps even where the Master session acts for them. A task is opened by a person
-   * and closed by one; what happens in between is the work, and the work is what the reviewer
-   * stands in for.
-   */
-  private static final Set<TaskAction> HUMAN_ONLY =
-      EnumSet.of(TRUST, LIFT, ESCALATE, PAUSE, DONE, REMOVE_REPO);
-
   private static final Set<TaskAction> NAMES_A_PROJECT = EnumSet.of(ADD_REPO, REMOVE_REPO);
 
   /** Verbs a human types with what they act on, so no card carries a button for them. */
@@ -177,11 +169,6 @@ public enum TaskAction {
   /** Where the verb sorts among every verb, global commands included: most-used lowest. */
   public int rank() {
     return rank;
-  }
-
-  /** Whether this verb stays a human's however much else is delegated. */
-  public boolean humanOnly() {
-    return HUMAN_ONLY.contains(this);
   }
 
   /**

@@ -64,6 +64,11 @@ class MasterPress {
     return pressed(taskId, TaskAction.LIFT);
   }
 
+  /** False where the press was refused. */
+  boolean escalate(String taskId) {
+    return pressed(taskId, TaskAction.ESCALATE);
+  }
+
   private boolean pressed(String taskId, TaskAction action) {
     log.atInfo()
         .setMessage("master presses")

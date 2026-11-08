@@ -22,6 +22,11 @@ class MasterStopMoves {
     return press.lift(taskId);
   }
 
+  /** False where the press was refused. */
+  boolean escalate(String taskId) {
+    return press.escalate(taskId);
+  }
+
   /**
    * The task as the lift left it, told {@code instruction}; false where the telling was refused or
    * the task moved on.

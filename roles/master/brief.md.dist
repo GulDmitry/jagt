@@ -77,3 +77,7 @@ Only blocking, wrong and unproven stop a round, an unproven one as a `show:` req
 rest is advice. What earlier rounds settled is not reopened for less. `ready` means nothing blocking, wrong or unproven; a
 question is the one thing the human must decide: a ticket that reads two ways, where one reading removes what
 callers rely on, is that question. Neither reading is provable, so a finding on one is a guess.
+
+## A stop for a suspected loop
+
+One line: `lift: <why>` where the loop is not one, `escalate: <why>` where the session needs the next model tier, `return: <instruction>` where it must change its approach, else `human: <why>`.

@@ -56,4 +56,81 @@ The session asked for a repository its task lacks, and the Master adds it.
 move: lift
 at: any but DONE
 by: master
-You left a stop for a suspected loop to the Master, which was asked about it and lifts it.
+The Master lifts a stop, as asked about a suspected loop or as you would.
+
+## escalate
+
+move: escalate
+at: any
+by: master
+The Master lifts a stop and starts the session again one model tier up.
+
+## trust
+
+move: trust
+at: any
+by: master
+jagt found the repository's config or hooks changed, and the Master adopts them as they are.
+
+## pause
+
+move: pause
+at: any but NEW, PLAN_PENDING, DONE
+by: master
+The Master pauses a started task: nothing of jagt runs on it until the stop is lifted.
+
+## done
+
+move: done
+at: any
+by: master
+The Master closes the task: the session ends, the worktree goes, the branch stays.
+
+## remove-repo
+
+move: remove-repo
+at: any but NEW, DEPLOY_CONFLICT, DONE
+by: master
+The Master takes a repository out of a task that works in several.
+
+## revert
+
+move: revert
+at: any
+by: master
+The Master takes the last deploy back out, as you would.
+
+## sweep
+
+move: sweep
+at: any
+by: master
+The Master reads what the pipeline and the reviewers said and relays it to the session.
+
+## respawn
+
+move: respawn
+at: any
+by: master
+The Master starts a new agent session in the task's worktree.
+
+## focus
+
+move: focus
+at: any
+by: master
+The Master opens the agent's terminal window.
+
+## ide
+
+move: ide
+at: any
+by: master
+The Master opens every worktree of the task in the editor.
+
+## diff
+
+move: diff
+at: any
+by: master
+The Master shows every repository's diff against the branch its request targets.

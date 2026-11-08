@@ -13,8 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * The Master's decision on a stop jagt set for a loop it suspects: lift it, return the task to its
- * session, or leave it.
+ * The Master's decision on a stop jagt set for a loop it suspects: lift it, lift it a model tier
+ * up, return the task to its session, or leave it.
  */
 @Service
 @RequiredArgsConstructor
@@ -72,13 +72,16 @@ public class MasterStopPanel {
         + "3. Lift where the loop is not one: the work moved, or the stop was set by a count the"
         + " work outgrew.\n"
         + "4. Return where the session must change its approach: say what it does differently.\n"
-        + "5. Leave it to the human where only they can settle it: a right, a choice of theirs, a"
+        + "5. Escalate where the loop is real and the session's model is too weak for the work: the"
+        + " session starts again on the next model tier.\n"
+        + "6. Leave it to the human where only they can settle it: a right, a choice of theirs, a"
         + " fact you cannot read.\n"
         + "</rules>\n"
         + "<output_format>\n"
         + "- verdict: ready.\n"
         + "- findings: exactly one, its issue one line that starts with `lift: <the reason>`,"
-        + " `return: <the instruction to the session>` or `human: <why>`.\n"
+        + " `escalate: <the reason>`, `return: <the instruction to the session>` or"
+        + " `human: <why>`.\n"
         + "- premises: what it rests on, each with provenBy.\n"
         + "- failure: blank unless something stopped you reading, then what.\n"
         + "</output_format>\n"

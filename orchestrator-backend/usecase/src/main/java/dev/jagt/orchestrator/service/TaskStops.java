@@ -184,11 +184,19 @@ public class TaskStops {
     return StopHold.of(task, profiles.at(task));
   }
 
-  /** Whether the Master was asked about the stop standing and may lift it, within its bound. */
-  public boolean masterMayLift(String taskId) {
+  /** Whether the human keeps this verb from the Master, whatever phase the task stands in. */
+  public boolean masterKeeps(String taskId, TaskAction action) {
     return stateService
-        .task(taskId)
-        .filter(task -> StopHold.liftableByTheMaster(task, profiles.at(task)))
+        .task(stateService.canonicalTaskId(taskId))
+        .filter(task -> profiles.at(task).keeps(action))
+        .isPresent();
+  }
+
+  /** Whether the Master spent the lifts it holds between two of the human's. */
+  public boolean masterLiftsSpent(String taskId) {
+    return stateService
+        .task(stateService.canonicalTaskId(taskId))
+        .filter(task -> task.masterOrNone().liftedStops() >= StopHold.LIFTS_PER_HUMAN_LIFT)
         .isPresent();
   }
 
@@ -207,10 +215,13 @@ public class TaskStops {
 
   /** A human's lift that leaves the task's session due on the next model tier. */
   public void escalate(String taskId) {
+    boolean byTheMaster = CaseDoor.byTheMaster();
     stateService.updateTask(
         taskId,
         task ->
-            TaskReducer.masterLiftedStops(TaskReducer.escalated(task, clock.millis()), 0));
+            TaskReducer.masterLiftedStops(
+                TaskReducer.escalated(task, clock.millis()),
+                byTheMaster ? task.masterOrNone().liftedStops() + 1 : 0));
   }
 
   /** A deploy by a human restores the Master's lifts, whether or not a stop stands. */

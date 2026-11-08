@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -564,8 +565,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
 
       /**
-       * Steps a human keeps for themselves, by name; anything not named here the Master holds in
-       * `act`.
+       * Steps and verbs a human keeps for themselves, by name; anything not named here the Master
+       * holds in `act`.
        */
       public List<String> mineOrDefault() {
         return mine == null ? List.of(MasterRight.PLAN.id()) : mine;
@@ -612,8 +613,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         return new Arbiter.Profile(
             modeOrDefault(),
             mineOrDefault().stream()
-                .map(MasterRight::of)
-                .flatMap(Optional::stream)
+                .map(word -> word.strip().toLowerCase(Locale.ROOT))
                 .collect(java.util.stream.Collectors.toSet()));
       }
     }

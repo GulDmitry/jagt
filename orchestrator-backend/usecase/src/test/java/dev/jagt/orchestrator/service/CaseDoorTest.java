@@ -70,28 +70,17 @@ class CaseDoorTest {
     assertThat(CaseDoor.byTheMaster()).isFalse();
   }
 
-  @Test
-  void refusesTheMasterAVerbOnlyAHumanPresses(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
-    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
-    CaseDoor door = doorOver(paths, state);
-
-    assertThatThrownBy(
-            () ->
-                OriginContext.as(
-                    ActionOrigin.MASTER, () -> door.presses("ABC-42", TaskAction.DONE)))
-        .isInstanceOfSatisfying(
-            Refusal.class,
-            refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
-  }
-
-  @Test
-  void letsTheMasterLiftAStopItWasAskedAboutAndNoOther(@TempDir Path root) throws Exception {
+  @ParameterizedTest
+  @CsvSource({
+    "TRUST, trust",
+    "LIFT, lift",
+    "ESCALATE, escalate",
+    "PAUSE, pause",
+    "DONE, done",
+    "REMOVE_REPO, remove-repo"
+  })
+  void letsTheMasterPressAVerbOnceReservedForAHumanWhereACaseAllowsIt(
+      TaskAction action, String move, @TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -100,56 +89,35 @@ class CaseDoorTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(
         root.resolve("roles/master/cases.md"),
-        "## lift\n\nmove: lift\nat: any but DONE\nby: master\nThe Master lifts it.\n");
+        "## verb\n\nmove: " + move + "\nat: any\nby: master\nThe Master presses it.\n");
     StateService state = new StateService(new JsonMapper(), paths);
-    TaskStop asked = new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds");
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .stop(asked)
-            .master(Master.defaults().withAskedStop(asked.key()))
-            .build());
-    state.putTask(
-        "ABC-43",
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .stop(new TaskStop(TaskStop.Trigger.PAUSE, 5, "until the managers answer"))
-            .master(Master.defaults().withAskedStop("PAUSE@5"))
-            .build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
-    boolean lifted =
-        OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", TaskAction.LIFT));
+    boolean admitted =
+        OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", action));
 
-    assertThat(lifted).isTrue();
-    assertThatThrownBy(
-            () ->
-                OriginContext.as(
-                    ActionOrigin.MASTER, () -> door.presses("ABC-43", TaskAction.LIFT)))
-        .isInstanceOfSatisfying(
-            Refusal.class,
-            refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
+    assertThat(admitted).isTrue();
   }
 
   @ParameterizedTest
-  @CsvSource({"ROUNDS@5, 1, plan", "ROUNDS@4, 0, plan", "ROUNDS@5, 0, lift"})
-  void refusesTheMasterToLiftAStopWhenItsBoundIsSpentOrItWasAskedAboutAnOlderOneOrItLacksTheRight(
-      String asked, int liftedStops, String mine, @TempDir Path root) throws Exception {
+  @CsvSource({
+    "DONE, done",
+    "LIFT, lift",
+    "ESCALATE, escalate",
+    "TRUST, trust",
+    "APPROVE_PLAN, plan",
+    "ADD_REPO, repo"
+  })
+  void refusesTheMasterAVerbItsHumanKeepsInMine(
+      TaskAction action, String mine, @TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.writeString(
-        root.resolve("roles/master/cases.md"),
-        "## lift\n\nmove: lift\nat: any but DONE\nby: master\nThe Master lifts it.\n");
     StateService state = new StateService(new JsonMapper(), paths);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .stop(new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds"))
-            .master(Master.defaults().withAskedStop(asked).withLiftedStops(liftedStops))
-            .build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door =
         doorOver(
             paths,
@@ -157,9 +125,7 @@ class CaseDoorTest {
             new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(mine), null));
 
     assertThatThrownBy(
-            () ->
-                OriginContext.as(
-                    ActionOrigin.MASTER, () -> door.presses("ABC-42", TaskAction.LIFT)))
+            () -> OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", action)))
         .isInstanceOfSatisfying(
             Refusal.class,
             refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
@@ -259,5 +225,33 @@ class CaseDoorTest {
   void knowsTheMasterByTheOriginTheCallRunsUnder() {
     assertThat(OriginContext.as(ActionOrigin.MASTER, CaseDoor::byTheMaster)).isTrue();
     assertThat(OriginContext.as(ActionOrigin.BOARD, CaseDoor::byTheMaster)).isFalse();
+  }
+
+  @ParameterizedTest
+  @CsvSource({"LIFT, lift", "ESCALATE, escalate"})
+  void refusesTheMasterALiftOnceItsOneLiftSinceTheHumansLastIsSpent(
+      TaskAction action, String move, @TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.writeString(
+        root.resolve("roles/master/cases.md"),
+        "## verb\n\nmove: " + move + "\nat: any\nby: master\nThe Master presses it.\n");
+    StateService state = new StateService(new JsonMapper(), paths);
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .master(Master.defaults().withLiftedStops(1))
+            .build());
+    CaseDoor door = doorOver(paths, state);
+
+    assertThatThrownBy(
+            () -> OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", action)))
+        .isInstanceOfSatisfying(
+            Refusal.class,
+            refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
   }
 }

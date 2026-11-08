@@ -24,14 +24,6 @@ public enum StopHold {
     return mayBeLifted(task) && profile.may(MasterRight.LIFT) && !asked(task) ? MASTER : HUMAN;
   }
 
-  /**
-   * The Master was asked about the stop standing, may lift in this phase, and has its bound
-   * unspent.
-   */
-  public static boolean liftableByTheMaster(TaskState task, Arbiter.Profile profile) {
-    return mayBeLifted(task) && asked(task) && profile.may(MasterRight.LIFT);
-  }
-
   /** A stop of a trigger the Master decides, while its bound is unspent. */
   public static boolean mayBeLifted(TaskState task) {
     TaskStop stop = task.stop();

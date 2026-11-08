@@ -25,13 +25,13 @@ unresolved, CI green, unapproved; `APPROVED` by a human; `DEPLOY_CONFLICT` resol
 - **WHEN** the agent has reported nothing
 - **THEN** the task is `NEW`
 
-### Requirement: A verb a human keeps is named in the table
-`TaskAction.humanOnly` SHALL mark it, never prose; `done` alone is. A person opens a task and closes it; the work between is what the Master stands
-in for where `roles.master.mode` is `act` ([master](../master/spec.md)).
+### Requirement: The Master in act presses every verb but those mine names
+The Master SHALL press every `TaskAction` where `roles.master.mode` is `act` and a Master case allows it ([master](../master/spec.md)); only
+`roles.master.mine` keeps a verb from it (`CaseDoor.presses`), no table of verbs does.
 
 #### Scenario: Closing a task
-- **WHEN** `done` runs
-- **THEN** a human pressed it
+- **WHEN** the Master presses `done` and `mine` does not name it
+- **THEN** the door admits it as a human's press, held to a Master case
 
 ### Requirement: Door one runs an action
 `flow/FlowEngine.run` SHALL check the rules, run the action's `flow/TaskCapability`, and write the status the table gives for its `flow/Outcome`.

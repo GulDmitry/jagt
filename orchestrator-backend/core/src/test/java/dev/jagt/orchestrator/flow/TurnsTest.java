@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.MasterMode;
-import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn.Holder;
@@ -26,7 +25,7 @@ class TurnsTest {
       Map.of(
           "off", Arbiter.Profile.OFF,
           "judge", new Arbiter.Profile(MasterMode.JUDGE, Set.of()),
-          "act-mine-plan", new Arbiter.Profile(MasterMode.ACT, Set.of(MasterRight.PLAN)),
+          "act-mine-plan", new Arbiter.Profile(MasterMode.ACT, Set.of("plan")),
           "act", new Arbiter.Profile(MasterMode.ACT, Set.of()));
 
   static Stream<Arguments> everyTurn() {

@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -39,6 +40,11 @@ public class DoCommand implements GlobalCommand {
         "  … [from <branch>] — cut the worktree from <branch> and target its request at it",
         "  … [recreate|resume] — the branch exists already: cut it fresh, or take over its"
             + " commits");
+  }
+
+  @Override
+  public Optional<String> whyNotTheMaster() {
+    return Optional.of("a task opens from a command of yours or the tracker, never from a model");
   }
 
   @Override

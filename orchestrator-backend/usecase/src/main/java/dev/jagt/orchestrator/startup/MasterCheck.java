@@ -62,17 +62,6 @@ public class MasterCheck implements StartupCheck {
               "orchestrator.roles.master.withhold is now orchestrator.roles.master.mine — the same"
                   + " list, named from your side rather than the Master's. Rename the key."));
     }
-    master.mineOrDefault().stream()
-        .filter(named -> MasterRight.of(named).isEmpty())
-        .forEach(
-            named ->
-                problems.add(
-                    new Problem(
-                        MINE,
-                        "orchestrator.roles.master.mine: '"
-                            + named
-                            + "' is not one of "
-                            + MasterRight.ids())));
     if (master.modeOrDefault() == MasterMode.ACT) {
       refuseHalfAutomatedLoop(config, master, problems);
     }

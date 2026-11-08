@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.command.MasterPresses;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
@@ -402,5 +403,70 @@ class McpToolScopeTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("list_tasks is Master-only");
     verifyNoInteractions(taskViews);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"press_task", "run_command"})
+  void refusesASubAgentPressingAVerbOrACommand(String tool) {
+    MasterPresses presses = mock(MasterPresses.class);
+    Registered registered = new Registered();
+    new PressTools(presses).declare(registered);
+    ToolHandler handler = registered.handlers.get(tool);
+
+    assertThatThrownBy(
+            () ->
+                handler.call(
+                    new JsonMapper().readTree("{\"taskId\":\"ABC-1\",\"verb\":\"done\"}"),
+                    "MINE-1"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(tool + " is Master-only");
+    verifyNoInteractions(presses);
+  }
+
+  @Test
+  void letsTheMasterPressAVerbOnATaskWithTheProjectItNames() {
+    MasterPresses presses = mock(MasterPresses.class);
+    when(presses.press("ABC-1", "remove-repo", "api")).thenReturn("removed api from ABC-1");
+    Registered registered = new Registered();
+    new PressTools(presses).declare(registered);
+    ToolHandler handler = registered.handlers.get("press_task");
+
+    String answered =
+        handler.call(
+            new JsonMapper()
+                .readTree("{\"taskId\":\"ABC-1\",\"verb\":\"remove-repo\",\"project\":\"api\"}"),
+            null);
+
+    assertThat(answered).isEqualTo("removed api from ABC-1");
+  }
+
+  @Test
+  void refusesAVerbNoTaskActionNames() {
+    MasterPresses presses = mock(MasterPresses.class);
+    Registered registered = new Registered();
+    new PressTools(presses).declare(registered);
+    ToolHandler handler = registered.handlers.get("press_task");
+
+    assertThatThrownBy(
+            () ->
+                handler.call(
+                    new JsonMapper().readTree("{\"taskId\":\"ABC-1\",\"verb\":\"explode\"}"),
+                    null))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(presses);
+  }
+
+  @Test
+  void letsTheMasterRunACommandNoTaskOwns() {
+    MasterPresses presses = mock(MasterPresses.class);
+    when(presses.run("stats", "today")).thenReturn("spent 3");
+    Registered registered = new Registered();
+    new PressTools(presses).declare(registered);
+    ToolHandler handler = registered.handlers.get("run_command");
+
+    String answered =
+        handler.call(new JsonMapper().readTree("{\"verb\":\"stats\",\"tail\":\"today\"}"), null);
+
+    assertThat(answered).isEqualTo("spent 3");
   }
 }

@@ -367,35 +367,6 @@ class MasterCheckTest {
   }
 
   @Test
-  void refusesAStepKeptForYourselfThatNamesNoStepTheMasterHolds(@TempDir Path root)
-      throws Exception {
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.writeString(root.resolve("roles/master/brief.md.dist"), "the shipped standards");
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withMaster(
-                    new MasterConfig("judge", null, null, List.of("ship", "teleport"), null)));
-    MasterCheck check =
-        new MasterCheck(
-            configService,
-            new MasterBriefs(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString())))),
-            agentRuntime);
-
-    assertThat(check.problems())
-        .singleElement()
-        .satisfies(
-            problem -> {
-              assertThat(problem.key()).isEqualTo("orchestrator.roles.master.mine");
-              assertThat(problem.text()).contains("'teleport'").doesNotContain("'ship'");
-            });
-  }
-
-  @Test
   void acceptsKeepingTheAttachingOfARepositoryForYourself(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");

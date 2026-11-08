@@ -70,12 +70,18 @@ writes only the stop's hover. A job's `Watch` admits one only where it names the
 ### Requirement: In act the Master decides a stop for a suspected loop
 With `roles.master.mode: act` and `lift` not in `mine`, a STALLED, SHIPS, ROUNDS, PACE or UNCHANGED_FAILURE stop SHALL be asked of the Master once
 (`MasterStopJob`). Its first line decides: `lift: <reason>` lifts it, and `return: <instruction>` lifts it and tells the session the instruction as
-an answer. `human: <why>`, any other line or no answer leaves it yours. MISS,
+an answer. `escalate: <reason>` lifts it and starts the session one model tier up
+([a stop lifts on the next tier](#requirement-a-stop-lifts-on-the-next-tier)), unless `escalate` is in `mine`.
+`human: <why>`, any other line or no answer leaves it yours. MISS,
 QA_FAILED and PAUSE stay yours, and the stops a read ends end on it.
 
 #### Scenario: A looping task goes on
 - **WHEN** ABC-42 stops on ROUNDS in `act` and the Master answers `lift: each round answered a new report`
 - **THEN** the stop is lifted as the Master's and its count starts anew
+
+#### Scenario: The Master lifts on the next tier
+- **WHEN** it answers `escalate: sonnet looped on the same fixture` and `agent.tiers` names a model above
+- **THEN** the stop is lifted and the session starts again one tier up
 
 #### Scenario: The Master returns the task
 - **WHEN** it answers `return: fix the fixture, not the test` and the task is not waiting on a plan
@@ -176,7 +182,7 @@ SHALL press, send, notify and write nothing, to git or the code host included.
 `escalate` SHALL lift a STALLED, SHIPS, ROUNDS, UNCHANGED_FAILURE or QA_FAILED stop.
 The session SHALL start again on the next model of `agent.tiers`, the work carried over.
 It is offered only while a model stands above the one the session runs on.
-Only a human presses it; nothing escalates unasked.
+A human presses it, or the Master in `act` where `mine` does not name it; nothing escalates unasked.
 
 #### Scenario: A looping task is lifted on the next tier
 - **WHEN** ABC-42 stops on ROUNDS while its session runs on `sonnet` and `agent.tiers` is `[sonnet, opus]`, and you press `escalate`

@@ -20,7 +20,8 @@ import org.springframework.stereotype.Service;
 /**
  * A step goes to a session only where a case sends it at the task's status, whoever relays it; the
  * session's reply closes its turn only where a case of that step takes it, and the Master presses a
- * verb only where a Master case allows it; a miss stops the task for the human.
+ * verb only where a Master case allows it and its human did not keep it; a miss stops the task for
+ * the human.
  */
 @Service
 @RequiredArgsConstructor
@@ -52,17 +53,23 @@ public class CaseDoor {
   }
 
   /**
-   * Only the Master's press is held to a case, and a verb only a human presses is refused it
-   * outright.
+   * Only the Master's press is held to a case; a verb its human keeps in {@code mine} is refused it
+   * outright, and a lift or tier-up past the Master's bound too.
    */
   public boolean presses(String taskId, TaskAction action) {
     if (!byTheMaster()) {
       return true;
     }
-    if (action.humanOnly() && !liftedByTheMaster(taskId, action)) {
+    if (stops.masterKeeps(taskId, action)) {
       throw new Refusal(
           Refusal.Code.ACTION_NOT_AVAILABLE,
-          action.label() + " is a human's to press, never the Master's.");
+          action.label() + " is kept for the human: mine names it.");
+    }
+    if ((action == TaskAction.LIFT || action == TaskAction.ESCALATE)
+        && stops.masterLiftsSpent(taskId)) {
+      throw new Refusal(
+          Refusal.Code.ACTION_NOT_AVAILABLE,
+          action.label() + " is the human's: the Master's lift since their last is spent.");
     }
     return held(taskId, action.id());
   }
@@ -70,14 +77,6 @@ public class CaseDoor {
   /** Only the Master's move is held to a case: any other passes. */
   public boolean presses(String taskId, String move) {
     return !byTheMaster() || held(taskId, move);
-  }
-
-  /**
-   * The one human-only verb the Master presses: a lift of a stop it was asked about, within its
-   * bound.
-   */
-  private boolean liftedByTheMaster(String taskId, TaskAction action) {
-    return action == TaskAction.LIFT && stops.masterMayLift(stateService.canonicalTaskId(taskId));
   }
 
   private boolean held(String taskId, String move) {

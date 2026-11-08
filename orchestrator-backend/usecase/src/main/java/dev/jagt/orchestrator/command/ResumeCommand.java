@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.command;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,11 @@ public class ResumeCommand implements GlobalCommand {
   public String hint() {
     return "reopened request: take over its branch and its commits, and link it — no second"
                + " request";
+  }
+
+  @Override
+  public Optional<String> whyNotTheMaster() {
+    return Optional.of("a task opens from a command of yours or the tracker, never from a model");
   }
 
   @Override

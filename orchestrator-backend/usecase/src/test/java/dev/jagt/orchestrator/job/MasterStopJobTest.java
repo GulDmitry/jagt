@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -269,5 +270,56 @@ class MasterStopJobTest {
         .runOn(state.tasks());
 
     verify(moves, never()).lift(anyString());
+  }
+
+  @Test
+  void theSessionStartsAgainOneTierUpWhereTheMasterAnswersEscalate(@TempDir Path root) {
+    StateService state =
+        stateWith(
+            root, new TaskStop(TaskStop.Trigger.ROUNDS, 5, "3 rounds"), Master.defaults());
+    mode("act");
+    when(panel.ask(anyString(), any(), any()))
+        .thenReturn(
+            Optional.of(
+                new MasterStopAnswer(MasterStopAnswer.Kind.ESCALATE, "sonnet looped on a fixture")));
+
+    new MasterStopJob(
+            config,
+            panel,
+            moves,
+            new TaskTurns(state, Clock.systemUTC()),
+            new Rounds(config, ignored -> false))
+        .runOn(state.tasks());
+
+    verify(moves).escalate("ABC-42");
+    verify(moves, never()).lift(anyString());
+  }
+
+  @Test
+  void theStopStaysTheHumansWhereTheMasterAnswersEscalateAndMineKeepsEscalate(
+      @TempDir Path root) {
+    StateService state =
+        stateWith(
+            root, new TaskStop(TaskStop.Trigger.ROUNDS, 5, "3 rounds"), Master.defaults());
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withMaster(
+                    new ConfigService.ConfigFile.MasterConfig(
+                        "act", null, null, List.of("escalate"), null)));
+    when(panel.ask(anyString(), any(), any()))
+        .thenReturn(
+            Optional.of(
+                new MasterStopAnswer(MasterStopAnswer.Kind.ESCALATE, "sonnet looped on a fixture")));
+
+    new MasterStopJob(
+            config,
+            panel,
+            moves,
+            new TaskTurns(state, Clock.systemUTC()),
+            new Rounds(config, ignored -> false))
+        .runOn(state.tasks());
+
+    verify(moves, never()).escalate(anyString());
   }
 }

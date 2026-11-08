@@ -61,7 +61,7 @@ The Master: a model reading every round before you, by the roles in its brief.
 | `deploy` | yours | yours | once green |
 | costs | nothing | one heavy read per role, per round | the same |
 
-In `act` a task reaches you deployed; `roles.master.mine` keeps any step yours.
+In `act` a task reaches you deployed; `roles.master.mine` keeps any step or verb yours.
 
 ## Start
 

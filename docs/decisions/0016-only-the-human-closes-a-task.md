@@ -4,7 +4,8 @@
 
 ## Status
 
-Accepted 2026-10-07.
+Accepted 2026-10-07. Superseded in part by [0153](0153-mine-names-what-the-master-leaves.md):
+`done` is the human's to keep in `mine`.
 
 ## Context
 

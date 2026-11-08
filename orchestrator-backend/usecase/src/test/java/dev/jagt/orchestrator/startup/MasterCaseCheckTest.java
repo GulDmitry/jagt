@@ -48,7 +48,7 @@ class MasterCaseCheckTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"revert", "answered"})
+  @ValueSource(strings = {"explode", "answered"})
   void refusesAMasterCaseNamingAnythingButAVerbTheMasterPresses(String move, @TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =

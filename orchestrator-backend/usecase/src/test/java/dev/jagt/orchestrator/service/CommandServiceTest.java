@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -27,6 +28,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -80,13 +82,14 @@ class CommandServiceTest {
   }
 
   @Test
-  void refusesTheMasterAVerbOnlyAHumanPresses(@TempDir Path root) {
+  void refusesTheMasterAVerbItsHumanKeepsInMine(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
     StateService state = new StateService(new JsonMapper(), paths);
+    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CommandService guarded =
         new CommandService(
             flow,
@@ -96,7 +99,7 @@ class CommandServiceTest {
                 state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    ignored -> new Arbiter.Profile(MasterMode.ACT, Set.of("done")),
                     state,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
@@ -109,7 +112,7 @@ class CommandServiceTest {
                 OriginContext.as(
                     ActionOrigin.MASTER, () -> guarded.execute("ABC-1", TaskAction.DONE)))
         .isInstanceOf(Refusal.class)
-        .hasMessage("Done is a human's to press, never the Master's.");
+        .hasMessage("Done is kept for the human: mine names it.");
   }
 
   @Test

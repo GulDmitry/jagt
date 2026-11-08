@@ -18,6 +18,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | H15 | a change validates but names a requirement archive cannot apply (MODIFIED of a missing one, ADDED of an existing one) → the hand-back is refused with the validator's issue, not at ship | seen 2026-11-05: the CLI reports it at INFO with exit 0, so a session handed back what ship then refused | `OpenSpecTest` |
 | H16 | a repository's remote is a local path or `file:` URL → its request links are judged by no remote, never dropped as foreign | seen 2026-11-07: the replay stand's ship never linked, the task held in SHIPPING | `ForeignLinksTest` |
 | H17 | a session reports a request link on another host, or any link while the remote is a local path → the code-host close sends nothing, failed and logged at WARN; only a link on the repository's own host is closed | seen 2026-11-08, review: `remove-repo` ran `gh pr close` under the human's login on a link the session chose | `ChosenCodeHostTest`, `RepoRemovalTest` |
+| H18 | the Master in act presses a verb a human may (`trust`, `lift`, `escalate`, `pause`, `done`, `remove-repo`) → the door admits it where a Master case allows it; only a verb `roles.master.mine` names is refused | seen 2026-11-08: a table of human-only verbs refused the Master what AGENTS.md gives it | `CaseDoorTest`, `MasterVerbsTest`, `MasterCheckTest` |
 ## I — vendor CLI behaviour
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

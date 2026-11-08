@@ -50,7 +50,7 @@ It SHALL be refused at `PLAN_PENDING`, `DEPLOYED`, `DEPLOY_CONFLICT`, `REVERTED`
 `remove-repo <task> <project>` SHALL close that repository's open request on its code host, then take the repository out of
 the task as one the host closed leaves: its checkout goes, its branch stays, the session is told. A repository with no
 request just leaves. The status does not change. A close that fails SHALL leave the repository on the task and report the cause.
-It SHALL be human-only and typed with a project, offered only where the task holds several repositories.
+It SHALL be typed with a project, offered only where the task holds several repositories.
 
 #### Scenario: A repository with a request is removed
 - **WHEN** you type `remove-repo ABC-42 schemaRegistry` on ABC-42, which works in `api` and `schemaRegistry`

@@ -108,11 +108,10 @@ A reader between the session and you, on by default.
 |---------------|--------------|-------|
 | `off` | nothing: every plan, round and question waits for you | nothing |
 | `judge` | reads each plan, then each round by its brief's roles; writes `master-review.md`, sends findings back, presses no verb | one heavy read per plan; per role per round |
-| `act` | also starts a holding plan, ships a ready round, answers a question, opens split-off work, deploys a green request; closing stays yours | the same |
+| `act` | also starts a holding plan, ships a ready round, answers a question, opens split-off work, deploys a green request; any other verb `mine` does not keep, only where it is asked | the same |
 
 It judges by the shipped brief; to edit one, copy `roles/master/brief.md.dist` and set `roles.master.brief`.
-`roles.master.mine` keeps named steps yours in `act`, `[plan]` unset; what you type to a session overrules it.
-`revert` and `sweep` stay yours in every mode.
+`roles.master.mine` keeps named steps and verbs yours in `act`, `[plan]` unset; what you type to a session overrules it.
 Each step is a line in the `master` window.
 
 ## Notes on the tricky ones

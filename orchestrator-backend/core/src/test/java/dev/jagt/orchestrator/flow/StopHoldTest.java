@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.MasterMode;
-import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -58,7 +57,7 @@ class StopHoldTest {
 
   @Test
   void aStopTheHumanKeptTheLiftOfIsTheirsInAct() {
-    Arbiter.Profile kept = new Arbiter.Profile(MasterMode.ACT, Set.of(MasterRight.LIFT));
+    Arbiter.Profile kept = new Arbiter.Profile(MasterMode.ACT, Set.of("lift"));
 
     assertThat(StopHold.of(stopped(TaskStop.Trigger.ROUNDS), kept)).isEqualTo(StopHold.HUMAN);
   }

@@ -41,4 +41,14 @@ class MasterStopAnswerTest {
   void leavesTheStopToTheHumanWhereTheAnswerIsNoLiftOrReturnWithWords(String said) {
     assertThat(MasterStopAnswer.of(said).kind()).isEqualTo(MasterStopAnswer.Kind.HUMAN);
   }
+
+  @Test
+  void escalatesWhereTheFirstLineStartsWithEscalateAndItsReason() {
+    MasterStopAnswer answer = MasterStopAnswer.of("Escalate: sonnet looped on the same fixture");
+
+    assertThat(answer)
+        .isEqualTo(
+            new MasterStopAnswer(
+                MasterStopAnswer.Kind.ESCALATE, "sonnet looped on the same fixture"));
+  }
 }
