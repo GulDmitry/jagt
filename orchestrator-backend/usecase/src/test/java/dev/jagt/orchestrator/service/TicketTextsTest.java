@@ -24,7 +24,7 @@ class TicketTextsTest {
 
   @Test
   void holdsTheTextOfATicketAsReadAndChargesTheReadToItsTask() {
-    TicketTexts texts = new TicketTexts(assistant, usage, paths());
+    TicketTexts texts = new TicketTexts(assistant, usage, new KeptTicketTexts(paths()));
     TokenUsage spent = TokenUsage.ofCall(9_000, 0, 80, 0.02);
     when(assistant.readTicketText("ABC-42"))
         .thenReturn(new Answer<>(Optional.of("Widget layout is off"), spent));
@@ -37,7 +37,7 @@ class TicketTextsTest {
 
   @Test
   void holdsNoTextForATaskNobodyReadAndAnswersNoReadSince() {
-    TicketTexts texts = new TicketTexts(assistant, usage, paths());
+    TicketTexts texts = new TicketTexts(assistant, usage, new KeptTicketTexts(paths()));
 
     assertThat(texts.of("ABC-42")).isEmpty();
     assertThat(texts.readSince("ABC-42", 0L)).isFalse();
@@ -45,7 +45,7 @@ class TicketTextsTest {
 
   @Test
   void saysWhetherAFailedReadWasMadeAtOrAfterAMoment() {
-    TicketTexts texts = new TicketTexts(assistant, usage, paths());
+    TicketTexts texts = new TicketTexts(assistant, usage, new KeptTicketTexts(paths()));
     when(assistant.readTicketText("ABC-42")).thenReturn(Answer.unavailable());
 
     texts.read("ABC-42", "ABC-42", 1_000L);
@@ -58,9 +58,9 @@ class TicketTextsTest {
   void keepsAReadTextForEveryLaterStintAndAfterARestart() {
     when(assistant.readTicketText("ABC-42"))
         .thenReturn(new Answer<>(Optional.of("Widget layout is off"), TokenUsage.NONE));
-    new TicketTexts(assistant, usage, paths()).read("ABC-42", "ABC-42", 1_000L);
+    new TicketTexts(assistant, usage, new KeptTicketTexts(paths())).read("ABC-42", "ABC-42", 1_000L);
 
-    TicketTexts restarted = new TicketTexts(assistant, usage, paths());
+    TicketTexts restarted = new TicketTexts(assistant, usage, new KeptTicketTexts(paths()));
 
     assertThat(restarted.readSince("ABC-42", 9_000L)).isTrue();
     assertThat(restarted.of("ABC-42")).contains("Widget layout is off");
@@ -69,7 +69,7 @@ class TicketTextsTest {
   @Test
   void answersNoTextWhereTheKeepingFolderCannotBeMade() throws java.io.IOException {
     java.nio.file.Files.writeString(root.resolve("ticket-texts"), "in the way");
-    TicketTexts texts = new TicketTexts(assistant, usage, paths());
+    TicketTexts texts = new TicketTexts(assistant, usage, new KeptTicketTexts(paths()));
     when(assistant.readTicketText("ABC-42"))
         .thenReturn(new Answer<>(Optional.of("Widget layout is off"), TokenUsage.NONE));
 

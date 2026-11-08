@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.TrackerAssistant;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.KeptTicketTexts;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TicketTexts;
 import dev.jagt.orchestrator.service.UsageLedger;
@@ -43,7 +44,7 @@ class TicketPrefetchJobTest {
       new TicketTexts(
           assistant,
           new UsageTracker(state, new UsageLedger(new JsonMapper(), paths, Clock.systemDefaultZone())),
-          paths);
+          new KeptTicketTexts(paths));
   private final TicketPrefetchJob job = new TicketPrefetchJob(config, tickets);
 
   @Test
@@ -132,7 +133,7 @@ class TicketPrefetchJobTest {
             afterRestart,
             new UsageTracker(
                 state, new UsageLedger(new JsonMapper(), paths, Clock.systemDefaultZone())),
-            paths);
+            new KeptTicketTexts(paths));
 
     new TicketPrefetchJob(config, restartedTickets).runOn(state.tasks());
 

@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.KeptTicketTexts;
 import dev.jagt.orchestrator.service.RetiredWorktrees;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -42,7 +43,17 @@ class TaskRetirementTest {
                     .withStateFile(root.resolve("state.json").toString())));
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    TaskRetirement retirement = new TaskRetirement(state, config, worktrees, viewer);
+    TaskRetirement retirement =
+        new TaskRetirement(
+            state,
+            config,
+            worktrees,
+            viewer,
+            new KeptTicketTexts(
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))));
 
     String result = retirement.retire("a1");
 
@@ -68,7 +79,17 @@ class TaskRetirementTest {
             .alias("a1")
             .build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    TaskRetirement retirement = new TaskRetirement(state, config, worktrees, viewer);
+    TaskRetirement retirement =
+        new TaskRetirement(
+            state,
+            config,
+            worktrees,
+            viewer,
+            new KeptTicketTexts(
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))));
 
     String result = retirement.retire("a1");
 
@@ -87,7 +108,17 @@ class TaskRetirementTest {
     state.putTask("ABC-1", TaskState.builder("gone", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     when(worktrees.remove(anyString(), any(), any())).thenReturn(true);
-    TaskRetirement retirement = new TaskRetirement(state, config, worktrees, viewer);
+    TaskRetirement retirement =
+        new TaskRetirement(
+            state,
+            config,
+            worktrees,
+            viewer,
+            new KeptTicketTexts(
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))));
 
     String result = retirement.retire("a1");
 
@@ -107,7 +138,17 @@ class TaskRetirementTest {
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     when(viewer.closeIfNoTasksLeft()).thenReturn(true);
-    TaskRetirement retirement = new TaskRetirement(state, config, worktrees, viewer);
+    TaskRetirement retirement =
+        new TaskRetirement(
+            state,
+            config,
+            worktrees,
+            viewer,
+            new KeptTicketTexts(
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))));
 
     String result = retirement.retire("a1");
 
@@ -123,7 +164,17 @@ class TaskRetirementTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())));
-    TaskRetirement retirement = new TaskRetirement(state, config, worktrees, viewer);
+    TaskRetirement retirement =
+        new TaskRetirement(
+            state,
+            config,
+            worktrees,
+            viewer,
+            new KeptTicketTexts(
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults()
+                        .withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))));
 
     assertThatThrownBy(() -> retirement.retire("ABC-9"))
         .isInstanceOf(Refusal.class)
@@ -131,5 +182,25 @@ class TaskRetirementTest {
         .extracting("code")
         .isEqualTo(Refusal.Code.NO_SUCH_TASK);
     verifyNoInteractions(viewer);
+  }
+
+  @Test
+  void forgetsTheKeptTicketTextSoALaterTaskOnTheSameTicketReadsItAgain(@TempDir Path root)
+      throws java.io.IOException {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    StateService state = new StateService(new JsonMapper(), paths);
+    state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    KeptTicketTexts kept = new KeptTicketTexts(paths);
+    java.nio.file.Files.createDirectories(paths.ticketTexts());
+    java.nio.file.Files.writeString(paths.ticketTexts().resolve("ABC-1.md"), "Widget layout is off");
+
+    new TaskRetirement(state, config, worktrees, viewer, kept).retire("a1");
+
+    assertThat(kept.of("ABC-1")).isEmpty();
   }
 }
