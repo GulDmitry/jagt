@@ -6,6 +6,7 @@ import {html} from './html.js';
 const Part = ({part}) => {
   switch (part.kind) {
     case 'link': return html`<a href=${httpOnly(part.href)} target="_blank" rel="noreferrer">${part.text}</a>`;
+    case 'task': return html`<a class="task-link" href="#" data-task=${part.text}>${part.text}</a>`;
     case 'verdict': return html`<span class=${`verdict ${part.tone}`}>${part.text}</span>`;
     case 'block':
     case 'quote': return html`<span class=${part.kind}>${part.parts.map((one) => html`<${Part} part=${one}/>`)}</span>`;

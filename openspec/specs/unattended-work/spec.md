@@ -78,13 +78,6 @@ the shared `TaskScheduler` once ready: never overlapping itself, the next run st
 - **THEN** jagt refuses to start, naming the job's class
 - **AND** a run lasting longer than the job's interval is followed the moment it ends, never beside it
 
-### Requirement: The activity report reads jagt's own log
-`command/ActivityReport` SHALL tail `logging.file.name` (ECS JSON) for entries carrying a `task` key, newest first.
-
-#### Scenario: What ran for a task
-- **WHEN** you open the activity report
-- **THEN** it lists jagt's unattended work on tasks, newest first
-
 ### Requirement: A restart keeps the run before
 `logback-spring.xml` SHALL drop Boot's rolling appender; `surface/ui/LogFileRoll` SHALL roll the file into `.1` before it opens
 and keep the `.1` it replaces as a dated archive for 14 days.
@@ -186,3 +179,20 @@ and startup refuses `file` without `tracker.file`.
 #### Scenario: A reference the file does not hold
 - **WHEN** you run `do <url>` or name a key the file lacks
 - **THEN** it is read through your MCP servers as without the file tracker
+
+### Requirement: The activity report is the task activity log
+`command/ActivityReport` SHALL list every status change of every live and every finished task, newest first: time (UTC), task, from and to
+status, origin. A kind and a project key after the verb filter it. A report line naming a task still on the board SHALL open that task.
+#### Scenario: Live and finished tasks merge
+- **WHEN** finished ABC-1 changed at 03:00 and live ABC-2 at 02:00
+- **THEN** ABC-1's line stands above ABC-2's
+- **AND** a finished task ends in `done`, stamped at its retirement, and at most the newest 200 lines show
+#### Scenario: A filter
+- **WHEN** the human types `activity alpha stopped`
+- **THEN** only changes of `alpha` tasks into `CI_FAILED` or `DEPLOY_CONFLICT` are listed
+- **AND** `created` is a task's first step, `shipped` is `SHIPPING`, `deployed` is `DEPLOYED`, `done` is `DONE`
+- **AND** `activity shipped done` answers the usage line, and a filter matching nothing says which it was
+#### Scenario: A line opens its task
+- **WHEN** the human presses `ABC-2` in a line while ABC-2 is on the board
+- **THEN** the report closes and ABC-2 opens
+- **AND** a finished task's line stays text

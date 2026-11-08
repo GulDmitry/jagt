@@ -250,7 +250,7 @@ button.flag:hover:not(:disabled) { color: var(--accent); }
 /* Where no verb is the deploy, the state says the work is live: same colour, one mark. */
 .status.live { color: var(--ok); }
 /* Clickable without a link's colour: a whole meta row in accent would compete with the buttons. */
-a.id, a.mr-age { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; }
+a.id, a.mr-age, a.task-link { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; }
 /* The request wears ONE fact — an APPROVAL, as green and a tick — because the checks answer as their own dot. */
 a.mr-age.approved, .tick { color: var(--ok); }
 /* A poll that STOPPED hands the move back: a ring on the request it was watching, never a fifth thing in the row. */
@@ -258,7 +258,7 @@ a.mr-age.approved, .tick { color: var(--ok); }
 .chip.stalled { border-color: var(--you); }
 .tick { font-size: 11px; align-self: center; }
 /* After the approval, or a link wearing it would answer a hover with nothing but a solid underline. */
-a.id:hover, a.mr-age:hover { color: var(--accent); text-decoration-style: solid; }
+a.id:hover, a.mr-age:hover, a.task-link:hover { color: var(--accent); text-decoration-style: solid; }
 .detail { font-size: 12px; margin: 4px 0; overflow-wrap: anywhere; }
 .detail.problem { color: var(--danger); font-weight: 600; }
 .detail.you { color: var(--you); font-weight: 600; }

@@ -47,6 +47,15 @@ const openVerb = (id) => {
 };
 menu.onPick(openVerb);
 header.onJobsClick(() => openVerb('jobs'));
+document.getElementById('report-body').addEventListener('click', (event) => {
+  const id = event.target.closest('a[data-task]')?.dataset.task;
+  if (!id) return;
+  event.preventDefault();
+  document.getElementById('report').close();
+  filters.box.value = id;
+  selection.choose(id);
+  render();
+});
 showLog(() => showReport(t('log.title'), sessionLog()));
 
 // A linked task lands in the FILTER rather than a selection of its own: the control that did it is visible, and

@@ -49,8 +49,14 @@ function marked(line) {
   return QUOTE.test(line) ? [{kind: 'quote', parts: linked(line)}] : linked(line);
 }
 
-export const reportParts = (said) => said.trimEnd().split('\n')
-  .flatMap((line, index) => (index ? [{kind: 'text', text: '\n'}, ...marked(line)] : marked(line)));
+// A task still on the board opens from a line naming it.
+const named = (ids) => new RegExp(`(?<![\\w-])(${ids.map((id) => id.replace(/\W/g, '\\$&')).join('|')})(?![\\w-])`);
+const tasked = (part, ids) => (part.kind !== 'text' || !ids.length ? [part]
+  : part.text.split(named(ids)).map((text, at) => ({kind: at % 2 ? 'task' : 'text', text})));
+
+export const reportParts = (said, ids = []) => said.trimEnd().split('\n')
+  .flatMap((line, index) => (index ? [{kind: 'text', text: '\n'}, ...marked(line)] : marked(line)))
+  .flatMap((part) => tasked(part, ids));
 
 export const switchLines = (task) => Object.entries(task.switches || {}).map(([name, said]) => `${name}: ${said}`);
 

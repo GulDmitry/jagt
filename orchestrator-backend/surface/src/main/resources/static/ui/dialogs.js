@@ -5,6 +5,7 @@ import {html} from '../components/html.js';
 import {Report} from '../components/Report.js';
 import {refusal, sayTo, text} from '../core/api.js';
 import {reportParts} from '../core/format.js';
+import * as store from '../core/store.js';
 import {t} from '../core/i18n.js';
 import {sending} from './submit.js';
 import {toast} from './toast.js';
@@ -25,7 +26,7 @@ let asked = 0;
 // A poll and the board's own event read it again side by side, and the read sent last is the one that paints.
 let reread = 0;
 
-const drawn = (said) => render(html`<${Report} parts=${reportParts(said)}/>`, reportBody);
+const drawn = (said) => render(html`<${Report} parts=${reportParts(said, store.tasks().map((task) => task.id))}/>`, reportBody);
 
 function paint(title, said, extra) {
   reportTitle.textContent = title;

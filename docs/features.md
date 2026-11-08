@@ -179,8 +179,8 @@
 ## Unattended work · [spec](../openspec/specs/unattended-work/spec.md)
 - **Auto-review** — jagt polls an open request for comments, only reading and drafting. Key: `orchestrator.autoReview.enabled`, off by default.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-the-auto-review-poll-only-reads-and-drafts)
-- **Activity report** — A report of what jagt did unasked is read back from its own log.
-  [spec](../openspec/specs/unattended-work/spec.md#requirement-the-activity-report-reads-jagts-own-log)
+- **Task activity log** — `activity` lists every status change of live and finished tasks, filtered by kind and project; a live task's line opens it.
+  [spec](../openspec/specs/unattended-work/spec.md#requirement-the-activity-report-is-the-task-activity-log)
 - **Brakes** — `act` stops after bad endings, an hourly ceiling bounds unasked moves; a looping or case-less task waits for your lift or the Master's.
   [spec](../openspec/specs/unattended-work/spec.md#requirement-act-stops-itself-after-three-bad-endings)
   [spec](../openspec/specs/unattended-work/spec.md#requirement-a-task-has-a-ceiling-of-unattended-moves-an-hour)

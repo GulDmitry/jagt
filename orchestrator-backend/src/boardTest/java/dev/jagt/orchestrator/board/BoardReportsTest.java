@@ -11,6 +11,7 @@ import com.microsoft.playwright.Route;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.io.IOException;
@@ -640,14 +641,21 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void showsWhatJagtDidOnItsOwnReadBackFromItsLog() throws IOException {
-    Files.writeString(
-        root.resolve("jagt.log"),
-        """
-        {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep ABC-1: 2 thread(s) relayed","task":"ABC-1"}
-        """,
-        java.nio.file.StandardOpenOption.CREATE,
-        java.nio.file.StandardOpenOption.APPEND);
+  void aTaskNamedInTheActivityLogOpensFromItsLine() {
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
+            .alias("a1")
+            .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1_000L, null)))
+            .lastActiveTimestamp(System.currentTimeMillis())
+            .build());
+    state.putTask(
+        "ABC-2",
+        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
+            .alias("a2")
+            .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 2_000L, null)))
+            .lastActiveTimestamp(System.currentTimeMillis())
+            .build());
 
     Page page = session.newPage();
 
@@ -656,9 +664,11 @@ class BoardReportsTest extends BoardPageContext {
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
     page.locator("#reports-toggle").click();
     page.locator("#show-activity").click();
+    assertThat(page.locator("#report-body")).containsText("→ agent working");
+    page.locator("#report-body a.task-link", new Page.LocatorOptions().setHasText("ABC-2")).click();
 
-    assertThat(page.locator("#report-title")).containsText("activity");
-    assertThat(page.locator("#report-body")).containsText("2 thread(s) relayed");
+    assertThat(page.locator("#report")).isHidden();
+    assertThat(page.locator("#pane article .alias")).hasText("a2");
   }
 
   @Test

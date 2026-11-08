@@ -68,7 +68,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `stats` | subscription limits, jagt's own model spend per task, cycle time, the week's cost per accepted task |
 | `project` | add a repository as a project, change or drop one (`project edit <key>`) |
 | `login` | log in where jagt lost its reach, in a window of its own |
-| `activity` | what jagt did unattended |
+| `activity [created\|shipped\|deployed\|stopped\|done] [<project>]` | every status change of every task, live or finished, newest first |
 | `jobs` | every scheduled job, its cadence, last and next run |
 | `run <job>` | run an unattended job now instead of at its next tick |
 | `finished` | what has been closed, how long each took, how many rounds it cost and who held it |

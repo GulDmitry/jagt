@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +22,12 @@ public class ActivityCommand implements GlobalCommand {
 
   @Override
   public String hint() {
-    return "what jagt did on its own, newest first";
+    return "every status change of every task, live or finished, newest first";
+  }
+
+  @Override
+  public List<String> usage() {
+    return List.of("activity [created|shipped|deployed|stopped|done] [<project>]");
   }
 
   @Override
@@ -31,6 +37,6 @@ public class ActivityCommand implements GlobalCommand {
 
   @Override
   public String run(String tail) {
-    return activity.render();
+    return activity.render(tail);
   }
 }

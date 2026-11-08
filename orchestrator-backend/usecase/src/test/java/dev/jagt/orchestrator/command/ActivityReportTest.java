@@ -1,231 +1,219 @@
 package dev.jagt.orchestrator.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import dev.jagt.orchestrator.service.FinishedTasks;
+import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.FinishedTask;
+import dev.jagt.orchestrator.task.StatusChange;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ActivityReportTest {
 
+  private final StateService state = mock(StateService.class);
+  private final FinishedTasks finished = mock(FinishedTasks.class);
+  private final ActivityReport report = new ActivityReport(state, finished);
+
   @Test
-  void showsTheNewestTaskEntriesFirst(@TempDir Path root) throws IOException {
-    Path log = root.resolve("jagt.log");
-    Files.writeString(
-        log,
-        """
-        {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep ABC-1: 2 thread(s) relayed","task":"ABC-1","alias":"a1"}
-        {"@timestamp":"2026-08-18T09:00:00Z","message":"auto-review poll found nothing","task":"ABC-2","alias":null}
-        """);
+  void listsATasksStatusChangeWithItsTimeInUtcItsStatusesAndItsOrigin() {
+    when(finished.all()).thenReturn(List.of());
+    when(state.tasks())
+        .thenReturn(
+            Map.of(
+                "ABC-42",
+                TaskState.builder("alpha", "/wt", TaskStatus.REVIEW_PENDING)
+                    .history(
+                        List.of(
+                            new StatusChange(TaskStatus.IN_PROGRESS, 1_786_000_000_000L, null),
+                            new StatusChange(
+                                TaskStatus.REVIEW_PENDING,
+                                1_786_000_060_000L,
+                                ActionOrigin.MCP)))
+                    .build()));
 
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String said = report.render("");
 
-    assertThat(report).containsSubsequence("auto-review poll found nothing", "2 thread(s) relayed");
-    assertThat(report).contains("a1", "ABC-2");
+    assertThat(said)
+        .contains("2026-08-06 07:07:40  ABC-42         agent working → not shipped  mcp");
   }
 
   @Test
-  void rendersTheFieldsBecauseTheEventAloneNamesNoRequest(@TempDir Path root) throws IOException {
-    Path log = root.resolve("jagt.log");
-    Files.writeString(
-        log,
-        """
-        {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep done","task":"ABC-1","alias":"a1",\
-        "outcome":"UNREADABLE","said":"error: read failed"}
-        """);
+  void showsTheNewestChangeFirstAcrossLiveAndFinishedTasks() {
+    TaskState retired =
+        TaskState.builder("alpha", "/wt", TaskStatus.DONE)
+            .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1_000L, null)))
+            .build();
+    when(finished.all()).thenReturn(List.of(FinishedTask.of("ABC-1", retired, 3_000L)));
+    when(state.tasks())
+        .thenReturn(
+            Map.of(
+                "ABC-2",
+                TaskState.builder("alpha", "/wt", TaskStatus.IN_PROGRESS)
+                    .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 2_000L, null)))
+                    .build()));
 
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String said = report.render("");
 
-    assertThat(report).contains("sweep done outcome=UNREADABLE said=error: read failed");
+    assertThat(said).containsSubsequence("ABC-1", "ABC-2", "ABC-1");
   }
 
   @Test
-  void leavesOutEntriesThatNameNoTask(@TempDir Path root) throws IOException {
-    Path log = root.resolve("jagt.log");
-    Files.writeString(
-        log,
-        """
-        {"@timestamp":"2026-08-18T08:00:00Z","message":"Board serving on http://localhost:8290"}
-        {"@timestamp":"2026-08-18T08:00:01Z","message":"relayed a brief","task":"ABC-1"}
-        """);
+  void endsAFinishedTasksLinesWithItsRetirementAsDoneWithNoOrigin() {
+    TaskState retired =
+        TaskState.builder("alpha", "/wt", TaskStatus.REVIEW_PENDING)
+            .history(List.of(new StatusChange(TaskStatus.REVIEW_PENDING, 1_000L, null)))
+            .build();
+    when(state.tasks()).thenReturn(Map.of());
+    when(finished.all()).thenReturn(List.of(FinishedTask.of("ABC-1", retired, 60_000L)));
 
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String said = report.render("");
 
-    assertThat(report).contains("relayed a brief").doesNotContain("Board serving");
+    assertThat(said).contains("1970-01-01 00:01:00  ABC-1          not shipped → done  -");
   }
 
   @Test
-  void saysTheLogIsNotStructuredInsteadOfShowingNothing(@TempDir Path root) throws IOException {
-    Path log = root.resolve("plain.log");
-    Files.writeString(log, "08:00:00 INFO  sweep ABC-1: relayed 2 comments\n");
+  void addsNoSecondDoneLineWhenTheHistoryAlreadyEndsInDone() {
+    TaskState retired =
+        TaskState.builder("alpha", "/wt", TaskStatus.DONE)
+            .history(
+                List.of(
+                    new StatusChange(TaskStatus.IN_PROGRESS, 1_000L, null),
+                    new StatusChange(TaskStatus.DONE, 2_000L, ActionOrigin.BOARD)))
+            .build();
+    when(state.tasks()).thenReturn(Map.of());
+    when(finished.all()).thenReturn(List.of(FinishedTask.of("ABC-1", retired, 3_000L)));
 
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String said = report.render("done");
 
-    assertThat(report).contains("not structured JSON");
+    assertThat(said.lines().filter(line -> line.contains("→ done")).count()).isEqualTo(1);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "created, starting",
+    "shipped, pushing",
+    "stopped, checks failed",
+    "stopped, deploy conflict",
+    "deployed, deployed",
+    "done, done"
+  })
+  void keepsOnlyTheChangesOfTheKindAsked(String kind, String landedOn) {
+    when(finished.all()).thenReturn(List.of());
+    when(state.tasks())
+        .thenReturn(
+            Map.of(
+                "ABC-42",
+                TaskState.builder("alpha", "/wt", TaskStatus.DONE)
+                    .history(
+                        List.of(
+                            new StatusChange(TaskStatus.NEW, 1_000L, null),
+                            new StatusChange(TaskStatus.IN_PROGRESS, 2_000L, null),
+                            new StatusChange(TaskStatus.SHIPPING, 3_000L, null),
+                            new StatusChange(TaskStatus.CI_FAILED, 4_000L, null),
+                            new StatusChange(TaskStatus.DEPLOY_CONFLICT, 5_000L, null),
+                            new StatusChange(TaskStatus.DEPLOYED, 6_000L, null),
+                            new StatusChange(TaskStatus.DONE, 7_000L, null)))
+                    .build()));
+
+    String said = report.render(kind);
+
+    assertThat(said).contains("→ " + landedOn).doesNotContain("→ agent working");
   }
 
   @Test
-  void saysTheFormatChangedWhenTheNEWESTLineIsNoLongerJson(@TempDir Path root) throws IOException {
-    Path log = root.resolve("switched.log");
-    Files.writeString(
-        log,
-        """
-        {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep ABC-1: relayed","task":"ABC-1"}
-        08:30:00 INFO  the format was blanked after this line
-        """);
+  void keepsOnlyTheChangesOfTheProjectAsked() {
+    when(finished.all()).thenReturn(List.of());
+    when(state.tasks())
+        .thenReturn(
+            Map.of(
+                "ABC-1",
+                TaskState.builder("alpha", "/wt", TaskStatus.IN_PROGRESS)
+                    .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1_000L, null)))
+                    .build(),
+                "ABC-2",
+                TaskState.builder("beta", "/wt", TaskStatus.IN_PROGRESS)
+                    .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 2_000L, null)))
+                    .build()));
 
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String said = report.render("beta");
 
-    assertThat(report).contains("not structured JSON").doesNotContain("sweep ABC-1");
+    assertThat(said).contains("ABC-2").doesNotContain("ABC-1");
   }
 
   @Test
-  void saysOlderEntriesRolledOverInsteadOfLookingLikeJagtDidNothing(@TempDir Path root)
-      throws IOException {
-    Path log = root.resolve("jagt.log");
-    Files.writeString(
-        log,
-        """
-        {"@timestamp":"2026-08-18T08:00:00Z","message":"Board serving on http://localhost:8290"}
-        """);
-    Files.writeString(root.resolve("jagt.log.2026-08-17.0.gz"), "rotated");
+  void combinesAKindAndAProjectInEitherOrder() {
+    when(finished.all()).thenReturn(List.of());
+    when(state.tasks())
+        .thenReturn(
+            Map.of(
+                "ABC-1",
+                TaskState.builder("alpha", "/wt", TaskStatus.DEPLOYED)
+                    .history(
+                        List.of(
+                            new StatusChange(TaskStatus.IN_PROGRESS, 1_000L, null),
+                            new StatusChange(TaskStatus.DEPLOYED, 2_000L, null)))
+                    .build()));
 
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String said = report.render("alpha deployed");
 
-    assertThat(report).contains("rolled over", "1 archived file(s)");
+    assertThat(said).contains("→ deployed").doesNotContain("→ agent working");
   }
 
   @Test
-  void saysWhereTheRecordWouldLiveWhenNoLogFileIsConfigured() {
-    String report = new ActivityReport("", new JsonMapper()).render();
+  void saysNothingMatchesNamingTheFilterWhenNoChangeDoes() {
+    when(finished.all()).thenReturn(List.of());
+    when(state.tasks()).thenReturn(Map.of());
 
-    assertThat(report).contains("logging.file.name");
+    String said = report.render("shipped alpha");
+
+    assertThat(said).isEqualTo("no status change matches of kind shipped in project alpha.\n");
   }
 
   @Test
-  void saysTheLogIsNotReadableYetWhereNoFileExistsAtThePath(@TempDir Path root) {
-    Path log = root.resolve("absent.log");
+  void refusesASecondKindWithTheUsage() {
+    String said = report.render("shipped done");
 
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
-
-    assertThat(report).isEqualTo("log file " + log + " is not readable yet — nothing to show.\n");
+    assertThat(said).isEqualTo("usage: activity [created|shipped|deployed|stopped|done] [<project>]\n");
   }
 
   @Test
-  void showsNoMoreThanTheFortyNewestEntries(@TempDir Path root) throws IOException {
-    Path log = root.resolve("jagt.log");
-    Files.writeString(
-        log,
-        "{\"@timestamp\":\"2026-08-18T08:00:00Z\",\"message\":\"relayed\",\"task\":\"ABC-1\"}\n"
-            .repeat(41));
+  void showsEveryChangeWithNoCutNoteWhenThereAreExactlyTwoHundred() {
+    TaskState busy =
+        TaskState.builder("alpha", "/wt", TaskStatus.IN_PROGRESS)
+            .history(
+                Collections.nCopies(200, new StatusChange(TaskStatus.IN_PROGRESS, 1_000L, null)))
+            .build();
+    when(finished.all()).thenReturn(List.of());
+    when(state.tasks()).thenReturn(Map.of("ABC-1", busy));
 
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String said = report.render("");
 
-    assertThat(report.lines().filter(line -> line.contains("relayed")).count()).isEqualTo(40);
+    assertThat(said).doesNotContain("the newest");
   }
 
   @Test
-  void closesTheEntriesWithTheNoteThatOlderOnesRolledOver(@TempDir Path root) throws IOException {
-    Path log = root.resolve("jagt.log");
-    Files.writeString(
-        log,
-        """
-        {"@timestamp":"2026-08-18T08:00:00Z","message":"relayed a brief","task":"ABC-1"}
-        """);
-    Files.writeString(root.resolve("jagt.log.2026-08-17.0.gz"), "rotated");
+  void showsOnlyTheNewestTwoHundredChangesAndSaysHowManyThereAre() {
+    TaskState busy =
+        TaskState.builder("alpha", "/wt", TaskStatus.IN_PROGRESS)
+            .history(
+                Collections.nCopies(201, new StatusChange(TaskStatus.IN_PROGRESS, 1_000L, null)))
+            .build();
+    when(finished.all()).thenReturn(List.of());
+    when(state.tasks()).thenReturn(Map.of("ABC-1", busy));
 
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
+    String said = report.render("");
 
-    assertThat(report)
-        .endsWith(
-            "Older entries rolled over into 1 archived file(s) next to it, which this does not"
-                + " read.\n");
-  }
-
-  @Test
-  void leavesOutAFieldThatCarriesNoValue(@TempDir Path root) throws IOException {
-    Path log = root.resolve("jagt.log");
-    Files.writeString(
-        log,
-        """
-        {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep done","task":"ABC-1","outcome":null,"said":""}
-        """);
-
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
-
-    assertThat(report).contains("sweep done").doesNotContain("outcome=").doesNotContain("said=");
-  }
-
-  @Test
-  void writesTheTimeOfAnEntryInPlaceOfItsRawStamp(@TempDir Path root) throws IOException {
-    Path log = root.resolve("jagt.log");
-    Files.writeString(
-        log,
-        """
-        {"@timestamp":"2026-08-18T08:00:00Z","message":"relayed a brief","task":"ABC-1"}
-        """);
-
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
-
-    assertThat(report)
-        .containsPattern("\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d")
-        .doesNotContain("2026-08-18T08:00:00Z");
-  }
-
-  @Test
-  void keepsAStampItCannotParseAsItWasWritten(@TempDir Path root) throws IOException {
-    Path log = root.resolve("jagt.log");
-    Files.writeString(
-        log,
-        """
-        {"@timestamp":"yesterday-ish","message":"relayed a brief","task":"ABC-1"}
-        """);
-
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
-
-    assertThat(report).contains("yesterday-ish");
-  }
-
-  @Test
-  void writesNoTimeForAnEntryWithoutAStamp(@TempDir Path root) throws IOException {
-    Path log = root.resolve("jagt.log");
-    Files.writeString(
-        log,
-        """
-        {"message":"relayed a brief","task":"ABC-1"}
-        """);
-
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
-
-    assertThat(report).contains("relayed a brief").doesNotContain("null");
-  }
-
-  @Test
-  void saysNothingAboutAnyTaskForALogHoldingOnlyBlankLines(@TempDir Path root) throws IOException {
-    Path log = root.resolve("jagt.log");
-    Files.writeString(log, "\n\n");
-
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
-
-    assertThat(report).startsWith("nothing about any task").doesNotContain("not structured JSON");
-  }
-
-  @Test
-  void dropsTheLineTheWindowCutInTwoEvenWhereItsTailParsesAsAnEntry(@TempDir Path root)
-      throws IOException {
-    Path log = root.resolve("jagt.log");
-    Files.writeString(
-        log,
-        "xxxxxxxxxx{\"message\":\"stale entry\",\"task\":\"OLD\"}\n"
-            + "{\"message\":\""
-            + "y".repeat(262077)
-            + "\",\"task\":\"NEW\"}\n");
-
-    String report = new ActivityReport(log.toString(), new JsonMapper()).render();
-
-    assertThat(report).contains("NEW").doesNotContain("stale entry");
+    assertThat(said).contains("the newest 200 of 201");
+    assertThat(said.lines().filter(line -> line.contains("ABC-1")).count()).isEqualTo(200);
   }
 }
