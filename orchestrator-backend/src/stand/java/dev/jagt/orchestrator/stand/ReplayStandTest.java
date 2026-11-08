@@ -29,6 +29,23 @@ class ReplayStandTest {
   }
 
   @Test
+  void aDeployedTaskPassesQaWhenTheRecordedFlowRunsAgainstTheStandsApp() throws Exception {
+    Path recording =
+        Path.of(ReplayStandTest.class.getResource("/recordings/happy-path-qa.jsonl").toURI());
+    try (StandRun stand = StandRun.replay("replay-qa-flow", StandMode.ACT, recording)) {
+
+      StandOutcome outcome =
+          stand.drive(Script.to("ABC-1", "DEPLOYED").within(Duration.ofMinutes(5)));
+
+      assertThat(stand.replayLog().divergences()).as(outcome.describe()).isEmpty();
+      assertThat(outcome.status()).as(outcome.describe()).isEqualTo("DEPLOYED");
+      assertThat(stand.statusLabel("ABC-1")).as(outcome.describe()).isEqualTo("qa passed");
+      assertThat(stand.qaReport()).as(outcome.describe()).contains("| @AC-1 | MET |");
+      stand.passed();
+    }
+  }
+
+  @Test
   void endsAsADivergenceNamingTheStepARecordingNeverAnswered() throws Exception {
     Path recording =
         Path.of(

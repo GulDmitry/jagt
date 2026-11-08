@@ -33,6 +33,7 @@ public final class StandRun implements AutoCloseable {
           "autoreview",
           "master-deploy",
           "deploy-check",
+          "qa-check",
           "deploy-conflict");
   private static final Duration STALL = Duration.ofMinutes(15);
 
@@ -111,7 +112,9 @@ public final class StandRun implements AutoCloseable {
           host.mcpUrl(),
           root.getFileName().toString(),
           mode,
-          replayed);
+          replayed == null
+              ? null
+              : new StandConfig.Replay(placed(root, replayed, host.appUrl()), host.appUrl()));
       JagtProcess jagt = JagtProcess.start(root);
       return new StandRun(
           root,
@@ -127,6 +130,11 @@ public final class StandRun implements AutoCloseable {
       marker.withOutcome(StandMarker.FAILED).writeTo(root);
       throw new StandFailure("stand run " + scenario + " did not start; kept " + root, e);
     }
+  }
+
+  private static Path placed(Path root, Path recording, String appUrl) throws IOException {
+    return Files.writeString(
+        root.resolve("recording.jsonl"), Files.readString(recording).replace("{app}", appUrl));
   }
 
   void restartJagt() {
@@ -147,6 +155,25 @@ public final class StandRun implements AutoCloseable {
 
   public StandProject project() {
     return project;
+  }
+
+  public String statusLabel(String task) {
+    for (JsonNode card : jagt.board().tasks().path("tasks")) {
+      if (card.path("id").asString().equals(task)) {
+        return card.path("statusLabel").asString();
+      }
+    }
+    return "";
+  }
+
+  public String qaReport() throws IOException {
+    for (var task : jagt.board().state().path("tasks").properties()) {
+      String worktree = task.getValue().path("repos").path(0).path("worktreePath").asString("");
+      if (!worktree.isEmpty()) {
+        return Files.readString(Path.of(worktree).resolve("qa-report.md"));
+      }
+    }
+    return "";
   }
 
   public RunRecord record() {
@@ -243,7 +270,10 @@ public final class StandRun implements AutoCloseable {
     }
     if (replayed != null) {
       ReplayLog replay = ReplayLog.read(root);
-      boolean done = replay.drained() && timeline.lastStatus().equals(script.until());
+      boolean done =
+          replay.drained()
+              && timeline.lastStatus().equals(script.until())
+              && (!qaRecorded() || statusLabel(script.ref()).equals("qa passed"));
       return replay.divergences().isEmpty() && !done && Instant.now().isBefore(deadline);
     }
     return !end.reached(timeline.lastStatus().equals(script.until()), eventsPending, timeline)
@@ -251,6 +281,14 @@ public final class StandRun implements AutoCloseable {
         && !timeline.stalledFor(STALL)
         && !held(timeline)
         && !end.waitingOnTheReviewer(sweepsWaiting, timeline);
+  }
+
+  private boolean qaRecorded() {
+    try {
+      return Files.readString(replayed).contains("\"kind\":\"QA_CHECK\"");
+    } catch (IOException e) {
+      throw new StandFailure("cannot read the recording " + replayed, e);
+    }
   }
 
   private JsonNode tick(Timeline timeline) {

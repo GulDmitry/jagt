@@ -8,7 +8,11 @@ import org.jspecify.annotations.Nullable;
 
 public final class StandConfig {
 
+  private static final Path FLOWS = Path.of("src/stand/resources/flows").toAbsolutePath();
+
   private StandConfig() {}
+
+  public record Replay(Path recording, String appUrl) {}
 
   public static void write(
       Path shipped,
@@ -17,7 +21,7 @@ public final class StandConfig {
       String mcpUrl,
       String tmuxSession,
       StandMode mode,
-      @Nullable Path replay) {
+      @Nullable Replay replay) {
     try {
       try (var dists = Files.newDirectoryStream(shipped, "*.dist")) {
         for (Path file : dists) {
@@ -43,7 +47,8 @@ public final class StandConfig {
           """
               .formatted(mcpUrl));
       Files.writeString(
-          root.resolve("jagt.yml"), jagtYml(repo, servers, tmuxSession, mode, replay));
+          root.resolve("jagt.yml"),
+          jagtYml(repo, servers, tmuxSession, mode, replay, qa(replay)));
     } catch (IOException e) {
       throw new StandFailure("cannot write the stand configuration under " + root, e);
     }
@@ -56,7 +61,12 @@ public final class StandConfig {
   }
 
   private static String jagtYml(
-      Path repo, Path servers, String tmuxSession, StandMode mode, @Nullable Path replay) {
+      Path repo,
+      Path servers,
+      String tmuxSession,
+      StandMode mode,
+      @Nullable Replay replay,
+      String qa) {
     return """
     orchestrator:
       %s
@@ -81,6 +91,7 @@ public final class StandConfig {
       autoReview: { enabled: true, minIntervalMinutes: 1, maxIntervalMinutes: 2 }
       tracker: { mode: "off" }
       replay: { file: "%s" }
+      %s
     """
         .formatted(
             replay == null ? "" : "codeHost: replay",
@@ -90,6 +101,18 @@ public final class StandConfig {
             servers,
             servers,
             mode.id(),
-            replay == null ? "" : replay);
+            replay == null ? "" : replay.recording(),
+            qa);
+  }
+
+  private static String qa(@Nullable Replay replay) throws IOException {
+    if (replay == null || !Files.readString(replay.recording()).contains("\"kind\":\"QA_CHECK\"")) {
+      return "";
+    }
+    return """
+        roles: { qa: { enabled: true, environments: [{ url: "%s" }], \
+        flows: { driver: playwright, path: "%s", command: ["%s"] } } }\
+        """
+        .formatted(replay.appUrl(), FLOWS, FLOWS.resolve("flows.sh"));
   }
 }
