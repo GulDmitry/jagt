@@ -12,6 +12,9 @@ Task transcripts 2026-10-02..13: cache writes cost more than reads, 37M written 
 Headless first calls wrote 26.3M of the 37M, all at the 1h TTL, a median 45k each. Of 739 headless runs, 21 read
 more than the common prefix from an earlier run, one of them more than 5 minutes later. A run lasts 0.5 minutes,
 1.6 at p90.
+Measured 2026-11-08 (`finished.jsonl`, 49 tasks, 75 gaps): a round's end to the next round's start, median 22 minutes,
+17 % under 5, 73 % under 60; a headless `-p` on a subscription writes at the 1h TTL unless forced (CLI 2.1.311).
+At about 1.5 gaps per task the 1h write breaks even near 3 rounds (estimate): the 5m TTL stays.
 
 ## Decision
 
