@@ -81,6 +81,19 @@ class TicketReadTest {
   }
 
   @Test
+  void takesAFileLinkAsAnItemsOwn() {
+    var facts =
+        TicketFacts.defaults()
+            .withExists(true)
+            .withKey("ABC-42")
+            .withTitle("Widget")
+            .withUrl("file:///work/list.md#ABC-42")
+            .withTrackerStatus("open");
+
+    assertThat(TicketRead.violations("ABC-42", facts)).isEmpty();
+  }
+
+  @Test
   void asksNothingAboutTheKeyWhenNoReferenceWasGiven() {
     var facts =
         TicketFacts.defaults()

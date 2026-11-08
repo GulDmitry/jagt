@@ -83,6 +83,39 @@ class TrackerCheckTest {
   }
 
   @Test
+  void asksAFileTrackerForItsFileAndForNoAssignee() {
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withTracker(
+                    TrackerConfig.defaults()
+                        .withMode("take")
+                        .withWorkflow("file")
+                        .withStartStatus("open")));
+    when(workflow.id()).thenReturn("file");
+
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.tracker.file");
+  }
+
+  @Test
+  void acceptsAFileTrackerNamingItsFile() {
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withTracker(
+                    TrackerConfig.defaults()
+                        .withMode("take")
+                        .withWorkflow("file")
+                        .withStartStatus("open")
+                        .withFile("work.md")));
+    when(workflow.id()).thenReturn("file");
+
+    assertThat(check.problems()).isEmpty();
+  }
+
+  @Test
   void refusesADrivenTrackerJagtCarriesNoWorkflowFor() {
     when(configService.load())
         .thenReturn(

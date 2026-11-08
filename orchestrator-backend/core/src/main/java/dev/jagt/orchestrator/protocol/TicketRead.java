@@ -47,8 +47,10 @@ public final class TicketRead {
     }
     if (blank(facts.url())) {
       found.add(new Violation("url", "the item's canonical web link; never invent one"));
-    } else if (!facts.url().startsWith("http://") && !facts.url().startsWith("https://")) {
-      found.add(new Violation("url", "an http(s) link, not " + facts.url()));
+    } else if (!facts.url().startsWith("http://")
+        && !facts.url().startsWith("https://")
+        && !facts.url().startsWith("file://")) {
+      found.add(new Violation("url", "an http(s) or file link, not " + facts.url()));
     }
     // An unassigned item is an answer; a blank status is not, an intake trigger having nothing to
     // fire on.

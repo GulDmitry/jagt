@@ -678,7 +678,10 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         @Nullable String startStatus,
         @Nullable String doneStatus,
         @Nullable Integer everyMinutes,
-        @Nullable List<String> projects) {
+        @Nullable List<String> projects,
+        @Nullable String file) {
+
+      private static final String FILE_WORKFLOW = "file";
 
       public TrackerConfig(
           @Nullable String mode,
@@ -687,7 +690,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
           @Nullable String startStatus,
           @Nullable String doneStatus,
           @Nullable Integer everyMinutes) {
-        this(mode, workflow, assignee, startStatus, doneStatus, everyMinutes, null);
+        this(mode, workflow, assignee, startStatus, doneStatus, everyMinutes, null, null);
       }
 
       public static TrackerConfig defaults() {
@@ -720,7 +723,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         if (blank(workflow)) {
           blank.add("workflow");
         }
-        if (running.takes() && blank(assignee)) {
+        boolean fileTracker = FILE_WORKFLOW.equals(workflow);
+        if (running.takes() && !fileTracker && blank(assignee)) {
           blank.add("assignee");
         }
         if (running.takes() && blank(startStatus)) {
@@ -728,6 +732,9 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         }
         if (running.closes() && blank(doneStatus)) {
           blank.add("doneStatus");
+        }
+        if (fileTracker && running != TrackerMode.OFF && blank(file)) {
+          blank.add("file");
         }
         return List.copyOf(blank);
       }

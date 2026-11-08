@@ -68,14 +68,7 @@ public class JiraWorkflow implements TrackerWorkflow {
     return same(facts.trackerStatus(), configService.load().tracker().doneStatus());
   }
 
-  /**
-   * Spelled as the tracker reports it, case aside: anything looser starts work on an item nobody
-   * meant.
-   */
   private static boolean same(@Nullable String read, @Nullable String configured) {
-    return configured != null
-        && !configured.isBlank()
-        && read != null
-        && read.strip().equalsIgnoreCase(configured.strip());
+    return StageMatch.same(read, configured);
   }
 }

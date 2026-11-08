@@ -101,7 +101,7 @@
   [spec](../openspec/specs/protocol/spec.md#requirement-every-violation-at-once)
 - **Tickets through your MCP** — Tracker and code host are read through your own MCP servers; jagt holds no token.
   [spec](../openspec/specs/protocol/spec.md#requirement-a-ticket-is-read-through-the-humans-mcp-servers)
-- **Tracker intake and close** — A ready ticket opens a task, and a done ticket closes it. Key: `orchestrator.tracker.mode`, off by default.
+- **Tracker intake and close** — Ready tickets open tasks, done ones close them, Markdown files too. Key: `orchestrator.tracker.mode`, off by default.
   [spec](../openspec/specs/protocol/spec.md#requirement-tracker-stages-open-and-close-tasks)
 - **Says why** — A session's report and a new task each give one sentence why, read in the step's hover.
   [spec](../openspec/specs/protocol/spec.md#requirement-a-request-says-why)

@@ -163,3 +163,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0147 The tick scope is its own port](0147-the-tick-scope-is-its-own-port.md)
 - [0148 jagt reaches the code host through its CLI login](0148-jagt-reaches-the-code-host-through-its-cli-login.md) (supersedes in part 0003, 0020)
 - [0149 Triage is a stop read, not a checker](0149-triage-is-a-stop-read-not-a-checker.md) (beside 0126)
+- [0150 A file tracker is read by jagt itself](0150-a-file-tracker-is-read-by-jagt-itself.md) (amends 0003)

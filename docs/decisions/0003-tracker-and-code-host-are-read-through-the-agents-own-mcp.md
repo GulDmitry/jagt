@@ -7,6 +7,7 @@
 Accepted 2026-08-24 (`7e9e35a`), recorded retroactively 2026-10-02. Superseded in part by
 [0130](0130-every-third-party-is-a-configured-seam.md): jagt reads the deploy pipeline through a configured code host seam.
 Superseded in part by [0148](0148-jagt-reaches-the-code-host-through-its-cli-login.md) for code-host reads.
+Amended by [0150](0150-a-file-tracker-is-read-by-jagt-itself.md): a Markdown file tracker is read by jagt itself.
 
 ## Context
 

@@ -212,7 +212,8 @@ orchestrator:
   # nothing to choose and nothing is asked.
   tracker:
     mode: off             # off | take | close | both
-    workflow: none        # none | jira. Read at startup, unlike everything beside it here
+    workflow: none        # none | jira | file. Read at startup, unlike everything beside it here
+    file: ""              # `file`: the Markdown checklist jagt reads itself, `- [ ] **ABC-42 — Title**`; `[ ]` is `open`, `[x]` `done`
     assignee: ""          # `take`: the item is yours, spelled exactly as your tracker reports it, case aside
     startStatus: ""       # `take`: the stage an item must stand in before a machine may start it
     projects: []          # `take`: the tracker projects (boards) work is taken from, by key; empty takes from all
