@@ -69,6 +69,7 @@ archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at star
     <logger name="dev.jagt.orchestrator.service.master.MasterDecisions"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.master.MasterReview"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.master.MasterBrake"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.service.master.ChargedReviews"><appender-ref ref="MASTER"/></logger>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

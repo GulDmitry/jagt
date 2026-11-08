@@ -127,7 +127,8 @@ Each of these jobs SHALL do its one thing unasked:
 
 ### Requirement: Jobs that read the tracker
 Each of these jobs SHALL do its one thing unasked:
-- `ticket-prefetch`: reads each working task's ticket once, for the Master's next review of it.
+- `ticket-prefetch`: reads each working task's ticket once, kept beside `state.json` so a new stint or a restart reads
+  none, booked as `TICKET_TEXT`; a failed read is asked again only in the next stint.
 - `intake`: with `tracker.mode` `take` or `both`, starts a task on every item ready for one. One it cannot
   is tried again every poll, and told once.
 - `ticket-close`: with `tracker.mode` `close` or `both`, closes a task whose item reached `doneStatus`.

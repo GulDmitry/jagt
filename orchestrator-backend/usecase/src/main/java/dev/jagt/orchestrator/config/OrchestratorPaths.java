@@ -77,6 +77,11 @@ public class OrchestratorPaths {
     return stateFile.resolveSibling("plan-baselines");
   }
 
+  /** One copy of each task's ticket text as first read, named by the task's slug. */
+  public Path ticketTexts() {
+    return stateFile.resolveSibling("ticket-texts");
+  }
+
   /** One folder per task that plans before it has a repository, named by the task's slug. */
   public Path scratch() {
     return stateFile.resolveSibling("scratch");

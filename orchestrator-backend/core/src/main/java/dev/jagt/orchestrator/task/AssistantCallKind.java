@@ -11,6 +11,8 @@ public enum AssistantCallKind {
 
   /** Reading the work item behind `do` — once per task. */
   TICKET_READ("ticket read"),
+  /** Copying the ticket text a Master review quotes — once per task. */
+  TICKET_TEXT("ticket text"),
   /** Reading a merge request to `resume` it — rare. */
   MR_READ("merge-request read"),
   /** One review round: the manual `sweep` and every auto-review poll. */

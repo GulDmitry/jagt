@@ -67,7 +67,7 @@ class ReplayTrackerAssistantTest {
     Files.writeString(
         file,
         """
-        {"type":"read","kind":"MASTER_REVIEW","ref":"ABC-1","answer":{"text":"  Greet World.  "}}
+        {"type":"read","kind":"TICKET_TEXT","ref":"ABC-1","answer":{"text":"  Greet World.  "}}
         """);
     ReplayTrackerAssistant assistant =
         new ReplayTrackerAssistant(new RecordedReads(new Recording(file.toString())));
@@ -83,7 +83,7 @@ class ReplayTrackerAssistantTest {
     Files.writeString(
         file,
         """
-        {"type":"read","kind":"MASTER_REVIEW","ref":"ABC-1","answer":{"text":"   "}}
+        {"type":"read","kind":"TICKET_TEXT","ref":"ABC-1","answer":{"text":"   "}}
         """);
     ReplayTrackerAssistant assistant =
         new ReplayTrackerAssistant(new RecordedReads(new Recording(file.toString())));

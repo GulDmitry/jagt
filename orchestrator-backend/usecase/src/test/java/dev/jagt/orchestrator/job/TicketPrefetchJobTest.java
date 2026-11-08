@@ -34,18 +34,16 @@ class TicketPrefetchJobTest {
   private final StateService state = mock(StateService.class);
   private final ConfigService config = mock(ConfigService.class);
   private final TrackerAssistant assistant = mock(TrackerAssistant.class);
+  private final OrchestratorPaths paths =
+      new OrchestratorPaths(
+          OrchestratorProperties.defaults()
+              .withRoot(root.toString())
+              .withStateFile(root.resolve("state.json").toString()));
   private final TicketTexts tickets =
       new TicketTexts(
           assistant,
-          new UsageTracker(
-              state,
-              new UsageLedger(
-                  new JsonMapper(),
-                  new OrchestratorPaths(
-                      OrchestratorProperties.defaults()
-                          .withRoot(root.toString())
-                          .withStateFile(root.resolve("state.json").toString())),
-                  Clock.systemDefaultZone())));
+          new UsageTracker(state, new UsageLedger(new JsonMapper(), paths, Clock.systemDefaultZone())),
+          paths);
   private final TicketPrefetchJob job = new TicketPrefetchJob(config, tickets);
 
   @Test
@@ -75,22 +73,22 @@ class TicketPrefetchJobTest {
     when(state.tasks())
         .thenReturn(
             Map.of(
-                "ABC-42",
+                "ABC-43",
                 TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                    .ticketUrl("https://tracker.example/ABC-42")
+                    .ticketUrl("https://tracker.example/ABC-43")
                     .build()));
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(assistant.readTicketText("https://tracker.example/ABC-42"))
+    when(assistant.readTicketText("https://tracker.example/ABC-43"))
         .thenReturn(Answer.unavailable());
 
     job.runOn(state.tasks());
     job.runOn(state.tasks());
 
-    verify(assistant, times(1)).readTicketText("https://tracker.example/ABC-42");
+    verify(assistant, times(1)).readTicketText("https://tracker.example/ABC-43");
   }
 
   @Test
@@ -98,9 +96,9 @@ class TicketPrefetchJobTest {
     when(state.tasks())
         .thenReturn(
             Map.of(
-                "ABC-42",
+                "ABC-44",
                 TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                    .ticketUrl("https://tracker.example/ABC-42")
+                    .ticketUrl("https://tracker.example/ABC-44")
                     .build()));
     when(config.load())
         .thenReturn(
@@ -110,6 +108,35 @@ class TicketPrefetchJobTest {
 
     job.runOn(state.tasks());
 
-    verify(assistant, never()).readTicketText("https://tracker.example/ABC-42");
+    verify(assistant, never()).readTicketText("https://tracker.example/ABC-44");
+  }
+
+  @Test
+  void readsNoTicketAgainAfterARestartOrASecondEntry() {
+    TaskState working =
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .ticketUrl("https://tracker.example/ABC-45")
+            .build();
+    when(state.tasks()).thenReturn(Map.of("ABC-45", working));
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withMaster(
+                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+    when(assistant.readTicketText("https://tracker.example/ABC-45"))
+        .thenReturn(new Answer<>(Optional.of("Summary: accept v3 calls"), TokenUsage.NONE));
+    job.runOn(state.tasks());
+    TrackerAssistant afterRestart = mock(TrackerAssistant.class);
+    TicketTexts restartedTickets =
+        new TicketTexts(
+            afterRestart,
+            new UsageTracker(
+                state, new UsageLedger(new JsonMapper(), paths, Clock.systemDefaultZone())),
+            paths);
+
+    new TicketPrefetchJob(config, restartedTickets).runOn(state.tasks());
+
+    verify(afterRestart, never()).readTicketText("https://tracker.example/ABC-45");
+    assertThat(restartedTickets.of("ABC-45")).contains("Summary: accept v3 calls");
   }
 }

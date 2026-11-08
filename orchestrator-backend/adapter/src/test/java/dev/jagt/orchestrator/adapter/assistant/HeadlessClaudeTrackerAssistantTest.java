@@ -12,6 +12,8 @@ import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.TokenUsage;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -283,5 +285,34 @@ class HeadlessClaudeTrackerAssistantTest {
 
     assertThat(copied).contains("# Summary\nbody");
     assertThat(empty).isEmpty();
+  }
+
+  @Test
+  void booksTheTicketTextCopyAsATicketTextCallNotAMasterReview() {
+    ProcessRunner runner = mock(ProcessRunner.class);
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                """
+                {"total_cost_usd":0.06,"usage":{"input_tokens":31000,"output_tokens":40},
+                 "structured_output":{"text":"# Summary"}}\
+                """,
+                ""));
+    UsageTracker usage = mock(UsageTracker.class);
+    var assistant =
+        new HeadlessClaudeTrackerAssistant(
+            new HeadlessClaude(
+                new AssistantProcess(
+                    runner,
+                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                ClaudeProperties.defaults(),
+                AssistantProperties.empty(),
+                usage,
+                mock(ReadOnlyTools.class)));
+
+    assistant.readTicketText("ABC-42");
+
+    verify(usage).record(AssistantCallKind.TICKET_TEXT, TokenUsage.ofCall(31_000, 0, 40, 0.06));
   }
 }
