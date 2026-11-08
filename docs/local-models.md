@@ -53,6 +53,10 @@ A QA read on the 9B hit the 10-minute cap after 2 of 12 cases, both wrong:
 A second run (2026-11-07, one run per case) judged 1 of 12 in 10 min, wrong: a read the gate refused did not end
 the read — the model made 7 calls — but its answer was prose outside the schema. Swap stayed flat.
 
+A triage read on the 9B (2026-11-08, `roleEval -Prole=triage -ProleCli=opencode`, one run per case, 7m51s, swap flat)
+answered 2 of 9 cases: one names who looped right, one advises a lift safe that is not. Six answers named no
+`who:` line, one was unreadable. Haiku: 16 of 19 runs right, none safe where unsafe.
+
 The gate worked: refused calls were retried, none discarded as unfenced. Role reads and sessions stay on the cloud.
 A task session on OpenCode was not tried: a session asks more of the model than a QA read.
 

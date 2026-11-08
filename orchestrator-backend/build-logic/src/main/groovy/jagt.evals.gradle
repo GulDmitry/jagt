@@ -50,7 +50,7 @@ tasks.register('roleEval', Test) {
     if (evalOnOpenCode) {
         systemProperty 'orchestrator.opencode.endpoint', project.findProperty('opencodeEndpoint') ?: ''
         systemProperty 'orchestrator.opencode.model', project.findProperty('roleModel') ?: ''
-        systemProperty "orchestrator.opencode.reads.${evalRole}", ''
+        systemProperty "orchestrator.opencode.reads.${evalIsTriage ? 'master' : evalRole}", ''
     }
     Map<String, String> retired = ['masterBrief': '-Prole=master -ProleBrief', 'masterModel': '-Prole=master -ProleModel',
                                    'qaBrief': '-Prole=qa -ProleBrief', 'qaModel': '-Prole=qa -ProleModel',
@@ -74,8 +74,8 @@ tasks.register('roleEval', Test) {
         if (!(evalCli in ['claude', 'opencode'])) {
             throw new GradleException("-ProleCli ${evalCli} must be claude or opencode.")
         }
-        if (evalOnOpenCode && (evalIsArbiter || evalIsTriage)) {
-            throw new GradleException('-ProleCli=opencode reads a checker only: the Master\'s round and a stop read have their own readers.')
+        if (evalOnOpenCode && evalIsArbiter) {
+            throw new GradleException('-ProleCli=opencode reads a checker or a stop: the Master\'s round has its own reader.')
         }
         if (evalOnOpenCode && !openCodeNamed) {
             throw new GradleException('-ProleCli=opencode needs -PopencodeEndpoint=<base url> and -ProleModel=<the model it serves>.')
