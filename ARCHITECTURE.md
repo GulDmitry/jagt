@@ -164,6 +164,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `RoundReviewer` | `adapter/assistant/ChosenRoundReviewer` choosing a driver by config (`HeadlessClaudeRoundReviewer`, OpenCode), `ReplayRoundReviewer` (a stand recording played back) |
 | `CheckerReader` | `adapter/assistant/ChosenCheckerReader` choosing a driver by config (`HeadlessClaudeCheckerReader`, `OpenCodeCheckerReader`), `ReplayCheckerReader` |
 | `EnvironmentProbe` | `adapter/assistant/HttpEnvironmentProbe` |
+| `AcceptanceRunner` | `adapter/flows/{PlaywrightRunner,NoAcceptanceRunner}` by `orchestrator.qa.flows.driver` — scripted flows run as argv, judged from the JSON report |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Reach` | `service/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login`; `adapter/assistant/AssistantBreaker` writes the assistant's outage into it |
 | `Notifier` | `adapter/DesktopNotifier`; `notify/Notifications` fans out to every one |

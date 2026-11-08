@@ -4,7 +4,7 @@
 ## Acceptance probes · [spec](../openspec/specs/acceptance-probes/spec.md)
 - **Declared probes** — A plan lists its acceptance checks as typed probes, never as prose.
   [spec](../openspec/specs/acceptance-probes/spec.md#requirement-a-plan-declares-its-probes-in-one-form)
-- **Probes run by jagt** — jagt runs the plan's probes itself before a hand-back and records what they printed.
+- **Probes and flows** — jagt records what the plan's probes printed; a project's flows run on a listed environment: passed, failed, unprovable.
   [spec](../openspec/specs/acceptance-probes/spec.md#requirement-jagt-runs-the-probes-at-verifying)
 - **Tagged criteria** — A plan lists the ticket's acceptance criteria, each tagged here, elsewhere or wrong; one without is refused.
   [spec](../openspec/specs/acceptance-probes/spec.md#requirement-a-plan-carries-its-tagged-acceptance-criteria)

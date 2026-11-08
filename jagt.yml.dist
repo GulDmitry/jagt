@@ -200,6 +200,13 @@ orchestrator:
   # LEGACY, still read: `qa:` with the same keys as `roles.qa`. Where `roles.qa` is written it wins; unwritten, this stands.
   # qa:
   #   enabled: false
+  #   # Scripted flows, run by jagt as argv and read from the driver's JSON report; evidence goes under `qa/` in the worktree.
+  #   flows:
+  #     driver: none                       # none | playwright
+  #     path: /path/to/flows               # the flows repository, the command's working directory; it holds any login
+  #     command: ["npx", "playwright", "test"]   # jagt adds the reporter, output folder and flow filter; BASE_URL is the environment
+  #     environments: ["https://stage.example.com"]   # allow-list of base URLs; any other is refused before a run
+  #     timeout: 10m                       # a run past it is unprovable
 
   # ── The two ends the tracker drives (EXPERIMENTAL) ─────────────────────────────────────────────────────────
   # `take` turns items at your starting stage into tasks; `close` ends a task whose item reached the stage that
