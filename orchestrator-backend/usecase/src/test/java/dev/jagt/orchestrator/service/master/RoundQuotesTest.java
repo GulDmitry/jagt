@@ -312,6 +312,209 @@ class RoundQuotesTest {
   }
 
   @Test
+  void keepsAVerdictWhenARestartForgotTheTicketOverTheSameRound(@TempDir Path worktree) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(worktree.toString())
+                    .withStateFile(worktree.resolve("state.json").toString())));
+    MasterReview reviews = new MasterReview(state);
+    RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+    TaskState task =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
+            .alias("a1")
+            .lastActiveTimestamp(5_000)
+            .build();
+    when(facts.request(any())).thenReturn("Summary");
+    when(facts.notes(any())).thenReturn("");
+    when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
+    when(facts.humanSaid(any())).thenReturn(Optional.of(List.of()));
+    when(facts.ticket("ABC-1")).thenReturn(Optional.of("Summary: accept v3 calls"));
+    String read = quotes.inputs("ABC-1", task).orElseThrow();
+    state.putTask("a1", task);
+    reviews.write(
+        "a1",
+        task,
+        new MasterReview.Review(
+            1_000,
+            "abc123",
+            "PLAIN",
+            read,
+            List.of(
+                new MasterReview.Read(
+                    "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+        "");
+    task = state.task("a1").orElseThrow();
+    when(facts.ticket("ABC-1")).thenReturn(Optional.empty());
+
+    boolean carried = quotes.carried("a1", task, quotes.inputs("ABC-1", task).orElseThrow());
+
+    assertThat(carried).isTrue();
+  }
+
+  @Test
+  void readsTheRoundAnewWhenTheTicketItReadChanged(@TempDir Path worktree) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(worktree.toString())
+                    .withStateFile(worktree.resolve("state.json").toString())));
+    MasterReview reviews = new MasterReview(state);
+    RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+    TaskState task =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
+            .alias("a1")
+            .lastActiveTimestamp(5_000)
+            .build();
+    when(facts.request(any())).thenReturn("Summary");
+    when(facts.notes(any())).thenReturn("");
+    when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
+    when(facts.humanSaid(any())).thenReturn(Optional.of(List.of()));
+    when(facts.ticket("ABC-1")).thenReturn(Optional.of("accept v3 calls"));
+    String read = quotes.inputs("ABC-1", task).orElseThrow();
+    state.putTask("a1", task);
+    reviews.write(
+        "a1",
+        task,
+        new MasterReview.Review(
+            1_000,
+            "abc123",
+            "PLAIN",
+            read,
+            List.of(
+                new MasterReview.Read(
+                    "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+        "");
+    task = state.task("a1").orElseThrow();
+    when(facts.ticket("ABC-1")).thenReturn(Optional.of("accept v4 calls"));
+
+    boolean carried = quotes.carried("a1", task, quotes.inputs("ABC-1", task).orElseThrow());
+
+    assertThat(carried).isFalse();
+  }
+
+  @Test
+  void readsTheRoundAnewOnceTheTicketIsReadWhereTheVerdictHadNone(@TempDir Path worktree) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(worktree.toString())
+                    .withStateFile(worktree.resolve("state.json").toString())));
+    MasterReview reviews = new MasterReview(state);
+    RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+    TaskState task =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
+            .alias("a1")
+            .lastActiveTimestamp(5_000)
+            .build();
+    when(facts.request(any())).thenReturn("Summary");
+    when(facts.notes(any())).thenReturn("");
+    when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
+    when(facts.humanSaid(any())).thenReturn(Optional.of(List.of()));
+    when(facts.ticket("ABC-1")).thenReturn(Optional.empty());
+    String read = quotes.inputs("ABC-1", task).orElseThrow();
+    state.putTask("a1", task);
+    reviews.write(
+        "a1",
+        task,
+        new MasterReview.Review(
+            1_000,
+            "abc123",
+            "PLAIN",
+            read,
+            List.of(
+                new MasterReview.Read(
+                    "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+        "");
+    task = state.task("a1").orElseThrow();
+    when(facts.ticket("ABC-1")).thenReturn(Optional.of("accept v3 calls"));
+
+    boolean carried = quotes.carried("a1", task, quotes.inputs("ABC-1", task).orElseThrow());
+
+    assertThat(carried).isFalse();
+  }
+
+  @Test
+  void callsTheFirstReadOfARoundFirst(@TempDir Path worktree) {
+    TaskState task =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
+            .alias("a1")
+            .build();
+    when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
+
+    String trigger = quotes.trigger(task, "in1");
+
+    assertThat(trigger).isEqualTo("first");
+  }
+
+  @Test
+  void callsARereadOfTheSameInputsARetryAndAChangedDiffAChange(@TempDir Path worktree) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(worktree.toString())
+                    .withStateFile(worktree.resolve("state.json").toString())));
+    MasterReview reviews = new MasterReview(state);
+    RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+    TaskState task =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
+            .alias("a1")
+            .lastActiveTimestamp(5_000)
+            .build();
+    state.putTask("a1", task);
+    reviews.write(
+        "a1",
+        task,
+        new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of()),
+        "");
+    task = state.task("a1").orElseThrow();
+    when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
+    String sameInputs = quotes.trigger(task, "in1");
+    when(facts.ownDiff(any())).thenReturn(Optional.of("def456"));
+
+    String changedDiff = quotes.trigger(task, "in1");
+
+    assertThat(sameInputs).isEqualTo("retry");
+    assertThat(changedDiff).isEqualTo("changed");
+  }
+
+  @Test
+  void fingerprintsARoundByItsOwnDiffAndInputs(@TempDir Path worktree) {
+    TaskState task =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+    when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
+    String first = quotes.fingerprint(task, "in1");
+    String again = quotes.fingerprint(task, "in1");
+    when(facts.ownDiff(any())).thenReturn(Optional.of("def456"));
+
+    String other = quotes.fingerprint(task, "in1");
+
+    assertThat(first).hasSize(32).isEqualTo(again).isNotEqualTo(other);
+  }
+
+  @Test
+  void fingerprintsAPlanByItsFileAndInputs(@TempDir Path worktree) {
+    TaskState task =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+    when(facts.plan(any())).thenReturn("step 1");
+    String first = quotes.planFingerprint(task, "in1");
+    String again = quotes.planFingerprint(task, "in1");
+    when(facts.plan(any())).thenReturn("step 1, step 2");
+
+    String other = quotes.planFingerprint(task, "in1");
+
+    assertThat(first).hasSize(32).isEqualTo(again).isNotEqualTo(other);
+  }
+
+  @Test
   void quotesTheTicketTheDiffTheDecisionsTheHumanAndTheNotesOfTheRound(@TempDir Path worktree) {
     MasterDecisions decisions = mock(MasterDecisions.class);
     TaskState task =

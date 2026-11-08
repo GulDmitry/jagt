@@ -210,11 +210,22 @@ public class MasterReview {
      * quoted texts.
      */
     boolean readsInputsOf(TaskState task, String own, String quoted) {
-      return !ownDiff.isBlank()
-          && !quoted.isBlank()
-          && ownDiff.equals(own)
+      return !ownDiff.isBlank() && !quoted.isBlank() && sameRound(task, own, quoted);
+    }
+
+    /**
+     * {@code quoted} is the texts' digest, then {@code :} and the ticket's, blank while it is
+     * unread; an unread ticket is no change, a ticket read where none was is.
+     */
+    boolean sameRound(TaskState task, String own, String quoted) {
+      String[] now = quoted.split(":", 2);
+      String[] read = String.valueOf(inputs).split(":", 2);
+      String ticketNow = now.length > 1 ? now[1] : "";
+      String ticketRead = read.length > 1 ? read[1] : "";
+      return ownDiff.equals(own)
           && task.report().name().equals(report)
-          && quoted.equals(inputs);
+          && now[0].equals(read[0])
+          && (ticketNow.isEmpty() || ticketNow.equals(ticketRead));
     }
   }
 

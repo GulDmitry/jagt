@@ -30,14 +30,19 @@ public class RoundFacts {
    * The ticket as read, else what the task was opened with: a task nobody filed has no other ask.
    */
   public String ask(String taskId, TaskState task) {
-    return tickets
-        .of(taskId)
-        .orElseGet(
-            () ->
-                WorktreeFiles.read(
-                        Path.of(task.worktreePath()).resolve(Artifact.REQUEST.fileName()))
-                    .orElse("")
-                    .strip());
+    return ticket(taskId).orElseGet(() -> request(task));
+  }
+
+  /** Empty until a read of the ticket came back, and again after a restart. */
+  public Optional<String> ticket(String taskId) {
+    return tickets.of(taskId);
+  }
+
+  /** What the task was opened with. */
+  public String request(TaskState task) {
+    return WorktreeFiles.read(Path.of(task.worktreePath()).resolve(Artifact.REQUEST.fileName()))
+        .orElse("")
+        .strip();
   }
 
   public String diff(TaskState task) {

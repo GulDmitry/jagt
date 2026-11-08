@@ -11,6 +11,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.Processes;
@@ -36,6 +39,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 class MasterPanelTest {
@@ -1307,6 +1311,68 @@ class MasterPanelTest {
     assertThat(written).isTrue();
     verify(reviews, never()).review(any(), any());
     assertThat(worktree.resolve(MasterReview.FILE)).doesNotExist();
+  }
+
+  @Test
+  void namesWhyAndOverWhatARoundWasReadInTheLog(@TempDir Path worktree) {
+    ChargedReviews reviews = mock(ChargedReviews.class);
+    MasterBriefs briefs = mock(MasterBriefs.class);
+    RoundQuotes quotes = mock(RoundQuotes.class);
+    TaskState task =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+    when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
+    when(briefs.author()).thenReturn("");
+    when(quotes.inputs("ABC-1", task)).thenReturn(Optional.of("in1"));
+    when(quotes.trigger(task, "in1")).thenReturn("retry");
+    when(quotes.fingerprint(task, "in1")).thenReturn("fp1");
+    when(quotes.round("ABC-1", task)).thenReturn(Optional.empty());
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    Logger panelLog = (Logger) LoggerFactory.getLogger(MasterPanel.class);
+    panelLog.addAppender(log);
+
+    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        .review(
+            "ABC-1",
+            task,
+            new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+
+    panelLog.detachAppender(log);
+    assertThat(List.copyOf(log.list))
+        .filteredOn(event -> "master review asked".equals(event.getMessage()))
+        .flatExtracting(ILoggingEvent::getKeyValuePairs)
+        .extracting(pair -> pair.key + "=" + pair.value)
+        .contains("trigger=retry", "fingerprint=fp1");
+  }
+
+  @Test
+  void namesAPlanReadAsSuchInTheLog(@TempDir Path worktree) {
+    ChargedReviews reviews = mock(ChargedReviews.class);
+    MasterBriefs briefs = mock(MasterBriefs.class);
+    RoundQuotes quotes = mock(RoundQuotes.class);
+    TaskState task =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+    when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
+    when(quotes.inputs("ABC-1", task)).thenReturn(Optional.of("in1"));
+    when(quotes.planFingerprint(task, "in1")).thenReturn("fp2");
+    when(quotes.plan("ABC-1", task)).thenReturn(Optional.empty());
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    Logger panelLog = (Logger) LoggerFactory.getLogger(MasterPanel.class);
+    panelLog.addAppender(log);
+
+    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        .plan(
+            "ABC-1",
+            task,
+            new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+
+    panelLog.detachAppender(log);
+    assertThat(List.copyOf(log.list))
+        .filteredOn(event -> "master review asked".equals(event.getMessage()))
+        .flatExtracting(ILoggingEvent::getKeyValuePairs)
+        .extracting(pair -> pair.key + "=" + pair.value)
+        .contains("trigger=plan", "fingerprint=fp2");
   }
 
   @Test

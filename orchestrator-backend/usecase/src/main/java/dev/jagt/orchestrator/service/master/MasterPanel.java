@@ -96,6 +96,8 @@ public class MasterPanel {
         .setMessage("master review asked")
         .addKeyValue("task", taskId)
         .addKeyValue("alias", task.alias())
+        .addKeyValue("trigger", quotes.trigger(task, inputs))
+        .addKeyValue("fingerprint", quotes.fingerprint(task, inputs))
         .log();
     String brief = masters.get();
     List<Path> worktrees = worktrees(task);
@@ -164,6 +166,10 @@ public class MasterPanel {
         .setMessage("master review asked")
         .addKeyValue("task", taskId)
         .addKeyValue("alias", task.alias())
+        .addKeyValue("trigger", "plan")
+        .addKeyValue(
+            "fingerprint",
+            quotes.planFingerprint(task, quotes.inputs(taskId, task).orElse("")))
         .log();
     Optional<RoundRead> read = quotes.plan(taskId, task);
     Judgement judged =

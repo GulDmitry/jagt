@@ -55,9 +55,10 @@ public class RoundQuotes {
   }
 
   /**
-   * Digest of the stored texts a round quotes: the ticket, what the human said, the session's notes
-   * and the probe results. Empty where what the human typed could not be read. The decisions are
-   * left out: acting on a verdict records them, so they differ at every hand-back.
+   * Digest of the stored texts a round quotes (what the task was opened with, what the human said,
+   * the session's notes, the probe results), then {@code :} and the digest of the ticket, blank
+   * while no read of it stands. Empty where what the human typed could not be read. The decisions
+   * are left out: acting on a verdict records them, so they differ at every hand-back.
    */
   Optional<String> inputs(String taskId, TaskState task) {
     return facts
@@ -65,14 +66,42 @@ public class RoundQuotes {
         .map(
             said ->
                 Turn.digestOf(
-                    String.join(
-                        "\u0000",
-                        facts.ask(taskId, task),
-                        String.join("\n", said),
-                        facts.notes(task),
-                        task.probes().stream()
-                            .map(Probe::result)
-                            .collect(Collectors.joining("\n")))));
+                        String.join(
+                            "\u0000",
+                            facts.request(task),
+                            String.join("\n", said),
+                            facts.notes(task),
+                            task.probes().stream()
+                                .map(Probe::result)
+                                .collect(Collectors.joining("\n"))))
+                    + ":"
+                    + facts.ticket(taskId).map(Turn::digestOf).orElse(""));
+  }
+
+  /** What one round was asked about, to tell two asks of an unchanged round apart in the log. */
+  String fingerprint(TaskState task, String inputs) {
+    return Turn.digestOf(
+        String.join("\u0000", facts.ownDiff(task).orElse(""), task.report().name(), inputs));
+  }
+
+  String planFingerprint(TaskState task, String inputs) {
+    return Turn.digestOf(String.join("\u0000", facts.plan(task), inputs));
+  }
+
+  /**
+   * Why the panel reads: {@code first} where no verdict stands, {@code retry} over the inputs the
+   * last verdict read (it was a question or read nothing), else {@code changed}.
+   */
+  String trigger(TaskState task, String inputs) {
+    Optional<String> own = facts.ownDiff(task);
+    return reviews
+        .stored(task)
+        .map(
+            review ->
+                own.isPresent() && review.sameRound(task, own.get(), inputs)
+                    ? "retry"
+                    : "changed")
+        .orElse("first");
   }
 
   /**

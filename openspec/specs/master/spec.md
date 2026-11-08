@@ -188,13 +188,13 @@ a fail (`MasterRecord`); it changes no brief.
 
 ### Requirement: A base-only move keeps the verdict
 `MasterPanel.review` SHALL keep the last verdict, not ready too, while the hand-back keeps the inputs it read: own diff
-identifier (`WorktreeInspection.ownDiffId`), report kind, and a digest of the ticket, human lines, notes and probes. It
-answers the hand-back in front; a question, an unread round or an untracked file is never kept.
+identifier (`WorktreeInspection.ownDiffId`), report kind, a digest of human lines, notes and probes, and the ticket's digest, no input while unread.
+It answers the hand-back in front; a question, an unread round or an untracked file is never kept.
 
 #### Scenario: An unchanged hand-back is not reviewed twice
-- **WHEN** ABC-42 is rebased onto a moved base, or its session hands back `no_changes` again, over the same inputs
+- **WHEN** ABC-42 is rebased onto a moved base, hands back `no_changes` again, or follows a restart, over the same inputs
 - **THEN** no role reads it; the last verdict stands for the new turn
 
 #### Scenario: A reply or a change of its own
-- **WHEN** ABC-42 is handed back with any change of its own, or with another report kind, or a new human line or note
+- **WHEN** ABC-42 is handed back with any change of its own, another report kind, a new human line or note, or a new ticket text
 - **THEN** each role reads the round again, the reply beside it
