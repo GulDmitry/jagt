@@ -1,0 +1,24 @@
+case: api-only-change
+ticket:
+  key: ABC-111
+  title: Quote endpoint returns validUntil
+  criteria:
+    - {id: C1, text: "GET /quotes/sample-q1 responds with validUntil as an ISO date"}
+    - {id: C2, text: "A quote older than 30 days is rejected with 410"}
+deploy:
+  sha: 4152637
+  tip: 4152637
+  landed: host-job
+  diff: ["api/QuoteResponse.java: validUntil", "api/QuoteGuard.java: 410 after 30 days"]
+  flags: {}
+environment:
+  login: {api-token-role: ok}
+  http:
+    "GET /quotes/sample-q1": {status: 200, body: {id: "sample-q1", validUntil: "2026-12-01"}}
+    "GET /quotes/sample-old": {status: 410, body: {id: "sample-old", createdAt: "2026-08-01", error: "quote is 91 days old, older than 30 days"}}
+expect:
+  rows: {C1: met, C2: met}
+  report: plain
+  ending: passed
+names: ["validUntil", "410"]
+note: No browser; the verdict rests on recorded HTTP alone, and acceptance must not call it unprovable for want of a UI.

@@ -122,7 +122,7 @@ project path, the Master's mode, logging in to the agent CLI.
 - Precedents agree (§6.9); update4j is archived since 2024-03-18 [s23].
 
 ### 6.5 `state.json` across versions
-- Reads migrate on the fly: `StoredTask.Unmigrated` carries `silentSince`, `loop`, `qa`, `pipelineUnread`, `conflict`, the report marker.
+- Reads migrate on the fly: `StoredTask.Unmigrated` carries `silentSince`, `loop`, `acceptance`, `pipelineUnread`, `conflict`, the report marker.
 - There is no schema version field, and only `ReportMarkerMigrationTest` pins a migration; no test reads a previous release's file.
 - A self-updating jagt needs that fixture per released minor (task 4), and a field dropped only one version after it stopped being written.
 

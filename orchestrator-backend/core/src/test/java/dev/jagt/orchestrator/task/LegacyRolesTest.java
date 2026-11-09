@@ -17,7 +17,7 @@ class LegacyRolesTest {
           "digest");
 
   @Test
-  void aStateFileWrittenBeforeRolesKeepsQasPassOnTheDeploy() {
+  void aStateFileWrittenBeforeRolesKeepsTheQaRolesPassOnTheDeploy() {
     String json =
         """
         {"status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
@@ -27,10 +27,26 @@ class LegacyRolesTest {
 
     TaskState task = new JsonMapper().readValue(json, TaskState.class).withDeployment(LIVE);
 
-    assertThat(task.passedBy("qa")).isTrue();
+    assertThat(task.passedBy("acceptance")).isTrue();
     JsonNode written = new JsonMapper().readTree(new JsonMapper().writeValueAsString(task));
     assertThat(written.has("qa")).isFalse();
-    assertThat(written.path("roles").has("qa")).isTrue();
+    assertThat(written.path("roles").has("qa")).isFalse();
+    assertThat(written.path("roles").has("acceptance")).isTrue();
+  }
+
+  @Test
+  void aRolesRecordKeyedQaLoadsAsTheAcceptanceRecord() {
+    String json =
+        """
+        {"status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
+         "repos":[{"project":"proj","worktreePath":"/wt"}],
+         "roles":{"qa":{"passed":"proj@abc"}}}
+        """;
+
+    TaskState task = new JsonMapper().readValue(json, TaskState.class);
+
+    assertThat(task.roleOrNone("acceptance").passed()).isEqualTo("proj@abc");
+    assertThat(task.roles()).doesNotContainKey("qa");
   }
 
   @Test
@@ -45,7 +61,7 @@ class LegacyRolesTest {
 
     TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
-    assertThat(task.roleOrNone("qa").passed()).isEqualTo("proj@new");
+    assertThat(task.roleOrNone("acceptance").passed()).isEqualTo("proj@new");
   }
 
   @Test

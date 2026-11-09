@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.task;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -33,9 +34,10 @@ public enum Step {
   RESTARTED("restarted"),
   WAKE("wake"),
   WAIT_OVER("wait-over"),
-  QA_ROUND("qa-round");
+  ACCEPTANCE_ROUND("acceptance-round");
 
   private static final String JOINT = "+";
+  private static final Map<String, String> RENAMED = Map.of("qa-round", "acceptance-round");
 
   private final String id;
 
@@ -48,7 +50,8 @@ public enum Step {
   }
 
   public static Optional<Step> find(String id) {
-    return Arrays.stream(values()).filter(step -> step.id.equals(id)).findFirst();
+    String current = RENAMED.getOrDefault(id, id);
+    return Arrays.stream(values()).filter(step -> step.id.equals(current)).findFirst();
   }
 
   public static Step of(String id) {

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 class PlaywrightReportTest {
 
-  private static final Path REPORT = Path.of("/wt/qa/report.json");
+  private static final Path REPORT = Path.of("/wt/acceptance/report.json");
 
   @Test
   void flowPassesWhenEveryTestOfItsSpecWasExpected() {
@@ -22,10 +22,13 @@ class PlaywrightReportTest {
 
     List<FlowResult> results = new PlaywrightReport(json).results(List.of("@AC-1"), REPORT);
 
-    assertThat(results).singleElement().satisfies(r -> {
-      assertThat(r.verdict()).isEqualTo(Verdict.PASSED);
-      assertThat(r.evidence()).containsExactly(REPORT);
-    });
+    assertThat(results)
+        .singleElement()
+        .satisfies(
+            r -> {
+              assertThat(r.verdict()).isEqualTo(Verdict.PASSED);
+              assertThat(r.evidence()).containsExactly(REPORT);
+            });
   }
 
   @Test
@@ -34,16 +37,20 @@ class PlaywrightReportTest {
         """
         {"suites":[{"suites":[{"specs":[{"title":"alpha search @AC-2","tags":[],
           "tests":[{"status":"unexpected","results":[
-            {"attachments":[{"name":"trace","path":"/wt/qa/artifacts/trace.zip"}]}]}]}]}]}]}
+            {"attachments":[{"name":"trace","path":"/wt/acceptance/artifacts/trace.zip"}]}]}]}]}]}]}
         """;
 
     List<FlowResult> results = new PlaywrightReport(json).results(List.of("AC-2"), REPORT);
 
-    assertThat(results).singleElement().satisfies(r -> {
-      assertThat(r.verdict()).isEqualTo(Verdict.FAILED);
-      assertThat(r.reason()).isEqualTo("failed: alpha search @AC-2");
-      assertThat(r.evidence()).containsExactly(REPORT, Path.of("/wt/qa/artifacts/trace.zip"));
-    });
+    assertThat(results)
+        .singleElement()
+        .satisfies(
+            r -> {
+              assertThat(r.verdict()).isEqualTo(Verdict.FAILED);
+              assertThat(r.reason()).isEqualTo("failed: alpha search @AC-2");
+              assertThat(r.evidence())
+                  .containsExactly(REPORT, Path.of("/wt/acceptance/artifacts/trace.zip"));
+            });
   }
 
   @Test
@@ -56,10 +63,13 @@ class PlaywrightReportTest {
 
     List<FlowResult> results = new PlaywrightReport(json).results(List.of("AC-3"), REPORT);
 
-    assertThat(results).singleElement().satisfies(r -> {
-      assertThat(r.verdict()).isEqualTo(Verdict.UNPROVABLE);
-      assertThat(r.reason()).isEqualTo("flaky or skipped: alpha export");
-    });
+    assertThat(results)
+        .singleElement()
+        .satisfies(
+            r -> {
+              assertThat(r.verdict()).isEqualTo(Verdict.UNPROVABLE);
+              assertThat(r.reason()).isEqualTo("flaky or skipped: alpha export");
+            });
   }
 
   @Test
@@ -85,10 +95,13 @@ class PlaywrightReportTest {
 
     List<FlowResult> results = new PlaywrightReport(json).results(List.of("AC-1"), REPORT);
 
-    assertThat(results).singleElement().satisfies(r -> {
-      assertThat(r.verdict()).isEqualTo(Verdict.UNPROVABLE);
-      assertThat(r.reason()).isEqualTo("no spec carries this flow");
-    });
+    assertThat(results)
+        .singleElement()
+        .satisfies(
+            r -> {
+              assertThat(r.verdict()).isEqualTo(Verdict.UNPROVABLE);
+              assertThat(r.reason()).isEqualTo("no spec carries this flow");
+            });
   }
 
   @Test
@@ -114,10 +127,10 @@ class PlaywrightReportTest {
           {"title":"b","tags":["AC-2"],"tests":[{"status":"unexpected","results":[]}]}]}]}
         """;
 
-    List<FlowResult> results =
-        new PlaywrightReport(json).results(List.of("AC-1", "AC-2"), REPORT);
+    List<FlowResult> results = new PlaywrightReport(json).results(List.of("AC-1", "AC-2"), REPORT);
 
-    assertThat(results).extracting(FlowResult::verdict)
+    assertThat(results)
+        .extracting(FlowResult::verdict)
         .containsExactly(Verdict.PASSED, Verdict.FAILED);
   }
 }

@@ -63,12 +63,12 @@ class ToolLessReadTest {
 
   @Test
   void asksTheCloudWhereTheKindIsNotListed() {
-    when(claude.ask(eq("p"), any(), any(), eq(AssistantCallKind.QA_CHECK), any()))
+    when(claude.ask(eq("p"), any(), any(), eq(AssistantCallKind.ACCEPTANCE_CHECK), any()))
         .thenReturn(cloudAnswer);
 
     var answer =
         new ToolLessRead(claude, localModel, on)
-            .ask("p", "{}", "qa", AssistantCallKind.QA_CHECK, TIMEOUT);
+            .ask("p", "{}", "acceptance", AssistantCallKind.ACCEPTANCE_CHECK, TIMEOUT);
 
     assertThat(answer.facts().orElseThrow().path("from").asString("")).isEqualTo("cloud");
     verifyNoInteractions(localModel);

@@ -7,8 +7,8 @@ import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.RoleSettings;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.Deployment;
-import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TaskState;
 import java.time.Duration;
 import java.util.List;
@@ -18,9 +18,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * The after-deploy check where the role is enabled: one QA run per deploy, opened once the deploy's
- * pipelines are green. {@link DeployCheckJob} asks the session nothing then, so a deploy is never
- * checked twice.
+ * The after-deploy check where the role is enabled: one acceptance run per deploy, opened once the
+ * deploy's pipelines are green. {@link DeployCheckJob} asks the session nothing then, so a deploy
+ * is never checked twice.
  */
 @Service
 @RequiredArgsConstructor
@@ -44,8 +44,8 @@ public class CheckerCheckJob implements TaskJob {
 
   @Override
   public String describe() {
-    return "check each deployed change against its ticket on the environments roles.qa.environments"
-               + " names";
+    return "check each deployed change against its ticket on the environments"
+               + " roles.acceptance.environments names";
   }
 
   @Override
@@ -60,9 +60,9 @@ public class CheckerCheckJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    RoleConfig qa = settings.load();
+    RoleConfig acceptance = settings.load();
     String worktree = task.worktreePath();
-    Optional<Deployment> open = openFor(task, qa);
+    Optional<Deployment> open = openFor(task, acceptance);
     if (open.isEmpty() || worktree == null) {
       return;
     }
@@ -73,11 +73,12 @@ public class CheckerCheckJob implements TaskJob {
     String sha = open.get().tips();
     String step =
         CheckerPhase.of(task, settings.role().id()) == CheckerPhase.READING
-            ? QaVerdict.AGAIN
-            : QaVerdict.ACCEPT;
-    Answer<QaVerdict> answer =
-        reads.check(taskId, step, digest, prompts.accept(taskId, worktree, sha, qa, step));
-    QaVerdict verdict = answer.facts().orElse(QaVerdict.failed(sha, answer.failure()));
+            ? AcceptanceVerdict.AGAIN
+            : AcceptanceVerdict.ACCEPT;
+    Answer<AcceptanceVerdict> answer =
+        reads.check(taskId, step, digest, prompts.accept(taskId, worktree, sha, acceptance, step));
+    AcceptanceVerdict verdict =
+        answer.facts().orElse(AcceptanceVerdict.failed(sha, answer.failure()));
     records.put(taskId, digest, sha, outcomes.apply(taskId, task, verdict));
   }
 

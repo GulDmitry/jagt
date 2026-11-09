@@ -77,7 +77,8 @@ the human's. A test reading the repository's own files may keep **file-scanning*
 - `roleEval -Prole=master` hands the real session a known-verdict round (`roles/master/eval/*.yml`) judged by `roles/master/brief.md.dist`,
   asserting what the read gate heard. Run it when either or a model changes; a defect: `master-lesson`. `-PevalShards` 3 JVMs.
 - `roleEval -Prole=<checker>` hands the real reader a deploy of known answer (`roles/<id>/eval/*.yml`); `-ProleBrief`, `-ProleModel`. Bar (estimate):
-  false met 0 per case, false not-met <= 5%, accuracy >= 90%, report and ending right; a QA step stays only if cutting it loses more than it costs.
+  false met 0 per case, false not-met <= 5%, accuracy >= 90%, report and ending right; an acceptance step stays only if cutting it
+  loses more than it costs.
 - `roleEval -Prole=triage` hands the stop reader a stop of known who, lift and family (`roles/triage/eval/*.yml`), one JVM. Bar (estimate): a lift
   advised safe where unsafe 0, who right on >= 80% of answered runs; the family is recorded, not asserted.
 - Eval cases hold on `-PevalRuns` (3) / `-PevalPasses` (majority), each recording seconds, cost and stalls in `eval-stats.jsonl`.

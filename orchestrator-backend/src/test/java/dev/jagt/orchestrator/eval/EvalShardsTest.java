@@ -10,7 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 class EvalShardsTest {
 
-  static class QaVerdictEvalShard3Test {}
+  static class AcceptanceVerdictEvalShard3Test {}
 
   static class MasterVerdictEvalShard0Test {}
 
@@ -19,7 +19,7 @@ class EvalShardsTest {
       throws IOException {
     EvalShards shards = EvalShards.under(base, 6);
 
-    int claimed = shards.claim(QaVerdictEvalShard3Test.class);
+    int claimed = shards.claim(AcceptanceVerdictEvalShard3Test.class);
 
     assertThat(claimed).isEqualTo(3);
     shards.release();
@@ -38,16 +38,16 @@ class EvalShardsTest {
 
   @Test
   void aShardNumberPastTheRunsShardsClaimsNothing(@TempDir Path base) {
-    assertThatThrownBy(() -> EvalShards.under(base, 3).claim(QaVerdictEvalShard3Test.class))
+    assertThatThrownBy(() -> EvalShards.under(base, 3).claim(AcceptanceVerdictEvalShard3Test.class))
         .isInstanceOf(IllegalStateException.class);
   }
 
   @Test
   void aShardAnotherRunHoldsIsRefusedNotReplacedByAFreeOne(@TempDir Path base) throws IOException {
     EvalShards other = EvalShards.under(base, 6);
-    other.claim(QaVerdictEvalShard3Test.class);
+    other.claim(AcceptanceVerdictEvalShard3Test.class);
 
-    assertThatThrownBy(() -> EvalShards.under(base, 6).claim(QaVerdictEvalShard3Test.class))
+    assertThatThrownBy(() -> EvalShards.under(base, 6).claim(AcceptanceVerdictEvalShard3Test.class))
         .isInstanceOf(IllegalStateException.class);
     other.release();
   }

@@ -8,9 +8,14 @@ import java.util.Optional;
 
 public final class Checkers {
 
-  public static final String QA = "qa";
+  public static final String ACCEPTANCE = "acceptance";
 
   private Checkers() {}
+
+  /** What the board says of a task this checker passed. */
+  public static String passedLabel(String id) {
+    return ACCEPTANCE.equals(id) ? "accepted" : id + " passed";
+  }
 
   /** The ids of the installed checkers, in composition order. */
   public static List<String> installed() {

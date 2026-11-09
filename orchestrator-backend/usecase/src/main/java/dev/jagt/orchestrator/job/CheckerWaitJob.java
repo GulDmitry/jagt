@@ -4,9 +4,9 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.EnvironmentProbe;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.QaEnvironment;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AcceptanceEnvironment;
 import dev.jagt.orchestrator.service.RoleSettings;
-import dev.jagt.orchestrator.task.QaEnding;
+import dev.jagt.orchestrator.task.AcceptanceEnding;
 import dev.jagt.orchestrator.task.TaskState;
 import java.time.Duration;
 import java.util.List;
@@ -37,7 +37,7 @@ public class CheckerWaitJob implements TaskJob {
 
   @Override
   public String describe() {
-    return "run a QA check again once the environment it found down answers its probe";
+    return "run an acceptance check again once the environment it found down answers its probe";
   }
 
   @Override
@@ -52,10 +52,10 @@ public class CheckerWaitJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    List<QaEnvironment> environments = settings.load().environmentsOrEmpty();
+    List<AcceptanceEnvironment> environments = settings.load().environmentsOrEmpty();
     records
         .latest(taskId)
-        .filter(record -> record.ending() == QaEnding.WAITING)
+        .filter(record -> record.ending() == AcceptanceEnding.WAITING)
         .ifPresent(
             record -> {
               if (!environments.isEmpty() && environments.stream().allMatch(this::answers)) {
@@ -64,7 +64,7 @@ public class CheckerWaitJob implements TaskJob {
             });
   }
 
-  private boolean answers(QaEnvironment environment) {
+  private boolean answers(AcceptanceEnvironment environment) {
     String landed = environment.landed();
     String address = landed == null || landed.isBlank() ? environment.url() : landed;
     return address != null && probe.answers(address);

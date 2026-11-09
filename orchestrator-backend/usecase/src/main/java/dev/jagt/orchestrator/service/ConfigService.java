@@ -86,8 +86,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
     public record Reviewing(
         @Nullable CodeReviewConfig codeReview,
         @Nullable AutoReviewConfig autoReview,
-        @Nullable MasterConfig master,
-        @Nullable QaConfig qa) {}
+        @Nullable MasterConfig master) {}
 
     @With
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -479,44 +478,17 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    @With
-    public record QaConfig(
-        @Nullable Boolean enabled,
-        @Nullable String model,
-        @Nullable List<QaEnvironment> environments) {
-
-      public static QaConfig defaults() {
-        return new QaConfig(null, null, null);
-      }
-
-      public boolean enabledOrDefault() {
-        return enabled != null && enabled;
-      }
-
-      public List<QaEnvironment> environmentsOrEmpty() {
-        return environments == null ? List.of() : environments;
-      }
-    }
-
-    /**
-     * What {@code orchestrator.roles.<id>} says of one checker role; the old {@code
-     * orchestrator.qa} reads as {@code roles.qa}.
-     */
+    /** What {@code orchestrator.roles.<id>} says of one checker role. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
     public record RoleConfig(
         @Nullable Boolean enabled,
         @Nullable String model,
-        @Nullable List<QaEnvironment> environments,
+        @Nullable List<AcceptanceEnvironment> environments,
         @Nullable FlowsConfig flows) {
 
       public static RoleConfig defaults() {
         return new RoleConfig(null, null, null, null);
-      }
-
-      static RoleConfig of(QaConfig legacy) {
-        return new RoleConfig(legacy.enabled(), legacy.model(), legacy.environments(), null);
       }
 
       /** The flows repository, blank while no driver is set. */
@@ -538,7 +510,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         return model == null ? "" : model.strip();
       }
 
-      public List<QaEnvironment> environmentsOrEmpty() {
+      public List<AcceptanceEnvironment> environmentsOrEmpty() {
         return environments == null ? List.of() : environments;
       }
 
@@ -557,7 +529,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
-    public record QaEnvironment(@Nullable String url, @Nullable String landed) {}
+    public record AcceptanceEnvironment(@Nullable String url, @Nullable String landed) {}
 
     /**
      * The Master session: judging unless a human turned it off or up to act. {@code brief} is the
@@ -798,7 +770,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
           null,
           null,
           new Sessions(null, null, null, null, null),
-          new Reviewing(null, null, null, null),
+          new Reviewing(null, null, null),
           new Outside(null, null, null));
     }
 
@@ -828,10 +800,6 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
 
     public ConfigFile withMaster(@Nullable MasterConfig master) {
       return withReviewing(reviewing.withMaster(master));
-    }
-
-    public ConfigFile withQa(@Nullable QaConfig qa) {
-      return withReviewing(reviewing.withQa(qa));
     }
 
     public ConfigFile withTracker(@Nullable TrackerConfig tracker) {
@@ -902,10 +870,6 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       return outside.tracker() == null ? TrackerConfig.defaults() : outside.tracker();
     }
 
-    public QaConfig qa() {
-      return reviewing.qa() == null ? QaConfig.defaults() : reviewing.qa();
-    }
-
     public boolean anyCheckerEnabled() {
       return Checkers.withJobs().stream().anyMatch(id -> role(id).enabledOrDefault());
     }
@@ -917,20 +881,11 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
           : roles.keySet().stream().filter(id -> !installed.contains(id)).sorted().toList();
     }
 
-    /**
-     * The role as {@code roles.<id>} writes it; where it names none, QA falls back to the old
-     * {@code qa} key.
-     */
+    /** The role as {@code roles.<id>} writes it. */
     public RoleConfig role(String id) {
       Map<String, RoleConfig> roles = sessions.roles();
       RoleConfig written = roles == null ? null : roles.get(id);
-      if (written != null) {
-        return written;
-      }
-      QaConfig legacy = reviewing.qa();
-      return Checkers.QA.equals(id) && legacy != null
-          ? RoleConfig.of(legacy)
-          : RoleConfig.defaults();
+      return written == null ? RoleConfig.defaults() : written;
     }
 
     @Override
@@ -942,11 +897,9 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
   /** The one root everything a human writes lives under, Spring's keys and jagt's own alike. */
   private static final String ROOT = "orchestrator";
 
-  private static final String LEGACY_QA = "qa";
-
   private static final String MASTER = Arbiter.ID;
 
-  private static final List<String> LEGACY_ROLE_KEYS = List.of(MASTER, LEGACY_QA);
+  private static final List<String> LEGACY_ROLE_KEYS = List.of(MASTER);
 
   private final JsonMapper mapper = new JsonMapper();
   private final OrchestratorPaths paths;
@@ -982,9 +935,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       if (!merged.isEmpty()) {
         layered.put(id, merged);
       }
-      if (roles.remove(id) != null && !MASTER.equals(id)) {
-        roles.put(id, merged);
-      }
+      roles.remove(id);
     }
     if (keys.containsKey("roles")) {
       layered.put("roles", roles);
@@ -1078,13 +1029,6 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
               .load(Files.readString(file));
       Object section = tree instanceof Map<?, ?> document ? document.get(ROOT) : null;
       parsed = version == null ? null : new Parsed(version, section);
-      if (section instanceof Map<?, ?> keys && keys.containsKey(LEGACY_QA)) {
-        log.atInfo()
-            .setMessage("config key deprecated")
-            .addKeyValue("key", "orchestrator.qa")
-            .addKeyValue("use", "orchestrator.roles.qa")
-            .log();
-      }
       if (section instanceof Map<?, ?> keys && keys.containsKey(MASTER)) {
         log.atInfo()
             .setMessage("config key deprecated")

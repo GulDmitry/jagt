@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -13,6 +14,7 @@ import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.ConfigService;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ConfigCheckTest {
 
@@ -116,7 +119,41 @@ class ConfigCheckTest {
         Arguments.of("terminal: warp", "orchestrator.terminal"),
         Arguments.of("openWarpWindow: false", "orchestrator.openWarpWindow"),
         Arguments.of("webTerminal: { enabled: true }", "orchestrator.webTerminal"),
-        Arguments.of("dashboard: { refreshSeconds: 10 }", "orchestrator.dashboard"));
+        Arguments.of("dashboard: { refreshSeconds: 10 }", "orchestrator.dashboard"),
+        Arguments.of("qa: { enabled: true }", "orchestrator.qa"),
+        Arguments.of("roles: { qa: { enabled: true } }", "orchestrator.roles.qa"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"qa: { enabled: true }", "roles: { qa: { enabled: true } }"})
+  void refusesTheStartNamingRolesAcceptanceWhereTheRoleIsStillWrittenAsQa(
+      String key, @TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("repo").resolve(".git"));
+    Files.writeString(
+        root.resolve("jagt.yml"),
+        """
+        orchestrator:
+          %s
+          projects:
+            demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
+        """
+            .formatted(key, root.resolve("repo")));
+    OrchestratorProperties properties =
+        OrchestratorProperties.defaults()
+            .withRoot(root.toString())
+            .withConfigFile(root.resolve("jagt.yml").toString())
+            .withStateFile(root.resolve("state.json").toString());
+    ConfigCheck check =
+        new ConfigCheck(
+            new ConfigService(
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
+            new OrchestratorPaths(properties),
+            mock(SessionHost.class),
+            new WorkingDirHost(root));
+
+    assertThatThrownBy(new StartupValidation(List.of(check), true)::refuseToRunWithoutWhatItNeeds)
+        .isInstanceOf(Misconfigured.class)
+        .hasMessageContaining("roles.acceptance");
   }
 
   @ParameterizedTest

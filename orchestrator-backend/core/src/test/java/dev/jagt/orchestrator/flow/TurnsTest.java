@@ -165,13 +165,14 @@ class TurnsTest {
 
   @ParameterizedTest
   @CsvSource({"off", "judge", "act"})
-  void qaHoldsTheDeployedTurnWhileItsCheckReadsAndTheBoardShowsTheAgentAtWork(String profile) {
+  void acceptanceHoldsTheDeployedTurnWhileItsCheckReadsAndTheBoardShowsTheAgentAtWork(
+      String profile) {
     Holder holder =
         Turns.next(
             TaskStatus.DEPLOYED,
             AgentReport.PLAIN,
             false,
-            Map.of("qa", CheckerPhase.READING),
+            Map.of("acceptance", CheckerPhase.READING),
             PROFILES.get(profile));
 
     Move move =
@@ -179,11 +180,11 @@ class TurnsTest {
             TaskStatus.DEPLOYED,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.PLAIN, false)
-                .withCheckers(Map.of("qa", CheckerPhase.READING))
+                .withCheckers(Map.of("acceptance", CheckerPhase.READING))
                 .withMaster(PROFILES.get(profile)),
             false);
 
-    assertThat(holder).isEqualTo(new Holder.Role("qa"));
+    assertThat(holder).isEqualTo(new Holder.Role("acceptance"));
     assertThat(move.owner()).isEqualTo(Owner.AGENT);
   }
 
@@ -196,13 +197,13 @@ class TurnsTest {
   }
 
   @Test
-  void aStoppedTaskIsTheHumansEvenWhereQaReads() {
+  void aStoppedTaskIsTheHumansEvenWhereAcceptanceReads() {
     Holder holder =
         Turns.next(
             TaskStatus.DEPLOYED,
             AgentReport.PLAIN,
             true,
-            Map.of("qa", CheckerPhase.READING),
+            Map.of("acceptance", CheckerPhase.READING),
             PROFILES.get("act"));
 
     assertThat(holder).isEqualTo(Holder.HUMAN);
@@ -227,7 +228,7 @@ class TurnsTest {
     assertThat(holder).isEqualTo(Holder.ARBITER);
   }
 
-  static Stream<Arguments> everyStatusReportStoppedAndQaPhase() {
+  static Stream<Arguments> everyStatusReportStoppedAndAcceptancePhase() {
     return Arrays.stream(TaskStatus.values())
         .flatMap(
             status ->
@@ -239,19 +240,21 @@ class TurnsTest {
                                     stopped ->
                                         Arrays.stream(CheckerPhase.values())
                                             .map(
-                                                qa -> Arguments.of(status, report, stopped, qa)))));
+                                                acceptance ->
+                                                    Arguments.of(
+                                                        status, report, stopped, acceptance)))));
   }
 
   @ParameterizedTest
-  @MethodSource("everyStatusReportStoppedAndQaPhase")
+  @MethodSource("everyStatusReportStoppedAndAcceptancePhase")
   void theMasterHoldsNoTurnWhereItLeftTheTaskToTheHuman(
-      TaskStatus status, AgentReport report, boolean stopped, CheckerPhase qa) {
+      TaskStatus status, AgentReport report, boolean stopped, CheckerPhase acceptance) {
     Holder holder =
         Turns.next(
             status,
             report,
             stopped,
-            Map.of("qa", qa),
+            Map.of("acceptance", acceptance),
             new Arbiter.Profile(MasterMode.ACT, Set.of()).at(MasterPhase.LEFT));
 
     assertThat(holder).isNotEqualTo(Holder.ARBITER);

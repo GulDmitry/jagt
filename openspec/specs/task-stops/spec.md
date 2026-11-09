@@ -104,7 +104,7 @@ a stop a read ends ends on it.
 - **THEN** the stop is yours and the Master is not asked
 
 #### Scenario: Stops the Master never decides
-- **WHEN** a task stops on MISS, QA_FAILED or PAUSE in `act`
+- **WHEN** a task stops on MISS, ACCEPTANCE_FAILED or PAUSE in `act`
 - **THEN** the stop is yours and the Master is not asked
 
 ### Requirement: A stopped task is rung on the board
@@ -181,7 +181,7 @@ SHALL press, send, notify and write nothing, to git or the code host included.
 - **THEN** nothing is pressed, notified or written to git or the code host, and the card still asks `lift the stop`
 
 ### Requirement: A stop lifts on the next tier
-`escalate` SHALL lift a STALLED, SHIPS, ROUNDS, UNCHANGED_FAILURE or QA_FAILED stop.
+`escalate` SHALL lift a STALLED, SHIPS, ROUNDS, UNCHANGED_FAILURE or ACCEPTANCE_FAILED stop.
 The session SHALL start again on the next model of `agent.tiers`, the work carried over.
 It is offered only while a model stands above the one the session runs on.
 A human presses it, or the Master in `act` where `mine` does not name it; nothing escalates unasked.

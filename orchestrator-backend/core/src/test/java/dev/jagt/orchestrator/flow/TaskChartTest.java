@@ -44,7 +44,7 @@ class TaskChartTest {
             entry("checks", "NONE"),
             entry("approval", "UNREAD"),
             entry("infra", "NONE"),
-            entry("qa", "NONE"),
+            entry("acceptance", "NONE"),
             entry("master", "STANDS_IN"),
             entry("session", "NONE"));
   }
@@ -86,8 +86,9 @@ class TaskChartTest {
     assertThat(Files.readString(Path.of("../../docs/task-master-chart.md")))
         .isEqualTo(
             "# The task master chart\n\n```mermaid\nstateDiagram-v2\n" + regions[13] + "```\n");
-    assertThat(Files.readString(Path.of("../../docs/task-qa-chart.md")))
-        .isEqualTo("# The task qa chart\n\n```mermaid\nstateDiagram-v2\n" + regions[12] + "```\n");
+    assertThat(Files.readString(Path.of("../../docs/task-acceptance-chart.md")))
+        .isEqualTo(
+            "# The task acceptance chart\n\n```mermaid\nstateDiagram-v2\n" + regions[12] + "```\n");
     assertThat(Files.readString(Path.of("../../docs/task-infra-chart.md")))
         .isEqualTo(
             "# The task infra chart\n\n```mermaid\nstateDiagram-v2\n" + regions[11] + "```\n");
@@ -400,7 +401,7 @@ class TaskChartTest {
     assertThat(TaskChart.land(from, move)).contains(to);
   }
 
-  static Stream<Arguments> qaEdges() {
+  static Stream<Arguments> acceptanceEdges() {
     return Stream.of(
         arguments(
             "DEPLOYED",
@@ -408,7 +409,7 @@ class TaskChartTest {
             new TaskMove.Relayed("accept", "d", "a"),
             CheckerPhase.NONE,
             "READING",
-            new TaskEffect.OpensCheckerRead("qa", "accept")),
+            new TaskEffect.OpensCheckerRead("acceptance", "accept")),
         arguments(
             "IN_PROGRESS",
             "NONE",
@@ -422,32 +423,32 @@ class TaskChartTest {
             new TaskMove.TurnClosed(),
             CheckerPhase.ROUND_OPEN,
             "ROUND_OPEN",
-            new TaskEffect.ClosesCheckerRead("qa")),
+            new TaskEffect.ClosesCheckerRead("acceptance")),
         arguments(
             "DEPLOYED",
             "READING",
             new TaskMove.TurnClosed(),
             CheckerPhase.PASSED,
             "PASSED",
-            new TaskEffect.ClosesCheckerRead("qa")),
+            new TaskEffect.ClosesCheckerRead("acceptance")),
         arguments(
             "DEPLOYED",
             "READING",
             new TaskMove.TurnClosed(),
             CheckerPhase.NONE,
             "NONE",
-            new TaskEffect.ClosesCheckerRead("qa")),
+            new TaskEffect.ClosesCheckerRead("acceptance")),
         arguments(
             "DEPLOYED",
             "READING",
-            new TaskMove.Checked.ReadEnded("qa", true),
+            new TaskMove.Checked.ReadEnded("acceptance", true),
             CheckerPhase.NONE,
             "NONE",
-            new TaskEffect.ClosesCheckerRead("qa")),
+            new TaskEffect.ClosesCheckerRead("acceptance")),
         arguments(
             "DEPLOYED",
             "READING",
-            new TaskMove.Checked.ReadEnded("qa", true),
+            new TaskMove.Checked.ReadEnded("acceptance", true),
             CheckerPhase.NONE,
             "NONE",
             new TaskEffect.ClosesTurn()),
@@ -457,54 +458,54 @@ class TaskChartTest {
             new TaskMove.Ran(TaskAction.REVERT, Outcome.Kind.OK),
             CheckerPhase.PASSED,
             "PASSED",
-            new TaskEffect.ClosesCheckerRead("qa")),
+            new TaskEffect.ClosesCheckerRead("acceptance")),
         arguments(
             "DEPLOYED",
             "NONE",
-            new TaskMove.Checked.Passed("qa", "s1", true),
+            new TaskMove.Checked.Passed("acceptance", "s1", true),
             CheckerPhase.NONE,
             "PASSED",
-            new TaskEffect.PassesChecker("qa", "s1")),
+            new TaskEffect.PassesChecker("acceptance", "s1")),
         arguments(
             "DEPLOYED",
             "READING",
-            new TaskMove.Checked.Passed("qa", "s1", true),
+            new TaskMove.Checked.Passed("acceptance", "s1", true),
             CheckerPhase.NONE,
             "READING",
-            new TaskEffect.PassesChecker("qa", "s1")),
+            new TaskEffect.PassesChecker("acceptance", "s1")),
         arguments(
             "DEPLOYED",
             "ROUND_OPEN",
-            new TaskMove.Checked.Passed("qa", "s1", false),
+            new TaskMove.Checked.Passed("acceptance", "s1", false),
             CheckerPhase.NONE,
             "ROUND_OPEN",
-            new TaskEffect.PassesChecker("qa", "s1")),
+            new TaskEffect.PassesChecker("acceptance", "s1")),
         arguments(
             "DEPLOYED",
             "NONE",
-            new TaskMove.Checked.RoundSent("qa", "d", "r", true),
+            new TaskMove.Checked.RoundSent("acceptance", "d", "r", true),
             CheckerPhase.NONE,
             "ROUND_OPEN",
-            new TaskEffect.SendsCheckerRound("qa", "d", "r")),
+            new TaskEffect.SendsCheckerRound("acceptance", "d", "r")),
         arguments(
             "DEPLOYED",
             "READING",
-            new TaskMove.Checked.RoundSent("qa", "d", "r", true),
+            new TaskMove.Checked.RoundSent("acceptance", "d", "r", true),
             CheckerPhase.NONE,
             "READING",
-            new TaskEffect.SendsCheckerRound("qa", "d", "r")),
+            new TaskEffect.SendsCheckerRound("acceptance", "d", "r")),
         arguments(
             "DEPLOYED",
             "PASSED",
-            new TaskMove.Checked.RoundSent("qa", "d", "r", false),
+            new TaskMove.Checked.RoundSent("acceptance", "d", "r", false),
             CheckerPhase.NONE,
             "PASSED",
-            new TaskEffect.SendsCheckerRound("qa", "d", "r")));
+            new TaskEffect.SendsCheckerRound("acceptance", "d", "r")));
   }
 
   @ParameterizedTest
-  @MethodSource("qaEdges")
-  void movesTheQaRegionOnlyAlongTheMovesItsPhaseTakes(
+  @MethodSource("acceptanceEdges")
+  void movesTheAcceptanceRegionOnlyAlongTheMovesItsPhaseTakes(
       String lifecycle,
       String from,
       TaskMove move,
@@ -513,33 +514,34 @@ class TaskChartTest {
       TaskEffect effect) {
     Map<String, String> plain = new HashMap<>(TaskChart.chart().initial().toPlain());
     plain.put("lifecycle", lifecycle);
-    plain.put("qa", from);
+    plain.put("acceptance", from);
 
     ChartStep<TaskEffect> stepped =
         TaskChart.chart()
             .step(
                 TaskChart.chart().configuration(plain),
-                new ChartFacts(false, Map.of("qa", beneath), Facts.defaults()),
+                new ChartFacts(false, Map.of("acceptance", beneath), Facts.defaults()),
                 move);
 
-    assertThat(stepped.configuration().toPlain()).containsEntry("qa", to);
+    assertThat(stepped.configuration().toPlain()).containsEntry("acceptance", to);
     assertThat(stepped.effects()).contains(effect);
   }
 
   @Test
-  void landsDeployedWhenTheSessionDeclinedTheOpenQaRoundWithNoChanges() {
+  void landsDeployedWhenTheSessionDeclinedTheOpenAcceptanceRoundWithNoChanges() {
     Map<String, String> plain = new HashMap<>(TaskChart.chart().initial().toPlain());
     plain.put("lifecycle", "IN_PROGRESS");
     plain.put("turn", "OPEN");
-    plain.put("qa", "ROUND_OPEN");
+    plain.put("acceptance", "ROUND_OPEN");
 
     ChartStep<TaskEffect> stepped =
         TaskChart.chart()
             .step(
                 TaskChart.chart().configuration(plain),
-                new ChartFacts(false, Map.of("qa", CheckerPhase.ROUND_OPEN), Facts.defaults()),
+                new ChartFacts(
+                    false, Map.of("acceptance", CheckerPhase.ROUND_OPEN), Facts.defaults()),
                 new TaskMove.Checked.RoundDeclined(
-                    "qa", AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS));
+                    "acceptance", AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS));
 
     assertThat(stepped.configuration().toPlain()).containsEntry("lifecycle", "DEPLOYED");
   }

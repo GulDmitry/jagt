@@ -14,11 +14,12 @@ import dev.jagt.orchestrator.port.AcceptanceRunner.Verdict;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.RoleSettings;
-import dev.jagt.orchestrator.task.QaVerdict;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -31,27 +32,34 @@ class CheckerFlowsTest {
   private final CheckerFlows flows =
       new CheckerFlows(
           runner,
-          RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")),
-          new RoleSettings(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), config));
+          RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+          new RoleSettings(
+              RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config));
 
   private void stageListed() {
     when(config.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withQa(
-                    new ConfigFile.QaConfig(
-                        true, null, List.of(new ConfigFile.QaEnvironment(STAGE, null)))));
+                .withRoles(
+                    Map.of(
+                        "acceptance",
+                        new ConfigFile.RoleConfig(
+                            true,
+                            null,
+                            List.of(new ConfigFile.AcceptanceEnvironment(STAGE, null)),
+                            null))));
   }
 
   @Test
   void runsNothingAndAddsNoRowWhereTheReadNamedNoFlow(@TempDir Path worktree) {
-    QaVerdict read = new QaVerdict("abc", "", List.of(), "", "", QaVerdict.Flows.none());
+    AcceptanceVerdict read =
+        new AcceptanceVerdict("abc", "", List.of(), "", "", AcceptanceVerdict.Flows.none());
 
-    QaVerdict result = flows.run(read, worktree, QaVerdict.Flows.none());
+    AcceptanceVerdict result = flows.run(read, worktree, AcceptanceVerdict.Flows.none());
 
     assertThat(result).isSameAs(read);
     verify(runner, never()).run(any(), any(), any());
-    assertThat(worktree.resolve("qa-report.md")).doesNotExist();
+    assertThat(worktree.resolve("acceptance-report.md")).doesNotExist();
   }
 
   @Test
@@ -64,55 +72,60 @@ class CheckerFlowsTest {
                     .withFlow("AC-1")
                     .withVerdict(Verdict.FAILED)
                     .withReason("button missing")
-                    .withEvidence(List.of(Path.of("qa/report.json")))));
-    QaVerdict read =
-        new QaVerdict(
+                    .withEvidence(List.of(Path.of("acceptance/report.json")))));
+    AcceptanceVerdict read =
+        new AcceptanceVerdict(
             "abc",
             "",
-            List.of(new QaVerdict.Row("page opens", QaVerdict.Status.MET, "GET 200")),
+            List.of(
+                new AcceptanceVerdict.Row("page opens", AcceptanceVerdict.Status.MET, "GET 200")),
             "",
             "",
-            QaVerdict.Flows.none());
+            AcceptanceVerdict.Flows.none());
 
-    QaVerdict result = flows.run(read, worktree, new QaVerdict.Flows(List.of("AC-1"), STAGE));
+    AcceptanceVerdict result =
+        flows.run(read, worktree, new AcceptanceVerdict.Flows(List.of("AC-1"), STAGE));
 
     assertThat(result.rows())
         .containsExactly(
-            new QaVerdict.Row("page opens", QaVerdict.Status.MET, "GET 200"),
-            new QaVerdict.Row("AC-1", QaVerdict.Status.NOT_MET, "button missing qa/report.json"));
-    assertThat(Files.readString(worktree.resolve("qa-report.md")))
-        .contains("| page opens | MET | GET 200 |", "| AC-1 | NOT_MET | button missing qa/report.json |");
+            new AcceptanceVerdict.Row("page opens", AcceptanceVerdict.Status.MET, "GET 200"),
+            new AcceptanceVerdict.Row(
+                "AC-1", AcceptanceVerdict.Status.NOT_MET, "button missing acceptance/report.json"));
+    assertThat(Files.readString(worktree.resolve("acceptance-report.md")))
+        .contains(
+            "| page opens | MET | GET 200 |",
+            "| AC-1 | NOT_MET | button missing acceptance/report.json |");
   }
 
   @Test
   void aPassedFlowIsAMetRow(@TempDir Path worktree) {
     stageListed();
     when(runner.run(worktree, List.of("AC-1"), STAGE))
-        .thenReturn(
-            List.of(FlowResult.defaults().withFlow("AC-1").withVerdict(Verdict.PASSED)));
+        .thenReturn(List.of(FlowResult.defaults().withFlow("AC-1").withVerdict(Verdict.PASSED)));
 
-    QaVerdict result =
+    AcceptanceVerdict result =
         flows.run(
-            new QaVerdict("abc", "", List.of(), "", "", QaVerdict.Flows.none()),
+            new AcceptanceVerdict("abc", "", List.of(), "", "", AcceptanceVerdict.Flows.none()),
             worktree,
-            new QaVerdict.Flows(List.of("AC-1"), STAGE));
+            new AcceptanceVerdict.Flows(List.of("AC-1"), STAGE));
 
-    assertThat(result.rows()).containsExactly(new QaVerdict.Row("AC-1", QaVerdict.Status.MET, ""));
+    assertThat(result.rows())
+        .containsExactly(new AcceptanceVerdict.Row("AC-1", AcceptanceVerdict.Status.MET, ""));
   }
 
   @Test
   void anEnvironmentNotListedIsRefusedBeforeAnyRun(@TempDir Path worktree) {
     stageListed();
 
-    QaVerdict result =
+    AcceptanceVerdict result =
         flows.run(
-            new QaVerdict("abc", "", List.of(), "", "", QaVerdict.Flows.none()),
+            new AcceptanceVerdict("abc", "", List.of(), "", "", AcceptanceVerdict.Flows.none()),
             worktree,
-            new QaVerdict.Flows(List.of("AC-1"), "https://prod.example.com"));
+            new AcceptanceVerdict.Flows(List.of("AC-1"), "https://prod.example.com"));
 
     assertThat(result.rows())
-        .extracting(QaVerdict.Row::status)
-        .containsExactly(QaVerdict.Status.UNPROVABLE);
+        .extracting(AcceptanceVerdict.Row::status)
+        .containsExactly(AcceptanceVerdict.Status.UNPROVABLE);
     verify(runner, never()).run(any(), any(), any());
   }
 }

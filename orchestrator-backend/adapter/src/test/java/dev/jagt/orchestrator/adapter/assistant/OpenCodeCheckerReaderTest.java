@@ -19,8 +19,8 @@ import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.ReadScopes;
 import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.QaDecline;
-import dev.jagt.orchestrator.task.QaVerdict;
+import dev.jagt.orchestrator.task.AcceptanceDecline;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -31,8 +31,8 @@ import org.mockito.ArgumentCaptor;
 
 class OpenCodeCheckerReaderTest {
 
-  private static final RoleDefinition QA =
-      RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"));
+  private static final RoleDefinition ACCEPTANCE =
+      RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"));
 
   @TempDir static Path state;
 
@@ -54,15 +54,18 @@ class OpenCodeCheckerReaderTest {
           new HeadlessOpenCode(
               processes,
               new OpenCodeProperties(
-                  "opencode", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("qa", "qwen-9b")),
+                  "opencode",
+                  "http://127.0.0.1:8080/v1",
+                  "qwen-4b",
+                  Map.of("acceptance", "qwen-9b")),
               mock(UsageTracker.class),
               gate),
           new OpenCodeProperties(
-              "opencode", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("qa", "qwen-9b")),
-          List.of(QA));
+              "opencode", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("acceptance", "qwen-9b")),
+          List.of(ACCEPTANCE));
 
   @Test
-  void mapsAFencedAnswerToTheQaVerdictItsRowsCarry(@TempDir Path worktree) {
+  void mapsAFencedAnswerToTheAcceptanceVerdictItsRowsCarry(@TempDir Path worktree) {
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
         .thenReturn(
             new Processes.Result(
@@ -74,7 +77,7 @@ class OpenCodeCheckerReaderTest {
                     + "```\"}}",
                 ""));
 
-    Answer<QaVerdict> answer =
+    Answer<AcceptanceVerdict> answer =
         reader.read(
             new CheckerReader.Run(
                 "",
@@ -83,12 +86,12 @@ class OpenCodeCheckerReaderTest {
                 "abc123",
                 "",
                 new CheckerReader.Reach(List.of(), List.of()),
-                QA.replies().answer().json(),
-                "qa"));
+                ACCEPTANCE.replies().answer().json(),
+                "acceptance"));
 
     assertThat(answer.facts().orElseThrow().rows())
-        .extracting(QaVerdict.Row::status)
-        .containsExactly(QaVerdict.Status.MET);
+        .extracting(AcceptanceVerdict.Row::status)
+        .containsExactly(AcceptanceVerdict.Status.MET);
   }
 
   @Test
@@ -105,8 +108,8 @@ class OpenCodeCheckerReaderTest {
             "abc123",
             "sonnet",
             new CheckerReader.Reach(List.of("https://dev.example.test"), List.of()),
-            QA.replies().decline().json(),
-            "qa"));
+            ACCEPTANCE.replies().decline().json(),
+            "acceptance"));
 
     ArgumentCaptor<Map<String, String>> env = ArgumentCaptor.captor();
     ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
@@ -121,7 +124,7 @@ class OpenCodeCheckerReaderTest {
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
         .thenThrow(new IllegalStateException("Command timed out"));
 
-    Answer<QaDecline> answer =
+    Answer<AcceptanceDecline> answer =
         reader.reconsider(
             new CheckerReader.Run(
                 "",
@@ -130,8 +133,8 @@ class OpenCodeCheckerReaderTest {
                 "abc123",
                 "",
                 new CheckerReader.Reach(List.of(), List.of()),
-                QA.replies().decline().json(),
-                "qa"));
+                ACCEPTANCE.replies().decline().json(),
+                "acceptance"));
 
     assertThat(answer.facts().orElseThrow().failure())
         .startsWith("the check failed: did not return");

@@ -30,7 +30,7 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | kind | its one job | state |
 |------|-------------|-------|
 | `task/` | the task record and everything it is made of, its `TaskStatus` too | built — `service/StateService` writes it to `state.json` |
-| `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, qa, master, plus derived lazy `ask` and `qa beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` |
+| `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, acceptance, master, plus derived lazy `ask` and `acceptance beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` |
 | `capability/` | one thing that can be done to a task | built — a class per verb |
 | `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use |
 | `notify/` | something a human must be told | built — the fan-out; the contract is `port/Notification` + `port/Notifier` |
@@ -110,8 +110,8 @@ answer. Every type in `flow/`, one question each:
   [`docs/task-request-chart.md`](docs/task-request-chart.md); the checks and the approval a read
   said, in [`docs/task-checks-chart.md`](docs/task-checks-chart.md) and
   [`docs/task-approval-chart.md`](docs/task-approval-chart.md); the infrastructure re-runs, in
-  [`docs/task-infra-chart.md`](docs/task-infra-chart.md); QA's read, pass and round, in
-  [`docs/task-qa-chart.md`](docs/task-qa-chart.md); what the Master left, in
+  [`docs/task-infra-chart.md`](docs/task-infra-chart.md); acceptance's read, pass and round, in
+  [`docs/task-acceptance-chart.md`](docs/task-acceptance-chart.md); what the Master left, in
   [`docs/task-master-chart.md`](docs/task-master-chart.md). What was told once is the ledger `task/ToldOnce`, written by the
   reducer alone ([0144](docs/decisions/0144-what-was-told-once-is-one-ledger-written-by-the-reducer.md)); the other
   marks are bookkeeping, written by `withMark` from anywhere.
@@ -166,7 +166,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `RoundReviewer` | `adapter/assistant/ChosenRoundReviewer` choosing a driver by config (`HeadlessClaudeRoundReviewer`, OpenCode), `ReplayRoundReviewer` (a stand recording played back) |
 | `CheckerReader` | `adapter/assistant/ChosenCheckerReader` choosing a driver by config (`HeadlessClaudeCheckerReader`, `OpenCodeCheckerReader`), `ReplayCheckerReader` |
 | `EnvironmentProbe` | `adapter/assistant/HttpEnvironmentProbe` |
-| `AcceptanceRunner` | `adapter/flows/{PlaywrightRunner,NoAcceptanceRunner}` by `orchestrator.roles.qa.flows.driver` — scripted flows run as argv, judged from the JSON report |
+| `AcceptanceRunner` | `adapter/flows/{PlaywrightRunner,NoAcceptanceRunner}` by `orchestrator.roles.acceptance.flows.driver` — scripted flows run as argv, judged from the JSON report |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Reach` | `service/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login`; `adapter/assistant/AssistantBreaker` writes the assistant's outage into it |
 | `Notifier` | `adapter/DesktopNotifier`; `notify/Notifications` fans out to every one |

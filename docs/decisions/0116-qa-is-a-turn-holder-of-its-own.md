@@ -36,7 +36,7 @@ Builds on [0072](0072-the-conversation-turn-is-the-machines.md), [0073](0073-cas
 ## Rejected
 
 - A status between `DEPLOYED` and `done`: a label carries it, the machine gains no state.
-- The Master as QA's gate: one opus read per check; if `qaEval` shows wrong findings frequent, QA moves to opus.
+- The Master as QA's gate: one opus read per check; if `acceptanceEval` shows wrong findings frequent, QA moves to opus.
 - Both strategies on one deploy: two checks, two verdicts, one task.
 - QA before merge: it races the session, the Master and the reviewer on one branch.
 - A prose-routed dispute (`question` by context): routing by prose is what 0072 removed.
@@ -45,6 +45,6 @@ Builds on [0072](0072-the-conversation-turn-is-the-machines.md), [0073](0073-cas
 
 ## Reopen when
 
-- `qaEval` or a live run shows QA's feed lines outnumber the Master's several times over.
-- `qaEval` shows wrong QA findings frequent enough that the round costs more than a Master read.
-- `qaEval` shows unprovable rows caused by untestable criteria: ticket readiness at plan returns.
+- `acceptanceEval` or a live run shows QA's feed lines outnumber the Master's several times over.
+- `acceptanceEval` shows wrong QA findings frequent enough that the round costs more than a Master read.
+- `acceptanceEval` shows unprovable rows caused by untestable criteria: ticket readiness at plan returns.

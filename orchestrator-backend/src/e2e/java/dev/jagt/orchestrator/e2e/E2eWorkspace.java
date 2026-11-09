@@ -96,10 +96,10 @@ final class E2eWorkspace {
         Path.of("../roles/master/cases.md.dist"),
         root.resolve("roles/master/cases.md.dist"),
         StandardCopyOption.REPLACE_EXISTING);
-    Files.createDirectories(root.resolve("roles/qa"));
+    Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
-        Path.of("../roles/qa/role.yml.dist"),
-        root.resolve("roles/qa/role.yml.dist"),
+        Path.of("../roles/acceptance/role.yml.dist"),
+        root.resolve("roles/acceptance/role.yml.dist"),
         StandardCopyOption.REPLACE_EXISTING);
   }
 

@@ -4,7 +4,7 @@
 ## Acceptance probes · [spec](../openspec/specs/acceptance-probes/spec.md)
 - **Declared probes** — A plan lists its acceptance checks as typed probes, never as prose.
   [spec](../openspec/specs/acceptance-probes/spec.md#requirement-a-plan-declares-its-probes-in-one-form)
-- **Probes and flows** — jagt records what the plan's probes printed; the QA read names flows, run on a listed environment as report rows.
+- **Probes and flows** — jagt records what the plan's probes printed; the acceptance read names flows, run on a listed environment as report rows.
   [spec](../openspec/specs/acceptance-probes/spec.md#requirement-jagt-runs-the-probes-at-verifying)
 - **Tagged criteria** — A plan lists the ticket's acceptance criteria, each tagged here, elsewhere or wrong; one without is refused.
   [spec](../openspec/specs/acceptance-probes/spec.md#requirement-a-plan-carries-its-tagged-acceptance-criteria)
@@ -163,9 +163,9 @@
   [spec](../openspec/specs/task-flow/spec.md#requirement-one-table-owns-the-life-of-a-task)
 - **Verify before hand-back** — jagt runs the project's check command and sends a red run back to the session.
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-hand-back-waits-at-verifying)
-- **Deploy check** — A deploy is checked where it landed — by its session, or by a read-only QA run when `roles.qa.enabled` (off).
+- **Deploy check** — A deploy is checked where it landed — by its session, or by a read-only acceptance run when `roles.acceptance.enabled` (off).
   A green pipeline stands it, a red one is re-run once, then goes back to the session in the deploy worktree. Key: `codeHost`.
-  [spec](../openspec/specs/deploy-check/spec.md#requirement-every-deploy-is-checked-where-it-landed) · [QA](../openspec/specs/qa/spec.md)
+  [spec](../openspec/specs/deploy-check/spec.md#requirement-every-deploy-is-checked-where-it-landed) · [role](../openspec/specs/acceptance/spec.md)
   · [host](../openspec/specs/deploy-check/spec.md#requirement-the-code-host-is-chosen)
 - **Stalled conflict** — A deploy conflict handed to its session that stops moving is yours: one banner, the card says why.
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-stalled-deploy-conflict-is-the-humans)

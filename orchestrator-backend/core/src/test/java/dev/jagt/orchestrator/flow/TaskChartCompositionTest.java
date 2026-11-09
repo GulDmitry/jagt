@@ -47,7 +47,7 @@ class TaskChartCompositionTest {
     assertThat(alone.initial().toPlain().keySet())
         .containsAll(CORE)
         .contains("lint")
-        .doesNotContain("qa");
+        .doesNotContain("acceptance");
   }
 
   @Test
@@ -56,10 +56,12 @@ class TaskChartCompositionTest {
         TaskChart.of(
             new Composition(
                 List.of(
-                    CheckerRegion.QA,
+                    CheckerRegion.ACCEPTANCE,
                     new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"))))));
 
-    assertThat(chart.initial().toPlain()).containsEntry("qa", "NONE").containsEntry("lint", "NONE");
+    assertThat(chart.initial().toPlain())
+        .containsEntry("acceptance", "NONE")
+        .containsEntry("lint", "NONE");
   }
 
   @Test
@@ -68,7 +70,7 @@ class TaskChartCompositionTest {
         TaskChart.of(
             new Composition(
                 List.of(
-                    CheckerRegion.QA,
+                    CheckerRegion.ACCEPTANCE,
                     new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"))))));
     Map<String, String> lintRound = new HashMap<>(chart.initial().toPlain());
     lintRound.put("lifecycle", TaskStatus.IN_PROGRESS.name());
@@ -85,27 +87,27 @@ class TaskChartCompositionTest {
                     "lint", AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS))
             .configuration()
             .toPlain();
-    Map<String, String> declinedByQa =
+    Map<String, String> declinedByAcceptance =
         chart
             .step(
                 chart.configuration(lintRound),
                 facts,
                 new TaskMove.Checked.RoundDeclined(
-                    "qa", AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS))
+                    "acceptance", AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS))
             .configuration()
             .toPlain();
 
     assertThat(declinedByLint).containsEntry("lifecycle", "DEPLOYED");
-    assertThat(declinedByQa).containsEntry("lifecycle", "IN_PROGRESS");
+    assertThat(declinedByAcceptance).containsEntry("lifecycle", "IN_PROGRESS");
   }
 
   @Test
-  void aComposedCheckerOpensItsReadOnItsOwnStepAndNotOnQas() {
+  void aComposedCheckerOpensItsReadOnItsOwnStepAndNotOnAcceptances() {
     Chart<TaskMove, ChartFacts, TaskEffect> chart =
         TaskChart.of(
             new Composition(
                 List.of(
-                    CheckerRegion.QA,
+                    CheckerRegion.ACCEPTANCE,
                     new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"))))));
     Map<String, String> deployed = new HashMap<>(chart.initial().toPlain());
     deployed.put("lifecycle", TaskStatus.DEPLOYED.name());
@@ -116,26 +118,28 @@ class TaskChartCompositionTest {
             .step(chart.configuration(deployed), facts, new TaskMove.Relayed("lint-read", "d", ""))
             .configuration()
             .toPlain();
-    Map<String, String> onQasStep =
+    Map<String, String> onAcceptancesStep =
         chart
             .step(chart.configuration(deployed), facts, new TaskMove.Relayed("accept", "d", ""))
             .configuration()
             .toPlain();
 
-    assertThat(onItsStep).containsEntry("lint", "READING").containsEntry("qa", "NONE");
-    assertThat(onQasStep).containsEntry("qa", "READING").containsEntry("lint", "NONE");
+    assertThat(onItsStep).containsEntry("lint", "READING").containsEntry("acceptance", "NONE");
+    assertThat(onAcceptancesStep)
+        .containsEntry("acceptance", "READING")
+        .containsEntry("lint", "NONE");
   }
 
   @Test
   void twoCheckersNamingOneReadStepAreRefusedNamingTheStepAndBoth() {
     List<Role> roles =
         List.of(
-            CheckerRegion.QA,
+            CheckerRegion.ACCEPTANCE,
             new CheckerRegion(new CheckerRole("lint", false, List.of("decline"))));
 
     assertThatThrownBy(() -> new Composition(roles))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContainingAll("decline", "qa", "lint");
+        .hasMessageContainingAll("decline", "acceptance", "lint");
   }
 
   @Test
@@ -143,10 +147,10 @@ class TaskChartCompositionTest {
     Composition composition =
         new Composition(
             List.of(
-                CheckerRegion.QA,
+                CheckerRegion.ACCEPTANCE,
                 new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"))),
                 new CheckerRegion(new CheckerRole("audit", true, List.of("audit-read")))));
 
-    assertThat(composition.withJobs()).containsExactly("qa", "audit");
+    assertThat(composition.withJobs()).containsExactly("acceptance", "audit");
   }
 }

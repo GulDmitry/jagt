@@ -8,12 +8,12 @@ stateDiagram-v2
         [*] --> turn_CLOSED
         turn_CLOSED --> turn_OPEN : relayed
         turn_CLOSED --> turn_CLOSED : turn closed
-        turn_CLOSED --> turn_CLOSED : qa read ended on its turn
+        turn_CLOSED --> turn_CLOSED : acceptance read ended on its turn
         turn_CLOSED --> turn_CLOSED : turn restored CLOSED
         turn_CLOSED --> turn_OPEN : turn restored OPEN
         turn_OPEN --> turn_OPEN : relayed
         turn_OPEN --> turn_CLOSED : turn closed
-        turn_OPEN --> turn_CLOSED : qa read ended on its turn
+        turn_OPEN --> turn_CLOSED : acceptance read ended on its turn
         turn_OPEN --> turn_CLOSED : turn restored CLOSED
         turn_OPEN --> turn_OPEN : turn restored OPEN
     }

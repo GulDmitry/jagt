@@ -453,12 +453,12 @@ class TaskViewTest {
                 new Deployment(
                     1, List.of(Deployment.Target.of("proj", "dev").withMerge("abc1234")), 1, null))
             .build()
-            .withRole("qa", RoleRecord.defaults().withPassed("proj@abc1234"));
+            .withRole("acceptance", RoleRecord.defaults().withPassed("proj@abc1234"));
 
     TaskView view =
         TaskView.of("ABC-1", passed, false, AutoReviewWatch.none(), Map.of("proj", "dev"));
 
-    assertThat(view.statusLabel()).isEqualTo("qa passed");
+    assertThat(view.statusLabel()).isEqualTo("accepted");
   }
 
   @Test

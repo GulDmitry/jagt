@@ -114,7 +114,10 @@ public record Deployment(
     return -1;
   }
 
-  /** The commit each landed target stands at; what a QA verdict names as the sha it checked. */
+  /**
+   * The commit each landed target stands at; what an acceptance verdict names as the sha it
+   * checked.
+   */
   public String tips() {
     return targets.stream()
         .filter(Target::landed)

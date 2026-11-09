@@ -3,9 +3,9 @@ package dev.jagt.orchestrator.adapter.assistant;
 import dev.jagt.orchestrator.adapter.replay.RecordedReads;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CheckerReader;
+import dev.jagt.orchestrator.task.AcceptanceDecline;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.AssistantCallKind;
-import dev.jagt.orchestrator.task.QaDecline;
-import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TokenUsage;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +24,12 @@ public class ReplayCheckerReader implements CheckerReader {
   private final RecordedReads reads;
 
   @Override
-  public Answer<QaVerdict> read(Run run) {
-    Optional<JsonNode> said = reads.answer(AssistantCallKind.QA_CHECK.name(), run.sha());
+  public Answer<AcceptanceVerdict> read(Run run) {
+    Optional<JsonNode> said = reads.answer(AssistantCallKind.ACCEPTANCE_CHECK.name(), run.sha());
     if (said.isEmpty()) {
       return new Answer<>(
-          Optional.of(QaVerdict.failed(run.sha(), "the recording holds no QA check")),
+          Optional.of(
+              AcceptanceVerdict.failed(run.sha(), "the recording holds no acceptance check")),
           TokenUsage.NONE);
     }
     var envelope = JSON.createObjectNode();
@@ -37,9 +38,9 @@ public class ReplayCheckerReader implements CheckerReader {
   }
 
   @Override
-  public Answer<QaDecline> reconsider(Run run) {
+  public Answer<AcceptanceDecline> reconsider(Run run) {
     return new Answer<>(
-        Optional.of(QaDecline.failed(run.sha(), "the recording holds no QA check")),
+        Optional.of(AcceptanceDecline.failed(run.sha(), "the recording holds no acceptance check")),
         TokenUsage.NONE);
   }
 }

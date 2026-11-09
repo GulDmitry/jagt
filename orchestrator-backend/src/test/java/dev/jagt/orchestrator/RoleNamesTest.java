@@ -19,10 +19,12 @@ class RoleNamesTest {
 
   private static final Map<String, String> ALLOWED =
       Map.of(
-          "dev.jagt.orchestrator.service.ConfigService$ConfigFile$QaConfig",
-              "the old orchestrator.qa key, named as jagt.yml wrote it",
-          "dev.jagt.orchestrator.service.ConfigService$ConfigFile$QaEnvironment",
-              "an environment as roles.qa.environments writes it",
+          "dev.jagt.orchestrator.port.AcceptanceRunner",
+              "runs the flows a plan's acceptance criteria name, whichever role asks",
+          "dev.jagt.orchestrator.service.AcceptanceProbing",
+              "probes a plan's acceptance criteria, before any role checks the deploy",
+          "dev.jagt.orchestrator.service.ConfigService$ConfigFile$AcceptanceEnvironment",
+              "an environment as roles.acceptance.environments writes it",
           "dev.jagt.orchestrator.service.ConfigService$ConfigFile$MasterConfig",
               "the old orchestrator.master key, named as jagt.yml wrote it",
           "dev.jagt.orchestrator.flow.TaskMove$MasterNoted",

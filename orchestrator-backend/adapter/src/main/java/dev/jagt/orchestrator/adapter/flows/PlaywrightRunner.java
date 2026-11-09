@@ -19,7 +19,7 @@ import tools.jackson.core.JacksonException;
 
 @Component
 @ConditionalOnProperty(
-    prefix = "orchestrator.roles.qa.flows",
+    prefix = "orchestrator.roles.acceptance.flows",
     name = "driver",
     havingValue = "playwright")
 @RequiredArgsConstructor
@@ -37,7 +37,7 @@ public class PlaywrightRunner implements AcceptanceRunner {
     if (properties.path().isEmpty() || properties.command().isEmpty()) {
       return Unrun.all(flows, "the flows path or command is not configured");
     }
-    Path evidence = worktree.resolve("qa");
+    Path evidence = worktree.resolve("acceptance");
     Processes.Result ran;
     try {
       Files.createDirectories(evidence);

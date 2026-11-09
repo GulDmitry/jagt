@@ -301,7 +301,7 @@ Claude auto-memory directory of their repositories. Call counts are measured; wh
 |---|---|
 | a DB script named in the global `CLAUDE.md` | zero rediscovery of DB access in any task |
 | a quality-gate MCP and a skill over it | the task blocked on it was followed by one using it the next day |
-| a shared QA wiki in git | read and extended by three tasks |
+| a shared acceptance wiki in git | read and extended by three tasks |
 
 ### Verdict
 

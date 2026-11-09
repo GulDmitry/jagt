@@ -3,8 +3,8 @@ package dev.jagt.orchestrator.flow;
 import static dev.jagt.orchestrator.task.TaskStatus.DEPLOYED;
 import static dev.jagt.orchestrator.task.TaskStatus.IN_PROGRESS;
 
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.statechart.ChartBuilder;
 import dev.jagt.statechart.RegionId;
 import java.util.EnumSet;
@@ -12,10 +12,13 @@ import java.util.List;
 
 record CheckerRegion(CheckerRole role) implements Role {
 
-  static final CheckerRegion QA =
+  static final CheckerRegion ACCEPTANCE =
       new CheckerRegion(
           new CheckerRole(
-              Checkers.QA, true, List.of(QaVerdict.ACCEPT, QaVerdict.AGAIN, QaVerdict.DECLINE)));
+              Checkers.ACCEPTANCE,
+              true,
+              List.of(
+                  AcceptanceVerdict.ACCEPT, AcceptanceVerdict.AGAIN, AcceptanceVerdict.DECLINE)));
 
   @Override
   public String id() {
@@ -48,7 +51,7 @@ record CheckerRegion(CheckerRole role) implements Role {
           .onMatching(
               region(),
               from,
-              "a " + id() + " read opened",
+              id() + " read opened",
               move ->
                   move instanceof TaskMove.Relayed relayed
                       && role.readSteps().contains(relayed.step()))

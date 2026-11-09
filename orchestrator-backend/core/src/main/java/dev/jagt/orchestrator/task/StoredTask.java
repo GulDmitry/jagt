@@ -73,7 +73,7 @@ record StoredTask(
       @Nullable Loop loop,
       // Rewritten on the deployment.
       LegacyDeployment.@Nullable Watch conflict,
-      // Rewritten as roles["qa"].
+      // Rewritten as roles["acceptance"].
       @Nullable RoleRecord qa) {}
 
   record Loop(List<RoundTrail.Round> rounds, long since, @Nullable TaskStop stop) {

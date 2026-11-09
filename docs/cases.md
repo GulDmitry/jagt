@@ -19,7 +19,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | A10 | a session is compacted or reopened in plan mode → its brief keeps task, branch and last report; the plan gate stands | 51a2ba67, 6c34876f, afe42f20 | `SessionReportsTest`, `AgentSessionControllerTest`, `AgentSessionsTest` |
 | A11 | a task session briefs sub-agents → lightest model, self-contained brief, result alone, the ship's message as the ship specifies | 70bce952, b0c6e815, deb035ec | `SubAgentBriefingTest` |
 | A12 | a plan or hand-back comes with a question → it is read and answered, with its facts in the prompt; a hand-back at VERIFYING says whose move | c0e97b9f, e4f5a366, b3922313 | `MasterAnswerJobTest`, `MasterReviewJobTest`, `AgentStatusReportsTest`, `RoundBriefTest` |
-| A13 | an eval case asserts what a QA row cites (the flag holding a change back) → the brief asks for it, so the case holds by rule, not by which file the QA happened to read | seen 2026-11-04: gate red, 1 of 3 runs named the flag | `QaVerdictEvalTest` |
+| A13 | an eval case asserts what an acceptance row cites (the flag holding a change back) → the brief asks for it, so the case holds by rule, not by which file the acceptance happened to read | seen 2026-11-04: gate red, 1 of 3 runs named the flag | `AcceptanceVerdictEvalTest` |
 ## B — state overwritten / dedup key in the wrong place
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -75,7 +75,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | C13 | a session reports a question and opens the CLI's question dialog → the dialog is denied in its settings and the question, options and pick are in `task_notes.md`, so the Master's or the human's answer reaches the session | seen 2026-11-02: the Master's answer to a session's question was relayed at 09:24:55Z and held (`nudge waits, the human is typing`) behind the dialog | `ClaudeAgentRuntimeTest` |
 | C14 | the human pauses a task while a session wake is due or a deploy conflict waits → the wake stays pending until the lift and the conflict is neither handed to the session nor finished | seen 2026-11-05: two jobs not reading the pause would still write into a paused task | `SessionWakesTest`, `DeployConflictsTest` |
 | C15 | the root session, holding the Master token, moves a task → the step reads `root`, so the task session's turn never takes it as the session's own answer | seen 2026-11-07: a root call was recorded `mcp` | `McpProtocolServiceTest`, `TaskTurnsTest` |
-| C16 | a replayed task passes QA → the turn the QA read holds is left to the read, so the replay neither answers it as the session's nor ends on it | seen 2026-11-08: the stand's QA replay diverged when its tick fell inside the read | `ReplaySessionsTest` |
+| C16 | a replayed task passes acceptance → the turn the acceptance read holds is left to the read, so the replay neither answers it as the session's nor ends on it | seen 2026-11-08: the stand's acceptance replay diverged when its tick fell inside the read | `ReplaySessionsTest` |
 | C17 | a fresh start carries the old conversation while jagt's own typed lines sit in it as human-origin entries → its nudge, start and revive lines are cut from the carried human words as from what the human said, never read by the new session as the human's | seen 2026-11-09 | `ClaudeTranscriptsTest`, `CarriedBlockTest` |
 ## D — model overreach
 | id | the case, one line | defects | pinned by |

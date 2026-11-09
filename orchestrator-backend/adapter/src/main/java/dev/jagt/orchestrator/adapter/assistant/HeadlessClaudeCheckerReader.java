@@ -6,9 +6,9 @@ import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
+import dev.jagt.orchestrator.task.AcceptanceDecline;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.AssistantCallKind;
-import dev.jagt.orchestrator.task.QaDecline;
-import dev.jagt.orchestrator.task.QaVerdict;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,16 +29,18 @@ public class HeadlessClaudeCheckerReader {
   private final AssistantProperties assistant;
   private final List<RoleDefinition> roles;
 
-  public Answer<QaVerdict> read(CheckerReader.Run run) {
+  public Answer<AcceptanceVerdict> read(CheckerReader.Run run) {
     HeadlessReply reply = ask(run);
     if (reply.envelope() != null && reply.envelope().path("structured_output").isObject()) {
       HeadlessClaude.answered(
-          run.sha(), AssistantCallKind.QA_CHECK, reply.envelope().path("structured_output"));
+          run.sha(),
+          AssistantCallKind.ACCEPTANCE_CHECK,
+          reply.envelope().path("structured_output"));
     }
     return CheckerAnswers.verdictOf(run, reply);
   }
 
-  public Answer<QaDecline> reconsider(CheckerReader.Run run) {
+  public Answer<AcceptanceDecline> reconsider(CheckerReader.Run run) {
     return CheckerAnswers.declineOf(run, ask(run));
   }
 
@@ -93,7 +95,7 @@ public class HeadlessClaudeCheckerReader {
             scope.git(),
             List.of(),
             scope.fetch() ? run.reach().urls() : List.of()),
-        AssistantCallKind.QA_CHECK,
+        AssistantCallKind.ACCEPTANCE_CHECK,
         run.worktree().toString());
   }
 }

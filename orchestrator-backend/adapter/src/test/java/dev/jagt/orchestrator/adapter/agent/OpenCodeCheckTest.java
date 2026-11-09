@@ -47,7 +47,10 @@ class OpenCodeCheckTest {
     var check =
         new OpenCodeCheck(
             new OpenCodeProperties(
-                "no-such-agent-cli", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("qa", "")),
+                "no-such-agent-cli",
+                "http://127.0.0.1:8080/v1",
+                "qwen-4b",
+                Map.of("acceptance", "")),
             roles,
             "claude");
 
@@ -93,7 +96,7 @@ class OpenCodeCheckTest {
   void refusesReadsWithoutAnEndpointSoNoReadFallsToTheUsersOwnProvider() {
     var check =
         new OpenCodeCheck(
-            new OpenCodeProperties("sh", "", "qwen-4b", Map.of("qa", "")), roles, "claude");
+            new OpenCodeProperties("sh", "", "qwen-4b", Map.of("acceptance", "")), roles, "claude");
 
     assertThat(check.problems())
         .extracting(Problem::key)
@@ -118,7 +121,10 @@ class OpenCodeCheckTest {
     var check =
         new OpenCodeCheck(
             new OpenCodeProperties(
-                "sh", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("qa", "qwen-9b", "master", "")),
+                "sh",
+                "http://127.0.0.1:8080/v1",
+                "qwen-4b",
+                Map.of("acceptance", "qwen-9b", "master", "")),
             roles,
             "claude");
 
@@ -129,9 +135,12 @@ class OpenCodeCheckTest {
   void answersTheModelARoleReadsOnAndNoneForARoleNotNamed() {
     var opencode =
         new OpenCodeProperties(
-            "sh", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("qa", "qwen-9b", "master", ""));
+            "sh",
+            "http://127.0.0.1:8080/v1",
+            "qwen-4b",
+            Map.of("acceptance", "qwen-9b", "master", ""));
 
-    assertThat(opencode.readModel("qa")).contains("qwen-9b");
+    assertThat(opencode.readModel("acceptance")).contains("qwen-9b");
     assertThat(opencode.readModel("master")).contains("qwen-4b");
     assertThat(opencode.readModel("review")).isEmpty();
   }

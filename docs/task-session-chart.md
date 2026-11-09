@@ -93,7 +93,7 @@ stateDiagram-v2
         session_GONE --> session_IDLE : restarted
     }
     %% derived ask
-    %% derived qa beneath a read
+    %% derived acceptance beneath a read
     %% derived review request
     %% derived live deploy
     %% derived agent live

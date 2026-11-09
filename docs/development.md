@@ -24,7 +24,7 @@ project rule into a vendor-named file.
 | `./gradlew roleEval -Prole=master` | the assistant's CLI, tokens, minutes, and `.master-eval/root` trusted once | whether the shipped Master brief still reaches a human's verdict |
 
 Timed 2026-11-01, `--rerun-tasks`, 10 CPUs: `test` 80 s, `e2eTest` 309 s, `boardTest` 82 s, `standTest -Pmodelfree` 42 s,
-`roleEval -Prole=qa` 4–7 min, `-Prole=master` about 5 min; the next refresh compares against these.
+`roleEval -Prole=acceptance` 4–7 min, `-Prole=master` about 5 min; the next refresh compares against these.
 
 Only `test` is in `check`, with its jqwik properties in `:core:propertyTest` after it; every executed suite appends
 its seconds to `suite-stats.jsonl`, and the build's end names one slower than its trend.

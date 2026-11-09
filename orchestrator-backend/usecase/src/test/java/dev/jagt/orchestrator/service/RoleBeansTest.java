@@ -15,10 +15,11 @@ import org.junit.jupiter.api.io.TempDir;
 class RoleBeansTest {
 
   @Test
-  void qaJobsStandIdleWhenNoQaRoleIsInstalledEvenWhereJagtYmlTurnsItOn(@TempDir Path root)
-      throws Exception {
+  void acceptanceJobsStandIdleWhenNoAcceptanceRoleIsInstalledEvenWhereJagtYmlTurnsItOn(
+      @TempDir Path root) throws Exception {
     Files.writeString(
-        root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    qa:\n      enabled: true\n");
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -27,8 +28,8 @@ class RoleBeansTest {
     ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class));
     RoleBeans beans = new RoleBeans();
 
-    RoleDefinition qa = beans.qaDefinition(new InstalledRoles(paths));
+    RoleDefinition acceptance = beans.acceptanceDefinition(new InstalledRoles(paths));
 
-    assertThat(beans.qaSettings(qa, config).load().enabledOrDefault()).isFalse();
+    assertThat(beans.acceptanceSettings(acceptance, config).load().enabledOrDefault()).isFalse();
   }
 }

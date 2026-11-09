@@ -48,7 +48,7 @@ public final class StandConfig {
               .formatted(mcpUrl));
       Files.writeString(
           root.resolve("jagt.yml"),
-          jagtYml(repo, servers, tmuxSession, mode, replay, qa(replay)));
+          jagtYml(repo, servers, tmuxSession, mode, replay, acceptance(replay)));
     } catch (IOException e) {
       throw new StandFailure("cannot write the stand configuration under " + root, e);
     }
@@ -66,7 +66,7 @@ public final class StandConfig {
       String tmuxSession,
       StandMode mode,
       @Nullable Replay replay,
-      String qa) {
+      String acceptance) {
     return """
     orchestrator:
       %s
@@ -102,17 +102,18 @@ public final class StandConfig {
             servers,
             mode.id(),
             replay == null ? "" : replay.recording(),
-            qa);
+            acceptance);
   }
 
-  private static String qa(@Nullable Replay replay) throws IOException {
-    if (replay == null || !Files.readString(replay.recording()).contains("\"kind\":\"QA_CHECK\"")) {
+  private static String acceptance(@Nullable Replay replay) throws IOException {
+    if (replay == null
+        || !Files.readString(replay.recording()).contains("\"kind\":\"ACCEPTANCE_CHECK\"")) {
       return "";
     }
     return """
-        roles: { qa: { enabled: true, environments: [{ url: "%s" }], \
-        flows: { driver: playwright, path: "%s", command: ["%s"] } } }\
-        """
+    roles: { acceptance: { enabled: true, environments: [{ url: "%s" }], \
+    flows: { driver: playwright, path: "%s", command: ["%s"] } } }\
+    """
         .formatted(replay.appUrl(), FLOWS, FLOWS.resolve("flows.sh"));
   }
 }

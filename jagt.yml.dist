@@ -1,7 +1,7 @@
 # jagt — your whole configuration, and the only file there is: `cp jagt.yml.dist jagt.yml`, then fill in ONE
 # project. Every other key already has the value shown and can stay commented out.
 # `projects`, `viewer`, `agent`, `worktree`, `codeReview`, `autoReview`, `tracker`,
-# `loopBreaker`, `conflictStallMinutes`, `notifications`, `archive` and `roles` (and the legacy `qa`) are re-read on every access;
+# `loopBreaker`, `conflictStallMinutes`, `notifications`, `archive` and `roles` are re-read on every access;
 # every other key is read once, at startup.
 
 orchestrator:
@@ -123,7 +123,7 @@ orchestrator:
   #   command: opencode
   #   endpoint: ""      # an OpenAI-compatible base URL, e.g. http://127.0.0.1:8080/v1; blank: your own OpenCode config picks the model
   #   model: ""         # the model name that endpoint serves; required with an endpoint
-  #   reads: {qa: qwen-4b}   # roles whose read runs on OpenCode at the endpoint; master = the round reads; blank model = model
+  #   reads: {acceptance: qwen-4b}   # roles whose read runs on OpenCode at the endpoint; master = the round reads; blank model = model
 
   # What a session is told at each step jagt sends it: roles/session/brief.md.dist; copy it to roles/session/brief.md to edit a step.
   # When jagt may send each step: roles/session/cases.md.dist; copy it to roles/session/cases.md to edit a case.
@@ -182,13 +182,13 @@ orchestrator:
                                # plan, repo, lift, or any other verb id (done, trust, escalate, pause, remove-repo, a command).
                                # Unset: [plan]; [] hands the Master every verb. Anything not listed the Master may do;
                                # a plan you opened in `plan` mode is always yours
-    qa:                     # checks a deployed change against its ticket on a running environment
+    acceptance:             # checks a deployed change against its ticket on a running environment
       enabled: false        # off: the session checks its own deploy
       # model: sonnet       # the model of the check; blank inherits the agent CLI's
       # environments:       # allow-list of base URLs the role may touch; a deploy to any other is not checked
       #   - url: https://stage.example.com
       #     landed: https://stage.example.com/health   # answers once the change is up, where the host reports no deploy job
-      # flows:              # scripted flows, run as argv on a listed environment; evidence goes under `qa/` in the worktree
+      # flows:              # scripted flows, run as argv on a listed environment; evidence goes under `acceptance/` in the worktree
       #   driver: none      # none | playwright; any other is refused at start
       #   path: /path/to/flows   # the flows repository, the command's working directory; it holds any login
       #   command: ["npx", "playwright", "test"]   # jagt adds the reporter, output folder and flow filter; BASE_URL is the environment
@@ -203,9 +203,7 @@ orchestrator:
   # master:
   #   mode: judge
 
-  # LEGACY, still read: `qa:` with the same keys as `roles.qa`. Where `roles.qa` is written it wins; unwritten, this stands.
-  # qa:
-  #   enabled: false
+  # The role was called `qa`: neither `qa:` nor `roles.qa` is read, and jagt refuses to start while either is written.
 
   # ── The two ends the tracker drives (EXPERIMENTAL) ─────────────────────────────────────────────────────────
   # `take` turns items at your starting stage into tasks; `close` ends a task whose item reached the stage that

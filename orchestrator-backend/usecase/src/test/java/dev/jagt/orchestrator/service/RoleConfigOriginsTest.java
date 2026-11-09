@@ -31,13 +31,16 @@ class RoleConfigOriginsTest {
     install(root, null);
     when(config.load())
         .thenReturn(
-            ConfigFile.defaults().withRoles(Map.of("qa", new RoleConfig(true, "opus", List.of(), null))));
+            ConfigFile.defaults()
+                .withRoles(Map.of("acceptance", new RoleConfig(true, "opus", List.of(), null))));
 
     List<String> lines = logged(root);
 
     assertThat(lines)
         .contains(
-            "qa model opus jagt.yml", "qa enabled true jagt.yml", "qa environments 0 jagt.yml");
+            "acceptance model opus jagt.yml",
+            "acceptance enabled true jagt.yml",
+            "acceptance environments 0 jagt.yml");
   }
 
   @Test
@@ -48,7 +51,7 @@ class RoleConfigOriginsTest {
 
     List<String> lines = logged(root);
 
-    assertThat(lines).contains("qa model haiku role.yml");
+    assertThat(lines).contains("acceptance model haiku role.yml");
   }
 
   @Test
@@ -59,7 +62,7 @@ class RoleConfigOriginsTest {
 
     List<String> lines = logged(root);
 
-    assertThat(lines).contains("qa model sonnet role.yml.dist");
+    assertThat(lines).contains("acceptance model sonnet role.yml.dist");
   }
 
   @Test
@@ -71,7 +74,7 @@ class RoleConfigOriginsTest {
 
     List<String> lines = logged(root);
 
-    assertThat(lines).contains("qa model sonnet role.yml.dist");
+    assertThat(lines).contains("acceptance model sonnet role.yml.dist");
   }
 
   @Test
@@ -82,7 +85,8 @@ class RoleConfigOriginsTest {
 
     List<String> lines = logged(root);
 
-    assertThat(lines).contains("qa enabled false default", "qa environments 0 default");
+    assertThat(lines)
+        .contains("acceptance enabled false default", "acceptance environments 0 default");
   }
 
   @Test
@@ -93,15 +97,18 @@ class RoleConfigOriginsTest {
 
     List<String> lines = logged(root);
 
-    assertThat(lines).contains("qa enabled false default", "qa environments 0 default");
+    assertThat(lines)
+        .contains("acceptance enabled false default", "acceptance environments 0 default");
   }
 
   private static void install(Path root, String humanCopy) throws Exception {
-    Files.createDirectories(root.resolve("roles/qa"));
-    Files.copy(Path.of("../../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.copy(
+        Path.of("../../roles/acceptance/role.yml.dist"),
+        root.resolve("roles/acceptance/role.yml.dist"));
     Files.writeString(root.resolve("jagt.yml"), "");
     if (humanCopy != null) {
-      Files.writeString(root.resolve("roles/qa/role.yml"), humanCopy);
+      Files.writeString(root.resolve("roles/acceptance/role.yml"), humanCopy);
     }
   }
 

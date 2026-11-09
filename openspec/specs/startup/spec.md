@@ -81,7 +81,7 @@ neither; anything else SHALL refuse the start (`startup/MasterCheck`).
 ### Requirement: The Master is configured under its role
 The Master SHALL be configured under `orchestrator.roles.master`, with `mode`, `model`, `brief` and `mine`. The old
 `orchestrator.master` key SHALL still be read; `roles.master` wins field by field and the old key fills each field
-it leaves unwritten (`roles.qa` likewise over `qa`). Reading the old key logs one
+it leaves unwritten. Reading the old key logs one
 deprecation line and is never a startup problem.
 
 #### Scenario: Only the old key

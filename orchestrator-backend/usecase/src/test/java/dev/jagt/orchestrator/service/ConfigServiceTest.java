@@ -66,8 +66,9 @@ class ConfigServiceTest {
     AgentRuntime runtime = mock(AgentRuntime.class);
     when(runtime.models()).thenReturn(List.of("opus", "sonnet"));
     when(runtime.tiers()).thenReturn(List.of("sonnet", "opus"));
-    AgentConfig written = AgentConfig.defaults().withSelection(
-        new AgentConfig.Models(null, null, List.of("opus", "ghost")));
+    AgentConfig written =
+        AgentConfig.defaults()
+            .withSelection(new AgentConfig.Models(null, null, List.of("opus", "ghost")));
 
     assertThat(written.tiersFor(runtime)).containsExactly("opus");
   }
@@ -89,28 +90,28 @@ class ConfigServiceTest {
   }
 
   @Test
-  void leavesQaOffWithNoEnvironmentWhereTheHumanWroteNone() {
+  void leavesAcceptanceOffWithNoEnvironmentWhereTheHumanWroteNone() {
     ConfigFile config = new JsonMapper().readValue("{}", ConfigFile.class);
 
-    assertThat(config.qa().enabledOrDefault()).isFalse();
-    assertThat(config.role("qa").allows("https://stage.example.com")).isFalse();
+    assertThat(config.role("acceptance").enabledOrDefault()).isFalse();
+    assertThat(config.role("acceptance").allows("https://stage.example.com")).isFalse();
   }
 
   @Test
-  void allowsOnlyTheEnvironmentsQaNamesWithTheirLandedProbe() {
+  void allowsOnlyTheEnvironmentsAcceptanceNamesWithTheirLandedProbe() {
     ConfigFile config =
         new JsonMapper()
             .readValue(
                 """
-                { "qa": { "enabled": true, "environments": [
-                  { "url": "https://stage.example.com", "landed": "https://stage.example.com/health" } ] } }
+                { "roles": { "acceptance": { "enabled": true, "environments": [
+                  { "url": "https://stage.example.com", "landed": "https://stage.example.com/health" } ] } } }
                 """,
                 ConfigFile.class);
 
-    assertThat(config.qa().enabledOrDefault()).isTrue();
-    assertThat(config.role("qa").allows("https://stage.example.com")).isTrue();
-    assertThat(config.role("qa").allows("https://prod.example.com")).isFalse();
-    assertThat(config.qa().environmentsOrEmpty().getFirst().landed())
+    assertThat(config.role("acceptance").enabledOrDefault()).isTrue();
+    assertThat(config.role("acceptance").allows("https://stage.example.com")).isTrue();
+    assertThat(config.role("acceptance").allows("https://prod.example.com")).isFalse();
+    assertThat(config.role("acceptance").environmentsOrEmpty().getFirst().landed())
         .isEqualTo("https://stage.example.com/health");
   }
 
@@ -187,7 +188,7 @@ class ConfigServiceTest {
   }
 
   @Test
-  void qaIsOffWhenNeitherTheRolesKeyNorTheOldOneSaysOtherwise(@TempDir Path root) throws Exception {
+  void acceptanceIsOffWhereTheRolesKeyDoesNotSayOtherwise(@TempDir Path root) throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
     OrchestratorProperties properties =
@@ -200,30 +201,10 @@ class ConfigServiceTest {
         new ConfigService(
                 new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
             .load()
-            .role("qa")
+            .role("acceptance")
             .enabledOrDefault();
 
     assertThat(enabled).isFalse();
-  }
-
-  @Test
-  void aJagtYmlWithTheOldQaKeyStillTurnsQaOn(@TempDir Path root) throws Exception {
-    Path configFile = root.resolve("jagt.yml");
-    Files.writeString(configFile, "orchestrator:\n  qa:\n    enabled: true\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    boolean enabled =
-        new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
-            .load()
-            .role("qa")
-            .enabledOrDefault();
-
-    assertThat(enabled).isTrue();
   }
 
   @Test
@@ -232,7 +213,12 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
-        "orchestrator:\n  roles:\n    foo:\n      enabled: true\n    QA:\n      enabled: true\n");
+        "orchestrator:\n"
+            + "  roles:\n"
+            + "    foo:\n"
+            + "      enabled: true\n"
+            + "    ACCEPTANCE:\n"
+            + "      enabled: true\n");
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -343,58 +329,6 @@ class ConfigServiceTest {
 
     assertThat(master.modeOrDefault()).isEqualTo(MasterMode.JUDGE);
     assertThat(master.mineOrDefault()).containsExactly("reply");
-  }
-
-  @Test
-  void aPartialRolesQaKeepsTheEnvironmentsTheOldKeyNamed(@TempDir Path root) throws Exception {
-    Path configFile = root.resolve("jagt.yml");
-    Files.writeString(
-        configFile,
-        "orchestrator:\n"
-            + "  qa:\n"
-            + "    enabled: true\n"
-            + "    environments:\n"
-            + "      - url: https://dev.example\n"
-            + "  roles:\n"
-            + "    qa:\n"
-            + "      model: haiku\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    ConfigService.ConfigFile.RoleConfig qa =
-        new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
-            .load()
-            .role("qa");
-
-    assertThat(qa.enabledOrDefault()).isTrue();
-    assertThat(qa.environmentsOrEmpty()).hasSize(1);
-    assertThat(qa.model()).isEqualTo("haiku");
-  }
-
-  @Test
-  void theRolesKeyWinsOverTheOldOne(@TempDir Path root) throws Exception {
-    Path configFile = root.resolve("jagt.yml");
-    Files.writeString(
-        configFile,
-        "orchestrator:\n  qa:\n    enabled: true\n  roles:\n    qa:\n      enabled: false\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    boolean enabled =
-        new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
-            .load()
-            .role("qa")
-            .enabledOrDefault();
-
-    assertThat(enabled).isFalse();
   }
 
   @Test
@@ -961,7 +895,12 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
-        "orchestrator:\n  roles:\n    foo:\n      enabled: true\n    qa:\n      enabled: true\n");
+        "orchestrator:\n"
+            + "  roles:\n"
+            + "    foo:\n"
+            + "      enabled: true\n"
+            + "    acceptance:\n"
+            + "      enabled: true\n");
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -972,7 +911,7 @@ class ConfigServiceTest {
         new ConfigService(
                 new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
             .load()
-            .unknownRoles(List.of("qa"));
+            .unknownRoles(List.of("acceptance"));
 
     assertThat(unknown).containsExactly("foo");
   }
@@ -993,64 +932,16 @@ class ConfigServiceTest {
         new ConfigService(
                 new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
             .load()
-            .unknownRoles(List.of("qa"));
+            .unknownRoles(List.of("acceptance"));
 
     assertThat(unknown).isEmpty();
   }
 
   @Test
-  void theOldQaKeyAloneNamesNoRoleUnderRoles(@TempDir Path root) throws Exception {
+  void anAcceptanceWrittenUnderRolesIsUnknownWhereNoAcceptanceRoleIsInstalled(@TempDir Path root)
+      throws Exception {
     Path configFile = root.resolve("jagt.yml");
-    Files.writeString(configFile, "orchestrator:\n  qa:\n    enabled: true\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    ConfigService.ConfigFile config =
-        new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
-            .load();
-
-    assertThat(config.unknownRoles(List.of())).isEmpty();
-    assertThat(config.role("qa").enabledOrDefault()).isTrue();
-  }
-
-  @Test
-  void aKeyLeftBlankUnderRolesKeepsWhatTheOldKeyWrote(@TempDir Path root) throws Exception {
-    Path configFile = root.resolve("jagt.yml");
-    Files.writeString(
-        configFile,
-        "orchestrator:\n"
-            + "  qa:\n"
-            + "    model: opus\n"
-            + "  roles:\n"
-            + "    qa:\n"
-            + "      model:\n"
-            + "      enabled: true\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    ConfigService.ConfigFile.RoleConfig qa =
-        new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
-            .load()
-            .role("qa");
-
-    assertThat(qa.model()).isEqualTo("opus");
-    assertThat(qa.enabledOrDefault()).isTrue();
-  }
-
-  @Test
-  void aQaWrittenUnderRolesIsUnknownWhereNoQaRoleIsInstalled(@TempDir Path root) throws Exception {
-    Path configFile = root.resolve("jagt.yml");
-    Files.writeString(
-        configFile,
-        "orchestrator:\n  qa:\n    enabled: true\n  roles:\n    qa:\n      model: haiku\n");
+    Files.writeString(configFile, "orchestrator:\n  roles:\n    acceptance:\n      model: haiku\n");
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -1063,7 +954,7 @@ class ConfigServiceTest {
             .load()
             .unknownRoles(List.of());
 
-    assertThat(unknown).containsExactly("qa");
+    assertThat(unknown).containsExactly("acceptance");
   }
 
   @ParameterizedTest
@@ -1149,6 +1040,8 @@ class ConfigServiceTest {
           roles:
             reviewer:
               enabled: true
+            acceptance:
+              enabled: true
           loopBreaker:
             ships: 6
           conflictStallMinutes: 15
@@ -1158,8 +1051,6 @@ class ConfigServiceTest {
             windowHours: 12
           master:
             mode: judge
-          qa:
-            enabled: true
           tracker:
             mode: intake
           codeHost: gitlab

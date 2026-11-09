@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class FlowsCheck implements StartupCheck {
 
-  private static final String KEY = "orchestrator.roles.qa.flows.driver";
+  private static final String KEY = "orchestrator.roles.acceptance.flows.driver";
   private static final List<String> DRIVERS = List.of("none", "playwright");
 
   private final FlowsProperties properties;

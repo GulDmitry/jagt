@@ -48,13 +48,15 @@ class PlaywrightRunnerTest {
   void flowsAreUnprovableNotFailedWhenTheCommandCannotStart(@TempDir Path worktree) {
     Processes processes = mock(Processes.class);
     when(processes.run(any(), any(), anyMap(), anyList()))
-        .thenThrow(new IllegalStateException("Failed to start command", new IOException("missing")));
+        .thenThrow(
+            new IllegalStateException("Failed to start command", new IOException("missing")));
 
     List<FlowResult> results =
         new PlaywrightRunner(processes, configured("no-such-tool"))
             .run(worktree, List.of("AC-1", "AC-2"), STAGE);
 
-    assertThat(results).extracting(FlowResult::verdict)
+    assertThat(results)
+        .extracting(FlowResult::verdict)
         .containsExactly(Verdict.UNPROVABLE, Verdict.UNPROVABLE);
   }
 
@@ -94,11 +96,11 @@ class PlaywrightRunnerTest {
     assertThat(argv.getValue())
         .containsSequence(
             "--reporter=json",
-            "--output=" + worktree.resolve("qa/artifacts"),
+            "--output=" + worktree.resolve("acceptance/artifacts"),
             "--grep",
             "AC-1");
     assertThat(results.get(0).verdict()).isEqualTo(Verdict.PASSED);
-    assertThat(Files.readString(worktree.resolve("qa/report.json"))).isEqualTo(json);
+    assertThat(Files.readString(worktree.resolve("acceptance/report.json"))).isEqualTo(json);
   }
 
   @Test
@@ -107,8 +109,7 @@ class PlaywrightRunnerTest {
     when(processes.run(any(), any(), anyMap(), anyList()))
         .thenReturn(new Processes.Result(0, "{\"suites\":[]}", ""));
 
-    new PlaywrightRunner(processes, configured("npx"))
-        .run(worktree, List.of("a.b", "c(d)"), STAGE);
+    new PlaywrightRunner(processes, configured("npx")).run(worktree, List.of("a.b", "c(d)"), STAGE);
 
     ArgumentCaptor<List<String>> argv = ArgumentCaptor.captor();
     verify(processes).run(any(), any(), anyMap(), argv.capture());

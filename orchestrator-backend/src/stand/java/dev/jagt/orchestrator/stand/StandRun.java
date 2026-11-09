@@ -33,7 +33,7 @@ public final class StandRun implements AutoCloseable {
           "autoreview",
           "master-deploy",
           "deploy-check",
-          "qa-check",
+          "acceptance-check",
           "deploy-conflict");
   private static final Duration STALL = Duration.ofMinutes(15);
 
@@ -166,11 +166,11 @@ public final class StandRun implements AutoCloseable {
     return "";
   }
 
-  public String qaReport() throws IOException {
+  public String acceptanceReport() throws IOException {
     for (var task : jagt.board().state().path("tasks").properties()) {
       String worktree = task.getValue().path("repos").path(0).path("worktreePath").asString("");
       if (!worktree.isEmpty()) {
-        return Files.readString(Path.of(worktree).resolve("qa-report.md"));
+        return Files.readString(Path.of(worktree).resolve("acceptance-report.md"));
       }
     }
     return "";
@@ -273,7 +273,7 @@ public final class StandRun implements AutoCloseable {
       boolean done =
           replay.drained()
               && timeline.lastStatus().equals(script.until())
-              && (!qaRecorded() || statusLabel(script.ref()).equals("qa passed"));
+              && (!acceptanceRecorded() || statusLabel(script.ref()).equals("accepted"));
       return replay.divergences().isEmpty() && !done && Instant.now().isBefore(deadline);
     }
     return !end.reached(timeline.lastStatus().equals(script.until()), eventsPending, timeline)
@@ -283,9 +283,9 @@ public final class StandRun implements AutoCloseable {
         && !end.waitingOnTheReviewer(sweepsWaiting, timeline);
   }
 
-  private boolean qaRecorded() {
+  private boolean acceptanceRecorded() {
     try {
-      return Files.readString(replayed).contains("\"kind\":\"QA_CHECK\"");
+      return Files.readString(replayed).contains("\"kind\":\"ACCEPTANCE_CHECK\"");
     } catch (IOException e) {
       throw new StandFailure("cannot read the recording " + replayed, e);
     }

@@ -73,13 +73,13 @@ by: master
 replies: IN_PROGRESS, REVIEW_PENDING; plain, question, permission, no_changes
 The Master read the hand-back and sends its findings back.
 
-## qa-round-by-qa
+## acceptance-round-by-acceptance
 
-step: qa-round
+step: acceptance-round
 at: DEPLOYED
-by: qa
+by: acceptance
 replies: IN_PROGRESS, REVIEW_PENDING, DEPLOYED; plain, question, permission, no_changes
-QA found a criterion of the ticket not met on the environment and sends its rows back.
+Acceptance found a criterion of the ticket not met on the environment and sends its rows back.
 
 ## asked-human
 

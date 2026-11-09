@@ -81,7 +81,7 @@ class MasterReviewTest {
             "",
             List.of(
                 new MasterReview.Read(
-                    "qa", new Judgement("", "ready", List.of(), "", List.of(), "")),
+                    "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")),
                 new MasterReview.Read(
                     "developer",
                     new Judgement("", "not ready", List.of(inverted), "", List.of(), "")))),

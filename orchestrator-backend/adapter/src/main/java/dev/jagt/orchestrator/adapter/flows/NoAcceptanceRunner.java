@@ -7,7 +7,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnExpression("!'${orchestrator.roles.qa.flows.driver:none}'.equals('playwright')")
+@ConditionalOnExpression(
+    "!'${orchestrator.roles.acceptance.flows.driver:none}'.equals('playwright')")
 public class NoAcceptanceRunner implements AcceptanceRunner {
 
   @Override

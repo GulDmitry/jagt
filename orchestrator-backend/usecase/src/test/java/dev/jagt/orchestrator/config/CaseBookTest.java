@@ -38,17 +38,25 @@ class CaseBookTest {
   }
 
   @Test
-  void readsQaAsWhoSetsAStepOff() {
+  void readsAcceptanceAsWhoSetsAStepOff() {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",
-            "## qa-round-by-qa\n\nstep: qa-round\nat: DEPLOYED\n"
-                + "by: qa\nreplies: IN_PROGRESS; plain, wait\nQA sends its rows back.\n");
+            "## acceptance-round-by-acceptance\n\n"
+                + "step: acceptance-round\n"
+                + "at: DEPLOYED\n"
+                + "by: acceptance\n"
+                + "replies: IN_PROGRESS; plain, wait\n"
+                + "Acceptance sends its rows back.\n");
 
     assertThat(book.faults()).isEmpty();
-    assertThat(book.sends("qa-round", TaskStatus.DEPLOYED, new CaseBook.By.Role("qa"))).isTrue();
     assertThat(
-            book.replies("qa-round").orElseThrow().takes(TaskStatus.IN_PROGRESS, AgentReport.WAIT))
+            book.sends("acceptance-round", TaskStatus.DEPLOYED, new CaseBook.By.Role("acceptance")))
+        .isTrue();
+    assertThat(
+            book.replies("acceptance-round")
+                .orElseThrow()
+                .takes(TaskStatus.IN_PROGRESS, AgentReport.WAIT))
         .isTrue();
   }
 
@@ -57,7 +65,7 @@ class CaseBookTest {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",
-            "## qa-round-by-lint\n\nstep: qa-round\nat: DEPLOYED\n"
+            "## acceptance-round-by-lint\n\nstep: acceptance-round\nat: DEPLOYED\n"
                 + "by: lint\nreplies: IN_PROGRESS; plain\nNobody installed.\n");
 
     assertThat(book.cases()).isEmpty();

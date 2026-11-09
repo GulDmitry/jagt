@@ -1,6 +1,6 @@
 # 0124 — The QA brief keeps the rules that measured
 
-[← decisions](README.md) · rule: [`roles/qa/brief.md.dist`](../../roles/qa/brief.md.dist) · measures
+[← decisions](README.md) · rule: [`roles/acceptance/brief.md.dist`](../../roles/acceptance/brief.md.dist) · measures
 [0116](0116-qa-is-a-turn-holder-of-its-own.md)'s per-step rule
 
 ## Status

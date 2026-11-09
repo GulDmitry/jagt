@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.task;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import java.util.Locale;
 
 /** Who asked for a status change. */
@@ -14,8 +15,9 @@ public enum ActionOrigin {
   AUTO_REVIEW,
   /** The Master session acting where a human would have. */
   MASTER,
-  /** The QA check sending the rows it did not meet back to the session. */
-  QA,
+  /** The acceptance check sending the rows it did not meet back to the session. */
+  @JsonAlias("QA")
+  ACCEPTANCE,
   /** A stage the tracker itself reports, which is nobody's judgement and so nobody's to hold. */
   TRACKER,
   /**

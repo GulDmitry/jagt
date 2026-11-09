@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RoleCheck implements StartupCheck {
 
-  private static final String QA_KEY = "roles/" + Checkers.QA;
+  private static final String ACCEPTANCE_KEY = "roles/" + Checkers.ACCEPTANCE;
 
   private final InstalledRoles roles;
   private final ConfigService config;
@@ -30,15 +30,15 @@ public class RoleCheck implements StartupCheck {
 
   @Override
   public List<Problem> problems() {
-    return qaMissing() && qaEnabled() ? List.of(qaWhy()) : List.of();
+    return acceptanceMissing() && acceptanceEnabled() ? List.of(acceptanceWhy()) : List.of();
   }
 
   @Override
   public List<Problem> notes() {
     List<Problem> notes = new ArrayList<>(roles.skipped());
-    if (qaMissing()
-        && roles.skipped().stream().noneMatch(skipped -> skipped.key().equals(QA_KEY))) {
-      notes.add(qaWhy());
+    if (acceptanceMissing()
+        && roles.skipped().stream().noneMatch(skipped -> skipped.key().equals(ACCEPTANCE_KEY))) {
+      notes.add(acceptanceWhy());
     }
     notes.addAll(unknownKeys());
     return notes;
@@ -49,12 +49,13 @@ public class RoleCheck implements StartupCheck {
     return false;
   }
 
-  private boolean qaMissing() {
-    return roles.find(Checkers.QA).isEmpty();
+  private boolean acceptanceMissing() {
+    return roles.find(Checkers.ACCEPTANCE).isEmpty();
   }
 
-  private boolean qaEnabled() {
-    return Files.exists(paths.configFile()) && config.load().role(Checkers.QA).enabledOrDefault();
+  private boolean acceptanceEnabled() {
+    return Files.exists(paths.configFile())
+        && config.load().role(Checkers.ACCEPTANCE).enabledOrDefault();
   }
 
   private List<Problem> unknownKeys() {
@@ -75,12 +76,14 @@ public class RoleCheck implements StartupCheck {
         .toList();
   }
 
-  private Problem qaWhy() {
+  private Problem acceptanceWhy() {
     return roles.skipped().stream()
-        .filter(skipped -> skipped.key().equals(QA_KEY))
+        .filter(skipped -> skipped.key().equals(ACCEPTANCE_KEY))
         .findFirst()
         .orElse(
             new Problem(
-                QA_KEY, "no roles/qa/role.yml or role.yml.dist is installed, so QA runs nothing"));
+                ACCEPTANCE_KEY,
+                "no roles/acceptance/role.yml or role.yml.dist is installed, so acceptance runs"
+                    + " nothing"));
   }
 }

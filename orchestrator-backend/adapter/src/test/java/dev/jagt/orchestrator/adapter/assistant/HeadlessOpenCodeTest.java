@@ -79,7 +79,7 @@ class HeadlessOpenCodeTest {
                 true,
                 List.of(worktree),
                 List.of()),
-            AssistantCallKind.QA_CHECK,
+            AssistantCallKind.ACCEPTANCE_CHECK,
             Duration.ofMinutes(1)));
 
     ArgumentCaptor<Map<String, String>> env = ArgumentCaptor.captor();
@@ -126,12 +126,12 @@ class HeadlessOpenCodeTest {
                     true,
                     List.of(worktree),
                     List.of()),
-                AssistantCallKind.QA_CHECK,
+                AssistantCallKind.ACCEPTANCE_CHECK,
                 Duration.ofMinutes(1)));
 
     assertThat(reply.envelope().path("structured_output").path("commits").asInt()).isEqualTo(1);
     assertThat(reply.usage().calls()).isEqualTo(4);
-    verify(usage).record(eq(AssistantCallKind.QA_CHECK), eq(reply.usage()));
+    verify(usage).record(eq(AssistantCallKind.ACCEPTANCE_CHECK), eq(reply.usage()));
   }
 
   @Test
@@ -156,7 +156,7 @@ class HeadlessOpenCodeTest {
                     true,
                     List.of(worktree),
                     List.of()),
-                AssistantCallKind.QA_CHECK,
+                AssistantCallKind.ACCEPTANCE_CHECK,
                 Duration.ofMinutes(1)));
 
     assertThat(reply.envelope()).isNotNull();
@@ -187,12 +187,12 @@ class HeadlessOpenCodeTest {
                     true,
                     List.of(worktree),
                     List.of()),
-                AssistantCallKind.QA_CHECK,
+                AssistantCallKind.ACCEPTANCE_CHECK,
                 Duration.ofMinutes(1)));
 
     assertThat(reply.envelope()).isNull();
     assertThat(reply.cause()).isEqualTo("exit 1");
-    verify(usage).record(eq(AssistantCallKind.QA_CHECK), eq(reply.usage()));
+    verify(usage).record(eq(AssistantCallKind.ACCEPTANCE_CHECK), eq(reply.usage()));
   }
 
   @Test
@@ -223,7 +223,7 @@ class HeadlessOpenCodeTest {
                 true,
                 List.of(worktree),
                 List.of()),
-            AssistantCallKind.QA_CHECK,
+            AssistantCallKind.ACCEPTANCE_CHECK,
             Duration.ofMinutes(1)));
 
     assertThat(held).isTrue();
@@ -253,7 +253,7 @@ class HeadlessOpenCodeTest {
                     true,
                     List.of(worktree),
                     List.of()),
-                AssistantCallKind.QA_CHECK,
+                AssistantCallKind.ACCEPTANCE_CHECK,
                 Duration.ofMinutes(1)));
 
     assertThat(reply.envelope()).isNull();
@@ -284,7 +284,7 @@ class HeadlessOpenCodeTest {
                     true,
                     List.of(worktree),
                     List.of()),
-                AssistantCallKind.QA_CHECK,
+                AssistantCallKind.ACCEPTANCE_CHECK,
                 Duration.ofMinutes(1)));
 
     assertThat(reply.envelope().path("structured_output").path("commits").asInt()).isEqualTo(2);
@@ -319,7 +319,7 @@ class HeadlessOpenCodeTest {
                     true,
                     List.of(worktree),
                     List.of()),
-                AssistantCallKind.QA_CHECK,
+                AssistantCallKind.ACCEPTANCE_CHECK,
                 Duration.ofMinutes(1)));
 
     assertThat(reply.envelope().path("structured_output").path("commits").asInt()).isEqualTo(3);
@@ -355,7 +355,7 @@ class HeadlessOpenCodeTest {
                     false,
                     List.of(worktree),
                     List.of()),
-                AssistantCallKind.QA_CHECK,
+                AssistantCallKind.ACCEPTANCE_CHECK,
                 Duration.ofMinutes(1)));
 
     assertThat(reply.envelope()).isNull();
@@ -382,7 +382,7 @@ class HeadlessOpenCodeTest {
                     true,
                     List.of(worktree),
                     List.of()),
-                AssistantCallKind.QA_CHECK,
+                AssistantCallKind.ACCEPTANCE_CHECK,
                 Duration.ofMinutes(1)));
 
     assertThat(reply.envelope()).isNull();
@@ -411,7 +411,7 @@ class HeadlessOpenCodeTest {
                             true,
                             List.of(worktree),
                             List.of()),
-                        AssistantCallKind.QA_CHECK,
+                        AssistantCallKind.ACCEPTANCE_CHECK,
                         Duration.ofMinutes(1))))
         .isInstanceOf(Processes.Stopped.class);
   }

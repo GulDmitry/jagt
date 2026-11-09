@@ -9,7 +9,7 @@ Proposed 2026-11-02 by the owner's order; accepted with the commit moving QA's c
 
 ## Context
 
-- QA lives in `roles/qa/`; the Master and the session keep brief and cases in the root, config in `jagt.yml`,
+- QA lives in `roles/acceptance/`; the Master and the session keep brief and cases in the root, config in `jagt.yml`,
   evals as Java in `src/masterEval`. Four loaders (`MasterBriefs`, `MasterCases`, `SessionBrief`, `SessionCases`)
   each hard-code a root path; `RoleFiles` already resolves a role folder but only QA uses it.
 - 0123 planned a location map and four layers for every kind of file; the owner narrowed it to roles first.

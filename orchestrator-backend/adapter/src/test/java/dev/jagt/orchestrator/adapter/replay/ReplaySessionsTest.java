@@ -204,8 +204,7 @@ class ReplaySessionsTest {
   }
 
   @Test
-  void aTurnACheckersReadHoldsIsNeitherAnsweredNorADivergence(@TempDir Path root)
-      throws Exception {
+  void aTurnACheckersReadHoldsIsNeitherAnsweredNorADivergence(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(
         file,
@@ -222,7 +221,7 @@ class ReplaySessionsTest {
                 TaskState.builder("p", "/work/ABC-1", TaskStatus.DEPLOYED)
                     .turn(checking)
                     .build()
-                    .withRole("qa", RoleRecord.defaults().withReading("accept"))));
+                    .withRole("acceptance", RoleRecord.defaults().withReading("accept"))));
     ReplayMoves moves = mock(ReplayMoves.class);
     sessions = new ReplaySessions(recording, tasks, moves);
     sessions.launched(Path.of("/work/ABC-1"));

@@ -1,0 +1,34 @@
+# The acceptance role: a headless model that checks a deployed change against its ticket, read-only, once per deploy.
+# Write what you change into `roles/acceptance/role.yml`: it layers over this file per key, a list replacing whole.
+# Take effect: id, model (the default; `roles.acceptance.model` in jagt.yml overrides it), trigger, tools, answer, decline,
+# jobs (true = the role runs jobs), readSteps (the brief steps whose turn opens its read).
+# tools: shell and refuseShell are command globs, refuseRead path globs; reads are always on, writes always refused.
+# trigger: deployed = the change is live; environment-named = jagt.yml names an environment;
+# pipelines-green always holds, as the check's key is the digest the green deploy pipelines set.
+# Declared for the lint only, nothing else reads them: name, oncePer (one check per deploy is fixed), outcomes.
+id: acceptance
+name: acceptance
+model: sonnet
+trigger: [deployed, pipelines-green, environment-named]
+oncePer: deploy
+outcomes: [round, question, wait, dispute, stop]
+jobs: true
+readSteps: [accept, again, decline]
+tools:
+  shell: ["curl -sS*", "git log*", "git show*", "git diff*"]
+  refuseShell: ["git * --output*", "git push*", "git commit*", "git reset*", "git checkout*"]
+  refuseRead: []
+  git: true
+  fetch: environments
+answer:
+  - required: failure
+  - records: rows
+    fields: [criterion, status, evidence]
+    choices: {status: [met, "not met", unprovable]}
+  - text: question
+  - text: waitingOn
+  - texts: flows
+  - text: environment
+decline:
+  - required: failure
+  - text: dispute

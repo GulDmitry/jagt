@@ -11,7 +11,7 @@ Accepted 2026-11-05 by the owner's order: no stops in `act`. Amends
 ## Decision
 
 - In `act`, with `MasterRight.LIFT` not in `mine`, a stop of trigger STALLED, SHIPS, ROUNDS, PACE or UNCHANGED_FAILURE is the Master's turn.
-- MISS, QA_FAILED and PAUSE stay the human's; a stop a read ends (UNDELIVERED, CHECKS, INFRA, WAIT, DEPLOY_UNREAD) stays on its read.
+- MISS, ACCEPTANCE_FAILED and PAUSE stay the human's; a stop a read ends (UNDELIVERED, CHECKS, INFRA, WAIT, DEPLOY_UNREAD) stays on its read.
 - `MasterStopJob` asks once per stop, the ask recorded on the task before it is made, so a restart never asks twice.
 - The answer's first line decides: `lift:`, `return:` (a lift, then the session told the instruction as an answer) or `human:`.
 - Anything else, no answer, or a task waiting on a plan (for `return:`) leaves the stop the human's; that ends the Master's hold.

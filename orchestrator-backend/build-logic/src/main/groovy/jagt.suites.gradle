@@ -57,8 +57,8 @@ sourceSets {
 }
 
 sourceSets {
-    qaEval {
-        java.srcDirs = ['src/qaEval/java']
+    acceptanceEval {
+        java.srcDirs = ['src/acceptanceEval/java']
         compileClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testCompileClasspath
         runtimeClasspath += sourceSets.main.output + sourceSets.evalSupport.output + configurations.testRuntimeClasspath
     }

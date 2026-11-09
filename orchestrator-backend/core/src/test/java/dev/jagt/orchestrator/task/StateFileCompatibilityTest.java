@@ -8,7 +8,7 @@ import tools.jackson.databind.json.JsonMapper;
 class StateFileCompatibilityTest {
 
   @Test
-  void aStateFileWrittenBeforeRolesLoadsWithQasPassAndTheMastersSeal() {
+  void aStateFileWrittenBeforeRolesLoadsWithTheQaRolesPassAsAcceptancesAndTheMastersSeal() {
     String json =
         """
         {"status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
@@ -21,7 +21,7 @@ class StateFileCompatibilityTest {
 
     TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
-    assertThat(task.roleOrNone("qa").passed()).isEqualTo("proj@abc");
+    assertThat(task.roleOrNone("acceptance").passed()).isEqualTo("proj@abc");
     assertThat(task.masterOrNone()).isEqualTo(new Master("", "", "", "abc", 3, "", 0));
     assertThat(task.turnOrNone().marks()).containsOnlyKeys("press:ship");
   }
@@ -83,7 +83,7 @@ class StateFileCompatibilityTest {
         "session":{"movedAt":23,"workStartedAt":0,"reportedAt":0,"halt":{"kind":"FAILED","at":24,"cause":"c"},"quietSince":0,"log":"log","stampedAsk":true,"generation":2,"window":{"state":"RUNNING","at":25,"printedAt":26}},
         "told":{"unreadable":"28","windowElapsed":"27"},
         "waits":[{"since":29,"until":30,"why":"QUESTION"}],
-        "roles":{"qa":{"reading":"r","passed":"p","roundDigest":"d","roundRows":"rows"}},
+        "roles":{"acceptance":{"reading":"r","passed":"p","roundDigest":"d","roundRows":"rows"}},
         "master":{"left":"l","unanswered":"u","pressedDeploy":"p","seal":"s","sealedRound":31,"askedStop":"a","liftedStops":2}
         }
         """;
@@ -180,7 +180,7 @@ class StateFileCompatibilityTest {
         "session":{"movedAt":23,"workStartedAt":0,"reportedAt":0,"halt":{"kind":"FAILED","at":24,"cause":"c"},"quietSince":0,"log":"log","stampedAsk":true,"generation":2,"window":{"state":"RUNNING","at":25,"printedAt":26}},
         "told":{"unreadable":"28","windowElapsed":"27"},
         "waits":[{"since":29,"until":30,"why":"QUESTION"}],
-        "roles":{"qa":{"reading":"r","passed":"p","roundDigest":"d","roundRows":"rows"}},
+        "roles":{"acceptance":{"reading":"r","passed":"p","roundDigest":"d","roundRows":"rows"}},
         "master":{"left":"l","unanswered":"u","pressedDeploy":"p","seal":"s","sealedRound":31,"askedStop":"a","liftedStops":2}
         }
         """;
@@ -190,5 +190,29 @@ class StateFileCompatibilityTest {
 
     assertThat(mapper.readTree(mapper.writeValueAsString(task)))
         .isEqualTo(mapper.readTree(current));
+  }
+
+  @Test
+  void aStateFileWrittenWhileTheRoleWasCalledQaLoadsItsRecordStopAndOriginUnderTheNewNames() {
+    String json =
+        """
+        {"status":"IN_PROGRESS","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
+         "repos":[{"project":"proj","worktreePath":"/wt"}],
+         "history":[{"status":"IN_PROGRESS","at":1,"origin":"QA"}],
+         "stop":{"trigger":"QA_FAILED","at":2,"evidence":"ev"},
+         "turn":{"step":"qa-round","id":3,"digest":"","since":4},
+         "roles":{"qa":{"passed":"proj@abc"}}}
+        """;
+    JsonMapper mapper = new JsonMapper();
+
+    TaskState task = mapper.readValue(json, TaskState.class);
+
+    assertThat(task.history().getFirst().origin()).isEqualTo(ActionOrigin.ACCEPTANCE);
+    assertThat(task.stop().trigger()).isEqualTo(TaskStop.Trigger.ACCEPTANCE_FAILED);
+    assertThat(task.turnOrNone().step()).isEqualTo("acceptance-round");
+    assertThat(task.roleOrNone("acceptance").passed()).isEqualTo("proj@abc");
+    assertThat(mapper.writeValueAsString(task))
+        .contains("\"ACCEPTANCE\"", "\"ACCEPTANCE_FAILED\"")
+        .doesNotContain("\"QA\"", "QA_FAILED");
   }
 }

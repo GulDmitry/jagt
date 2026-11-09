@@ -18,7 +18,7 @@ public interface AcceptanceRunner {
     UNPROVABLE
   }
 
-  /** {@code evidence} lies under the worktree's {@code qa/} folder. */
+  /** {@code evidence} lies under the worktree's {@code acceptance/} folder. */
   @With
   record FlowResult(String flow, Verdict verdict, String reason, List<Path> evidence) {
 

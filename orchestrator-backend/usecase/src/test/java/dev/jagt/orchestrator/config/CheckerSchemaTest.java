@@ -8,11 +8,14 @@ import org.junit.jupiter.api.Test;
 class CheckerSchemaTest {
 
   @Test
-  void theQaSchemaFromItsDefinitionIsTheOneQaAnsweredBefore() {
+  void theAcceptanceSchemaFromItsDefinitionIsTheOneAcceptanceAnsweredBefore() {
     String answer =
-        RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")).replies().answer().json();
+        RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
+            .replies()
+            .answer()
+            .json();
     String decline =
-        RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+        RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
             .replies()
             .decline()
             .json();
@@ -25,8 +28,7 @@ class CheckerSchemaTest {
                 + "\"unprovable\"]},\"evidence\":{\"type\":\"string\"}},\"required\":[\"criterion\",\"status\","
                 + "\"evidence\"]}},\"question\":{\"type\":\"string\"},\"waitingOn\":{\"type\":\"string\"},"
                 + "\"flows\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},"
-                + "\"environment\":{\"type\":\"string\"}},"
-                + "\"required\":[\"failure\"]}");
+                + "\"environment\":{\"type\":\"string\"}},\"required\":[\"failure\"]}");
     assertThat(decline)
         .isEqualTo(
             "{\"type\":\"object\",\"properties\":{\"failure\":{\"type\":\"string\"},"

@@ -26,8 +26,10 @@ final class RoleModules {
 
   static final Map<String, List<String>> CHECKERS =
       Map.of(
-          "qa",
-          Stream.of("eval.Qa", "startup.Qa", "task.Qa").map(prefix -> ROOT + prefix).toList());
+          "acceptance",
+          Stream.of("eval.Acceptance", "startup.Acceptance", "task.Acceptance")
+              .map(prefix -> ROOT + prefix)
+              .toList());
 
   private RoleModules() {}
 }

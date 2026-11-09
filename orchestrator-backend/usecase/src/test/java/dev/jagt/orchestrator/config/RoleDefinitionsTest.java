@@ -14,10 +14,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 class RoleDefinitionsTest {
 
   @Test
-  void theQaCompiledFromItsRoleYmlIsTheQaDeclaredInCode() {
-    RoleDefinition compiled = RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"));
+  void theAcceptanceCompiledFromItsRoleYmlIsTheAcceptanceDeclaredInCode() {
+    RoleDefinition compiled =
+        RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"));
 
-    assertThat(compiled.id()).isEqualTo("qa");
+    assertThat(compiled.id()).isEqualTo("acceptance");
     assertThat(compiled.trigger().trigger())
         .containsExactly("deployed", "pipelines-green", "environment-named");
     assertThat(compiled.trigger().oncePer()).isEqualTo("deploy");
@@ -54,8 +55,9 @@ class RoleDefinitionsTest {
   }
 
   @Test
-  void theShippedQaRunsJobsAndItsReadOpensOnAcceptAgainAndDecline() {
-    RoleDefinition compiled = RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"));
+  void theShippedAcceptanceRunsJobsAndItsReadOpensOnAcceptAgainAndDecline() {
+    RoleDefinition compiled =
+        RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"));
 
     assertThat(compiled.checking().jobs()).isTrue();
     assertThat(compiled.checking().readSteps()).containsExactly("accept", "again", "decline");
@@ -88,7 +90,7 @@ class RoleDefinitionsTest {
     Path copy = Files.writeString(folder.resolve("role.yml"), "model: opus\n");
 
     RoleDefinition compiled =
-        RoleDefinitions.fromFiles(List.of(Path.of("../../roles/qa/role.yml.dist"), copy));
+        RoleDefinitions.fromFiles(List.of(Path.of("../../roles/acceptance/role.yml.dist"), copy));
 
     assertThat(compiled.model()).isEqualTo("opus");
     assertThat(compiled.checking().jobs()).isTrue();

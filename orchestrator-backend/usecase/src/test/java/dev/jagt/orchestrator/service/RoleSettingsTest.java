@@ -26,7 +26,8 @@ class RoleSettingsTest {
   void theRoleYmlsModelIsTheBottomLayerUnderJagtYml(
       String written, String model, @TempDir Path root) throws Exception {
     Path configFile = root.resolve("jagt.yml");
-    Files.writeString(configFile, "orchestrator:\n  roles:\n    qa:\n      " + written + "\n");
+    Files.writeString(
+        configFile, "orchestrator:\n  roles:\n    acceptance:\n      " + written + "\n");
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -37,7 +38,8 @@ class RoleSettingsTest {
             new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class));
 
     String loaded =
-        new RoleSettings(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist")), config)
+        new RoleSettings(
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config)
             .load()
             .modelOrInherited();
 

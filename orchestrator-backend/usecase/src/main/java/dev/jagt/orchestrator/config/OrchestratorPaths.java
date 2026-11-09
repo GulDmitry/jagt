@@ -62,8 +62,15 @@ public class OrchestratorPaths {
     return stateFile.resolveSibling("intake-turned-away");
   }
 
-  /** What each deploy's QA check ended in, one line per task. */
-  public Path qaVerdicts() {
+  /** What each deploy's acceptance check ended in, one line per task. */
+  public Path acceptanceVerdicts() {
+    return stateFile.resolveSibling("acceptance-verdicts");
+  }
+
+  /**
+   * Where the verdicts were kept while the role was called qa; read while the new file is absent.
+   */
+  public Path legacyQaVerdicts() {
     return stateFile.resolveSibling("qa-verdicts");
   }
 

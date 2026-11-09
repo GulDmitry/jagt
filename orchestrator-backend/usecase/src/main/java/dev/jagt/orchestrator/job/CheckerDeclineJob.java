@@ -7,11 +7,11 @@ import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.RoleSettings;
+import dev.jagt.orchestrator.task.AcceptanceDecline;
+import dev.jagt.orchestrator.task.AcceptanceEnding;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
-import dev.jagt.orchestrator.task.QaDecline;
-import dev.jagt.orchestrator.task.QaEnding;
-import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.TaskState;
 import java.time.Duration;
 import java.util.Optional;
@@ -19,9 +19,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * Reads the session's no-change reply to a QA round back to QA: it accepts, or disputes. Once a
- * round and a first dispute are behind, a reply is read once more; a second dispute goes to the
- * human, and nothing is read after it.
+ * Reads the session's no-change reply to an acceptance round back to acceptance: it accepts, or
+ * disputes. Once a round and a first dispute are behind, a reply is read once more; a second
+ * dispute goes to the human, and nothing is read after it.
  */
 @Service
 @RequiredArgsConstructor
@@ -45,7 +45,8 @@ public class CheckerDeclineJob implements TaskJob {
 
   @Override
   public String describe() {
-    return "read the session's answer to a QA round that changed nothing back to QA";
+    return "read the session's answer to an acceptance round that changed nothing back to"
+               + " acceptance";
   }
 
   @Override
@@ -63,29 +64,37 @@ public class CheckerDeclineJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    RoleConfig qa = settings.load();
+    RoleConfig acceptance = settings.load();
     String role = settings.role().id();
     CheckerPhase reading = CheckerPhase.of(task, role);
     Optional<CheckerRecords.Entry> asked =
         records.latest(taskId).filter(record -> answered(task, role, record));
     if (asked.isEmpty()
-        || !qa.enabledOrDefault()
+        || !acceptance.enabledOrDefault()
         || task.worktreePath() == null
         || (task.turnOrNone().open() && reading != CheckerPhase.READING)) {
       return;
     }
     String sha = asked.get().sha();
     String rows = task.roleOrNone(role).roundRows();
-    String step = reading == CheckerPhase.READING ? QaVerdict.AGAIN : QaVerdict.DECLINE;
-    Answer<QaDecline> answer =
+    String step =
+        reading == CheckerPhase.READING ? AcceptanceVerdict.AGAIN : AcceptanceVerdict.DECLINE;
+    Answer<AcceptanceDecline> answer =
         reads.decline(
             taskId,
             step,
             asked.get().digest(),
             prompts.decline(
-                taskId, task.worktreePath(), sha, qa, rows, String.valueOf(task.message())));
-    QaDecline decline = answer.facts().orElse(QaDecline.failed(sha, answer.failure()));
-    QaEnding ending = outcomes.declined(taskId, decline, asked.get().ending() == QaEnding.DISPUTED);
+                taskId,
+                task.worktreePath(),
+                sha,
+                acceptance,
+                rows,
+                String.valueOf(task.message())));
+    AcceptanceDecline decline =
+        answer.facts().orElse(AcceptanceDecline.failed(sha, answer.failure()));
+    AcceptanceEnding ending =
+        outcomes.declined(taskId, decline, asked.get().ending() == AcceptanceEnding.DISPUTED);
     records.put(taskId, asked.get().digest(), sha, ending);
   }
 
@@ -95,7 +104,8 @@ public class CheckerDeclineJob implements TaskJob {
     return deployment != null
         && record.digest().equals(deployment.askedDigest())
         && task.roundOpen(role)
-        && (record.ending() == QaEnding.NOT_MET || record.ending() == QaEnding.DISPUTED)
+        && (record.ending() == AcceptanceEnding.NOT_MET
+            || record.ending() == AcceptanceEnding.DISPUTED)
         && task.session().reportedAt() > record.at();
   }
 }

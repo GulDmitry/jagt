@@ -16,7 +16,7 @@ class FlowsCheckTest {
 
     assertThat(new FlowsCheck(selenium).problems())
         .extracting(Problem::key)
-        .containsExactly("orchestrator.roles.qa.flows.driver");
+        .containsExactly("orchestrator.roles.acceptance.flows.driver");
   }
 
   @Test

@@ -17,8 +17,10 @@ class StartupRefusalTest {
   void anIncompleteInstallationStopsTheStartInsteadOfServingABoardThatCannotWork(@TempDir Path root)
       throws Exception {
     Files.writeString(root.resolve("mcp_client.js"), "// bridge");
-    Files.createDirectories(root.resolve("roles/qa"));
-    Files.copy(Path.of("../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.copy(
+        Path.of("../roles/acceptance/role.yml.dist"),
+        root.resolve("roles/acceptance/role.yml.dist"));
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
 
     assertThatThrownBy(

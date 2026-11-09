@@ -10,30 +10,32 @@ import org.junit.jupiter.api.io.TempDir;
 class RoleFilesTest {
 
   @Test
-  void aHumansQaBriefInItsRoleFolderOverridesTheShippedOne(@TempDir Path root) throws Exception {
-    Files.createDirectories(root.resolve("roles/qa"));
+  void aHumansAcceptanceBriefInItsRoleFolderOverridesTheShippedOne(@TempDir Path root)
+      throws Exception {
+    Files.createDirectories(root.resolve("roles/acceptance"));
     Files.writeString(
-        root.resolve("roles/qa/brief.md.dist"), "shipped\n\n## accept\n\nshipped accept\n");
-    Files.writeString(root.resolve("roles/qa/brief.md"), "mine\n\n## accept\n\nmy accept\n");
+        root.resolve("roles/acceptance/brief.md.dist"), "shipped\n\n## accept\n\nshipped accept\n");
+    Files.writeString(
+        root.resolve("roles/acceptance/brief.md"), "mine\n\n## accept\n\nmy accept\n");
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
-    RoleFiles files = new RoleFiles(paths, "qa");
+    RoleFiles files = new RoleFiles(paths, "acceptance");
 
     assertThat(files.text()).startsWith("mine");
     assertThat(files.section("accept")).contains("my accept");
   }
 
   @Test
-  void theShippedQaBriefIsReadFromItsRoleFolderWhereTheHumanKeptNoCopy(@TempDir Path root)
+  void theShippedAcceptanceBriefIsReadFromItsRoleFolderWhereTheHumanKeptNoCopy(@TempDir Path root)
       throws Exception {
-    Files.createDirectories(root.resolve("roles/qa"));
+    Files.createDirectories(root.resolve("roles/acceptance"));
     Files.writeString(
-        root.resolve("roles/qa/brief.md.dist"), "shipped\n\n## accept\n\nshipped accept\n");
+        root.resolve("roles/acceptance/brief.md.dist"), "shipped\n\n## accept\n\nshipped accept\n");
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
-    RoleFiles files = new RoleFiles(paths, "qa");
+    RoleFiles files = new RoleFiles(paths, "acceptance");
 
     assertThat(files.section("accept")).contains("shipped accept");
   }

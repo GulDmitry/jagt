@@ -16,7 +16,7 @@ import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.QaDecline;
+import dev.jagt.orchestrator.task.AcceptanceDecline;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,14 +36,18 @@ class HeadlessClaudeCheckerReaderTest {
       new HeadlessClaudeCheckerReader(
           new HeadlessClaude(
               new AssistantProcess(
-                  runner, new AssistantBreaker(AssistantProperties.empty(), Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                  runner,
+                  new AssistantBreaker(
+                      AssistantProperties.empty(),
+                      Clock.systemUTC(),
+                      new dev.jagt.orchestrator.service.ReachLedger())),
               ClaudeProperties.defaults(),
               AssistantProperties.empty(),
               usage,
               reads),
           ClaudeProperties.defaults(),
           AssistantProperties.empty(),
-          List.of(RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))));
+          List.of(RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))));
 
   @TempDir Path worktree;
 
@@ -61,11 +65,11 @@ class HeadlessClaudeCheckerReaderTest {
             "abc123",
             "",
             new CheckerReader.Reach(List.of(), List.of()),
-            RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                 .replies()
                 .answer()
                 .json(),
-            "qa"));
+            "acceptance"));
 
     ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
     verify(runner).run(any(Path.class), any(Duration.class), command.capture());
@@ -94,12 +98,13 @@ class HeadlessClaudeCheckerReaderTest {
             worktree,
             "abc123",
             "",
-            new CheckerReader.Reach(List.of("https://dev.example.test", "https://dev.example.test/version"), List.of()),
-            RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+            new CheckerReader.Reach(
+                List.of("https://dev.example.test", "https://dev.example.test/version"), List.of()),
+            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                 .replies()
                 .answer()
                 .json(),
-            "qa"));
+            "acceptance"));
 
     verify(reads)
         .fence(
@@ -127,11 +132,11 @@ class HeadlessClaudeCheckerReaderTest {
             "abc123",
             "",
             new CheckerReader.Reach(List.of(), List.of(flows)),
-            RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                 .replies()
                 .answer()
                 .json(),
-            "qa"));
+            "acceptance"));
 
     verify(reads)
         .fence(
@@ -146,7 +151,7 @@ class HeadlessClaudeCheckerReaderTest {
   }
 
   @Test
-  void writesQaReportFromTheRowsTheModelAnswered() throws IOException {
+  void writesAcceptanceReportFromTheRowsTheModelAnswered() throws IOException {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
             new Processes.Result(
@@ -164,13 +169,13 @@ class HeadlessClaudeCheckerReaderTest {
                 "abc123",
                 "",
                 new CheckerReader.Reach(List.of(), List.of()),
-                RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                     .replies()
                     .answer()
                     .json(),
-                "qa"));
+                "acceptance"));
 
-    assertThat(Files.readString(worktree.resolve("qa-report.md")))
+    assertThat(Files.readString(worktree.resolve("acceptance-report.md")))
         .contains("abc123", "page opens", "GET answered 200");
     assertThat(answer.facts().orElseThrow().rows())
         .extracting(row -> row.criterion())
@@ -178,7 +183,7 @@ class HeadlessClaudeCheckerReaderTest {
   }
 
   @Test
-  void readsTheDisputeQaFilledAgainstASessionsDecline() {
+  void readsTheDisputeAcceptanceFilledAgainstASessionsDecline() {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
             new Processes.Result(
@@ -186,7 +191,7 @@ class HeadlessClaudeCheckerReaderTest {
                 "{\"structured_output\":{\"failure\":\"\",\"dispute\":\"GET /list is unsorted\"}}",
                 ""));
 
-    QaDecline decline =
+    AcceptanceDecline decline =
         reader
             .reconsider(
                 new CheckerReader.Run(
@@ -196,15 +201,15 @@ class HeadlessClaudeCheckerReaderTest {
                     "abc123",
                     "",
                     new CheckerReader.Reach(List.of(), List.of()),
-                    RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                    RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                         .replies()
                         .decline()
                         .json(),
-                    "qa"))
+                    "acceptance"))
             .facts()
             .orElseThrow();
 
-    assertThat(decline).isEqualTo(new QaDecline("abc123", "", "GET /list is unsorted"));
+    assertThat(decline).isEqualTo(new AcceptanceDecline("abc123", "", "GET /list is unsorted"));
   }
 
   @Test
@@ -221,11 +226,11 @@ class HeadlessClaudeCheckerReaderTest {
             "abc123",
             "opus",
             new CheckerReader.Reach(List.of(), List.of()),
-            RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                 .replies()
                 .answer()
                 .json(),
-            "qa"));
+            "acceptance"));
 
     ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
     verify(runner).run(any(Path.class), any(Duration.class), command.capture());
@@ -249,11 +254,11 @@ class HeadlessClaudeCheckerReaderTest {
             "abc123",
             "",
             new CheckerReader.Reach(List.of(), List.of()),
-            RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                 .replies()
                 .answer()
                 .json(),
-            "qa"));
+            "acceptance"));
 
     ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
     verify(runner).run(any(Path.class), any(Duration.class), command.capture());
@@ -263,7 +268,15 @@ class HeadlessClaudeCheckerReaderTest {
   @Test
   void refusesARunOfARoleNoInstalledDefinitionNames() {
     var run =
-        new CheckerReader.Run("", "check ABC-42", worktree, "abc123", "", new CheckerReader.Reach(List.of(), List.of()), "{}", "nope");
+        new CheckerReader.Run(
+            "",
+            "check ABC-42",
+            worktree,
+            "abc123",
+            "",
+            new CheckerReader.Reach(List.of(), List.of()),
+            "{}",
+            "nope");
 
     assertThatThrownBy(() -> reader.read(run)).isInstanceOf(IllegalStateException.class);
   }
@@ -288,11 +301,11 @@ class HeadlessClaudeCheckerReaderTest {
                     "abc123",
                     "",
                     new CheckerReader.Reach(List.of(), List.of()),
-                    RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                    RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                         .replies()
                         .answer()
                         .json(),
-                    "qa"))
+                    "acceptance"))
             .facts()
             .orElseThrow();
 
@@ -315,11 +328,11 @@ class HeadlessClaudeCheckerReaderTest {
                     "abc123",
                     "",
                     new CheckerReader.Reach(List.of(), List.of()),
-                    RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                    RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                         .replies()
                         .answer()
                         .json(),
-                    "qa"))
+                    "acceptance"))
             .facts()
             .orElseThrow();
 
@@ -331,7 +344,7 @@ class HeadlessClaudeCheckerReaderTest {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(1, "", "boom"));
 
-    QaDecline decline =
+    AcceptanceDecline decline =
         reader
             .reconsider(
                 new CheckerReader.Run(
@@ -341,11 +354,11 @@ class HeadlessClaudeCheckerReaderTest {
                     "abc123",
                     "",
                     new CheckerReader.Reach(List.of(), List.of()),
-                    RoleDefinitions.fromFile(Path.of("../../roles/qa/role.yml.dist"))
+                    RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                         .replies()
                         .decline()
                         .json(),
-                    "qa"))
+                    "acceptance"))
             .facts()
             .orElseThrow();
 

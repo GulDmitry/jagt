@@ -1,0 +1,22 @@
+case: criterion-met-by-a-flag-that-is-off
+ticket:
+  key: ABC-109
+  title: Bulk reassign of tasks
+  criteria:
+    - {id: C1, text: "The task list has a bulk reassign action"}
+deploy:
+  sha: 2930415
+  tip: 2930415
+  landed: host-job
+  diff: ["ui/TaskList.tsx: bulk action behind flag bulkReassign", "config/flags.yml: bulkReassign false"]
+  flags: {bulkReassign: false}
+environment:
+  login: {broker-role: ok}
+  ui:
+    "/tasks": {actions: ["close"]}
+expect:
+  rows: {C1: not_met}
+  report: plain
+  ending: not-met
+names: ["bulkReassign", "flag"]
+note: Code is present, behaviour is not. The environment is the judge; the flag is named as the cause. Flipping it is not acceptance's.

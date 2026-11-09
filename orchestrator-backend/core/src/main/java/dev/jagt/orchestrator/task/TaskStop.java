@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.task;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Arrays;
 import java.util.List;
@@ -85,8 +86,9 @@ public record TaskStop(
         "Bring up what the session named, then lift",
         Ends.SESSION_REPORT,
         false),
-    QA_FAILED(
-        "the QA check failed",
+    @JsonAlias("QA_FAILED")
+    ACCEPTANCE_FAILED(
+        "the acceptance check failed",
         "Fix what the check needs, then lift: the same check runs once more",
         Ends.LIFT,
         false),

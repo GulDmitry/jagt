@@ -37,7 +37,7 @@ class MasterVerdictReportTest {
                         List.of(new Premise("A names its caller", "grep: A.java:3")),
                         "")),
                 new Read(
-                    "qa",
+                    "acceptance",
                     new Judgement(
                         "",
                         "question",
@@ -57,7 +57,7 @@ class MasterVerdictReportTest {
             - architect: not_ready
                 finding [blocking] A.java run - leaks the caller
                 premise: A names its caller (proven by: grep: A.java:3)
-            - qa: question
+            - acceptance: question
                 premise: no test (reasoned only)
                 question: which test pins it?
             - designer: could not read the round: no reply\

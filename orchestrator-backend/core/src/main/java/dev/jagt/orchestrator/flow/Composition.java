@@ -37,7 +37,7 @@ record Composition(List<Role> roles) {
   }
 
   static Composition builtIn() {
-    return new Composition(List.of(CheckerRegion.QA));
+    return new Composition(List.of(CheckerRegion.ACCEPTANCE));
   }
 
   List<String> withJobs() {

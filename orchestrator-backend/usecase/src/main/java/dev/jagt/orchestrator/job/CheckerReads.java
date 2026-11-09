@@ -4,13 +4,16 @@ import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.service.TaskTurns;
-import dev.jagt.orchestrator.task.QaDecline;
-import dev.jagt.orchestrator.task.QaVerdict;
+import dev.jagt.orchestrator.task.AcceptanceDecline;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** A QA read held as a turn: open while the run reads, closed before what it found is acted on. */
+/**
+ * An acceptance read held as a turn: open while the run reads, closed before what it found is acted
+ * on.
+ */
 @Component
 @RequiredArgsConstructor
 public class CheckerReads {
@@ -20,18 +23,17 @@ public class CheckerReads {
   private final TaskTurns turns;
   private final CheckerFlows flows;
 
-  public Answer<QaVerdict> check(String taskId, String step, String digest, CheckerReader.Run run) {
+  public Answer<AcceptanceVerdict> check(
+      String taskId, String step, String digest, CheckerReader.Run run) {
     turns.opened(taskId, step, digest, TaskStatus.DEPLOYED);
     try {
-      return reader
-          .read(run)
-          .map(verdict -> flows.run(verdict, run.worktree(), verdict.flows()));
+      return reader.read(run).map(verdict -> flows.run(verdict, run.worktree(), verdict.flows()));
     } finally {
       turns.closed(taskId, role.id(), step, digest);
     }
   }
 
-  public Answer<QaDecline> decline(
+  public Answer<AcceptanceDecline> decline(
       String taskId, String step, String digest, CheckerReader.Run run) {
     turns.opened(taskId, step, digest, TaskStatus.DEPLOYED);
     try {

@@ -32,7 +32,9 @@ public class ConfigCheck implements StartupCheck {
           "terminal", "the driver comes from `platform`",
           "webTerminal", "`focus` raises the terminal window",
           "dashboard", "nothing renders a console table",
-          "openWarpWindow", "renamed to `openTerminalWindow`; set it again");
+          "openWarpWindow", "renamed to `openTerminalWindow`; set it again",
+          "qa", "the role is called `acceptance`; write it under `roles.acceptance`");
+  private static final String RETIRED_ROLE = "qa";
   private final ConfigService configService;
   private final OrchestratorPaths paths;
   private final SessionHost sessions;
@@ -55,6 +57,7 @@ public class ConfigCheck implements StartupCheck {
       return List.of(new Problem(CONFIG_FILE, String.valueOf(unreadable.getMessage())));
     }
     List<Problem> problems = new ArrayList<>(retiredKeys());
+    problems.addAll(retiredRole(config));
     problems.addAll(viewerProblems(config));
     Map<String, ProjectConfig> projects = config.projects();
     if (projects.isEmpty()) {
@@ -115,6 +118,22 @@ public class ConfigCheck implements StartupCheck {
                         + paths.configFile()
                         + "."))
         .toList();
+  }
+
+  private List<Problem> retiredRole(ConfigService.ConfigFile config) {
+    Map<String, ?> roles = config.sessions().roles();
+    if (roles == null || !roles.containsKey(RETIRED_ROLE)) {
+      return List.of();
+    }
+    return List.of(
+        new Problem(
+            "orchestrator.roles." + RETIRED_ROLE,
+            "orchestrator.roles."
+                + RETIRED_ROLE
+                + " is no longer read: the role is called `acceptance`. Rename it to"
+                + " `roles.acceptance` in "
+                + paths.configFile()
+                + "."));
   }
 
   /**

@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.port.AcceptanceRunner;
 import dev.jagt.orchestrator.port.AcceptanceRunner.FlowResult;
 import dev.jagt.orchestrator.service.RoleSettings;
-import dev.jagt.orchestrator.task.QaVerdict;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,7 +14,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-/** Runs the scripted flows a QA read asked for and folds each result into its verdict as a row. */
+/**
+ * Runs the scripted flows an acceptance read asked for and folds each result into its verdict as a
+ * row.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -24,7 +27,8 @@ public class CheckerFlows {
   private final RoleDefinition role;
   private final RoleSettings settings;
 
-  public QaVerdict run(QaVerdict verdict, Path worktree, QaVerdict.Flows ask) {
+  public AcceptanceVerdict run(
+      AcceptanceVerdict verdict, Path worktree, AcceptanceVerdict.Flows ask) {
     if (ask.ids().isEmpty()) {
       return verdict;
     }
@@ -36,31 +40,32 @@ public class CheckerFlows {
                     flow ->
                         FlowResult.defaults()
                             .withFlow(flow)
-                            .withReason(ask.environment() + " is not in roles.qa.environments"))
+                            .withReason(
+                                ask.environment() + " is not in roles.acceptance.environments"))
                 .toList();
-    QaVerdict merged = verdict.plus(results.stream().map(CheckerFlows::row).toList());
+    AcceptanceVerdict merged = verdict.plus(results.stream().map(CheckerFlows::row).toList());
     write(worktree.resolve(role.id() + "-report.md"), merged);
     return merged;
   }
 
-  private static QaVerdict.Row row(FlowResult result) {
-    QaVerdict.Status status =
+  private static AcceptanceVerdict.Row row(FlowResult result) {
+    AcceptanceVerdict.Status status =
         switch (result.verdict()) {
-          case PASSED -> QaVerdict.Status.MET;
-          case FAILED -> QaVerdict.Status.NOT_MET;
-          case UNPROVABLE -> QaVerdict.Status.UNPROVABLE;
+          case PASSED -> AcceptanceVerdict.Status.MET;
+          case FAILED -> AcceptanceVerdict.Status.NOT_MET;
+          case UNPROVABLE -> AcceptanceVerdict.Status.UNPROVABLE;
         };
     String paths = result.evidence().stream().map(Path::toString).collect(Collectors.joining(", "));
-    return new QaVerdict.Row(
+    return new AcceptanceVerdict.Row(
         result.flow(), status, (result.reason() + " " + paths).strip());
   }
 
-  private void write(Path file, QaVerdict verdict) {
+  private void write(Path file, AcceptanceVerdict verdict) {
     try {
       Files.writeString(file, verdict.report(role.id()));
     } catch (IOException unwritten) {
       log.atWarn()
-          .setMessage("qa report not written")
+          .setMessage("acceptance report not written")
           .addKeyValue("file", file)
           .addKeyValue("cause", unwritten.toString())
           .log();

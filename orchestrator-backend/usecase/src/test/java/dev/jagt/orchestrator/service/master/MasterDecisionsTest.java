@@ -91,7 +91,7 @@ class MasterDecisionsTest {
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
     var delay =
         new MasterReview.Said(
-            "qa",
+            "acceptance",
             new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"));
     new MasterDecisions(mock(WorktreeChanges.class)).returned(task, 1L, List.of(delay));
 
@@ -128,7 +128,7 @@ class MasterDecisionsTest {
         1L,
         List.of(
             new MasterReview.Said(
-                "qa",
+                "acceptance",
                 new Finding(
                     "Foo.java", "every test injects zero", "", "blocking", "delay", "test"))));
     var now =
@@ -146,7 +146,7 @@ class MasterDecisionsTest {
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
     var show =
         new MasterReview.Said(
-            "qa",
+            "acceptance",
             new Finding("Foo.java", "which caller reads v2", "", "unproven", "", "behaviour"));
     decisions.returned(task, 1L, List.of(show));
 
@@ -162,7 +162,7 @@ class MasterDecisionsTest {
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
     var delay =
         new MasterReview.Said(
-            "qa",
+            "acceptance",
             new Finding("Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"));
     decisions.returned(task, 1L, List.of(delay));
 

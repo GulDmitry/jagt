@@ -285,8 +285,8 @@ class TaskReducerProperties {
                           ApprovalPhase.of(next).name(),
                           "infra",
                           InfraPhase.of(next).name(),
-                          "qa",
-                          CheckerPhase.of(next, Checkers.QA).name()))
+                          "acceptance",
+                          CheckerPhase.of(next, Checkers.ACCEPTANCE).name()))
                   .isEqualTo(
                       Map.of(
                           "git",
@@ -301,15 +301,15 @@ class TaskReducerProperties {
                           declared.get("approval"),
                           "infra",
                           declared.get("infra"),
-                          "qa",
-                          declared.get("qa")));
+                          "acceptance",
+                          declared.get("acceptance")));
               return next;
             },
             (left, right) -> right);
   }
 
   @Property
-  void qaHoldsTheTurnOnlyWhileItsReadRuns(
+  void acceptanceHoldsTheTurnOnlyWhileItsReadRuns(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
     moves.stream()
         .reduce(
@@ -328,9 +328,10 @@ class TaskReducerProperties {
                                           false,
                                           Checkers.of(moved),
                                           Arbiter.Profile.OFF)
-                                      .equals(new Turn.Holder.Role("qa")))
+                                      .equals(new Turn.Holder.Role("acceptance")))
                               .isEqualTo(
-                                  CheckerPhase.of(moved, Checkers.QA) == CheckerPhase.READING));
+                                  CheckerPhase.of(moved, Checkers.ACCEPTANCE)
+                                      == CheckerPhase.READING));
               return next;
             },
             (left, right) -> right);
@@ -468,15 +469,15 @@ class TaskReducerProperties {
             Arbitraries.just(new TaskMove.Relayed("ship", "d", "a")),
             Arbitraries.of("accept", "decline", "again")
                 .map(step -> new TaskMove.Relayed(step, "d1", "a")),
-            flag.map(holds -> new TaskMove.Checked.ReadEnded("qa", holds)),
+            flag.map(holds -> new TaskMove.Checked.ReadEnded("acceptance", holds)),
             Arbitraries.of(
                     new MasterNote.Left("deploy x"),
                     new MasterNote.Took(),
                     new MasterNote.Unanswered("u"),
                     new MasterNote.Sealed("s", 4))
                 .map(note -> new TaskMove.MasterNoted(note, MasterPhase.LEFT)),
-            Arbitraries.just(new TaskMove.Checked.Passed("qa", "api@abc", false)),
-            Arbitraries.just(new TaskMove.Checked.RoundSent("qa", "d1", "- row", false)),
+            Arbitraries.just(new TaskMove.Checked.Passed("acceptance", "api@abc", false)),
+            Arbitraries.just(new TaskMove.Checked.RoundSent("acceptance", "d1", "- row", false)),
             Arbitraries.just(new TaskMove.TurnClosed()),
             Arbitraries.just(new TaskMove.GitTrusted(GitTrust.of(Map.of("b", "2")))),
             Arbitraries.just(new TaskMove.GitChanged("b changed")),

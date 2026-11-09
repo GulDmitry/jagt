@@ -1,10 +1,10 @@
 // One harness per kind of role, each over `roles/<id>/eval/*.yml`: a checker reads its brief against deploys, the
 // arbiter against rounds, triage against stops. -Prole=<id> picks the role; -ProleBrief and -ProleModel read another brief or
 // model against the same cases, to compare cost. -ProleCli=opencode reads at -PopencodeEndpoint on -ProleModel.
-def evalRole = (project.findProperty('role') ?: 'qa').toString()
+def evalRole = (project.findProperty('role') ?: 'acceptance').toString()
 def evalIsArbiter = evalRole == 'master'
 def evalIsTriage = evalRole == 'triage'
-def evalSet = evalIsArbiter ? sourceSets.masterEval : evalIsTriage ? sourceSets.triageEval : sourceSets.qaEval
+def evalSet = evalIsArbiter ? sourceSets.masterEval : evalIsTriage ? sourceSets.triageEval : sourceSets.acceptanceEval
 def evalCli = (project.findProperty('roleCli') ?: 'claude').toString()
 def evalOnOpenCode = evalCli == 'opencode'
 tasks.register('roleEval', Test) {
@@ -13,8 +13,8 @@ tasks.register('roleEval', Test) {
     testClassesDirs = evalSet.output.classesDirs
     classpath = evalSet.runtimeClasspath
     useJUnitPlatform()
-    String harness = evalIsArbiter ? 'master' : evalIsTriage ? 'triage' : 'qa'
-    String testClass = evalIsArbiter ? 'MasterVerdictEvalShard' : 'QaVerdictEvalShard'
+    String harness = evalIsArbiter ? 'master' : evalIsTriage ? 'triage' : 'acceptance'
+    String testClass = evalIsArbiter ? 'MasterVerdictEvalShard' : 'AcceptanceVerdictEvalShard'
     // A review is one task per tick, so cases go in parallel only across JVMs: one per shard class, each a full context.
     int shards = evalIsTriage ? 1 : (project.findProperty('evalShards') ?: '3') as int
     if (shards < 1 || shards > 6) {
@@ -53,8 +53,8 @@ tasks.register('roleEval', Test) {
         systemProperty "orchestrator.opencode.reads.${evalIsTriage ? 'master' : evalRole}", ''
     }
     Map<String, String> retired = ['masterBrief': '-Prole=master -ProleBrief', 'masterModel': '-Prole=master -ProleModel',
-                                   'qaBrief': '-Prole=qa -ProleBrief', 'qaModel': '-Prole=qa -ProleModel',
-                                   'masterShards': '-PevalShards', 'qaShards': '-PevalShards'].findAll { name, use ->
+                                   'acceptanceBrief': '-Prole=acceptance -ProleBrief', 'acceptanceModel': '-Prole=acceptance -ProleModel',
+                                   'masterShards': '-PevalShards', 'acceptanceShards': '-PevalShards'].findAll { name, use ->
         project.hasProperty(name)
     }
     boolean roleNamed = project.hasProperty('role')
@@ -168,9 +168,9 @@ tasks.named('promptEval') {
     systemProperty 'eval.model', project.hasProperty('localModel') ? "local/${project.property('localModel')}" : 'default'
     systemProperty 'eval.brief.file', file('adapter/src/main/java/dev/jagt/orchestrator/adapter/assistant/HeadlessClaudeCommandAssistant.java').path
 }
-// The suite names stay `masterEval`, `qaEval` and `triageEval`, so the trend a later run reads continues across the rename.
+// `acceptanceEval` is a new stats key: the trend recorded as `qaEval` does not carry over.
 tasks.named('roleEval') {
-    systemProperty 'eval.suite', evalIsArbiter ? 'masterEval' : evalIsTriage ? 'triageEval' : 'qaEval'
+    systemProperty 'eval.suite', evalIsArbiter ? 'masterEval' : evalIsTriage ? 'triageEval' : 'acceptanceEval'
     systemProperty 'eval.stats', file('eval-stats.jsonl').absolutePath
     systemProperty 'eval.model', (evalOnOpenCode ? 'opencode/' : '') + (project.findProperty('roleModel') ?: 'default')
     systemProperty 'eval.brief.file', project.findProperty('roleBrief')

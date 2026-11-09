@@ -22,8 +22,10 @@ class RoleStartupTest {
 
   @Test
   void aRoleYmlWithAStateWithoutAnExitIsRefusedAndJagtStarts(@TempDir Path root) throws Exception {
-    Files.createDirectories(root.resolve("roles/qa"));
-    Files.copy(Path.of("../../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.copy(
+        Path.of("../../roles/acceptance/role.yml.dist"),
+        root.resolve("roles/acceptance/role.yml.dist"));
     Files.createDirectories(root.resolve("roles/dead"));
     Files.writeString(
         root.resolve("roles/dead/role.yml"),
@@ -34,7 +36,7 @@ class RoleStartupTest {
 
     InstalledRoles roles = new InstalledRoles(paths);
 
-    assertThat(roles.definitions()).extracting(RoleDefinition::id).containsExactly("qa");
+    assertThat(roles.definitions()).extracting(RoleDefinition::id).containsExactly("acceptance");
     assertThat(check(roles, paths).problems()).isEmpty();
     assertThat(check(roles, paths).notes())
         .singleElement()
@@ -46,53 +48,61 @@ class RoleStartupTest {
   }
 
   @Test
-  void qaShippedAsDistComposesTheQaRegion(@TempDir Path root) throws Exception {
-    Files.createDirectories(root.resolve("roles/qa"));
-    Files.copy(Path.of("../../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
+  void acceptanceShippedAsDistComposesTheAcceptanceRegion(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.copy(
+        Path.of("../../roles/acceptance/role.yml.dist"),
+        root.resolve("roles/acceptance/role.yml.dist"));
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
     InstalledRoles roles = new InstalledRoles(paths);
 
-    assertThat(roles.definitions()).extracting(RoleDefinition::id).containsExactly("qa");
+    assertThat(roles.definitions()).extracting(RoleDefinition::id).containsExactly("acceptance");
     assertThat(roles.skipped()).isEmpty();
-    assertThat(Roles.lint(new CheckerRole("qa", true, List.of("accept", "again", "decline"))))
+    assertThat(
+            Roles.lint(new CheckerRole("acceptance", true, List.of("accept", "again", "decline"))))
         .isEmpty();
   }
 
   @Test
   void aCopyOfRoleYmlChangesOnlyTheKeysItWritesAndAListItWritesReplacesTheShippedOne(
       @TempDir Path root) throws Exception {
-    Files.createDirectories(root.resolve("roles/qa"));
-    Files.copy(Path.of("../../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.copy(
+        Path.of("../../roles/acceptance/role.yml.dist"),
+        root.resolve("roles/acceptance/role.yml.dist"));
     Files.writeString(
-        root.resolve("roles/qa/role.yml"),
+        root.resolve("roles/acceptance/role.yml"),
         "model: opus\ntrigger: [deployed]\ntools:\n  git: false\n");
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
-    RoleDefinition qa = new InstalledRoles(paths).find("qa").orElseThrow();
+    RoleDefinition acceptance = new InstalledRoles(paths).find("acceptance").orElseThrow();
 
-    assertThat(qa.model()).isEqualTo("opus");
-    assertThat(qa.trigger().trigger()).containsExactly("deployed");
-    assertThat(qa.tools().git()).isFalse();
-    assertThat(qa.tools().shell()).contains("git log*");
-    assertThat(qa.replies().outcomes()).contains("round");
+    assertThat(acceptance.model()).isEqualTo("opus");
+    assertThat(acceptance.trigger().trigger()).containsExactly("deployed");
+    assertThat(acceptance.tools().git()).isFalse();
+    assertThat(acceptance.tools().shell()).contains("git log*");
+    assertThat(acceptance.replies().outcomes()).contains("round");
   }
 
   @Test
   void aCopyOfRoleYmlThatBreaksTheRoleIsRefusedAndTheShippedFileStands(@TempDir Path root)
       throws Exception {
-    Files.createDirectories(root.resolve("roles/qa"));
-    Files.copy(Path.of("../../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
-    Files.writeString(root.resolve("roles/qa/role.yml"), "outcomes: []\n");
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.copy(
+        Path.of("../../roles/acceptance/role.yml.dist"),
+        root.resolve("roles/acceptance/role.yml.dist"));
+    Files.writeString(root.resolve("roles/acceptance/role.yml"), "outcomes: []\n");
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
     InstalledRoles roles = new InstalledRoles(paths);
 
-    assertThat(roles.find("qa"))
-        .hasValueSatisfying(qa -> assertThat(qa.replies().outcomes()).contains("round"));
+    assertThat(roles.find("acceptance"))
+        .hasValueSatisfying(
+            acceptance -> assertThat(acceptance.replies().outcomes()).contains("round"));
     assertThat(roles.skipped())
         .singleElement()
         .satisfies(
@@ -103,8 +113,8 @@ class RoleStartupTest {
   }
 
   @Test
-  void aDisabledQaWithNoQaRoleInstalledNeverFailsTheStartAndTheNoteSaysWhy(@TempDir Path root)
-      throws Exception {
+  void aDisabledAcceptanceWithNoAcceptanceRoleInstalledNeverFailsTheStartAndTheNoteSaysWhy(
+      @TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     InstalledRoles roles = new InstalledRoles(paths);
@@ -116,16 +126,17 @@ class RoleStartupTest {
         .singleElement()
         .satisfies(
             note -> {
-              assertThat(note.key()).isEqualTo("roles/qa");
-              assertThat(note.text()).contains("no roles/qa/role.yml");
+              assertThat(note.key()).isEqualTo("roles/acceptance");
+              assertThat(note.text()).contains("no roles/acceptance/role.yml");
             });
   }
 
   @Test
-  void anEnabledQaWithNoQaRoleInstalledRefusesTheStartNamingTheReason(@TempDir Path root)
-      throws Exception {
+  void anEnabledAcceptanceWithNoAcceptanceRoleInstalledRefusesTheStartNamingTheReason(
+      @TempDir Path root) throws Exception {
     Files.writeString(
-        root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    qa:\n      enabled: true\n");
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -137,16 +148,18 @@ class RoleStartupTest {
         .singleElement()
         .satisfies(
             problem -> {
-              assertThat(problem.key()).isEqualTo("roles/qa");
-              assertThat(problem.text()).contains("no roles/qa/role.yml");
+              assertThat(problem.key()).isEqualTo("roles/acceptance");
+              assertThat(problem.text()).contains("no roles/acceptance/role.yml");
             });
   }
 
   @Test
   void aRolesKeyNamingAFolderWithABriefAndNoRoleFileIsNoUnknownRole(@TempDir Path root)
       throws Exception {
-    Files.createDirectories(root.resolve("roles/qa"));
-    Files.copy(Path.of("../../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.copy(
+        Path.of("../../roles/acceptance/role.yml.dist"),
+        root.resolve("roles/acceptance/role.yml.dist"));
     Files.createDirectories(root.resolve("roles/triage"));
     Files.writeString(root.resolve("roles/triage/brief.md.dist"), "a brief\n");
     Files.writeString(
@@ -164,10 +177,13 @@ class RoleStartupTest {
 
   @Test
   void aRolesKeyNamingNoInstalledRoleIsANoteNamingTheKey(@TempDir Path root) throws Exception {
-    Files.createDirectories(root.resolve("roles/qa"));
-    Files.copy(Path.of("../../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.copy(
+        Path.of("../../roles/acceptance/role.yml.dist"),
+        root.resolve("roles/acceptance/role.yml.dist"));
     Files.writeString(
-        root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    QA:\n      enabled: true\n");
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  roles:\n    ACCEPTANCE:\n      enabled: true\n");
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -180,8 +196,9 @@ class RoleStartupTest {
         .singleElement()
         .satisfies(
             note -> {
-              assertThat(note.key()).isEqualTo("roles.QA");
-              assertThat(note.text()).contains("orchestrator.roles.QA names no installed role");
+              assertThat(note.key()).isEqualTo("roles.ACCEPTANCE");
+              assertThat(note.text())
+                  .contains("orchestrator.roles.ACCEPTANCE names no installed role");
             });
     assertThat(check.problems()).isEmpty();
   }

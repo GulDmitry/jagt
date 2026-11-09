@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.port;
 
-import dev.jagt.orchestrator.task.QaDecline;
-import dev.jagt.orchestrator.task.QaVerdict;
+import dev.jagt.orchestrator.task.AcceptanceDecline;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -29,10 +29,10 @@ public interface CheckerReader {
   /** The only URLs the read may fetch and the extra roots it may read. */
   record Reach(List<String> urls, List<Path> paths) {}
 
-  Answer<QaVerdict> read(Run run);
+  Answer<AcceptanceVerdict> read(Run run);
 
   /**
    * The same read, of the reason the session gave for changing nothing, or of an arbiter's ruling.
    */
-  Answer<QaDecline> reconsider(Run run);
+  Answer<AcceptanceDecline> reconsider(Run run);
 }

@@ -118,7 +118,7 @@ stateDiagram-v2
         lifecycle_DEPLOY_CONFLICT --> lifecycle_REVIEWED : conflicted repository left, nothing landed
         lifecycle_DEPLOYED --> lifecycle_DEPLOY_CONFLICT : deploy read red
         lifecycle_DEPLOY_CONFLICT --> lifecycle_DEPLOYED : deploy read green
-        lifecycle_IN_PROGRESS --> lifecycle_DEPLOYED : qa round declined
+        lifecycle_IN_PROGRESS --> lifecycle_DEPLOYED : acceptance round declined
         lifecycle_VERIFYING --> lifecycle_REVIEW_PENDING : verified
         lifecycle_VERIFYING --> lifecycle_IN_PROGRESS : verification failed
         lifecycle_DONE --> [*]

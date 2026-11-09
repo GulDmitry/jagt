@@ -127,7 +127,7 @@ public record TaskView(
     }
     Optional<String> passer = Checkers.installed().stream().filter(task::passedBy).findFirst();
     if (passer.isPresent()) {
-      return passer.get() + " passed";
+      return Checkers.passedLabel(passer.get());
     }
     return task.requestsMerged() && FlowRules.awaitsApproval(task.status())
         ? "merged"

@@ -58,7 +58,7 @@ It SHALL also refuse the binary missing from PATH wherever a read or the session
 - **THEN** the start is refused, naming `orchestrator.opencode.reads`
 
 #### Scenario: Reads without an endpoint
-- **WHEN** `reads` names `qa` and `endpoint` is blank
+- **WHEN** `reads` names `acceptance` and `endpoint` is blank
 - **THEN** the start is refused, naming `orchestrator.opencode.endpoint`, so no read falls to the user's own provider
 
 #### Scenario: A role with no model
@@ -66,16 +66,16 @@ It SHALL also refuse the binary missing from PATH wherever a read or the session
 - **THEN** the start is refused, naming `orchestrator.opencode.reads`
 
 #### Scenario: A role reads on the endpoint
-- **WHEN** `reads` is `{qa: qwen-4b}` with an endpoint set
+- **WHEN** `reads` is `{acceptance: qwen-4b}` with an endpoint set
 - **THEN** the start is accepted while the sessions stay on the default agent CLI
 
 ### Requirement: A read named under reads runs on OpenCode
 A role named under `orchestrator.opencode.reads` SHALL have its read run as `opencode run` on the endpoint, on its model.
-The QA checker read follows the role's declared tools, `master` names the round reads, and a role not named reads on `claude -p`.
+The acceptance checker read follows the role's declared tools, `master` names the round reads, and a role not named reads on `claude -p`.
 
 #### Scenario: A named role
-- **WHEN** `reads` names `qa` and ABC-42's QA check opens
-- **THEN** the read runs on OpenCode on the model named for `qa`
+- **WHEN** `reads` names `acceptance` and ABC-42's acceptance check opens
+- **THEN** the read runs on OpenCode on the model named for `acceptance`
 - **AND** a fenced JSON answer is read as the check's verdict
 
 #### Scenario: A role not named

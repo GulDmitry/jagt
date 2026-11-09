@@ -25,8 +25,8 @@ public enum AssistantCallKind {
   ROUTE("project routing"),
   /** One role's reading of a round handed back to the Master. */
   MASTER_REVIEW("master review"),
-  /** One QA run checking a deployed change against its ticket. */
-  QA_CHECK("qa check");
+  /** One acceptance run checking a deployed change against its ticket. */
+  ACCEPTANCE_CHECK("acceptance check");
 
   private final String label;
 

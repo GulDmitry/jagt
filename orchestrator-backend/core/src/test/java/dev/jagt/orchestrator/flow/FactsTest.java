@@ -42,9 +42,8 @@ class FactsTest {
   @ParameterizedTest
   @EnumSource(
       value = TaskStop.Trigger.class,
-      names = {"STALLED", "SHIPS", "ROUNDS", "UNCHANGED_FAILURE", "QA_FAILED"})
-  void projectsATierAboveOnAStopThatCountsAsAFailureWhenTheLadderHasOne(
-      TaskStop.Trigger trigger) {
+      names = {"STALLED", "SHIPS", "ROUNDS", "UNCHANGED_FAILURE", "ACCEPTANCE_FAILED"})
+  void projectsATierAboveOnAStopThatCountsAsAFailureWhenTheLadderHasOne(TaskStop.Trigger trigger) {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .stop(new TaskStop(trigger, 1_000, "same failure"))

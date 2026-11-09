@@ -124,7 +124,7 @@ class MasterReviewJobTest {
                 "",
                 List.of(
                     new MasterReview.Read(
-                        "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+                        "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
             "");
     back = state.task("ABC-1").orElseThrow();
     ConfigService.ConfigFile.MasterConfig master = master("act");
@@ -154,7 +154,7 @@ class MasterReviewJobTest {
                 "",
                 List.of(
                     new MasterReview.Read(
-                        "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+                        "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
             "");
     back = state.task("ABC-1").orElseThrow();
     master("judge");
@@ -184,7 +184,7 @@ class MasterReviewJobTest {
                 "",
                 List.of(
                     new MasterReview.Read(
-                        "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+                        "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
             "");
     back = state.task("ABC-1").orElseThrow();
     ConfigService.ConfigFile.MasterConfig master = master("act");

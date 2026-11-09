@@ -97,20 +97,13 @@ one, it SHALL hand the session the deploy worktree: `DEPLOY_CONFLICT`, handed as
 - **THEN** the deploy stays open, its line says why, and the next read tries again
 
 ### Requirement: Every deploy is checked where it landed
-With `orchestrator.roles.qa.enabled` off, `DeployCheckJob` SHALL ask the session once per deploy commit, keyed on the task's turn. Neither another
-relay nor a restart asks again; what it asks is the brief's `deploy` step. Green MUST report nothing, the task staying `DEPLOYED`; red is the
-session's `IN_PROGRESS`, the round running again: reviewed, deployed, checked.
+With `roles.acceptance.enabled` off, `DeployCheckJob` SHALL ask the session once per deploy commit, keyed on the task's
+turn. Neither another relay nor a restart asks again; what it asks is the brief's `deploy` step. Green MUST report nothing, the task
+staying `DEPLOYED`; red is the session's `IN_PROGRESS`, the round running again: reviewed, deployed, checked.
 
 #### Scenario: A deployed change fails its check
 - **WHEN** the check fails
 - **THEN** the task is `IN_PROGRESS`
-
-### Requirement: With QA on, QA checks the deploy instead of the session
-With it on, QA checks the deploy ([qa](../qa/spec.md)) and `DeployCheckJob` MUST ask the session nothing; never both on one deploy.
-
-#### Scenario: QA checks the deploy
-- **WHEN** a deploy lands with `orchestrator.roles.qa.enabled` on
-- **THEN** `deploy` is never sent to the session and QA's check runs
 
 ### Requirement: The code host is chosen
 jagt SHALL read a deploy's pipeline through the driver `codeHost` names, a project's key over `orchestrator.codeHost` over `github`. The drivers are
@@ -198,3 +191,10 @@ SHALL stand on such a later green the same way.
 #### Scenario: A merge conflict
 - **WHEN** ABC-42 is `DEPLOY_CONFLICT` for a merge that conflicts and `dev` has a green pipeline
 - **THEN** ABC-42 stays `DEPLOY_CONFLICT` and no pipeline is read
+
+### Requirement: With acceptance on, acceptance checks the deploy instead of the session
+With it on, acceptance checks the deploy ([acceptance](../acceptance/spec.md)) and `DeployCheckJob` MUST ask the session nothing.
+
+#### Scenario: Acceptance checks the deploy
+- **WHEN** a deploy lands with `orchestrator.roles.acceptance.enabled` on
+- **THEN** `deploy` is never sent to the session and acceptance's check runs

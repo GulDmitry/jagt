@@ -18,7 +18,7 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace) {
           TaskStop.Trigger.SHIPS,
           TaskStop.Trigger.ROUNDS,
           TaskStop.Trigger.UNCHANGED_FAILURE,
-          TaskStop.Trigger.QA_FAILED);
+          TaskStop.Trigger.ACCEPTANCE_FAILED);
 
   @With
   public record Delivery(
@@ -35,8 +35,8 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace) {
 
   /**
    * {@code agentLive} is a supplier because answering it costs a process probe: a projection buil
-   * for every row of a dashboard passes one that says no, while the gate that is about to ac
-   * passes the real thing. One rule, two prices.
+   * for every row of a dashboard passes one that says no, while the gate that is about to ac passes
+   * the real thing. One rule, two prices.
    */
   @With
   public record Hold(

@@ -7,7 +7,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CheckerReader;
-import dev.jagt.orchestrator.task.QaVerdict;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.TokenUsage;
 import java.nio.file.Path;
 import java.util.List;
@@ -24,16 +24,24 @@ class ChosenCheckerReaderTest {
   void readsOnOpenCodeForARoleNamedUnderReads() {
     CheckerReader.Run run =
         new CheckerReader.Run(
-            "", "check ABC-42", Path.of("/wt"), "abc123", "", new CheckerReader.Reach(List.of(), List.of()), "{}", "qa");
-    Answer<QaVerdict> local =
-        new Answer<>(Optional.of(QaVerdict.failed("abc123", "local")), TokenUsage.NONE);
+            "",
+            "check ABC-42",
+            Path.of("/wt"),
+            "abc123",
+            "",
+            new CheckerReader.Reach(List.of(), List.of()),
+            "{}",
+            "acceptance");
+    Answer<AcceptanceVerdict> local =
+        new Answer<>(Optional.of(AcceptanceVerdict.failed("abc123", "local")), TokenUsage.NONE);
     when(opencode.read(run)).thenReturn(local);
 
     var chosen =
         new ChosenCheckerReader(
             claude,
             opencode,
-            new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("qa", "")));
+            new OpenCodeProperties(
+                "", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("acceptance", "")));
 
     assertThat(chosen.read(run)).isSameAs(local);
   }
@@ -42,9 +50,16 @@ class ChosenCheckerReaderTest {
   void readsOnClaudeForARoleNotNamedUnderReads() {
     CheckerReader.Run run =
         new CheckerReader.Run(
-            "", "check ABC-42", Path.of("/wt"), "abc123", "", new CheckerReader.Reach(List.of(), List.of()), "{}", "qa");
-    Answer<QaVerdict> cloud =
-        new Answer<>(Optional.of(QaVerdict.failed("abc123", "cloud")), TokenUsage.NONE);
+            "",
+            "check ABC-42",
+            Path.of("/wt"),
+            "abc123",
+            "",
+            new CheckerReader.Reach(List.of(), List.of()),
+            "{}",
+            "acceptance");
+    Answer<AcceptanceVerdict> cloud =
+        new Answer<>(Optional.of(AcceptanceVerdict.failed("abc123", "cloud")), TokenUsage.NONE);
     when(claude.read(run)).thenReturn(cloud);
 
     var chosen = new ChosenCheckerReader(claude, opencode, OpenCodeProperties.defaults());

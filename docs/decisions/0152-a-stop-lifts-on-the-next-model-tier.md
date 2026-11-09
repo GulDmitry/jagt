@@ -11,7 +11,7 @@ Accepted 2026-11-08 by the owner's order. Beside
 
 ## Decision
 
-- `escalate` is a legal move in `FlowRules`, offered only on a STALLED, SHIPS, ROUNDS, UNCHANGED_FAILURE or QA_FAILED stop.
+- `escalate` is a legal move in `FlowRules`, offered only on a STALLED, SHIPS, ROUNDS, UNCHANGED_FAILURE or ACCEPTANCE_FAILED stop.
 - A model must stand above the one the session runs on; the trigger is a stop `TaskStops` set, never a model's judgement.
 - `agent.tiers` lists the models lowest first; unset, the runtime offers its own (`AgentRuntime.tiers`), the vendor in its adapter.
 - Names the agent does not accept are dropped; the first entry stands for the session's start model.

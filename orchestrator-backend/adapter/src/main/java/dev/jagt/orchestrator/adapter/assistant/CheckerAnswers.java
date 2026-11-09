@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CheckerReader;
-import dev.jagt.orchestrator.task.QaDecline;
-import dev.jagt.orchestrator.task.QaVerdict;
+import dev.jagt.orchestrator.task.AcceptanceDecline;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,29 +18,29 @@ final class CheckerAnswers {
 
   private CheckerAnswers() {}
 
-  static Answer<QaVerdict> verdictOf(CheckerReader.Run run, HeadlessReply reply) {
-    QaVerdict verdict = verdict(run.sha(), reply);
+  static Answer<AcceptanceVerdict> verdictOf(CheckerReader.Run run, HeadlessReply reply) {
+    AcceptanceVerdict verdict = verdict(run.sha(), reply);
     write(run.worktree().resolve(run.role() + "-report.md"), run.role(), verdict);
     return new Answer<>(Optional.of(verdict), reply.usage());
   }
 
-  static Answer<QaDecline> declineOf(CheckerReader.Run run, HeadlessReply reply) {
+  static Answer<AcceptanceDecline> declineOf(CheckerReader.Run run, HeadlessReply reply) {
     return new Answer<>(Optional.of(decline(run.sha(), reply)), reply.usage());
   }
 
-  static QaDecline decline(String sha, HeadlessReply reply) {
+  static AcceptanceDecline decline(String sha, HeadlessReply reply) {
     JsonNode answer = reply.envelope() == null ? null : reply.envelope().path("structured_output");
     return answer == null || !answer.isObject()
-        ? QaDecline.failed(
+        ? AcceptanceDecline.failed(
             sha,
             reply.envelope() == null
                 ? "the check failed: " + reply.cause()
                 : "the check answered nothing readable")
-        : new QaDecline(
+        : new AcceptanceDecline(
             sha, answer.path("failure").asString(""), answer.path("dispute").asString(""));
   }
 
-  static void write(Path file, String role, QaVerdict verdict) {
+  static void write(Path file, String role, AcceptanceVerdict verdict) {
     if (verdict.rows().isEmpty()) {
       return;
     }
@@ -48,38 +48,39 @@ final class CheckerAnswers {
       Files.writeString(file, verdict.report(role));
     } catch (IOException unwritten) {
       log.atWarn()
-          .setMessage("qa report not written")
+          .setMessage("acceptance report not written")
           .addKeyValue("file", file)
           .addKeyValue("cause", unwritten.toString())
           .log();
     }
   }
 
-  static QaVerdict verdict(String sha, HeadlessReply reply) {
+  static AcceptanceVerdict verdict(String sha, HeadlessReply reply) {
     JsonNode envelope = reply.envelope();
     if (envelope == null) {
-      return QaVerdict.failed(sha, "the check failed: " + reply.cause());
+      return AcceptanceVerdict.failed(sha, "the check failed: " + reply.cause());
     }
     JsonNode answer = envelope.path("structured_output");
     if (!answer.isObject()) {
-      return QaVerdict.failed(sha, "the check answered nothing readable");
+      return AcceptanceVerdict.failed(sha, "the check answered nothing readable");
     }
-    List<QaVerdict.Row> rows = new ArrayList<>();
+    List<AcceptanceVerdict.Row> rows = new ArrayList<>();
     for (JsonNode row : answer.path("rows")) {
-      Optional<QaVerdict.Status> status = QaVerdict.Status.of(row.path("status").asString(""));
+      Optional<AcceptanceVerdict.Status> status =
+          AcceptanceVerdict.Status.of(row.path("status").asString(""));
       rows.add(
-          new QaVerdict.Row(
+          new AcceptanceVerdict.Row(
               row.path("criterion").asString(""),
-              status.orElse(QaVerdict.Status.UNPROVABLE),
+              status.orElse(AcceptanceVerdict.Status.UNPROVABLE),
               row.path("evidence").asString("")));
     }
-    return new QaVerdict(
+    return new AcceptanceVerdict(
         sha,
         answer.path("failure").asString(""),
         rows,
         answer.path("question").asString(""),
         answer.path("waitingOn").asString(""),
-        new QaVerdict.Flows(
+        new AcceptanceVerdict.Flows(
             flowIds(answer.path("flows")), answer.path("environment").asString("")));
   }
 

@@ -50,7 +50,8 @@ class ChosenRoundReviewerTest {
         new ChosenRoundReviewer(
             claude,
             opencode,
-            new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("qa", "")));
+            new OpenCodeProperties(
+                "", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("acceptance", "")));
 
     assertThat(chosen.review(round)).isSameAs(cloud);
     assertThat(chosen.loadsMcpServer()).isTrue();

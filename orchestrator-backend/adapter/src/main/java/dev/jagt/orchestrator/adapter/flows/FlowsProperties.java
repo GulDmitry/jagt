@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /** The flows driver, the repository holding the flows and the command that runs them. */
-@ConfigurationProperties(prefix = "orchestrator.roles.qa.flows")
+@ConfigurationProperties(prefix = "orchestrator.roles.acceptance.flows")
 public record FlowsProperties(String driver, String path, List<String> command, Duration timeout) {
 
   public FlowsProperties {

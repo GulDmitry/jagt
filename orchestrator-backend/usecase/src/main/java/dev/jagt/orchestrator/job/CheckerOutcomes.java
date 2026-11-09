@@ -9,11 +9,11 @@ import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskStops;
+import dev.jagt.orchestrator.task.AcceptanceDecline;
+import dev.jagt.orchestrator.task.AcceptanceEnding;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.QaDecline;
-import dev.jagt.orchestrator.task.QaEnding;
-import dev.jagt.orchestrator.task.QaVerdict;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -47,43 +47,48 @@ public class CheckerOutcomes {
   }
 
   /**
-   * A task closed while QA read is gone, and its verdict is refused at the door; any other is a
-   * deploy moved on.
+   * A task closed while acceptance read is gone, and its verdict is refused at the door; any other
+   * is a deploy moved on.
    */
-  private QaEnding notStanding(String taskId) {
-    return state.task(taskId).isEmpty() ? QaEnding.GONE : QaEnding.DROPPED;
+  private AcceptanceEnding notStanding(String taskId) {
+    return state.task(taskId).isEmpty() ? AcceptanceEnding.GONE : AcceptanceEnding.DROPPED;
   }
 
   /**
-   * What QA made of the session's decline: no dispute ends the check, a first one goes to whoever
-   * stands in for the human, and one after that to the human alone, since only a right the human
-   * grants is never answered by another.
+   * What acceptance made of the session's decline: no dispute ends the check, a first one goes to
+   * whoever stands in for the human, and one after that to the human alone, since only a right the
+   * human grants is never answered by another.
    */
-  public QaEnding declined(String taskId, QaDecline decline, boolean disputedBefore) {
+  public AcceptanceEnding declined(
+      String taskId, AcceptanceDecline decline, boolean disputedBefore) {
     if (!stands(taskId, decline.sha())) {
       return notStanding(taskId);
     }
     if (!decline.failure().isBlank()) {
-      stops.stop(taskId, TaskStop.Trigger.QA_FAILED, decline.failure());
-      return QaEnding.FAILED;
+      stops.stop(taskId, TaskStop.Trigger.ACCEPTANCE_FAILED, decline.failure());
+      return AcceptanceEnding.FAILED;
     }
     if (decline.dispute().isBlank()) {
-      return QaEnding.DECLINED;
+      return AcceptanceEnding.DECLINED;
     }
     String said =
-        "QA disputes your answer to its round, on " + decline.sha() + ":\n" + decline.dispute();
+        "Acceptance disputes your answer to its round, on "
+            + decline.sha()
+            + ":\n"
+            + decline.dispute();
     reports.ask(taskId, disputedBefore ? AgentReport.PERMISSION : AgentReport.QUESTION, said);
     log.atInfo()
-        .setMessage("qa disputes")
+        .setMessage("acceptance disputes")
         .addKeyValue("task", taskId)
         .addKeyValue("again", disputedBefore)
         .log();
-    return disputedBefore ? QaEnding.ESCALATED : QaEnding.DISPUTED;
+    return disputedBefore ? AcceptanceEnding.ESCALATED : AcceptanceEnding.DISPUTED;
   }
 
   /** A verdict on a sha no longer the deploy's tip is dropped, whatever it found. */
-  public QaEnding apply(String taskId, TaskState task, QaVerdict verdict) {
-    QaEnding ending = stands(taskId, verdict.sha()) ? verdict.ending() : notStanding(taskId);
+  public AcceptanceEnding apply(String taskId, TaskState task, AcceptanceVerdict verdict) {
+    AcceptanceEnding ending =
+        stands(taskId, verdict.sha()) ? verdict.ending() : notStanding(taskId);
     switch (ending) {
       case PASSED ->
           state.updateTask(
@@ -93,7 +98,7 @@ public class CheckerOutcomes {
       case FAILED -> failed(taskId, verdict);
       default ->
           log.atInfo()
-              .setMessage("qa verdict kept")
+              .setMessage("acceptance verdict kept")
               .addKeyValue("task", taskId)
               .addKeyValue("ending", ending)
               .log();
@@ -101,11 +106,13 @@ public class CheckerOutcomes {
     return ending;
   }
 
-  private boolean notMet(String taskId, TaskState task, QaVerdict verdict) {
+  private boolean notMet(String taskId, TaskState task, AcceptanceVerdict verdict) {
     String facts =
         verdict.sha()
             + ":\n"
-            + verdict.notMet().stream().map(QaVerdict.Row::line).collect(Collectors.joining("\n"));
+            + verdict.notMet().stream()
+                .map(AcceptanceVerdict.Row::line)
+                .collect(Collectors.joining("\n"));
     StepRelay.Claim claim =
         new StepRelay.Claim(
             Standing.of(task),
@@ -115,12 +122,13 @@ public class CheckerOutcomes {
                     task,
                     FlowRules.relayed(),
                     AgentReport.PLAIN,
-                    "qa: not met; relayed",
+                    "acceptance: not met; relayed",
                     opensTheTurn),
             opened -> reports.undoClaim(taskId, task, opened));
     boolean sent =
         OriginContext.as(
-            ActionOrigin.QA, () -> relay.relayRound(taskId, Step.QA_ROUND, facts, claim));
+            ActionOrigin.ACCEPTANCE,
+            () -> relay.relayRound(taskId, Step.ACCEPTANCE_ROUND, facts, claim));
     if (sent) {
       String digest =
           Objects.requireNonNull(Objects.requireNonNull(task.deployment()).askedDigest());
@@ -128,7 +136,7 @@ public class CheckerOutcomes {
           taskId, current -> TaskReducer.checkerRoundSent(current, role.id(), digest, facts));
     }
     log.atInfo()
-        .setMessage("qa returns the round")
+        .setMessage("acceptance returns the round")
         .addKeyValue("task", taskId)
         .addKeyValue("rows", verdict.notMet().size())
         .addKeyValue("sent", sent)
@@ -136,32 +144,32 @@ public class CheckerOutcomes {
     return sent;
   }
 
-  private void unprovable(String taskId, QaVerdict verdict) {
+  private void unprovable(String taskId, AcceptanceVerdict verdict) {
     String said =
         verdict.question().isBlank()
             ? verdict.rows().stream()
-                .filter(row -> row.status() != QaVerdict.Status.MET)
-                .map(QaVerdict.Row::line)
+                .filter(row -> row.status() != AcceptanceVerdict.Status.MET)
+                .map(AcceptanceVerdict.Row::line)
                 .collect(Collectors.joining("\n"))
             : verdict.question();
     reports.ask(
         taskId,
         AgentReport.QUESTION,
-        "QA could not prove, on "
+        "Acceptance could not prove, on "
             + verdict.sha()
             + ":\n"
             + (said.isBlank() ? "the check named no criterion" : said));
     log.atInfo()
-        .setMessage("qa asks")
+        .setMessage("acceptance asks")
         .addKeyValue("task", taskId)
         .addKeyValue("rows", verdict.rows().size())
         .log();
   }
 
-  private void failed(String taskId, QaVerdict verdict) {
-    stops.stop(taskId, TaskStop.Trigger.QA_FAILED, verdict.failure());
+  private void failed(String taskId, AcceptanceVerdict verdict) {
+    stops.stop(taskId, TaskStop.Trigger.ACCEPTANCE_FAILED, verdict.failure());
     log.atWarn()
-        .setMessage("qa check failed")
+        .setMessage("acceptance check failed")
         .addKeyValue("task", taskId)
         .addKeyValue("cause", verdict.failure())
         .log();

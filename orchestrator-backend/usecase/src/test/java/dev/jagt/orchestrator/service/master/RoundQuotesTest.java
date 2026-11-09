@@ -55,7 +55,7 @@ class RoundQuotesTest {
             "in1",
             List.of(
                 new MasterReview.Read(
-                    "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+                    "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
         "");
     task = state.task("a1").orElseThrow();
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
@@ -94,7 +94,7 @@ class RoundQuotesTest {
             "in1",
             List.of(
                 new MasterReview.Read(
-                    "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+                    "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
         "");
     task = state.task("a1").orElseThrow();
     when(facts.ownDiff(any())).thenReturn(Optional.of("def456"));
@@ -133,7 +133,7 @@ class RoundQuotesTest {
             "in1",
             List.of(
                 new MasterReview.Read(
-                    "qa",
+                    "acceptance",
                     new Judgement(
                         "",
                         "not ready",
@@ -180,7 +180,7 @@ class RoundQuotesTest {
             "in1",
             List.of(
                 new MasterReview.Read(
-                    "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+                    "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
         "");
     task = state.task("a1").orElseThrow();
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
@@ -217,7 +217,7 @@ class RoundQuotesTest {
             "in1",
             List.of(
                 new MasterReview.Read(
-                    "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+                    "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
         "");
     task = state.task("a1").orElseThrow();
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
@@ -259,7 +259,7 @@ class RoundQuotesTest {
             read,
             List.of(
                 new MasterReview.Read(
-                    "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+                    "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
         "");
     task = state.task("a1").orElseThrow();
     when(facts.humanSaid(any())).thenReturn(Optional.of(List.of("keep v2", "drop v1")));
@@ -301,7 +301,7 @@ class RoundQuotesTest {
             read,
             List.of(
                 new MasterReview.Read(
-                    "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+                    "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
         "");
     task = state.task("a1").orElseThrow();
     when(facts.notes(any())).thenReturn("disputed: the guard is right");
@@ -344,7 +344,7 @@ class RoundQuotesTest {
             read,
             List.of(
                 new MasterReview.Read(
-                    "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+                    "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
         "");
     task = state.task("a1").orElseThrow();
     when(facts.ticket("ABC-1")).thenReturn(Optional.empty());
@@ -387,7 +387,7 @@ class RoundQuotesTest {
             read,
             List.of(
                 new MasterReview.Read(
-                    "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+                    "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
         "");
     task = state.task("a1").orElseThrow();
     when(facts.ticket("ABC-1")).thenReturn(Optional.of("accept v4 calls"));
@@ -430,7 +430,7 @@ class RoundQuotesTest {
             read,
             List.of(
                 new MasterReview.Read(
-                    "qa", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+                    "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
         "");
     task = state.task("a1").orElseThrow();
     when(facts.ticket("ABC-1")).thenReturn(Optional.of("accept v3 calls"));
@@ -471,10 +471,7 @@ class RoundQuotesTest {
             .build();
     state.putTask("a1", task);
     reviews.write(
-        "a1",
-        task,
-        new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of()),
-        "");
+        "a1", task, new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of()), "");
     task = state.task("a1").orElseThrow();
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
     String sameInputs = quotes.trigger(task, "in1");

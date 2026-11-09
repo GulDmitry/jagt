@@ -1231,7 +1231,7 @@ class MasterVerdictsTest {
         3,
         List.of(
             new MasterReview.Said(
-                "qa",
+                "acceptance",
                 new Finding(
                     "Foo.java",
                     "the delay is never pinned",
@@ -1280,7 +1280,7 @@ class MasterVerdictsTest {
             MasterReview.Kind.NOT_READY,
             List.of(
                 new MasterReview.Said(
-                    "qa",
+                    "acceptance",
                     new Finding(
                         "Foo.java",
                         "the delay is never pinned",
@@ -1298,7 +1298,7 @@ class MasterVerdictsTest {
         .writeTaskContext(
             eq("ABC-1"),
             contains(
-                "- [qa] Foo.java delay — the delay is never pinned (unguarded delay, test)"
+                "- [acceptance] Foo.java delay — the delay is never pinned (unguarded delay, test)"
                     + " [repeat]"));
   }
 
@@ -1325,7 +1325,7 @@ class MasterVerdictsTest {
         3,
         List.of(
             new MasterReview.Said(
-                "qa",
+                "acceptance",
                 new Finding(
                     "Foo.java",
                     "the delay is never pinned",
@@ -1338,7 +1338,7 @@ class MasterVerdictsTest {
         5,
         List.of(
             new MasterReview.Said(
-                "qa",
+                "acceptance",
                 new Finding(
                     "Foo.java",
                     "the delay is never pinned",
@@ -1387,7 +1387,7 @@ class MasterVerdictsTest {
             MasterReview.Kind.NOT_READY,
             List.of(
                 new MasterReview.Said(
-                    "qa",
+                    "acceptance",
                     new Finding(
                         "Foo.java",
                         "the delay is never pinned",
@@ -1464,7 +1464,7 @@ class MasterVerdictsTest {
             MasterReview.Kind.NOT_READY,
             List.of(
                 new MasterReview.Said(
-                    "qa",
+                    "acceptance",
                     new Finding(
                         "Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))),
             List.of(),
@@ -1481,7 +1481,7 @@ class MasterVerdictsTest {
             MasterReview.Kind.NOT_READY,
             List.of(
                 new MasterReview.Said(
-                    "qa",
+                    "acceptance",
                     new Finding(
                         "Foo.java",
                         "the delay is still never pinned",
@@ -1503,7 +1503,7 @@ class MasterVerdictsTest {
             MasterReview.Kind.NOT_READY,
             List.of(
                 new MasterReview.Said(
-                    "qa",
+                    "acceptance",
                     new Finding(
                         "Foo.java", "no test pins the delay", "", "blocking", "delay", "test"))),
             List.of(),
@@ -1522,7 +1522,7 @@ class MasterVerdictsTest {
                 MasterReview.Kind.NOT_READY,
                 List.of(
                     new MasterReview.Said(
-                        "qa",
+                        "acceptance",
                         new Finding(
                             "Foo.java",
                             "the delay is never pinned",
@@ -1607,7 +1607,7 @@ class MasterVerdictsTest {
             MasterReview.Kind.NOT_READY,
             List.of(
                 new MasterReview.Said(
-                    "qa",
+                    "acceptance",
                     new Finding(
                         "Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))),
             List.of(),
@@ -1629,7 +1629,7 @@ class MasterVerdictsTest {
             MasterReview.Kind.NOT_READY,
             List.of(
                 new MasterReview.Said(
-                    "qa",
+                    "acceptance",
                     new Finding(
                         "Foo.java",
                         "the delay is still never pinned",
@@ -1656,7 +1656,7 @@ class MasterVerdictsTest {
             MasterReview.Kind.NOT_READY,
             List.of(
                 new MasterReview.Said(
-                    "qa",
+                    "acceptance",
                     new Finding(
                         "Foo.java", "no test pins the delay", "", "blocking", "delay", "test"))),
             List.of(),
@@ -1680,7 +1680,7 @@ class MasterVerdictsTest {
                 MasterReview.Kind.NOT_READY,
                 List.of(
                     new MasterReview.Said(
-                        "qa",
+                        "acceptance",
                         new Finding(
                             "Foo.java",
                             "the delay is never pinned",
@@ -1763,7 +1763,7 @@ class MasterVerdictsTest {
             MasterReview.Kind.NOT_READY,
             List.of(
                 new MasterReview.Said(
-                    "qa",
+                    "acceptance",
                     new Finding(
                         "Foo.java", "the delay is never pinned", "", "blocking", "delay", "test"))),
             List.of(),
@@ -1785,7 +1785,7 @@ class MasterVerdictsTest {
             MasterReview.Kind.NOT_READY,
             List.of(
                 new MasterReview.Said(
-                    "qa",
+                    "acceptance",
                     new Finding(
                         "Foo.java",
                         "the delay is still never pinned",
@@ -1812,7 +1812,7 @@ class MasterVerdictsTest {
             MasterReview.Kind.NOT_READY,
             List.of(
                 new MasterReview.Said(
-                    "qa",
+                    "acceptance",
                     new Finding(
                         "Foo.java", "no test pins the delay", "", "blocking", "delay", "test"))),
             List.of(),
@@ -1836,7 +1836,7 @@ class MasterVerdictsTest {
                 MasterReview.Kind.NOT_READY,
                 List.of(
                     new MasterReview.Said(
-                        "qa",
+                        "acceptance",
                         new Finding(
                             "Foo.java",
                             "the delay is never pinned",

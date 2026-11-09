@@ -5,12 +5,13 @@ import java.util.TreeMap;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Reads a state file written when QA's record was the task's top-level {@code qa}, into {@code
- * roles["qa"]}, once.
+ * Reads a state file written while the acceptance role was called {@code qa}: its record, whether
+ * the task's top-level {@code qa} or {@code roles["qa"]}, into {@code roles["acceptance"]}, once.
  */
 final class LegacyRoles {
 
   private static final String QA = "qa";
+  private static final String ACCEPTANCE = "acceptance";
 
   private LegacyRoles() {}
 
@@ -25,8 +26,12 @@ final class LegacyRoles {
             }
           });
     }
+    RoleRecord renamed = read.remove(QA);
+    if (renamed != null) {
+      read.putIfAbsent(ACCEPTANCE, renamed);
+    }
     if (qa != null) {
-      read.putIfAbsent(QA, qa);
+      read.putIfAbsent(ACCEPTANCE, qa);
     }
     return read;
   }

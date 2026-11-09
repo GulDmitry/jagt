@@ -7,10 +7,10 @@ import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.command.MasterPresses;
 import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.service.CommandService;
-import java.io.IOException;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.service.CommandService;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -54,8 +54,10 @@ class MasterVerbsTest {
         Path.of("../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
     Files.copy(
         Path.of("../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/qa"));
-    Files.copy(Path.of("../roles/qa/role.yml.dist"), root.resolve("roles/qa/role.yml.dist"));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.copy(
+        Path.of("../roles/acceptance/role.yml.dist"),
+        root.resolve("roles/acceptance/role.yml.dist"));
     registry.add("orchestrator.root", () -> root.toString());
     registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
     registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());

@@ -41,7 +41,7 @@ class StopHoldTest {
       value = TaskStop.Trigger.class,
       names = {
         "MISS",
-        "QA_FAILED",
+        "ACCEPTANCE_FAILED",
         "PAUSE",
         "CHECKS",
         "INFRA",

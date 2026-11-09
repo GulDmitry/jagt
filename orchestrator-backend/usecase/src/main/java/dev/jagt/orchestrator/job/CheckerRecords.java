@@ -1,9 +1,10 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.task.QaEnding;
+import dev.jagt.orchestrator.task.AcceptanceEnding;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,8 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * What each task's last QA check ended in, kept beside {@code state.json}: one check per deploy,
- * across a restart.
+ * What each task's last acceptance check ended in, kept beside {@code state.json}: one check per
+ * deploy, across a restart.
  */
 @Slf4j
 @Component
@@ -25,7 +26,7 @@ public class CheckerRecords {
   private static final String TAB = "\t";
 
   /** {@code digest} is the deploy's, {@code sha} what the check read, {@code at} when it ended. */
-  public record Entry(String digest, String sha, QaEnding ending, long at) {}
+  public record Entry(String digest, String sha, AcceptanceEnding ending, long at) {}
 
   private final OrchestratorPaths paths;
   private final Clock clock;
@@ -46,13 +47,15 @@ public class CheckerRecords {
   public synchronized void released(String taskId, String digest) {
     Map<String, Entry> kept = all();
     Entry record = kept.get(taskId);
-    if (record != null && record.digest().equals(digest) && record.ending() == QaEnding.WAITING) {
+    if (record != null
+        && record.digest().equals(digest)
+        && record.ending() == AcceptanceEnding.WAITING) {
       kept.remove(taskId);
       write(kept);
     }
   }
 
-  public synchronized void put(String taskId, String digest, String sha, QaEnding ending) {
+  public synchronized void put(String taskId, String digest, String sha, AcceptanceEnding ending) {
     Map<String, Entry> kept = all();
     kept.put(taskId, new Entry(digest, sha, ending, clock.millis()));
     write(kept);
@@ -61,7 +64,7 @@ public class CheckerRecords {
   private void write(Map<String, Entry> kept) {
     try {
       Files.write(
-          paths.qaVerdicts(),
+          paths.acceptanceVerdicts(),
           kept.entrySet().stream()
               .map(
                   entry ->
@@ -77,8 +80,8 @@ public class CheckerRecords {
               .toList());
     } catch (IOException unwritten) {
       log.atWarn()
-          .setMessage("qa verdicts not kept")
-          .addKeyValue("file", paths.qaVerdicts())
+          .setMessage("acceptance verdicts not kept")
+          .addKeyValue("file", paths.acceptanceVerdicts())
           .addKeyValue("cause", unwritten.toString())
           .log();
     }
@@ -91,7 +94,8 @@ public class CheckerRecords {
       if (part.length == 5) {
         read.put(
             part[0],
-            new Entry(part[1], part[2], QaEnding.valueOf(part[3]), Long.parseLong(part[4])));
+            new Entry(
+                part[1], part[2], AcceptanceEnding.valueOf(part[3]), Long.parseLong(part[4])));
       }
     }
     return read;
@@ -99,13 +103,15 @@ public class CheckerRecords {
 
   private List<String> lines() {
     try {
-      return Files.isRegularFile(paths.qaVerdicts())
-          ? Files.readAllLines(paths.qaVerdicts())
-          : List.of();
+      Path kept =
+          Files.isRegularFile(paths.acceptanceVerdicts())
+              ? paths.acceptanceVerdicts()
+              : paths.legacyQaVerdicts();
+      return Files.isRegularFile(kept) ? Files.readAllLines(kept) : List.of();
     } catch (IOException unread) {
       log.atWarn()
-          .setMessage("qa verdicts unread")
-          .addKeyValue("file", paths.qaVerdicts())
+          .setMessage("acceptance verdicts unread")
+          .addKeyValue("file", paths.acceptanceVerdicts())
           .addKeyValue("cause", unread.toString())
           .log();
       return List.of();

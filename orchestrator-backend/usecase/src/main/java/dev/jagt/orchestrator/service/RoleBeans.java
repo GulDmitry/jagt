@@ -11,17 +11,19 @@ import org.springframework.context.annotation.Configuration;
 class RoleBeans {
 
   @Bean
-  RoleDefinition qaDefinition(InstalledRoles roles) {
-    return roles.find(Checkers.QA).orElseGet(() -> RoleDefinition.absent(Checkers.QA));
+  RoleDefinition acceptanceDefinition(InstalledRoles roles) {
+    return roles
+        .find(Checkers.ACCEPTANCE)
+        .orElseGet(() -> RoleDefinition.absent(Checkers.ACCEPTANCE));
   }
 
   @Bean
-  RoleFiles qaFiles(RoleDefinition qaDefinition, OrchestratorPaths paths) {
-    return new RoleFiles(paths, qaDefinition.id());
+  RoleFiles acceptanceFiles(RoleDefinition acceptanceDefinition, OrchestratorPaths paths) {
+    return new RoleFiles(paths, acceptanceDefinition.id());
   }
 
   @Bean
-  RoleSettings qaSettings(RoleDefinition qaDefinition, ConfigService config) {
-    return new RoleSettings(qaDefinition, config);
+  RoleSettings acceptanceSettings(RoleDefinition acceptanceDefinition, ConfigService config) {
+    return new RoleSettings(acceptanceDefinition, config);
   }
 }

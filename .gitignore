@@ -49,7 +49,7 @@ interactions.jsonl.1
 .master-eval/
 .master-eval.lock
 # The roleEval suite over a checker's own root, rebuilt each run
-.qa-eval/
+.acceptance-eval/
 # Present while the Master's act is stopped, written beside state.json
 act-stopped
 act-strikes

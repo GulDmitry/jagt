@@ -4,9 +4,9 @@ import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CheckerReader;
+import dev.jagt.orchestrator.task.AcceptanceDecline;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.AssistantCallKind;
-import dev.jagt.orchestrator.task.QaDecline;
-import dev.jagt.orchestrator.task.QaVerdict;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
@@ -25,11 +25,11 @@ class OpenCodeCheckerReader {
   private final OpenCodeProperties opencode;
   private final List<RoleDefinition> roles;
 
-  Answer<QaVerdict> read(CheckerReader.Run run) {
+  Answer<AcceptanceVerdict> read(CheckerReader.Run run) {
     return CheckerAnswers.verdictOf(run, ask(run));
   }
 
-  Answer<QaDecline> reconsider(CheckerReader.Run run) {
+  Answer<AcceptanceDecline> reconsider(CheckerReader.Run run) {
     return CheckerAnswers.declineOf(run, ask(run));
   }
 
@@ -61,7 +61,7 @@ class OpenCodeCheckerReader {
             run.schema(),
             model,
             scope,
-            AssistantCallKind.QA_CHECK,
+            AssistantCallKind.ACCEPTANCE_CHECK,
             TIMEOUT));
   }
 }
