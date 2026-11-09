@@ -13,6 +13,8 @@ once per deploy, and organises its checks so a later check reuses what an earlie
 - Does not own the deploy: the human, or the Master in `act`, presses it.
 - Does not own a stop's lift: the human does.
 - Owns its interactive session, where the human writes scenarios with it or answers its questions over several rounds.
+- Owns the analysis of a ticket before its plan: gaps and contradictions asked, criteria written as scenarios.
+- Does not own the plan: the session copies the scenarios into it.
 
 ## Who triggers it
 
@@ -31,6 +33,9 @@ jagt alone: a task DEPLOYED, its deploy pipelines green, the role's `environment
   **THEN** the session gets an `acceptance-round`, as before
 - **WHEN** you run `acceptance`, or `scenarios` on ABC-42 before its deploy
   **THEN** an interactive acceptance session opens in its workspace, ABC-42's ticket and any open question loaded
+- **WHEN** you press `scenarios` on ABC-42 before its plan is approved
+  **THEN** acceptance asks one question per gap or contradiction in the ticket and writes `scenarios/ABC-42.md`, each row
+  tagged `from-ticket` or `inferred`; the session's plan copies its rows
 - **WHEN** `workspace: none`
   **THEN** acceptance reads memoryless and writes nothing, as before workspaces
 
