@@ -72,6 +72,7 @@ orchestrator-backend/suite-stats.jsonl
 # A human's copy of a role file, made from its .dist beside it; the shipped .dist files and eval/ cases stay tracked
 roles/*/*
 !roles/*/*.dist
+!roles/*/design.md
 !roles/*/eval/
 
 
