@@ -81,14 +81,18 @@ final class CheckerAnswers {
         answer.path("question").asString(""),
         answer.path("waitingOn").asString(""),
         new AcceptanceVerdict.Flows(
-            flowIds(answer.path("flows")), answer.path("environment").asString("")));
+            namedFlows(answer.path("flows")), answer.path("environment").asString("")));
   }
 
-  private static List<String> flowIds(JsonNode flows) {
-    List<String> ids = new ArrayList<>();
+  private static List<AcceptanceVerdict.Flows.Flow> namedFlows(JsonNode flows) {
+    List<AcceptanceVerdict.Flows.Flow> named = new ArrayList<>();
     for (JsonNode flow : flows) {
-      ids.add(flow.asString(""));
+      named.add(
+          flow.isObject()
+              ? new AcceptanceVerdict.Flows.Flow(
+                  flow.path("id").asString(""), flow.path("criterion").asString(""))
+              : new AcceptanceVerdict.Flows.Flow(flow.asString(""), ""));
     }
-    return ids;
+    return named;
   }
 }

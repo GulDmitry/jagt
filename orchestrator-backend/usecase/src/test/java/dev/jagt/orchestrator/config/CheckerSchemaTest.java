@@ -27,7 +27,7 @@ class CheckerSchemaTest {
                 + " met\","
                 + "\"unprovable\"]},\"evidence\":{\"type\":\"string\"}},\"required\":[\"criterion\",\"status\","
                 + "\"evidence\"]}},\"question\":{\"type\":\"string\"},\"waitingOn\":{\"type\":\"string\"},"
-                + "\"flows\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},"
+                + "\"flows\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"},\"criterion\":{\"type\":\"string\"}},\"required\":[\"id\",\"criterion\"]}},"
                 + "\"environment\":{\"type\":\"string\"}},\"required\":[\"failure\"]}");
     assertThat(decline)
         .isEqualTo(

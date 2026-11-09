@@ -22,6 +22,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | A13 | an eval case asserts what an acceptance row cites (the flag holding a change back) → the brief asks for it, so the case holds by rule, not by which file the acceptance happened to read | seen 2026-11-04: gate red, 1 of 3 runs named the flag | `AcceptanceVerdictEvalTest` |
 | A14 | acceptance starts in its workspace but the change lives in the worktree → the prompt names the worktree and the one git form the read may run there | a3f280612 | `AcceptancePromptsTest`, `AcceptanceVerdictEvalTest` |
 | A15 | acceptance reads a flows repository with no workspace → the prompt says jagt runs each flow the read names and adds its result as a row, so a covered criterion is not called unprovable for want of a way to run it | seen 2026-11-09: a live read named the flow and said no flows command was named | `AcceptancePromptsTest` |
+| A16 | the read calls a criterion unprovable and the flow it named for it passes → the flow's answer names its criterion and decides that row, so no question reaches a human for a criterion a flow proved | seen 2026-11-09: a live read's unprovable row stayed beside a passed flow's own row | `CheckerFlowsTest`, `AcceptancePromptsTest` |
 
 ## B — state overwritten / dedup key in the wrong place
 | id | the case, one line | defects | pinned by |

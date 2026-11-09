@@ -45,7 +45,8 @@ answer:
     choices: {status: [met, "not met", unprovable]}
   - text: question
   - text: waitingOn
-  - texts: flows
+  - records: flows
+    fields: [id, criterion]
   - text: environment
 decline:
   - required: failure

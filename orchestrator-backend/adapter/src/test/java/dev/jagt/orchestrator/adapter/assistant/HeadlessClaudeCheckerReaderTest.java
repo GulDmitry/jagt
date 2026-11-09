@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AcceptanceDecline;
+import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -338,13 +339,14 @@ class HeadlessClaudeCheckerReaderTest {
   }
 
   @Test
-  void carriesTheFlowIdsAndTheEnvironmentTheCheckNamed() {
+  void carriesTheFlowsWithTheirCriteriaAndTheEnvironmentTheCheckNamed() {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
             new Processes.Result(
                 0,
                 "{\"structured_output\":{\"failure\":\"\",\"rows\":[],"
-                    + "\"flows\":[\"AC-1\",\"AC-2\"],\"environment\":\"https://alpha.test\"}}",
+                    + "\"flows\":[{\"id\":\"AC-1\",\"criterion\":\"C1\"},"
+                    + "{\"id\":\"AC-2\",\"criterion\":\"\"}],\"environment\":\"https://alpha.test\"}}",
                 ""));
 
     var verdict =
@@ -365,7 +367,10 @@ class HeadlessClaudeCheckerReaderTest {
             .facts()
             .orElseThrow();
 
-    assertThat(verdict.flows().ids()).containsExactly("AC-1", "AC-2");
+    assertThat(verdict.flows().named())
+        .containsExactly(
+            new AcceptanceVerdict.Flows.Flow("AC-1", "C1"),
+            new AcceptanceVerdict.Flows.Flow("AC-2", ""));
     assertThat(verdict.flows().environment()).isEqualTo("https://alpha.test");
   }
 

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.acceptanceeval;
 
+import dev.jagt.orchestrator.config.RoleOptions;
 import dev.jagt.orchestrator.eval.AcceptanceCase;
 import dev.jagt.orchestrator.eval.EvalShards;
 import java.io.IOException;
@@ -152,6 +153,23 @@ final class AcceptanceEvalWorkspace {
               + ": "
               + new String(process.getInputStream().readAllBytes()));
     }
+  }
+
+  static void writeRole(String environment, String landed, RoleOptions.Flows flows)
+      throws IOException {
+    Path folder = root().resolve("roles/acceptance");
+    Files.createDirectories(folder);
+    Files.writeString(
+        folder.resolve("role.yml"),
+        "environments: [{url: \"%s\", landed: \"%s\"}]\nflows: {driver: \"%s\", path: \"%s\", command: [%s]}\n"
+            .formatted(
+                environment,
+                landed,
+                flows.driver(),
+                flows.path(),
+                flows.command().stream()
+                    .map(word -> "\"" + word + "\"")
+                    .collect(Collectors.joining(", "))));
   }
 
   static void writeConfig(Path configFile, Path projectPath) throws IOException {
