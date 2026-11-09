@@ -515,9 +515,9 @@ public class MasterPanel {
           + "</goal>\n";
 
   private static final String GIT =
-      "git in plain words (no quote, ~, ^, brace or glob; diff, log, show and blame carry"
-          + " `--no-ext-diff --no-textconv`; `git -C <worktree>` reads each worktree past the"
-          + " first)";
+      "git in plain words, one command per call (no `&&`, `;` or pipe, no quote, ~, ^, brace or"
+          + " glob; diff, log, show and blame carry `--no-ext-diff --no-textconv`;"
+          + " `git -C <worktree>` reads each worktree past the first)";
 
   /** Where no MCP server loads, no ticket the round does not quote was read. */
   private static String ticket(boolean tracker, String judged) {
