@@ -20,6 +20,8 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | A11 | a task session briefs sub-agents → lightest model, self-contained brief, result alone, the ship's message as the ship specifies | 70bce952, b0c6e815, deb035ec | `SubAgentBriefingTest` |
 | A12 | a plan or hand-back comes with a question → it is read and answered, with its facts in the prompt; a hand-back at VERIFYING says whose move | c0e97b9f, e4f5a366, b3922313 | `MasterAnswerJobTest`, `MasterReviewJobTest`, `AgentStatusReportsTest`, `RoundBriefTest` |
 | A13 | an eval case asserts what an acceptance row cites (the flag holding a change back) → the brief asks for it, so the case holds by rule, not by which file the acceptance happened to read | seen 2026-11-04: gate red, 1 of 3 runs named the flag | `AcceptanceVerdictEvalTest` |
+| A14 | acceptance starts in its workspace but the change lives in the worktree → the prompt names the worktree and the one git form the read may run there | a3f280612 | `AcceptancePromptsTest`, `AcceptanceVerdictEvalTest` |
+
 ## B — state overwritten / dedup key in the wrong place
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

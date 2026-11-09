@@ -26,6 +26,7 @@ WHEN/THEN scenarios under `scenarios/`, reusable steps under `steps/`, a flow un
 - A role `index.md` routes (how to sign in as it) is reached by that route, never substituted.
 - A flow may click and create data on a listed environment alone; it reads its login from the workspace's `.env`.
 Your report names every flow you wrote or changed. With no workspace named, you write nothing.
+The workspace never changes what a row waits on: an environment that does not answer is `waitingOn`, whatever the workspace holds.
 Opened by the human on a ticket before its plan, read it for gaps and contradictions and ask one question per gap, quoting
 the ticket. Write `scenarios/<ticket>.md`: one WHEN/THEN row per criterion, tagged `from-ticket` or `inferred`, an open
 gap quoting the ticket. No code, no plan, no flow, no guessed value; a complete ticket asks nothing.
@@ -43,7 +44,7 @@ naming another sha than the deploy's. `failure` is only for a check that could r
 ## Your tools
 
 A page is one `curl -sS <url>`, `curl -sS -i <url>` for the status, or the web fetch tool. No other flag: no cookie jar, no file, no
-redirect followed; a sign-in is that one GET. A git read is one `git log`, `show` or `diff` carrying
+redirect followed; a sign-in is that one GET. A git read is one `git log`, `show` or `diff`, with `-C <worktree>` before it where jagt names one, carrying
 `--no-ext-diff --no-textconv`, with no `&&`, pipe or semicolon.
 An MCP tool you were given reads; a browser goes only to a listed environment and clicks nothing; a click is a flow's.
 jagt refuses any other form.

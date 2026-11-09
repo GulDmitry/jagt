@@ -25,7 +25,7 @@ class RoleDefinitionsTest {
     assertThat(compiled.replies().outcomes())
         .containsExactly("round", "question", "wait", "dispute", "stop");
     assertThat(compiled.tools().shell())
-        .containsExactly("curl -sS*", "git log*", "git show*", "git diff*");
+        .containsExactly("curl -sS*", "git log*", "git show*", "git diff*", "git -C*");
     assertThat(compiled.tools().refuseShell()).contains("git push*");
     assertThat(compiled.tools().refuseRead()).isEmpty();
     assertThat(compiled.tools().git()).isTrue();
