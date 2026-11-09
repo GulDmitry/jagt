@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.ReviewSweepService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.SweepFetches;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.ToldOnce;
@@ -41,7 +42,12 @@ class AutoReviewPolls {
    * {@code finished} runs last and unconditionally: losing it would exclude the task from
    * auto-review for the JVM's life.
    */
-  boolean start(String taskId, @Nullable String alias, long round, Runnable finished) {
+  boolean start(
+      String taskId,
+      @Nullable String alias,
+      long round,
+      SweepFetches fetches,
+      Runnable finished) {
     if (!stops.moveDue(taskId) || !inFlight.add(taskId)) {
       return false;
     }
@@ -51,7 +57,7 @@ class AutoReviewPolls {
         .addKeyValue("alias", alias)
         .log();
     try {
-      executor.execute(() -> pollNow(taskId, round, finished));
+      executor.execute(() -> pollNow(taskId, round, fetches, finished));
       return true;
     } catch (RejectedExecutionException e) {
       // Caught NARROWLY: an exception from the sweep landing here would leave lastPolledAt
@@ -67,10 +73,12 @@ class AutoReviewPolls {
     }
   }
 
-  private void pollNow(String taskId, long round, Runnable finished) {
+  private void pollNow(String taskId, long round, SweepFetches fetches, Runnable finished) {
     try {
-      ReviewSweepService.SweepResult result =
-          OriginContext.as(ActionOrigin.AUTO_REVIEW, () -> reviewSweep.sweep(taskId));
+      ReviewSweepService.SweepResult result;
+      try (OriginContext.Scope ignored = fetches.open()) {
+        result = OriginContext.as(ActionOrigin.AUTO_REVIEW, () -> reviewSweep.sweep(taskId));
+      }
       // A round nobody could read is the one outcome an unattended poll must not keep to itself:
       // the
       // retries are spent, and every further tick would say the same thing to the same log.

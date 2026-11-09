@@ -119,8 +119,12 @@ public class WorktreeInspection {
         projectPath,
         () -> {
           String target = remote.track(targetBranch);
-          git.fetchBranch(remote, worktree, targetBranch)
-              .expectSuccess("git fetch " + target + " in " + worktree);
+          String fetched = projectPath + "\n" + target;
+          if (!SweepFetches.made(fetched)) {
+            git.fetchBranch(remote, worktree, targetBranch)
+                .expectSuccess("git fetch " + target + " in " + worktree);
+            SweepFetches.record(fetched);
+          }
           String head =
               git.run(worktree, List.of("git", "rev-parse", "HEAD"))
                   .expectSuccess("git rev-parse in " + worktree)

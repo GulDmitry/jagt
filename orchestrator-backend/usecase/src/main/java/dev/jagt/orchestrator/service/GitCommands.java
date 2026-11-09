@@ -63,6 +63,8 @@ public class GitCommands {
         workingDir,
         List.of(
             "git",
+            "-c",
+            "maintenance.auto=false",
             "fetch",
             remote.name(),
             "+refs/heads/" + branch + ":" + remote.trackingRef(branch)));

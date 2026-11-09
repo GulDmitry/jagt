@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.AutoReviewCadence;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ReviewSweepService;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.SweepFetches;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.ToldOnce;
@@ -65,6 +66,7 @@ public class AutoReviewScheduler implements Job {
     }
     long now = clock.millis();
     var tasks = stateService.tasks();
+    SweepFetches fetches = SweepFetches.create();
     tasks.forEach(
         (taskId, task) -> {
           // A task the poller has no business with any more re-arms its pings.
@@ -99,7 +101,7 @@ public class AutoReviewScheduler implements Job {
                         .withEvent(Notification.Event.AUTO_REVIEW));
               }
             }
-            case POLL -> poll(taskId, task.alias(), task.mrCreatedAt());
+            case POLL -> poll(taskId, task.alias(), task.mrCreatedAt(), fetches);
             default -> {}
           }
         });
@@ -115,11 +117,12 @@ public class AutoReviewScheduler implements Job {
     };
   }
 
-  private void poll(String taskId, @Nullable String alias, long round) {
+  private void poll(String taskId, @Nullable String alias, long round, SweepFetches fetches) {
     polls.start(
         taskId,
         alias,
         round,
+        fetches,
         () -> stateService.updateTask(taskId, t -> t.withLastPolledAt(clock.millis())));
   }
 }

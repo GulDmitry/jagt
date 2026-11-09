@@ -2,6 +2,11 @@ package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
@@ -727,5 +732,36 @@ class WorktreeInspectionTest {
 
     assertThat(git.aheadOfTarget(repo, repo, "dev")).isTrue();
     assertThat(git.unpublished(repo, repo)).isFalse();
+  }
+
+  @Test
+  void fetchesTheTargetOnceForTwoTasksOfOneRepositoryInOneSweep(@TempDir Path dir)
+      throws Exception {
+    Processes runner = spy(new ProcessRunner());
+    Duration timeout = Duration.ofSeconds(30);
+    Path origin = dir.resolve("origin.git");
+    Path repo = dir.resolve("repo");
+    runner.run(
+        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+    Files.writeString(repo.resolve("f.txt"), "base");
+    runner.run(repo, timeout, List.of("git", "add", "."));
+    runner.run(
+        repo,
+        timeout,
+        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+    WorktreeInspection git =
+        new WorktreeInspection(
+            new GitCommands(
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+            new StubAgentRuntime(StubAgentProperties.defaults()));
+
+    try (OriginContext.Scope ignored = SweepFetches.create().open()) {
+      git.mergedIntoTarget(repo, repo, "main");
+      git.mergedIntoTarget(repo, repo, "main");
+    }
+
+    verify(runner, times(1)).run(any(), any(), argThat(command -> command.contains("fetch")));
   }
 }
