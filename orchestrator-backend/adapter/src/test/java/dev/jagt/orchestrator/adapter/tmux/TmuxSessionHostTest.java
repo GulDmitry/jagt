@@ -1163,6 +1163,33 @@ class TmuxSessionHostTest {
   }
 
   @Test
+  void runsAShellLineInTheFolderGivenAsTheProcessOfAWindowOfItsOwn() {
+    Processes processes = mock(Processes.class);
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "@9", ""));
+    ToolchainProperties properties = ToolchainProperties.defaults();
+    TmuxSessionHost host =
+        new TmuxSessionHost(
+            processes,
+            new TmuxReads(processes, properties),
+            new OrchestratorPaths(OrchestratorProperties.defaults()),
+            mock(TerminalDriver.class),
+            mock(AgentRuntime.class));
+
+    host.openShellWindow("jagt", "jagt", "acceptance-alpha", Path.of("/ws"), "agent 'p'");
+
+    ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+    verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
+    assertThat(commands.getAllValues())
+        .anySatisfy(
+            command -> {
+              assertThat(command).containsSequence("new-window", "-P");
+              assertThat(command).containsSequence("-n", "acceptance-alpha", "-c", "/ws");
+              assertThat(command.getLast()).startsWith("agent 'p';");
+            });
+  }
+
+  @Test
   void createsTheSessionAndShowsItToTheHumanForACommandWindow() {
     Processes processes = mock(Processes.class);
     TerminalDriver terminal = mock(TerminalDriver.class);

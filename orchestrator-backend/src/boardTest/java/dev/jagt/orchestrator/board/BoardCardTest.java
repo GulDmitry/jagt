@@ -592,6 +592,7 @@ class BoardCardTest extends BoardPageContext {
               "Deploy",
               "Pause",
               "Done",
+              "Scenarios",
               "Focus",
               "Open IDE",
               "Diff",
@@ -600,7 +601,7 @@ class BoardCardTest extends BoardPageContext {
     assertThat(page.locator("article .actions.flow button"))
         .hasText(new String[] {"Check review", "Deploy", "Pause", "Done"});
     assertThat(page.locator("article .actions.tool button"))
-        .hasText(new String[] {"Focus", "Open IDE", "Diff", "Restart agent"});
+        .hasText(new String[] {"Scenarios", "Focus", "Open IDE", "Diff", "Restart agent"});
     assertThat(page.locator("article .actions button.primary")).hasText("Deploy");
   }
 

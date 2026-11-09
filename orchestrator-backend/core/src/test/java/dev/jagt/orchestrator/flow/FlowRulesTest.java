@@ -27,6 +27,20 @@ class FlowRulesTest {
   }
 
   @ParameterizedTest
+  @CsvSource({"NEW,true", "IN_PROGRESS,true", "REVIEW_PENDING,true", "DONE,false"})
+  void offersScenariosOnATaskThatHasNotDeployed(TaskStatus status, boolean offered) {
+    assertThat(FlowRules.allows(status, TaskAction.SCENARIOS, Facts.defaults()))
+        .isEqualTo(offered);
+  }
+
+  @Test
+  void offersNoScenariosOnATaskWhoseDeployIsLive() {
+    Facts live = Facts.defaults().withDelivery(Facts.Delivery.defaults().withLiveDeploy(true));
+
+    assertThat(FlowRules.allows(TaskStatus.DEPLOYED, TaskAction.SCENARIOS, live)).isFalse();
+  }
+
+  @ParameterizedTest
   @CsvSource({"SHIPPING,true", "DEPLOY_CONFLICT,true", "IN_PROGRESS,false"})
   void awaitsAnInstructionOnlyWhereJagtRelayedOne(TaskStatus status, boolean awaits) {
     assertThat(FlowRules.awaitsItsInstruction(status)).isEqualTo(awaits);

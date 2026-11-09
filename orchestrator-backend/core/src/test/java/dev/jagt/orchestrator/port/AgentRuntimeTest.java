@@ -50,6 +50,18 @@ class AgentRuntimeTest {
   }
 
   @Test
+  void startsAWorkspaceSessionAsAPlainOneWhereTheRuntimeCannotBeTold() {
+    assertThat(
+            new Minimal()
+                .workspaceCommand(
+                    Path.of("/ws"),
+                    "fast",
+                    "a brief",
+                    new CheckerReader.Workspace(Path.of("/ws"), java.util.List.of())))
+        .isEqualTo("run in /ws");
+  }
+
+  @Test
   void offersNoModelByDefault() {
     assertThat(new Minimal().models()).isEmpty();
   }

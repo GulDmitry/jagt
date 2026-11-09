@@ -114,6 +114,13 @@ at: any
 by: master
 The Master starts a new agent session in the task's worktree.
 
+## scenarios
+
+move: scenarios
+at: any
+by: master
+The Master opens an interactive acceptance session on the task's ticket, in the workspace.
+
 ## focus
 
 move: focus

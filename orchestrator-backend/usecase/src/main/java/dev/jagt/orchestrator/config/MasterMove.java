@@ -25,6 +25,7 @@ public enum MasterMove {
   REMOVE_REPO("remove-repo", false),
   SWEEP("sweep", false),
   RESPAWN("respawn", false),
+  SCENARIOS("scenarios", false),
   FOCUS("focus", false),
   IDE("ide", false),
   DIFF("diff", false),

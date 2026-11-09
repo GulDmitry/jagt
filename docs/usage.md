@@ -54,6 +54,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `resume <request-url>` | adopt an existing review request: its branch, its commits, its target |
 | `deploy <ticket>` | merge the task branch into `deployBranch` and push |
 | `revert <ticket>` | undo that deploy with a revert commit |
+| `scenarios <ticket>` | before its deploy: an interactive acceptance session in the workspace, the ticket and any open question loaded |
 | `respawn <ticket>` | restart a dead agent session |
 | `add-repo <ticket> [project]` | attach the repository a session asked for, or the project you name: its worktree is cut and the session told |
 | `remove-repo <ticket> <project>` | close that repository's request on its host and take it out of the task; the primary and a deployed one stay |
@@ -68,6 +69,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 |---------|--------------|
 | `stats` | subscription limits, jagt's own model spend per task, cycle time, the week's cost per accepted task |
 | `project` | add a repository as a project, change or drop one (`project edit <key>`) |
+| `acceptance [project]` | an interactive acceptance session in its workspace, one per project: write scenarios, answer its questions |
 | `login` | log in where jagt lost its reach, in a window of its own |
 | `activity [created\|shipped\|deployed\|stopped\|done] [<project>]` | every status change of every task, live or finished, newest first |
 | `jobs` | every scheduled job, its cadence, last and next run |
