@@ -169,3 +169,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0153 Mine names what the Master leaves](0153-mine-names-what-the-master-leaves.md) (supersedes in part 0016, 0152)
 - [0154 A deploy conflict names the reads that end it](0154-a-deploy-conflict-names-the-reads-that-end-it.md) (beside 0110)
 - [0155 The qa role is called acceptance](0155-the-qa-role-is-called-acceptance.md) (renames the role of 0116, 0124)
+- [0156 A poll reads an unchanged request from the host alone](0156-a-poll-reads-an-unchanged-request-from-the-host-alone.md) (beside 0130)

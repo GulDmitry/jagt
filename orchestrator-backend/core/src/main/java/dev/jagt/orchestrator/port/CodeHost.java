@@ -37,6 +37,13 @@ public interface CodeHost {
   Answer<List<String>> unresolvedNotes(String project, String requestUrl);
 
   /**
+   * What the host shows of the request at {@code requestUrl} without a model: its state, head
+   * commit, checks and reviews, equal between two reads only where none of them changed. Empty
+   * facts where the host gives none.
+   */
+  Answer<String> requestFingerprint(String project, String requestUrl);
+
+  /**
    * The pipeline the host ran for {@code sha} in the repository at {@code remoteUrl}; the worst of
    * several, none read as {@code none}.
    */

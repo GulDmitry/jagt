@@ -53,6 +53,11 @@ public class ChosenCodeHost implements CodeHost {
   }
 
   @Override
+  public Answer<String> requestFingerprint(String project, String requestUrl) {
+    return ask(project, (driver, host) -> driver.requestFingerprint(host, requestUrl));
+  }
+
+  @Override
   public Answer<CommitPipeline> onCommit(String project, String remoteUrl, String sha) {
     return ask(project, (driver, host) -> driver.onCommit(host, remoteUrl, sha));
   }

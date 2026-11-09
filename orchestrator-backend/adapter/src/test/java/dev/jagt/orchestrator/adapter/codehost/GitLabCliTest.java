@@ -361,6 +361,61 @@ class GitLabCliTest {
   }
 
   @Test
+  void aRequestsFingerprintChangesWithItsHeadPipelineAndApprovals() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                """
+                {"state":"opened","updated_at":"2026-11-09T08:00:00Z","sha":"abc123",
+                 "user_notes_count":2,"head_pipeline":{"id":77,"status":"running"}}
+                """,
+                ""))
+        .thenReturn(
+            new Processes.Result(0, "{\"approved_by\":[{\"user\":{\"username\":\"mia\"}}]}", ""))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                """
+                {"state":"opened","updated_at":"2026-11-09T08:00:00Z","sha":"abc123",
+                 "user_notes_count":2,"head_pipeline":{"id":77,"status":"success"}}
+                """,
+                ""))
+        .thenReturn(
+            new Processes.Result(0, "{\"approved_by\":[{\"user\":{\"username\":\"mia\"}}]}", ""))
+        .thenReturn(
+            new Processes.Result(
+                0,
+                """
+                {"state":"opened","updated_at":"2026-11-09T08:00:00Z","sha":"abc123",
+                 "user_notes_count":2,"head_pipeline":{"id":77,"status":"success"}}
+                """,
+                ""))
+        .thenReturn(new Processes.Result(0, "{\"approved_by\":[]}", ""));
+    String request = "https://git.example.invalid/shop/web/-/merge_requests/9";
+
+    String running = gitlab.requestFingerprint(host, request).facts().orElseThrow();
+    String green = gitlab.requestFingerprint(host, request).facts().orElseThrow();
+    String unapproved = gitlab.requestFingerprint(host, request).facts().orElseThrow();
+
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(processes, times(6)).run(isNull(), any(Duration.class), command.capture());
+    assertThat(command.getAllValues().get(1))
+        .contains("projects/shop%2Fweb/merge_requests/9/approvals");
+    assertThat(running).isNotEqualTo(green);
+    assertThat(green).isNotEqualTo(unapproved);
+  }
+
+  @Test
+  void anAddressThatIsNoRequestHasNoFingerprintAndNothingIsRun() {
+    Answer<String> answer =
+        gitlab.requestFingerprint(host, "https://git.example.invalid/shop/web/-/pipelines/7");
+
+    assertThat(answer.failure()).startsWith("not the address of a request");
+    verifyNoInteractions(processes);
+  }
+
+  @Test
   void anAddressThatIsNoRequestHasNoNotesReadAndNothingIsRun() {
     Answer<List<String>> answer =
         gitlab.unresolvedNotes(host, "https://git.example.invalid/shop/web/-/pipelines/7");

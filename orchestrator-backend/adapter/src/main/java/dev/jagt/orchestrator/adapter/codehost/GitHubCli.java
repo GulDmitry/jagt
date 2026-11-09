@@ -39,6 +39,12 @@ public class GitHubCli implements CodeHostDriver {
           + " repository(owner:$owner,name:$name){pullRequest(number:$number)"
           + "{reviewThreads(first:100){nodes{isResolved"
           + " comments(last:1){nodes{databaseId author{login}}}}}}}}";
+  private static final String REQUEST_FIELDS =
+      "state,updatedAt,headRefOid,reviewDecision,comments,latestReviews,statusCheckRollup";
+  private static final String FINGERPRINT =
+      "[.state,.updatedAt,.headRefOid,.reviewDecision,(.comments|length),"
+          + "[.latestReviews[]|[.author.login,.state,.submittedAt]],"
+          + "[.statusCheckRollup[]|[.name // .context,.status,.conclusion,.state]]]";
   private static final JsonMapper JSON = new JsonMapper();
 
   private final HostCli cli;
@@ -118,6 +124,25 @@ public class GitHubCli implements CodeHostDriver {
                             "-F",
                             "number=" + address.id())),
                     GitHubCli::unresolved))
+        .orElseGet(() -> HostCli.notRequest(requestUrl));
+  }
+
+  @Override
+  public Answer<String> requestFingerprint(HostSettings host, String requestUrl) {
+    return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, false)
+        .map(
+            address ->
+                cli.run(
+                    address.hostname(),
+                    List.of(
+                        "pr",
+                        "view",
+                        requestUrl.strip(),
+                        "--json",
+                        REQUEST_FIELDS,
+                        "--jq",
+                        FINGERPRINT)))
+        .map(read -> read.map(String::strip))
         .orElseGet(() -> HostCli.notRequest(requestUrl));
   }
 

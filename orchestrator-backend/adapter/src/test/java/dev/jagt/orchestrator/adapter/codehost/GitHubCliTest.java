@@ -331,6 +331,35 @@ class GitHubCliTest {
   }
 
   @Test
+  void aRequestsFingerprintIsWhatTheHostShowsOfItsStateHeadChecksAndReviews() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(
+            new Processes.Result(
+                0, "[\"OPEN\",\"2026-11-09T08:00:00Z\",\"abc123\",\"\",2,[],[]]\n", ""));
+
+    Answer<String> answer =
+        github.requestFingerprint(host, "https://ghe.corp.invalid/acme/shop/pull/7");
+
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(processes).run(isNull(), any(Duration.class), command.capture());
+    assertThat(command.getValue())
+        .containsSubsequence("pr", "view", "https://ghe.corp.invalid/acme/shop/pull/7", "--json");
+    assertThat(String.join(" ", command.getValue()))
+        .contains("statusCheckRollup", "latestReviews", "headRefOid", "updatedAt");
+    assertThat(answer.facts())
+        .contains("[\"OPEN\",\"2026-11-09T08:00:00Z\",\"abc123\",\"\",2,[],[]]");
+  }
+
+  @Test
+  void anAddressThatIsNoRequestHasNoFingerprintAndNothingIsRun() {
+    Answer<String> answer =
+        github.requestFingerprint(host, "https://ghe.corp.invalid/acme/shop/actions/runs/5");
+
+    assertThat(answer.failure()).startsWith("not the address of a request");
+    verifyNoInteractions(processes);
+  }
+
+  @Test
   void anAddressThatIsNoRequestHasNoNotesReadAndNothingIsRun() {
     Answer<List<String>> answer =
         github.unresolvedNotes(host, "https://ghe.corp.invalid/acme/shop/actions/runs/5");

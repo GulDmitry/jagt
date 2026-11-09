@@ -120,6 +120,25 @@ public class GitLabCli implements CodeHostDriver {
   }
 
   @Override
+  public Answer<String> requestFingerprint(HostSettings host, String requestUrl) {
+    return HostAddress.ofPipeline(requestUrl, REQUEST_MARKER, true)
+        .map(
+            address ->
+                HostCli.then(
+                    cli.parsed(
+                        cli.run(
+                            address.hostname(), api(address, "/merge_requests/" + address.id())),
+                        GitLabCli::requestState),
+                    request ->
+                        cli.parsed(
+                            cli.run(
+                                address.hostname(),
+                                api(address, "/merge_requests/" + address.id() + "/approvals")),
+                            output -> request + approvers(output))))
+        .orElseGet(() -> HostCli.notRequest(requestUrl));
+  }
+
+  @Override
   public Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha) {
     return HostAddress.ofRemote(remoteUrl, sha, host.host().name(), true)
         .map(
@@ -217,6 +236,29 @@ public class GitLabCli implements CodeHostDriver {
               }
             });
     return ids;
+  }
+
+  private static String requestState(String output) {
+    JsonNode request = JSON.readTree(output);
+    JsonNode pipeline = request.path("head_pipeline");
+    return String.join(
+        " ",
+        request.path("state").asString(""),
+        request.path("updated_at").asString(""),
+        request.path("sha").asString(""),
+        request.path("user_notes_count").asString(""),
+        pipeline.path("id").asString(""),
+        pipeline.path("status").asString(""));
+  }
+
+  private static String approvers(String output) {
+    StringBuilder approvers = new StringBuilder(" approved by");
+    JSON.readTree(output)
+        .path("approved_by")
+        .forEach(
+            approval ->
+                approvers.append(' ').append(approval.path("user").path("username").asString("")));
+    return approvers.toString();
   }
 
   private static BranchTip newest(String output) {

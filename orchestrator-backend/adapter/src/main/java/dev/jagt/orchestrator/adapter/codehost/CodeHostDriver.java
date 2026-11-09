@@ -24,6 +24,8 @@ public interface CodeHostDriver {
    */
   Answer<List<String>> unresolvedNotes(HostSettings host, String requestUrl);
 
+  Answer<String> requestFingerprint(HostSettings host, String requestUrl);
+
   Answer<CommitPipeline> onCommit(HostSettings host, String remoteUrl, String sha);
 
   Answer<CommitPipeline> onBranchSince(
