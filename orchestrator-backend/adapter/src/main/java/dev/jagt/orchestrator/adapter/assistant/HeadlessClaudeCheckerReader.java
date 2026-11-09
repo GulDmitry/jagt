@@ -97,7 +97,7 @@ public class HeadlessClaudeCheckerReader {
     List<String> tools = new ArrayList<>(mcpReads);
     tools.add(HeadlessClaude.STRUCTURED_OUTPUT);
     return headless.run(
-        run.worktree(),
+        run.reach().startIn(run.worktree()),
         TIMEOUT,
         cmd,
             new ReadScope(

@@ -206,7 +206,7 @@ class OpenCodeConfigTest {
 
     assertThat(agent.path("permission").path("edit").path("*").asString()).isEqualTo("deny");
     assertThat(agent.path("permission").path("edit").path("/ws/**").asString()).isEqualTo("allow");
-    assertThat(agent.path("permission").path("bash").path("cd /ws && BASE_URL=u t *").asString())
+    assertThat(agent.path("permission").path("bash").path("BASE_URL=u t *").asString())
         .isEqualTo("allow");
     assertThat(agent.path("tools").path("write").asBoolean()).isTrue();
   }

@@ -41,7 +41,7 @@ record ClaudeToolScope(String tools, List<String> allow, List<String> refuse) {
         held -> {
           tools.addAll(List.of("Write", "Edit"));
           allow.addAll(List.of("Write(/" + held.root() + "/**)", "Edit(/" + held.root() + "/**)"));
-          held.shells().forEach(command -> allow.add(bash(command + "*")));
+          held.commands().forEach(command -> allow.add(bash(command + "*")));
           if (shell.isEmpty()) {
             tools.add("Bash");
           }

@@ -455,4 +455,30 @@ class HeadlessClaudeCheckerReaderTest {
         .contains("NotebookEdit")
         .doesNotContain("Write", "Edit");
   }
+
+  @Test
+  void theRunStartsInTheWorkspaceWhenOneIsHeld(@TempDir Path workspace) {
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
+
+    reader.read(
+        new CheckerReader.Run(
+            "",
+            "check ABC-42",
+            worktree,
+            "abc123",
+            "",
+            new CheckerReader.Reach(
+                List.of(),
+                List.of(workspace),
+                Optional.of(new CheckerReader.Workspace(workspace, List.of()))),
+            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
+                .replies()
+                .answer()
+                .json(),
+            "acceptance"));
+
+    verify(runner).run(eq(workspace), any(Duration.class), any());
+  }
 }

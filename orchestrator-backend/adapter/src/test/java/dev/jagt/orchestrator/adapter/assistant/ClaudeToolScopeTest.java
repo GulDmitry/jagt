@@ -59,7 +59,7 @@ class ClaudeToolScopeTest {
         .contains(
             "Write(//ws/**)",
             "Edit(//ws/**)",
-            "Bash(cd /ws && BASE_URL=https://dev.example.test npx test:*)");
+            "Bash(BASE_URL=https://dev.example.test npx test:*)");
     assertThat(scope.refuse()).containsExactly("NotebookEdit");
   }
 }

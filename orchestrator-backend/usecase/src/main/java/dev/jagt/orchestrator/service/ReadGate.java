@@ -123,7 +123,7 @@ public final class ReadGate {
   }
 
   private static boolean workspaceCommand(CheckerReader.Workspace workspace, String command) {
-    return workspace.shells().stream()
+    return workspace.commands().stream()
         .anyMatch(
             shell ->
                 command.equals(shell)

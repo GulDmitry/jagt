@@ -522,7 +522,7 @@ class ReadGateTest {
                 Optional.of(
                     new CheckerReader.Workspace(
                         workspace, List.of("BASE_URL=https://dev.example.test npx test"))));
-    String listed = "cd " + workspace + " && BASE_URL=https://dev.example.test npx test";
+    String listed = "BASE_URL=https://dev.example.test npx test";
 
     assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", listed + " a.spec.ts"), "/tmp"))
         .isEmpty();
@@ -534,6 +534,10 @@ class ReadGateTest {
                 "/tmp"))
         .isPresent();
     assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", listed + "; rm -rf /"), "/tmp"))
+        .isPresent();
+    assertThat(
+            ReadGate.refusal(
+                scope, "Bash", Map.of("command", "cd " + workspace + " && " + listed), "/tmp"))
         .isPresent();
   }
 

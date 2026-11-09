@@ -57,7 +57,7 @@ class OpenCodeCheckerReader {
         .withWorkspace(run.reach().workspace());
     return headless.run(
         new OpenCodeRead(
-            run.worktree(),
+            run.reach().startIn(run.worktree()),
             prompt,
             run.schema(),
             model,

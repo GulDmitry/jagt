@@ -31,19 +31,19 @@ public interface CheckerReader {
    * The only URLs the read may fetch and the extra roots it may read; a {@code workspace} is also
    * written.
    */
-  record Reach(List<String> urls, List<Path> paths, Optional<Workspace> workspace) {}
+  record Reach(List<String> urls, List<Path> paths, Optional<Workspace> workspace) {
 
-  /**
-   * The one directory a read may write, and the shell commands it may run there, each the whole
-   * command up to its arguments.
-   */
-  record Workspace(Path root, List<String> commands) {
-
-    /** Each command as the shell is given it: from the workspace. */
-    public List<String> shells() {
-      return commands.stream().map(command -> "cd " + root + " && " + command).toList();
+    /** Where the read's process starts: its workspace when held, else {@code worktree}. */
+    public Path startIn(Path worktree) {
+      return workspace.map(Workspace::root).orElse(worktree);
     }
   }
+
+  /**
+   * The one directory a read may write and starts in, and the shell commands it may run there, each
+   * the whole command up to its arguments.
+   */
+  record Workspace(Path root, List<String> commands) {}
 
   Answer<AcceptanceVerdict> read(Run run);
 

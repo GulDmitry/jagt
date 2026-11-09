@@ -71,7 +71,7 @@ final class OpenCodeConfig {
     bash.put("*", "deny");
     scope.bashAllowed().forEach(glob -> bash.put(glob, "allow"));
     scope.workspace().stream()
-        .flatMap(held -> held.shells().stream())
+        .flatMap(held -> held.commands().stream())
         .forEach(command -> bash.put(command + " *", "allow"));
     scope.bashRefused().forEach(glob -> bash.put(glob, "deny"));
     CURL_WRITES.forEach(glob -> bash.put(glob, "deny"));
