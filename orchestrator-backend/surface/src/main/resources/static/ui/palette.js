@@ -6,7 +6,7 @@ import {t} from '../core/i18n.js';
 import * as store from '../core/store.js';
 import {run} from './act.js';
 import {openReport} from './dialogs.js';
-import {refresh, verbsArrived} from './refresh.js';
+import {boardArrived, refresh, verbsArrived} from './refresh.js';
 import {sending} from './submit.js';
 import {toast} from './toast.js';
 
@@ -93,7 +93,7 @@ opener.onclick = toggle;
 
 form.onsubmit = async (event) => {
   event.preventDefault();
-  await verbsArrived;
+  await Promise.all([verbsArrived, boardArrived]);
   const parsed = parse(ask.value);
   // A verb typed ALONE is answered here; one whose argument named no task is prose and stays tier 2's job.
   if (parsed && parsed.verb.takesTask && !parsed.task && !parsed.argument) {

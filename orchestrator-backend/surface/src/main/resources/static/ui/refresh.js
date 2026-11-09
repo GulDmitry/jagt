@@ -8,6 +8,8 @@ import {toast} from './toast.js';
 
 let asked = 0;
 let painted = 0;
+let boardRead;
+export const boardArrived = new Promise((resolve) => { boardRead = resolve; });
 
 export async function refresh() {
   const mine = ++asked;
@@ -31,6 +33,8 @@ export async function refresh() {
     render();
   } catch (e) {
     toast(t('refresh.backend', {cause: e.message}), true);
+  } finally {
+    boardRead();
   }
 }
 

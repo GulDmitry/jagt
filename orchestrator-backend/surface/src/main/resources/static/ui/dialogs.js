@@ -23,7 +23,7 @@ let showing = {path: null, about: null, body: '', extra: null};
 let poll = 0;
 // Two reports opened in quick succession: the one asked for last is the one shown, whichever answers last.
 let asked = 0;
-// A poll and the board's own event read it again side by side, and the read sent last is the one that paints.
+// A poll and the board's own event overlap: the read sent last paints.
 let reread = 0;
 
 const drawn = (said) => render(html`<${Report} parts=${reportParts(said, store.tasks().map((task) => task.id))}/>`, reportBody);
