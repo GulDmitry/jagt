@@ -239,9 +239,9 @@ abstract class MasterVerdictEvalTest {
     Mockito.doAnswer(
             call -> {
               Object made = call.callRealMethod();
-              ((Optional<?>) made)
-                  .map(decision -> ((MasterPanel.Decision) decision).text())
-                  .ifPresent(text -> firstLine.set(text.lines().findFirst().orElse("")));
+              if (made instanceof MasterPanel.Decision decision) {
+                firstLine.set(decision.text().lines().findFirst().orElse(""));
+              }
               return made;
             })
         .when(panel)

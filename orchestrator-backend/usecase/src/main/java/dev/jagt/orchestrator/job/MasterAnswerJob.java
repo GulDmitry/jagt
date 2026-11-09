@@ -132,21 +132,28 @@ public class MasterAnswerJob implements Job {
         .addKeyValue("task", taskId)
         .addKeyValue("alias", task.alias())
         .log();
-    Optional<MasterPanel.Decision> decision =
-        panel.answer(taskId, task, Objects.requireNonNull(task.message()), config, stuck);
+    String question = Objects.requireNonNull(task.message());
     try {
-      if (decision.isEmpty()
-          || !verdicts.answered(
-              taskId, task, Objects.requireNonNull(task.message()), decision.get())) {
-        log.atWarn()
-            .setMessage("master answer unusable")
-            .addKeyValue("task", taskId)
-            .addKeyValue("effect", "the question waits for the human")
-            .log();
-        unanswered(taskId);
+      switch (panel.answer(taskId, task, question, config, stuck)) {
+        case MasterPanel.Undecided undecided -> unusable(taskId, undecided.cause());
+        case MasterPanel.Decision decision -> {
+          if (!verdicts.answered(taskId, task, question, decision)) {
+            unusable(taskId, "the session could not be told the decision");
+          }
+        }
       }
     } catch (TaskMovedOn dropped) {
       return;
     }
+  }
+
+  private void unusable(String taskId, String cause) {
+    log.atWarn()
+        .setMessage("master answer unusable")
+        .addKeyValue("task", taskId)
+        .addKeyValue("cause", cause)
+        .addKeyValue("effect", "the question waits for the human")
+        .log();
+    unanswered(taskId);
   }
 }

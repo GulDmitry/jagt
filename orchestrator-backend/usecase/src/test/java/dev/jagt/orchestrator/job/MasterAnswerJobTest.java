@@ -11,6 +11,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.FlowReports;
@@ -27,12 +30,14 @@ import dev.jagt.orchestrator.task.TaskStop;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 class MasterAnswerJobTest {
@@ -62,7 +67,7 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(Optional.of(new MasterPanel.Decision("keep v2 beside v3", "")));
+        .thenReturn(new MasterPanel.Decision("keep v2 beside v3", ""));
 
     new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
         .run();
@@ -92,7 +97,7 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(Optional.of(new MasterPanel.Decision("keep v2 beside v3", "")));
+        .thenReturn(new MasterPanel.Decision("keep v2 beside v3", ""));
     when(verdicts.answered(anyString(), any(), anyString(), any()))
         .thenThrow(new TaskMovedOn("ABC-1"));
 
@@ -264,6 +269,8 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(verdicts.answersOverThisTree(asking)).thenReturn(3);
+    when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
+        .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
 
     new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
         .run();
@@ -346,7 +353,7 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(Optional.empty());
+        .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
     MasterAnswerJob job =
         new MasterAnswerJob(
             state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()));
@@ -355,6 +362,49 @@ class MasterAnswerJobTest {
     job.run();
 
     verify(panel, times(1)).answer(anyString(), any(), anyString(), any(), anyBoolean());
+  }
+
+  @Test
+  @ResourceLock(Resources.GLOBAL)
+  void namesWhyTheMastersAnswerWasUnusable(@TempDir Path root) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .message("keep v2?")
+            .report(AgentReport.QUESTION)
+            .build());
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withMaster(
+                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+    when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
+        .thenReturn(new MasterPanel.Undecided("the worktree could not be listed"));
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    ((Logger) LoggerFactory.getLogger(MasterAnswerJob.class)).addAppender(log);
+
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+        .run();
+
+    ILoggingEvent unusable =
+        assertThat(List.copyOf(log.list))
+            .filteredOn(ILoggingEvent::getMessage, "master answer unusable")
+            .singleElement()
+            .actual();
+    assertThat(unusable.getKeyValuePairs())
+        .anySatisfy(
+            pair -> {
+              assertThat(pair.key).isEqualTo("cause");
+              assertThat(pair.value).isEqualTo("the worktree could not be listed");
+            });
   }
 
   @Test
@@ -378,7 +428,7 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(Optional.of(new MasterPanel.Decision("keep v2", "")));
+        .thenReturn(new MasterPanel.Decision("keep v2", ""));
     when(verdicts.answered(anyString(), any(), anyString(), any())).thenReturn(false);
     MasterAnswerJob job =
         new MasterAnswerJob(
@@ -470,7 +520,7 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(Optional.empty());
+        .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
 
     new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
         .run();
@@ -500,7 +550,7 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(Optional.empty());
+        .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
 
     new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
         .run();
@@ -529,7 +579,7 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(Optional.empty());
+        .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
 
     new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
         .run();
@@ -555,7 +605,7 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
-        .thenReturn(Optional.empty());
+        .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
     MasterAnswerJob job =
         new MasterAnswerJob(
             state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()));

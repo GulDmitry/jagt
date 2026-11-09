@@ -1111,7 +1111,7 @@ class MasterPanelTest {
                 List.of(),
                 "do proj drop the old keys"));
 
-    Optional<MasterPanel.Decision> decision =
+    MasterPanel.Answer decision =
         new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
             .answer(
                 "ABC-1",
@@ -1121,11 +1121,11 @@ class MasterPanelTest {
                 false);
 
     assertThat(decision)
-        .contains(new MasterPanel.Decision("keep v2 beside v3", "do proj drop the old keys"));
+        .isEqualTo(new MasterPanel.Decision("keep v2 beside v3", "do proj drop the old keys"));
   }
 
   @Test
-  void answersNothingWhereTheReviewerFailedOrNamedNothing(@TempDir Path worktree) {
+  void answersNothingWhereTheReviewerNamedNothing(@TempDir Path worktree) {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
@@ -1137,7 +1137,7 @@ class MasterPanelTest {
     when(reviews.review(eq("ABC-1"), any()))
         .thenReturn(new Judgement("", "answer", List.of(), "", List.of(), ""));
 
-    Optional<MasterPanel.Decision> decision =
+    MasterPanel.Answer decision =
         new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
             .answer(
                 "ABC-1",
@@ -1146,11 +1146,11 @@ class MasterPanelTest {
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null),
                 false);
 
-    assertThat(decision).isEmpty();
+    assertThat(decision).isInstanceOf(MasterPanel.Undecided.class);
   }
 
   @Test
-  void answersNothingWhereTheReviewerCouldNotReadTheRound(@TempDir Path worktree) {
+  void namesTheReviewersFailureAsWhyNothingWasDecided(@TempDir Path worktree) {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
@@ -1169,7 +1169,7 @@ class MasterPanelTest {
                 List.of(),
                 ""));
 
-    Optional<MasterPanel.Decision> decision =
+    MasterPanel.Answer decision =
         new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
             .answer(
                 "ABC-1",
@@ -1178,7 +1178,7 @@ class MasterPanelTest {
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null),
                 false);
 
-    assertThat(decision).isEmpty();
+    assertThat(decision).isEqualTo(new MasterPanel.Undecided("stopped"));
   }
 
   @Test
@@ -1190,7 +1190,7 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
     when(quotes.question(task)).thenReturn(Optional.empty());
 
-    Optional<MasterPanel.Decision> decision =
+    MasterPanel.Answer decision =
         new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
             .answer(
                 "ABC-1",
@@ -1199,7 +1199,7 @@ class MasterPanelTest {
                 new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null),
                 false);
 
-    assertThat(decision).isEmpty();
+    assertThat(decision).isInstanceOf(MasterPanel.Undecided.class);
     verify(reviews, never()).review(any(), any());
   }
 

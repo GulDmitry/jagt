@@ -197,20 +197,28 @@ public class MasterPanel {
   private static final Role PLANNER =
       new Role("planner", "whether the plan does what the ticket asks", "", List.of());
 
-  /** {@code newTask} is work the decision would open as a task of its own, blank where none. */
-  public record Decision(String text, String newTask) {}
+  /** What a question came back with: a decision, or why none came. */
+  public sealed interface Answer permits Decision, Undecided {}
 
-  /** The session's question decided as the human would; empty where no decision came back. */
-  public Optional<Decision> answer(
+  /** {@code newTask} is work the decision would open as a task of its own, blank where none. */
+  public record Decision(String text, String newTask) implements Answer {}
+
+  public record Undecided(String cause) implements Answer {}
+
+  /** The session's question decided as the human would. */
+  public Answer answer(
       String taskId,
       TaskState task,
       String question,
       ConfigService.ConfigFile.MasterConfig config,
       boolean stuck) {
     Optional<String> brief = briefs.master(taskId, config);
+    if (brief.isEmpty()) {
+      return new Undecided("the master brief could not be read");
+    }
     Optional<RoundRead> read = quotes.question(task);
-    if (brief.isEmpty() || read.isEmpty()) {
-      return Optional.empty();
+    if (read.isEmpty()) {
+      return new Undecided("what the human typed could not be read");
     }
     Judgement judged =
         reviews.review(
@@ -225,15 +233,17 @@ public class MasterPanel {
                     reviews.loadsMcpServer()),
                 worktrees(task),
                 config.modelOrInherited()));
-    return Optional.of(judged)
-        .filter(said -> said.failure().isBlank() && !said.findings().isEmpty())
-        .map(
-            said ->
-                new Decision(
-                    said.findings().stream()
-                        .map(f -> OneLine.of(f.issue()))
-                        .collect(Collectors.joining("\n")),
-                    said.newTask().strip()));
+    if (!judged.failure().isBlank()) {
+      return new Undecided(judged.failure());
+    }
+    if (judged.findings().isEmpty()) {
+      return new Undecided("the read returned no findings");
+    }
+    return new Decision(
+        judged.findings().stream()
+            .map(f -> OneLine.of(f.issue()))
+            .collect(Collectors.joining("\n")),
+        judged.newTask().strip());
   }
 
   private static List<Path> worktrees(TaskState task) {
