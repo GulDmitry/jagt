@@ -15,6 +15,11 @@ public interface TaskCapability {
     return 0;
   }
 
+  /** Whether the configuration lets this verb be taken at all, whatever the task. */
+  default boolean offered() {
+    return true;
+  }
+
   Outcome run(String taskId);
 
   /** The work on the project a human named, once vetted. */

@@ -49,7 +49,7 @@ class HumanWaitRecorderTest {
     ((Logger) LoggerFactory.getLogger(HumanWaitRecorder.class)).addAppender(log);
     new HumanWaitRecorder(
             state,
-            new Rounds(config, ignored -> false),
+            new Rounds(config, ignored -> false, () -> false),
             Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC))
         .follow();
 
@@ -92,7 +92,7 @@ class HumanWaitRecorderTest {
 
     new HumanWaitRecorder(
             state,
-            new Rounds(config, ignored -> false),
+            new Rounds(config, ignored -> false, () -> false),
             Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC))
         .follow();
 
@@ -119,7 +119,7 @@ class HumanWaitRecorderTest {
 
     new HumanWaitRecorder(
             state,
-            new Rounds(config, ignored -> false),
+            new Rounds(config, ignored -> false, () -> false),
             Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC))
         .follow();
 

@@ -156,6 +156,12 @@ public class FlowEngine {
         Facts.Workspace.defaults()
             .withGitStateChanged(task.gitStateChanged())
             .withRepoRequested(task.asksForRepository())
-            .withSeveralRepos(task.repos().size() > 1));
+            .withSeveralRepos(task.repos().size() > 1),
+        Facts.Reach.defaults()
+            .withScenarios(
+                capabilities
+                    .of(TaskAction.SCENARIOS)
+                    .map(TaskCapability::offered)
+                    .orElse(false)));
   }
 }

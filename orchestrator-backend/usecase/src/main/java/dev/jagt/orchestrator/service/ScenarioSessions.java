@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * The interactive acceptance session of a project, in the workspace the role writes, with the
- * write and shell reach its read has. It ends when its window closes.
+ * write and shell reach its read has. Its ending is logged by its window.
  */
 @Service
 @RequiredArgsConstructor

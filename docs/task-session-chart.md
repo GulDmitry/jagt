@@ -105,4 +105,5 @@ stateDiagram-v2
     %% derived request merged
     %% derived shipped without request
     %% derived revert conflict
+    %% derived scenarios ready
 ```

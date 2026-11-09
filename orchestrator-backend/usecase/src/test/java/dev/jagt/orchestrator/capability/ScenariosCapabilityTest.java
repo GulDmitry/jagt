@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -20,7 +21,7 @@ class ScenariosCapabilityTest {
   private final ScenarioSessions sessions = mock(ScenarioSessions.class);
   private final TicketTexts tickets = mock(TicketTexts.class);
   private final StateService state = mock(StateService.class);
-  private final ScenariosCapability capability = new ScenariosCapability(sessions, tickets, state);
+  private final ScenariosCapability capability = new ScenariosCapability(sessions, tickets, state, () -> true);
 
   @Test
   void opensTheProjectsSessionWithTheTicketLoaded() {
@@ -52,5 +53,18 @@ class ScenariosCapabilityTest {
 
     assertThatThrownBy(() -> capability.run("ABC-42")).isInstanceOf(Refusal.class);
     verifyNoInteractions(sessions);
+  }
+
+  @Test
+  void isOfferedWhereAcceptanceIsReady() {
+    assertThat(capability.offered()).isTrue();
+  }
+
+  @Test
+  void isNotOfferedWhereAcceptanceIsOffOrHoldsNoWorkspace() {
+    ScenariosCapability notReady =
+        new ScenariosCapability(sessions, tickets, state, () -> false);
+
+    assertThat(notReady.offered()).isFalse();
   }
 }

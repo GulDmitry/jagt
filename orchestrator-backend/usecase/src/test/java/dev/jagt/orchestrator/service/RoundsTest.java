@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 class RoundsTest {
 
   private final ConfigService configService = mock(ConfigService.class);
-  private final Rounds rounds = new Rounds(configService, ignored -> false);
+  private final Rounds rounds = new Rounds(configService, ignored -> false, () -> false);
 
   @Test
   void theMasterReadsAHandBackItHasNotReadYetWhileItRuns() {
@@ -96,7 +96,7 @@ class RoundsTest {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
     var round =
-        new Rounds(configService, standing -> standing == task)
+        new Rounds(configService, standing -> standing == task, () -> false)
             .of(task, ConfigService.ConfigFile.defaults());
 
     assertThat(round.requestless()).isTrue();

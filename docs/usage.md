@@ -54,7 +54,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `resume <request-url>` | adopt an existing review request: its branch, its commits, its target |
 | `deploy <ticket>` | merge the task branch into `deployBranch` and push |
 | `revert <ticket>` | undo that deploy with a revert commit |
-| `scenarios <ticket>` | before its deploy: an interactive acceptance session in the workspace, the ticket and any open question loaded |
+| `scenarios <ticket>` | where acceptance is on and holds a workspace, before its deploy: an interactive acceptance session in the workspace, the ticket and any open question loaded |
 | `respawn <ticket>` | restart a dead agent session |
 | `add-repo <ticket> [project]` | attach the repository a session asked for, or the project you name: its worktree is cut and the session told |
 | `remove-repo <ticket> <project>` | close that repository's request on its host and take it out of the task; the primary and a deployed one stay |

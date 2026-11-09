@@ -84,7 +84,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
@@ -110,7 +110,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.IN_PROGRESS, "going on", "ABC-1");
@@ -150,7 +150,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.verified(true, "verified", "ABC-1");
@@ -177,7 +177,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
@@ -207,7 +207,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThatThrownBy(() -> reports.report(TaskStatus.IN_PROGRESS, "working", "ABC-9"))
@@ -240,7 +240,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
@@ -268,7 +268,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
     when(configService.load())
         .thenReturn(
@@ -302,7 +302,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: https://gitlab/x/-/merge_requests/9", "ABC-1");
@@ -333,7 +333,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
@@ -360,7 +360,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -397,7 +397,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -441,7 +441,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThatThrownBy(
@@ -486,7 +486,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -526,7 +526,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -568,7 +568,7 @@ class AgentStatusReportsTest {
                 state),
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -603,7 +603,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThatThrownBy(
@@ -645,7 +645,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -687,7 +687,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -721,7 +721,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -754,7 +754,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -784,7 +784,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -817,7 +817,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThatThrownBy(() -> reports.report(TaskStatus.CI_POLLING, message, "ABC-1"))
@@ -843,7 +843,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -874,7 +874,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThatThrownBy(
@@ -901,7 +901,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.IN_PROGRESS, "root cause\nanalysis ".repeat(20), "ABC-1");
@@ -929,7 +929,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "pipeline queued after the push — MR: " + link, "ABC-1");
@@ -959,7 +959,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.markRead("ABC-1", TaskStatus.APPROVED, Optional.empty());
@@ -989,7 +989,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
@@ -1023,7 +1023,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
@@ -1052,7 +1052,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -1085,7 +1085,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -1118,7 +1118,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/2", "ABC-1");
@@ -1149,7 +1149,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/2", "ABC-1");
@@ -1181,7 +1181,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -1217,7 +1217,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -1254,7 +1254,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -1282,7 +1282,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThatThrownBy(() -> reports.report(TaskStatus.PLAN_PENDING, "plan ready", "ABC-1"))
@@ -1314,7 +1314,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -1344,7 +1344,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThatThrownBy(
@@ -1380,7 +1380,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.markRead("ABC-1", TaskStatus.CI_FAILED, Optional.empty());
@@ -1410,7 +1410,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.markRead("ABC-1", TaskStatus.CI_FAILED, Optional.empty());
@@ -1441,7 +1441,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
     TaskStop stop =
         new TaskStop(TaskStop.Trigger.INFRA, 3_000, "unit-tests: runner_system_failure, 3 retries");
@@ -1471,7 +1471,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
     when(configService.load())
         .thenReturn(
@@ -1525,7 +1525,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.PLAN_PENDING, "plan ready", "ABC-1");
@@ -1559,7 +1559,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThatThrownBy(() -> reports.report(TaskStatus.PLAN_PENDING, "plan ready", "ABC-1"))
@@ -1595,7 +1595,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -1631,7 +1631,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -1662,7 +1662,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThatThrownBy(
@@ -1703,7 +1703,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(
@@ -1746,7 +1746,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThatThrownBy(
@@ -1786,7 +1786,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     String answer =
@@ -1814,7 +1814,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     String answer = reports.verified(true, "checks green", "ABC-1");
@@ -1846,7 +1846,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of()), "ABC-1");
@@ -1874,7 +1874,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
@@ -1909,7 +1909,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
@@ -1951,7 +1951,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
@@ -1992,7 +1992,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(TaskStatus.IN_PROGRESS, "back to work", "ABC-1");
@@ -2022,7 +2022,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     MessageContext context = reports.sessionContextFor("ABC-1");
@@ -2047,7 +2047,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThat(reports.sessionContextFor("ABC-1").switchesOn()).isEmpty();
@@ -2075,7 +2075,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThat(reports.sessionContextFor("ABC-1").firstReport()).isFalse();
@@ -2099,7 +2099,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThat(reports.sessionContextFor("ABC-1").visualMissing()).isTrue();
@@ -2124,7 +2124,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThat(reports.sessionContextFor("ABC-1").visualMissing()).isFalse();
@@ -2147,7 +2147,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     assertThat(reports.sessionContextFor("ABC-1").visualMissing()).isFalse();
@@ -2170,7 +2170,7 @@ class AgentStatusReportsTest {
             refusals,
             new FlowReports(state, Clock.systemUTC()),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             configService);
 
     reports.report(

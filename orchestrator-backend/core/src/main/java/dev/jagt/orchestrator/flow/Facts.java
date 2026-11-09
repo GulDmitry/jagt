@@ -10,7 +10,7 @@ import lombok.With;
 
 /** What a rule may ask about a task besides its status. */
 @With
-public record Facts(Delivery delivery, Hold hold, Workspace workspace) {
+public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach reach) {
 
   private static final Set<TaskStop.Trigger> ESCALATING =
       EnumSet.of(
@@ -55,8 +55,17 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace) {
     }
   }
 
+  /** What the configuration lets jagt offer, whatever the task is. */
+  @With
+  public record Reach(boolean scenarios) {
+
+    public static Reach defaults() {
+      return new Reach(false);
+    }
+  }
+
   public static Facts defaults() {
-    return new Facts(Delivery.defaults(), Hold.defaults(), Workspace.defaults());
+    return new Facts(Delivery.defaults(), Hold.defaults(), Workspace.defaults(), Reach.defaults());
   }
 
   /**
@@ -97,6 +106,7 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace) {
         Workspace.defaults()
             .withGitStateChanged(task.gitStateChanged())
             .withRepoRequested(task.asksForRepository())
-            .withSeveralRepos(task.repos().size() > 1));
+            .withSeveralRepos(task.repos().size() > 1),
+        Reach.defaults());
   }
 }

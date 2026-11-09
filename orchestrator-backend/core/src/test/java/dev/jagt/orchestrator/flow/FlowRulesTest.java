@@ -28,14 +28,25 @@ class FlowRulesTest {
 
   @ParameterizedTest
   @CsvSource({"NEW,true", "IN_PROGRESS,true", "REVIEW_PENDING,true", "DONE,false"})
-  void offersScenariosOnATaskThatHasNotDeployed(TaskStatus status, boolean offered) {
-    assertThat(FlowRules.allows(status, TaskAction.SCENARIOS, Facts.defaults()))
-        .isEqualTo(offered);
+  void offersScenariosOnATaskThatHasNotDeployedWhereAcceptanceIsReady(
+      TaskStatus status, boolean offered) {
+    Facts ready = Facts.defaults().withReach(Facts.Reach.defaults().withScenarios(true));
+
+    assertThat(FlowRules.allows(status, TaskAction.SCENARIOS, ready)).isEqualTo(offered);
+  }
+
+  @Test
+  void offersNoScenariosWhereAcceptanceIsOffOrHoldsNoWorkspace() {
+    assertThat(FlowRules.allows(TaskStatus.IN_PROGRESS, TaskAction.SCENARIOS, Facts.defaults()))
+        .isFalse();
   }
 
   @Test
   void offersNoScenariosOnATaskWhoseDeployIsLive() {
-    Facts live = Facts.defaults().withDelivery(Facts.Delivery.defaults().withLiveDeploy(true));
+    Facts live =
+        Facts.defaults()
+            .withReach(Facts.Reach.defaults().withScenarios(true))
+            .withDelivery(Facts.Delivery.defaults().withLiveDeploy(true));
 
     assertThat(FlowRules.allows(TaskStatus.DEPLOYED, TaskAction.SCENARIOS, live)).isFalse();
   }

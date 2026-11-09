@@ -39,7 +39,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false),
+                new Rounds(configService, ignored -> false, () -> false),
                 Clock.systemUTC())
             .all();
 
@@ -59,7 +59,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false),
+                new Rounds(configService, ignored -> false, () -> false),
                 Clock.systemUTC())
             .all();
 
@@ -82,7 +82,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false),
+                new Rounds(configService, ignored -> false, () -> false),
                 Clock.systemUTC())
             .all();
 
@@ -105,7 +105,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false),
+                new Rounds(configService, ignored -> false, () -> false),
                 Clock.systemUTC())
             .all();
 
@@ -132,7 +132,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false),
+                new Rounds(configService, ignored -> false, () -> false),
                 Clock.systemUTC())
             .all();
 
@@ -152,7 +152,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false),
+                new Rounds(configService, ignored -> false, () -> false),
                 Clock.systemUTC())
             .snapshot();
 
@@ -174,7 +174,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false),
+                new Rounds(configService, ignored -> false, () -> false),
                 Clock.systemUTC())
             .all();
 
@@ -199,14 +199,32 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false),
+                new Rounds(configService, ignored -> false, () -> false),
                 Clock.systemUTC())
             .listing();
 
     assertThat(listing)
         .isEqualTo(
             "ABC-1 [REVIEW_PENDING] Fix the login — ready | /wt/ABC-1 https://host/mr/7"
-                + " alias=a1 legal=ship,sweep,deploy,pause,done,scenarios,focus,ide,diff,respawn");
+                + " alias=a1 legal=ship,sweep,deploy,pause,done,focus,ide,diff,respawn");
+  }
+
+  @Test
+  void listsScenariosAmongTheLegalVerbsWhereAcceptanceIsReady() {
+    TaskState task = TaskState.builder("alpha", "/wt/ABC-1", TaskStatus.REVIEW_PENDING).build();
+    when(stateService.tasks()).thenReturn(Map.of("ABC-1", task));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(task));
+    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+
+    String listing =
+        new TaskViews(
+                stateService,
+                configService,
+                new Rounds(configService, ignored -> false, () -> true),
+                Clock.systemUTC())
+            .listing();
+
+    assertThat(listing).contains("pause,done,scenarios,focus");
   }
 
   @Test
@@ -218,7 +236,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false),
+                new Rounds(configService, ignored -> false, () -> false),
                 Clock.systemUTC())
             .listing();
 
@@ -242,7 +260,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false),
+                new Rounds(configService, ignored -> false, () -> false),
                 Clock.systemUTC())
             .all();
 

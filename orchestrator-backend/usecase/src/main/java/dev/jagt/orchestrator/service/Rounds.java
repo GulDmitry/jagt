@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.MasterPhase;
 import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.port.RequestlessShip;
+import dev.jagt.orchestrator.port.ScenarioReach;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,6 +18,7 @@ public class Rounds implements PhaseProfiles {
 
   private final ConfigService configService;
   private final RequestlessShip requestless;
+  private final ScenarioReach scenarios;
 
   public RoundState of(TaskState task) {
     return of(task, configService.load());
@@ -35,7 +37,8 @@ public class Rounds implements PhaseProfiles {
         .withMaster(master)
         .withMasterReading(FlowRules.readByTheMaster(task.status()) && master.running())
         .withCheckers(Checkers.of(task))
-        .withRequestless(requestless.stands(task));
+        .withRequestless(requestless.stands(task))
+        .withScenarios(scenarios.ready());
   }
 
   @Override

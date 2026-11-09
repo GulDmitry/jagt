@@ -88,7 +88,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -125,7 +125,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     state.putTask(
         "ABC-1",
@@ -168,7 +168,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -204,7 +204,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     state.putTask(
         "ABC-1",
@@ -246,7 +246,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
@@ -277,7 +277,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -313,7 +313,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -347,7 +347,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     state.putTask(
         "ABC-1",
@@ -390,7 +390,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     state.putTask(
         "ABC-1",
@@ -432,7 +432,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: done\n");
@@ -479,7 +479,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
@@ -532,7 +532,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
@@ -570,7 +570,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
@@ -625,7 +625,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
@@ -676,7 +676,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
@@ -729,7 +729,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
@@ -776,7 +776,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
@@ -830,7 +830,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
@@ -875,7 +875,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
@@ -921,7 +921,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
@@ -967,7 +967,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
@@ -1020,7 +1020,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
@@ -1074,7 +1074,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     state.putTask(
         "ABC-1",
@@ -1124,7 +1124,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     state.putTask(
         "ABC-1",
@@ -1177,7 +1177,7 @@ class YourMoveJobTest {
             state,
             notifications,
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false), configService),
+                worktreeChanges, new Rounds(configService, ignored -> false, () -> false), configService),
             clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();

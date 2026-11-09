@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskCapability;
+import dev.jagt.orchestrator.port.ScenarioReach;
 import dev.jagt.orchestrator.service.ScenarioSessions;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TicketTexts;
@@ -19,10 +20,16 @@ public class ScenariosCapability implements TaskCapability {
   private final ScenarioSessions sessions;
   private final TicketTexts tickets;
   private final StateService state;
+  private final ScenarioReach reach;
 
   @Override
   public TaskAction action() {
     return TaskAction.SCENARIOS;
+  }
+
+  @Override
+  public boolean offered() {
+    return reach.ready();
   }
 
   @Override

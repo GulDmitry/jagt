@@ -57,7 +57,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC()),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -96,7 +96,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC()),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -127,7 +127,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC()),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -159,7 +159,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC()),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -189,7 +189,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC()),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -219,7 +219,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC()),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -242,7 +242,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC()),
                 state,
                 new ReviewDrafts(config))
             .render("zz");
@@ -276,7 +276,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC()),
                 state,
                 new ReviewDrafts(config))
             .render("");
@@ -303,7 +303,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC()),
                 state,
                 new ReviewDrafts(config))
             .render(null);
@@ -353,7 +353,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC()),
                 state,
                 new ReviewDrafts(config))
             .render("a2");
@@ -385,7 +385,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC()),
                 state,
                 new ReviewDrafts(config))
             .render("");

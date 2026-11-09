@@ -320,7 +320,8 @@ public record TaskView(
       Map<String, String> deployBranches) {
     boolean draftedReplies = round.draftedReplies();
     Stop stop = Stop.of(task.stop());
-    Facts projected = Facts.projected(task);
+    Facts projected =
+        Facts.projected(task).withReach(Facts.Reach.defaults().withScenarios(round.scenarios()));
     Move move =
         Move.forTask(
             task.status(),
