@@ -75,7 +75,7 @@ the human's. A test reading the repository's own files may keep **file-scanning*
 - `promptEval` puts one operator phrasing per row (`CommandMappingCase`) through the real assistant: run it on a change to the mapping prompt,
   a `TaskAction`'s hint, the task-list shape or the model; `-PevalParallelism` (6) rows at once.
 - `roleEval -Prole=master` hands the real session a known-verdict round (`roles/master/eval/*.yml`) judged by `roles/master/brief.md.dist`,
-  asserting what the read gate heard. Run it when either or a model changes; a defect: `master-lesson`. `-PevalShards` 3 JVMs.
+  asserting what the read gate heard. Run it when either or a model changes; a defect: `master-lesson`. `-PevalShards` 6 JVMs.
 - `roleEval -Prole=<checker>` hands the real reader a deploy of known answer (`roles/<id>/eval/*.yml`); `-ProleBrief`, `-ProleModel`. Bar (estimate):
   false met 0 per case, false not-met <= 5%, accuracy >= 90%, report and ending right; an acceptance step stays only if cutting it
   loses more than it costs.

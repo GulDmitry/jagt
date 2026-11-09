@@ -16,7 +16,7 @@ tasks.register('roleEval', Test) {
     String harness = evalIsArbiter ? 'master' : evalIsTriage ? 'triage' : 'acceptance'
     String testClass = evalIsArbiter ? 'MasterVerdictEvalShard' : 'AcceptanceVerdictEvalShard'
     // A review is one task per tick, so cases go in parallel only across JVMs: one per shard class, each a full context.
-    int shards = evalIsTriage ? 1 : (project.findProperty('evalShards') ?: '3') as int
+    int shards = evalIsTriage ? 1 : (project.findProperty('evalShards') ?: (evalIsArbiter ? '6' : '3')) as int
     if (shards < 1 || shards > 6) {
         throw new GradleException("-PevalShards ${shards} must be between 1 and 6, the shard classes there are.")
     }
