@@ -56,6 +56,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | B33 | jagt restarts, or a ticket read lands after a hand-back, over a round no human changed → the kept verdict stands, an unread ticket being no change | seen 2026-11: 6.1 Master calls per round against 3 by design | `RoundQuotesTest` |
 | B32 | several boards are open in one browser when a task turns required → one sighting is logged, by the board holding the lock | seen 2026-11-02: 19 of 246 sightings were twins | `BoardInteractionLogTest` |
 | B34 | a task is retired and a later task opens on the same ticket key → the first task's kept ticket text is gone with it, so the ticket is read again and an edit is seen | seen 2026-11-08: `TicketTexts` kept the file and never deleted it | `TaskRetirementTest`, `TicketTextsTest` |
+| B35 | a task is retired and a later task opens under the same id → its plan is not diffed against the first task's approved-plan baseline | seen 2026-11-09: `plan-baselines/<slug>.md` was never deleted | `TaskRetirementTest` |
 ## C — turn collision
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

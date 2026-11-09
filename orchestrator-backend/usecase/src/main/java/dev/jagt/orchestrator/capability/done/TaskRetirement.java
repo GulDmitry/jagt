@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.capability.done;
 import dev.jagt.orchestrator.capability.TaskViewer;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.KeptTicketTexts;
 import dev.jagt.orchestrator.service.RetiredWorktrees;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
@@ -19,7 +18,7 @@ public class TaskRetirement {
   private final ConfigService configService;
   private final RetiredWorktrees worktrees;
   private final TaskViewer viewer;
-  private final KeptTicketTexts tickets;
+  private final KeptTaskFiles keptFiles;
 
   public String retire(String taskIdOrAlias) {
     String taskId = stateService.canonicalTaskId(taskIdOrAlias);
@@ -30,7 +29,7 @@ public class TaskRetirement {
     boolean anyProjectMissing =
         worktrees.remove(taskId, task.repos(), configService.load().projects());
     stateService.removeTask(taskId);
-    tickets.forget(taskId);
+    keptFiles.forget(taskId);
     boolean closedViewer = viewer.closeIfNoTasksLeft();
     return "Task "
         + taskId

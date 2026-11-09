@@ -10,6 +10,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PlanBaseline {
 
   private final OrchestratorPaths paths;
@@ -49,6 +51,19 @@ public class PlanBaseline {
       return diff.between(Files.readString(file), plan);
     } catch (IOException e) {
       throw new UncheckedIOException("could not read the approved plan of " + taskId, e);
+    }
+  }
+
+  public void forget(String taskId) {
+    try {
+      Files.deleteIfExists(file(taskId));
+    } catch (IOException e) {
+      log.atWarn()
+          .setMessage("plan baseline forget failed")
+          .addKeyValue("task", taskId)
+          .addKeyValue("cause", Causes.of(e))
+          .addKeyValue("effect", "a later task on this id diffs its plan against the old one")
+          .log();
     }
   }
 
