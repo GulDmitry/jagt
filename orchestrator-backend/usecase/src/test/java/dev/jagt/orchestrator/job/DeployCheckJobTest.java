@@ -30,7 +30,6 @@ import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TaskTurns;
-import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.Step;
@@ -59,102 +58,6 @@ class DeployCheckJobTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString())));
-  }
-
-  @Test
-  void aRedPipelineConflictEndsAndTheTaskIsDeployedAgainWhenALaterPipelineOnTheDeployBranchIsGreen(
-      @TempDir Path root) {
-    StateService state = state(root);
-    ConfigService config = mock(ConfigService.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    Deployment conflicted =
-        new Deployment(
-                1,
-                List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                0,
-                null)
-            .withTarget(
-                "proj",
-                target -> target.withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 1)));
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .build()
-            .withDeployment(conflicted));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.redConflictDisproved(any())).thenReturn(true);
-
-    new DeployCheckJob(
-            config,
-            mock(StepRelay.class),
-            pipelines,
-            new FlowReports(state, Clock.systemUTC()),
-            new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
-                state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
-                Clock.systemUTC()))
-        .runOn(state.tasks());
-
-    TaskState read = state.task("ABC-42").orElseThrow();
-    assertThat(read.status()).isEqualTo(TaskStatus.DEPLOYED);
-    assertThat(read.deployment().conflictedTarget()).isEmpty();
-  }
-
-  @Test
-  void aMergeConflictStandsWhateverTheDeployBranchPipelinesSay(@TempDir Path root) {
-    StateService state = state(root);
-    ConfigService config = mock(ConfigService.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    Deployment conflicted =
-        new Deployment(
-                1,
-                List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                0,
-                null)
-            .withTarget(
-                "proj", target -> target.withConflict(Conflict.of(Deployment.Cause.MERGE, 1)));
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .build()
-            .withDeployment(conflicted));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.redConflictDisproved(any())).thenReturn(true);
-
-    new DeployCheckJob(
-            config,
-            mock(StepRelay.class),
-            pipelines,
-            new FlowReports(state, Clock.systemUTC()),
-            new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
-                state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
-                Clock.systemUTC()))
-        .runOn(state.tasks());
-
-    assertThat(state.task("ABC-42").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
   }
 
   @Test

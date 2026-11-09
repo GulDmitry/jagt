@@ -4,12 +4,10 @@ import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.GitDeploy;
-import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.TaskState;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -18,25 +16,16 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class DeployConflicts {
 
-  private final StateService stateService;
   private final DeployTargets deployTargets;
   private final GitDeploy gitDeploy;
 
-  /**
-   * Every task handed back from a deploy conflict and not paused, with the worktree it waits in.
-   */
-  public Map<String, WaitingConflict> waiting() {
-    Map<String, WaitingConflict> waiting = new LinkedHashMap<>();
-    stateService
-        .tasks()
-        .forEach(
-            (taskId, task) ->
-                deployTargets
-                    .stopped(task)
-                    .filter(target -> !task.paused())
-                    .filter(target -> holds(task, taskId, target))
-                    .ifPresent(target -> waiting.put(taskId, conflict(taskId, task, target))));
-    return waiting;
+  /** The worktree {@code task} waits in, where it was handed back from a deploy conflict. */
+  public Optional<WaitingConflict> waiting(String taskId, TaskState task) {
+    return deployTargets
+        .stopped(task)
+        .filter(target -> !task.paused())
+        .filter(target -> holds(task, taskId, target))
+        .map(target -> conflict(taskId, task, target));
   }
 
   private boolean holds(TaskState task, String taskId, DeployTargets.Target target) {

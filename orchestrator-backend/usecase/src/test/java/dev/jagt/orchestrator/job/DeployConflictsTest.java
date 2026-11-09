@@ -66,21 +66,19 @@ class DeployConflictsTest {
     when(git.deployResolved(Path.of("/src/web"), "ABC-1", "dev")).thenReturn(true);
     when(git.deployProgress(Path.of("/src/web"), "ABC-1"))
         .thenReturn(new Conflict.Progress(0, 2, "d"));
-    DeployConflicts service = new DeployConflicts(state, new DeployTargets(config), git);
+    DeployConflicts service = new DeployConflicts(new DeployTargets(config), git);
 
-    var conflicts = service.waiting();
+    var conflicts = service.waiting("ABC-1", state.task("ABC-1").orElseThrow());
 
     assertThat(conflicts)
-        .containsExactly(
-            Map.entry(
-                "ABC-1",
-                new DeployConflicts.WaitingConflict(
-                    Path.of("/src/ABC-1-deploy"),
-                    true,
-                    new Conflict.Progress(0, 2, "d"),
-                    null,
-                    false,
-                    new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))));
+        .contains(
+            new DeployConflicts.WaitingConflict(
+                Path.of("/src/ABC-1-deploy"),
+                true,
+                new Conflict.Progress(0, 2, "d"),
+                null,
+                false,
+                new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
   }
 
   @Test
@@ -113,9 +111,35 @@ class DeployConflictsTest {
                     Map.of("web", new ProjectConfig("/src/web", "origin/main", "dev", null))));
     GitDeploy git = mock(GitDeploy.class);
     when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
-    DeployConflicts service = new DeployConflicts(state, new DeployTargets(config), git);
+    DeployConflicts service = new DeployConflicts(new DeployTargets(config), git);
 
-    var conflicts = service.waiting();
+    var conflicts = service.waiting("ABC-1", state.task("ABC-1").orElseThrow());
+
+    assertThat(conflicts).isEmpty();
+  }
+
+  @Test
+  void findsNoConflictWhoseWorktreeIsGone() {
+    TaskState task =
+        TaskState.builder(List.of(TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT)
+            .deployment(
+                new Deployment(
+                    1,
+                    List.of(
+                        Deployment.Target.of("web", "dev")
+                            .withConflict(Conflict.of(Deployment.Cause.MERGE, 1))),
+                    0,
+                    null))
+            .build();
+    ConfigService config = mock(ConfigService.class);
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withProjects(
+                    Map.of("web", new ProjectConfig("/src/web", "origin/main", "dev", null))));
+    DeployConflicts service = new DeployConflicts(new DeployTargets(config), mock(GitDeploy.class));
+
+    var conflicts = service.waiting("ABC-1", task);
 
     assertThat(conflicts).isEmpty();
   }
@@ -153,11 +177,11 @@ class DeployConflictsTest {
     when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
     when(git.deployProgress(Path.of("/src/web"), "ABC-1"))
         .thenReturn(new Conflict.Progress(0, 0, "d"));
-    DeployConflicts service = new DeployConflicts(state, new DeployTargets(config), git);
+    DeployConflicts service = new DeployConflicts(new DeployTargets(config), git);
 
-    var conflicts = service.waiting();
+    var conflicts = service.waiting("ABC-1", state.task("ABC-1").orElseThrow());
 
-    assertThat(conflicts.get("ABC-1").red())
+    assertThat(conflicts.orElseThrow().red())
         .isEqualTo(
             "red pipeline on the deploy commit: web 01234567 https://git.example.invalid/p/7");
   }
@@ -195,20 +219,18 @@ class DeployConflictsTest {
     when(git.revertResolved(Path.of("/src/web"), "ABC-1")).thenReturn(true);
     when(git.revertProgress(Path.of("/src/web"), "ABC-1"))
         .thenReturn(new Conflict.Progress(0, 1, "r"));
-    DeployConflicts service = new DeployConflicts(state, new DeployTargets(config), git);
+    DeployConflicts service = new DeployConflicts(new DeployTargets(config), git);
 
-    var conflicts = service.waiting();
+    var conflicts = service.waiting("ABC-1", state.task("ABC-1").orElseThrow());
 
     assertThat(conflicts)
-        .containsExactly(
-            Map.entry(
-                "ABC-1",
-                new DeployConflicts.WaitingConflict(
-                    Path.of("/src/ABC-1-revert"),
-                    true,
-                    new Conflict.Progress(0, 1, "r"),
-                    null,
-                    true,
-                    new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))));
+        .contains(
+            new DeployConflicts.WaitingConflict(
+                Path.of("/src/ABC-1-revert"),
+                true,
+                new Conflict.Progress(0, 1, "r"),
+                null,
+                true,
+                new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
   }
 }

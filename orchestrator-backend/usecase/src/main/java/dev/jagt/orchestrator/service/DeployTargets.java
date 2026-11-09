@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -52,6 +53,16 @@ public class DeployTargets {
       }
     }
     return landed;
+  }
+
+  /** The deploy branches the task's repositories land on, each once, joined by a comma. */
+  public static String deployBranches(TaskState task, Map<String, ProjectConfig> projects) {
+    return task.repos().stream()
+        .map(repo -> projects.get(repo.project()))
+        .filter(project -> project != null && project.deployBranch() != null)
+        .map(ProjectConfig::deployBranch)
+        .distinct()
+        .collect(Collectors.joining(", "));
   }
 
   /**

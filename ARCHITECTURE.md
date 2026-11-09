@@ -77,6 +77,7 @@ answer. Every type in `flow/`, one question each:
 | `flow/TaskCapability` | `Outcome run(taskId)` — and names no `TaskStatus` |
 | `Outcome` | OK, NOTHING, RELAYED, CONFLICT, PARTIAL, GONE + the sentence, the stamp, the cause |
 | `TaskChart` | the regions and their edges: `edge(chart, DEPLOYED, "deploy read red", move, DEPLOY_CONFLICT)` — one per status move |
+| `ConflictEnding` | which reads end a deploy conflict, by its cause, and under which stops; `job/DeployConflictJob` walks it |
 | `TaskOffers` | which statuses offer which action: a self-loop per action, guarded by the task's facts |
 | `FlowRules` | the questions asked of the chart — `allows`, `allowed`, `next`, `reportable` — and no declaration |
 | `Facts` | the guard's second argument — an open request, a live deploy, and a liveness probe passed as a SUPPLIER |

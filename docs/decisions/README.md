@@ -167,3 +167,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0151 Mutants are judged locally only](0151-mutants-are-judged-locally-only.md) (supersedes 0129)
 - [0152 A stop lifts on the next model tier](0152-a-stop-lifts-on-the-next-model-tier.md) (beside 0140; superseded in part by 0153)
 - [0153 Mine names what the Master leaves](0153-mine-names-what-the-master-leaves.md) (supersedes in part 0016, 0152)
+- [0154 A deploy conflict names the reads that end it](0154-a-deploy-conflict-names-the-reads-that-end-it.md) (beside 0110)

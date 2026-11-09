@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ChecksUnread;
@@ -29,10 +30,8 @@ import org.springframework.stereotype.Service;
 /**
  * Asks every deployed task's session to check the change where it landed, once per deploy, as the
  * brief's deploy section says, and only once the pipeline jagt reads on each deploy commit is
- * green; until then the card says what the deploy waits on. A deploy handed back for a red pipeline
- * is read as well, and stands again once a later pipeline containing the deploy commit is green. A
- * check that fails is the session's IN_PROGRESS, and the round goes round again: reviewed,
- * deployed, checked.
+ * green; until then the card says what the deploy waits on. A check that fails is the session's
+ * IN_PROGRESS, and the round goes round again: reviewed, deployed, checked.
  */
 @Slf4j
 @Service
@@ -71,17 +70,12 @@ public class DeployCheckJob implements TaskJob {
   @Override
   public Watch watch() {
     return Watch.defaults()
-        .withStatuses(
-            status -> FlowRules.checkedWhereItLanded(status) || FlowRules.deployConflicted(status))
+        .withStatuses(FlowRules::checkedWhereItLanded)
         .withStops(StopKind.NONE, StopKind.DEPLOY_READ);
   }
 
   @Override
   public void run(String taskId, TaskState task) {
-    if (FlowRules.deployConflicted(task.status())) {
-      readConflict(taskId, task);
-      return;
-    }
     if (task.stopped()) {
       readStopped(taskId, task);
       return;
@@ -95,16 +89,6 @@ public class DeployCheckJob implements TaskJob {
                 readLate(taskId, task);
               }
             });
-  }
-
-  /**
-   * The read that ends a red-pipeline conflict, run while it stands: a later green pipeline on the
-   * deploy commit's branch disproves it.
-   */
-  private void readConflict(String taskId, TaskState task) {
-    if (pipelines.redConflictDisproved(task)) {
-      reports.endRedConflict(taskId, "deployed to " + deployBranches(task));
-    }
   }
 
   /**
@@ -213,13 +197,7 @@ public class DeployCheckJob implements TaskJob {
   }
 
   private String deployBranches(TaskState task) {
-    Map<String, ProjectConfig> projects = configService.load().projects();
-    return task.repos().stream()
-        .map(repo -> projects.get(repo.project()))
-        .filter(project -> project != null && project.deployBranch() != null)
-        .map(ProjectConfig::deployBranch)
-        .distinct()
-        .collect(Collectors.joining(", "));
+    return DeployTargets.deployBranches(task, configService.load().projects());
   }
 
   private Optional<String> landed(String taskId, TaskState task) {

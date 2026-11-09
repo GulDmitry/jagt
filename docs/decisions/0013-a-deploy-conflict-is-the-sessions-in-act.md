@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-10-06.
+Accepted 2026-10-06. Amended by [0154](0154-a-deploy-conflict-names-the-reads-that-end-it.md): the hand-off is one read of its table.
 
 ## Context
 
