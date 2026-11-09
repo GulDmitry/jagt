@@ -31,7 +31,11 @@ public class CheckerPrompts {
             .map(CheckerPrompts::environment)
             .collect(Collectors.joining("\n"));
     String facts =
-        deployFact(taskId, sha) + "\nCheck it on:\n" + environments + flowsLine(acceptance);
+        deployFact(taskId, sha)
+            + "\nCheck it on:\n"
+            + environments
+            + flowsLine(acceptance)
+            + workspaceLine(acceptance);
     return new CheckerReader.Run(
         brief.text(),
         brief.section(step) + "\n\n" + facts,
@@ -85,6 +89,24 @@ public class CheckerPrompts {
             + path
             + ". In `flows` name the ids checking a criterion: a test tagged `@AC-n`, else its"
             + " title; in `environment` the listed URL they run on.";
+  }
+
+  private static String workspaceLine(RoleOptions acceptance) {
+    return acceptance
+        .workspacePath()
+        .map(
+            root ->
+                "\nWorkspace: "
+                    + root
+                    + ", your working directory."
+                    + (acceptance.flows().command().isEmpty()
+                        ? " No flows command is set."
+                        : " Run a flow as `BASE_URL=<environment> "
+                            + String.join(" ", acceptance.flows().command())
+                            + " <file>`.")
+                    + " In `flows` name each flow you wrote or ran,"
+                    + " in `environment` the URL.")
+        .orElse("");
   }
 
   private static String deployFact(String taskId, String sha) {

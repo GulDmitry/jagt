@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.capability.ship.ShipService;
 import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
@@ -24,6 +25,7 @@ import dev.jagt.orchestrator.service.MissLog;
 import dev.jagt.orchestrator.service.NoTracker;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.ResumeRegistration;
+import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.StopAnnouncements;
@@ -31,6 +33,7 @@ import dev.jagt.orchestrator.service.StopLog;
 import dev.jagt.orchestrator.service.SubAgentBriefing;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.TaskStops;
+import dev.jagt.orchestrator.service.TicketScenarios;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.service.WorktreeChanges;
@@ -54,6 +57,13 @@ import tools.jackson.databind.json.JsonMapper;
 
 class SessionBriefContractTest {
 
+  private final TicketScenarios scenarios =
+      new TicketScenarios(
+          new RoleSettings(
+              RoleDefinition.absent("acceptance"),
+              null,
+              new OrchestratorPaths(OrchestratorProperties.defaults())));
+
   @Test
   void aDeployConflictIsHandedOnlyInAWorktreeTheBriefGrantsAsTheSessionsWithItsMergeExcepted(
       @TempDir Path root) throws Exception {
@@ -74,7 +84,7 @@ class SessionBriefContractTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -168,7 +178,7 @@ class SessionBriefContractTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 web,
@@ -265,7 +275,7 @@ class SessionBriefContractTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("widget-fix", "web").build(),
                 repo,

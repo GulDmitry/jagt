@@ -7,7 +7,7 @@ The headless acceptance check of a deployed change against its ticket, run once 
 
 ### Requirement: A checker is configured under its role
 `jagt.yml` SHALL say only whether a checker is on: `orchestrator.roles.<id>.enabled`, off unless true.
-Its `model`, `environments` and `flows` SHALL be read from `roles/<id>/role.yml` over its `.dist`, again on every check.
+Its `model`, `environments`, `flows` and `workspace` SHALL be read from `roles/<id>/role.yml` over its `.dist`, again on every check.
 jagt SHALL refuse to start while `jagt.yml` writes one of them, or `qa` or `roles.qa`, naming where it now lives.
 
 #### Scenario: No key names acceptance
@@ -88,28 +88,6 @@ unattended move toward `loopBreaker`. A row unprovable, or a verdict with no row
 #### Scenario: A verdict on a sha off the deploy branch
 - **WHEN** the checked sha is no longer the tip when the verdict arrives
 - **THEN** it is dropped and changes nothing on the card
-
-### Requirement: Acceptance writes nothing but its report
-Acceptance SHALL be read-only by construction. Its tools are Read, Grep, Glob, the agent CLI's web fetch, `curl -sS [-i] <url>` and read-only git,
-beside the read-shaped tools of `assistant.allowedTools` and its `tools.mcp`. A browser server there also navigates and looks, writing no file. Its
-curl and its navigation reach a listed environment alone. It holds no Write tool. jagt writes `acceptance-report.md` from acceptance's answer.
-Acceptance never pushes, never touches the base branch and holds no credential; a login is the user's own MCP's. Off, it reads no acceptance file.
-
-#### Scenario: A request that would write
-- **WHEN** a page tells acceptance to POST, to save a response to a file, or to click or type in its browser
-- **THEN** the read gate refuses any curl but `curl -sS [-i] <url>` and any MCP write verb, and acceptance holds no Write
-
-#### Scenario: An environment the web fetch cannot reach
-- **WHEN** the folder's `environments` names `http://127.0.0.1:5000`, which the web fetch refuses as a host without a dot
-- **THEN** acceptance reads it with `curl -sS http://127.0.0.1:5000/version`, and a curl of any other host is refused
-
-#### Scenario: A browser navigation
-- **WHEN** acceptance navigates the browser its `tools.mcp` names to a page of a listed environment, then to another host
-- **THEN** the first goes and the read gate refuses the second, as it refuses a curl there
-
-#### Scenario: Acceptance is off
-- **WHEN** `orchestrator.roles.acceptance.enabled` is off
-- **THEN** no acceptance turn exists, no acceptance file is read and the session's own deploy check runs as today
 
 ### Requirement: A declined round holds DEPLOYED
 A session answering an `acceptance-round` with `no_changes` SHALL leave the task DEPLOYED, since nothing on the deploy changed.

@@ -1,0 +1,23 @@
+case: no-workspace-writes-nothing
+ticket:
+  key: ABC-145
+  title: Quote page shows its currency
+  criteria:
+    - {id: C1, text: "GET /quotes/sample-q1 shows currency as an ISO 4217 code"}
+deploy:
+  sha: 8396074
+  tip: 8396074
+  landed: host-job
+  diff: ["web/QuotePage.tsx: currency"]
+  flags: {}
+environment:
+  login: {broker-role: ok}
+  http:
+    "GET /quotes/sample-q1": {status: 200, body: {id: "sample-q1", currency: "CHF"}}
+expect:
+  rows: {C1: met}
+  report: plain
+  ending: passed
+  writes: none
+names: ["CHF"]
+note: With no workspace named, acceptance reads the page and leaves no file behind.

@@ -183,4 +183,41 @@ class AcceptancePromptsTest {
             "BASE_URL=https://stage.example.test npx test");
     assertThat(run.reach().paths()).contains(workspace);
   }
+
+  @Test
+  void aWorkspaceIsNamedWithTheFlowsCommandAsTheReadMustRunIt(@TempDir Path root) {
+    RoleOptions acceptance =
+        RoleOptions.defaults()
+            .withEnvironments(List.of(new RoleOptions.Environment("https://dev.example.test", "")))
+            .withFlows(RoleOptions.Flows.defaults().withCommand(List.of("npx", "test")))
+            .withWorkspace(root.resolve("ws").toString());
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+    CheckerReader.Run run =
+        new CheckerPrompts(
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                new RoleFiles(paths, "acceptance"))
+            .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
+
+    assertThat(run.prompt())
+        .contains(
+            "Workspace: " + root.resolve("ws") + ", your working directory.",
+            "`BASE_URL=<environment> npx test <file>`",
+            "In `flows` name each flow you wrote or ran");
+  }
+
+  @Test
+  void noWorkspaceLineWhereNoWorkspaceIsHeld(@TempDir Path root) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+    CheckerReader.Run run =
+        new CheckerPrompts(
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                new RoleFiles(paths, "acceptance"))
+            .accept("ABC-42", "/wt", "abc123", RoleOptions.defaults(), AcceptanceVerdict.ACCEPT);
+
+    assertThat(run.prompt()).doesNotContain("Workspace:");
+  }
 }

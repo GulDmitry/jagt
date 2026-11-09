@@ -52,7 +52,18 @@ public final class AcceptanceCases {
         expect.get("probe") == null ? "" : text(expect.get("probe")),
         text(expect.get("ending")),
         ((List<Object>) root.get("names")).stream().map(AcceptanceCases::text).toList(),
-        flows(root));
+        flows(root),
+        workspace(root));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static AcceptanceCase.Workspace workspace(Map<String, Object> root) {
+    Map<String, Object> files = (Map<String, Object>) root.getOrDefault("workspace", Map.of());
+    Map<String, Object> expect = (Map<String, Object>) root.get("expect");
+    Map<String, String> content = new LinkedHashMap<>();
+    files.forEach((name, text) -> content.put(name, text(text)));
+    return new AcceptanceCase.Workspace(
+        content, expect.get("writes") == null ? "" : text(expect.get("writes")));
   }
 
   @SuppressWarnings("unchecked")

@@ -1,0 +1,44 @@
+case: workspace-reuses-a-covered-scenario
+ticket:
+  key: ABC-144
+  title: Quote page keeps showing its validity
+  criteria:
+    - {id: C1, text: "GET /quotes/sample-q1 shows validUntil as an ISO date"}
+deploy:
+  sha: 7285963
+  tip: 7285963
+  landed: host-job
+  diff: ["web/QuotePage.tsx: validUntil kept"]
+  flags: {}
+environment:
+  login: {broker-role: ok}
+  http:
+    "GET /quotes/sample-q1": {status: 200, body: {id: "sample-q1", validUntil: "2026-12-01"}}
+workspace:
+  index.md: |
+    # Acceptance workspace
+
+    Flows run as the flows command, one flow file as its argument: `node runflow.mjs flows/<name>.test.mjs`.
+
+    ## Scenarios
+
+    | scenario | flow | last run |
+    |----------|------|----------|
+    | GET /quotes/sample-q1 shows validUntil as an ISO date (ABC-142 #1) | `flows/validity.test.mjs` | passed |
+  flows/validity.test.mjs: |
+    import test from 'node:test';
+    import assert from 'node:assert';
+
+    test('quote shows validUntil', async () => {
+      const body = await (await fetch(process.env.BASE_URL + '/quotes/sample-q1')).json();
+      assert.match(body.validUntil, /^\d{4}-\d{2}-\d{2}$/);
+    });
+expect:
+  rows: {C1: met}
+  report: plain
+  ending: passed
+  writes: none
+  flows:
+    ids: ["validity"]
+names: ["validUntil"]
+note: The index maps the criterion to a flow; acceptance runs that flow and writes no new file.

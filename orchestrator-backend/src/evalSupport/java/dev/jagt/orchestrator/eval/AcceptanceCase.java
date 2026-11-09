@@ -19,13 +19,21 @@ public record AcceptanceCase(
     String probe,
     String ending,
     List<String> names,
-    Flows flows) {
+    Flows flows,
+    Workspace workspace) {
 
   public record Criterion(String id, String text, boolean testable) {}
 
   public record Deploy(String sha, String landed, List<String> diff, String servedSha) {}
 
   public record Flows(Map<String, String> files, List<String> ids) {}
+
+  public record Workspace(Map<String, String> files, String writes) {
+
+    public boolean held() {
+      return !files.isEmpty();
+    }
+  }
 
   public record Decline(String evidence, String why) {}
 

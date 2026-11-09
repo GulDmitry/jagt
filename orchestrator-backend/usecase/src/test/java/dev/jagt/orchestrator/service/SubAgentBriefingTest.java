@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -15,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class SubAgentBriefingTest {
+
+  private final TicketScenarios scenarios = mock(TicketScenarios.class, call -> "");
 
   @Test
   void pointsTheAgentAtTheRequestTheTaskWasOpenedWithSinceLaterInstructionsReplaceTheContext(
@@ -37,7 +41,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -69,7 +73,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -102,7 +106,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -142,7 +146,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(blank.toString()))))
+                        OrchestratorProperties.defaults().withRoot(blank.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -154,7 +158,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(absent.toString()))))
+                        OrchestratorProperties.defaults().withRoot(absent.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -187,7 +191,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -220,7 +224,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -264,7 +268,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 web,
@@ -307,7 +311,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 web,
@@ -340,7 +344,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -372,7 +376,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -407,7 +411,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").mode("plan").build(),
                 repo,
@@ -440,7 +444,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").mode("auto").build(),
                 repo,
@@ -472,7 +476,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -515,7 +519,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 web,
@@ -550,7 +554,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 web,
@@ -584,7 +588,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -621,7 +625,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -659,7 +663,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -691,7 +695,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -723,7 +727,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -757,7 +761,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -789,7 +793,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -822,7 +826,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -847,7 +851,7 @@ class SubAgentBriefingTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))))
+                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
             .ofScratch(
                 NewTask.unplacedBuilder("ABC-42").mode("plan").build(),
                 ConfigService.ConfigFile.AutoplanConfig.defaults(),
@@ -857,5 +861,58 @@ class SubAgentBriefingTest {
     assertThat(briefing)
         .contains("## Repositories", "- [changed] <key>", "registered in", "No git of any kind")
         .contains("PLAN FIRST", "ASKING IS STOPPING", "no repository");
+  }
+
+  @Test
+  void endsTheBriefingWithTheScenariosLineWhenThereIsOne(@TempDir Path root) throws Exception {
+    NewRepo repo =
+        new NewRepo(
+            "web",
+            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
+            Path.of("/repo/web"),
+            Path.of("/w/ABC-42"),
+            Path.of("/repo/web/.git"),
+            "origin/main",
+            "git@host:g/web.git",
+            true);
+    TicketScenarios found = mock(TicketScenarios.class);
+    when(found.briefingLine("ABC-42")).thenReturn("\n\n<scenarios>rows</scenarios>");
+
+    String briefing =
+        new SubAgentBriefing(
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString()))),
+                found)
+            .of(
+                NewTask.builder("ABC-42", "web").build(),
+                repo,
+                List.of(repo),
+                ConfigService.ConfigFile.AutoplanConfig.defaults(),
+                ConfigService.ConfigFile.VisualizeConfig.defaults(),
+                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+
+    assertThat(briefing).endsWith("<scenarios>rows</scenarios>");
+  }
+
+  @Test
+  void endsTheScratchBriefingWithTheScenariosLineWhenThereIsOne(@TempDir Path root)
+      throws Exception {
+    TicketScenarios found = mock(TicketScenarios.class);
+    when(found.briefingLine("ABC-42")).thenReturn("\n\n<scenarios>rows</scenarios>");
+
+    String briefing =
+        new SubAgentBriefing(
+                new SessionBrief(
+                    new OrchestratorPaths(
+                        OrchestratorProperties.defaults().withRoot(root.toString()))),
+                found)
+            .ofScratch(
+                NewTask.builder("ABC-42", "web").build(),
+                ConfigService.ConfigFile.AutoplanConfig.defaults(),
+                ConfigService.ConfigFile.VisualizeConfig.defaults(),
+                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+
+    assertThat(briefing).endsWith("<scenarios>rows</scenarios>");
   }
 }

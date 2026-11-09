@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.eval.AcceptanceFixtureEnvironment;
 import dev.jagt.orchestrator.eval.AcceptanceJudgement;
 import dev.jagt.orchestrator.eval.AcceptanceScore;
 import dev.jagt.orchestrator.eval.AcceptanceScoreboard;
+import dev.jagt.orchestrator.eval.AcceptanceWorkspaceFiles;
 import dev.jagt.orchestrator.eval.EvalPorts;
 import dev.jagt.orchestrator.eval.EvalQuorum;
 import dev.jagt.orchestrator.eval.EvalStalled;
@@ -29,6 +30,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalDouble;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterAll;
@@ -153,6 +155,12 @@ abstract class AcceptanceVerdictEvalTest {
             AcceptanceEvalWorkspace.root().resolve("repos/" + ROUND.incrementAndGet() + "/repo"),
             deployed);
     String sha = AcceptanceEvalWorkspace.head(worktree);
+    Path workspace = AcceptanceEvalWorkspace.root().resolve("repos/" + ROUND.get() + "/workspace");
+    if (deployed.workspace().held()) {
+      AcceptanceWorkspaceFiles.seed(workspace, deployed);
+    }
+    Path watched = deployed.workspace().held() ? workspace : worktree;
+    Set<String> before = AcceptanceWorkspaceFiles.snapshot(watched);
     String landedProbe =
         deployed.probe().isEmpty()
             ? ""
@@ -164,7 +172,7 @@ abstract class AcceptanceVerdictEvalTest {
             List.of(new RoleOptions.Environment(url, landedProbe)),
             flows(deployed),
             List.of(),
-            "",
+            deployed.workspace().held() ? workspace.toString() : "",
             List.of());
     CheckerReader.Run run =
         deployed.declines()
@@ -198,11 +206,23 @@ abstract class AcceptanceVerdictEvalTest {
               .facts()
               .orElseThrow(() -> EvalStalled.because("no decline answer")));
     }
-    return AcceptanceJudgement.ofVerdict(
-        deployed, reader.read(told).facts().orElseThrow(() -> EvalStalled.because("no verdict")));
+    AcceptanceJudgement judged =
+        AcceptanceJudgement.ofVerdict(
+            deployed,
+            reader.read(told).facts().orElseThrow(() -> EvalStalled.because("no verdict")));
+    assertThat(AcceptanceWorkspaceFiles.problem(deployed, before, watched, url))
+        .describedAs(
+            "%s: the workspace; acceptance said: %s",
+            deployed.name(),
+            judged.cited().substring(0, Math.min(400, judged.cited().length())))
+        .isEmpty();
+    return judged;
   }
 
   private static RoleOptions.Flows flows(AcceptanceCase deployed) throws IOException {
+    if (deployed.workspace().held()) {
+      return RoleOptions.Flows.defaults().withCommand(AcceptanceWorkspaceFiles.FLOWS_COMMAND);
+    }
     if (!deployed.hasFlows()) {
       return RoleOptions.Flows.defaults();
     }

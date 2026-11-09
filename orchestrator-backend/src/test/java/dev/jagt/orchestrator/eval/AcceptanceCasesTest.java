@@ -13,7 +13,7 @@ class AcceptanceCasesTest {
     var cases = AcceptanceCases.all();
 
     assertThat(cases)
-        .hasSize(14)
+        .hasSize(17)
         .allSatisfy(
             loaded ->
                 assertThat(loaded.rows().keySet())
@@ -56,5 +56,32 @@ class AcceptanceCasesTest {
         AcceptanceCases.all().stream().filter(AcceptanceCase::declines).findFirst().orElseThrow();
 
     assertThat(loaded.decline().why()).contains("pinned");
+  }
+
+  @Test
+  void aCaseKeepsTheWorkspaceItSeedsAndWhatItExpectsRunToWrite() {
+    AcceptanceCase loaded =
+        AcceptanceCases.parse(
+            """
+            case: seeds
+            ticket:
+              key: ABC-1
+              title: A title
+              criteria:
+                - {id: C1, text: "first"}
+            deploy: {sha: 1829304, landed: host-job, diff: ["a/B.java: change"]}
+            workspace:
+              index.md: "# index"
+            expect:
+              rows: {C1: met}
+              report: plain
+              ending: passed
+              writes: new
+            names: []
+            """);
+
+    assertThat(loaded.workspace().held()).isTrue();
+    assertThat(loaded.workspace().files()).containsEntry("index.md", "# index");
+    assertThat(loaded.workspace().writes()).isEqualTo("new");
   }
 }

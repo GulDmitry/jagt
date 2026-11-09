@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 public class SubAgentBriefing {
 
   private final SessionBrief brief;
+  private final TicketScenarios scenarios;
 
   public String of(
       NewTask request,
@@ -44,7 +45,8 @@ public class SubAgentBriefing {
             .map(context -> context + "\n\n")
             .orElse("")
         + hardSafety(taskId, baseBranches(repos), deployBranches(repos))
-        + (switches.isBlank() ? "" : "\n\n<switches>\n" + switches.strip() + "\n</switches>");
+        + (switches.isBlank() ? "" : "\n\n<switches>\n" + switches.strip() + "\n</switches>")
+        + scenarios.briefingLine(taskId);
   }
 
   /**
@@ -64,7 +66,8 @@ public class SubAgentBriefing {
             .map(context -> context + "\n\n")
             .orElse("")
         + SCRATCH_SAFETY
-        + (switches.isBlank() ? "" : "\n\n<switches>\n" + switches.strip() + "\n</switches>");
+        + (switches.isBlank() ? "" : "\n\n<switches>\n" + switches.strip() + "\n</switches>")
+        + scenarios.briefingLine(request.taskId());
   }
 
   private static String switches(

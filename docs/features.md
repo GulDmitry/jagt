@@ -63,13 +63,9 @@
   [spec](../openspec/specs/git/spec.md#requirement-push-guard-lives-in-the-worktree)
 - **Several repositories** — One task spans several repositories, a worktree in each; `add-repo` attaches one, `remove-repo` drops one.
   [spec](../openspec/specs/repo-attach/spec.md#requirement-a-running-task-gains-a-repository)
-
-## Git trust · [spec](../openspec/specs/git-trust/spec.md)
 - **Trust before credentials** — Git runs with your credentials only under config and hooks you trusted; only you adopt a change.
   [spec](../openspec/specs/git-trust/spec.md#requirement-git-with-the-humans-credentials-waits-for-trust)
   [spec](../openspec/specs/git-trust/spec.md#requirement-only-the-human-adopts-a-change)
-
-## Guards · [spec](../openspec/specs/guards/spec.md)
 - **Guards** — A session's shell writes only inside its task's worktrees and the tool caches; each refusal is counted on its task.
   [spec](../openspec/specs/guards/spec.md#requirement-a-session-writes-only-inside-its-task)
   [spec](../openspec/specs/guards/spec.md#requirement-a-refusal-is-counted-on-its-task)
@@ -163,10 +159,14 @@
   [spec](../openspec/specs/task-flow/spec.md#requirement-one-table-owns-the-life-of-a-task)
 - **Verify before hand-back** — jagt runs the project's check command and sends a red run back to the session.
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-hand-back-waits-at-verifying)
-- **Deploy check** — A deploy is checked where it landed — by its session, or by a read-only acceptance run when `roles.acceptance.enabled` (off).
+- **Deploy check** — A deploy is checked where it landed — by its session, or by an acceptance run when `roles.acceptance.enabled` (off).
   A green pipeline stands it, a red one is re-run once, then goes back to the session in the deploy worktree. Key: `codeHost`.
   [spec](../openspec/specs/deploy-check/spec.md#requirement-every-deploy-is-checked-where-it-landed) · [role](../openspec/specs/acceptance/spec.md)
   · [host](../openspec/specs/deploy-check/spec.md#requirement-the-code-host-is-chosen)
+- **Acceptance workspace** — Acceptance keeps its scenarios, steps and flows in a folder of its own and writes only there.
+  [spec](../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-keeps-its-checks-in-its-workspace)
+- **Ticket analysis** — Before a plan, acceptance writes the ticket's WHEN/THEN rows, asks one question per gap, and the plan copies the open rows.
+  [spec](../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-analyses-a-ticket-before-its-plan)
 - **Stalled conflict** — A deploy conflict handed to its session that stops moving is yours: one banner, the card says why.
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-stalled-deploy-conflict-is-the-humans)
 - **Starting a task** — A task starts from a ticket or a sentence, in its own worktree on its own branch.
