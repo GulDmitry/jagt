@@ -13,7 +13,7 @@ class AcceptanceCasesTest {
     var cases = AcceptanceCases.all();
 
     assertThat(cases)
-        .hasSize(17)
+        .hasSizeGreaterThanOrEqualTo(17)
         .allSatisfy(
             loaded ->
                 assertThat(loaded.rows().keySet())
@@ -83,5 +83,34 @@ class AcceptanceCasesTest {
     assertThat(loaded.workspace().held()).isTrue();
     assertThat(loaded.workspace().files()).containsEntry("index.md", "# index");
     assertThat(loaded.workspace().writes()).isEqualTo("new");
+  }
+
+  @Test
+  void aCaseKeepsTheFlowsDirectoryAndCommandItPointsAt() {
+    AcceptanceCase loaded =
+        AcceptanceCases.parse(
+            """
+            case: points
+            ticket:
+              key: ABC-1
+              title: A title
+              criteria:
+                - {id: C1, text: "first"}
+            deploy: {sha: 1829304, landed: host-job, diff: ["a/B.java: change"]}
+            environment:
+              live: https://app.example.test
+            flows:
+              path: /checks/example
+              command: ["npx", "playwright", "test"]
+            expect:
+              rows: {C1: met}
+              report: plain
+              ending: passed
+            names: []
+            """);
+
+    assertThat(loaded.flows().path()).isEqualTo("/checks/example");
+    assertThat(loaded.flows().command()).containsExactly("npx", "playwright", "test");
+    assertThat(loaded.flows().files()).isEmpty();
   }
 }

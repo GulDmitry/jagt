@@ -223,8 +223,14 @@ abstract class AcceptanceVerdictEvalTest {
     if (deployed.workspace().held()) {
       return RoleOptions.Flows.defaults().withCommand(AcceptanceWorkspaceFiles.FLOWS_COMMAND);
     }
-    if (!deployed.hasFlows()) {
+    if (!deployed.flows().given()) {
       return RoleOptions.Flows.defaults();
+    }
+    if (!deployed.flows().path().isEmpty()) {
+      return RoleOptions.Flows.defaults()
+          .withDriver("playwright")
+          .withPath(deployed.flows().path())
+          .withCommand(deployed.flows().command());
     }
     Path directory = AcceptanceEvalWorkspace.root().resolve("repos/" + ROUND.get() + "/flows");
     Files.createDirectories(directory);

@@ -26,7 +26,13 @@ public record AcceptanceCase(
 
   public record Deploy(String sha, String landed, List<String> diff, String servedSha) {}
 
-  public record Flows(Map<String, String> files, List<String> ids) {}
+  public record Flows(
+      Map<String, String> files, List<String> ids, String path, List<String> command) {
+
+    public boolean given() {
+      return !files.isEmpty() || !path.isEmpty();
+    }
+  }
 
   public record Workspace(Map<String, String> files, String writes) {
 

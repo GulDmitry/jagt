@@ -17,9 +17,15 @@ public final class AcceptanceFixtureEnvironment implements AutoCloseable {
   private static final JsonMapper MAPPER = new JsonMapper();
 
   private final HttpServer server;
+  private final String url;
   private final Map<String, Reply> replies = new HashMap<>();
 
   private record Reply(int status, String contentType, String body) {}
+
+  private AcceptanceFixtureEnvironment(String live) {
+    server = null;
+    url = live;
+  }
 
   @SuppressWarnings("unchecked")
   private AcceptanceFixtureEnvironment(Map<String, Object> environment) throws IOException {
@@ -40,9 +46,13 @@ public final class AcceptanceFixtureEnvironment implements AutoCloseable {
     server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
     server.createContext("/", this::answer);
     server.start();
+    url = "http://127.0.0.1:" + server.getAddress().getPort();
   }
 
   public static AcceptanceFixtureEnvironment serve(Map<String, Object> environment) {
+    if (environment.get("live") instanceof String live) {
+      return new AcceptanceFixtureEnvironment(live);
+    }
     try {
       return new AcceptanceFixtureEnvironment(environment);
     } catch (IOException unbound) {
@@ -51,12 +61,14 @@ public final class AcceptanceFixtureEnvironment implements AutoCloseable {
   }
 
   public String url() {
-    return "http://127.0.0.1:" + server.getAddress().getPort();
+    return url;
   }
 
   @Override
   public void close() {
-    server.stop(0);
+    if (server != null) {
+      server.stop(0);
+    }
   }
 
   private static Reply http(Map<String, Object> recorded) {
