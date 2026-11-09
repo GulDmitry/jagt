@@ -163,10 +163,10 @@
   A green pipeline stands it, a red one is re-run once, then goes back to the session in the deploy worktree. Key: `codeHost`.
   [spec](../openspec/specs/deploy-check/spec.md#requirement-every-deploy-is-checked-where-it-landed) · [role](../openspec/specs/acceptance/spec.md)
   · [host](../openspec/specs/deploy-check/spec.md#requirement-the-code-host-is-chosen)
-- **Acceptance workspace** — Acceptance keeps its scenarios, steps and flows in a folder of its own and writes only there.
+- **Acceptance workspace** — Acceptance keeps scenarios in its own folder, writes only there, and asks one question per ticket gap in a session.
   [spec](../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-keeps-its-checks-in-its-workspace)
-- **Ticket analysis** — Before a plan, acceptance writes the ticket's WHEN/THEN rows, asks one question per gap, and the plan copies the open rows.
   [spec](../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-analyses-a-ticket-before-its-plan)
+  [spec](../openspec/specs/acceptance-workspace/spec.md#requirement-acceptance-has-an-interactive-session)
 - **Stalled conflict** — A deploy conflict handed to its session that stops moving is yours: one banner, the card says why.
   [spec](../openspec/specs/task-flow/spec.md#requirement-a-stalled-deploy-conflict-is-the-humans)
 - **Starting a task** — A task starts from a ticket or a sentence, in its own worktree on its own branch.
