@@ -178,10 +178,20 @@ public class TmuxSessionHost implements SessionHost {
         resolved.stream()
             .map(part -> "'" + part.replace("'", "'\\''") + "'")
             .collect(Collectors.joining(" "));
+    shown(session, dedicatedTitle, name, VIEWER_CWD, line);
+  }
+
+  @Override
+  public void openShellWindow(
+      String session, String dedicatedTitle, String name, Path cwd, String command) {
+    shown(session, dedicatedTitle, name, cwd, command);
+  }
+
+  private void shown(String session, String dedicatedTitle, String name, Path cwd, String line) {
     synchronized (lock) {
       ensureSession(session);
       killTaskWindows(session, name);
-      String windowId = newWindow(session, name, VIEWER_CWD, line);
+      String windowId = newWindow(session, name, cwd, line);
       processRunner.run(null, TIMEOUT, tmux("select-window", "-t", windowId));
       ensureViewer(session, dedicatedTitle);
     }

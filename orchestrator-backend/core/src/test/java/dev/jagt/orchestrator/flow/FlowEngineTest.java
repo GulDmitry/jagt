@@ -63,6 +63,24 @@ class FlowEngineTest {
     }
   }
 
+  private record ScenariosThatAre(boolean ready, Outcome outcome) implements TaskCapability {
+
+    @Override
+    public TaskAction action() {
+      return TaskAction.SCENARIOS;
+    }
+
+    @Override
+    public boolean offered() {
+      return ready;
+    }
+
+    @Override
+    public Outcome run(String taskId) {
+      return outcome;
+    }
+  }
+
   private record NeverRunCapability(TaskAction action) implements TaskCapability {
 
     @Override
@@ -91,6 +109,41 @@ class FlowEngineTest {
                 assertThat(refusal)
                     .hasMessageContaining("No task ABC-1")
                     .hasMessageContaining("may have been closed"));
+  }
+
+  @Test
+  void refusesScenariosWhereAcceptanceIsNotReady() {
+    when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+    when(stateService.task("ABC-1"))
+        .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()));
+    FlowEngine engine =
+        new FlowEngine(
+            stateService,
+            new Capabilities(List.of(new ScenariosThatAre(false, Outcome.ok("opened"))), List.of()),
+            sessions,
+            Clock.systemUTC(),
+            ignored -> false);
+
+    assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SCENARIOS))
+        .asInstanceOf(type(Refusal.class))
+        .satisfies(
+            refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
+  }
+
+  @Test
+  void takesScenariosWhereAcceptanceIsReady() {
+    when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+    when(stateService.task("ABC-1"))
+        .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()));
+    FlowEngine engine =
+        new FlowEngine(
+            stateService,
+            new Capabilities(List.of(new ScenariosThatAre(true, Outcome.ok("opened"))), List.of()),
+            sessions,
+            Clock.systemUTC(),
+            ignored -> false);
+
+    assertThat(engine.run("ABC-1", TaskAction.SCENARIOS)).isEqualTo("opened");
   }
 
   @Test

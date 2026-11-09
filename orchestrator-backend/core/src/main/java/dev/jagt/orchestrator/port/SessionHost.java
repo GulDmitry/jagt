@@ -81,6 +81,13 @@ public interface SessionHost {
    */
   void openCommandWindow(String session, String dedicatedTitle, String name, List<String> command);
 
+  /**
+   * Runs the shell line {@code command} in {@code cwd} as the process of a window named {@code
+   * name}, replacing one of that name, and shows it to the human.
+   */
+  void openShellWindow(
+      String session, String dedicatedTitle, String name, Path cwd, String command);
+
   /** Brings the task's window to whoever is attached; false when there is no such window. */
   boolean focusTaskWindow(String session, String dedicatedTitle, String taskId);
 

@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.AgentWorktree;
+import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.port.Sandbox;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -1008,6 +1009,32 @@ class ClaudeAgentRuntimeTest {
 
     assertThat(runtime.launchCommand(Path.of("/wt"), false, "  "))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'go'");
+  }
+
+  @Test
+  void allowsAWorkspaceSessionToWriteItsWorkspaceAndRunItsCommandsAfterThePrompt(
+      @TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
+    var runtime =
+        new ClaudeAgentRuntime(
+            new SessionBrief(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
+            new ClaudeProperties("claude", "", "", List.of()),
+            new McpEndpoint("http://localhost:8290/mcp"),
+            new HookEndpoint(
+                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
+            Clock.systemUTC());
+
+    assertThat(
+            runtime.workspaceCommand(
+                Path.of("/ws"),
+                "",
+                "p",
+                new CheckerReader.Workspace(Path.of("/ws"), List.of("npx test"))))
+        .isEqualTo(
+            "CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'p' --allowedTools 'Read' 'Grep' 'Glob'"
+                + " 'Write(//ws/**)' 'Edit(//ws/**)' 'Bash(npx test:*)'");
   }
 
   @Test

@@ -103,7 +103,7 @@ class AcceptanceRoundFlowTest {
             state,
             new LinkRefusals(new ReachLedger(), (session, line) -> "", state),
             flow,
-            new HandBack(mock(WorktreeChanges.class), new Rounds(config, ignored -> false), config),
+            new HandBack(mock(WorktreeChanges.class), new Rounds(config, ignored -> false, () -> false), config),
             config);
     AcceptanceVerdict verdict =
         new AcceptanceVerdict(
@@ -186,7 +186,7 @@ class AcceptanceRoundFlowTest {
             state,
             new LinkRefusals(new ReachLedger(), (session, line) -> "", state),
             flow,
-            new HandBack(mock(WorktreeChanges.class), new Rounds(config, ignored -> false), config),
+            new HandBack(mock(WorktreeChanges.class), new Rounds(config, ignored -> false, () -> false), config),
             config);
     AcceptanceVerdict verdict =
         new AcceptanceVerdict(

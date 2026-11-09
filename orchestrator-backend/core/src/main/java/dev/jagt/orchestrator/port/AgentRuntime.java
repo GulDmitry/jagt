@@ -44,6 +44,16 @@ public interface AgentRuntime {
   }
 
   /**
+   * The session started on {@code prompt} in {@code root}, a folder that is no worktree, allowed
+   * the shell commands and the writes {@code reach} names; a runtime that cannot be told leaves
+   * every call to the human's own answer.
+   */
+  default String workspaceCommand(
+      Path root, String model, String prompt, CheckerReader.Workspace reach) {
+    return launchCommand(root, false, model, prompt);
+  }
+
+  /**
    * The command re-entering the session this worktree last held, for a window jagt revives on its
    * own rather than one a human restarted; the fresh {@link #launchCommand} where the runtime keeps
    * nothing to re-enter.

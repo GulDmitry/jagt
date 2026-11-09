@@ -77,7 +77,7 @@ class MasterStopJobTest {
             panel,
             moves,
             new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false))
+            new Rounds(config, ignored -> false, () -> false))
         .runOn(state.tasks());
 
     verify(moves).lift("ABC-42");
@@ -97,7 +97,7 @@ class MasterStopJobTest {
             panel,
             moves,
             new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false))
+            new Rounds(config, ignored -> false, () -> false))
         .runOn(state.tasks());
 
     verify(panel, never()).ask(anyString(), any(), any());
@@ -119,7 +119,7 @@ class MasterStopJobTest {
             panel,
             moves,
             new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false));
+            new Rounds(config, ignored -> false, () -> false));
 
     job.runOn(state.tasks());
     job.runOn(state.tasks());
@@ -142,7 +142,7 @@ class MasterStopJobTest {
             panel,
             moves,
             new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false))
+            new Rounds(config, ignored -> false, () -> false))
         .runOn(state.tasks());
 
     verify(panel, never()).ask(anyString(), any(), any());
@@ -168,7 +168,7 @@ class MasterStopJobTest {
             panel,
             moves,
             new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false))
+            new Rounds(config, ignored -> false, () -> false))
         .runOn(state.tasks());
 
     verify(moves).returned("ABC-42", "fix the fixture, not the test");
@@ -188,7 +188,7 @@ class MasterStopJobTest {
             panel,
             moves,
             new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false))
+            new Rounds(config, ignored -> false, () -> false))
         .runOn(state.tasks());
 
     verify(panel, never()).ask(anyString(), any(), any());
@@ -208,7 +208,7 @@ class MasterStopJobTest {
             panel,
             moves,
             new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false))
+            new Rounds(config, ignored -> false, () -> false))
         .runOn(state.tasks());
 
     verify(panel, never()).ask(anyString(), any(), any());
@@ -230,7 +230,7 @@ class MasterStopJobTest {
             panel,
             moves,
             new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false));
+            new Rounds(config, ignored -> false, () -> false));
 
     assertThatThrownBy(() -> job.runOn(state.tasks())).isInstanceOf(IllegalStateException.class);
     job.runOn(state.tasks());
@@ -266,7 +266,7 @@ class MasterStopJobTest {
             panel,
             moves,
             new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false))
+            new Rounds(config, ignored -> false, () -> false))
         .runOn(state.tasks());
 
     verify(moves, never()).lift(anyString());
@@ -288,7 +288,7 @@ class MasterStopJobTest {
             panel,
             moves,
             new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false))
+            new Rounds(config, ignored -> false, () -> false))
         .runOn(state.tasks());
 
     verify(moves).escalate("ABC-42");
@@ -317,7 +317,7 @@ class MasterStopJobTest {
             panel,
             moves,
             new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false))
+            new Rounds(config, ignored -> false, () -> false))
         .runOn(state.tasks());
 
     verify(moves, never()).escalate(anyString());

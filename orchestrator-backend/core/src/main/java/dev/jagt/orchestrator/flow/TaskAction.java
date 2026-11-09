@@ -85,6 +85,12 @@ public enum TaskAction {
       "done",
       "Done",
       "kill the session, delete the worktree, drop the task; the branch is kept"),
+  SCENARIOS(
+      65,
+      Group.TOOL,
+      "scenarios",
+      "Scenarios",
+      "open an interactive acceptance session on this ticket, before its deploy"),
   FOCUS(70, Group.TOOL, "focus", "Focus", "open the agent's terminal window"),
   IDE(
       50,

@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.AcceptanceDecline;
 import dev.jagt.orchestrator.task.AcceptanceEnding;
+import dev.jagt.orchestrator.task.AcceptanceQuestion;
 import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -155,7 +156,7 @@ public class CheckerOutcomes {
     reports.ask(
         taskId,
         AgentReport.QUESTION,
-        "Acceptance could not prove, on "
+        AcceptanceQuestion.PREFIX
             + verdict.sha()
             + ":\n"
             + (said.isBlank() ? "the check named no criterion" : said));

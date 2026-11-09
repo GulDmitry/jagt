@@ -71,6 +71,9 @@ final class TaskOffers {
   private static final RegionId<Fact> REVERT_CONFLICT =
       new RegionId<>("revert conflict", Fact.class);
 
+  private static final RegionId<Fact> SCENARIOS_READY =
+      new RegionId<>("scenarios ready", Fact.class);
+
   private record Need(RegionId<Fact> region, Fact is) {}
 
   private record Offer(TaskAction action, Set<TaskStatus> from, List<Need> needs) {}
@@ -137,6 +140,7 @@ final class TaskOffers {
           offer(TaskAction.PAUSE, STARTED, no(STOPPED)),
           offer(TaskAction.LIFT, ANY, yes(STOPPED)),
           offer(TaskAction.ESCALATE, ANY, yes(STOPPED), yes(TIER_ABOVE)),
+          offer(TaskAction.SCENARIOS, OPEN, no(LIVE_DEPLOY), yes(SCENARIOS_READY)),
           offer(TaskAction.FOCUS, ANY),
           offer(TaskAction.IDE, ANY),
           offer(TaskAction.DIFF, ANY),
@@ -164,6 +168,7 @@ final class TaskOffers {
         SHIPPED_WITHOUT_REQUEST,
         facts -> Fact.of(facts.facts().delivery().shippedWithoutRequest()));
     chart.derived(REVERT_CONFLICT, facts -> Fact.of(facts.facts().delivery().revertConflict()));
+    chart.derived(SCENARIOS_READY, facts -> Fact.of(facts.facts().reach().scenarios()));
     for (Offer offer : OFFERS) {
       chart
           .onMatching(

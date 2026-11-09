@@ -9,14 +9,14 @@ import java.util.Optional;
  * The Claude Code tool list and permission rules for a read scope: reads always on, writes always
  * refused but under the workspace, when one is held.
  */
-record ClaudeToolScope(String tools, List<String> allow, List<String> refuse) {
+public record ClaudeToolScope(String tools, List<String> allow, List<String> refuse) {
 
-  static ClaudeToolScope of(
+  public static ClaudeToolScope of(
       List<String> shell, List<String> refuseShell, List<String> refuseRead, boolean fetch) {
     return of(shell, refuseShell, refuseRead, fetch, Optional.empty());
   }
 
-  static ClaudeToolScope of(
+  public static ClaudeToolScope of(
       List<String> shell,
       List<String> refuseShell,
       List<String> refuseRead,

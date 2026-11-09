@@ -76,44 +76,46 @@ stateDiagram-v2
         lifecycle_from_25 --> lifecycle_from_25 : offers lift
         state "all" as lifecycle_from_26
         lifecycle_from_26 --> lifecycle_from_26 : offers escalate
-        state "all" as lifecycle_from_27
-        lifecycle_from_27 --> lifecycle_from_27 : offers focus
+        state "all but DONE" as lifecycle_from_27
+        lifecycle_from_27 --> lifecycle_from_27 : offers scenarios
         state "all" as lifecycle_from_28
-        lifecycle_from_28 --> lifecycle_from_28 : offers ide
+        lifecycle_from_28 --> lifecycle_from_28 : offers focus
         state "all" as lifecycle_from_29
-        lifecycle_from_29 --> lifecycle_from_29 : offers diff
+        lifecycle_from_29 --> lifecycle_from_29 : offers ide
         state "all" as lifecycle_from_30
-        lifecycle_from_30 --> lifecycle_from_30 : offers respawn
+        lifecycle_from_30 --> lifecycle_from_30 : offers diff
         state "all" as lifecycle_from_31
-        lifecycle_from_31 --> lifecycle_from_31 : offers done
-        state "NEW, PLAN_PENDING, IN_PROGRESS" as lifecycle_from_32
-        lifecycle_from_32 --> lifecycle_PLAN_PENDING : report PLAN_PENDING
-        state "all but DEPLOY_CONFLICT, REVERTED, DONE" as lifecycle_from_33
-        lifecycle_from_33 --> lifecycle_IN_PROGRESS : report IN_PROGRESS
+        lifecycle_from_31 --> lifecycle_from_31 : offers respawn
+        state "all" as lifecycle_from_32
+        lifecycle_from_32 --> lifecycle_from_32 : offers done
+        state "NEW, PLAN_PENDING, IN_PROGRESS" as lifecycle_from_33
+        lifecycle_from_33 --> lifecycle_PLAN_PENDING : report PLAN_PENDING
+        state "all but DEPLOY_CONFLICT, REVERTED, DONE" as lifecycle_from_34
+        lifecycle_from_34 --> lifecycle_IN_PROGRESS : report IN_PROGRESS
         lifecycle_DEPLOY_CONFLICT --> lifecycle_DEPLOY_CONFLICT : report IN_PROGRESS
         lifecycle_REVERTED --> lifecycle_REVERTED : report IN_PROGRESS
-        state "all but DEPLOY_CONFLICT, REVERTED, DONE" as lifecycle_from_34
-        lifecycle_from_34 --> lifecycle_VERIFYING : report REVIEW_PENDING owing verification
         state "all but DEPLOY_CONFLICT, REVERTED, DONE" as lifecycle_from_35
-        lifecycle_from_35 --> lifecycle_REVIEW_PENDING : report REVIEW_PENDING
+        lifecycle_from_35 --> lifecycle_VERIFYING : report REVIEW_PENDING owing verification
+        state "all but DEPLOY_CONFLICT, REVERTED, DONE" as lifecycle_from_36
+        lifecycle_from_36 --> lifecycle_REVIEW_PENDING : report REVIEW_PENDING
         lifecycle_DEPLOY_CONFLICT --> lifecycle_DEPLOY_CONFLICT : report REVIEW_PENDING
         lifecycle_REVERTED --> lifecycle_REVERTED : report REVIEW_PENDING
-        state "all but DEPLOY_CONFLICT, REVERTED, DONE" as lifecycle_from_36
-        lifecycle_from_36 --> lifecycle_SHIPPING : report SHIPPING
+        state "all but DEPLOY_CONFLICT, REVERTED, DONE" as lifecycle_from_37
+        lifecycle_from_37 --> lifecycle_SHIPPING : report SHIPPING
         lifecycle_DEPLOY_CONFLICT --> lifecycle_DEPLOY_CONFLICT : report SHIPPING
         lifecycle_REVERTED --> lifecycle_REVERTED : report SHIPPING
-        state "NEW, IN_PROGRESS, REVIEW_PENDING, SHIPPING, CI_POLLING, CI_FAILED" as lifecycle_from_37
-        lifecycle_from_37 --> lifecycle_CI_POLLING : report CI_POLLING
-        state "all but DEPLOY_CONFLICT, REVERTED, DONE" as lifecycle_from_38
-        lifecycle_from_38 --> lifecycle_CI_FAILED : report CI_FAILED
+        state "NEW, IN_PROGRESS, REVIEW_PENDING, SHIPPING, CI_POLLING, CI_FAILED" as lifecycle_from_38
+        lifecycle_from_38 --> lifecycle_CI_POLLING : report CI_POLLING
+        state "all but DEPLOY_CONFLICT, REVERTED, DONE" as lifecycle_from_39
+        lifecycle_from_39 --> lifecycle_CI_FAILED : report CI_FAILED
         lifecycle_DEPLOY_CONFLICT --> lifecycle_DEPLOY_CONFLICT : report CI_FAILED
         lifecycle_REVERTED --> lifecycle_REVERTED : report CI_FAILED
-        state "CI_POLLING, CI_FAILED, REVIEWED, APPROVED" as lifecycle_from_39
-        lifecycle_from_39 --> lifecycle_CI_FAILED : read CI_FAILED
         state "CI_POLLING, CI_FAILED, REVIEWED, APPROVED" as lifecycle_from_40
-        lifecycle_from_40 --> lifecycle_REVIEWED : read REVIEWED
+        lifecycle_from_40 --> lifecycle_CI_FAILED : read CI_FAILED
         state "CI_POLLING, CI_FAILED, REVIEWED, APPROVED" as lifecycle_from_41
-        lifecycle_from_41 --> lifecycle_APPROVED : read APPROVED
+        lifecycle_from_41 --> lifecycle_REVIEWED : read REVIEWED
+        state "CI_POLLING, CI_FAILED, REVIEWED, APPROVED" as lifecycle_from_42
+        lifecycle_from_42 --> lifecycle_APPROVED : read APPROVED
         lifecycle_DEPLOY_CONFLICT --> lifecycle_DEPLOYED : conflicted repository left
         lifecycle_DEPLOY_CONFLICT --> lifecycle_REVIEWED : conflicted repository left, nothing landed
         lifecycle_DEPLOYED --> lifecycle_DEPLOY_CONFLICT : deploy read red
