@@ -5,6 +5,14 @@
 A deployed change is checked against its ticket by someone other than the session that built it. Acceptance does it
 once per deploy, and organises its checks so a later check reuses what an earlier one learnt and spends fewer tokens.
 
+## Responsibility
+
+- Owns the check of a deployed change against its ticket, one row per criterion.
+- Owns its own workspace of scenarios, steps and flows, and the `index.md` that lists them.
+- Does not own the code fix: a row not met goes to the session as an `acceptance-round`.
+- Does not own the deploy: the human, or the Master in `act`, presses it.
+- Does not own a stop's lift: the human does.
+
 ## Who triggers it
 
 jagt alone: a task DEPLOYED, its deploy pipelines green, the role's `environments` naming one. Never a model's answer.

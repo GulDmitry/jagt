@@ -68,6 +68,24 @@ class RoleNamesTest {
         .isEmpty();
   }
 
+  @Test
+  void everyRoleFolderHoldsADesign() {
+    try (Stream<Path> folders = Files.list(Path.of("..", "roles"))) {
+      assertThat(
+              folders
+                  .filter(Files::isDirectory)
+                  .filter(
+                      folder ->
+                          Files.exists(folder.resolve("brief.md.dist"))
+                              || Files.exists(folder.resolve("role.yml.dist")))
+                  .filter(folder -> !Files.exists(folder.resolve("design.md")))
+                  .map(folder -> folder.getFileName().toString()))
+          .isEmpty();
+    } catch (IOException unread) {
+      throw new UncheckedIOException(unread);
+    }
+  }
+
   private static Stream<String> roleFolderIds() {
     try (Stream<Path> folders = Files.list(Path.of("..", "roles"))) {
       return folders
