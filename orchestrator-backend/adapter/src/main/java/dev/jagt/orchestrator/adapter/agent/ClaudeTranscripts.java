@@ -171,14 +171,15 @@ final class ClaudeTranscripts {
    * The newest conversation's last human prompts and model text, oldest first; the oldest is cut to
    * fit.
    */
-  static Optional<String> tail(Path projectsDir, Path sessionDirectory, int maxChars) {
+  static Optional<String> tail(
+      Path projectsDir, Path sessionDirectory, int maxChars, Set<String> typedByJagt) {
     Optional<Path> newest = newestLog(projectsDir, sessionDirectory);
     if (newest.isEmpty()) {
       return Optional.empty();
     }
     List<String> said = new ArrayList<>();
     try (Stream<String> lines = Files.lines(newest.get())) {
-      lines.forEach(line -> spoken(line).ifPresent(said::add));
+      lines.forEach(line -> spoken(line, typedByJagt).ifPresent(said::add));
     } catch (IOException | RuntimeException unreadable) {
       log.atWarn()
           .setMessage("conversation unreadable")
@@ -198,10 +199,13 @@ final class ClaudeTranscripts {
     return kept.isEmpty() ? Optional.empty() : Optional.of(String.join("\n", kept));
   }
 
-  private static Optional<String> spoken(String line) {
+  private static Optional<String> spoken(String line, Set<String> typedByJagt) {
     Optional<String> human = typed(line);
     if (human.isPresent()) {
-      return human.filter(text -> !text.isBlank()).map(text -> "human: " + oneLine(text));
+      return human
+          .map(text -> cut(text, typedByJagt))
+          .filter(text -> !text.isEmpty())
+          .map(text -> "human: " + oneLine(text));
     }
     if (!line.contains("\"assistant\"")) {
       return Optional.empty();

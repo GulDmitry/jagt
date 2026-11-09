@@ -123,8 +123,10 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   }
 
   @Override
-  public Optional<String> conversationTail(Path worktree, int maxChars) {
-    return ClaudeTranscripts.tail(ClaudeTranscripts.projectsDir(), worktree, maxChars);
+  public Optional<String> conversationTail(
+      Path worktree, int maxChars, Set<String> typedByJagt) {
+    return ClaudeTranscripts.tail(
+        ClaudeTranscripts.projectsDir(), worktree, maxChars, withBriefLines(typedByJagt));
   }
 
   @Override
@@ -175,18 +177,21 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
   @Override
   public Optional<List<String>> humanSaid(Path worktree, Set<String> typedByJagt) {
-    Set<String> cut = new HashSet<>(typedByJagt);
-    cut.add(brief.line(Step.START));
-    cut.add(brief.line(Step.REVIVE));
-    return ClaudeTranscripts.humanSaid(ClaudeTranscripts.projectsDir(), worktree, cut);
+    return ClaudeTranscripts.humanSaid(
+        ClaudeTranscripts.projectsDir(), worktree, withBriefLines(typedByJagt));
   }
 
   @Override
   public boolean humanExchangeOpen(Path worktree, Set<String> typedByJagt) {
+    return ClaudeTranscripts.humanExchangeOpen(
+        ClaudeTranscripts.projectsDir(), worktree, withBriefLines(typedByJagt));
+  }
+
+  private Set<String> withBriefLines(Set<String> typedByJagt) {
     Set<String> cut = new HashSet<>(typedByJagt);
     cut.add(brief.line(Step.START));
     cut.add(brief.line(Step.REVIVE));
-    return ClaudeTranscripts.humanExchangeOpen(ClaudeTranscripts.projectsDir(), worktree, cut);
+    return cut;
   }
 
   @Override

@@ -1457,7 +1457,7 @@ class AgentSessionsTest {
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
     when(tmux.sessionName(null)).thenReturn("jagt");
     when(agentRuntime.sessionLogOf(root)).thenReturn(Optional.of(Path.of("/logs/old.jsonl")));
-    when(agentRuntime.conversationTail(root, 16_000))
+    when(agentRuntime.conversationTail(root, 16_000, Set.of(AgentSessions.NUDGE)))
         .thenReturn(Optional.of("human: it is the second route"));
     when(changes.history(any(TaskState.class), eq(40))).thenReturn("abc123 Add export");
     AgentSessions sessions =

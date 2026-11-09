@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.TaskState;
 import java.nio.file.Path;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +40,7 @@ public class CarriedBlock {
             .append(changes.history(task, MAX_GIT_LINES))
             .append('\n');
     runtime
-        .conversationTail(worktree, MAX_CONVERSATION_CHARS)
+        .conversationTail(worktree, MAX_CONVERSATION_CHARS, Set.of(AgentSessions.NUDGE))
         .ifPresent(
             tail ->
                 carried.append("### Its last words, newest last\n").append(tail).append("\n\n"));

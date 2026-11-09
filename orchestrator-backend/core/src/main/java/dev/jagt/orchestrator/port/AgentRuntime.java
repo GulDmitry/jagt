@@ -242,10 +242,11 @@ public interface AgentRuntime {
 
   /**
    * What the conversation in {@code worktree} last said, newest kept within {@code maxChars}: the
-   * human's prompts and the model's own text, never a tool's input or output. Empty where this
-   * runtime keeps no record to read.
+   * human's prompts, every {@code typedByJagt} cut out, and the model's own text, never a tool's
+   * input or output. Empty where this runtime keeps no record to read.
    */
-  default Optional<String> conversationTail(Path worktree, int maxChars) {
+  default Optional<String> conversationTail(
+      Path worktree, int maxChars, Set<String> typedByJagt) {
     return Optional.empty();
   }
 

@@ -1373,7 +1373,7 @@ class ClaudeAgentRuntimeTest {
                 "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
             Clock.systemUTC());
 
-    assertThat(runtime.conversationTail(worktree, 16_000)).contains("human: fix the login");
+    assertThat(runtime.conversationTail(worktree, 16_000, Set.of())).contains("human: fix the login");
     assertThat(runtime.sessionLogOf(worktree)).contains(log);
     assertThat(runtime.lastSessionActivity(worktree))
         .isEqualTo(OptionalLong.of(1_700_000_000_000L));

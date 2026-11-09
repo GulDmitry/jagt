@@ -193,7 +193,7 @@ class ClaudeTranscriptsTest {
         {"type":"assistant","message":{"content":[{"type":"text","text":"Fixed."}]}}
         """);
 
-    String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000).orElseThrow();
+    String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000, Set.of()).orElseThrow();
 
     assertThat(tail)
         .isEqualTo("human: fix the login\nassistant: Looking at it.\nassistant: Fixed.");
@@ -209,14 +209,14 @@ class ClaudeTranscriptsTest {
         {"type":"assistant","message":{"content":[{"type":"text","text":"newest words"}]}}
         """);
 
-    String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 30).orElseThrow();
+    String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 30, Set.of()).orElseThrow();
 
     assertThat(tail).isEqualTo(" words\nassistant: newest words");
   }
 
   @Test
   void tailsNothingWhereTheSessionKeepsNoLog(@TempDir Path root) {
-    assertThat(ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000)).isEmpty();
+    assertThat(ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000, Set.of())).isEmpty();
   }
 
   @Test
@@ -230,7 +230,7 @@ class ClaudeTranscriptsTest {
         {"type":"assistant","message":{"content":[{"type":"text","text":"bb"}]}}
         """);
 
-    String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 14).orElseThrow();
+    String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 14, Set.of()).orElseThrow();
 
     assertThat(tail).isEqualTo("assistant: bb");
   }
@@ -245,9 +245,28 @@ class ClaudeTranscriptsTest {
         {"type":"assistant","message":{"content":[{"type":"text","text":"Fixed."}]}}
         """);
 
-    String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000).orElseThrow();
+    String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000, Set.of()).orElseThrow();
 
     assertThat(tail).isEqualTo("assistant: Fixed.");
+  }
+
+  @Test
+  void tailsNoLineJagtTypedAsIfTheHumanSaidIt(@TempDir Path root) throws Exception {
+    Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+    Files.writeString(
+        logs.resolve("session.jsonl"),
+        """
+        {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"fix the login"}}
+        {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"Re-read the file."}}
+        {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"why red? Re-read the file."}}
+        """);
+
+    String tail =
+        ClaudeTranscripts.tail(
+                root, Path.of("/wt/ABC-1-proj"), 16_000, Set.of("Re-read the file."))
+            .orElseThrow();
+
+    assertThat(tail).isEqualTo("human: fix the login\nhuman: why red?");
   }
 
   @Test

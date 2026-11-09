@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class CarriedBlockTest {
@@ -24,7 +25,7 @@ class CarriedBlockTest {
             .message("two tests left")
             .build();
     when(changes.history(task, 40)).thenReturn("# proj\ncommits:\nabc123 Add export\n");
-    when(runtime.conversationTail(Path.of("/wt/ABC-42"), 16_000))
+    when(runtime.conversationTail(Path.of("/wt/ABC-42"), 16_000, Set.of(AgentSessions.NUDGE)))
         .thenReturn(Optional.of("human: go on"));
     when(runtime.sessionLogOf(Path.of("/wt/ABC-42")))
         .thenReturn(Optional.of(Path.of("/logs/old.jsonl")));
@@ -63,7 +64,7 @@ class CarriedBlockTest {
             .build();
     when(changes.history(task, 40)).thenReturn("# proj\ncommits:\nabc123 Add export\n");
     when(runtime.sessionLogOf(Path.of("/wt/ABC-42"))).thenReturn(Optional.empty());
-    when(runtime.conversationTail(Path.of("/wt/ABC-42"), 16_000)).thenReturn(Optional.empty());
+    when(runtime.conversationTail(Path.of("/wt/ABC-42"), 16_000, Set.of(AgentSessions.NUDGE))).thenReturn(Optional.empty());
 
     String carried = new CarriedBlock(changes, runtime).after("the round", task);
 
