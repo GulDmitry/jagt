@@ -30,7 +30,7 @@ public class CheckerPrompts {
             + "\nCheck it on:\n"
             + environments
             + flowsLine(acceptance)
-            + workspaceLine(acceptance);
+            + workspaceLine(acceptance, worktree, sha);
     return new CheckerReader.Run(
         brief.text(),
         brief.section(step) + "\n\n" + facts,
@@ -83,17 +83,25 @@ public class CheckerPrompts {
         : "\nFlows: "
             + path
             + ". In `flows` name the ids checking a criterion: a test tagged `@AC-n`, else its"
-            + " title; in `environment` the listed URL they run on.";
+            + " title; in `environment` the listed URL they run on."
+            + " List and open its files with Glob and Read; the shell runs no `ls`.";
   }
 
-  private static String workspaceLine(RoleOptions acceptance) {
+  private static String workspaceLine(
+      RoleOptions acceptance, String worktree, String sha) {
     return acceptance
         .workspacePath()
         .map(
             root ->
                 "\nWorkspace: "
                     + root
-                    + ", your working directory."
+                    + ", your working directory. The change's repository is "
+                    + worktree
+                    + ": read git there with `git -C "
+                    + worktree
+                    + " show --no-ext-diff --no-textconv "
+                    + sha
+                    + "`, never in the workspace."
                     + (acceptance.flows().command().isEmpty()
                         ? " No flows command is set."
                         : " Run a flow as `BASE_URL=<environment> "

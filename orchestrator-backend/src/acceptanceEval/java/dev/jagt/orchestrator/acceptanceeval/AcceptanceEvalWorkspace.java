@@ -129,7 +129,7 @@ final class AcceptanceEvalWorkspace {
         + criteria
         + "\n"
         + landed
-        + "\nThe change is the last commit of the worktree you run in."
+        + "\nThe change is the last commit of the repository named above."
         + "\nRoles you may sign in as:\n"
         + roles
         + "\nPages the environment serves:\n"

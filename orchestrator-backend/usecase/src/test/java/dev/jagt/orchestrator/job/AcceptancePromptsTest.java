@@ -208,6 +208,22 @@ class AcceptancePromptsTest {
   }
 
   @Test
+  void theGitReadIsPointedAtTheWorktreeNotTheWorkspace(@TempDir Path root) {
+    RoleOptions acceptance = RoleOptions.defaults().withWorkspace(root.resolve("ws").toString());
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+    CheckerReader.Run run =
+        new CheckerPrompts(
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                new RoleFiles(paths, "acceptance"))
+            .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
+
+    assertThat(run.prompt())
+        .contains("read git there with `git -C /wt show --no-ext-diff --no-textconv abc123`, never in the workspace");
+  }
+
+  @Test
   void noWorkspaceLineWhereNoWorkspaceIsHeld(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));

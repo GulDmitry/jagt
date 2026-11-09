@@ -22,7 +22,7 @@ outcomes: [round, question, wait, dispute, stop]
 jobs: true
 readSteps: [accept, again, decline]
 tools:
-  shell: ["curl -sS*", "git log*", "git show*", "git diff*"]
+  shell: ["curl -sS*", "git log*", "git show*", "git diff*", "git -C*"]
   refuseShell: ["git * --output*", "git push*", "git commit*", "git reset*", "git checkout*"]
   refuseRead: []
   git: true

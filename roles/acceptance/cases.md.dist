@@ -79,3 +79,12 @@ by: jagt
 replies: DONE; plain
 `ticket-close` closed the task, so acceptance gets the `done` signal with its context and cleans up what the brief says, else nothing.
 > WHEN the item reaches `doneStatus` mid-check THEN the same as above; a tracker already closed at DEPLOYED opens no check at all.
+
+## scenarios-by-human
+
+step: scenarios
+at: any
+by: human
+replies: any; plain
+You opened the acceptance session, so acceptance and you write scenarios in its workspace over as many rounds as the answers need.
+> WHEN you press `scenarios` on ABC-42 before its plan THEN a session opens in the workspace and asks one question per gap; it reports nothing to the task.
