@@ -17,7 +17,8 @@ class RoleCasesTest {
     Files.writeString(role.resolve("eval.local/01-local.yml"), "local");
     Files.writeString(role.resolve("eval.local/notes.txt"), "ignored");
 
-    assertThat(RoleCases.in(role, text -> text)).containsExactly("shipped", "local");
+    assertThat(RoleCases.in(text -> text, role.resolve("eval"), role.resolve("eval.local")))
+        .containsExactly("shipped", "local");
   }
 
   @Test
@@ -25,6 +26,7 @@ class RoleCasesTest {
     Files.createDirectories(role.resolve("eval"));
     Files.writeString(role.resolve("eval/01-shipped.yml"), "shipped");
 
-    assertThat(RoleCases.in(role, text -> text)).containsExactly("shipped");
+    assertThat(RoleCases.in(text -> text, role.resolve("eval"), role.resolve("eval.local")))
+        .containsExactly("shipped");
   }
 }

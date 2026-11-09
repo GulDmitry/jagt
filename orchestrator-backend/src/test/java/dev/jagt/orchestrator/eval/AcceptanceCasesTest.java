@@ -4,16 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.task.AcceptanceEnding;
 import dev.jagt.orchestrator.task.AcceptanceVerdict.Status;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class AcceptanceCasesTest {
 
   @Test
   void everyShippedCaseLoadsWithAnExpectedRowPerCriterion() {
-    var cases = AcceptanceCases.all();
+    var cases = RoleCases.in(AcceptanceCases::parse, Path.of("..", "roles", "acceptance", "eval"));
 
     assertThat(cases)
-        .hasSizeGreaterThanOrEqualTo(17)
+        .hasSize(17)
         .allSatisfy(
             loaded ->
                 assertThat(loaded.rows().keySet())

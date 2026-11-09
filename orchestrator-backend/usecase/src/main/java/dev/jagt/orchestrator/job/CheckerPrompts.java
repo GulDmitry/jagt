@@ -84,7 +84,11 @@ public class CheckerPrompts {
             + path
             + ". In `flows` name the ids checking a criterion: a test tagged `@AC-n`, else its"
             + " title; in `environment` the listed URL they run on."
-            + " List and open its files with Glob and Read; the shell runs no `ls`.";
+            + " List and open its files with Glob and Read; the shell runs no `ls`."
+            + (acceptance.workspacePath().isEmpty()
+                ? " jagt runs each flow you name on that URL after your answer and adds its result"
+                    + " as a row of its own; you run none."
+                : "");
   }
 
   private static String workspaceLine(

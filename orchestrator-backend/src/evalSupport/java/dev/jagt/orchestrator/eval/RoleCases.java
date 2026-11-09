@@ -15,12 +15,13 @@ final class RoleCases {
   private RoleCases() {}
 
   static <T> List<T> of(String role, Function<String, T> parse) {
-    return in(Path.of("..", "roles", System.getProperty(ROLE, role)), parse);
+    Path folder = Path.of("..", "roles", System.getProperty(ROLE, role));
+    return in(parse, folder.resolve("eval"), folder.resolve("eval.local"));
   }
 
-  static <T> List<T> in(Path folder, Function<String, T> parse) {
-    return Stream.concat(
-            cases(folder.resolve("eval")).stream(), cases(folder.resolve("eval.local")).stream())
+  static <T> List<T> in(Function<String, T> parse, Path... directories) {
+    return Stream.of(directories)
+        .flatMap(directory -> cases(directory).stream())
         .map(file -> parse.apply(read(file)))
         .toList();
   }
