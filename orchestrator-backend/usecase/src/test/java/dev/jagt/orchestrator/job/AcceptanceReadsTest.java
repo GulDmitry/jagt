@@ -40,7 +40,7 @@ class AcceptanceReadsTest {
           Paths.get("/wt"),
           "proj@0123",
           "",
-          new CheckerReader.Reach(List.of(), List.of()),
+          new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
           RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
               .replies()
               .answer()

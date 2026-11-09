@@ -24,6 +24,7 @@ import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -85,7 +86,7 @@ class OpenCodeCheckerReaderTest {
                 worktree,
                 "abc123",
                 "",
-                new CheckerReader.Reach(List.of(), List.of()),
+                new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
                 ACCEPTANCE.replies().answer().json(),
                 "acceptance"));
 
@@ -107,7 +108,7 @@ class OpenCodeCheckerReaderTest {
             worktree,
             "abc123",
             "sonnet",
-            new CheckerReader.Reach(List.of("https://dev.example.test"), List.of()),
+            new CheckerReader.Reach(List.of("https://dev.example.test"), List.of(), Optional.empty()),
             ACCEPTANCE.replies().decline().json(),
             "acceptance"));
 
@@ -132,7 +133,7 @@ class OpenCodeCheckerReaderTest {
                 worktree,
                 "abc123",
                 "",
-                new CheckerReader.Reach(List.of(), List.of()),
+                new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
                 ACCEPTANCE.replies().decline().json(),
                 "acceptance"));
 

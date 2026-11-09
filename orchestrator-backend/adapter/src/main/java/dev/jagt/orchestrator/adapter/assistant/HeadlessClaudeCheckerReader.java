@@ -80,7 +80,12 @@ public class HeadlessClaudeCheckerReader {
       cmd.addAll(List.of("--model", run.model()));
     }
     ClaudeToolScope claude =
-        ClaudeToolScope.of(scope.shell(), scope.refuseShell(), scope.refuseRead(), scope.fetch());
+        ClaudeToolScope.of(
+            scope.shell(),
+            scope.refuseShell(),
+            scope.refuseRead(),
+            scope.fetch(),
+            run.reach().workspace());
     cmd.addAll(
         List.of("--tools", claude.tools(), "--permission-mode", "dontAsk", "--disallowedTools"));
     cmd.addAll(claude.refuse());
@@ -95,14 +100,16 @@ public class HeadlessClaudeCheckerReader {
         run.worktree(),
         TIMEOUT,
         cmd,
-        new ReadScope(
-            Stream.concat(Stream.of(run.worktree()), run.reach().paths().stream()).toList(),
-            tools,
-            scope.git(),
-            List.of(),
-            scope.fetch() ? run.reach().urls() : List.of(),
-            BrowserTools.navigating(scope.mcp()),
-            BrowserTools.looking(scope.mcp())),
+            new ReadScope(
+                    Stream.concat(Stream.of(run.worktree()), run.reach().paths().stream())
+                        .toList(),
+                    tools,
+                    scope.git(),
+                    List.of(),
+                    scope.fetch() ? run.reach().urls() : List.of(),
+                    BrowserTools.navigating(scope.mcp()),
+                    BrowserTools.looking(scope.mcp()))
+                .withWorkspace(run.reach().workspace()),
         AssistantCallKind.ACCEPTANCE_CHECK,
         run.worktree().toString());
   }

@@ -29,7 +29,7 @@ class ChosenCheckerReaderTest {
             Path.of("/wt"),
             "abc123",
             "",
-            new CheckerReader.Reach(List.of(), List.of()),
+            new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
             "{}",
             "acceptance");
     Answer<AcceptanceVerdict> local =
@@ -55,7 +55,7 @@ class ChosenCheckerReaderTest {
             Path.of("/wt"),
             "abc123",
             "",
-            new CheckerReader.Reach(List.of(), List.of()),
+            new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
             "{}",
             "acceptance");
     Answer<AcceptanceVerdict> cloud =

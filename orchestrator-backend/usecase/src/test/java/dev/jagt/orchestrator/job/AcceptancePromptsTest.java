@@ -152,4 +152,35 @@ class AcceptancePromptsTest {
 
     assertThat(run.prompt()).doesNotContain("Flows:");
   }
+
+  @Test
+  void aWorkspaceIsCreatedAndHoldsTheFlowsCommandOncePerEnvironment(@TempDir Path root) {
+    Path workspace = root.resolve("ws");
+    RoleOptions acceptance =
+        RoleOptions.defaults()
+            .withEnvironments(
+                List.of(
+                    new RoleOptions.Environment("https://dev.example.test", ""),
+                    new RoleOptions.Environment("https://stage.example.test", "")))
+            .withFlows(
+                RoleOptions.Flows.defaults()
+                    .withDriver("playwright")
+                    .withCommand(List.of("npx", "test")))
+            .withWorkspace(workspace.toString());
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+    CheckerReader.Run run =
+        new CheckerPrompts(
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                new RoleFiles(paths, "acceptance"))
+            .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
+
+    assertThat(workspace).isDirectory();
+    assertThat(run.reach().workspace().orElseThrow().commands())
+        .containsExactly(
+            "BASE_URL=https://dev.example.test npx test",
+            "BASE_URL=https://stage.example.test npx test");
+    assertThat(run.reach().paths()).contains(workspace);
+  }
 }

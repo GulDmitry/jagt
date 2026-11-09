@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.CheckerReader;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +22,9 @@ public class ReadScopes {
    * {@code tools} are tool names or globs; {@code roots} bound the file tools; {@code git} admits
    * the read-only git subcommands inside them; {@code writes} are globs a tool only a glob allowed
    * must not match; {@code fetchable} are the URLs a web fetch may reach, each itself and what lies
-   * below it. A tool in {@code navigating} goes only to a fetchable {@code url}; one in {@code
-   * looking} runs but never with a file argument.
+   * below it; a {@code workspace} may also be written and run its commands. A tool in {@code
+   * navigating} goes only to a fetchable {@code url}; one in {@code looking} runs but never with a
+   * file argument.
    */
   @With
   public record ReadScope(
@@ -32,7 +34,19 @@ public class ReadScopes {
       List<String> writes,
       List<String> fetchable,
       List<String> navigating,
-      List<String> looking) {
+      List<String> looking,
+      Optional<CheckerReader.Workspace> workspace) {
+
+    public ReadScope(
+        List<Path> roots,
+        List<String> tools,
+        boolean git,
+        List<String> writes,
+        List<String> fetchable,
+        List<String> navigating,
+        List<String> looking) {
+      this(roots, tools, git, writes, fetchable, navigating, looking, Optional.empty());
+    }
 
     public ReadScope(List<Path> roots, List<String> tools, boolean git) {
       this(roots, tools, git, List.of(), List.of());
@@ -44,7 +58,7 @@ public class ReadScopes {
         boolean git,
         List<String> writes,
         List<String> fetchable) {
-      this(roots, tools, git, writes, fetchable, List.of(), List.of());
+      this(roots, tools, git, writes, fetchable, List.of(), List.of(), Optional.empty());
     }
   }
 

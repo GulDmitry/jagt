@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.AcceptanceDecline;
 import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * One read of a deployed change by a fresh model, able to read and GET but to write nothing.
@@ -26,8 +27,23 @@ public interface CheckerReader {
       String schema,
       String role) {}
 
-  /** The only URLs the read may fetch and the extra roots it may read. */
-  record Reach(List<String> urls, List<Path> paths) {}
+  /**
+   * The only URLs the read may fetch and the extra roots it may read; a {@code workspace} is also
+   * written.
+   */
+  record Reach(List<String> urls, List<Path> paths, Optional<Workspace> workspace) {}
+
+  /**
+   * The one directory a read may write, and the shell commands it may run there, each the whole
+   * command up to its arguments.
+   */
+  record Workspace(Path root, List<String> commands) {
+
+    /** Each command as the shell is given it: from the workspace. */
+    public List<String> shells() {
+      return commands.stream().map(command -> "cd " + root + " && " + command).toList();
+    }
+  }
 
   Answer<AcceptanceVerdict> read(Run run);
 
