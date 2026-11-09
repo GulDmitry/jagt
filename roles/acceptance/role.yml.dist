@@ -1,7 +1,7 @@
 # The acceptance role: a headless model that checks a deployed change against its ticket, read-only, once per deploy.
 # jagt ships this frame; what you check, where and with what is yours. jagt.yml holds only roles.acceptance.enabled.
 # Write what you change into `roles/acceptance/role.yml`: it layers over this file per key, a list replacing whole.
-# environments, flows and model are read again on every check; the rest at start.
+# environments, flows, workspace and model are read again on every check; the rest at start.
 # A `setup.md` beside it is your own setup brief for any session to follow; nothing in jagt reads it.
 # What to check and how: copy brief.md.dist to brief.md.
 # Take effect: id, model, trigger, tools, answer, decline, environments, flows,
@@ -36,6 +36,8 @@ tools:
 #   path: /path/to/flows    # the flows repository, the command's working directory; it holds any login
 #   command: ["npx", "playwright", "test"]   # jagt adds the reporter, output folder and flow filter; BASE_URL is the environment
 #   timeout: 10m            # a run past it is unprovable
+# workspace: the one folder the role writes: scenarios, steps and flows it keeps; a relative path is the role folder's, none = memoryless
+workspace: workspace
 answer:
   - required: failure
   - records: rows

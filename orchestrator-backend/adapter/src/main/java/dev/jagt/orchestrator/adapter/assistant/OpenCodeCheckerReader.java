@@ -53,10 +53,11 @@ class OpenCodeCheckerReader {
             tools.fetch(),
             tools.git(),
             Stream.concat(Stream.of(run.worktree()), run.reach().paths().stream()).toList(),
-            run.reach().urls());
+            run.reach().urls())
+        .withWorkspace(run.reach().workspace());
     return headless.run(
         new OpenCodeRead(
-            run.worktree(),
+            run.reach().startIn(run.worktree()),
             prompt,
             run.schema(),
             model,

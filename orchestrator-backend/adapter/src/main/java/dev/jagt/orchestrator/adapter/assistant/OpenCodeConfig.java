@@ -46,11 +46,23 @@ final class OpenCodeConfig {
     tools.put("grep", true);
     tools.put("glob", true);
     tools.put("bash", true);
+    if (scope.workspace().isPresent()) {
+      tools.put("write", true);
+      tools.put("edit", true);
+    }
     if (scope.fetch()) {
       tools.put("webfetch", true);
     }
     ObjectNode permission = agent.putObject("permission");
-    permission.put("edit", "deny");
+    scope
+        .workspace()
+        .ifPresentOrElse(
+            held -> {
+              ObjectNode edit = permission.putObject("edit");
+              edit.put("*", "deny");
+              edit.put(held.root() + "/**", "allow");
+            },
+            () -> permission.put("edit", "deny"));
     permission.put("webfetch", scope.fetch() ? "allow" : "deny");
     ObjectNode outside = permission.putObject("external_directory");
     outside.put("*", "deny");
@@ -58,6 +70,9 @@ final class OpenCodeConfig {
     ObjectNode bash = permission.putObject("bash");
     bash.put("*", "deny");
     scope.bashAllowed().forEach(glob -> bash.put(glob, "allow"));
+    scope.workspace().stream()
+        .flatMap(held -> held.commands().stream())
+        .forEach(command -> bash.put(command + " *", "allow"));
     scope.bashRefused().forEach(glob -> bash.put(glob, "deny"));
     CURL_WRITES.forEach(glob -> bash.put(glob, "deny"));
     bash.put("*>*", "deny");

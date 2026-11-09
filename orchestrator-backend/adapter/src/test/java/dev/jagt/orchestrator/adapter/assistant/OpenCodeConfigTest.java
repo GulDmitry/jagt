@@ -2,8 +2,10 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.port.CheckerReader;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -184,5 +186,28 @@ class OpenCodeConfigTest {
             .path("plugin");
 
     assertThat(plugin).extracting(JsonNode::asString).containsExactly("/state/opencode-gate");
+  }
+
+  @Test
+  void allowsEditsUnderTheWorkspaceAndDeniesTheRest() {
+    OpenCodeScope scope =
+        OpenCodeScope.of(
+                List.of(), List.of(), List.of(), false, false, List.of(Path.of("/wt")), List.of())
+            .withWorkspace(
+                Optional.of(new CheckerReader.Workspace(Path.of("/ws"), List.of("BASE_URL=u t"))));
+
+    JsonNode agent =
+        new JsonMapper()
+            .readTree(
+                OpenCodeConfig.json(
+                    "http://127.0.0.1:8080/v1", "qwen-4b", scope, Path.of("/state/gate")))
+            .path("agent")
+            .path("jagt-read");
+
+    assertThat(agent.path("permission").path("edit").path("*").asString()).isEqualTo("deny");
+    assertThat(agent.path("permission").path("edit").path("/ws/**").asString()).isEqualTo("allow");
+    assertThat(agent.path("permission").path("bash").path("BASE_URL=u t *").asString())
+        .isEqualTo("allow");
+    assertThat(agent.path("tools").path("write").asBoolean()).isTrue();
   }
 }

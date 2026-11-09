@@ -24,6 +24,7 @@ public record RoleOptions(
     List<Environment> environments,
     Flows flows,
     List<String> mcp,
+    String workspace,
     List<String> unread) {
 
   private static final String NONE = "none";
@@ -35,7 +36,7 @@ public record RoleOptions(
   }
 
   public static RoleOptions defaults() {
-    return new RoleOptions(false, "", List.of(), Flows.defaults(), List.of(), List.of());
+    return new RoleOptions(false, "", List.of(), Flows.defaults(), List.of(), "", List.of());
   }
 
   /** {@code landed} answers once the change is up, where the host reports no deploy job. */
@@ -65,10 +66,14 @@ public record RoleOptions(
       return defaults();
     }
     try {
-      return of(RoleDefinitions.tree(layers));
+      return of(RoleDefinitions.tree(layers), folder);
     } catch (org.yaml.snakeyaml.error.YAMLException unparsed) {
-      return of(RoleDefinitions.tree(layers.subList(0, 1)));
+      return of(RoleDefinitions.tree(layers.subList(0, 1)), folder);
     }
+  }
+
+  public Optional<Path> workspacePath() {
+    return workspace.isEmpty() ? Optional.empty() : Optional.of(Path.of(workspace));
   }
 
   public boolean allows(String baseUrl) {
@@ -79,7 +84,7 @@ public record RoleOptions(
     return flows.used() ? flows.path() : "";
   }
 
-  private static RoleOptions of(@Nullable Object tree) {
+  private static RoleOptions of(@Nullable Object tree, Path folder) {
     Map<?, ?> document = tree instanceof Map<?, ?> found ? found : Map.of();
     Map<?, ?> flows = document.get("flows") instanceof Map<?, ?> named ? named : Map.of();
     String timeout = text(flows, "timeout");
@@ -93,9 +98,16 @@ public record RoleOptions(
         tools.get("mcp") instanceof List<?> listed
             ? listed.stream().map(String::valueOf).toList()
             : List.of(),
+        workspace(text(document, "workspace"), folder),
         timeout.isEmpty() || parsed.isPresent()
             ? List.of()
             : List.of("flows.timeout " + timeout + " is no duration such as 10m"));
+  }
+
+  private static String workspace(String written, Path folder) {
+    return written.isEmpty() || NONE.equals(written)
+        ? ""
+        : folder.toAbsolutePath().resolve(written).normalize().toString();
   }
 
   private static Optional<Duration> duration(String written) {

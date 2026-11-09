@@ -7,6 +7,7 @@ function claudeCalls({ action, resources = [], metadata = {} }) {
     case "read": return resources.map((file_path) => ["Read", { file_path }]);
     case "grep": return resources.map((pattern) => ["Grep", { path: metadata.path ?? ".", pattern }]);
     case "glob": return resources.map((pattern) => ["Glob", { path: metadata.root ?? ".", pattern }]);
+    case "edit": return resources.map((file_path) => ["Edit", { file_path }]);
     case "webfetch": return resources.map((url) => ["WebFetch", { url }]);
     default: return [];
   }

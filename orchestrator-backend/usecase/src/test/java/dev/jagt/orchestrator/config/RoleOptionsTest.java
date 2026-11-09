@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -57,5 +58,23 @@ class RoleOptionsTest {
 
     assertThat(options.environments())
         .containsExactly(new RoleOptions.Environment("https://a.test", ""));
+  }
+
+  @Test
+  void aRelativeWorkspaceIsTheRoleFoldersAndNoneOrAbsentIsNoWorkspace(
+      @TempDir Path folder, @TempDir Path other) throws Exception {
+    Files.writeString(folder.resolve("role.yml"), "workspace: ws\n");
+    Path relative = RoleOptions.read(folder).workspacePath().orElseThrow();
+    Files.writeString(folder.resolve("role.yml"), "workspace: none\n");
+    Optional<Path> none = RoleOptions.read(folder).workspacePath();
+    Files.writeString(folder.resolve("role.yml"), "model: sonnet\n");
+    Optional<Path> absent = RoleOptions.read(folder).workspacePath();
+    Files.writeString(folder.resolve("role.yml"), "workspace: " + other + "\n");
+    Path absolute = RoleOptions.read(folder).workspacePath().orElseThrow();
+
+    assertThat(relative).isEqualTo(folder.toAbsolutePath().resolve("ws"));
+    assertThat(none).isEmpty();
+    assertThat(absent).isEmpty();
+    assertThat(absolute).isEqualTo(other.toAbsolutePath());
   }
 }

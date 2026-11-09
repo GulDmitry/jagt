@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -64,7 +65,7 @@ class HeadlessClaudeCheckerReaderTest {
             worktree,
             "abc123",
             "",
-            new CheckerReader.Reach(List.of(), List.of()),
+            new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                 .replies()
                 .answer()
@@ -99,7 +100,9 @@ class HeadlessClaudeCheckerReaderTest {
             "abc123",
             "",
             new CheckerReader.Reach(
-                List.of("https://dev.example.test", "https://dev.example.test/version"), List.of()),
+                List.of("https://dev.example.test", "https://dev.example.test/version"),
+                List.of(),
+                Optional.empty()),
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                 .replies()
                 .answer()
@@ -131,7 +134,7 @@ class HeadlessClaudeCheckerReaderTest {
             worktree,
             "abc123",
             "",
-            new CheckerReader.Reach(List.of(), List.of(flows)),
+            new CheckerReader.Reach(List.of(), List.of(flows), Optional.empty()),
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                 .replies()
                 .answer()
@@ -168,7 +171,7 @@ class HeadlessClaudeCheckerReaderTest {
                 worktree,
                 "abc123",
                 "",
-                new CheckerReader.Reach(List.of(), List.of()),
+                new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                     .replies()
                     .answer()
@@ -200,7 +203,7 @@ class HeadlessClaudeCheckerReaderTest {
                     worktree,
                     "abc123",
                     "",
-                    new CheckerReader.Reach(List.of(), List.of()),
+                    new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
                     RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                         .replies()
                         .decline()
@@ -225,7 +228,7 @@ class HeadlessClaudeCheckerReaderTest {
             worktree,
             "abc123",
             "opus",
-            new CheckerReader.Reach(List.of(), List.of()),
+            new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                 .replies()
                 .answer()
@@ -273,7 +276,7 @@ class HeadlessClaudeCheckerReaderTest {
             worktree,
             "abc123",
             "",
-            new CheckerReader.Reach(List.of(), List.of()),
+            new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
             "{}",
             "acceptance"));
 
@@ -306,7 +309,7 @@ class HeadlessClaudeCheckerReaderTest {
             worktree,
             "abc123",
             "",
-            new CheckerReader.Reach(List.of(), List.of()),
+            new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                 .replies()
                 .answer()
@@ -327,7 +330,7 @@ class HeadlessClaudeCheckerReaderTest {
             worktree,
             "abc123",
             "",
-            new CheckerReader.Reach(List.of(), List.of()),
+            new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
             "{}",
             "nope");
 
@@ -353,7 +356,7 @@ class HeadlessClaudeCheckerReaderTest {
                     worktree,
                     "abc123",
                     "",
-                    new CheckerReader.Reach(List.of(), List.of()),
+                    new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
                     RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                         .replies()
                         .answer()
@@ -380,7 +383,7 @@ class HeadlessClaudeCheckerReaderTest {
                     worktree,
                     "abc123",
                     "",
-                    new CheckerReader.Reach(List.of(), List.of()),
+                    new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
                     RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                         .replies()
                         .answer()
@@ -406,7 +409,7 @@ class HeadlessClaudeCheckerReaderTest {
                     worktree,
                     "abc123",
                     "",
-                    new CheckerReader.Reach(List.of(), List.of()),
+                    new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
                     RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
                         .replies()
                         .decline()
@@ -416,5 +419,66 @@ class HeadlessClaudeCheckerReaderTest {
             .orElseThrow();
 
     assertThat(decline.failure()).startsWith("the check failed");
+  }
+
+  @Test
+  void withAWorkspaceTheRunWritesOnlyThereUnderDontAsk(@TempDir Path workspace) {
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
+
+    reader.read(
+        new CheckerReader.Run(
+            "",
+            "check ABC-42",
+            worktree,
+            "abc123",
+            "",
+            new CheckerReader.Reach(
+                List.of(),
+                List.of(workspace),
+                Optional.of(new CheckerReader.Workspace(workspace, List.of()))),
+            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
+                .replies()
+                .answer()
+                .json(),
+            "acceptance"));
+
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+    List<String> argv = command.getValue();
+    assertThat(argv.get(argv.indexOf("--permission-mode") + 1)).isEqualTo("dontAsk");
+    assertThat(argv.subList(argv.indexOf("--allowedTools"), argv.size()))
+        .contains("Write(/" + workspace + "/**)", "Edit(/" + workspace + "/**)")
+        .doesNotContain("Write", "Edit");
+    assertThat(argv.subList(argv.indexOf("--disallowedTools"), argv.indexOf("--allowedTools")))
+        .contains("NotebookEdit")
+        .doesNotContain("Write", "Edit");
+  }
+
+  @Test
+  void theRunStartsInTheWorkspaceWhenOneIsHeld(@TempDir Path workspace) {
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
+
+    reader.read(
+        new CheckerReader.Run(
+            "",
+            "check ABC-42",
+            worktree,
+            "abc123",
+            "",
+            new CheckerReader.Reach(
+                List.of(),
+                List.of(workspace),
+                Optional.of(new CheckerReader.Workspace(workspace, List.of()))),
+            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
+                .replies()
+                .answer()
+                .json(),
+            "acceptance"));
+
+    verify(runner).run(eq(workspace), any(Duration.class), any());
   }
 }

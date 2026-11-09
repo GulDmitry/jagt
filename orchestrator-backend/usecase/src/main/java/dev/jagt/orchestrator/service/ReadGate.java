@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -25,6 +26,8 @@ public final class ReadGate {
   private static final List<String> PATH_KEYS = List.of("file_path", "path");
   private static final String SHELL_TOOL = "Bash";
   private static final String WEB_TOOL = "WebFetch";
+  private static final Set<String> WRITE_TOOLS = Set.of("Write", "Edit");
+  private static final Pattern SHELL_META = Pattern.compile("[;&|<>`$()\\n\\r\\\\]");
 
   /**
    * WebFetch reaches no host without a dot and no plain http, so an environment is read with one
@@ -57,6 +60,11 @@ public final class ReadGate {
         cwd == null || cwd.isBlank()
             ? read.roots().stream().findFirst().orElse(Path.of("/"))
             : Path.of(cwd);
+    return unlisted(read, tool, arguments, here);
+  }
+
+  private static Optional<String> unlisted(
+      ReadScope read, String tool, Map<String, Object> arguments, Path here) {
     if (FILE_TOOLS.contains(tool)) {
       return fileRefusal(read, arguments, here, GLOB.equals(tool));
     }
@@ -66,7 +74,22 @@ public final class ReadGate {
     if (WEB_TOOL.equals(tool) && !read.fetchable().isEmpty()) {
       return fetchRefusal(read, String.valueOf(arguments.getOrDefault("url", "")));
     }
+    if (WRITE_TOOLS.contains(tool) && read.workspace().isPresent()) {
+      return writeRefusal(read.workspace().get(), arguments, here);
+    }
     return given(tool);
+  }
+
+  private static Optional<String> writeRefusal(
+      CheckerReader.Workspace workspace, Map<String, Object> arguments, Path here) {
+    String path = String.valueOf(arguments.getOrDefault("file_path", ""));
+    boolean inside =
+        !path.isEmpty()
+            && !path.startsWith("~")
+            && real(here.resolve(path)).startsWith(real(workspace.root()));
+    return inside
+        ? Optional.empty()
+        : Optional.of("jagt refuses writing " + path + ": a read writes only its workspace.");
   }
 
   /** A navigation goes to a listed environment alone; a look writes no file. */
@@ -86,6 +109,9 @@ public final class ReadGate {
   }
 
   private static Optional<String> shellRefusal(ReadScope read, String command, Path here) {
+    if (read.workspace().isPresent() && workspaceCommand(read.workspace().get(), command)) {
+      return Optional.empty();
+    }
     if (command.startsWith("curl ") && !read.fetchable().isEmpty()) {
       var get = CURL_GET.matcher(command);
       return get.matches()
@@ -94,6 +120,15 @@ public final class ReadGate {
               "jagt refuses " + command + ": a read runs curl -sS [-i] <url> and nothing more.");
     }
     return read.git() ? GitReadLine.refusal(read, command, here) : given(SHELL_TOOL);
+  }
+
+  private static boolean workspaceCommand(CheckerReader.Workspace workspace, String command) {
+    return workspace.commands().stream()
+        .anyMatch(
+            shell ->
+                command.equals(shell)
+                    || (command.startsWith(shell + " ")
+                        && !SHELL_META.matcher(command.substring(shell.length())).find()));
   }
 
   private static Optional<String> fetchRefusal(ReadScope read, String url) {

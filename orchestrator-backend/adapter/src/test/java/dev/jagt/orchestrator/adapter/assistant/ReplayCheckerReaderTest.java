@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -70,7 +71,7 @@ class ReplayCheckerReaderTest {
         root,
         "abc123",
         "",
-        new CheckerReader.Reach(List.of(), List.of()),
+        new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
         "{}",
         "acceptance");
   }

@@ -2,11 +2,13 @@ package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -488,6 +490,62 @@ class ReadGateTest {
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), false);
 
     assertThat(ReadGate.refusal(scope, "Glob", Map.of("pattern", pattern), worktree.toString()))
+        .isPresent();
+  }
+
+  @Test
+  void writesAndEditsInsideTheWorkspaceAndNowhereElse(@TempDir Path elsewhere) {
+    Path workspace = worktree.resolve("ws");
+    ReadScope scope =
+        new ReadScope(List.of(worktree), List.of(), false)
+            .withWorkspace(Optional.of(new CheckerReader.Workspace(workspace, List.of())));
+
+    assertThat(ReadGate.refusal(scope, "Write", Map.of("file_path", workspace + "/flows/a.ts"), "/tmp"))
+        .isEmpty();
+    assertThat(ReadGate.refusal(scope, "Edit", Map.of("file_path", workspace + "/index.md"), "/tmp"))
+        .isEmpty();
+    assertThat(ReadGate.refusal(scope, "Write", Map.of("file_path", elsewhere + "/a.ts"), "/tmp"))
+        .get()
+        .asString()
+        .contains("only its workspace");
+    assertThat(ReadGate.refusal(scope, "Write", Map.of("file_path", workspace + "/../role.yml"), "/tmp"))
+        .isPresent();
+    assertThat(ReadGate.refusal(scope, "NotebookEdit", Map.of(), "/tmp")).isPresent();
+  }
+
+  @Test
+  void aFlowAimedPastTheEnvironmentsIsRefused() {
+    Path workspace = worktree.resolve("ws");
+    ReadScope scope =
+        new ReadScope(List.of(worktree), List.of(), false)
+            .withWorkspace(
+                Optional.of(
+                    new CheckerReader.Workspace(
+                        workspace, List.of("BASE_URL=https://dev.example.test npx test"))));
+    String listed = "BASE_URL=https://dev.example.test npx test";
+
+    assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", listed + " a.spec.ts"), "/tmp"))
+        .isEmpty();
+    assertThat(
+            ReadGate.refusal(
+                scope,
+                "Bash",
+                Map.of("command", listed.replace("dev.example.test", "evil.example.test")),
+                "/tmp"))
+        .isPresent();
+    assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", listed + "; rm -rf /"), "/tmp"))
+        .isPresent();
+    assertThat(
+            ReadGate.refusal(
+                scope, "Bash", Map.of("command", "cd " + workspace + " && " + listed), "/tmp"))
+        .isPresent();
+  }
+
+  @Test
+  void writesNothingWhereNoWorkspaceIsHeld() {
+    ReadScope scope = new ReadScope(List.of(worktree), List.of(), false);
+
+    assertThat(ReadGate.refusal(scope, "Edit", Map.of("file_path", worktree + "/a"), "/tmp"))
         .isPresent();
   }
 }
