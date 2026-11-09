@@ -38,7 +38,7 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb |
 | `protocol/` | what crosses into jagt, and what makes it valid | built — every tool, every read, the hooks |
 | `startup/` | why the assembly must not start | built — `port/StartupCheck`, `StartupValidation` and every check |
-| `roles/<id>/` | a role: its definition, brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion`, the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesTest` |
+| `roles/<id>/` | a role: its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition, brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion`, the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesTest` |
 
 `service/` is the rest: work kinds share — git, the state file, config, worktrees, agent sessions —
 because a class two kinds use belongs to neither; the Master's reading is `service/master/`. So does a rule one

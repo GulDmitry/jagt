@@ -88,6 +88,7 @@ or local setup; such names live only in git-ignored files.
 - **English and UTC only, set in `main`**: no code reads the machine's locale, zone or clock (`EnglishAndUtcTest`, `BoardAssetsTest`).
   Only the board's UI text may come from a language catalog, English the default
   ([0141](docs/decisions/0141-the-boards-words-are-catalog-files.md)).
+- **A new role starts from its `roles/<id>/design.md`**, agreed before its first code ([`ARCHITECTURE.md`](ARCHITECTURE.md)).
 - **Nothing below `flow/` decides a status.** `withStatus` lives in `flow/` and the record implementing it (`FlowDoorsTest`).
 - **Only `adapter/` names an OS or a vendor.** `core/` imports no Spring.
 - **Every third-party service or technology is a seam chosen in `jagt.yml`**: a port, a driver per vendor, a key with a
