@@ -15,13 +15,23 @@ final class RoleCases {
   private RoleCases() {}
 
   static <T> List<T> of(String role, Function<String, T> parse) {
-    try (Stream<Path> files =
-        Files.list(Path.of("..", "roles", System.getProperty(ROLE, role), "eval"))) {
-      return files
-          .filter(file -> file.getFileName().toString().endsWith(".yml"))
-          .sorted()
-          .map(file -> parse.apply(read(file)))
-          .toList();
+    Path folder = Path.of("..", "roles", System.getProperty(ROLE, role));
+    return in(parse, folder.resolve("eval"), folder.resolve("eval.local"));
+  }
+
+  static <T> List<T> in(Function<String, T> parse, Path... directories) {
+    return Stream.of(directories)
+        .flatMap(directory -> cases(directory).stream())
+        .map(file -> parse.apply(read(file)))
+        .toList();
+  }
+
+  private static List<Path> cases(Path directory) {
+    if (!Files.isDirectory(directory)) {
+      return List.of();
+    }
+    try (Stream<Path> files = Files.list(directory)) {
+      return files.filter(file -> file.getFileName().toString().endsWith(".yml")).sorted().toList();
     } catch (IOException unreadable) {
       throw new UncheckedIOException(
           new IOException("the role's eval cases unreadable: " + unreadable, unreadable));

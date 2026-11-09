@@ -55,6 +55,14 @@ class AcceptanceFixtureEnvironmentTest {
   }
 
   @Test
+  void aLiveEnvironmentIsHandedOnAsItIsWithNoServerStarted() {
+    try (AcceptanceFixtureEnvironment environment =
+        AcceptanceFixtureEnvironment.serve(Map.of("live", "https://app.example.test"))) {
+      assertThat(environment.url()).isEqualTo("https://app.example.test");
+    }
+  }
+
+  @Test
   void aRecordedPageAnswersItsFieldsAsJson() throws Exception {
     try (AcceptanceFixtureEnvironment environment =
         AcceptanceFixtureEnvironment.serve(

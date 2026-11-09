@@ -138,6 +138,25 @@ class AcceptancePromptsTest {
   }
 
   @Test
+  void aRunWithNoWorkspaceIsToldJagtRunsTheFlowsItNames(@TempDir Path root) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    RoleOptions acceptance =
+        RoleOptions.defaults()
+            .withFlows(RoleOptions.Flows.defaults().withDriver("playwright").withPath("/flows"));
+
+    CheckerReader.Run run =
+        new CheckerPrompts(
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                new RoleFiles(paths, "acceptance"))
+            .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
+
+    assertThat(run.prompt())
+        .contains("jagt runs each flow you name on that URL after your answer")
+        .contains("you run none");
+  }
+
+  @Test
   void theRunIsToldOfNoFlowsWhileTheDriverIsNone(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));

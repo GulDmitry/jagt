@@ -4,13 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.task.AcceptanceEnding;
 import dev.jagt.orchestrator.task.AcceptanceVerdict.Status;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class AcceptanceCasesTest {
 
   @Test
   void everyShippedCaseLoadsWithAnExpectedRowPerCriterion() {
-    var cases = AcceptanceCases.all();
+    var cases = RoleCases.in(AcceptanceCases::parse, Path.of("..", "roles", "acceptance", "eval"));
 
     assertThat(cases)
         .hasSize(17)
@@ -83,5 +84,34 @@ class AcceptanceCasesTest {
     assertThat(loaded.workspace().held()).isTrue();
     assertThat(loaded.workspace().files()).containsEntry("index.md", "# index");
     assertThat(loaded.workspace().writes()).isEqualTo("new");
+  }
+
+  @Test
+  void aCaseKeepsTheFlowsDirectoryAndCommandItPointsAt() {
+    AcceptanceCase loaded =
+        AcceptanceCases.parse(
+            """
+            case: points
+            ticket:
+              key: ABC-1
+              title: A title
+              criteria:
+                - {id: C1, text: "first"}
+            deploy: {sha: 1829304, landed: host-job, diff: ["a/B.java: change"]}
+            environment:
+              live: https://app.example.test
+            flows:
+              path: /checks/example
+              command: ["npx", "playwright", "test"]
+            expect:
+              rows: {C1: met}
+              report: plain
+              ending: passed
+            names: []
+            """);
+
+    assertThat(loaded.flows().path()).isEqualTo("/checks/example");
+    assertThat(loaded.flows().command()).containsExactly("npx", "playwright", "test");
+    assertThat(loaded.flows().files()).isEmpty();
   }
 }

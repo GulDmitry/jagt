@@ -73,9 +73,14 @@ public final class AcceptanceCases {
     Map<String, Object> flows = (Map<String, Object>) expect.getOrDefault("flows", Map.of());
     Map<String, String> content = new LinkedHashMap<>();
     files.forEach((name, text) -> content.put(name, text(text)));
+    content.remove("path");
+    content.remove("command");
     return new AcceptanceCase.Flows(
         content,
         ((List<Object>) flows.getOrDefault("ids", List.of()))
+            .stream().map(AcceptanceCases::text).toList(),
+        files.containsKey("path") ? text(files.get("path")) : "",
+        ((List<Object>) files.getOrDefault("command", List.of()))
             .stream().map(AcceptanceCases::text).toList());
   }
 
