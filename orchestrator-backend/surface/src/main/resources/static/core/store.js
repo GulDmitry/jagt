@@ -24,15 +24,11 @@ export const offerFor = (task, part) => data.verbs.find((verb) => verb.part === 
 
 export const taskFor = (name) => data.tasks.find((task) => task.id === name || (task.alias || '') === name);
 
-
 // An empty reference names no task: the loose lookup above would hand it the first task without an alias.
 export const nameOf = (ref) => {
   const task = ref ? taskFor(ref) : null;
   return task ? bothNames(task) : ref;
 };
-
-// Only an id may answer a click: an alias is short enough to collide with a numeric ticket id.
-export {bothNames};
 
 export const taskById = (id) => data.tasks.find((task) => task.id === id);
 

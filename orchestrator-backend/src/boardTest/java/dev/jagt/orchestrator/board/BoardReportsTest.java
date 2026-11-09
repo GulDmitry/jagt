@@ -504,6 +504,32 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
+  void aReportTypedBeforeTheBoardArrivedIsStillTitledByBothNamesOfItsTask() throws IOException {
+    Path worktree = Files.createDirectories(root.resolve("ABC-21-alpha"));
+    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+    state.putTask(
+        "ABC-21",
+        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+            .alias("a21")
+            .mrUrl("https://host.example/mr/7")
+            .lastActiveTimestamp(System.currentTimeMillis())
+            .build());
+    List<Route> board = new java.util.concurrent.CopyOnWriteArrayList<>();
+    Page page = session.newPage();
+    page.route("**/api/tasks", board::add);
+    page.navigate("http://localhost:" + port + "/");
+    page.waitForCondition(() -> !board.isEmpty());
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+
+    page.keyboard().press("Control+k");
+    page.locator("#ask").fill("replies a21");
+    page.locator("#ask").press("Enter");
+    board.forEach(Route::resume);
+
+    assertThat(page.locator("#report-title")).hasText("replies a21 \u00b7 ABC-21");
+  }
+
+  @Test
   void aReportIsNamedToAScreenReaderByItsTitle() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("ABC-7-alpha"));
     Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
