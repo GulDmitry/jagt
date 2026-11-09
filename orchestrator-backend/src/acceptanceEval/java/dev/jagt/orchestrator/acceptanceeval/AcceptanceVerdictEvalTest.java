@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.acceptanceeval;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.config.RoleDefinition;
+import dev.jagt.orchestrator.config.RoleOptions;
 import dev.jagt.orchestrator.eval.AcceptanceCase;
 import dev.jagt.orchestrator.eval.AcceptanceCases;
 import dev.jagt.orchestrator.eval.AcceptanceFixtureEnvironment;
@@ -16,9 +17,6 @@ import dev.jagt.orchestrator.eval.ShippedRoot;
 import dev.jagt.orchestrator.job.CheckerPrompts;
 import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.port.UserNotifier;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AcceptanceEnvironment;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.FlowsConfig;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AcceptanceEnding;
 import dev.jagt.orchestrator.task.AcceptanceVerdict;
@@ -157,14 +155,16 @@ abstract class AcceptanceVerdictEvalTest {
     String sha = AcceptanceEvalWorkspace.head(worktree);
     String landedProbe =
         deployed.probe().isEmpty()
-            ? null
+            ? ""
             : url + deployed.probe().substring(deployed.probe().indexOf(' ') + 1);
-    RoleConfig acceptance =
-        new RoleConfig(
+    RoleOptions acceptance =
+        new RoleOptions(
             true,
             System.getProperty("acceptanceEval.model", acceptanceDefinition.model()),
-            List.of(new AcceptanceEnvironment(url, landedProbe)),
-            flows(deployed));
+            List.of(new RoleOptions.Environment(url, landedProbe)),
+            flows(deployed),
+            List.of(),
+            List.of());
     CheckerReader.Run run =
         deployed.declines()
             ? prompts.decline(
@@ -201,16 +201,16 @@ abstract class AcceptanceVerdictEvalTest {
         deployed, reader.read(told).facts().orElseThrow(() -> EvalStalled.because("no verdict")));
   }
 
-  private static FlowsConfig flows(AcceptanceCase deployed) throws IOException {
+  private static RoleOptions.Flows flows(AcceptanceCase deployed) throws IOException {
     if (!deployed.hasFlows()) {
-      return null;
+      return RoleOptions.Flows.defaults();
     }
     Path directory = AcceptanceEvalWorkspace.root().resolve("repos/" + ROUND.get() + "/flows");
     Files.createDirectories(directory);
     for (Map.Entry<String, String> file : deployed.flows().files().entrySet()) {
       Files.writeString(directory.resolve(file.getKey()), file.getValue());
     }
-    return new FlowsConfig("playwright", directory.toString());
+    return RoleOptions.Flows.defaults().withDriver("playwright").withPath(directory.toString());
   }
 
   static List<AcceptanceCase> cases() {

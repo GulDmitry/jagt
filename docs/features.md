@@ -151,8 +151,8 @@
 ## Startup · [spec](../openspec/specs/startup/spec.md) · [agent seams](../openspec/specs/agent-seams/spec.md)
 - **Install checks** — A missing part of the installation is refused at start, with no network.
   [spec](../openspec/specs/startup/spec.md#requirement-a-bad-install-is-refused-at-once-offline)
-- **One configuration file** — Every option lives in `jagt.yml` alone, described in `jagt.yml.dist`.
-  [spec](../openspec/specs/startup/spec.md#requirement-configuration-lives-in-jagtyml)
+- **One configuration file** — Options live in `jagt.yml`, a role's own in `roles/<id>/role.yml`; one that cannot check is a board mark.
+  [spec](../openspec/specs/startup/spec.md#requirement-a-role-folder-that-cannot-run-a-check-is-the-boards)
 - **Local reads** — A local model may map commands, else the cloud; a down one is a lost reach. Key: `orchestrator.assistant.local.endpoint`, off.
   [spec](../openspec/specs/agent-seams/spec.md#requirement-a-read-that-needs-no-tool-may-ask-a-local-model)
 - **Codex and OpenCode agents** — `agent.cli: codex` or `opencode` runs sessions there, `opencode.reads`, off, a role's reads.

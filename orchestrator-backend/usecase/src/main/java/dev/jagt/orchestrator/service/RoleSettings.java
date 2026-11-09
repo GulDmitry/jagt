@@ -1,17 +1,23 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.RoleDefinition;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
+import dev.jagt.orchestrator.config.RoleOptions;
 
-/**
- * A role's definition under what {@code jagt.yml} says about it now; a role not installed is always
- * off.
- */
-public record RoleSettings(RoleDefinition role, ConfigService config) {
+/** A role not installed is always off. */
+public record RoleSettings(RoleDefinition role, ConfigService config, OrchestratorPaths paths) {
 
-  public RoleConfig load() {
-    RoleConfig written =
-        role.installed() ? config.load().role(role.id()) : new RoleConfig(false, null, null, null);
-    return written.modelOrInherited().isEmpty() ? written.withModel(role.model()) : written;
+  public RoleOptions load() {
+    if (!role.installed()) {
+      return RoleOptions.defaults();
+    }
+    RoleOptions folder = RoleOptions.read(paths.root().resolve("roles").resolve(role.id()));
+    return folder
+        .withEnabled(config.load().role(role.id()).enabledOrDefault())
+        .withModel(folder.model().isEmpty() ? role.model() : folder.model());
+  }
+
+  public String file() {
+    return "roles/" + role.id() + "/role.yml";
   }
 }

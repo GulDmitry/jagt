@@ -38,15 +38,7 @@ class AcceptanceCheckJobTest {
 
   private static final ConfigFile ON =
       ConfigFile.defaults()
-          .withRoles(
-              Map.of(
-                  "acceptance",
-                  new ConfigFile.RoleConfig(
-                      true,
-                      null,
-                      List.of(
-                          new ConfigFile.AcceptanceEnvironment("https://stage.example.com", null)),
-                      null)));
+          .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));
 
   private static TaskState deployed(String askedDigest) {
     return TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -92,7 +84,9 @@ class AcceptanceCheckJobTest {
 
     new CheckerCheckJob(
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config),
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 new RoleFiles(paths, "acceptance")),
@@ -105,16 +99,22 @@ class AcceptanceCheckJobTest {
   }
 
   @Test
-  void waitsForTheDeploysPipelineToBeGreenBeforeItChecks(@TempDir Path root) {
+  void waitsForTheDeploysPipelineToBeGreenBeforeItChecks(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     when(config.load()).thenReturn(ON);
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "environments: [{url: \"https://stage.example.com\"}]\n");
 
     new CheckerCheckJob(
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config),
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 new RoleFiles(paths, "acceptance")),
@@ -127,7 +127,7 @@ class AcceptanceCheckJobTest {
   }
 
   @Test
-  void checksADeployOnceThenLeavesItAloneAcrossARestart(@TempDir Path root) {
+  void checksADeployOnceThenLeavesItAloneAcrossARestart(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     when(config.load()).thenReturn(ON);
@@ -135,12 +135,18 @@ class AcceptanceCheckJobTest {
         .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "environments: [{url: \"https://stage.example.com\"}]\n");
     CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
     when(outcomes.apply(any(), any(), any()))
         .thenReturn(dev.jagt.orchestrator.task.AcceptanceEnding.PASSED);
     new CheckerCheckJob(
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config),
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 new RoleFiles(paths, "acceptance")),
@@ -151,7 +157,9 @@ class AcceptanceCheckJobTest {
 
     new CheckerCheckJob(
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config),
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 new RoleFiles(paths, "acceptance")),
@@ -164,7 +172,7 @@ class AcceptanceCheckJobTest {
   }
 
   @Test
-  void sendsARowNotMetBackToTheSession(@TempDir Path root) {
+  void sendsARowNotMetBackToTheSession(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
@@ -173,11 +181,17 @@ class AcceptanceCheckJobTest {
         .thenReturn(new Answer<>(Optional.of(notMet()), TokenUsage.NONE));
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "environments: [{url: \"https://stage.example.com\"}]\n");
     TaskState task = deployed("digest");
 
     new CheckerCheckJob(
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config),
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 new RoleFiles(paths, "acceptance")),
@@ -190,7 +204,7 @@ class AcceptanceCheckJobTest {
   }
 
   @Test
-  void handsAMetVerdictToTheOutcomesToMarkPassed(@TempDir Path root) {
+  void handsAMetVerdictToTheOutcomesToMarkPassed(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
@@ -199,10 +213,16 @@ class AcceptanceCheckJobTest {
         .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "environments: [{url: \"https://stage.example.com\"}]\n");
 
     new CheckerCheckJob(
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config),
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 new RoleFiles(paths, "acceptance")),
@@ -228,11 +248,17 @@ class AcceptanceCheckJobTest {
         .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "environments: [{url: \"https://stage.example.com\"}]\n");
     TaskState restarted = TaskReducer.relayed(deployed("digest"), "accept", "digest", "", 1);
 
     new CheckerCheckJob(
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config),
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 new RoleFiles(paths, "acceptance")),
@@ -275,7 +301,7 @@ class AcceptanceCheckJobTest {
         .thenReturn(
             ConfigFile.defaults()
                 .withRoles(
-                    Map.of("acceptance", new ConfigFile.RoleConfig(true, null, List.of(), null))));
+                    Map.of("acceptance", new ConfigFile.RoleConfig(true, null))));
     when(reader.check(any(), any(), any(), any()))
         .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
     OrchestratorPaths paths =
@@ -283,7 +309,7 @@ class AcceptanceCheckJobTest {
     RoleDefinition role = RoleDefinitions.fromFile(root.resolve("role.yml"));
 
     new CheckerCheckJob(
-            new RoleSettings(role, config),
+            new RoleSettings(role, config, paths),
             new CheckerPrompts(role, new RoleFiles(paths, "acceptance")),
             reader,
             new CheckerRecords(paths, Clock.systemUTC()),
@@ -316,7 +342,7 @@ class AcceptanceCheckJobTest {
         .thenReturn(
             ConfigFile.defaults()
                 .withRoles(
-                    Map.of("acceptance", new ConfigFile.RoleConfig(true, null, List.of(), null))));
+                    Map.of("acceptance", new ConfigFile.RoleConfig(true, null))));
     when(reader.check(any(), any(), any(), any()))
         .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
     OrchestratorPaths paths =
@@ -324,7 +350,7 @@ class AcceptanceCheckJobTest {
     RoleDefinition role = RoleDefinitions.fromFile(root.resolve("role.yml"));
 
     new CheckerCheckJob(
-            new RoleSettings(role, config),
+            new RoleSettings(role, config, paths),
             new CheckerPrompts(role, new RoleFiles(paths, "acceptance")),
             reader,
             new CheckerRecords(paths, Clock.systemUTC()),
@@ -358,10 +384,14 @@ class AcceptanceCheckJobTest {
         .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "environments: [{url: \"https://stage.example.com\"}]\n");
     RoleDefinition role = RoleDefinitions.fromFile(root.resolve("role.yml"));
 
     new CheckerCheckJob(
-            new RoleSettings(role, config),
+            new RoleSettings(role, config, paths),
             new CheckerPrompts(role, new RoleFiles(paths, "acceptance")),
             reader,
             new CheckerRecords(paths, Clock.systemUTC()),

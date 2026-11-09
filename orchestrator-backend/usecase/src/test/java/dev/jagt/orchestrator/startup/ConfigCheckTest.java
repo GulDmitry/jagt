@@ -121,7 +121,16 @@ class ConfigCheckTest {
         Arguments.of("webTerminal: { enabled: true }", "orchestrator.webTerminal"),
         Arguments.of("dashboard: { refreshSeconds: 10 }", "orchestrator.dashboard"),
         Arguments.of("qa: { enabled: true }", "orchestrator.qa"),
-        Arguments.of("roles: { qa: { enabled: true } }", "orchestrator.roles.qa"));
+        Arguments.of("roles: { qa: { enabled: true } }", "orchestrator.roles.qa"),
+        Arguments.of(
+            "roles: { acceptance: { enabled: true, model: opus } }",
+            "orchestrator.roles.acceptance.model"),
+        Arguments.of(
+            "roles: { acceptance: { environments: [] } }",
+            "orchestrator.roles.acceptance.environments"),
+        Arguments.of(
+            "roles: { acceptance: { flows: { driver: none } } }",
+            "orchestrator.roles.acceptance.flows"));
   }
 
   @ParameterizedTest

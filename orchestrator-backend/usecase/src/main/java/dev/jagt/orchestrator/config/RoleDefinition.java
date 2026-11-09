@@ -30,7 +30,7 @@ public record RoleDefinition(
         "",
         new Trigger(List.of(), ""),
         new Replies(List.of(), ABSENT, ABSENT),
-        new Tools(List.of(), List.of(), List.of(), false, false),
+        new Tools(List.of(), List.of(), List.of(), false, false, List.of()),
         new Checking(false, List.of()));
   }
 
@@ -51,13 +51,14 @@ public record RoleDefinition(
   public record Checking(boolean jobs, List<String> readSteps) {}
 
   /**
-   * Command globs a read may run and may not, and path globs it may not open; reads are on, writes
-   * refused.
+   * Command globs a read may run and may not, path globs it may not open, and the MCP servers or
+   * tools it loads beside the assistant's; reads are on, writes refused.
    */
   public record Tools(
       List<String> shell,
       List<String> refuseShell,
       List<String> refuseRead,
       boolean git,
-      boolean fetch) {}
+      boolean fetch,
+      List<String> mcp) {}
 }

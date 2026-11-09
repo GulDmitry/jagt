@@ -66,7 +66,7 @@ class DeployCheckJobAcceptanceTest {
                 .withRoles(
                     Map.of(
                         "acceptance",
-                        new ConfigService.ConfigFile.RoleConfig(true, null, List.of(), null))));
+                        new ConfigService.ConfigFile.RoleConfig(true, null))));
     when(pipelines.read(eq("ABC-42"), any()))
         .thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.GREEN, "", "", "", List.of()));
 

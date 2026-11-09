@@ -1,9 +1,16 @@
 # The acceptance role: a headless model that checks a deployed change against its ticket, read-only, once per deploy.
+# jagt ships this frame; what you check, where and with what is yours. jagt.yml holds only roles.acceptance.enabled.
 # Write what you change into `roles/acceptance/role.yml`: it layers over this file per key, a list replacing whole.
-# Take effect: id, model (the default; `roles.acceptance.model` in jagt.yml overrides it), trigger, tools, answer, decline,
+# environments, flows and model are read again on every check; the rest at start.
+# A `setup.md` beside it is your own setup brief for any session to follow; nothing in jagt reads it.
+# What to check and how: copy brief.md.dist to brief.md.
+# Take effect: id, model, trigger, tools, answer, decline, environments, flows,
 # jobs (true = the role runs jobs), readSteps (the brief steps whose turn opens its read).
 # tools: shell and refuseShell are command globs, refuseRead path globs; reads are always on, writes always refused.
-# trigger: deployed = the change is live; environment-named = jagt.yml names an environment;
+# tools.mcp: MCP servers or tools the read loads beside assistant.allowedTools; a bare server gives its get/list/read
+# tools, a browser server also its navigation (to a listed environment only), snapshot and screenshot; click, fill and the
+# like stay refused. An entry that names no MCP server is a mark on the board's head.
+# trigger: deployed = the change is live; environment-named = environments names one;
 # pipelines-green always holds, as the check's key is the digest the green deploy pipelines set.
 # Declared for the lint only, nothing else reads them: name, oncePer (one check per deploy is fixed), outcomes.
 id: acceptance
@@ -20,6 +27,15 @@ tools:
   refuseRead: []
   git: true
   fetch: environments
+  mcp: []                   # e.g. [mcp__your-logs]
+# environments:             # allow-list of base URLs the role may touch; with none, no check opens and the board says so
+#   - url: https://stage.example.com
+#     landed: https://stage.example.com/health   # answers once the change is up, where the host reports no deploy job
+# flows:                    # scripted flows, run as argv on a listed environment; evidence goes under `acceptance/` in the worktree
+#   driver: none            # none | playwright; any other is a mark on the board's head
+#   path: /path/to/flows    # the flows repository, the command's working directory; it holds any login
+#   command: ["npx", "playwright", "test"]   # jagt adds the reporter, output folder and flow filter; BASE_URL is the environment
+#   timeout: 10m            # a run past it is unprovable
 answer:
   - required: failure
   - records: rows

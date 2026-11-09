@@ -146,7 +146,7 @@ any key passes, configured or not, and `[unaffected]` keys are ignored.
 
 ### Requirement: Scripted flows are run by jagt and judged by their report
 `port/AcceptanceRunner` SHALL run the named flows of the project's flows repository against one environment.
-It runs them as argv with no shell and a timeout (`adapter/flows`; `orchestrator.roles.acceptance.flows.driver` is `none` or `playwright`).
+It runs them as argv with no shell and a timeout (`adapter/flows`; the folder's `flows.driver` is `none` or `playwright`).
 It answers per flow `passed`, `failed` or `unprovable` from the driver's JSON report, never its HTML.
 Evidence SHALL lie under `acceptance/` in the worktree; jagt holds no credential, the flows repository does.
 
@@ -166,11 +166,11 @@ A flow that could not be run or found, or whose test passed only on retry or was
 - **THEN** every flow is `unprovable` and none is `failed`
 
 #### Scenario: No driver is configured
-- **WHEN** `orchestrator.roles.acceptance.flows.driver` is unset
+- **WHEN** `roles/acceptance/role.yml` and its `.dist` name no `flows.driver`
 - **THEN** every flow is `unprovable` and nothing runs
 
 ### Requirement: Flows run only on a listed environment
-A run SHALL be refused before any process starts when its base URL is no url of `orchestrator.roles.acceptance.environments`;
+A run SHALL be refused before any process starts when its base URL is no url of the folder's `environments`;
 every flow is then `unprovable`.
 
 #### Scenario: A production URL not listed
@@ -190,10 +190,3 @@ A read naming no flow runs nothing and adds no row.
 #### Scenario: No flow named
 - **WHEN** the read names no flow
 - **THEN** no run starts and the report holds the read's rows alone
-
-### Requirement: An unknown flows driver is refused at start
-`orchestrator.roles.acceptance.flows.driver` other than `none` or `playwright` SHALL be refused at start, naming the key.
-
-#### Scenario: A driver jagt does not carry
-- **WHEN** `flows.driver` is `selenium`
-- **THEN** start is refused with a problem on `orchestrator.roles.acceptance.flows.driver`

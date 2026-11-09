@@ -241,6 +241,59 @@ class HeadlessClaudeCheckerReaderTest {
   }
 
   @Test
+  void givesABrowserServerTheRoleNamesItsReadsNavigationAndLooksAndNoClick() {
+    when(runner.run(any(Path.class), any(Duration.class), any()))
+        .thenReturn(
+            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
+    HeadlessClaudeCheckerReader browsing =
+        new HeadlessClaudeCheckerReader(
+            new HeadlessClaude(
+                new AssistantProcess(
+                    runner,
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
+                ClaudeProperties.defaults(),
+                AssistantProperties.empty(),
+                usage,
+                reads),
+            ClaudeProperties.defaults(),
+            AssistantProperties.empty(),
+            List.of(
+                RoleDefinitions.compile(
+                    "id: acceptance\nname: acceptance\nmodel: m\ntrigger: [deployed]\n"
+                        + "oncePer: deploy\noutcomes: [round]\ntools:\n  mcp: [mcp__browser]\n"
+                        + "answer:\n  - required: failure\n")));
+
+    browsing.read(
+        new CheckerReader.Run(
+            "",
+            "check ABC-42",
+            worktree,
+            "abc123",
+            "",
+            new CheckerReader.Reach(List.of(), List.of()),
+            "{}",
+            "acceptance"));
+
+    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+    verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+    List<String> argv = command.getValue();
+    assertThat(argv).doesNotContain("--strict-mcp-config");
+    assertThat(argv.subList(argv.indexOf("--allowedTools"), argv.size()))
+        .contains(
+            "mcp__browser__list*",
+            "mcp__browser__get*",
+            "mcp__browser__navigate_page",
+            "mcp__browser__take_snapshot",
+            "mcp__browser__take_screenshot");
+    assertThat(argv.subList(argv.indexOf("--disallowedTools"), argv.indexOf("--allowedTools")))
+        .contains("mcp__*__click*", "mcp__*__fill*", "mcp__*__evaluate*")
+        .doesNotContain("mcp__*__navigate*");
+  }
+
+  @Test
   void passesNeitherASharedPromptNorAModelWhereTheRunNamesNone() {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(

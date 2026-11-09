@@ -27,20 +27,20 @@ class RoleConfigOriginsTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void modelComesFromJagtYmlWhenItWritesOne(@TempDir Path root) throws Exception {
-    install(root, null);
+  void enabledComesFromJagtYmlAndEnvironmentsFromTheHumanCopy(@TempDir Path root)
+      throws Exception {
+    install(root, "environments: [{url: https://stage.example.com}]\n");
     when(config.load())
         .thenReturn(
-            ConfigFile.defaults()
-                .withRoles(Map.of("acceptance", new RoleConfig(true, "opus", List.of(), null))));
+            ConfigFile.defaults().withRoles(Map.of("acceptance", new RoleConfig(true, "opus"))));
 
     List<String> lines = logged(root);
 
     assertThat(lines)
         .contains(
-            "acceptance model opus jagt.yml",
             "acceptance enabled true jagt.yml",
-            "acceptance environments 0 jagt.yml");
+            "acceptance model sonnet role.yml.dist",
+            "acceptance environments 1 role.yml");
   }
 
   @Test

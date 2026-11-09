@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -43,12 +44,15 @@ public final class ReadGate {
   /** Why the call is refused, or empty when it may go on to the CLI's own permission rules. */
   public static Optional<String> refusal(
       ReadScope read, String tool, Map<String, Object> input, @Nullable String cwd) {
+    Map<String, Object> arguments = input == null ? Map.of() : input;
+    if (read.navigating().contains(tool) || read.looking().contains(tool)) {
+      return browserRefusal(read, tool, arguments);
+    }
     List<String> allowing = read.tools().stream().filter(named -> names(named, tool)).toList();
     if (allowing.contains(tool)
         || (!allowing.isEmpty() && read.writes().stream().noneMatch(write -> names(write, tool)))) {
       return Optional.empty();
     }
-    Map<String, Object> arguments = input == null ? Map.of() : input;
     Path here =
         cwd == null || cwd.isBlank()
             ? read.roots().stream().findFirst().orElse(Path.of("/"))
@@ -63,6 +67,18 @@ public final class ReadGate {
       return fetchRefusal(read, String.valueOf(arguments.getOrDefault("url", "")));
     }
     return given(tool);
+  }
+
+  /** A navigation goes to a listed environment alone; a look writes no file. */
+  private static Optional<String> browserRefusal(
+      ReadScope read, String tool, Map<String, Object> arguments) {
+    if (read.navigating().contains(tool)) {
+      return fetchRefusal(read, String.valueOf(arguments.getOrDefault("url", "")));
+    }
+    return arguments.keySet().stream()
+            .anyMatch(key -> key.toLowerCase(Locale.ROOT).contains("file"))
+        ? Optional.of("jagt refuses " + tool + " writing a file: a read writes nothing.")
+        : Optional.empty();
   }
 
   private static Optional<String> given(String tool) {

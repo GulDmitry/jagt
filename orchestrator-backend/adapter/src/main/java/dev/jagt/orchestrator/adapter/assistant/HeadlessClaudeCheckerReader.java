@@ -45,7 +45,18 @@ public class HeadlessClaudeCheckerReader {
   }
 
   private HeadlessReply ask(CheckerReader.Run run) {
-    List<String> mcpReads = ReadOnlyTools.mcpNamed(assistant.allowedTools());
+    RoleDefinition.Tools scope =
+        roles.stream()
+            .filter(role -> role.id().equals(run.role()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("no installed role " + run.role()))
+            .tools();
+    List<String> mcpReads =
+        Stream.concat(
+                ReadOnlyTools.mcpNamed(assistant.allowedTools()).stream(),
+                ReadOnlyTools.mcpNamed(scope.mcp()).stream())
+            .distinct()
+            .toList();
     List<String> cmd =
         new ArrayList<>(
             List.of(
@@ -68,21 +79,16 @@ public class HeadlessClaudeCheckerReader {
     if (!run.model().isBlank()) {
       cmd.addAll(List.of("--model", run.model()));
     }
-    RoleDefinition.Tools scope =
-        roles.stream()
-            .filter(role -> role.id().equals(run.role()))
-            .findFirst()
-            .orElseThrow(() -> new IllegalStateException("no installed role " + run.role()))
-            .tools();
     ClaudeToolScope claude =
         ClaudeToolScope.of(scope.shell(), scope.refuseShell(), scope.refuseRead(), scope.fetch());
     cmd.addAll(
         List.of("--tools", claude.tools(), "--permission-mode", "dontAsk", "--disallowedTools"));
     cmd.addAll(claude.refuse());
-    cmd.addAll(ReadOnlyTools.MCP_WRITES);
+    cmd.addAll(BrowserTools.refused(ReadOnlyTools.MCP_WRITES, scope.mcp()));
     cmd.add("--allowedTools");
     cmd.addAll(claude.allow());
     cmd.addAll(mcpReads);
+    cmd.addAll(BrowserTools.all(scope.mcp()));
     List<String> tools = new ArrayList<>(mcpReads);
     tools.add(HeadlessClaude.STRUCTURED_OUTPUT);
     return headless.run(
@@ -94,7 +100,9 @@ public class HeadlessClaudeCheckerReader {
             tools,
             scope.git(),
             List.of(),
-            scope.fetch() ? run.reach().urls() : List.of()),
+            scope.fetch() ? run.reach().urls() : List.of(),
+            BrowserTools.navigating(scope.mcp()),
+            BrowserTools.looking(scope.mcp())),
         AssistantCallKind.ACCEPTANCE_CHECK,
         run.worktree().toString());
   }

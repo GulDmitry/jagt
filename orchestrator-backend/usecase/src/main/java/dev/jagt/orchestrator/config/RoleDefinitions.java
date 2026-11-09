@@ -39,6 +39,10 @@ public final class RoleDefinitions {
    * replaces.
    */
   public static RoleDefinition fromFiles(List<Path> bottomFirst) {
+    return compile(tree(bottomFirst));
+  }
+
+  static @Nullable Object tree(List<Path> bottomFirst) {
     @Nullable Object tree = null;
     for (Path file : bottomFirst) {
       try {
@@ -47,7 +51,7 @@ public final class RoleDefinitions {
         throw new UncheckedIOException(unread);
       }
     }
-    return compile(tree);
+    return tree;
   }
 
   public static RoleDefinition compile(String yaml) {
@@ -108,7 +112,8 @@ public final class RoleDefinitions {
         strings(tools, "refuseShell"),
         strings(tools, "refuseRead"),
         Boolean.TRUE.equals(tools.get("git")),
-        "environments".equals(tools.get("fetch")));
+        "environments".equals(tools.get("fetch")),
+        strings(tools, "mcp"));
   }
 
   private static Schema schema(Map<?, ?> document, String key) {

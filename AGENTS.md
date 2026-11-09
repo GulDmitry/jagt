@@ -112,7 +112,7 @@ or local setup; such names live only in git-ignored files.
 - **A colour means one thing, board-wide** — meanings in `docs/rules/design.md` alone.
 - **What is merely coming is not news.** A countdown belongs in a tooltip; what has STOPPED belongs on screen.
 - **Every mark has one row in the legend**, rendered as the page's own element rather than named in words.
-- **Getting started stays one copied file and one command.** Every option lives in `jagt.yml` alone, described in `jagt.yml.dist`.
+- **Getting started stays one copied file and one command.** Options live in `jagt.yml`, a role's own in its folder, each described in its `.dist`.
 
 ## Tests
 

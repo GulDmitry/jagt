@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ProjectProblems;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.SessionHost;
@@ -35,6 +36,7 @@ public class ConfigCheck implements StartupCheck {
           "openWarpWindow", "renamed to `openTerminalWindow`; set it again",
           "qa", "the role is called `acceptance`; write it under `roles.acceptance`");
   private static final String RETIRED_ROLE = "qa";
+  private static final List<String> FOLDER_OPTIONS = List.of("environments", "flows", "model");
   private final ConfigService configService;
   private final OrchestratorPaths paths;
   private final SessionHost sessions;
@@ -58,6 +60,7 @@ public class ConfigCheck implements StartupCheck {
     }
     List<Problem> problems = new ArrayList<>(retiredKeys());
     problems.addAll(retiredRole(config));
+    problems.addAll(folderOptions());
     problems.addAll(viewerProblems(config));
     Map<String, ProjectConfig> projects = config.projects();
     if (projects.isEmpty()) {
@@ -134,6 +137,29 @@ public class ConfigCheck implements StartupCheck {
                 + " `roles.acceptance` in "
                 + paths.configFile()
                 + "."));
+  }
+
+  private List<Problem> folderOptions() {
+    String role = "roles." + Checkers.ACCEPTANCE;
+    return configService.declaredKeys("roles", Checkers.ACCEPTANCE).stream()
+        .filter(FOLDER_OPTIONS::contains)
+        .sorted()
+        .map(
+            key ->
+                new Problem(
+                    "orchestrator." + role + "." + key,
+                    "orchestrator."
+                        + role
+                        + "."
+                        + key
+                        + " is no longer read: write `"
+                        + key
+                        + "` in roles/"
+                        + Checkers.ACCEPTANCE
+                        + "/role.yml, and keep only `enabled` in "
+                        + paths.configFile()
+                        + "."))
+        .toList();
   }
 
   /**

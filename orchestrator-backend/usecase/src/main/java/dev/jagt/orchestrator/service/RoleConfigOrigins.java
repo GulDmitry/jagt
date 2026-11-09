@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.RoleDefinition;
+import dev.jagt.orchestrator.config.RoleOptions;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,7 +24,8 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 @Component
 public final class RoleConfigOrigins {
 
-  private static final String JAGT_YML = "jagt.yml";
+  private static final String ROLE_YML = "role.yml";
+  private static final String DIST = "role.yml.dist";
   private static final String DEFAULT = "default";
 
   private final InstalledRoles roles;
@@ -41,21 +43,23 @@ public final class RoleConfigOrigins {
     for (RoleDefinition role : roles.definitions()) {
       RoleConfig written =
           Files.exists(paths.configFile()) ? config.load().role(role.id()) : RoleConfig.defaults();
+      Path folder = paths.root().resolve("roles").resolve(role.id());
+      RoleOptions options = RoleOptions.read(folder);
       report(
           role.id(),
           "enabled",
           written.enabledOrDefault(),
-          written.enabled() == null ? DEFAULT : JAGT_YML);
+          written.enabled() == null ? DEFAULT : "jagt.yml");
       report(
           role.id(),
           "model",
-          written.modelOrInherited().isEmpty() ? role.model() : written.modelOrInherited(),
-          modelOrigin(role, written));
+          options.model().isEmpty() ? role.model() : options.model(),
+          names(folder.resolve(ROLE_YML), "model") ? ROLE_YML : DIST);
       report(
           role.id(),
           "environments",
-          written.environmentsOrEmpty().size(),
-          written.environments() == null ? DEFAULT : JAGT_YML);
+          options.environments().size(),
+          origin(folder, "environments"));
     }
   }
 
@@ -69,20 +73,19 @@ public final class RoleConfigOrigins {
         .log();
   }
 
-  private String modelOrigin(RoleDefinition role, RoleConfig written) {
-    if (!written.modelOrInherited().isEmpty()) {
-      return JAGT_YML;
+  private static String origin(Path folder, String key) {
+    if (names(folder.resolve(ROLE_YML), key)) {
+      return ROLE_YML;
     }
-    return humanCopyNamesModel(role.id()) ? "role.yml" : "role.yml.dist";
+    return names(folder.resolve(DIST), key) ? DIST : DEFAULT;
   }
 
-  private boolean humanCopyNamesModel(String id) {
-    Path copy = paths.root().resolve("roles").resolve(id).resolve("role.yml");
+  private static boolean names(Path file, String key) {
     try {
-      return Files.isRegularFile(copy)
-          && new Yaml(new SafeConstructor(new LoaderOptions())).load(Files.readString(copy))
+      return Files.isRegularFile(file)
+          && new Yaml(new SafeConstructor(new LoaderOptions())).load(Files.readString(file))
               instanceof Map<?, ?> top
-          && top.containsKey("model");
+          && top.containsKey(key);
     } catch (IOException | RuntimeException unread) {
       return false;
     }

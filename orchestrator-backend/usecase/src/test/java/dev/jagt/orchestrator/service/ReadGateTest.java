@@ -103,6 +103,79 @@ class ReadGateTest {
         .isPresent();
   }
 
+  @Test
+  void letsANavigationToAListedEnvironmentGo() {
+    ReadScope scope =
+        new ReadScope(
+            List.of(),
+            List.of(),
+            false,
+            List.of("mcp__*__navigate*"),
+            List.of("https://stage.alpha.test"),
+            List.of("mcp__browser__go"),
+            List.of());
+
+    assertThat(
+            ReadGate.refusal(
+                scope,
+                "mcp__browser__go",
+                Map.of("url", "https://stage.alpha.test/quotes"),
+                "/tmp"))
+        .isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"https://prod.alpha.test/quotes", ""})
+  void refusesANavigationToAnyOtherHostOrToNoUrl(String url) {
+    ReadScope scope =
+        new ReadScope(
+            List.of(),
+            List.of(),
+            false,
+            List.of(),
+            List.of("https://stage.alpha.test"),
+            List.of("mcp__browser__go"),
+            List.of());
+
+    assertThat(ReadGate.refusal(scope, "mcp__browser__go", Map.of("url", url), "/tmp"))
+        .get()
+        .asString()
+        .contains("the environments the role names");
+  }
+
+  @Test
+  void refusesALookThatWouldWriteAFile() {
+    ReadScope scope =
+        new ReadScope(
+            List.of(),
+            List.of(),
+            false,
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of("mcp__browser__look"));
+
+    assertThat(
+            ReadGate.refusal(scope, "mcp__browser__look", Map.of("filePath", "/tmp/x.png"), "/tmp"))
+        .isPresent();
+  }
+
+  @Test
+  void letsALookWithNoFileArgumentGo() {
+    ReadScope scope =
+        new ReadScope(
+            List.of(),
+            List.of(),
+            false,
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of("mcp__browser__look"));
+
+    assertThat(ReadGate.refusal(scope, "mcp__browser__look", Map.of("format", "png"), "/tmp"))
+        .isEmpty();
+  }
+
   @ParameterizedTest
   @ValueSource(
       strings = {

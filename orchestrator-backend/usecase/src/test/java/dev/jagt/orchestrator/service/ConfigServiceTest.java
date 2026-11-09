@@ -90,29 +90,10 @@ class ConfigServiceTest {
   }
 
   @Test
-  void leavesAcceptanceOffWithNoEnvironmentWhereTheHumanWroteNone() {
+  void leavesAcceptanceOffWhereTheHumanWroteNone() {
     ConfigFile config = new JsonMapper().readValue("{}", ConfigFile.class);
 
     assertThat(config.role("acceptance").enabledOrDefault()).isFalse();
-    assertThat(config.role("acceptance").allows("https://stage.example.com")).isFalse();
-  }
-
-  @Test
-  void allowsOnlyTheEnvironmentsAcceptanceNamesWithTheirLandedProbe() {
-    ConfigFile config =
-        new JsonMapper()
-            .readValue(
-                """
-                { "roles": { "acceptance": { "enabled": true, "environments": [
-                  { "url": "https://stage.example.com", "landed": "https://stage.example.com/health" } ] } } }
-                """,
-                ConfigFile.class);
-
-    assertThat(config.role("acceptance").enabledOrDefault()).isTrue();
-    assertThat(config.role("acceptance").allows("https://stage.example.com")).isTrue();
-    assertThat(config.role("acceptance").allows("https://prod.example.com")).isFalse();
-    assertThat(config.role("acceptance").environmentsOrEmpty().getFirst().landed())
-        .isEqualTo("https://stage.example.com/health");
   }
 
   @Test

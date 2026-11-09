@@ -30,6 +30,6 @@ class RoleBeansTest {
 
     RoleDefinition acceptance = beans.acceptanceDefinition(new InstalledRoles(paths));
 
-    assertThat(beans.acceptanceSettings(acceptance, config).load().enabledOrDefault()).isFalse();
+    assertThat(beans.acceptanceSettings(acceptance, config, paths).load().enabled()).isFalse();
   }
 }

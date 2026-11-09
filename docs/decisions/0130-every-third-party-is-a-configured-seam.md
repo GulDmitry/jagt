@@ -6,6 +6,7 @@ for the deploy read [0109](0109-a-deploys-outcome-is-the-pipeline-jagt-reads-on-
 ## Status
 
 Proposed 2026-11-02 by the owner's order; accepted with the commit landing the code host seam and the board-wide mark.
+Amended by [0157](0157-a-roles-options-live-in-its-folder.md): a role's runner is chosen in its folder.
 
 ## Context
 

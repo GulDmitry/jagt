@@ -23,8 +23,6 @@ class RoleNamesTest {
               "runs the flows a plan's acceptance criteria name, whichever role asks",
           "dev.jagt.orchestrator.service.AcceptanceProbing",
               "probes a plan's acceptance criteria, before any role checks the deploy",
-          "dev.jagt.orchestrator.service.ConfigService$ConfigFile$AcceptanceEnvironment",
-              "an environment as roles.acceptance.environments writes it",
           "dev.jagt.orchestrator.service.ConfigService$ConfigFile$MasterConfig",
               "the old orchestrator.master key, named as jagt.yml wrote it",
           "dev.jagt.orchestrator.flow.TaskMove$MasterNoted",

@@ -27,6 +27,8 @@ import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
@@ -40,15 +42,7 @@ class AcceptanceDeclineJobTest {
 
   private static final ConfigFile ON =
       ConfigFile.defaults()
-          .withRoles(
-              Map.of(
-                  "acceptance",
-                  new ConfigFile.RoleConfig(
-                      true,
-                      null,
-                      List.of(
-                          new ConfigFile.AcceptanceEnvironment("https://stage.example.com", null)),
-                      null)));
+          .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));
 
   private static TaskState declined(long reportedAt) {
     return TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -67,7 +61,8 @@ class AcceptanceDeclineJobTest {
   }
 
   @Test
-  void readsTheSessionsReasonBackToAcceptanceOnceItRepliedToTheRound(@TempDir Path root) {
+  void readsTheSessionsReasonBackToAcceptanceOnceItRepliedToTheRound(@TempDir Path root)
+      throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
@@ -77,12 +72,18 @@ class AcceptanceDeclineJobTest {
         .thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "environments: [{url: \"https://stage.example.com\"}]\n");
     CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.NOT_MET);
 
     new CheckerDeclineJob(
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config),
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 new RoleFiles(paths, "acceptance")),
@@ -95,18 +96,24 @@ class AcceptanceDeclineJobTest {
   }
 
   @Test
-  void readsNothingBeforeTheSessionRepliedToTheRound(@TempDir Path root) {
+  void readsNothingBeforeTheSessionRepliedToTheRound(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     when(config.load()).thenReturn(ON);
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "environments: [{url: \"https://stage.example.com\"}]\n");
     CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.NOT_MET);
 
     new CheckerDeclineJob(
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config),
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 new RoleFiles(paths, "acceptance")),
@@ -119,18 +126,24 @@ class AcceptanceDeclineJobTest {
   }
 
   @Test
-  void readsNothingOnceTheDisputeWentToTheHuman(@TempDir Path root) {
+  void readsNothingOnceTheDisputeWentToTheHuman(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     when(config.load()).thenReturn(ON);
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "environments: [{url: \"https://stage.example.com\"}]\n");
     CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.ESCALATED);
 
     new CheckerDeclineJob(
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config),
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 new RoleFiles(paths, "acceptance")),
@@ -143,7 +156,8 @@ class AcceptanceDeclineJobTest {
   }
 
   @Test
-  void marksTheSecondReadAsAnotherDisputeWhereOneStandsAlready(@TempDir Path root) {
+  void marksTheSecondReadAsAnotherDisputeWhereOneStandsAlready(@TempDir Path root)
+      throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
@@ -154,12 +168,18 @@ class AcceptanceDeclineJobTest {
         .thenReturn(new Answer<>(Optional.of(disputed), TokenUsage.NONE));
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "environments: [{url: \"https://stage.example.com\"}]\n");
     CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.DISPUTED);
 
     new CheckerDeclineJob(
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config),
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 new RoleFiles(paths, "acceptance")),
@@ -172,7 +192,7 @@ class AcceptanceDeclineJobTest {
   }
 
   @Test
-  void readsTheDeclineAgainAfterARestartDuringItsRead(@TempDir Path root) {
+  void readsTheDeclineAgainAfterARestartDuringItsRead(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
@@ -182,6 +202,10 @@ class AcceptanceDeclineJobTest {
         .thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "environments: [{url: \"https://stage.example.com\"}]\n");
     CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.NOT_MET);
     TaskState reading =
@@ -190,7 +214,9 @@ class AcceptanceDeclineJobTest {
 
     new CheckerDeclineJob(
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config),
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 new RoleFiles(paths, "acceptance")),
@@ -203,7 +229,8 @@ class AcceptanceDeclineJobTest {
   }
 
   @Test
-  void readsTheDeclineAgainAfterARestartOnAStateFileWithTheReadOpenAsATurn(@TempDir Path root) {
+  void readsTheDeclineAgainAfterARestartOnAStateFileWithTheReadOpenAsATurn(@TempDir Path root)
+      throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
@@ -213,6 +240,10 @@ class AcceptanceDeclineJobTest {
         .thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"),
+        "environments: [{url: \"https://stage.example.com\"}]\n");
     CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.NOT_MET);
     String json =
@@ -238,7 +269,9 @@ class AcceptanceDeclineJobTest {
 
     new CheckerDeclineJob(
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config),
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                paths),
             new CheckerPrompts(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 new RoleFiles(paths, "acceptance")),

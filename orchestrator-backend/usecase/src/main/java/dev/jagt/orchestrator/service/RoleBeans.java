@@ -23,7 +23,8 @@ class RoleBeans {
   }
 
   @Bean
-  RoleSettings acceptanceSettings(RoleDefinition acceptanceDefinition, ConfigService config) {
-    return new RoleSettings(acceptanceDefinition, config);
+  RoleSettings acceptanceSettings(
+      RoleDefinition acceptanceDefinition, ConfigService config, OrchestratorPaths paths) {
+    return new RoleSettings(acceptanceDefinition, config, paths);
   }
 }

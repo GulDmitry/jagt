@@ -41,7 +41,7 @@ public class CheckerFlows {
                         FlowResult.defaults()
                             .withFlow(flow)
                             .withReason(
-                                ask.environment() + " is not in roles.acceptance.environments"))
+                                ask.environment() + " is not an environment of " + settings.file()))
                 .toList();
     AcceptanceVerdict merged = verdict.plus(results.stream().map(CheckerFlows::row).toList());
     write(worktree.resolve(role.id() + "-report.md"), merged);

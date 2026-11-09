@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.RoleOptions;
 import dev.jagt.orchestrator.flow.CheckerPhase;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.task.AcceptanceDecline;
 import dev.jagt.orchestrator.task.AcceptanceEnding;
@@ -64,13 +64,13 @@ public class CheckerDeclineJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    RoleConfig acceptance = settings.load();
+    RoleOptions acceptance = settings.load();
     String role = settings.role().id();
     CheckerPhase reading = CheckerPhase.of(task, role);
     Optional<CheckerRecords.Entry> asked =
         records.latest(taskId).filter(record -> answered(task, role, record));
     if (asked.isEmpty()
-        || !acceptance.enabledOrDefault()
+        || !acceptance.enabled()
         || task.worktreePath() == null
         || (task.turnOrNone().open() && reading != CheckerPhase.READING)) {
       return;

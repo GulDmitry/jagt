@@ -7,6 +7,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.port.AcceptanceRunner;
 import dev.jagt.orchestrator.port.AcceptanceRunner.FlowResult;
@@ -27,6 +29,8 @@ class CheckerFlowsTest {
 
   private static final String STAGE = "https://stage.example.com";
 
+  @TempDir static Path root;
+
   private final AcceptanceRunner runner = mock(AcceptanceRunner.class);
   private final ConfigService config = mock(ConfigService.class);
   private final CheckerFlows flows =
@@ -34,20 +38,18 @@ class CheckerFlowsTest {
           runner,
           RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
           new RoleSettings(
-              RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")), config));
+              RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+              config,
+              new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))));
 
-  private void stageListed() {
+  private void stageListed() throws IOException {
     when(config.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withRoles(
-                    Map.of(
-                        "acceptance",
-                        new ConfigFile.RoleConfig(
-                            true,
-                            null,
-                            List.of(new ConfigFile.AcceptanceEnvironment(STAGE, null)),
-                            null))));
+                .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null))));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"), "environments: [{url: \"" + STAGE + "\"}]\n");
   }
 
   @Test
@@ -98,7 +100,7 @@ class CheckerFlowsTest {
   }
 
   @Test
-  void aPassedFlowIsAMetRow(@TempDir Path worktree) {
+  void aPassedFlowIsAMetRow(@TempDir Path worktree) throws IOException {
     stageListed();
     when(runner.run(worktree, List.of("AC-1"), STAGE))
         .thenReturn(List.of(FlowResult.defaults().withFlow("AC-1").withVerdict(Verdict.PASSED)));
@@ -114,7 +116,7 @@ class CheckerFlowsTest {
   }
 
   @Test
-  void anEnvironmentNotListedIsRefusedBeforeAnyRun(@TempDir Path worktree) {
+  void anEnvironmentNotListedIsRefusedBeforeAnyRun(@TempDir Path worktree) throws IOException {
     stageListed();
 
     AcceptanceVerdict result =

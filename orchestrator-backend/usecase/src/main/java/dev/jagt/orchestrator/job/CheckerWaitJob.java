@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.RoleOptions.Environment;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.EnvironmentProbe;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AcceptanceEnvironment;
 import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.task.AcceptanceEnding;
 import dev.jagt.orchestrator.task.TaskState;
@@ -52,7 +52,7 @@ public class CheckerWaitJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    List<AcceptanceEnvironment> environments = settings.load().environmentsOrEmpty();
+    List<Environment> environments = settings.load().environments();
     records
         .latest(taskId)
         .filter(record -> record.ending() == AcceptanceEnding.WAITING)
@@ -64,9 +64,8 @@ public class CheckerWaitJob implements TaskJob {
             });
   }
 
-  private boolean answers(AcceptanceEnvironment environment) {
+  private boolean answers(Environment environment) {
     String landed = environment.landed();
-    String address = landed == null || landed.isBlank() ? environment.url() : landed;
-    return address != null && probe.answers(address);
+    return probe.answers(landed.isBlank() ? environment.url() : landed);
   }
 }

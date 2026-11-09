@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.RoleOptions;
 import dev.jagt.orchestrator.flow.CheckerPhase;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.StopKind;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.Deployment;
@@ -60,7 +60,7 @@ public class CheckerCheckJob implements TaskJob {
 
   @Override
   public void run(String taskId, TaskState task) {
-    RoleConfig acceptance = settings.load();
+    RoleOptions acceptance = settings.load();
     String worktree = task.worktreePath();
     Optional<Deployment> open = openFor(task, acceptance);
     if (open.isEmpty() || worktree == null) {
@@ -86,22 +86,22 @@ public class CheckerCheckJob implements TaskJob {
    * The deployment where a check may open: the role is on and every predicate its trigger names
    * holds.
    */
-  private Optional<Deployment> openFor(TaskState task, RoleConfig config) {
+  private Optional<Deployment> openFor(TaskState task, RoleOptions config) {
     List<String> trigger = settings.role().trigger().trigger();
     return Optional.ofNullable(task.deployment())
         .filter(
             deployment ->
-                config.enabledOrDefault()
+                config.enabled()
                     && deployment.askedDigest() != null
                     && trigger.stream()
                         .allMatch(predicate -> holds(predicate, deployment, config)));
   }
 
-  private static boolean holds(String predicate, Deployment deployment, RoleConfig config) {
+  private static boolean holds(String predicate, Deployment deployment, RoleOptions config) {
     return switch (predicate) {
       case "deployed" -> deployment.live();
       case "pipelines-green" -> deployment.askedDigest() != null;
-      case "environment-named" -> !config.environmentsOrEmpty().isEmpty();
+      case "environment-named" -> !config.environments().isEmpty();
       default -> false;
     };
   }

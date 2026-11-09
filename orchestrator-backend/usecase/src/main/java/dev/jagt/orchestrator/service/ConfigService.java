@@ -478,28 +478,13 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       }
     }
 
-    /** What {@code orchestrator.roles.<id>} says of one checker role. */
+    /** A checker's options live in its role folder; jagt.yml says only whether it is on. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
-    public record RoleConfig(
-        @Nullable Boolean enabled,
-        @Nullable String model,
-        @Nullable List<AcceptanceEnvironment> environments,
-        @Nullable FlowsConfig flows) {
+    public record RoleConfig(@Nullable Boolean enabled, @Nullable String model) {
 
       public static RoleConfig defaults() {
-        return new RoleConfig(null, null, null, null);
-      }
-
-      /** The flows repository, blank while no driver is set. */
-      public String flowsPathOrBlank() {
-        FlowsConfig named = flows;
-        if (named == null || named.driver() == null || named.path() == null) {
-          return "";
-        }
-        return named.driver().isBlank() || "none".equals(named.driver().strip())
-            ? ""
-            : named.path().strip();
+        return new RoleConfig(null, null);
       }
 
       public boolean enabledOrDefault() {
@@ -509,27 +494,7 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       public String modelOrInherited() {
         return model == null ? "" : model.strip();
       }
-
-      public List<AcceptanceEnvironment> environmentsOrEmpty() {
-        return environments == null ? List.of() : environments;
-      }
-
-      public boolean allows(String baseUrl) {
-        return environmentsOrEmpty().stream()
-            .anyMatch(environment -> baseUrl.equals(environment.url()));
-      }
     }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record FlowsConfig(@Nullable String driver, @Nullable String path) {}
-
-    /**
-     * {@code landed} is a URL whose answer proves the change is up where the host reports no deploy
-     * job.
-     */
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    @With
-    public record AcceptanceEnvironment(@Nullable String url, @Nullable String landed) {}
 
     /**
      * The Master session: judging unless a human turned it off or up to act. {@code brief} is the
@@ -1000,8 +965,11 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
    * The names the human wrote under {@code orchestrator}, INCLUDING ones nothing binds — both
    * readers drop those.
    */
-  public Set<String> declaredKeys() {
-    Object section = section();
+  public Set<String> declaredKeys(String... under) {
+    @Nullable Object section = section();
+    for (String key : under) {
+      section = section instanceof Map<?, ?> keys ? keys.get(key) : null;
+    }
     return section instanceof Map<?, ?> keys
         ? keys.keySet().stream().map(String::valueOf).collect(Collectors.toUnmodifiableSet())
         : Set.of();
