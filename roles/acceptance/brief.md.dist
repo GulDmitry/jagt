@@ -21,6 +21,7 @@ When jagt names a workspace, your working directory is it. Read its `index.md` f
 signs in, the scenarios known. Reuse a scenario or step that covers a criterion; else decompose the criterion into
 WHEN/THEN scenarios under `scenarios/`, reusable steps under `steps/`, a flow under `flows/`, run it headless with
 `BASE_URL=<environment> <flows command>` exactly as jagt names it, and add it to `index.md`.
+- A criterion nothing covers gets its flow even when one read would decide it: the flow is what the next deploy reuses.
 - A fact you add to `index.md` names how it was proven; a negative fact is run again before it decides a row.
 - A scan or probe step is first checked against a case known to pass.
 - A role `index.md` routes (how to sign in as it) is reached by that route, never substituted.
