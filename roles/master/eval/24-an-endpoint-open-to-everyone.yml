@@ -1,0 +1,31 @@
+case: an endpoint open to everyone that the ticket reserves
+status: review-pending
+instructions: Add `GET /reports/export`, the CSV export of the report. It is for admins only.
+baseline:
+  src/main/java/Roles.java: |
+    class Roles {
+        static final String ADMIN = "ADMIN";
+        static final String ALL_USERS = "USER";
+    }
+  src/main/java/ReportController.java: |
+    class ReportController {
+        String summary() { return "summary"; }
+    }
+change:
+  src/main/java/ReportController.java: |
+    class ReportController {
+        String summary() { return "summary"; }
+        @GetMapping("/reports/export")
+        @PreAuthorize(Roles.ALL_USERS)
+        String export() { return reports.csv(); }
+    }
+  src/test/java/ReportControllerTest.java: |
+    class ReportControllerTest {
+        @Test void aSignedInUserReceivesTheCsv() {
+            assertEquals(200, asUser().get("/reports/export").status());
+        }
+    }
+expect:
+  verdict: not-ready
+  names:
+  - ALL_USERS

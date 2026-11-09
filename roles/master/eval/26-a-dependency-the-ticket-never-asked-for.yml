@@ -1,0 +1,30 @@
+case: a dependency the ticket never asked for
+status: review-pending
+instructions: Trim the whitespace around a customer's name before it is saved.
+baseline:
+  build.gradle: |
+    dependencies {
+        implementation 'org.springframework.boot:spring-boot-starter-web'
+    }
+  src/main/java/Customer.java: |
+    record Customer(String name) {}
+change:
+  build.gradle: |
+    dependencies {
+        implementation 'org.springframework.boot:spring-boot-starter-web'
+        implementation 'commons-lang:commons-lang:2.1'
+    }
+  src/main/java/Customer.java: |
+    record Customer(String name) {
+        Customer { name = org.apache.commons.lang.StringUtils.trim(name); }
+    }
+  src/test/java/CustomerTest.java: |
+    class CustomerTest {
+        @Test void aNameIsSavedTrimmed() {
+            assertEquals("Ann", new Customer("  Ann ").name());
+        }
+    }
+expect:
+  verdict: not-ready
+  names:
+  - commons-lang

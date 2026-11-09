@@ -1,0 +1,29 @@
+case: a query built from the request
+status: review-pending
+instructions: Look an order up by its number.
+baseline:
+  src/main/java/Orders.java: |
+    class Orders {
+        private final Jdbc jdbc;
+        Orders(Jdbc jdbc) { this.jdbc = jdbc; }
+    }
+change:
+  src/main/java/Orders.java: |
+    class Orders {
+        private final Jdbc jdbc;
+        Orders(Jdbc jdbc) { this.jdbc = jdbc; }
+        Order byNumber(String number) {
+            return jdbc.one("SELECT * FROM orders WHERE number = '" + number + "'", Order::of);
+        }
+    }
+  src/test/java/OrdersTest.java: |
+    class OrdersTest {
+        @Test void anOrderIsFoundByItsNumber() {
+            assertEquals("A-7", new Orders(seeded("A-7")).byNumber("A-7").number());
+        }
+    }
+expect:
+  verdict: not-ready
+  names:
+  - number
+  - concatenat|inject|parameter

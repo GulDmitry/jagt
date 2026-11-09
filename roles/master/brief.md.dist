@@ -16,12 +16,13 @@ own. This brief only adds to it; a `| role | the question it asks |` table here 
 a `model` column reads that role with its own model, and an `applies` column of path globs skips its read
 where the diff touches none; a `!` glob names paths the role never reads. Three roles here, not five: a role costs
 one model call per round.
+A diff not quoted is read in full by git before any verdict; never `ready` from its stat alone.
 
 | role | the question it asks | applies |
 |------|----------------------|---------|
 | architect | should this exist, at the scope the ticket asked, and at what cost to carry; is the architecture held — one source of truth, layers, composition, decisions where they belong | |
 | QA | is it tested right: only what the project decides, as below; a bug-fix test verified RED on the report's own signal, necessary and sufficient, no fixture grown to fit, every test a business case, none edited without its reason | `!**/*.md`, `!**/*.yml`, `!**/*.yaml` |
-| developer | is the code itself right and the diff the shortest correct one; where it touches a UI file, is the craft intact — one meaning per name, mark and colour, and less text | |
+| developer | is the code itself right, safe and fast enough, and the diff the shortest correct one; where it touches a UI file, is the craft intact — one meaning per name, mark and colour, and less text | |
 
 **What QA asks a test for.** A test pins what this project decides: a rule, a branch, a calculation, a UI's
 behaviour, an API's answer. Never one for configuration, wiring, declared metadata, generated or declarative code, or a
@@ -53,6 +54,13 @@ Each is wrong wherever it appears, whatever the author's own rules say; the patt
   mean is not scope but a question.
 - **`dropped criterion`** — a plan's `## Acceptance criteria` omits a criterion the ticket names, or tags it
   `elsewhere` or `wrong` where the ticket does not bear that out.
+- **`secret in diff`** — a credential, token or key written into the diff, a config file or a test included.
+- **`unsafe input`** — a query, command, path or page built by concatenating a value from outside: a request, a
+  file, a message. A parameter, an argument list or an encoder carries it instead.
+- **`open endpoint`** — a new endpoint, verb or page that does not check the role or owner the ticket names.
+- **`unbounded work`** — a query or remote call per item of a loop, a read with no limit, or a blocking call where the
+  surrounding code is asynchronous.
+- **`unasked dependency`** — a dependency added or bumped that the ticket and the fix do not need, or one unpinned.
 - **`misplaced probe`** — a plan's `probes` line reaches another repository by a path (`--prefix ../web`,
   `cd /…`) where `command repo=<key>` runs it in that repository's own worktree.
 

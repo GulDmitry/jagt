@@ -1,0 +1,32 @@
+case: a query per item of a loop
+status: review-pending
+instructions: Return the customers of every order number in the request.
+baseline:
+  src/main/java/Customers.java: |
+    class Customers {
+        private final OrderRepository repository;
+        Customers(OrderRepository repository) { this.repository = repository; }
+    }
+change:
+  src/main/java/Customers.java: |
+    class Customers {
+        private final OrderRepository repository;
+        Customers(OrderRepository repository) { this.repository = repository; }
+        List<String> of(List<String> numbers) {
+            List<String> customers = new ArrayList<>();
+            for (String number : numbers) {
+                customers.add(repository.findByNumber(number).customer());
+            }
+            return customers;
+        }
+    }
+  src/test/java/CustomersTest.java: |
+    class CustomersTest {
+        @Test void eachOrderNumberGivesItsCustomer() {
+            assertEquals(List.of("Ann", "Bo"), new Customers(seeded()).of(List.of("A-1", "A-2")));
+        }
+    }
+expect:
+  verdict: not-ready
+  names:
+  - findByNumber
