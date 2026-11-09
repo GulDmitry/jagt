@@ -12,6 +12,7 @@ once per deploy, and organises its checks so a later check reuses what an earlie
 - Does not own the code fix: a row not met goes to the session as an `acceptance-round`.
 - Does not own the deploy: the human, or the Master in `act`, presses it.
 - Does not own a stop's lift: the human does.
+- Owns its interactive session, where the human writes scenarios with it or answers its questions over several rounds.
 
 ## Who triggers it
 
@@ -28,6 +29,8 @@ jagt alone: a task DEPLOYED, its deploy pipelines green, the role's `environment
   **THEN** the row is `unprovable` behind a `question`, and the answer goes into the index for the next check
 - **WHEN** a row is not met
   **THEN** the session gets an `acceptance-round`, as before
+- **WHEN** you run `acceptance`, or `scenarios` on ABC-42 before its deploy
+  **THEN** an interactive acceptance session opens in its workspace, ABC-42's ticket and any open question loaded
 - **WHEN** `workspace: none`
   **THEN** acceptance reads memoryless and writes nothing, as before workspaces
 
