@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.task;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import lombok.With;
 
 /**
  * What one acceptance run found on {@code sha}. {@code failure} non-blank means nothing else was
@@ -11,15 +12,31 @@ import java.util.Optional;
 public record AcceptanceVerdict(
     String sha, String failure, List<Row> rows, String question, String waitingOn, Flows flows) {
 
-  /** The flow ids a read named and the listed base url they run on. */
-  public record Flows(List<String> ids, String environment) {
+  /** The flows a read named, each with the criterion it checks, and the base url they run on. */
+  @With
+  public record Flows(List<Flow> named, String environment) {
+
+    /** A blank {@code criterion} means the flow decides no row of the read's. */
+    public record Flow(String id, String criterion) {}
 
     public Flows {
-      ids = List.copyOf(ids);
+      named = List.copyOf(named);
     }
 
     public static Flows none() {
       return new Flows(List.of(), "");
+    }
+
+    public List<String> ids() {
+      return named.stream().map(Flow::id).toList();
+    }
+
+    public String criterionOf(String id) {
+      return named.stream()
+          .filter(flow -> flow.id().equals(id))
+          .map(Flow::criterion)
+          .findFirst()
+          .orElse("");
     }
   }
 
@@ -69,14 +86,12 @@ public record AcceptanceVerdict(
     rows = List.copyOf(rows);
   }
 
-  public AcceptanceVerdict plus(List<Row> more) {
-    return new AcceptanceVerdict(
-        sha,
-        failure,
-        java.util.stream.Stream.concat(rows.stream(), more.stream()).toList(),
-        question,
-        waitingOn,
-        flows);
+  public AcceptanceVerdict withRows(List<Row> decided) {
+    return new AcceptanceVerdict(sha, failure, decided, question, waitingOn, flows);
+  }
+
+  public AcceptanceVerdict withQuestion(String asked) {
+    return new AcceptanceVerdict(sha, failure, rows, asked, waitingOn, flows);
   }
 
   public AcceptanceVerdict withFlows(Flows named) {

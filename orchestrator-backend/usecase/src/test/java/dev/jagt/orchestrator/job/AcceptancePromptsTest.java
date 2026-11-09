@@ -134,7 +134,10 @@ class AcceptancePromptsTest {
                 new RoleFiles(paths, "acceptance"))
             .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
-    assertThat(run.prompt()).contains("Flows: /flows. In `flows` name the ids");
+    assertThat(run.prompt())
+        .contains(
+            "Flows: /flows. In `flows` give each flow's `id`",
+            "its `criterion`, written exactly as in the `criterion` of the row it checks");
   }
 
   @Test
@@ -223,7 +226,7 @@ class AcceptancePromptsTest {
         .contains(
             "Workspace: " + root.resolve("ws") + ", your working directory.",
             "`BASE_URL=<environment> npx test <file>`",
-            "In `flows` name each flow you wrote or ran");
+            "In `flows` name each flow you wrote or ran with its `id` and the `criterion`");
   }
 
   @Test

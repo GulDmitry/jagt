@@ -9,14 +9,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * Runs the scripted flows an acceptance read asked for and folds each result into its verdict as a
- * row.
+ * Runs the scripted flows an acceptance read asked for and folds each result into its verdict.
  */
 @Slf4j
 @Component
@@ -43,21 +41,9 @@ public class CheckerFlows {
                             .withReason(
                                 ask.environment() + " is not an environment of " + settings.file()))
                 .toList();
-    AcceptanceVerdict merged = verdict.plus(results.stream().map(CheckerFlows::row).toList());
+    AcceptanceVerdict merged = FlowRows.merge(verdict, ask, results);
     write(worktree.resolve(role.id() + "-report.md"), merged);
     return merged;
-  }
-
-  private static AcceptanceVerdict.Row row(FlowResult result) {
-    AcceptanceVerdict.Status status =
-        switch (result.verdict()) {
-          case PASSED -> AcceptanceVerdict.Status.MET;
-          case FAILED -> AcceptanceVerdict.Status.NOT_MET;
-          case UNPROVABLE -> AcceptanceVerdict.Status.UNPROVABLE;
-        };
-    String paths = result.evidence().stream().map(Path::toString).collect(Collectors.joining(", "));
-    return new AcceptanceVerdict.Row(
-        result.flow(), status, (result.reason() + " " + paths).strip());
   }
 
   private void write(Path file, AcceptanceVerdict verdict) {

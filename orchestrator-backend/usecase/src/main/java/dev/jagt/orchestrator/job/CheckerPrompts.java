@@ -82,12 +82,14 @@ public class CheckerPrompts {
         ? ""
         : "\nFlows: "
             + path
-            + ". In `flows` name the ids checking a criterion: a test tagged `@AC-n`, else its"
-            + " title; in `environment` the listed URL they run on."
+            + ". In `flows` give each flow's `id`, a test's `@AC-n` tag else its title, never its"
+            + " file, and its `criterion`, written exactly as in the `criterion` of the row it"
+            + " checks; in"
+            + " `environment` the listed URL they run on."
             + " List and open its files with Glob and Read; the shell runs no `ls`."
             + (acceptance.workspacePath().isEmpty()
-                ? " jagt runs each flow you name on that URL after your answer and adds its result"
-                    + " as a row of its own; you run none."
+                ? " jagt runs each flow you name on that URL after your answer: a passed flow"
+                    + " makes its criterion's row met, a failed one not met; you run none."
                 : "");
   }
 
@@ -111,8 +113,8 @@ public class CheckerPrompts {
                         : " Run a flow as `BASE_URL=<environment> "
                             + String.join(" ", acceptance.flows().command())
                             + " <file>`.")
-                    + " In `flows` name each flow you wrote or ran,"
-                    + " in `environment` the URL.")
+                    + " In `flows` name each flow you wrote or ran with its `id` and the"
+                    + " `criterion` of the row it checks, in `environment` the URL.")
         .orElse("");
   }
 

@@ -118,7 +118,7 @@ class AcceptanceReadsTest {
             List.of(),
             "",
             "",
-            new AcceptanceVerdict.Flows(List.of("AC-1"), "https://alpha.test"));
+            new AcceptanceVerdict.Flows(List.of(new AcceptanceVerdict.Flows.Flow("AC-1", "")), "https://alpha.test"));
     AcceptanceVerdict withFlows =
         new AcceptanceVerdict(
             "proj@0123",

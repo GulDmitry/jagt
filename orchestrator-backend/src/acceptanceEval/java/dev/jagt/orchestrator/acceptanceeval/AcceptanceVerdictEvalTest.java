@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.eval.EvalPorts;
 import dev.jagt.orchestrator.eval.EvalQuorum;
 import dev.jagt.orchestrator.eval.EvalStalled;
 import dev.jagt.orchestrator.eval.ShippedRoot;
+import dev.jagt.orchestrator.job.CheckerFlows;
 import dev.jagt.orchestrator.job.CheckerPrompts;
 import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.port.UserNotifier;
@@ -99,6 +100,7 @@ abstract class AcceptanceVerdictEvalTest {
   @MockitoBean private UserNotifier userNotifier;
   @Autowired private CheckerReader reader;
   @Autowired private CheckerPrompts prompts;
+  @Autowired private CheckerFlows checkerFlows;
   @Autowired private RoleDefinition acceptanceDefinition;
   @Autowired private UsageTracker usage;
 
@@ -165,12 +167,14 @@ abstract class AcceptanceVerdictEvalTest {
         deployed.probe().isEmpty()
             ? ""
             : url + deployed.probe().substring(deployed.probe().indexOf(' ') + 1);
+    RoleOptions.Flows scripted = flows(deployed);
+    AcceptanceEvalWorkspace.writeRole(url, landedProbe, scripted);
     RoleOptions acceptance =
         new RoleOptions(
             true,
             System.getProperty("acceptanceEval.model", acceptanceDefinition.model()),
             List.of(new RoleOptions.Environment(url, landedProbe)),
-            flows(deployed),
+            scripted,
             List.of(),
             deployed.workspace().held() ? workspace.toString() : "",
             List.of());
@@ -206,10 +210,10 @@ abstract class AcceptanceVerdictEvalTest {
               .facts()
               .orElseThrow(() -> EvalStalled.because("no decline answer")));
     }
+    AcceptanceVerdict read =
+        reader.read(told).facts().orElseThrow(() -> EvalStalled.because("no verdict"));
     AcceptanceJudgement judged =
-        AcceptanceJudgement.ofVerdict(
-            deployed,
-            reader.read(told).facts().orElseThrow(() -> EvalStalled.because("no verdict")));
+        AcceptanceJudgement.ofVerdict(deployed, checkerFlows.run(read, worktree, read.flows()));
     assertThat(AcceptanceWorkspaceFiles.problem(deployed, before, watched, url))
         .describedAs(
             "%s: the workspace; acceptance said: %s",

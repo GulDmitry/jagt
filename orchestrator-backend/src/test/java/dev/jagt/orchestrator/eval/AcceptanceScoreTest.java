@@ -150,7 +150,9 @@ class AcceptanceScoreTest {
             "",
             "",
             new AcceptanceVerdict.Flows(
-                List.of("@AC-1 quote shows validUntil", "shows the expired notice"),
+                List.of(
+                    new AcceptanceVerdict.Flows.Flow("@AC-1 quote shows validUntil", ""),
+                    new AcceptanceVerdict.Flows.Flow("shows the expired notice", "")),
                 "http://127.0.0.1:1"));
     AcceptanceVerdict one =
         new AcceptanceVerdict(
@@ -160,7 +162,8 @@ class AcceptanceScoreTest {
             "",
             "",
             new AcceptanceVerdict.Flows(
-                List.of("@AC-1 quote shows validUntil"), "http://127.0.0.1:1"));
+                List.of(new AcceptanceVerdict.Flows.Flow("@AC-1 quote shows validUntil", "")),
+                "http://127.0.0.1:1"));
 
     AcceptanceScore named =
         AcceptanceScore.of(
