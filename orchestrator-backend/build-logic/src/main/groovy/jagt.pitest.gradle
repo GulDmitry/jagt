@@ -2,7 +2,7 @@
 def usecaseGitClasses = ['GitWorktrees', 'GitDeploy', 'WorktreeInspection', 'GitStates', 'GitCommands', 'WorktreeHooks', 'DiffCheckouts']
     .collect { "dev.jagt.orchestrator.service.${it}" }
 
-subprojects {
+allprojects {
     apply plugin: 'info.solidsoft.pitest'
     def pitestTargets = providers.gradleProperty('pitestTargets').map { it.split(',').toList() }
     // Only `:adapter`'s real-git tests run the `:usecase` classes listed above, so `:adapter` mutates them and `:usecase` does not.
@@ -56,7 +56,7 @@ subprojects {
 def base = providers.gradleProperty('pitestDiff').map { it ?: 'HEAD' }.getOrElse('HEAD')
 def diff = providers.exec {
     workingDir rootDir
-    commandLine 'git', 'diff', '-U0', base, '--', '*/src/main/java/*.java'
+    commandLine 'git', 'diff', '-U0', base, '--', '*/src/main/java/*.java', 'src/main/java/*.java'
 }.standardOutput.asText.get()
 def changedLines = [:].withDefault { [] as Set }
 def file = null
@@ -87,9 +87,15 @@ if (ignored.intersect(inRange)) {
     changedLines.keySet().removeAll { changedLines[it].isEmpty() }
 }
 def classOf = { String path -> path.replaceFirst('^.*?src/main/java/', '').replace('.java', '').replace('/', '.') }
-def moduleOf = { String path -> ':' + path.replaceFirst('^orchestrator-backend/', '').tokenize('/')[0] }
-// The root project's own main classes carry no pitest.
-changedLines.keySet().removeAll { !findProject(moduleOf(it)) }
+// A path under `src/` is the root project's own main; any other first segment is a module.
+def moduleOf = { String path ->
+    def relative = path.replaceFirst('^orchestrator-backend/', '')
+    def owner = relative.startsWith('src/') ? ':' : ':' + relative.tokenize('/')[0]
+    if (!findProject(owner)) {
+        throw new GradleException("pitestDiff: no project ${owner} owns ${path}")
+    }
+    owner
+}
 def targets = [:].withDefault { [] }
 changedLines.keySet().each { path ->
     def type = classOf(path)
@@ -106,7 +112,7 @@ targets.each { module, types ->
     project(module).pitest.targetClasses = types.collectMany { [it, it + '$*'] }
 }
 tasks.register('pitestDiff') {
-    dependsOn targets.keySet().collect { "$it:pitest" }
+    dependsOn targets.keySet().collect { project(it).tasks.named('pitest') }
     def reports = targets.keySet().collect { project(it).layout.buildDirectory.file('reports/pitest/mutations.xml').get().asFile }
     def lines = changedLines.collectEntries { path, numbers -> [(path.replaceFirst('^.*?src/main/java/', '')): numbers] }
     doLast {
