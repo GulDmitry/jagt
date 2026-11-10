@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.StartupCheck;
 import java.util.List;
@@ -16,11 +17,12 @@ public class CaseCheck implements StartupCheck {
 
   private final SessionCases cases;
   private final SessionBrief brief;
+  private final Checkers checkers;
 
   @Override
   public List<Problem> problems() {
     return Stream.concat(
-            cases.book().problems(brief.steps(), SessionCases.FILE).stream(),
+            cases.book().problems(brief.steps(), SessionCases.FILE, checkers.installed()).stream(),
             brief.unreadable().stream())
         .toList();
   }

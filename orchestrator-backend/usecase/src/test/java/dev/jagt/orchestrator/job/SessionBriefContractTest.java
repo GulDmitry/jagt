@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -132,7 +133,7 @@ class SessionBriefContractTest {
     new ConflictHandOff(
             sessions,
             new StepRelay(
-                new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC())),
+                new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             mock(ConflictStall.class),
             mock(ConflictFinish.class))
         .handle(
@@ -247,7 +248,7 @@ class SessionBriefContractTest {
             state,
             config,
             new StepRelay(
-                new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC())),
+                new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             changes,
             door);
 

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.Standing;
@@ -73,6 +74,7 @@ class DeployCheckJobAcceptanceTest {
                     Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of())))
                 .withRoles(
                     Map.of("acceptance", new ConfigService.ConfigFile.RoleConfig(true, null))));
+    when(config.anyCheckerEnabled()).thenReturn(true);
     when(pipelines.read(eq("ABC-42"), any()))
         .thenReturn(new DeployPipelines.Reading(DeployPipelines.Kind.GREEN, "", "", "", List.of()));
 
@@ -80,7 +82,7 @@ class DeployCheckJobAcceptanceTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,

@@ -14,6 +14,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Processes;
 import java.nio.file.Files;
@@ -61,7 +64,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -115,7 +118,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(128, "", "not a git repository"));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -150,7 +153,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -197,7 +200,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -242,7 +245,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -272,7 +275,7 @@ class ProjectSetupTest {
     when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -302,7 +305,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -334,7 +337,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -363,7 +366,7 @@ class ProjectSetupTest {
                 128, "", "fatal: detected dubious ownership in repository at '/x'\nmore"));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -394,7 +397,7 @@ class ProjectSetupTest {
     when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ConfigService config =
-        spy(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)));
+        spy(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))));
     doThrow(new IllegalStateException("bad yaml")).when(config).project("billing");
     ProjectSetup setup = new ProjectSetup(config, paths, git, checkout -> List.of());
 
@@ -424,7 +427,7 @@ class ProjectSetupTest {
     when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ConfigService config =
-        spy(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)));
+        spy(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))));
     doAnswer(
             call -> {
               Files.delete(configFile);
@@ -462,7 +465,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -485,7 +488,7 @@ class ProjectSetupTest {
                 .withConfigFile(root.resolve("jagt.yml").toString()));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             mock(Processes.class),
             checkout -> List.of());
@@ -512,7 +515,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(128, "", "fatal: not a git repository"));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -546,7 +549,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("get-url")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -584,7 +587,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -619,7 +622,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("master")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -653,7 +656,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("main")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -694,7 +697,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("get-url")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -733,7 +736,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of("./gradlew", "test"));
@@ -775,7 +778,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -809,7 +812,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -843,7 +846,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("origin/main")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -877,7 +880,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("origin/master")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -908,7 +911,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("get-url")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -943,7 +946,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -974,7 +977,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1014,7 +1017,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1054,7 +1057,7 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("get-url")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1104,7 +1107,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1165,7 +1168,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1211,7 +1214,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1249,7 +1252,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1281,7 +1284,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1328,7 +1331,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1378,7 +1381,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1418,7 +1421,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1452,7 +1455,7 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1491,7 +1494,7 @@ class ProjectSetupTest {
                 .withConfigFile(configFile.toString()));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             mock(Processes.class),
             checkout -> List.of());

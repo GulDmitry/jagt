@@ -34,6 +34,7 @@ class ConflictStall {
   private final Notifications notifications;
   private final ConfigService config;
   private final Clock clock;
+  private final Checkers checkers;
 
   boolean handed(String taskId) {
     return stateService
@@ -79,7 +80,7 @@ class ConflictStall {
                 task.status(),
                 AgentReport.QUESTION,
                 task.stopped(),
-                Checkers.of(task),
+                checkers.of(task),
                 config.load().master().profile())
             .equals(Turn.Holder.ARBITER);
   }

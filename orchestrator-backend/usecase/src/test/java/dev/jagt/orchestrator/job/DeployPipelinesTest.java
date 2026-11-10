@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.RedCause;
@@ -57,7 +58,7 @@ class DeployPipelinesTest {
               new StateService(
                   new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()),
                   reducer),
-              Clock.fixed(NOW, ZoneOffset.UTC)));
+              Clock.fixed(NOW, ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn()))));
   private final TaskState deployed =
       TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)), TaskStatus.DEPLOYED)
           .deployment(

@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -56,7 +57,7 @@ class FinishedArtifactsTest {
                 new AgentSpend(TokenUsage.ofCall(30, 5, 20, 2.0), Map.of("/logs/a.jsonl", 9L)))
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class));
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
 
     new FinishedArtifacts(
             state,
@@ -94,7 +95,7 @@ class FinishedArtifactsTest {
             .title("a thing")
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class));
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
 
     new FinishedArtifacts(
             state,
@@ -128,7 +129,7 @@ class FinishedArtifactsTest {
             .title("a thing")
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class));
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
 
     new FinishedArtifacts(
             state,
@@ -165,7 +166,7 @@ class FinishedArtifactsTest {
             .title("a thing")
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class));
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
 
     new FinishedArtifacts(
             state,
@@ -197,7 +198,7 @@ class FinishedArtifactsTest {
             .title("a thing")
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class));
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
     Files.writeString(worktree.resolve("plan.md"), "the first plan");
     new FinishedArtifacts(
             state,
@@ -241,7 +242,7 @@ class FinishedArtifactsTest {
             .title("a thing")
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class));
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
 
     new FinishedArtifacts(
             state,
@@ -275,7 +276,7 @@ class FinishedArtifactsTest {
             .title("a thing")
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class));
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
 
     new FinishedArtifacts(
             state,

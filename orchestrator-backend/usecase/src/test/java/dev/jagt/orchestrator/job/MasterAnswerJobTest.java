@@ -16,6 +16,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -76,7 +77,7 @@ class MasterAnswerJobTest {
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Decision("keep v2 beside v3", ""));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     verify(verdicts)
@@ -109,7 +110,7 @@ class MasterAnswerJobTest {
     when(verdicts.answered(anyString(), any(), anyString(), any()))
         .thenThrow(new TaskMovedOn("ABC-1"));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     assertThat(state.task("ABC-1").orElseThrow().masterOrNone().unanswered()).isEmpty();
@@ -137,7 +138,7 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
@@ -164,7 +165,7 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     TaskState left = state.task("ABC-1").orElseThrow();
@@ -196,7 +197,7 @@ class MasterAnswerJobTest {
                     new ConfigService.ConfigFile.MasterConfig(
                         "act", null, null, List.of(kept), null)));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
@@ -225,7 +226,7 @@ class MasterAnswerJobTest {
                     new ConfigService.ConfigFile.MasterConfig(
                         "act", null, null, List.of("answer"), null)));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
@@ -255,7 +256,7 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
@@ -286,7 +287,7 @@ class MasterAnswerJobTest {
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     verify(panel).answer("ABC-1", asking, "override the gate?", config.load().master(), true);
@@ -315,7 +316,7 @@ class MasterAnswerJobTest {
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(verdicts.answersOverThisTree(asking)).thenReturn(9);
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
@@ -342,7 +343,7 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
@@ -373,7 +374,7 @@ class MasterAnswerJobTest {
         .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
     MasterAnswerJob job =
         new MasterAnswerJob(
-            state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()));
+            state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     job.run();
     job.run();
@@ -409,7 +410,7 @@ class MasterAnswerJobTest {
     log.start();
     ((Logger) LoggerFactory.getLogger(MasterAnswerJob.class)).addAppender(log);
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     ILoggingEvent unusable =
@@ -451,7 +452,7 @@ class MasterAnswerJobTest {
     when(verdicts.answered(anyString(), any(), anyString(), any())).thenReturn(false);
     MasterAnswerJob job =
         new MasterAnswerJob(
-            state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()));
+            state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     job.run();
     job.run();
@@ -482,7 +483,7 @@ class MasterAnswerJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
@@ -514,7 +515,7 @@ class MasterAnswerJobTest {
                     new ConfigService.ConfigFile.MasterConfig(
                         "act", null, null, List.of("repo"), null)));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
@@ -544,7 +545,7 @@ class MasterAnswerJobTest {
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
@@ -575,7 +576,7 @@ class MasterAnswerJobTest {
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
@@ -605,7 +606,7 @@ class MasterAnswerJobTest {
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
 
-    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()))
+    new MasterAnswerJob(state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
     verify(panel).answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean());
@@ -622,7 +623,7 @@ class MasterAnswerJobTest {
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
                     reducer);
-    FlowReports reports = new FlowReports(state, Clock.systemUTC());
+    FlowReports reports = new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     when(config.load())
         .thenReturn(
@@ -633,7 +634,7 @@ class MasterAnswerJobTest {
         .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
     MasterAnswerJob job =
         new MasterAnswerJob(
-            state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC()));
+            state, config, panel, verdicts, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     reports.report("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.QUESTION, "keep v2?");
     job.run();
     reports.report("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.PLAIN, "worked on it");

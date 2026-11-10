@@ -8,11 +8,13 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.command.CommandReference;
 import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
+import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.AutoReviewCadence;
 import dev.jagt.orchestrator.service.TaskViews;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.time.Clock;
@@ -322,14 +324,14 @@ class BoardApiControllerTest {
         TaskView.of(
             "ABC-1",
             TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build(),
-            true,
+            RoundState.of(AgentReport.PLAIN, true),
             null,
             Map.of());
     TaskView quiet =
         TaskView.of(
             "ABC-2",
             TaskState.builder("demo", "/wt2", TaskStatus.REVIEW_PENDING).build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             null,
             Map.of());
     when(taskViews.snapshot())

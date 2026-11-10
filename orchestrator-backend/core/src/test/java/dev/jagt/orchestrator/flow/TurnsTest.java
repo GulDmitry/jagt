@@ -225,7 +225,7 @@ class TurnsTest {
             sealed.status(),
             sealed.report(),
             sealed.stopped(),
-            Checkers.of(sealed),
+            new Checkers(new TaskChart(Composition.builtIn())).of(sealed),
             new Arbiter.Profile(MasterMode.JUDGE, Set.of()).at(MasterPhase.of(sealed)));
 
     assertThat(holder).isEqualTo(Holder.ARBITER);

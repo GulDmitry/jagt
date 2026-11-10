@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.capability.ship.MergedGuard;
 import dev.jagt.orchestrator.capability.trust.GitStateGuard;
 import dev.jagt.orchestrator.flow.Capabilities;
 import dev.jagt.orchestrator.flow.CapabilityInterceptor;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.FlowEngine;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.ReducingStore;
@@ -32,6 +33,11 @@ public class FlowWiring {
   @Bean
   public TaskChart taskChart(InstalledRoles roles) {
     return new TaskChart(roles.composition());
+  }
+
+  @Bean
+  public Checkers checkers(TaskChart chart) {
+    return new Checkers(chart);
   }
 
   @Bean
@@ -100,7 +106,7 @@ public class FlowWiring {
   }
 
   @Bean
-  public FlowReports flowReports(ReducingStore tasks, Clock clock) {
-    return new FlowReports(tasks, clock);
+  public FlowReports flowReports(ReducingStore tasks, Clock clock, Checkers checkers) {
+    return new FlowReports(tasks, clock, checkers);
   }
 }

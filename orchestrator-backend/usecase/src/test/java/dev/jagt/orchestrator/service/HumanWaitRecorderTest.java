@@ -9,6 +9,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -56,8 +57,8 @@ class HumanWaitRecorderTest {
     ((Logger) LoggerFactory.getLogger(HumanWaitRecorder.class)).addAppender(log);
     new HumanWaitRecorder(
             state,
-            new Rounds(config, ignored -> false, () -> false),
-            Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC))
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
+            Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .follow();
 
     state.updateTask("ABC-77", task -> task.withReport(AgentReport.QUESTION));
@@ -100,8 +101,8 @@ class HumanWaitRecorderTest {
 
     new HumanWaitRecorder(
             state,
-            new Rounds(config, ignored -> false, () -> false),
-            Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC))
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
+            Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .follow();
 
     assertThat(state.task("ABC-42").orElseThrow().waits())
@@ -128,8 +129,8 @@ class HumanWaitRecorderTest {
 
     new HumanWaitRecorder(
             state,
-            new Rounds(config, ignored -> false, () -> false),
-            Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC))
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
+            Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .follow();
 
     assertThat(state.task("ABC-42").orElseThrow().waits())

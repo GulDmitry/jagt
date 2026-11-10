@@ -7,6 +7,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.MasterPhase;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -51,7 +52,7 @@ class TaskTurnsTest {
     log.start();
     ((Logger) LoggerFactory.getLogger(TaskTurns.class)).addAppender(log);
 
-    new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.DEPLOYED);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.DEPLOYED);
 
     assertThat(List.copyOf(log.list))
         .filteredOn(event -> "turn opened".equals(event.getMessage()))
@@ -80,7 +81,7 @@ class TaskTurnsTest {
     log.start();
     ((Logger) LoggerFactory.getLogger(TaskTurns.class)).addAppender(log);
 
-    new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
 
     assertThat(List.copyOf(log.list))
         .filteredOn(event -> "turn opened".equals(event.getMessage()))
@@ -106,7 +107,7 @@ class TaskTurnsTest {
             .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1, ActionOrigin.ROOT)))
             .build());
 
-    new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.IN_PROGRESS);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.IN_PROGRESS);
 
     assertThat(state.task("ABC-42").orElseThrow().turnOrNone().mark("deploy:answers"))
         .isEqualTo(Turn.digestOf(""));
@@ -197,7 +198,7 @@ class TaskTurnsTest {
             .history(List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, null)))
             .build());
 
-    new TaskTurns(state, Clock.systemUTC()).shippedOn("ABC-42", "tree-1;");
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).shippedOn("ABC-42", "tree-1;");
 
     assertThat(state.task("ABC-42").orElseThrow().history().getLast().tree())
         .isEqualTo("23189593ac33d3bc37d365b9805c4c248103ce3d9980acdee9801672208b9a44");
@@ -216,7 +217,7 @@ class TaskTurnsTest {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).message("which cache").build());
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
+    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
 
     turns.left("ABC-42", "deploy src/Login.java");
     turns.unanswered("ABC-42");

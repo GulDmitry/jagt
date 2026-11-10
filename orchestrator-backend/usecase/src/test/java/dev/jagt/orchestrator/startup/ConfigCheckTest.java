@@ -7,6 +7,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.SessionHost;
@@ -49,7 +52,7 @@ class ConfigCheckTest {
                     new ConfigService(
                         new OrchestratorPaths(properties),
                         mock(AgentRuntime.class),
-                        mock(ActStops.class)),
+                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
                     new OrchestratorPaths(properties),
                     mock(SessionHost.class),
                     new WorkingDirHost(root))
@@ -70,7 +73,7 @@ class ConfigCheckTest {
                     new ConfigService(
                         new OrchestratorPaths(properties),
                         mock(AgentRuntime.class),
-                        mock(ActStops.class)),
+                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
                     new OrchestratorPaths(properties),
                     mock(SessionHost.class),
                     new WorkingDirHost(root))
@@ -104,7 +107,7 @@ class ConfigCheckTest {
                     new ConfigService(
                         new OrchestratorPaths(properties),
                         mock(AgentRuntime.class),
-                        mock(ActStops.class)),
+                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
                     new OrchestratorPaths(properties),
                     mock(SessionHost.class),
                     new WorkingDirHost(root))
@@ -155,7 +158,7 @@ class ConfigCheckTest {
     ConfigCheck check =
         new ConfigCheck(
             new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class)),
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
             new OrchestratorPaths(properties),
             mock(SessionHost.class),
             new WorkingDirHost(root));
@@ -183,7 +186,7 @@ class ConfigCheckTest {
                     new ConfigService(
                         new OrchestratorPaths(properties),
                         mock(AgentRuntime.class),
-                        mock(ActStops.class)),
+                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
                     new OrchestratorPaths(properties),
                     mock(SessionHost.class),
                     new WorkingDirHost(root))
@@ -255,7 +258,7 @@ class ConfigCheckTest {
                     new ConfigService(
                         new OrchestratorPaths(properties),
                         mock(AgentRuntime.class),
-                        mock(ActStops.class)),
+                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
                     new OrchestratorPaths(properties),
                     mock(SessionHost.class),
                     new WorkingDirHost(root))
@@ -291,7 +294,7 @@ class ConfigCheckTest {
                     new ConfigService(
                         new OrchestratorPaths(properties),
                         mock(AgentRuntime.class),
-                        mock(ActStops.class)),
+                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
                     new OrchestratorPaths(properties),
                     mock(SessionHost.class),
                     new WorkingDirHost(root))
@@ -324,7 +327,7 @@ class ConfigCheckTest {
                     new ConfigService(
                         new OrchestratorPaths(properties),
                         mock(AgentRuntime.class),
-                        mock(ActStops.class)),
+                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
                     new OrchestratorPaths(properties),
                     sessions,
                     new WorkingDirHost(root))
@@ -351,7 +354,7 @@ class ConfigCheckTest {
                     new ConfigService(
                         new OrchestratorPaths(properties),
                         mock(AgentRuntime.class),
-                        mock(ActStops.class)),
+                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
                     new OrchestratorPaths(properties),
                     mock(SessionHost.class),
                     new WorkingDirHost(root))

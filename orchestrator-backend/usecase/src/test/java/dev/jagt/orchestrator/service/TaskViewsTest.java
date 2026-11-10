@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.StatusChange;
@@ -39,7 +42,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false),
+                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC())
             .all();
 
@@ -59,7 +62,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false),
+                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC())
             .all();
 
@@ -82,7 +85,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false),
+                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC())
             .all();
 
@@ -105,7 +108,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false),
+                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC())
             .all();
 
@@ -132,7 +135,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false),
+                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC())
             .all();
 
@@ -152,7 +155,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false),
+                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC())
             .snapshot();
 
@@ -174,7 +177,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false),
+                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC())
             .all();
 
@@ -199,7 +202,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false),
+                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC())
             .listing();
 
@@ -220,7 +223,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> true),
+                new Rounds(configService, ignored -> false, () -> true, new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC())
             .listing();
 
@@ -236,7 +239,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false),
+                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC())
             .listing();
 
@@ -260,7 +263,7 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false),
+                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC())
             .all();
 

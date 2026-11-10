@@ -835,8 +835,8 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
       return outside.tracker() == null ? TrackerConfig.defaults() : outside.tracker();
     }
 
-    public boolean anyCheckerEnabled() {
-      return Checkers.withJobs().stream().anyMatch(id -> role(id).enabledOrDefault());
+    public boolean anyCheckerEnabled(List<String> withJobs) {
+      return withJobs.stream().anyMatch(id -> role(id).enabledOrDefault());
     }
 
     public List<String> unknownRoles(Collection<String> installed) {
@@ -870,9 +870,14 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
   private final OrchestratorPaths paths;
   private final AgentRuntime agentRuntime;
   private final ActStops actStops;
+  private final Checkers checkers;
   private volatile @Nullable Parsed parsed;
 
   private record Parsed(FileVersion version, @Nullable Object section) {}
+
+  public boolean anyCheckerEnabled() {
+    return load().anyCheckerEnabled(checkers.withJobs());
+  }
 
   public ConfigFile load() {
     Object section = section();

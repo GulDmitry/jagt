@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -83,8 +84,8 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false, () -> false))
+            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(moves).lift("ABC-42");
@@ -103,8 +104,8 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false, () -> false))
+            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(panel, never()).ask(anyString(), any(), any());
@@ -125,8 +126,8 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false, () -> false));
+            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))));
 
     job.runOn(state.tasks());
     job.runOn(state.tasks());
@@ -148,8 +149,8 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false, () -> false))
+            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(panel, never()).ask(anyString(), any(), any());
@@ -174,8 +175,8 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false, () -> false))
+            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(moves).returned("ABC-42", "fix the fixture, not the test");
@@ -194,8 +195,8 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false, () -> false))
+            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(panel, never()).ask(anyString(), any(), any());
@@ -214,8 +215,8 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false, () -> false))
+            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(panel, never()).ask(anyString(), any(), any());
@@ -236,8 +237,8 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false, () -> false));
+            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))));
 
     assertThatThrownBy(() -> job.runOn(state.tasks())).isInstanceOf(IllegalStateException.class);
     job.runOn(state.tasks());
@@ -273,8 +274,8 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false, () -> false))
+            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(moves, never()).lift(anyString());
@@ -295,8 +296,8 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false, () -> false))
+            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(moves).escalate("ABC-42");
@@ -324,8 +325,8 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC()),
-            new Rounds(config, ignored -> false, () -> false))
+            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(moves, never()).escalate(anyString());

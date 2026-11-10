@@ -36,16 +36,19 @@ public class ReplaySessions {
   private final Recording recording;
   private final TaskStore tasks;
   private final ReplayMoves moves;
+  private final Checkers checkers;
   private final Map<String, TurnScript> scripts = new LinkedHashMap<>();
   private final Map<String, Long> answered = new ConcurrentHashMap<>();
   private final Set<Path> launched = ConcurrentHashMap.newKeySet();
   private final ScheduledExecutorService ticker = Executors.newSingleThreadScheduledExecutor();
   private boolean drained;
 
-  public ReplaySessions(Recording recording, TaskStore tasks, ReplayMoves moves) {
+  public ReplaySessions(
+      Recording recording, TaskStore tasks, ReplayMoves moves, Checkers checkers) {
     this.recording = recording;
     this.tasks = tasks;
     this.moves = moves;
+    this.checkers = checkers;
     recording.lines().stream()
         .map(ReplaySessions::taskOf)
         .filter(task -> !task.isEmpty())
@@ -103,7 +106,7 @@ public class ReplaySessions {
     Turn turn = state.turnOrNone();
     if (!turn.open()
         || answered.getOrDefault(task, 0L) >= turn.id()
-        || Checkers.of(state).containsValue(CheckerPhase.READING)) {
+        || checkers.of(state).containsValue(CheckerPhase.READING)) {
       return;
     }
     answered.put(task, turn.id());

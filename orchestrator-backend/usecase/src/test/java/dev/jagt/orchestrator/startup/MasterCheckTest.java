@@ -7,6 +7,9 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -54,7 +57,7 @@ class MasterCheckTest {
                 .withRoot(root.toString())
                 .withConfigFile(root.resolve("jagt.yml").toString()));
     ConfigService real =
-        new ConfigService(paths, agentRuntime, mock(dev.jagt.orchestrator.service.ActStops.class));
+        new ConfigService(paths, agentRuntime, mock(dev.jagt.orchestrator.service.ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
 
     MasterCheck check =
         new MasterCheck(real, new MasterBriefs(paths, new SessionBrief(paths)), agentRuntime);

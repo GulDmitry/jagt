@@ -19,6 +19,7 @@ public class Rounds implements PhaseProfiles {
   private final ConfigService configService;
   private final RequestlessShip requestless;
   private final ScenarioReach scenarios;
+  private final Checkers checkers;
 
   public RoundState of(TaskState task) {
     return of(task, configService.load());
@@ -36,7 +37,7 @@ public class Rounds implements PhaseProfiles {
         .withRepliesWrittenAt(drafted ? ReviewDrafts.writtenAt(task) : 0)
         .withMaster(master)
         .withMasterReading(FlowRules.readByTheMaster(task.status()) && master.running())
-        .withCheckers(Checkers.of(task))
+        .withCheckers(checkers.of(task))
         .withRequestless(requestless.stands(task))
         .withScenarios(scenarios.ready());
   }

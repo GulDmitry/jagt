@@ -6,6 +6,9 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.Problem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,7 +28,7 @@ class CaseCheckTest {
         "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: any; plain\nA reset.\n\n"
             + "## woke\n\nstep: woke\nat: any\nby: jagt\nreplies: any; plain\nA typo.\n");
 
-    assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths)).problems())
+    assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths), new Checkers(new TaskChart(Composition.builtIn()))).problems())
         .containsExactly(
             new Problem(
                 "roles/session/cases.md",
@@ -44,7 +47,7 @@ class CaseCheckTest {
         root.resolve("roles/session/cases.md"),
         "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: any; plain\nA reset.\n");
 
-    assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths)).problems())
+    assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths), new Checkers(new TaskChart(Composition.builtIn()))).problems())
         .containsExactly(
             new Problem(
                 "roles/session/cases.md",
@@ -62,7 +65,7 @@ class CaseCheckTest {
         root.resolve("roles/session/cases.md"),
         "## wake\n\nstep: wake\nat: WAITING\nby: jagt\nreplies: any; plain\nA reset.\n");
 
-    assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths)).problems())
+    assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths), new Checkers(new TaskChart(Composition.builtIn()))).problems())
         .extracting(Problem::text)
         .anySatisfy(
             text ->
@@ -79,7 +82,7 @@ class CaseCheckTest {
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
 
-    assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths)).problems())
+    assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths), new Checkers(new TaskChart(Composition.builtIn()))).problems())
         .isEmpty();
   }
 
@@ -94,7 +97,7 @@ class CaseCheckTest {
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
     Files.createDirectories(root.resolve("roles/session/cases.md"));
 
-    assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths)).problems())
+    assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths), new Checkers(new TaskChart(Composition.builtIn()))).problems())
         .extracting(Problem::text)
         .containsExactly(
             "roles/session/cases.md: cannot be read — java.io.IOException: Is a directory");
@@ -111,7 +114,7 @@ class CaseCheckTest {
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
     Files.createDirectories(root.resolve("roles/session/brief.md"));
 
-    assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths)).problems())
+    assertThat(new CaseCheck(new SessionCases(paths), new SessionBrief(paths), new Checkers(new TaskChart(Composition.builtIn()))).problems())
         .extracting(Problem::text)
         .containsExactly(
             "roles/session/brief.md: cannot be read — java.io.IOException: Is a directory");

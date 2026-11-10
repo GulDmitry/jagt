@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import dev.jagt.orchestrator.task.*;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Step;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,7 @@ class TaskViewTest {
             TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("http://host/mr/1")
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             watch,
             Map.of("proj", "dev"));
 
@@ -51,7 +52,7 @@ class TaskViewTest {
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .build()
                 .withTier(new ModelTier(List.of("sonnet", "opus"), 1)),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -66,7 +67,7 @@ class TaskViewTest {
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .build()
                 .withTier(new ModelTier(List.of("sonnet", "opus"), 0)),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -79,7 +80,7 @@ class TaskViewTest {
         TaskView.of(
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build(),
-            true,
+            RoundState.of(AgentReport.PLAIN, true),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -127,7 +128,7 @@ class TaskViewTest {
         TaskView.of(
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -161,7 +162,7 @@ class TaskViewTest {
                     .withQuietSince(500));
 
     TaskView view =
-        TaskView.of("ABC-1", asked, false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+        TaskView.of("ABC-1", asked, RoundState.of(asked.report(), false), AutoReviewWatch.none(), Map.of("proj", "dev"));
 
     assertThat(view.owner()).isEqualTo(Owner.YOU);
     assertThat(view.ask()).isEqualTo("answer the session");
@@ -177,7 +178,7 @@ class TaskViewTest {
             .build();
 
     TaskView view =
-        TaskView.of("ABC-1", several, false, AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of("ABC-1", several, RoundState.of(several.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
 
     assertThat(view.actions()).extracting(TaskView.ActionView::id).doesNotContain("remove-repo");
   }
@@ -199,7 +200,7 @@ class TaskViewTest {
                 .ticketUrl(hostile)
                 .mrUrl(hostile)
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -216,7 +217,7 @@ class TaskViewTest {
                 .ticketUrl("  https://tracker.example.com/browse/ABC-1  ")
                 .mrUrl("http://host.example.com/x/-/merge_requests/9")
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -230,7 +231,7 @@ class TaskViewTest {
         TaskView.of(
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -246,7 +247,7 @@ class TaskViewTest {
             TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("javascript:alert(1)")
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -274,7 +275,7 @@ class TaskViewTest {
                     TaskStatus.CI_POLLING)
                 .alias("a1")
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("api", "dev", "web", "dev"));
 
@@ -292,7 +293,7 @@ class TaskViewTest {
         TaskView.of(
             "ABC-1",
             TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 
@@ -308,7 +309,7 @@ class TaskViewTest {
         TaskView.of(
             "ABC-1",
             TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 
@@ -325,7 +326,7 @@ class TaskViewTest {
         TaskView.of(
             "ABC-1",
             TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 
@@ -342,7 +343,7 @@ class TaskViewTest {
         TaskView.of(
             "ABC-1",
             TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 
@@ -358,7 +359,7 @@ class TaskViewTest {
                 .alias("a1")
                 .mrUrl("http://host/mr/1")
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 
@@ -375,7 +376,7 @@ class TaskViewTest {
         TaskView.of(
             "ABC-1",
             started.withStatus(TaskStatus.IN_PROGRESS, "working", 2_000),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 
@@ -388,7 +389,7 @@ class TaskViewTest {
         TaskView.of(
             "ABC-1",
             TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 
@@ -414,7 +415,7 @@ class TaskViewTest {
                     TaskStatus.CI_POLLING)
                 .alias("a1")
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("api", "dev", "web", "dev"));
 
@@ -440,7 +441,7 @@ class TaskViewTest {
                         1,
                         null))
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -459,7 +460,13 @@ class TaskViewTest {
             .withRole("acceptance", RoleRecord.defaults().withPassed("proj@abc1234"));
 
     TaskView view =
-        TaskView.of("ABC-1", passed, false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+        TaskView.of(
+            "ABC-1",
+            passed,
+            RoundState.of(passed.report(), false)
+                .withCheckers(new Checkers(new TaskChart(Composition.builtIn())).of(passed)),
+            AutoReviewWatch.none(),
+            Map.of("proj", "dev"));
 
     assertThat(view.statusLabel()).isEqualTo("accepted");
   }
@@ -481,7 +488,7 @@ class TaskViewTest {
             .build();
 
     TaskView view =
-        TaskView.of("ABC-1", reverted, false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+        TaskView.of("ABC-1", reverted, RoundState.of(reverted.report(), false), AutoReviewWatch.none(), Map.of("proj", "dev"));
 
     assertThat(view.deployed()).isFalse();
   }
@@ -501,7 +508,7 @@ class TaskViewTest {
                         1,
                         null))
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -530,7 +537,7 @@ class TaskViewTest {
                         1,
                         null))
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("api", "dev", "web", "dev"));
 
@@ -555,7 +562,7 @@ class TaskViewTest {
                         1,
                         null))
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("api", "dev", "web", "dev"));
 
@@ -571,7 +578,7 @@ class TaskViewTest {
                     List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
                     TaskStatus.APPROVED)
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("php", "main"));
 
@@ -596,9 +603,9 @@ class TaskViewTest {
             .build();
 
     TaskView withRequest =
-        TaskView.of("ABC-1", open, false, AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of("ABC-1", open, RoundState.of(open.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
     TaskView withoutRequest =
-        TaskView.of("ABC-1", none, false, AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of("ABC-1", none, RoundState.of(none.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
 
     assertThat(withRequest.requestOpenedAt()).isEqualTo(1_700_000_000_000L);
     assertThat(withRequest.approved()).isTrue();
@@ -614,7 +621,7 @@ class TaskViewTest {
             TaskState.builder("api", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("http://host/mr/1")
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             null,
             Map.of("api", "dev"));
 
@@ -703,7 +710,7 @@ class TaskViewTest {
             .build();
 
     TaskView view =
-        TaskView.of("ABC-42", stopped, false, AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of("ABC-42", stopped, RoundState.of(stopped.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
 
     assertThat(view.ask()).isEqualTo("lift the stop \u2014 ships with no new note");
     assertThat(view.stop())
@@ -722,7 +729,7 @@ class TaskViewTest {
         TaskView.of(
             "ABC-42",
             TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("api", "dev"));
 
@@ -748,7 +755,7 @@ class TaskViewTest {
                             1,
                             3)))
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -766,7 +773,7 @@ class TaskViewTest {
                 .mrUrl("http://host/mr/1")
                 .pipelineStatus("failed")
                 .build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 
@@ -788,7 +795,7 @@ class TaskViewTest {
                 .withMark(Wake.MARK, new Wake(0, 36_000_000, Step.WAIT_OVER).mark()));
 
     TaskView view =
-        TaskView.of("ABC-1", waiting, false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+        TaskView.of("ABC-1", waiting, RoundState.of(waiting.report(), false), AutoReviewWatch.none(), Map.of("proj", "dev"));
 
     assertThat(view.waiting()).isEqualTo("db down: ping db.internal\nnext try 10:00 UTC");
   }
@@ -799,7 +806,7 @@ class TaskViewTest {
         TaskView.of(
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build(),
-            false,
+            RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
             Map.of("proj", "dev"));
 

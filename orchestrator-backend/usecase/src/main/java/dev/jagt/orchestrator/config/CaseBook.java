@@ -73,8 +73,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
           .filter(by -> by.id().equals(id))
           .findFirst()
           .or(
-              () ->
-                  Checkers.installed().stream().filter(id::equals).findFirst().<By>map(Role::new));
+              () -> id.isEmpty() ? Optional.empty() : Optional.of(new Role(id)));
     }
 
     /** A call over MCP is a session's own, so what it sets off is jagt's answer to it. */
@@ -215,8 +214,19 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
   }
 
   /** What keeps this book from matching {@code named}, both ways, beside what it could not read. */
-  public List<Problem> problems(Set<String> named, String file) {
+  public List<Problem> problems(Set<String> named, String file, List<String> checkers) {
     List<Problem> problems = new ArrayList<>(faults);
+    cases.stream()
+        .filter(c -> c.by() instanceof By.Role role && !checkers.contains(role.id()))
+        .forEach(
+            c ->
+                problems.add(
+                    fault(
+                        c.file(),
+                        c.id(),
+                        "has by: '"
+                            + c.by().id()
+                            + "', which is not jagt, master, human or an installed checker")));
     cases.stream()
         .filter(c -> !named.contains(c.step()))
         .forEach(

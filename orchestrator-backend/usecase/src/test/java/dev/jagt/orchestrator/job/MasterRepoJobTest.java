@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -54,7 +55,7 @@ class MasterRepoJobTest {
                     .repoRequest("registry")
                     .build()));
 
-    new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC())).run();
+    new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).run();
 
     verify(press).execute("ABC-1", TaskAction.ADD_REPO);
   }
@@ -77,7 +78,7 @@ class MasterRepoJobTest {
                     .repoRequest("registry")
                     .build()));
 
-    new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC())).run();
+    new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).run();
 
     verify(press, never()).execute(anyString(), any());
   }
@@ -99,7 +100,7 @@ class MasterRepoJobTest {
                     .repoRequest("registry")
                     .build()));
 
-    new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC())).run();
+    new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).run();
 
     verify(press, never()).execute(anyString(), any());
   }
@@ -120,7 +121,7 @@ class MasterRepoJobTest {
                     .report(AgentReport.QUESTION)
                     .build()));
 
-    new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC())).run();
+    new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).run();
 
     verify(press, never()).execute(anyString(), any());
   }
@@ -146,10 +147,10 @@ class MasterRepoJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     StateService before = new StateService(new JsonMapper(), paths, reducer);
-    new MasterRepoJob(before, config, press, new TaskTurns(before, Clock.systemUTC())).run();
+    new MasterRepoJob(before, config, press, new TaskTurns(before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).run();
     StateService restarted = new StateService(new JsonMapper(), paths, reducer);
 
-    new MasterRepoJob(restarted, config, press, new TaskTurns(restarted, Clock.systemUTC())).run();
+    new MasterRepoJob(restarted, config, press, new TaskTurns(restarted, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).run();
 
     verify(press, times(1)).execute("ABC-1", TaskAction.ADD_REPO);
   }
@@ -175,7 +176,7 @@ class MasterRepoJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     MasterRepoJob job =
-        new MasterRepoJob(tasks, config, press, new TaskTurns(tasks, Clock.systemUTC()));
+        new MasterRepoJob(tasks, config, press, new TaskTurns(tasks, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     job.run();
     tasks.updateTask("ABC-1", task -> task.withRepoRequest(null));

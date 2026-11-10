@@ -14,6 +14,9 @@ import static org.mockito.Mockito.when;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.RoleRecord;
 import dev.jagt.orchestrator.task.TaskState;
@@ -55,7 +58,7 @@ class ReplaySessionsTest {
     when(tasks.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("p", "/work/ABC-1", TaskStatus.NEW).build()));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions = new ReplaySessions(recording, tasks, moves);
+    sessions = new ReplaySessions(recording, tasks, moves, new Checkers(new TaskChart(Composition.builtIn())));
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -85,7 +88,7 @@ class ReplaySessionsTest {
     when(tasks.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("p", "/work/ABC-1", TaskStatus.NEW).build()));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions = new ReplaySessions(new Recording(file.toString()), tasks, moves);
+    sessions = new ReplaySessions(new Recording(file.toString()), tasks, moves, new Checkers(new TaskChart(Composition.builtIn())));
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -108,7 +111,7 @@ class ReplaySessionsTest {
     when(tasks.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("p", "/work/ABC-1", TaskStatus.NEW).build()));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions = new ReplaySessions(recording, tasks, moves);
+    sessions = new ReplaySessions(recording, tasks, moves, new Checkers(new TaskChart(Composition.builtIn())));
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -137,7 +140,7 @@ class ReplaySessionsTest {
                     .turn(shipping)
                     .build()));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions = new ReplaySessions(recording, tasks, moves);
+    sessions = new ReplaySessions(recording, tasks, moves, new Checkers(new TaskChart(Composition.builtIn())));
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -163,7 +166,7 @@ class ReplaySessionsTest {
     when(tasks.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("p", "/work/ABC-1", TaskStatus.NEW).build()));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions = new ReplaySessions(recording, tasks, moves);
+    sessions = new ReplaySessions(recording, tasks, moves, new Checkers(new TaskChart(Composition.builtIn())));
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -193,7 +196,7 @@ class ReplaySessionsTest {
                     .turn(verifying)
                     .build()));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions = new ReplaySessions(recording, tasks, moves);
+    sessions = new ReplaySessions(recording, tasks, moves, new Checkers(new TaskChart(Composition.builtIn())));
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -223,7 +226,7 @@ class ReplaySessionsTest {
                     .build()
                     .withRole("acceptance", RoleRecord.defaults().withReading("accept"))));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions = new ReplaySessions(recording, tasks, moves);
+    sessions = new ReplaySessions(recording, tasks, moves, new Checkers(new TaskChart(Composition.builtIn())));
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -244,7 +247,7 @@ class ReplaySessionsTest {
     Recording recording = new Recording(file.toString());
     TaskStore tasks = mock(TaskStore.class);
     when(tasks.task("ABC-1")).thenThrow(new IllegalStateException("state unreadable"));
-    sessions = new ReplaySessions(recording, tasks, mock(ReplayMoves.class));
+    sessions = new ReplaySessions(recording, tasks, mock(ReplayMoves.class), new Checkers(new TaskChart(Composition.builtIn())));
 
     sessions.start();
 
@@ -264,7 +267,7 @@ class ReplaySessionsTest {
     TaskStore tasks = mock(TaskStore.class);
     when(tasks.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("p", "/work/ABC-1", TaskStatus.NEW).build()));
-    sessions = new ReplaySessions(new Recording(file.toString()), tasks, mock(ReplayMoves.class));
+    sessions = new ReplaySessions(new Recording(file.toString()), tasks, mock(ReplayMoves.class), new Checkers(new TaskChart(Composition.builtIn())));
 
     sessions.start();
 
@@ -289,7 +292,7 @@ class ReplaySessionsTest {
     log.start();
     Logger sessionsLog = (Logger) LoggerFactory.getLogger(ReplaySessions.class);
     sessionsLog.addAppender(log);
-    sessions = new ReplaySessions(new Recording(file.toString()), tasks, mock(ReplayMoves.class));
+    sessions = new ReplaySessions(new Recording(file.toString()), tasks, mock(ReplayMoves.class), new Checkers(new TaskChart(Composition.builtIn())));
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -317,7 +320,7 @@ class ReplaySessionsTest {
     log.start();
     Logger sessionsLog = (Logger) LoggerFactory.getLogger(ReplaySessions.class);
     sessionsLog.addAppender(log);
-    sessions = new ReplaySessions(recording, tasks, mock(ReplayMoves.class));
+    sessions = new ReplaySessions(recording, tasks, mock(ReplayMoves.class), new Checkers(new TaskChart(Composition.builtIn())));
 
     sessions.start();
 

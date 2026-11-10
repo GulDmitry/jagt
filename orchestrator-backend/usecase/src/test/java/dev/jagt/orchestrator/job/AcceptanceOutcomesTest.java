@@ -67,7 +67,7 @@ class AcceptanceOutcomesTest {
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC()),
+                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .apply("ABC-42", task, verdict);
@@ -111,7 +111,7 @@ class AcceptanceOutcomesTest {
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC()),
+                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .apply("ABC-42", task, verdict);
@@ -181,7 +181,7 @@ class AcceptanceOutcomesTest {
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC()),
+                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .apply("ABC-42", task, verdict);
@@ -224,7 +224,7 @@ class AcceptanceOutcomesTest {
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             mock(StepRelay.class),
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             mock(TaskStops.class),
             state)
         .apply("ABC-42", task, verdict);
@@ -267,7 +267,7 @@ class AcceptanceOutcomesTest {
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             mock(StepRelay.class),
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             mock(TaskStops.class),
             state)
         .apply("ABC-42", task, verdict);
@@ -303,7 +303,7 @@ class AcceptanceOutcomesTest {
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             mock(StepRelay.class),
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             mock(TaskStops.class),
             state)
         .apply("ABC-42", task, verdict);

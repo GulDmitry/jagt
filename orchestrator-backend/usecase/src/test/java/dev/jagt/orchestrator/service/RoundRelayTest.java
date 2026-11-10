@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -85,7 +86,7 @@ class RoundRelayTest {
                         new StopLog(new JsonMapper(), paths))),
                 state,
                 clock),
-            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock)),
+            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths));
     ReviewFacts round =
@@ -145,7 +146,7 @@ class RoundRelayTest {
                         new StopLog(new JsonMapper(), paths))),
                 state,
                 clock),
-            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock)),
+            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths));
 
@@ -207,7 +208,7 @@ class RoundRelayTest {
                         new StopLog(new JsonMapper(), paths))),
                 state,
                 clock),
-            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock)),
+            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths));
 
@@ -262,7 +263,7 @@ class RoundRelayTest {
     SweepResult result =
         new RoundRelay(
                 stops,
-                new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock)),
+                new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
                 door,
                 new SessionBrief(paths))
             .relay(
@@ -318,7 +319,7 @@ class RoundRelayTest {
 
     new RoundRelay(
             stops,
-            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock)),
+            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths))
         .relay(
@@ -375,7 +376,7 @@ class RoundRelayTest {
     RoundRelay relay =
         new RoundRelay(
             stops,
-            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock)),
+            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths));
     ReviewFacts round =
@@ -423,7 +424,7 @@ class RoundRelayTest {
     RoundRelay relay =
         new RoundRelay(
             stops,
-            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock)),
+            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths));
 

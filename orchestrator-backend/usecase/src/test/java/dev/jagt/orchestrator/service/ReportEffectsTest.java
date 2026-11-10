@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -53,7 +54,7 @@ class ReportEffectsTest {
 
   private ReportEffects effects(StateService state, InfraWaitProperties properties) {
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-    TaskTurns turns = new TaskTurns(state, clock);
+    TaskTurns turns = new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
     return new ReportEffects(
         new SessionWakes(state, turns, clock), turns, stops, properties, mock(LinkRefusals.class));
   }
@@ -130,7 +131,7 @@ class ReportEffectsTest {
                 .withStateFile(dir.resolve("state.json").toString()));
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-    TaskTurns turns = new TaskTurns(state, clock);
+    TaskTurns turns = new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
     TaskStops realStops =
         new TaskStops(
             new StopPolicy(
@@ -164,7 +165,7 @@ class ReportEffectsTest {
                 .withStateFile(dir.resolve("state.json").toString()));
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-    TaskTurns turns = new TaskTurns(state, clock);
+    TaskTurns turns = new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
     TaskStops realStops =
         new TaskStops(
             new StopPolicy(
@@ -200,7 +201,7 @@ class ReportEffectsTest {
                 .withStateFile(dir.resolve("state.json").toString()));
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-    TaskTurns turns = new TaskTurns(state, clock);
+    TaskTurns turns = new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
     TaskStops realStops =
         new TaskStops(
             new StopPolicy(

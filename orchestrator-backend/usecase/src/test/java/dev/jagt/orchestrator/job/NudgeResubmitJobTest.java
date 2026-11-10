@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -39,7 +40,7 @@ class NudgeResubmitJobTest {
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
                     reducer);
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
+    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
     AgentSessions sessions = mock(AgentSessions.class);
@@ -60,7 +61,7 @@ class NudgeResubmitJobTest {
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
                     reducer);
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
+    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
     AgentSessions sessions = mock(AgentSessions.class);
@@ -84,7 +85,7 @@ class NudgeResubmitJobTest {
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
                     reducer);
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
+    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -112,7 +113,7 @@ class NudgeResubmitJobTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     AgentSessions sessions = mock(AgentSessions.class);
 
-    new NudgeResubmitJob(sessions, new TaskTurns(state, Clock.systemUTC())).runOn(state.tasks());
+    new NudgeResubmitJob(sessions, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).runOn(state.tasks());
 
     verify(sessions, never()).resubmitUnsentNudge("ABC-42");
   }

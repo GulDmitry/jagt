@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.Standing;
@@ -96,7 +97,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -158,7 +159,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -212,7 +213,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -272,7 +273,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -335,7 +336,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -387,7 +388,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -441,7 +442,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -515,12 +516,12 @@ class DeployCheckJobTest {
                             new StopLog(new JsonMapper(), paths))),
                     before,
                     Clock.systemUTC())),
-            new TaskTurns(before, Clock.systemUTC()));
+            new TaskTurns(before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     new DeployCheckJob(
             config,
             relay,
             pipelines,
-            new FlowReports(before, Clock.systemUTC()),
+            new FlowReports(before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -557,9 +558,9 @@ class DeployCheckJobTest {
                                 new StopLog(new JsonMapper(), paths))),
                         restarted,
                         Clock.systemUTC())),
-                new TaskTurns(restarted, Clock.systemUTC())),
+                new TaskTurns(restarted, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             pipelines,
-            new FlowReports(restarted, Clock.systemUTC()),
+            new FlowReports(restarted, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -595,7 +596,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -642,7 +643,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -682,7 +683,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -727,7 +728,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -776,7 +777,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -823,7 +824,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -865,7 +866,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -928,7 +929,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -986,7 +987,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -1041,7 +1042,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -49,7 +50,7 @@ class MasterDeployJobTest {
     when(state.tasks())
         .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC()))
+    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
@@ -65,7 +66,7 @@ class MasterDeployJobTest {
     when(state.tasks())
         .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.APPROVED).build()));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC()))
+    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
@@ -82,7 +83,7 @@ class MasterDeployJobTest {
     when(state.tasks())
         .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC()))
+    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press, never()).press(anyString(), any(), any());
@@ -99,7 +100,7 @@ class MasterDeployJobTest {
         .thenReturn(
             Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.CI_POLLING).build()));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC()))
+    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press, never()).press(anyString(), any(), any());
@@ -120,11 +121,11 @@ class MasterDeployJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     StateService before = new StateService(new JsonMapper(), paths, reducer);
-    new MasterDeployJob(config, press, new TaskTurns(before, Clock.systemUTC()))
+    new MasterDeployJob(config, press, new TaskTurns(before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(before.tasks());
     StateService restarted = new StateService(new JsonMapper(), paths, reducer);
 
-    new MasterDeployJob(config, press, new TaskTurns(restarted, Clock.systemUTC()))
+    new MasterDeployJob(config, press, new TaskTurns(restarted, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(restarted.tasks());
 
     verify(press, times(1)).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
@@ -140,7 +141,7 @@ class MasterDeployJobTest {
     when(state.tasks())
         .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC()))
+    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press, never()).press(anyString(), any(), any());
@@ -157,7 +158,7 @@ class MasterDeployJobTest {
     when(state.tasks())
         .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DEPLOYED).build()));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC()))
+    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press, never()).press(anyString(), any(), any());
@@ -178,7 +179,7 @@ class MasterDeployJobTest {
                     .build()
                     .withMaster(Master.defaults().withLeft("ship src/Login.java"))));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC()))
+    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));

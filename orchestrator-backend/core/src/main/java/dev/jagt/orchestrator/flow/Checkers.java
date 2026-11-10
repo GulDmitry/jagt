@@ -10,7 +10,11 @@ public final class Checkers {
 
   public static final String ACCEPTANCE = "acceptance";
 
-  private Checkers() {}
+  private final TaskChart chart;
+
+  public Checkers(TaskChart chart) {
+    this.chart = chart;
+  }
 
   /** What the board says of a task this checker passed. */
   public static String passedLabel(String id) {
@@ -18,21 +22,20 @@ public final class Checkers {
   }
 
   /** The ids of the installed checkers, in composition order. */
-  public static List<String> installed() {
-    return TaskChart.current().installedCheckers();
+  public List<String> installed() {
+    return chart.installedCheckers();
   }
 
   /** Where each installed checker stands for the task, in composition order. */
-  public static Map<String, CheckerPhase> of(TaskState task) {
+  public Map<String, CheckerPhase> of(TaskState task) {
     Map<String, CheckerPhase> phases = new LinkedHashMap<>();
-    TaskChart.current().installedCheckers().forEach(role ->
-        phases.put(role, CheckerPhase.of(task, role)));
+    chart.installedCheckers().forEach(role -> phases.put(role, CheckerPhase.of(task, role)));
     return phases;
   }
 
   /** The installed checkers whose {@code role.yml} declares jobs. */
-  public static List<String> withJobs() {
-    return TaskChart.current().composition().withJobs();
+  public List<String> withJobs() {
+    return chart.composition().withJobs();
   }
 
   /** The first checker whose read is running: it holds the turn. */

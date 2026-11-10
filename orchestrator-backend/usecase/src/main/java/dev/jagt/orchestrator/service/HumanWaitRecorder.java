@@ -30,6 +30,7 @@ public class HumanWaitRecorder {
   private final StateService stateService;
   private final Rounds rounds;
   private final Clock clock;
+  private final Checkers checkers;
 
   @PostConstruct
   void follow() {
@@ -74,6 +75,6 @@ public class HumanWaitRecorder {
   private Holder holder(TaskState task) {
     Arbiter.Profile master = rounds.of(task).master();
     return Turns.next(
-        task.status(), task.report(), StopHold.of(task, master), Checkers.of(task), master);
+        task.status(), task.report(), StopHold.of(task, master), checkers.of(task), master);
   }
 }

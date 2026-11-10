@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.ConflictEnding;
 import dev.jagt.orchestrator.flow.FlowReports;
@@ -74,7 +75,7 @@ class DeployConflictJobTest {
 
     new DeployConflictJob(
             List.of(
-                new LaterGreenRead(config, pipelines, new FlowReports(state, Clock.systemUTC()))),
+                new LaterGreenRead(config, pipelines, new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))),
             state,
             Clock.systemUTC())
         .runOn(state.tasks());

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -52,7 +53,7 @@ class HandBackTest {
             paths,
             mock(AgentRuntime.class),
             new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths,
-            reducer), paths)));
+            reducer), paths)), new Checkers(new TaskChart(Composition.builtIn())));
     HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
     boolean owed =
@@ -81,7 +82,7 @@ class HandBackTest {
             paths,
             mock(AgentRuntime.class),
             new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths,
-            reducer), paths)));
+            reducer), paths)), new Checkers(new TaskChart(Composition.builtIn())));
     HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
     boolean owed =

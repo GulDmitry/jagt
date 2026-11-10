@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -85,7 +86,7 @@ class ConflictHandOffTest {
                                 new StopLog(new JsonMapper(), paths))),
                         state,
                         Clock.systemUTC())),
-                new TaskTurns(state, Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(
@@ -131,7 +132,7 @@ class ConflictHandOffTest {
                                 new StopLog(new JsonMapper(), paths))),
                         state,
                         Clock.systemUTC())),
-                new TaskTurns(state, Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(
@@ -184,7 +185,7 @@ class ConflictHandOffTest {
                                 new StopLog(new JsonMapper(), paths))),
                         state,
                         Clock.systemUTC())),
-                new TaskTurns(state, Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle("ABC-42", conflict);
@@ -221,7 +222,7 @@ class ConflictHandOffTest {
                                 new StopLog(new JsonMapper(), paths))),
                         state,
                         Clock.systemUTC())),
-                new TaskTurns(state, Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(
@@ -264,7 +265,7 @@ class ConflictHandOffTest {
                                 new StopLog(new JsonMapper(), paths))),
                         state,
                         Clock.systemUTC())),
-                new TaskTurns(state, Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(
@@ -314,7 +315,7 @@ class ConflictHandOffTest {
                                 new StopLog(new JsonMapper(), paths))),
                         state,
                         Clock.systemUTC())),
-                new TaskTurns(state, Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(
@@ -370,7 +371,7 @@ class ConflictHandOffTest {
                                 new StopLog(new JsonMapper(), paths))),
                         state,
                         Clock.systemUTC())),
-                new TaskTurns(state, Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(
@@ -420,7 +421,7 @@ class ConflictHandOffTest {
                                 new StopLog(new JsonMapper(), paths))),
                         state,
                         Clock.systemUTC())),
-                new TaskTurns(state, Clock.systemUTC())),
+                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(

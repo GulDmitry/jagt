@@ -35,7 +35,7 @@ public class MasterCaseCheck implements StartupCheck {
       return List.of();
     }
     return Stream.concat(
-            cases.book().problems(MasterMove.pressed(), MasterCases.FILE).stream(),
+            cases.book().problems(MasterMove.pressed(), MasterCases.FILE, List.of()).stream(),
             sessionCases.book().unnamed(MasterMove.relayed(), CaseBook.By.MASTER).stream()
                 .map(
                     step ->

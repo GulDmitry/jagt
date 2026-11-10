@@ -6,6 +6,9 @@ import static org.mockito.Mockito.mock;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleFiles;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -64,7 +67,7 @@ class AcceptanceCaseCheckTest {
             .withConfigFile(root.resolve("jagt.yml").toString())
             .withStateFile(root.resolve("state.json").toString());
     OrchestratorPaths paths = new OrchestratorPaths(properties);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class));
-    return new AcceptanceCaseCheck(new RoleFiles(paths, "acceptance"), config, paths);
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
+    return new AcceptanceCaseCheck(new RoleFiles(paths, "acceptance"), config, paths, new Checkers(new TaskChart(Composition.builtIn())));
   }
 }

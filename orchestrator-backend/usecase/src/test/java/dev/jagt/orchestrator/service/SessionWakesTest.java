@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -55,7 +56,7 @@ class SessionWakesTest {
                     .withRoot(file.getParent().toString())
                     .withStateFile(file.toString())),
                     reducer);
-    return new SessionWakes(state, new TaskTurns(state, at(now)), at(now));
+    return new SessionWakes(state, new TaskTurns(state, at(now), new Checkers(new TaskChart(Composition.builtIn()))), at(now));
   }
 
   private static UsageLimitWakes wakes(UsageLimits limits, boolean on, Path file, Instant now) {
@@ -315,7 +316,7 @@ class SessionWakesTest {
                     reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
-    new TaskTurns(state, at(STOPPED)).opened("ABC-42", "context", "a1b2", TaskStatus.IN_PROGRESS);
+    new TaskTurns(state, at(STOPPED), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "context", "a1b2", TaskStatus.IN_PROGRESS);
 
     List<SessionWakes.Due> due = sessionWakes(file, RESET).takeDue(taskId -> false);
 

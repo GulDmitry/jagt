@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -57,7 +58,7 @@ class RestartAskJobTest {
     Files.writeString(root.resolve("alive"), "2026-11-05T07:00:00Z");
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    new TaskTurns(state, Clock.systemUTC())
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
         .opened("ABC-42", "round-not-ready", "digest", TaskStatus.REVIEW_PENDING);
     when(presence.agentLive("ABC-42")).thenReturn(true);
     when(sessions.loggedSince("ABC-42", 1793862000000L)).thenReturn(true);
@@ -89,7 +90,7 @@ class RestartAskJobTest {
   void doesNotReviveASessionThatIsNotRunning(@TempDir Path root) {
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    new TaskTurns(state, Clock.systemUTC())
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
         .opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
     when(presence.agentLive("ABC-42")).thenReturn(false);
 
@@ -103,7 +104,7 @@ class RestartAskJobTest {
   void doesNotTypeOverAHumansDraft(@TempDir Path root) {
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    new TaskTurns(state, Clock.systemUTC())
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
         .opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
     when(presence.agentLive("ABC-42")).thenReturn(true);
     when(sessions.composing("ABC-42")).thenReturn(true);
@@ -118,7 +119,7 @@ class RestartAskJobTest {
   void asksNothingOfASessionIdlePastItsCacheLifetime(@TempDir Path root) {
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    new TaskTurns(state, Clock.systemUTC())
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
         .opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
     when(presence.agentLive("ABC-42")).thenReturn(true);
     when(sessions.cold("ABC-42")).thenReturn(true);
@@ -133,7 +134,7 @@ class RestartAskJobTest {
   void keepsAskingTheOtherTasksWhenOneCannotBeTold(@TempDir Path root) throws Exception {
     Files.writeString(root.resolve("alive"), "2026-11-05T07:00:00Z");
     StateService state = state(root);
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
+    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     state.putTask("ABC-43", TaskState.builder("proj", "/wt2", TaskStatus.IN_PROGRESS).build());
     turns.opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
@@ -164,7 +165,7 @@ class RestartAskJobTest {
     Files.writeString(root.resolve("alive"), "2026-11-05T07:00:00Z");
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    new TaskTurns(state, Clock.systemUTC())
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
         .opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
     when(presence.agentLive("ABC-42")).thenReturn(true);
     when(sessions.loggedSince("ABC-42", 1793862000000L)).thenReturn(false);
@@ -179,7 +180,7 @@ class RestartAskJobTest {
   void asksNobodyWhenJagtLeftNoAliveStamp(@TempDir Path root) {
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    new TaskTurns(state, Clock.systemUTC())
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
         .opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
     when(presence.agentLive("ABC-42")).thenReturn(true);
     when(sessions.loggedSince(anyString(), anyLong())).thenReturn(true);
@@ -203,7 +204,7 @@ class RestartAskJobTest {
   void doesNotAskASessionWhoseWindowCouldNotBeRead(@TempDir Path root) {
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    new TaskTurns(state, Clock.systemUTC())
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
         .opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
     when(presence.agentLive("ABC-42")).thenThrow(new AgentPresence.Unread("tmux timed out"));
 

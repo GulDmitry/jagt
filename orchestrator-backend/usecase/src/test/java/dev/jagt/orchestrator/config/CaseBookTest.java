@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -68,8 +69,8 @@ class CaseBookTest {
             "## acceptance-round-by-lint\n\nstep: acceptance-round\nat: DEPLOYED\n"
                 + "by: lint\nreplies: IN_PROGRESS; plain\nNobody installed.\n");
 
-    assertThat(book.cases()).isEmpty();
-    assertThat(book.faults()).hasSize(1);
+    assertThat(book.problems(Set.of("acceptance-round"), "roles/session/cases.md", List.of()))
+        .hasSize(1);
   }
 
   @Test

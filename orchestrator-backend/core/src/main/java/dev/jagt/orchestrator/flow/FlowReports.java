@@ -28,6 +28,7 @@ public class FlowReports {
 
   private final ReducingStore tasks;
   private final Clock clock;
+  private final Checkers checkers;
 
   /** The status a report found the task in, and the one it left it in. */
   public record Landed(TaskStatus previous, TaskStatus now) {}
@@ -212,7 +213,7 @@ public class FlowReports {
   private TaskState declined(
       TaskReducer reducer, TaskState said, AgentReport means, TaskStatus status) {
     TaskState declined = said;
-    for (Map.Entry<String, CheckerPhase> checker : Checkers.of(said).entrySet()) {
+    for (Map.Entry<String, CheckerPhase> checker : checkers.of(said).entrySet()) {
       if (checker.getValue() == CheckerPhase.ROUND_OPEN) {
         declined =
             reducer.checkerDeclined(declined, checker.getKey(), means, status, clock.millis());

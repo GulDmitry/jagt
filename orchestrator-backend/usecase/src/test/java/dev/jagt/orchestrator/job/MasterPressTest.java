@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -61,7 +62,7 @@ class MasterPressTest {
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
                                 reducer),
-                    Clock.systemUTC()))
+                    Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
             .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(pressed).isTrue();
@@ -86,7 +87,7 @@ class MasterPressTest {
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
                                 reducer),
-                    Clock.systemUTC()))
+                    Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
             .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(pressed).isFalse();
@@ -112,7 +113,7 @@ class MasterPressTest {
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
                                 reducer),
-                    Clock.systemUTC()))
+                    Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
             .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(pressed).isFalse();
@@ -134,7 +135,7 @@ class MasterPressTest {
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
                             reducer),
-                Clock.systemUTC()))
+                Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .execute("ABC-1", TaskAction.ADD_REPO);
 
     verify(commands).execute("ABC-1", TaskAction.ADD_REPO);
@@ -155,7 +156,7 @@ class MasterPressTest {
     state.putTask("ABC-1", task);
     when(humanPaths.touched(task)).thenReturn(Optional.of("demo/src/auth/Login.java"));
 
-    new MasterPress(commands, humanPaths, stops, new TaskTurns(state, Clock.systemUTC()))
+    new MasterPress(commands, humanPaths, stops, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left())
@@ -179,7 +180,7 @@ class MasterPressTest {
     state.putTask("ABC-1", task);
     when(humanPaths.touched(task)).thenReturn(Optional.of("demo/src/auth/Login.java"));
 
-    new MasterPress(commands, humanPaths, stops, new TaskTurns(state, Clock.systemUTC()))
+    new MasterPress(commands, humanPaths, stops, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left())
@@ -204,7 +205,7 @@ class MasterPressTest {
     when(stops.moveDue("ABC-1")).thenReturn(true);
     when(humanPaths.touched(task)).thenReturn(Optional.empty());
 
-    new MasterPress(commands, humanPaths, stops, new TaskTurns(state, Clock.systemUTC()))
+    new MasterPress(commands, humanPaths, stops, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left()).isEmpty();
@@ -232,7 +233,7 @@ class MasterPressTest {
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
                                 reducer),
-                    Clock.systemUTC()))
+                    Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
             .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(pressed).isFalse();
@@ -257,7 +258,7 @@ class MasterPressTest {
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
                             reducer),
-                Clock.systemUTC()));
+                Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     assertThatThrownBy(() -> press.execute("ABC-1", TaskAction.DEPLOY))
         .isInstanceOf(UncheckedIOException.class);
@@ -278,7 +279,7 @@ class MasterPressTest {
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
                                 reducer),
-                    Clock.systemUTC()))
+                    Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
             .lift("ABC-1");
 
     assertThat(lifted).isTrue();
@@ -305,7 +306,7 @@ class MasterPressTest {
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
                                 reducer),
-                    Clock.systemUTC()))
+                    Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
             .lift("ABC-1");
 
     assertThat(lifted).isFalse();

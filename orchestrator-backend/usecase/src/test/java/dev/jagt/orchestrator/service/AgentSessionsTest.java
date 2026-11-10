@@ -21,6 +21,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -75,7 +76,7 @@ class AgentSessionsTest {
             .withConfigFile(configFile.toString());
     OrchestratorPaths paths = new OrchestratorPaths(properties);
     state = new StateService(new JsonMapper(), paths, reducer);
-    config = new ConfigService(paths, agentRuntime, new ActStops(new MasterBrake(state, paths)));
+    config = new ConfigService(paths, agentRuntime, new ActStops(new MasterBrake(state, paths)), new Checkers(new TaskChart(Composition.builtIn())));
   }
 
   @Test

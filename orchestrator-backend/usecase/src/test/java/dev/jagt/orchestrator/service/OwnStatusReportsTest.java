@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -50,7 +51,7 @@ class OwnStatusReportsTest {
   }
 
   private static ReportEffects effects(StateService state, SessionLines sessions) {
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
+    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     TaskStops stops =
         new TaskStops(
             new StopPolicy(
@@ -239,7 +240,7 @@ class OwnStatusReportsTest {
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
-    new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
     when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
     AgentStatusMessage broke =
@@ -289,7 +290,7 @@ class OwnStatusReportsTest {
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
-    new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
     when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
     AgentStatusMessage handBack =
@@ -340,7 +341,7 @@ class OwnStatusReportsTest {
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
-    new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
     when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
     AgentStatusMessage handBack =
@@ -392,7 +393,7 @@ class OwnStatusReportsTest {
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
-    new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
     when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
     AgentStatusMessage handBack =

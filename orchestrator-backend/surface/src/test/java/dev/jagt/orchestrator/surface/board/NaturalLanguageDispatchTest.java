@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -77,7 +78,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
     when(commands.execute("ABC-1", TaskAction.SWEEP)).thenReturn("sweep ABC-1: checks success");
@@ -116,7 +117,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
     when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: pushed");
@@ -155,7 +156,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
     when(commands.execute("ABC-1", TaskAction.DEPLOY))
@@ -202,7 +203,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
 
@@ -239,7 +240,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
 
@@ -278,7 +279,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
 
@@ -317,7 +318,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
     when(launcher.launch(LaunchRequest.of("ABC-42")))
@@ -351,7 +352,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
     AtomicReference<ActionOrigin> openedBy = new AtomicReference<>();
@@ -398,7 +399,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
     when(launcher.resume("https://host/mr/42"))
@@ -437,7 +438,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
 
@@ -474,7 +475,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
 
@@ -509,7 +510,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
 
@@ -542,7 +543,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
 
@@ -575,7 +576,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
 
@@ -608,7 +609,7 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false), Clock.systemUTC())),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC())),
             commands,
             launcher);
 

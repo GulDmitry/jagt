@@ -13,6 +13,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.Standing;
@@ -77,20 +78,20 @@ class ConflictStallTest {
             false,
             Standing.ABSENT);
     new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))
+            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     new ConflictStall(
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC))
+            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
     new ConflictStall(
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(2_401_000), ZoneOffset.UTC))
+            Clock.fixed(Instant.ofEpochMilli(2_401_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     verify(notifications, times(1)).send(any());
@@ -133,14 +134,14 @@ class ConflictStallTest {
             false,
             Standing.ABSENT);
     new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))
+            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     new ConflictStall(
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC))
+            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     TaskState asked = state.task("ABC-42").orElseThrow();
@@ -185,20 +186,20 @@ class ConflictStallTest {
             false,
             Standing.ABSENT);
     new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))
+            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
     new ConflictStall(
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC))
+            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     new ConflictStall(
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(2_401_000), ZoneOffset.UTC))
+            Clock.fixed(Instant.ofEpochMilli(2_401_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     verify(notifications, times(1)).send(any());
@@ -242,14 +243,14 @@ class ConflictStallTest {
             false,
             Standing.ABSENT);
     new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))
+            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     new ConflictStall(
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC))
+            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     verify(notifications, times(1)).send(any());
@@ -281,7 +282,7 @@ class ConflictStallTest {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     Path worktree = Path.of("/src/ABC-42-deploy");
     new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))
+            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
@@ -290,7 +291,7 @@ class ConflictStallTest {
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_141_000), ZoneOffset.UTC))
+            Clock.fixed(Instant.ofEpochMilli(1_141_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
@@ -300,7 +301,7 @@ class ConflictStallTest {
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_501_000), ZoneOffset.UTC))
+            Clock.fixed(Instant.ofEpochMilli(1_501_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
@@ -341,13 +342,13 @@ class ConflictStallTest {
             false,
             Standing.ABSENT);
     new ConflictStall(
-            before, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))
+            before, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
     new ConflictStall(
             before,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC))
+            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
     StateService after =
         new StateService(
@@ -362,7 +363,7 @@ class ConflictStallTest {
             after,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(3_601_000), ZoneOffset.UTC));
+            Clock.fixed(Instant.ofEpochMilli(3_601_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())));
 
     boolean handed = restarted.handed("ABC-42");
     restarted.watch("ABC-42", conflict);
@@ -370,7 +371,7 @@ class ConflictStallTest {
             after,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(4_801_000), ZoneOffset.UTC))
+            Clock.fixed(Instant.ofEpochMilli(4_801_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     verify(notifications, times(1)).send(any());
@@ -401,7 +402,7 @@ class ConflictStallTest {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     ConflictStall stall =
         new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC));
+            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())));
     stall.watch(
         "ABC-42",
         new DeployConflicts.WaitingConflict(
@@ -454,7 +455,7 @@ class ConflictStallTest {
             false,
             Standing.ABSENT);
     new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))
+            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
@@ -465,7 +466,7 @@ class ConflictStallTest {
               state,
               notifications,
               config,
-              Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC))
+              Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
           .watch("ABC-42", conflict);
     } finally {
       stallLog.detachAppender(log);

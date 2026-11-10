@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.Turns;
@@ -33,6 +35,11 @@ public class TaskTurns {
 
   private final StateService stateService;
   private final Clock clock;
+  private final Checkers checkers;
+
+  public Turn.Holder next(TaskState task, Arbiter.Profile profile) {
+    return Turns.next(task.status(), task.report(), task.stopped(), checkers.of(task), profile);
+  }
 
   public Turn of(String taskId) {
     return stateService

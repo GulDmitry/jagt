@@ -3,7 +3,9 @@ package dev.jagt.orchestrator.command;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.flow.TaskView;
+import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -21,7 +23,7 @@ class RepliesCommandTest {
         TaskView.of(
             "ABC-1",
             TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build(),
-            drafted,
+            RoundState.of(AgentReport.PLAIN, drafted),
             AutoReviewWatch.none(),
             Map.of());
 

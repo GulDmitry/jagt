@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -18,7 +19,7 @@ class RoundsTest {
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ConfigService configService = mock(ConfigService.class);
-  private final Rounds rounds = new Rounds(configService, ignored -> false, () -> false);
+  private final Rounds rounds = new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn())));
 
   @Test
   void theMasterReadsAHandBackItHasNotReadYetWhileItRuns() {
@@ -101,7 +102,7 @@ class RoundsTest {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
     var round =
-        new Rounds(configService, standing -> standing == task, () -> false)
+        new Rounds(configService, standing -> standing == task, () -> false, new Checkers(new TaskChart(Composition.builtIn())))
             .of(task, ConfigService.ConfigFile.defaults());
 
     assertThat(round.requestless()).isTrue();

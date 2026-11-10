@@ -330,7 +330,7 @@ class TaskReducerProperties {
                                           moved.status(),
                                           moved.report(),
                                           false,
-                                          Checkers.of(moved),
+                                          new Checkers(new TaskChart(Composition.builtIn())).of(moved),
                                           Arbiter.Profile.OFF)
                                       .equals(new Turn.Holder.Role("acceptance")))
                               .isEqualTo(

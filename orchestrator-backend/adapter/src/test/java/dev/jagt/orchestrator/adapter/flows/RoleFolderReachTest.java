@@ -6,6 +6,9 @@ import static org.mockito.Mockito.mock;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleDefinitions;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.service.ActStops;
@@ -53,7 +56,7 @@ class RoleFolderReachTest {
     new RoleFolderReach(
             new RoleSettings(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+                new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
                 paths),
             reach)
         .run();
@@ -85,7 +88,7 @@ class RoleFolderReachTest {
     new RoleFolderReach(
             new RoleSettings(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+                new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
                 paths),
             reach)
         .run();
@@ -118,7 +121,7 @@ class RoleFolderReachTest {
     new RoleFolderReach(
             new RoleSettings(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+                new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
                 paths),
             reach)
         .run();
@@ -143,7 +146,7 @@ class RoleFolderReachTest {
     new RoleFolderReach(
             new RoleSettings(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+                new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
                 paths),
             reach)
         .run();

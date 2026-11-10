@@ -23,6 +23,7 @@ public class AcceptanceCaseCheck implements StartupCheck {
   private final RoleFiles files;
   private final ConfigService config;
   private final OrchestratorPaths paths;
+  private final Checkers checkers;
 
   @Override
   public List<Problem> problems() {
@@ -31,7 +32,7 @@ public class AcceptanceCaseCheck implements StartupCheck {
       return List.of();
     }
     return Stream.concat(
-            files.book().problems(files.steps(), files.casesFile()).stream(),
+            files.book().problems(files.steps(), files.casesFile(), checkers.installed()).stream(),
             files.unreadable().stream())
         .toList();
   }

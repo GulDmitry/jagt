@@ -125,7 +125,7 @@ public record TaskView(
     if (round.masterReading() || StopHold.of(task, round.master()) == StopHold.MASTER) {
       return "master review";
     }
-    Optional<String> passer = Checkers.installed().stream().filter(task::passedBy).findFirst();
+    Optional<String> passer = round.checkers().keySet().stream().filter(task::passedBy).findFirst();
     if (passer.isPresent()) {
       return Checkers.passedLabel(passer.get());
     }
@@ -302,15 +302,6 @@ public record TaskView(
   }
 
   public record RepoView(@Nullable String project, @Nullable String reviewRequestUrl) {}
-
-  public static TaskView of(
-      String id,
-      TaskState task,
-      boolean draftedReplies,
-      AutoReviewWatch autoReview,
-      Map<String, String> deployBranches) {
-    return of(id, task, RoundState.of(task.report(), draftedReplies), autoReview, deployBranches);
-  }
 
   public static TaskView of(
       String id,

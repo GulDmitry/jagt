@@ -90,7 +90,7 @@ class AcceptanceReadsTest {
                       task.status(),
                       task.report(),
                       task.stopped(),
-                      Checkers.of(task),
+                      new Checkers(new TaskChart(Composition.builtIn())).of(task),
                       Arbiter.Profile.OFF));
               return new Answer<>(Optional.empty(), TokenUsage.NONE);
             });
@@ -98,7 +98,7 @@ class AcceptanceReadsTest {
     new CheckerReads(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             reader,
-            new TaskTurns(state, Clock.systemUTC()),
+            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             mock(CheckerFlows.class))
         .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
 
@@ -109,7 +109,7 @@ class AcceptanceReadsTest {
                 after.status(),
                 after.report(),
                 after.stopped(),
-                Checkers.of(after),
+                new Checkers(new TaskChart(Composition.builtIn())).of(after),
                 Arbiter.Profile.OFF))
         .isEqualTo(Turn.Holder.NOBODY);
   }
@@ -143,7 +143,7 @@ class AcceptanceReadsTest {
         new CheckerReads(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 reader,
-                new TaskTurns(state, Clock.systemUTC()),
+                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
                 flows)
             .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
 

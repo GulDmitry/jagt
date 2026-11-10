@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.Standing;
@@ -119,12 +120,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -200,12 +201,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -272,12 +273,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -333,12 +334,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -415,12 +416,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -510,12 +511,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -592,12 +593,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -658,12 +659,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -737,12 +738,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -810,12 +811,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -882,12 +883,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -953,12 +954,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1015,12 +1016,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1074,12 +1075,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1133,12 +1134,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1196,12 +1197,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1280,12 +1281,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1388,12 +1389,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1467,12 +1468,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1604,12 +1605,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1761,12 +1762,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1918,12 +1919,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2000,12 +2001,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2065,12 +2066,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2129,12 +2130,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2192,12 +2193,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2266,8 +2267,8 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
-    ConfigService config = new ConfigService(paths, null, null);
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+    ConfigService config = new ConfigService(paths, null, null, new Checkers(new TaskChart(Composition.builtIn())));
     PlanPlacement placement =
         new PlanPlacement(
             state,
@@ -2279,7 +2280,7 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2346,12 +2347,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2410,12 +2411,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2478,12 +2479,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2547,12 +2548,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2615,12 +2616,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2696,12 +2697,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2777,12 +2778,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2850,12 +2851,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2927,12 +2928,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2986,12 +2987,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3056,12 +3057,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3118,12 +3119,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3173,12 +3174,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3242,12 +3243,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3301,12 +3302,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3363,12 +3364,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3428,12 +3429,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3559,12 +3560,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3668,12 +3669,12 @@ class MasterVerdictsTest {
                 Clock.systemUTC()));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,

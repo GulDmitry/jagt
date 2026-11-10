@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -83,7 +84,7 @@ class AcceptanceRoundFlowTest {
                     1,
                     "digest"));
     state.putTask("ABC-42", task);
-    FlowReports flow = new FlowReports(state, Clock.systemUTC());
+    FlowReports flow = new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     TaskStops stops =
         new TaskStops(
             new StopPolicy(
@@ -103,7 +104,7 @@ class AcceptanceRoundFlowTest {
             stops);
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC()));
+            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     AgentStatusReports reports =
@@ -113,7 +114,7 @@ class AcceptanceRoundFlowTest {
             flow,
             new HandBack(
                 mock(WorktreeChanges.class),
-                new Rounds(config, ignored -> false, () -> false),
+                new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
                 config),
             config);
     AcceptanceVerdict verdict =
@@ -171,7 +172,7 @@ class AcceptanceRoundFlowTest {
                     1,
                     "digest"));
     state.putTask("ABC-42", task);
-    FlowReports flow = new FlowReports(state, Clock.systemUTC());
+    FlowReports flow = new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     TaskStops stops =
         new TaskStops(
             new StopPolicy(
@@ -189,7 +190,7 @@ class AcceptanceRoundFlowTest {
             state,
             new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
             stops);
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
+    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door, turns);
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -200,7 +201,7 @@ class AcceptanceRoundFlowTest {
             flow,
             new HandBack(
                 mock(WorktreeChanges.class),
-                new Rounds(config, ignored -> false, () -> false),
+                new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
                 config),
             config);
     AcceptanceVerdict verdict =
@@ -266,7 +267,7 @@ class AcceptanceRoundFlowTest {
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             mock(StepRelay.class),
-            new FlowReports(state, Clock.systemUTC()),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             mock(TaskStops.class),
             state)
         .apply("ABC-42", task, verdict);
@@ -311,7 +312,7 @@ class AcceptanceRoundFlowTest {
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 relay,
-                new FlowReports(state, Clock.systemUTC()),
+                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .apply("ABC-42", task, verdict);

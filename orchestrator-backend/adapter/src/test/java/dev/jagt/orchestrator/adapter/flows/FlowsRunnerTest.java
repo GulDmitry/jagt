@@ -11,6 +11,9 @@ import static org.mockito.Mockito.verify;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleDefinitions;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.AcceptanceRunner.FlowResult;
 import dev.jagt.orchestrator.port.AcceptanceRunner.Verdict;
 import dev.jagt.orchestrator.port.AgentRuntime;
@@ -46,7 +49,7 @@ class FlowsRunnerTest {
         new FlowsRunner(
                 new RoleSettings(
                     RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                    new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)),
+                    new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
                     paths),
                 new PlaywrightRunner(processes))
             .run(root, List.of("AC-1", "AC-2"), "https://alpha.test");

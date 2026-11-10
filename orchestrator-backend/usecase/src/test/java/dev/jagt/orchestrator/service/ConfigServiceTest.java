@@ -8,6 +8,9 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
@@ -109,7 +112,7 @@ class ConfigServiceTest {
 
     var events =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load()
             .notifications()
             .desktopEvents();
@@ -143,7 +146,7 @@ class ConfigServiceTest {
 
     var channel =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load()
             .notifications()
             .channel();
@@ -180,7 +183,7 @@ class ConfigServiceTest {
 
     boolean enabled =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load()
             .role("acceptance")
             .enabledOrDefault();
@@ -208,8 +211,7 @@ class ConfigServiceTest {
 
     boolean any =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
-            .load()
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .anyCheckerEnabled();
 
     assertThat(any).isFalse();
@@ -227,7 +229,7 @@ class ConfigServiceTest {
 
     MasterConfig master =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load()
             .master();
 
@@ -255,7 +257,7 @@ class ConfigServiceTest {
 
     MasterConfig master =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load()
             .master();
 
@@ -282,7 +284,7 @@ class ConfigServiceTest {
 
     MasterConfig master =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load()
             .master();
 
@@ -304,7 +306,7 @@ class ConfigServiceTest {
 
     MasterConfig master =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load()
             .master();
 
@@ -330,7 +332,7 @@ class ConfigServiceTest {
 
     String mode =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load()
             .master()
             .mode();
@@ -352,7 +354,7 @@ class ConfigServiceTest {
     OrchestratorPaths paths = new OrchestratorPaths(properties);
     ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
 
-    String mode = new ConfigService(paths, mock(AgentRuntime.class), stops).load().master().mode();
+    String mode = new ConfigService(paths, mock(AgentRuntime.class), stops, new Checkers(new TaskChart(Composition.builtIn()))).load().master().mode();
 
     assertThat(mode).isEqualTo("judge");
   }
@@ -368,7 +370,7 @@ class ConfigServiceTest {
             .withStateFile(root.resolve("state.json").toString());
     ConfigService configService =
         new ConfigService(
-            new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class));
+            new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
     configService.load();
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
 
@@ -392,7 +394,7 @@ class ConfigServiceTest {
     when(runtime.readsWhatTheHumanTyped()).thenReturn(reads);
 
     String mode =
-        new ConfigService(new OrchestratorPaths(properties), runtime, mock(ActStops.class))
+        new ConfigService(new OrchestratorPaths(properties), runtime, mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load()
             .master()
             .mode();
@@ -413,7 +415,7 @@ class ConfigServiceTest {
 
     String mode =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load()
             .master()
             .mode();
@@ -440,7 +442,7 @@ class ConfigServiceTest {
             .withStateFile(root.resolve("state.json").toString());
     ConfigService service =
         new ConfigService(
-            new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class));
+            new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
 
     assertThat(service.load().worktree().copyGlobsOrDefault()).containsExactly("**/.env");
   }
@@ -486,7 +488,7 @@ class ConfigServiceTest {
     OrchestratorPaths paths = new OrchestratorPaths(properties);
     ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
 
-    String mode = new ConfigService(paths, mock(AgentRuntime.class), stops).load().master().mode();
+    String mode = new ConfigService(paths, mock(AgentRuntime.class), stops, new Checkers(new TaskChart(Composition.builtIn()))).load().master().mode();
 
     assertThat(mode).isEqualTo("judge");
   }
@@ -503,7 +505,7 @@ class ConfigServiceTest {
     OrchestratorPaths paths = new OrchestratorPaths(properties);
     ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
 
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops);
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops, new Checkers(new TaskChart(Composition.builtIn())));
 
     assertThat(config.actStop()).isEmpty();
   }
@@ -523,7 +525,7 @@ class ConfigServiceTest {
     when(runtime.readsWhatTheHumanTyped()).thenReturn(true);
     ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
 
-    ConfigFile config = new ConfigService(paths, runtime, stops).load();
+    ConfigFile config = new ConfigService(paths, runtime, stops, new Checkers(new TaskChart(Composition.builtIn()))).load();
 
     assertThat(config.projects()).isEmpty();
     assertThat(config.master().mode()).isEqualTo("judge");
@@ -542,7 +544,7 @@ class ConfigServiceTest {
             .withStateFile(root.resolve("state.json").toString());
     OrchestratorPaths paths = new OrchestratorPaths(properties);
     ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops);
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops, new Checkers(new TaskChart(Composition.builtIn())));
 
     assertThat(config.project("api").path()).isEqualTo("/srv/api");
     assertThatThrownBy(() -> config.project("web"))
@@ -804,7 +806,7 @@ class ConfigServiceTest {
 
     var beside =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .beside();
 
     assertThat(beside).containsExactly(specs.toRealPath());
@@ -831,7 +833,7 @@ class ConfigServiceTest {
 
     var breaker =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .current();
 
     assertThat(breaker.rounds()).isEqualTo(5);
@@ -866,7 +868,7 @@ class ConfigServiceTest {
     OrchestratorPaths paths = new OrchestratorPaths(properties);
     ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
 
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops);
+    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), stops, new Checkers(new TaskChart(Composition.builtIn())));
 
     assertThat(config.actStop()).isPresent();
   }
@@ -890,7 +892,7 @@ class ConfigServiceTest {
 
     List<String> unknown =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load()
             .unknownRoles(List.of("acceptance"));
 
@@ -911,7 +913,7 @@ class ConfigServiceTest {
 
     List<String> unknown =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load()
             .unknownRoles(List.of("acceptance"));
 
@@ -931,7 +933,7 @@ class ConfigServiceTest {
 
     List<String> unknown =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load()
             .unknownRoles(List.of());
 
@@ -1054,7 +1056,7 @@ class ConfigServiceTest {
 
     ConfigFile config =
         new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class))
+                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())))
             .load();
 
     Object expected = new Yaml().<java.util.Map<String, Object>>load(written).get("orchestrator");

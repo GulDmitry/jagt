@@ -7,7 +7,10 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.flow.CheckerRole;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Roles;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -205,6 +208,6 @@ class RoleStartupTest {
 
   private static RoleCheck check(InstalledRoles roles, OrchestratorPaths paths) {
     return new RoleCheck(
-        roles, new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class)), paths);
+        roles, new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))), paths);
   }
 }
