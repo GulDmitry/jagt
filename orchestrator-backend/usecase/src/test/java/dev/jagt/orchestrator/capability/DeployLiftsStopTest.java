@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -60,7 +61,7 @@ class DeployLiftsStopTest {
                 new StopAnnouncements(
                     mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "ships without a new note");
     DeployLiftsStop lifter = new DeployLiftsStop(stops);
 
@@ -100,7 +101,7 @@ class DeployLiftsStopTest {
                 new StopAnnouncements(
                     mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "ships without a new note");
     DeployLiftsStop lifter = new DeployLiftsStop(stops);
 
@@ -134,7 +135,7 @@ class DeployLiftsStopTest {
                 new StopAnnouncements(
                     mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     DeployLiftsStop lifter = new DeployLiftsStop(stops);
 
     OriginContext.as(human, () -> lifter.around("ABC-42", () -> Outcome.ok("deployed")));

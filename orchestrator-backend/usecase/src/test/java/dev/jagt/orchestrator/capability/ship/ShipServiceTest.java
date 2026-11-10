@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.Standing;
@@ -87,7 +88,7 @@ class ShipServiceTest {
                         new Notifications(List.of(), stateService, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 stateService,
-                Clock.systemUTC()));
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()

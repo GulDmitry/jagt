@@ -13,17 +13,21 @@ import java.util.Set;
 /** What a task's status allows and where an outcome leads it, answered by the task chart alone. */
 public final class FlowRules {
 
-  private FlowRules() {}
+  private final TaskChart chart;
 
-  public static boolean allows(TaskStatus status, TaskAction action, Facts facts) {
-    return TaskChart.current().offers(status, action, facts);
+  public FlowRules(TaskChart chart) {
+    this.chart = chart;
+  }
+
+  public boolean allows(TaskStatus status, TaskAction action, Facts facts) {
+    return chart.offers(status, action, facts);
   }
 
   /**
    * Every action legal for a task, what moves it on before what only looks at it — so no surface
    * sorts.
    */
-  public static List<TaskAction> allowed(TaskStatus status, Facts facts) {
+  public List<TaskAction> allowed(TaskStatus status, Facts facts) {
     return Arrays.stream(TaskAction.values())
         .filter(action -> allows(status, action, facts))
         .sorted(Comparator.comparing(TaskAction::group))
@@ -34,11 +38,11 @@ public final class FlowRules {
    * The status this outcome leads a task in {@code from} to, or empty to leave the task where it
    * is.
    */
-  public static Optional<TaskStatus> next(
+  public Optional<TaskStatus> next(
       TaskStatus from, TaskAction action, Outcome.Kind outcome) {
     return outcome == Outcome.Kind.GONE
         ? Optional.empty()
-        : TaskChart.current().land(from, new TaskMove.Ran(action, outcome));
+        : chart.land(from, new TaskMove.Ran(action, outcome));
   }
 
   /**
@@ -50,16 +54,16 @@ public final class FlowRules {
   }
 
   /** Every status any action can lead to. */
-  public static Set<TaskStatus> targets() {
-    return TaskChart.current().ranTargets();
+  public Set<TaskStatus> targets() {
+    return chart.ranTargets();
   }
 
   /**
    * Whether a plan can still come first for a task in {@code status}: it has written nothing from
    * the code yet.
    */
-  public static boolean planMayComeFirst(TaskStatus status) {
-    return TaskChart.current().planMayComeFirst(status);
+  public boolean planMayComeFirst(TaskStatus status) {
+    return chart.planMayComeFirst(status);
   }
 
   /** Whether a task may be moved to {@code status} by its own agent rather than by jagt. */
@@ -68,7 +72,7 @@ public final class FlowRules {
   }
 
   /** The same question with the status the task is IN. */
-  public static boolean reportable(TaskStatus from, TaskStatus to) {
+  public boolean reportable(TaskStatus from, TaskStatus to) {
     return refusedReport(from, to).isEmpty();
   }
 
@@ -78,11 +82,11 @@ public final class FlowRules {
    * has already passed drags it backwards and re-arms the unattended poll; REVERTED is a record no
    * agent may erase.
    */
-  public static Optional<String> refusedReport(TaskStatus from, TaskStatus to) {
+  public Optional<String> refusedReport(TaskStatus from, TaskStatus to) {
     if (!reportable(to)) {
       return Optional.of(to + " is jagt's to set, not a task's to report");
     }
-    if (TaskChart.current().land(from, new TaskMove.Reported(to, false)).isPresent()) {
+    if (chart.land(from, new TaskMove.Reported(to, false)).isPresent()) {
       return Optional.empty();
     }
     if (to == TaskStatus.PLAN_PENDING) {
@@ -106,7 +110,7 @@ public final class FlowRules {
    * As {@link #refusedReport(TaskStatus, TaskStatus)}, for what the report means: a question ends
    * the round.
    */
-  public static Optional<String> refusedReport(TaskStatus from, TaskStatus to, AgentReport means) {
+  public Optional<String> refusedReport(TaskStatus from, TaskStatus to, AgentReport means) {
     if (from == TaskStatus.CI_POLLING && to == TaskStatus.CI_POLLING && means.asks()) {
       return Optional.of(
           "a question cannot be reported while the task stands at CI_POLLING"
@@ -122,7 +126,7 @@ public final class FlowRules {
    * what it is doing, and a status it cannot report is a session whose every call errors. Such a
    * status keeps its line too ({@link #holdsItsLine}).
    */
-  public static TaskStatus reported(TaskStatus from, TaskStatus to) {
+  public TaskStatus reported(TaskStatus from, TaskStatus to) {
     return reported(from, to, false);
   }
 
@@ -130,8 +134,8 @@ public final class FlowRules {
    * The same, told whether this project still owes a verification run. A hand-back waits at
    * VERIFYING until jagt has run the project's own command, so a human never opens a red tree.
    */
-  public static TaskStatus reported(TaskStatus from, TaskStatus to, boolean verificationOwed) {
-    return TaskChart.current().land(from, new TaskMove.Reported(to, verificationOwed)).orElse(to);
+  public TaskStatus reported(TaskStatus from, TaskStatus to, boolean verificationOwed) {
+    return chart.land(from, new TaskMove.Reported(to, verificationOwed)).orElse(to);
   }
 
   /**
@@ -166,12 +170,12 @@ public final class FlowRules {
    * Where a round read lands: only a task waiting on the host moves, a session on its status keeps
    * it.
    */
-  public static TaskStatus readLands(TaskStatus from, TaskStatus read) {
+  public TaskStatus readLands(TaskStatus from, TaskStatus read) {
     if (!TaskChart.reads().contains(read)) {
       throw new IllegalArgumentException(
           read + " is not what a read of the review round concludes");
     }
-    return TaskChart.current().land(from, new TaskMove.Read(read)).orElse(from);
+    return chart.land(from, new TaskMove.Read(read)).orElse(from);
   }
 
   /**
@@ -185,8 +189,8 @@ public final class FlowRules {
   }
 
   /** A verified hand-back reaches the human; a failed one goes back to its session. */
-  public static TaskStatus verified(boolean passed) {
-    return TaskChart.current()
+  public TaskStatus verified(boolean passed) {
+    return chart
         .land(TaskStatus.VERIFYING, new TaskMove.Verified(passed))
         .orElseThrow();
   }
@@ -287,8 +291,8 @@ public final class FlowRules {
    * Where a read of the pipeline on a deploy commit lands: only a task live on the deploy branch
    * moves, and only on a red the code owns.
    */
-  public static TaskStatus deployReadLands(TaskStatus from, boolean redOnTheCode) {
-    return TaskChart.current().land(from, new TaskMove.DeployRead(redOnTheCode)).orElse(from);
+  public TaskStatus deployReadLands(TaskStatus from, boolean redOnTheCode) {
+    return chart.land(from, new TaskMove.DeployRead(redOnTheCode)).orElse(from);
   }
 
   /** A plan waiting to be read, rather than a round of code. */
@@ -330,8 +334,8 @@ public final class FlowRules {
    * Statuses no action leads to and no task reports: a redirect in {@link #reported} is the only
    * way in.
    */
-  public static Set<TaskStatus> redirects() {
-    return TaskChart.current().verifiable();
+  public Set<TaskStatus> redirects() {
+    return chart.verifiable();
   }
 
   private static final Set<TaskStop.Trigger> LIFTED_BY_THE_MASTER =

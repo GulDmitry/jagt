@@ -24,6 +24,8 @@ class TurnsTest {
   private static final TaskReducer reducer =
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
+  private static final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
+
   private static final Map<String, Arbiter.Profile> PROFILES =
       Map.of(
           "off", Arbiter.Profile.OFF,
@@ -72,6 +74,7 @@ class TurnsTest {
 
     Move move =
         Move.forTask(
+            rules,
             status,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(report, false).withMaster(PROFILES.get(profile)),
@@ -92,6 +95,7 @@ class TurnsTest {
       TaskStatus status, AgentReport report, String profile) {
     Move move =
         Move.forTask(
+            rules,
             status,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(report, false).withMaster(PROFILES.get(profile)),
@@ -128,6 +132,7 @@ class TurnsTest {
 
     Move move =
         Move.forTask(
+            rules,
             status,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(report, false).withMasterReading(true),
@@ -180,6 +185,7 @@ class TurnsTest {
 
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.DEPLOYED,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.PLAIN, false)

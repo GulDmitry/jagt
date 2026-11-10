@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -73,7 +74,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     ReviewFacts round =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),
@@ -113,7 +114,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     TaskStop stop =
         stops
@@ -139,7 +140,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     TaskStop stop =
         stops
@@ -176,7 +177,7 @@ class TaskStopsTest {
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
                 state,
-                clock)
+                clock, new FlowRules(new TaskChart(Composition.builtIn())))
             .mayShip("ABC-42");
 
     assertThat(may).isFalse();
@@ -206,7 +207,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     stops.lift("ABC-42");
 
@@ -247,7 +248,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "4 ships");
     stops.stop("ABC-43", TaskStop.Trigger.ROUNDS, "3 rounds");
@@ -273,7 +274,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(stops.mayShip("ABC-42")).isTrue();
     assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
@@ -300,7 +301,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(stops.stopped("ABC-1")).isFalse();
     assertThat(stops.stopped("ABC-2")).isTrue();
@@ -323,7 +324,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     TaskStop first = new TaskStop(TaskStop.Trigger.CHECKS, 5, "3 reads could not list the checks");
 
     Optional<TaskStop> tripped = stops.trip("ABC-42", task -> Optional.of(first));
@@ -350,7 +351,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     ReviewFacts round =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),
@@ -381,7 +382,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     stops.round(
         "ABC-42",
@@ -422,7 +423,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     ReviewFacts first =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),
@@ -463,7 +464,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     ReviewFacts first =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),
@@ -502,7 +503,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     ReviewFacts first =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),
@@ -536,7 +537,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     ReviewFacts round =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),
@@ -566,7 +567,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     stops.stop("ABC-42", TaskStop.Trigger.CHECKS, "3 reads could not list the checks");
     stops.stop("ABC-42", TaskStop.Trigger.ROUNDS, "later");
@@ -593,7 +594,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     stops.stop("ABC-42", TaskStop.Trigger.CHECKS, "3 reads could not list the checks");
 
     stops.lift("ABC-42");
@@ -623,7 +624,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     ReviewFacts answered =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),
@@ -654,7 +655,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     stops.stop("ABC-42", trigger, "host down");
 
     Optional<TaskStop> ended = stops.endOnRead("ABC-42", read);
@@ -689,7 +690,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     stops.stop("ABC-42", trigger, "host down");
 
     Optional<TaskStop> ended = stops.endOnRead("ABC-42", read);
@@ -726,7 +727,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     stops.stop("ABC-42", trigger, "host down");
 
     stops.endOnRefusal("ABC-42", refusal, "");
@@ -756,7 +757,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     stops.endOnRefusal("ABC-42", ReviewSweepService.SweepResult.Kind.GONE, "http://mr/A");
 
@@ -785,7 +786,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     stops.endOnRefusal("ABC-42", ReviewSweepService.SweepResult.Kind.GONE, "http://mr/B");
 
@@ -818,7 +819,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     boolean due = stops.roundDue("ABC-42", "review");
 
@@ -848,7 +849,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     stops.stop("ABC-42", trigger, "down");
 
     Optional<TaskStop> ended = ending.apply(stops);
@@ -896,7 +897,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(stops.standing("ABC-1", TaskStop.Trigger.INFRA)).isTrue();
     assertThat(stops.standing("ABC-1", TaskStop.Trigger.CHECKS)).isFalse();
@@ -925,7 +926,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(stops.asking("ABC-1")).isTrue();
     assertThat(stops.asking("ABC-2")).isFalse();
@@ -948,7 +949,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     ReviewFacts round =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),
@@ -977,7 +978,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     ReviewFacts round =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),
@@ -1006,7 +1007,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     stops.round(
         "ABC-42",
         new ReviewFacts(
@@ -1044,7 +1045,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     stops.pauseOnWord("ABC-42", "until the managers answer");
 
@@ -1069,7 +1070,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThatThrownBy(() -> stops.pauseOnWord("ABC-42", "until the managers answer"))
         .isInstanceOf(Refusal.class);
@@ -1094,7 +1095,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     OriginContext.as(ActionOrigin.MASTER, () -> stops.lift("ABC-42"));
     int afterTheMasters = state.task("ABC-42").orElseThrow().masterOrNone().liftedStops();
@@ -1130,7 +1131,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     stops.escalate("ABC-42");
 
@@ -1156,7 +1157,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     stops.stop("ABC-42", TaskStop.Trigger.ROUNDS, "verify sent 3 rounds");
 
@@ -1179,7 +1180,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     stops.stop("ABC-42", TaskStop.Trigger.ROUNDS, "verify sent 3 rounds");
 
@@ -1206,7 +1207,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     stops.triaged("ABC-42", "ROUNDS@5", StopTriage.failed("a stop that is gone"));
 
@@ -1234,7 +1235,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     OriginContext.as(ActionOrigin.MASTER, () -> stops.escalate("ABC-42"));
 
@@ -1257,7 +1258,7 @@ class TaskStopsTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(stops.masterKeeps("ABC-42", TaskAction.DONE)).isTrue();
     assertThat(stops.masterKeeps("ABC-42", TaskAction.TRUST)).isFalse();

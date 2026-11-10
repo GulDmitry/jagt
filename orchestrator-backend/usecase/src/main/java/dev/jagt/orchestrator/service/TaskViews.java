@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
@@ -28,6 +29,7 @@ public class TaskViews {
   private final ConfigService configService;
   private final Rounds rounds;
   private final Clock clock;
+  private final FlowRules rules;
 
   /**
    * One render's worth of answers, read from the configuration ONCE so two reads cannot disagree
@@ -56,6 +58,7 @@ public class TaskViews {
             .map(
                 entry ->
                     TaskView.of(
+                        rules,
                         entry.getKey(),
                         entry.getValue(),
                         rounds.of(entry.getValue(), config),

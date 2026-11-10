@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -58,7 +59,7 @@ class DeployPipelinesTest {
               new StateService(
                   new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()),
                   reducer),
-              Clock.fixed(NOW, ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn()))));
+              Clock.fixed(NOW, ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
   private final TaskState deployed =
       TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)), TaskStatus.DEPLOYED)
           .deployment(

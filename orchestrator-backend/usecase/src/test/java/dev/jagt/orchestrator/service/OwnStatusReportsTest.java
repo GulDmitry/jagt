@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -63,7 +64,7 @@ class OwnStatusReportsTest {
                         new JsonMapper(),
                         new OrchestratorPaths(OrchestratorProperties.defaults())))),
             state,
-            Clock.systemUTC());
+            Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())));
     return new ReportEffects(
         new SessionWakes(state, turns, Clock.systemUTC()),
         turns,
@@ -266,7 +267,7 @@ class OwnStatusReportsTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
             effects(state));
 
     reports.report(broke, "ABC-42");
@@ -316,7 +317,7 @@ class OwnStatusReportsTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
             effects(state));
 
     assertThatThrownBy(() -> reports.report(handBack, "ABC-42"))
@@ -367,7 +368,7 @@ class OwnStatusReportsTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
             effects(state));
 
     assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
@@ -419,7 +420,7 @@ class OwnStatusReportsTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
             effects(state));
 
     assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);

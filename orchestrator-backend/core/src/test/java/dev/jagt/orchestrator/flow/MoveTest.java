@@ -16,10 +16,12 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 class MoveTest {
 
+  private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
+
   @ParameterizedTest
   @EnumSource(TaskStatus.class)
   void answersForEveryStatusThereIsSoNoTaskCanRenderAsUnknown(TaskStatus status) {
-    Move move = Move.forTask(status, Facts.defaults(), RoundState.NONE, false);
+    Move move = Move.forTask(rules, status, Facts.defaults(), RoundState.NONE, false);
 
     assertThat(move.phase()).isNotNull();
     assertThat(move.owner()).isNotNull();
@@ -32,6 +34,7 @@ class MoveTest {
   void withholdsShipWhereEveryRequestIsMerged(TaskStatus status) {
     List<TaskAction> actions =
         Move.forTask(
+                rules,
                 status,
                 Facts.defaults()
                     .withDelivery(
@@ -50,6 +53,7 @@ class MoveTest {
   void offersWhatMovesTheTaskOnBeforeWhatOnlyLooksAtIt(TaskStatus status) {
     List<TaskAction> actions =
         Move.forTask(
+                rules,
                 status,
                 Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.NONE,
@@ -95,6 +99,7 @@ class MoveTest {
   void leavesWhatTheMasterHasYetToReadOffTheHumansMoves(TaskStatus status) {
     Move move =
         Move.forTask(
+            rules,
             status,
             Facts.defaults(),
             RoundState.of(AgentReport.PLAIN, false).withMasterReading(true),
@@ -109,6 +114,7 @@ class MoveTest {
   void leadsWithTheRevertAndSaysSoWhereTheConflictIsARevertsAndNotADeploys() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.DEPLOY_CONFLICT,
             Facts.defaults()
                 .withDelivery(
@@ -127,6 +133,7 @@ class MoveTest {
   void doesNotAdviseAShipForAReviewRoundThatChangedNothing() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEW_PENDING,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.NO_CHANGES, false),
@@ -143,6 +150,7 @@ class MoveTest {
   void handsAReviewRoundBackToTheHumanOncePollingHasStoppedForIt() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEW_PENDING,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.NO_CHANGES, false),
@@ -160,6 +168,7 @@ class MoveTest {
   void leavesATaskWithItsAgentWhenThePollingWindowElapsedWhileItWorks() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.IN_PROGRESS,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
@@ -174,6 +183,7 @@ class MoveTest {
   void stillAdvisesAShipWhenTheRoundLeftRepliesToPostEvenThoughItChangedNoCode() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEW_PENDING,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.NO_CHANGES, true),
@@ -188,6 +198,7 @@ class MoveTest {
   void asksTheHumanToShipARoundThatChangedNothingBeforeAnyRequestExists() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEW_PENDING,
             Facts.defaults(),
             RoundState.of(AgentReport.NO_CHANGES, false),
@@ -203,6 +214,7 @@ class MoveTest {
   void keepsTheRoundWithTheHumanWhenTheDraftedRepliesStillNeedAShip() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEW_PENDING,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.NO_CHANGES, true),
@@ -216,6 +228,7 @@ class MoveTest {
   void asksTheHumanToSweepARoundThePollHasGivenUpOn() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.CI_POLLING,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
@@ -230,6 +243,7 @@ class MoveTest {
   void leavesARoundStillBeingPolledWithTheHost() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.CI_POLLING,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
@@ -243,6 +257,7 @@ class MoveTest {
   void asksTheHumanAboutATaskWaitingOnChecksWithNoRequestToRead() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.CI_POLLING,
             Facts.defaults(),
             RoundState.NONE,
@@ -258,6 +273,7 @@ class MoveTest {
   void pointsAtTheAgentWhenTheRoundEndedInAQuestionInsteadOfAtTheShipButton() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEW_PENDING,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
@@ -272,6 +288,7 @@ class MoveTest {
   void leavesAQuestionUnshoutedWhileAPollIsStillReadingTheRoundItWasAskedOn() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEW_PENDING,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
@@ -287,6 +304,7 @@ class MoveTest {
   void interruptsForTheSameQuestionOnceNothingIsPollingTheRoundAnyMore() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEW_PENDING,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
@@ -304,6 +322,7 @@ class MoveTest {
       TaskStatus status) {
     Move move =
         Move.forTask(
+            rules,
             status,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
@@ -317,6 +336,7 @@ class MoveTest {
   void asksForTheRoundToBeReadRatherThanTheSessionAnsweredWhenTheQuestionCameBackWithIt() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEW_PENDING,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
@@ -330,7 +350,7 @@ class MoveTest {
   void handsAnAgentThatStoppedToAskBackToTheHumanInsteadOfSayingItIsStillWorking(
       TaskStatus status) {
     Move move =
-        Move.forTask(status, Facts.defaults(), RoundState.of(AgentReport.QUESTION, false), false);
+        Move.forTask(rules, status, Facts.defaults(), RoundState.of(AgentReport.QUESTION, false), false);
 
     assertThat(move.owner()).isEqualTo(Owner.YOU);
     assertThat(move.hint()).contains("answer the question");
@@ -340,7 +360,7 @@ class MoveTest {
   @ParameterizedTest
   @CsvSource({"NEW", "IN_PROGRESS", "SHIPPING"})
   void handsAnAgentThatWentQuietBackToTheHumanInsteadOfSayingItIsStillWorking(TaskStatus status) {
-    Move move = Move.forTask(status, Facts.defaults(), RoundState.NONE, true);
+    Move move = Move.forTask(rules, status, Facts.defaults(), RoundState.NONE, true);
 
     assertThat(move.owner()).isEqualTo(Owner.YOU);
     assertThat(move.hint()).contains("stopped without reporting");
@@ -351,6 +371,7 @@ class MoveTest {
   void quotesTheQuestionRatherThanTheSilenceWhenAnAgentAskedBeforeItStopped() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.IN_PROGRESS,
             Facts.defaults(),
             RoundState.of(AgentReport.QUESTION, false),
@@ -367,12 +388,14 @@ class MoveTest {
   void keepsTheOwnerOfAStatusThatWasNeverTheAgentsEvenIfSilenceWasStamped(TaskStatus status) {
     assertThat(
             Move.forTask(
+                rules,
                 status,
                 Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.NONE,
                 true))
         .isEqualTo(
             Move.forTask(
+                rules,
                 status,
                 Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                 RoundState.NONE,
@@ -386,6 +409,7 @@ class MoveTest {
             .filter(
                 status ->
                     Move.forTask(
+                                rules,
                                 status,
                                 Facts.defaults()
                                     .withDelivery(
@@ -410,6 +434,7 @@ class MoveTest {
   void asksForNothingOnceTheChangeIsLiveWhileStillOfferingTheClose() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.DEPLOYED,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
@@ -423,6 +448,7 @@ class MoveTest {
   void stillAsksForTheHumanWhenAnAgentQuestionOutlivesTheDeploy() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.DEPLOYED,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
@@ -437,6 +463,7 @@ class MoveTest {
   void saysNothingAboutAttentionUnlessTheMoveIsTheHumansOwn(TaskStatus status) {
     Move move =
         Move.forTask(
+            rules,
             status,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
@@ -450,30 +477,34 @@ class MoveTest {
   void namesTheActOnEveryCardWhoseMoveIsTheHumansOwn(TaskStatus status) {
     Move working =
         Move.forTask(
+            rules,
             status,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
             false);
     Move stopped =
         Move.forTask(
+            rules,
             status,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
             true);
     Move asked =
         Move.forTask(
+            rules,
             status,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
             false);
     Move unpolled =
         Move.forTask(
+            rules,
             status,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
             false,
             AutoReviewWatch.windowElapsed(24));
-    Move requestless = Move.forTask(status, Facts.defaults(), RoundState.NONE, false);
+    Move requestless = Move.forTask(rules, status, Facts.defaults(), RoundState.NONE, false);
 
     assertThat(working.ask() == null).isEqualTo(working.attention() == Attention.NONE);
     assertThat(stopped.ask() == null).isEqualTo(stopped.attention() == Attention.NONE);
@@ -491,6 +522,7 @@ class MoveTest {
   void namesTheActItWantsRatherThanHowLoudlyItWantsIt(TaskStatus status, String ask) {
     assertThat(
             Move.forTask(
+                    rules,
                     status,
                     Facts.defaults()
                         .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
@@ -504,6 +536,7 @@ class MoveTest {
   void namesTheReadWhenTheRoundIsBackWithTheHumanBecauseNothingPollsIt() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.CI_POLLING,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
@@ -517,6 +550,7 @@ class MoveTest {
   void asksForTheApprovalRatherThanAReadOnARoundThatCameBackWithNothingUnresolved() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEWED,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
@@ -534,7 +568,7 @@ class MoveTest {
   })
   void namesWhatIsLeftWhenTheStatusClaimsAReviewRequestThatIsNotThere(
       TaskStatus status, String ask) {
-    assertThat(Move.forTask(status, Facts.defaults(), RoundState.NONE, false).ask()).isEqualTo(ask);
+    assertThat(Move.forTask(rules, status, Facts.defaults(), RoundState.NONE, false).ask()).isEqualTo(ask);
   }
 
   @ParameterizedTest
@@ -542,6 +576,7 @@ class MoveTest {
   void offersRatherThanOrdersTheActWhoseCardCanWait(TaskStatus status, String ask) {
     assertThat(
             Move.forTask(
+                    rules,
                     status,
                     Facts.defaults()
                         .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
@@ -555,6 +590,7 @@ class MoveTest {
   void asksForAnAnswerWhereverTheSessionStoppedToPutTheQuestion() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.DEPLOYED,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
@@ -565,7 +601,7 @@ class MoveTest {
 
   @Test
   void asksForTheSessionToBeCheckedWhenItWentQuietWithoutReporting() {
-    Move move = Move.forTask(TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, true);
+    Move move = Move.forTask(rules, TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, true);
 
     assertThat(move.ask()).isEqualTo("check the stopped session");
   }
@@ -576,19 +612,22 @@ class MoveTest {
     List<Move> badged =
         Stream.of(
                 Move.forTask(
+                    rules,
                     status,
                     Facts.defaults()
                         .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                     RoundState.NONE,
                     false),
-                Move.forTask(status, Facts.defaults(), RoundState.NONE, false),
+                Move.forTask(rules, status, Facts.defaults(), RoundState.NONE, false),
                 Move.forTask(
+                    rules,
                     status,
                     Facts.defaults()
                         .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
                     RoundState.NONE,
                     true),
                 Move.forTask(
+                    rules,
                     status,
                     Facts.defaults()
                         .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
@@ -603,7 +642,7 @@ class MoveTest {
 
   @Test
   void pointsAtTheSessionRatherThanAShipWhenARevertedDeployHasNoRequestToShipOnto() {
-    Move move = Move.forTask(TaskStatus.REVERTED, Facts.defaults(), RoundState.NONE, false);
+    Move move = Move.forTask(rules, TaskStatus.REVERTED, Facts.defaults(), RoundState.NONE, false);
 
     assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
     assertThat(move.hint())
@@ -612,7 +651,7 @@ class MoveTest {
 
   @Test
   void pointsAtTheSessionRatherThanASweepWhenAFailedRunHasNoRequestToReadItFrom() {
-    Move move = Move.forTask(TaskStatus.CI_FAILED, Facts.defaults(), RoundState.NONE, false);
+    Move move = Move.forTask(rules, TaskStatus.CI_FAILED, Facts.defaults(), RoundState.NONE, false);
 
     assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
     assertThat(move.hint())
@@ -623,6 +662,7 @@ class MoveTest {
   void saysNothingAboutARoundWhoseOpenThreadsAreTheReviewersToClose() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEW_PENDING,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.NO_CHANGES, false),
@@ -639,6 +679,7 @@ class MoveTest {
   void offersTheNextMoveWithoutInterruptingWhenNothingIsStuck(TaskStatus status) {
     Move move =
         Move.forTask(
+            rules,
             status,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
@@ -655,6 +696,7 @@ class MoveTest {
   void interruptsForATaskThatMovesNoFurtherWithoutTheHuman(TaskStatus status) {
     assertThat(
             Move.forTask(
+                    rules,
                     status,
                     Facts.defaults()
                         .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
@@ -668,6 +710,7 @@ class MoveTest {
   void interruptsWhenAnAgentAsksFromAStatusThatWouldOtherwiseWait() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.APPROVED,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
@@ -678,7 +721,7 @@ class MoveTest {
 
   @Test
   void interruptsForAnAgentThatWentQuietWithoutReportingAnything() {
-    Move move = Move.forTask(TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, true);
+    Move move = Move.forTask(rules, TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, true);
 
     assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
   }
@@ -687,6 +730,7 @@ class MoveTest {
   void waitsOnTheReviewerAfterACleanRoundThatNobodyHasApprovedYet() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEWED,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
@@ -703,6 +747,7 @@ class MoveTest {
   void highlightsTheReadWhenNothingIsPollingForTheApprovalAtAll() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEWED,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
@@ -720,6 +765,7 @@ class MoveTest {
   void highlightsTheAnswerRatherThanAVerbThatActsWhileAQuestionIsOpen(TaskStatus status) {
     Move move =
         Move.forTask(
+            rules,
             status,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
@@ -732,6 +778,7 @@ class MoveTest {
   void handsACleanRoundBackToTheHumanOnceNothingPollsItForTheApproval() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEWED,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
@@ -750,6 +797,7 @@ class MoveTest {
   void handsTheTaskOverForAQuestionAskedFromAStatusThatWaitsOnTheCodeHost(TaskStatus status) {
     Move move =
         Move.forTask(
+            rules,
             status,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
@@ -763,6 +811,7 @@ class MoveTest {
   void leavesAClosedTaskAloneWhateverItsLastMessageSaid() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.DONE,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
@@ -782,6 +831,7 @@ class MoveTest {
       TaskStatus status, boolean hasRequest, Phase phase) {
     assertThat(
             Move.forTask(
+                    rules,
                     status,
                     Facts.defaults()
                         .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(hasRequest)),
@@ -793,7 +843,7 @@ class MoveTest {
 
   @Test
   void neverMakesDeployThePrimaryMoveOfATaskThatHasNoRequestToLand() {
-    Move move = Move.forTask(TaskStatus.REVIEWED, Facts.defaults(), RoundState.NONE, false);
+    Move move = Move.forTask(rules, TaskStatus.REVIEWED, Facts.defaults(), RoundState.NONE, false);
 
     assertThat(move.actions()).doesNotContain(TaskAction.DEPLOY);
     assertThat(move.actions()).contains(move.primary());
@@ -814,6 +864,7 @@ class MoveTest {
       TaskStatus status, boolean hasRequest, TaskAction primary) {
     assertThat(
             Move.forTask(
+                    rules,
                     status,
                     Facts.defaults()
                         .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(hasRequest)),
@@ -826,7 +877,7 @@ class MoveTest {
   @Test
   void offersShipForATaskStuckAtShippingBecauseTheDeadAgentIsWhatMakesItStuck() {
     assertThat(
-            Move.forTask(TaskStatus.SHIPPING, Facts.defaults(), RoundState.NONE, false).actions())
+            Move.forTask(rules, TaskStatus.SHIPPING, Facts.defaults(), RoundState.NONE, false).actions())
         .contains(TaskAction.SHIP);
   }
 
@@ -834,6 +885,7 @@ class MoveTest {
   void advisesAFixOntoTheSameRequestForATaskWhoseDeployWasTakenBackOut() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVERTED,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.NONE,
@@ -846,7 +898,7 @@ class MoveTest {
   @Test
   void sendsTheHumanToTheAgentWhenAReversionHasNoRequestToShipOnto() {
     assertThat(
-            Move.forTask(TaskStatus.REVERTED, Facts.defaults(), RoundState.NONE, false).primary())
+            Move.forTask(rules, TaskStatus.REVERTED, Facts.defaults(), RoundState.NONE, false).primary())
         .isEqualTo(TaskAction.FOCUS);
   }
 
@@ -854,6 +906,7 @@ class MoveTest {
   void leavesAReversionInTheDeployPhaseBecauseThatIsWhereItWentWrong() {
     assertThat(
             Move.forTask(
+                    rules,
                     TaskStatus.REVERTED,
                     Facts.defaults()
                         .withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
@@ -865,7 +918,7 @@ class MoveTest {
 
   @Test
   void asksTheHumanToCheckTheStoppedSessionWhereTheAgentWentSilent() {
-    Move move = Move.forTask(TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, true);
+    Move move = Move.forTask(rules, TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, true);
 
     assertThat(move.owner()).isEqualTo(Owner.YOU);
     assertThat(move.ask()).isEqualTo("check the stopped session");
@@ -875,6 +928,7 @@ class MoveTest {
   void asksTheHumanToAnswerTheSessionWhereItStoppedOnAQuestion() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.IN_PROGRESS,
             Facts.defaults(),
             RoundState.of(AgentReport.QUESTION, false),
@@ -888,6 +942,7 @@ class MoveTest {
   void asksTheHumanToReviewTheRoundWhereTheQuestionCameBackWithTheHandBack() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEW_PENDING,
             Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
             RoundState.of(AgentReport.QUESTION, false),
@@ -898,7 +953,7 @@ class MoveTest {
 
   @Test
   void asksNothingOfAHumanWhileTheAgentIsWorking() {
-    Move move = Move.forTask(TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, false);
+    Move move = Move.forTask(rules, TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, false);
 
     assertThat(move.ask()).isNull();
   }
@@ -910,6 +965,7 @@ class MoveTest {
   void putsAddRepoOnTheQuestionOfASessionAskingForARepository(TaskStatus status) {
     Move move =
         Move.forTask(
+            rules,
             status,
             Facts.defaults().withWorkspace(Facts.Workspace.defaults().withRepoRequested(true)),
             RoundState.of(AgentReport.QUESTION, false),
@@ -925,6 +981,7 @@ class MoveTest {
   void keepsFocusOnTheQuestionOfASessionAskingForNothingTheBoardCanAdd() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.IN_PROGRESS,
             Facts.defaults(),
             RoundState.of(AgentReport.QUESTION, false),
@@ -938,6 +995,7 @@ class MoveTest {
   void offersNoAddRepoOnceTheSessionIsWorkingAgainWhateverRequestIsLeftOnTheTask() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.IN_PROGRESS,
             Facts.defaults().withWorkspace(Facts.Workspace.defaults().withRepoRequested(true)),
             RoundState.NONE,
@@ -953,6 +1011,7 @@ class MoveTest {
   void offersTheCloseQuietlyOnceEveryRequestIsMerged(TaskStatus status) {
     Move move =
         Move.forTask(
+            rules,
             status,
             Facts.defaults()
                 .withDelivery(
@@ -970,6 +1029,7 @@ class MoveTest {
   void advisesTheDeployOfATaskShippedWithoutARequestSinceNoReviewIsOpenOnIt() {
     Move move =
         Move.forTask(
+            rules,
             TaskStatus.REVIEW_PENDING,
             Facts.defaults()
                 .withDelivery(Facts.Delivery.defaults().withShippedWithoutRequest(true)),
@@ -982,7 +1042,7 @@ class MoveTest {
 
   @Test
   void offersNoDeployToATaskAtReviewPendingThatWasNeitherShippedNorRequested() {
-    Move move = Move.forTask(TaskStatus.REVIEW_PENDING, Facts.defaults(), RoundState.NONE, false);
+    Move move = Move.forTask(rules, TaskStatus.REVIEW_PENDING, Facts.defaults(), RoundState.NONE, false);
 
     assertThat(move.actions()).doesNotContain(TaskAction.DEPLOY);
   }

@@ -15,6 +15,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 class TaskViewTest {
 
+  private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
+
   private static final TaskReducer reducer =
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
@@ -33,6 +35,7 @@ class TaskViewTest {
   void asksForAHumanOnlyWhereAnExpectedPollHasStopped(AutoReviewWatch watch, Owner expected) {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("http://host/mr/1")
@@ -48,6 +51,7 @@ class TaskViewTest {
   void namesTheModelASessionRunsOnWhileItIsATierUp() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .build()
@@ -63,6 +67,7 @@ class TaskViewTest {
   void namesNoModelForASessionOnItsOwn() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .build()
@@ -78,6 +83,7 @@ class TaskViewTest {
   void servesTheTaskAsOneFlatObjectWithoutTheDraftedRepliesFlag() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build(),
             RoundState.of(AgentReport.PLAIN, true),
@@ -126,6 +132,7 @@ class TaskViewTest {
   void servesEachActionAsOneFlatObject() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build(),
             RoundState.of(AgentReport.PLAIN, false),
@@ -162,7 +169,7 @@ class TaskViewTest {
                     .withQuietSince(500));
 
     TaskView view =
-        TaskView.of("ABC-1", asked, RoundState.of(asked.report(), false), AutoReviewWatch.none(), Map.of("proj", "dev"));
+        TaskView.of(rules, "ABC-1", asked, RoundState.of(asked.report(), false), AutoReviewWatch.none(), Map.of("proj", "dev"));
 
     assertThat(view.owner()).isEqualTo(Owner.YOU);
     assertThat(view.ask()).isEqualTo("answer the session");
@@ -178,7 +185,7 @@ class TaskViewTest {
             .build();
 
     TaskView view =
-        TaskView.of("ABC-1", several, RoundState.of(several.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of(rules, "ABC-1", several, RoundState.of(several.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
 
     assertThat(view.actions()).extracting(TaskView.ActionView::id).doesNotContain("remove-repo");
   }
@@ -195,6 +202,7 @@ class TaskViewTest {
   void dropsALinkThatIsNotHttpRatherThanHandingItToAnAnchor(String hostile) {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .ticketUrl(hostile)
@@ -212,6 +220,7 @@ class TaskViewTest {
   void keepsRealLinksAndTrimsTheWhitespaceAroundThem() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .ticketUrl("  https://tracker.example.com/browse/ABC-1  ")
@@ -229,6 +238,7 @@ class TaskViewTest {
   void leavesBothLinksUnsetWhenTheTaskHasNone() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build(),
             RoundState.of(AgentReport.PLAIN, false),
@@ -243,6 +253,7 @@ class TaskViewTest {
   void stillSaysSomethingWhenTheStoredRequestLinkWasUnusable() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("javascript:alert(1)")
@@ -259,6 +270,7 @@ class TaskViewTest {
   void carriesEveryRepositoryWithItsOwnRequestSoNoSurfaceHasToGuessWhichDiffIsWhich() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder(
                     List.of(
@@ -291,6 +303,7 @@ class TaskViewTest {
   void doneStandsApartFromTheOtherVerbs() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
             RoundState.of(AgentReport.PLAIN, false),
@@ -307,6 +320,7 @@ class TaskViewTest {
   void doneCarriesNoKey() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
             RoundState.of(AgentReport.PLAIN, false),
@@ -324,6 +338,7 @@ class TaskViewTest {
   void shipCarriesItsLetter() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
             RoundState.of(AgentReport.PLAIN, false),
@@ -341,6 +356,7 @@ class TaskViewTest {
   void highlightsNoVerbWhileTheAgentHoldsTheMove() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
             RoundState.of(AgentReport.PLAIN, false),
@@ -354,6 +370,7 @@ class TaskViewTest {
   void highlightsTheMovesVerbWhereTheMoveIsTheHumans() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("api", "/api-wt", TaskStatus.CI_FAILED)
                 .alias("a1")
@@ -374,6 +391,7 @@ class TaskViewTest {
     TaskState started = TaskState.builder("api", "/api-wt", TaskStatus.NEW).alias("a1").build();
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             started.withStatus(TaskStatus.IN_PROGRESS, "working", 2_000),
             RoundState.of(AgentReport.PLAIN, false),
@@ -387,6 +405,7 @@ class TaskViewTest {
   void onlyFocusRidesOnTheRowOfAWorkingTask() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
             RoundState.of(AgentReport.PLAIN, false),
@@ -403,6 +422,7 @@ class TaskViewTest {
   void offersASweepAsSoonAsANYRepositoryHasARequestOpen() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder(
                     List.of(
@@ -431,6 +451,7 @@ class TaskViewTest {
   void marksATaskWhoseWorkIsOnASharedBranchAfterTheDeployStatusHasMovedOn() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.DONE)
                 .alias("a1")
@@ -461,6 +482,7 @@ class TaskViewTest {
 
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             passed,
             RoundState.of(passed.report(), false)
@@ -488,7 +510,7 @@ class TaskViewTest {
             .build();
 
     TaskView view =
-        TaskView.of("ABC-1", reverted, RoundState.of(reverted.report(), false), AutoReviewWatch.none(), Map.of("proj", "dev"));
+        TaskView.of(rules, "ABC-1", reverted, RoundState.of(reverted.report(), false), AutoReviewWatch.none(), Map.of("proj", "dev"));
 
     assertThat(view.deployed()).isFalse();
   }
@@ -497,6 +519,7 @@ class TaskViewTest {
   void marksTheDeployVerbAsARepeatWhileItsLastRunIsStillLive() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
                 .alias("a1")
@@ -523,6 +546,7 @@ class TaskViewTest {
   void offersTheRevertOnACardWhoseDeployBrokeOffAfterARepositoryLanded() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder(
                     List.of(TaskRepo.of("api", "/api-wt"), TaskRepo.of("web", "/web-wt")),
@@ -548,6 +572,7 @@ class TaskViewTest {
   void marksAMultiRepoTaskAsSoonAsONERepositoryHasLanded() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder(
                     List.of(TaskRepo.of("api", "/api-wt"), TaskRepo.of("web", "/web-wt")),
@@ -573,6 +598,7 @@ class TaskViewTest {
   void asksBeforeEveryPressThatCannotBeTakenBackNamingTheBranchEachRepositoryWrites() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder(
                     List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
@@ -603,9 +629,9 @@ class TaskViewTest {
             .build();
 
     TaskView withRequest =
-        TaskView.of("ABC-1", open, RoundState.of(open.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of(rules, "ABC-1", open, RoundState.of(open.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
     TaskView withoutRequest =
-        TaskView.of("ABC-1", none, RoundState.of(none.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of(rules, "ABC-1", none, RoundState.of(none.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
 
     assertThat(withRequest.requestOpenedAt()).isEqualTo(1_700_000_000_000L);
     assertThat(withRequest.approved()).isTrue();
@@ -617,6 +643,7 @@ class TaskViewTest {
   void readsATaskWithNoWatchAsOneNothingPolls() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("api", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("http://host/mr/1")
@@ -632,6 +659,7 @@ class TaskViewTest {
   void namesAReviewedTaskAsAwaitingTheApprovalOfItsReviewers() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("api", "/wt", TaskStatus.REVIEWED).build(),
             RoundState.NONE,
@@ -645,6 +673,7 @@ class TaskViewTest {
   void namesTheMasterAsTheStatusLabelWhileItReadsTheRound() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("api", "/wt", TaskStatus.REVIEW_PENDING).build(),
             RoundState.NONE.withMasterReading(true),
@@ -664,6 +693,7 @@ class TaskViewTest {
 
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-42",
             stopped,
             RoundState.NONE.withMaster(act),
@@ -688,6 +718,7 @@ class TaskViewTest {
 
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-42",
             asked,
             RoundState.NONE.withMaster(act),
@@ -710,7 +741,7 @@ class TaskViewTest {
             .build();
 
     TaskView view =
-        TaskView.of("ABC-42", stopped, RoundState.of(stopped.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of(rules, "ABC-42", stopped, RoundState.of(stopped.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
 
     assertThat(view.ask()).isEqualTo("lift the stop \u2014 ships with no new note");
     assertThat(view.stop())
@@ -727,6 +758,7 @@ class TaskViewTest {
   void carriesNoStopWhereJagtStoppedNothing() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-42",
             TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).build(),
             RoundState.of(AgentReport.PLAIN, false),
@@ -740,6 +772,7 @@ class TaskViewTest {
   void showsARedWhoseRetryIsArmedAsRunningWithWhatItWaitsOn() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("http://host/mr/1")
@@ -768,6 +801,7 @@ class TaskViewTest {
   void showsARedWithNoRetryArmedAsRed() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
                 .mrUrl("http://host/mr/1")
@@ -795,7 +829,7 @@ class TaskViewTest {
                 .withMark(Wake.MARK, new Wake(0, 36_000_000, Step.WAIT_OVER).mark()));
 
     TaskView view =
-        TaskView.of("ABC-1", waiting, RoundState.of(waiting.report(), false), AutoReviewWatch.none(), Map.of("proj", "dev"));
+        TaskView.of(rules, "ABC-1", waiting, RoundState.of(waiting.report(), false), AutoReviewWatch.none(), Map.of("proj", "dev"));
 
     assertThat(view.waiting()).isEqualTo("db down: ping db.internal\nnext try 10:00 UTC");
   }
@@ -804,6 +838,7 @@ class TaskViewTest {
   void saysNothingOfAWaitForASessionThatDoesNotWait() {
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-1",
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build(),
             RoundState.of(AgentReport.PLAIN, false),
@@ -823,6 +858,7 @@ class TaskViewTest {
 
     TaskView view =
         TaskView.of(
+            rules,
             "ABC-42", merged, RoundState.NONE, AutoReviewWatch.none(), Map.of("api", "dev"));
 
     assertThat(view.statusLabel()).isEqualTo("merged");

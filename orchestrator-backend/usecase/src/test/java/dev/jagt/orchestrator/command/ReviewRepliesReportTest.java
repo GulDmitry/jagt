@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -65,7 +66,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -105,7 +106,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -137,7 +138,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -170,7 +171,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -201,7 +202,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -232,7 +233,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -256,7 +257,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("zz");
@@ -291,7 +292,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("");
@@ -319,7 +320,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render(null);
@@ -370,7 +371,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a2");
@@ -403,7 +404,7 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()),
+                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("");

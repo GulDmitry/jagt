@@ -7,8 +7,10 @@ import dev.jagt.orchestrator.capability.trust.GitStateGuard;
 import dev.jagt.orchestrator.flow.Capabilities;
 import dev.jagt.orchestrator.flow.CapabilityInterceptor;
 import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.FactSources;
 import dev.jagt.orchestrator.flow.FlowEngine;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.ReducingStore;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskCapability;
@@ -33,6 +35,11 @@ public class FlowWiring {
   @Bean
   public TaskChart taskChart(InstalledRoles roles) {
     return new TaskChart(roles.composition());
+  }
+
+  @Bean
+  public FlowRules flowRules(TaskChart chart) {
+    return new FlowRules(chart);
   }
 
   @Bean
@@ -101,12 +108,15 @@ public class FlowWiring {
       Capabilities capabilities,
       AgentPresence agents,
       Clock clock,
-      RequestlessShip requestless) {
-    return new FlowEngine(tasks, capabilities, agents, clock, requestless);
+      RequestlessShip requestless,
+      FlowRules rules) {
+    return new FlowEngine(
+        tasks, capabilities, new FactSources(agents, requestless), clock, rules);
   }
 
   @Bean
-  public FlowReports flowReports(ReducingStore tasks, Clock clock, Checkers checkers) {
-    return new FlowReports(tasks, clock, checkers);
+  public FlowReports flowReports(
+      ReducingStore tasks, Clock clock, Checkers checkers, FlowRules rules) {
+    return new FlowReports(tasks, clock, checkers, rules);
   }
 }

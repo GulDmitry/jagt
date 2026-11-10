@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowEngine;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -112,7 +113,7 @@ class CommandServiceTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())));
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))));
 
     assertThatThrownBy(
             () ->
@@ -158,7 +159,7 @@ class CommandServiceTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())));
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))));
 
     OriginContext.as(ActionOrigin.MASTER, () -> guarded.execute("ABC-1", TaskAction.DEPLOY));
 

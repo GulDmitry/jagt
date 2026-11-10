@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -82,7 +83,7 @@ class DeployCheckJobAcceptanceTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -94,7 +95,7 @@ class DeployCheckJobAcceptanceTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));

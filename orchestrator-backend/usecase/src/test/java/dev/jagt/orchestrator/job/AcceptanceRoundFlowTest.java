@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
@@ -84,7 +85,7 @@ class AcceptanceRoundFlowTest {
                     1,
                     "digest"));
     state.putTask("ABC-42", task);
-    FlowReports flow = new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+    FlowReports flow = new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn())));
     TaskStops stops =
         new TaskStops(
             new StopPolicy(
@@ -94,7 +95,7 @@ class AcceptanceRoundFlowTest {
                     new Notifications(List.of(), state, Runnable::run),
                     new StopLog(new JsonMapper(), paths))),
             state,
-            Clock.systemUTC());
+            Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())));
     CaseDoor door =
         new CaseDoor(
             new SessionCases(paths),
@@ -172,7 +173,7 @@ class AcceptanceRoundFlowTest {
                     1,
                     "digest"));
     state.putTask("ABC-42", task);
-    FlowReports flow = new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+    FlowReports flow = new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn())));
     TaskStops stops =
         new TaskStops(
             new StopPolicy(
@@ -182,7 +183,7 @@ class AcceptanceRoundFlowTest {
                     new Notifications(List.of(), state, Runnable::run),
                     new StopLog(new JsonMapper(), paths))),
             state,
-            Clock.systemUTC());
+            Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())));
     CaseDoor door =
         new CaseDoor(
             new SessionCases(paths),
@@ -267,7 +268,7 @@ class AcceptanceRoundFlowTest {
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             mock(StepRelay.class),
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             mock(TaskStops.class),
             state)
         .apply("ABC-42", task, verdict);
@@ -312,7 +313,7 @@ class AcceptanceRoundFlowTest {
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 relay,
-                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .apply("ABC-42", task, verdict);

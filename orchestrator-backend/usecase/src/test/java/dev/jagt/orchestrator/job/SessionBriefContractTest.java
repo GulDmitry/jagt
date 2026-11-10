@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -128,7 +129,7 @@ class SessionBriefContractTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()));
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
 
     new ConflictHandOff(
             sessions,
@@ -241,7 +242,7 @@ class SessionBriefContractTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()));
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
 
     ShipService ships =
         new ShipService(

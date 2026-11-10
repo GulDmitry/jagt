@@ -117,8 +117,6 @@ public final class TaskChart {
   private static final Set<AgentReport> STANDING_THROUGH_A_READ =
       EnumSet.of(AgentReport.QUESTION, AgentReport.PERMISSION);
 
-  private static volatile TaskChart current = new TaskChart(Composition.builtIn());
-
   private final Composition composition;
   private final Chart<TaskMove, ChartFacts, TaskEffect> chart;
   private final Map<TaskStatus, Configuration> starts;
@@ -133,16 +131,6 @@ public final class TaskChart {
                 Collectors.toUnmodifiableMap(
                     status -> status,
                     status -> configurationOf(chart, composition, Phases.at(status))));
-  }
-
-  static TaskChart current() {
-    return current;
-  }
-
-  static synchronized void install(Composition composition) {
-    if (!current.composition.equals(composition)) {
-      current = new TaskChart(composition);
-    }
   }
 
   Chart<TaskMove, ChartFacts, TaskEffect> chart() {

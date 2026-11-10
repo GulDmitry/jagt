@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -43,7 +44,7 @@ class TaskViewsTest {
                 stateService,
                 configService,
                 new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC())
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(true);
@@ -63,7 +64,7 @@ class TaskViewsTest {
                 stateService,
                 configService,
                 new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC())
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(false);
@@ -86,7 +87,7 @@ class TaskViewsTest {
                 stateService,
                 configService,
                 new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC())
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views)
@@ -109,7 +110,7 @@ class TaskViewsTest {
                 stateService,
                 configService,
                 new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC())
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views)
@@ -136,7 +137,7 @@ class TaskViewsTest {
                 stateService,
                 configService,
                 new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC())
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views).singleElement().extracting("statusLabel").isEqualTo("master review");
@@ -156,7 +157,7 @@ class TaskViewsTest {
                 stateService,
                 configService,
                 new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC())
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
             .snapshot();
 
     assertThat(snapshot.tasks()).hasSize(1);
@@ -178,7 +179,7 @@ class TaskViewsTest {
                 stateService,
                 configService,
                 new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC())
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(false);
@@ -203,7 +204,7 @@ class TaskViewsTest {
                 stateService,
                 configService,
                 new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC())
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
             .listing();
 
     assertThat(listing)
@@ -224,7 +225,7 @@ class TaskViewsTest {
                 stateService,
                 configService,
                 new Rounds(configService, ignored -> false, () -> true, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC())
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
             .listing();
 
     assertThat(listing).contains("pause,done,scenarios,focus");
@@ -240,7 +241,7 @@ class TaskViewsTest {
                 stateService,
                 configService,
                 new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC())
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
             .listing();
 
     assertThat(listing).isEqualTo("no tasks");
@@ -264,7 +265,7 @@ class TaskViewsTest {
                 stateService,
                 configService,
                 new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC())
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views)

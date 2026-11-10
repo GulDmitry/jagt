@@ -29,7 +29,8 @@ class FlowReportsTest {
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ReducingStore stateService = mock(ReducingStore.class);
-  private final FlowReports reports = new FlowReports(stateService, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+  private final FlowReports reports = new FlowReports(stateService, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())),
+          new FlowRules(new TaskChart(Composition.builtIn())));
 
   @Test
   void letsATaskSayItIsWaitingOnTheHuman() {

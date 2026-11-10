@@ -8,7 +8,10 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.command.CommandReference;
 import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.RoundState;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.job.Jobs;
@@ -322,6 +325,7 @@ class BoardApiControllerTest {
                 Clock.systemUTC()));
     TaskView drafted =
         TaskView.of(
+            new FlowRules(new TaskChart(Composition.builtIn())),
             "ABC-1",
             TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build(),
             RoundState.of(AgentReport.PLAIN, true),
@@ -329,6 +333,7 @@ class BoardApiControllerTest {
             Map.of());
     TaskView quiet =
         TaskView.of(
+            new FlowRules(new TaskChart(Composition.builtIn())),
             "ABC-2",
             TaskState.builder("demo", "/wt2", TaskStatus.REVIEW_PENDING).build(),
             RoundState.of(AgentReport.PLAIN, false),

@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
@@ -140,7 +141,7 @@ class ReportEffectsTest {
                 new StopAnnouncements(
                     mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     ReportEffects effects =
         new ReportEffects(
             new SessionWakes(state, turns, clock),
@@ -174,7 +175,7 @@ class ReportEffectsTest {
                 new StopAnnouncements(
                     mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     ReportEffects effects =
         new ReportEffects(
             new SessionWakes(state, turns, clock),
@@ -210,7 +211,7 @@ class ReportEffectsTest {
                 new StopAnnouncements(
                     mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     ReportEffects effects =
         new ReportEffects(
             new SessionWakes(state, turns, clock),

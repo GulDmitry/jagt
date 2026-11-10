@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
@@ -166,7 +167,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -226,7 +227,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -283,7 +284,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -344,7 +345,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -416,7 +417,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -471,7 +472,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -541,7 +542,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             mock(Notifications.class),
@@ -592,7 +593,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -655,7 +656,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -727,7 +728,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -780,7 +781,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -859,7 +860,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -926,7 +927,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -987,7 +988,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -1058,7 +1059,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             mock(Notifications.class),
@@ -1112,7 +1113,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 queued::add,
                 state),
             notifications,
@@ -1172,7 +1173,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -1234,7 +1235,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -1261,7 +1262,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -1313,7 +1314,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,
@@ -1339,7 +1340,7 @@ class AutoReviewSchedulerTest {
                                         .withRoot(root.toString())
                                         .withStateFile(root.resolve("state.json").toString()))))),
                     state,
-                    Clock.systemUTC()),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
             notifications,

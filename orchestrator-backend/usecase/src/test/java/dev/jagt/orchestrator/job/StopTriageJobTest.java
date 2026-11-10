@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
@@ -86,7 +87,7 @@ class StopTriageJobTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            Clock.systemUTC()));
+            Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
   }
 
   private void triage(boolean enabled) {

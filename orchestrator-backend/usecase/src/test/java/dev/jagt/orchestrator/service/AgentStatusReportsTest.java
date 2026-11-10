@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -90,7 +91,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -117,7 +118,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -158,7 +159,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -186,7 +187,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -217,7 +218,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -251,7 +252,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             staleView,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -280,7 +281,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -315,7 +316,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -347,7 +348,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -375,7 +376,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -413,7 +414,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -458,7 +459,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -504,7 +505,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -545,7 +546,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -588,7 +589,7 @@ class AgentStatusReportsTest {
                   throw new AssertionError("no session to tell");
                 },
                 state),
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -624,7 +625,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -667,7 +668,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -710,7 +711,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -745,7 +746,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -779,7 +780,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -810,7 +811,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -844,7 +845,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -871,7 +872,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -903,7 +904,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -931,7 +932,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -960,7 +961,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -991,7 +992,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1022,7 +1023,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1057,7 +1058,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1087,7 +1088,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1121,7 +1122,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1155,7 +1156,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1187,7 +1188,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1220,7 +1221,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1257,7 +1258,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1295,7 +1296,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1324,7 +1325,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1357,7 +1358,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1388,7 +1389,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1425,7 +1426,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1456,7 +1457,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1488,7 +1489,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1519,7 +1520,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1574,7 +1575,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1609,7 +1610,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1646,7 +1647,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1683,7 +1684,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1715,7 +1716,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1757,7 +1758,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1801,7 +1802,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1842,7 +1843,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1871,7 +1872,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1904,7 +1905,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1933,7 +1934,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -1969,7 +1970,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -2012,7 +2013,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -2054,7 +2055,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -2085,7 +2086,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -2111,7 +2112,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -2140,7 +2141,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -2165,7 +2166,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -2191,7 +2192,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -2215,7 +2216,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);
@@ -2239,7 +2240,7 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
                 worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
             configService);

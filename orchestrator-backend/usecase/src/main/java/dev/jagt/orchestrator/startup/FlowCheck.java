@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,7 +16,10 @@ import org.springframework.stereotype.Component;
  * task will hold.
  */
 @Component
+@RequiredArgsConstructor
 public class FlowCheck implements StartupCheck {
+
+  private final FlowRules rules;
 
   /** No live task holds either, so nothing needs to lead there. */
   private static final Set<TaskStatus> WITHOUT_A_WAY_IN =
@@ -28,14 +32,14 @@ public class FlowCheck implements StartupCheck {
         .toList();
   }
 
-  private static java.util.stream.Stream<String> unreachableStatuses() {
+  private java.util.stream.Stream<String> unreachableStatuses() {
     return java.util.Arrays.stream(TaskStatus.values())
         .filter(status -> !WITHOUT_A_WAY_IN.contains(status))
         .filter(
             status ->
-                !FlowRules.targets().contains(status)
+                !rules.targets().contains(status)
                     && !FlowRules.reportable(status)
-                    && !FlowRules.redirects().contains(status)
+                    && !rules.redirects().contains(status)
                     && !FlowRules.reads().contains(status))
         .map(
             status ->

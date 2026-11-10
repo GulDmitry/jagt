@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -97,7 +98,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -109,7 +110,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay)
@@ -159,7 +160,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -171,7 +172,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()));
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
     job.runOn(state.tasks());
 
     job.runOn(state.tasks());
@@ -213,7 +214,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -225,7 +226,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()));
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
     job.runOn(state.tasks());
     job.runOn(state.tasks());
 
@@ -273,7 +274,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -285,7 +286,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()));
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
     job.runOn(state.tasks());
     job.runOn(state.tasks());
 
@@ -336,7 +337,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -348,7 +349,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
@@ -388,7 +389,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -400,7 +401,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
@@ -442,7 +443,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -454,7 +455,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     TaskState handed = state.task("ABC-42").orElseThrow();
@@ -515,13 +516,13 @@ class DeployCheckJobTest {
                             new Notifications(List.of(), before, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     before,
-                    Clock.systemUTC())),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
             new TaskTurns(before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     new DeployCheckJob(
             config,
             relay,
             pipelines,
-            new FlowReports(before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -530,7 +531,7 @@ class DeployCheckJobTest {
                         new Notifications(List.of(), before, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 before,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(before.tasks());
     relay.relay(
         "ABC-42",
@@ -557,10 +558,10 @@ class DeployCheckJobTest {
                                 new Notifications(List.of(), restarted, Runnable::run),
                                 new StopLog(new JsonMapper(), paths))),
                         restarted,
-                        Clock.systemUTC())),
+                        Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
                 new TaskTurns(restarted, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             pipelines,
-            new FlowReports(restarted, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(restarted, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -569,7 +570,7 @@ class DeployCheckJobTest {
                         new Notifications(List.of(), restarted, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 restarted,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(restarted.tasks());
 
     verify(sessions, times(1)).writeTaskContext(eq("ABC-42"), contains("ABC-42 is deployed"));
@@ -596,7 +597,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -608,7 +609,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
@@ -643,7 +644,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -655,7 +656,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay)
@@ -683,7 +684,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -695,7 +696,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
@@ -728,7 +729,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -740,7 +741,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
@@ -777,7 +778,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -789,7 +790,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().deployment().askedDigest())
@@ -824,7 +825,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -836,7 +837,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().deployment().askedDigest()).isNull();
@@ -866,7 +867,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -878,7 +879,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay)
@@ -929,7 +930,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -941,7 +942,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
@@ -987,7 +988,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -999,7 +1000,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
@@ -1042,7 +1043,7 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -1054,7 +1055,7 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().deployment().targets().getFirst().unreadReads())

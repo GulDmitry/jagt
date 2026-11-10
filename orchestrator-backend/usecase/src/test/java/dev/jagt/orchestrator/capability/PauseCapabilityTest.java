@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -50,7 +51,7 @@ class PauseCapabilityTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()));
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
 
     var outcome = pause.run("ABC-1");
 

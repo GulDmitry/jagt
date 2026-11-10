@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
@@ -74,7 +75,7 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock));
+                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
     RoundRelay relay =
         new RoundRelay(
             new TaskStops(
@@ -85,7 +86,7 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock),
+                clock, new FlowRules(new TaskChart(Composition.builtIn()))),
             new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths));
@@ -134,7 +135,7 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock));
+                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
     RoundRelay relay =
         new RoundRelay(
             new TaskStops(
@@ -145,7 +146,7 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock),
+                clock, new FlowRules(new TaskChart(Composition.builtIn()))),
             new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths));
@@ -196,7 +197,7 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock));
+                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
     RoundRelay relay =
         new RoundRelay(
             new TaskStops(
@@ -207,7 +208,7 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock),
+                clock, new FlowRules(new TaskChart(Composition.builtIn()))),
             new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths));
@@ -258,7 +259,7 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock));
+                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
 
     SweepResult result =
         new RoundRelay(
@@ -315,7 +316,7 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock));
+                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
 
     new RoundRelay(
             stops,
@@ -372,7 +373,7 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock));
+                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
     RoundRelay relay =
         new RoundRelay(
             stops,
@@ -420,7 +421,7 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock));
+                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
     RoundRelay relay =
         new RoundRelay(
             stops,

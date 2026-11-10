@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.Facts;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.Owner;
 import dev.jagt.orchestrator.flow.RoundState;
@@ -34,6 +35,7 @@ public class YourMoveJob implements Job {
   private final Notifications notifications;
   private final HandBack handBack;
   private final Clock clock;
+  private final FlowRules rules;
 
   /** A task first seen after a restart counts as told, so a restart pings nobody. */
   private final Map<String, Standing> seen = new ConcurrentHashMap<>();
@@ -74,6 +76,7 @@ public class YourMoveJob implements Job {
     Facts projected = Facts.projected(task);
     Move move =
         Move.forTask(
+            rules,
             task.status(),
             projected.withDelivery(
                 projected.delivery().withShippedWithoutRequest(round.requestless())),

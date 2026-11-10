@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.StateService;
@@ -60,7 +61,7 @@ class AcceptanceDeclineFlowTest {
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .declined("ABC-42", new AcceptanceDecline("proj@0123456789abcdef", "", ""), false);
@@ -85,7 +86,7 @@ class AcceptanceDeclineFlowTest {
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .declined(
@@ -116,7 +117,7 @@ class AcceptanceDeclineFlowTest {
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .declined(
@@ -145,7 +146,7 @@ class AcceptanceDeclineFlowTest {
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .declined("ABC-42", new AcceptanceDecline("proj@fedcba9876543210", "", "x"), false);

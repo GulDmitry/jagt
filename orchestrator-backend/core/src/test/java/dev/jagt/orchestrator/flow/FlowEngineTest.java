@@ -25,6 +25,8 @@ import org.mockito.ArgumentCaptor;
 
 class FlowEngineTest {
 
+  private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
+
   private final TaskReducer reducer =
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
@@ -99,9 +101,9 @@ class FlowEngineTest {
         new FlowEngine(
             stateService,
             new Capabilities(List.of(new NeverRunCapability(TaskAction.FOCUS)), List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.FOCUS))
         .asInstanceOf(type(Refusal.class))
@@ -122,9 +124,9 @@ class FlowEngineTest {
         new FlowEngine(
             stateService,
             new Capabilities(List.of(new ScenariosThatAre(false, Outcome.ok("opened"))), List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SCENARIOS))
         .asInstanceOf(type(Refusal.class))
@@ -141,9 +143,9 @@ class FlowEngineTest {
         new FlowEngine(
             stateService,
             new Capabilities(List.of(new ScenariosThatAre(true, Outcome.ok("opened"))), List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThat(engine.run("ABC-1", TaskAction.SCENARIOS)).isEqualTo("opened");
   }
@@ -157,9 +159,9 @@ class FlowEngineTest {
         new FlowEngine(
             stateService,
             new Capabilities(List.of(new NeverRunCapability(TaskAction.DEPLOY)), List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.DEPLOY))
         .asInstanceOf(type(Refusal.class))
@@ -187,9 +189,9 @@ class FlowEngineTest {
                         TaskAction.SHIP,
                         Outcome.ok("ship ABC-1: request opened", "review request: http://host/1"))),
                 List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
     String said = engine.run("ABC-1", TaskAction.SHIP);
@@ -215,9 +217,9 @@ class FlowEngineTest {
             new Capabilities(
                 List.of(new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1"))),
                 List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThat(engine.run("ABC-1", TaskAction.FOCUS)).isEqualTo("focused ABC-1");
     verify(stateService, never()).reduce(any(), any());
@@ -245,9 +247,9 @@ class FlowEngineTest {
                             "revert stopped",
                             cause))),
                 List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.REVERT))
@@ -284,9 +286,9 @@ class FlowEngineTest {
             new Capabilities(
                 List.of(new FixedCapability(TaskAction.REVERT, Outcome.ok("reverted ABC-1"))),
                 List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
     String said = engine.run("ABC-1", TaskAction.REVERT);
@@ -319,9 +321,9 @@ class FlowEngineTest {
                         TaskAction.SWEEP,
                         Outcome.ok("ABC-1: pipeline still running", "checks running"))),
                 List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
     String said = engine.run("ABC-1", TaskAction.SWEEP);
@@ -349,9 +351,9 @@ class FlowEngineTest {
             new Capabilities(
                 List.of(new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1"))),
                 List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThat(engine.run("a1", TaskAction.FOCUS)).isEqualTo("focused ABC-1");
   }
@@ -366,9 +368,9 @@ class FlowEngineTest {
         new FlowEngine(
             stateService,
             new Capabilities(List.of(), List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.FOCUS))
         .isInstanceOf(IllegalStateException.class)
@@ -389,9 +391,9 @@ class FlowEngineTest {
                     new FixedCapability(
                         TaskAction.SHIP, Outcome.ok("ship ABC-1: request opened", null))),
                 List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
     engine.run("ABC-1", TaskAction.SHIP);
@@ -412,9 +414,9 @@ class FlowEngineTest {
         new FlowEngine(
             stateService,
             new Capabilities(List.of(new NeverRunCapability(TaskAction.SHIP)), List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))
         .asInstanceOf(type(Refusal.class))
@@ -434,9 +436,9 @@ class FlowEngineTest {
             new Capabilities(
                 List.of(new FixedCapability(TaskAction.SHIP, Outcome.ok("shipped again"))),
                 List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThat(engine.run("ABC-1", TaskAction.SHIP)).isEqualTo("shipped again");
   }
@@ -451,9 +453,9 @@ class FlowEngineTest {
         new FlowEngine(
             stateService,
             new Capabilities(List.of(new NeverRunCapability(TaskAction.SHIP)), List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))
         .asInstanceOf(type(Refusal.class))
@@ -474,9 +476,9 @@ class FlowEngineTest {
                     new KnowingCapability(
                         TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "beta")),
                 List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> writes = ArgumentCaptor.captor();
 
     String said = engine.run("ABC-1", TaskAction.ADD_REPO, "beta");
@@ -507,9 +509,9 @@ class FlowEngineTest {
                     new KnowingCapability(
                         TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "beta")),
                 List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.ADD_REPO, "beta"))
         .asInstanceOf(type(Refusal.class))
@@ -531,9 +533,9 @@ class FlowEngineTest {
                     new KnowingCapability(
                         TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "beta")),
                 List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.ADD_REPO, "gamma"))
         .asInstanceOf(type(Refusal.class))
@@ -552,9 +554,9 @@ class FlowEngineTest {
             new Capabilities(
                 List.of(new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1"))),
                 List.of()),
-            sessions,
+            new FactSources(sessions, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.FOCUS, "beta"))
         .asInstanceOf(type(Refusal.class))

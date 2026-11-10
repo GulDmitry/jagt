@@ -8,7 +8,6 @@ import dev.jagt.orchestrator.flow.CheckerRole;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Roles;
 import dev.jagt.orchestrator.port.Problem;
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -45,11 +44,6 @@ public final class InstalledRoles {
                     + (standing.isPresent() ? "; the shipped file stands" : "")));
       }
     }
-  }
-
-  @PostConstruct
-  void install() {
-    Roles.install(checkers());
   }
 
   /** The chart composition of the standing roles. */

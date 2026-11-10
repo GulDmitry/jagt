@@ -23,6 +23,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -88,7 +89,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.closeTaskTab("TEST-1")).contains("Closed 1 tab(s) for TEST-1");
   }
@@ -104,7 +105,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.screen("ABC-1")).contains("✗ two tests fail");
   }
@@ -125,7 +126,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.screen("ABC-1")).contains("✗ two tests fail");
   }
@@ -141,7 +142,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThatThrownBy(() -> sessions.screen("ABC-1")).isInstanceOf(IllegalStateException.class);
   }
@@ -162,7 +163,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.closeTaskTab("TEST-1");
 
@@ -175,7 +176,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThatThrownBy(() -> sessions.closeTaskTab("ABC-9"))
         .isInstanceOf(IllegalArgumentException.class)
@@ -193,7 +194,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.writeTaskContext("ABC-1", "new instructions")).contains("nudged");
   }
@@ -223,7 +224,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.writeTaskContext("ABC-1", "probes failed");
 
@@ -249,7 +250,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.writeTaskContext("ABC-1", "probes failed");
 
@@ -269,7 +270,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.writeTaskContext("ABC-1", "new instructions");
 
@@ -291,7 +292,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.writeTaskContext("ABC-1", "new instructions");
 
@@ -312,7 +313,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.writeTaskContext("ABC-1", "new instructions");
 
@@ -332,7 +333,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.say("ABC-1", "no, answer 2 differently");
 
@@ -351,7 +352,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThatThrownBy(() -> sessions.say("ABC-1", "no, answer 2 differently"))
         .isInstanceOf(IllegalStateException.class)
@@ -373,7 +374,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
@@ -398,7 +399,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
@@ -426,7 +427,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
@@ -444,7 +445,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -467,7 +468,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.openTaskTab("ABC-1", mode);
 
@@ -488,7 +489,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.openTaskTab("ABC-1", "plan");
 
@@ -503,7 +504,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThatThrownBy(() -> sessions.openTaskTab("ABC-1", "plan"))
         .isInstanceOfSatisfying(
@@ -529,7 +530,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.say("ABC-1", "jagt was restarted.");
 
@@ -556,7 +557,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.cold("ABC-1")).isEqualTo(cold);
   }
@@ -572,7 +573,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.say("ABC-1", "answer 2 differently")).isEqualTo("Said to the agent.");
   }
@@ -587,7 +588,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.windowState("ABC-1")).isEqualTo(SessionHost.WindowState.DEAD_SHELL);
   }
@@ -604,7 +605,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -624,7 +625,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -645,7 +646,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -666,7 +667,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String said = sessions.restartOnTier("ABC-1");
 
@@ -692,7 +693,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -712,7 +713,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -727,7 +728,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThatThrownBy(() -> sessions.restartOnTier("ABC-1")).isInstanceOf(Refusal.class);
   }
@@ -743,7 +744,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -761,7 +762,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -779,7 +780,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
@@ -798,7 +799,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.writeTaskContext("ABC-1", "new instructions")).contains("re-entered");
     verify(tmux).reviveTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any());
@@ -815,7 +816,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.focusTask("ABC-1").revivedAs()).isEqualTo("Claude");
     verify(tmux).reviveTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any());
@@ -831,7 +832,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.openTaskTab("ABC-1", "auto")).contains("New Claude session started");
     verify(tmux)
@@ -856,7 +857,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
     sessions.openTaskTab("ABC-1", "auto");
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
@@ -879,7 +880,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.writeTaskContext("ABC-1", "NEW ROUND: fix the pipeline");
 
@@ -900,7 +901,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.relayUnder("ABC-42", "Keep both imports.", false);
 
@@ -920,7 +921,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
     sessions.relayUnder("ABC-42", "Keep both imports.", false);
 
     sessions.relayUnder("ABC-42", "Drop the old import.", false);
@@ -940,7 +941,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.viewerToClose()).isEmpty();
   }
@@ -955,7 +956,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.viewerToClose()).contains("jagt");
   }
@@ -971,7 +972,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.press("ABC-1", SessionHost.Key.ESCAPE)).isEqualTo("Pressed ESCAPE.");
   }
@@ -987,7 +988,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThatThrownBy(() -> sessions.press("ABC-1", SessionHost.Key.TAB))
         .isInstanceOf(IllegalStateException.class)
@@ -1006,7 +1007,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.composing("ABC-1")).isTrue();
   }
@@ -1021,7 +1022,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.composing("ABC-1")).isFalse();
   }
@@ -1039,7 +1040,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.writeTaskContext("ABC-1", "new instructions");
 
@@ -1063,7 +1064,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.writeTaskContext("ABC-1", "new instructions");
 
@@ -1087,7 +1088,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.resubmitUnsentNudge("ABC-1")).isTrue();
     verify(tmux).submitTaskWindow("jagt", "ABC-1");
@@ -1113,7 +1114,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     boolean pressed = sessions.resubmitUnsentNudge("ABC-1");
 
@@ -1134,7 +1135,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
     verify(tmux, never()).submitTaskWindow(anyString(), anyString());
@@ -1155,7 +1156,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
     verify(tmux, never()).submitTaskWindow(anyString(), anyString());
@@ -1167,7 +1168,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.forgetWorktree(Path.of("/wt"));
 
@@ -1183,7 +1184,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.exitTail("ABC-1")).contains("Error: usage limit reached");
   }
@@ -1199,7 +1200,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.unansweredPrompt("ABC-1")).contains("a trust dialog");
   }
@@ -1213,7 +1214,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.admit("ABC-1", Path.of("/other")))
         .isEqualTo(AgentRuntime.Admission.GRANTED);
@@ -1228,7 +1229,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -1244,7 +1245,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.relayUnder("ABC-1", "Keep both imports.", false);
 
@@ -1263,7 +1264,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.say("ABC-1", "use the cache");
 
@@ -1289,7 +1290,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.say("ABC-1", "1");
 
@@ -1309,7 +1310,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThatThrownBy(() -> sessions.say("ABC-1", "use the cache"))
         .isInstanceOf(IllegalStateException.class)
@@ -1331,7 +1332,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThatThrownBy(() -> sessions.say("ABC-1", "use the cache"))
         .isInstanceOf(IllegalStateException.class)
@@ -1352,7 +1353,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThatThrownBy(() -> sessions.say("ABC-1", "use the cache"))
         .isInstanceOf(IllegalStateException.class)
@@ -1377,7 +1378,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.resubmitUnsentNudge("ABC-1")).isEqualTo(pressed);
   }
@@ -1397,7 +1398,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
   }
@@ -1413,7 +1414,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
     verify(tmux, never()).submitTaskWindow(anyString(), anyString());
@@ -1440,7 +1441,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.writeTaskContext("ABC-1", "probes failed");
 
@@ -1464,7 +1465,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     Throwable refused = catchThrowable(() -> sessions.say("ABC-1", "use the cache"));
     boolean stopKept = Thread.interrupted();
@@ -1493,7 +1494,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.writeTaskContext("ABC-1", "new instructions");
 
@@ -1510,7 +1511,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger sessionsLog = (Logger) LoggerFactory.getLogger(AgentSessions.class);
@@ -1535,7 +1536,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.relayUnderCold("ABC-1", "and handle empty files");
 
@@ -1560,7 +1561,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.relayUnderCold("ABC-1", "and handle empty files");
 
@@ -1581,7 +1582,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     assertThatThrownBy(() -> sessions.focusTask("ABC-1"))
         .isInstanceOf(Refusal.class)
@@ -1600,7 +1601,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     String answer = sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -1629,7 +1630,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -1658,7 +1659,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
     sessions.startWaitingFreshWhenFree("ABC-1");
@@ -1684,7 +1685,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -1705,7 +1706,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -1733,7 +1734,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger sessionsLog = (Logger) LoggerFactory.getLogger(AgentSessions.class);
@@ -1771,7 +1772,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
     sessions.startWaitingFreshWhenFree("ABC-1");
@@ -1795,7 +1796,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -1813,7 +1814,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     boolean logged = sessions.loggedSince("ABC-1", 1793862000000L);
 
@@ -1831,7 +1832,7 @@ class AgentSessionsTest {
         new AgentSessions(
             config,
             state,
-            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)), new FlowRules(new TaskChart(Composition.builtIn())));
 
     boolean logged = sessions.loggedSince("ABC-1", 1793862000000L);
 

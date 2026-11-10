@@ -21,6 +21,8 @@ import org.junit.jupiter.api.Test;
 
 class InterceptedCapabilityTest {
 
+  private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
+
   private record Ships(List<String> log) implements TaskCapability {
     @Override
     public TaskAction action() {
@@ -75,9 +77,9 @@ class InterceptedCapabilityTest {
             tasks,
             new Capabilities(
                 List.of(new Ships(log)), List.of(new Announces(log, 2), new Announces(log, 1))),
-            agents,
+            new FactSources(agents, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     engine.run("ABC-1", TaskAction.SHIP);
 
@@ -93,9 +95,9 @@ class InterceptedCapabilityTest {
         new FlowEngine(
             tasks,
             new Capabilities(List.of(new Ships(log)), List.of(new Refuses())),
-            agents,
+            new FactSources(agents, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.SHIP))
         .isInstanceOf(IllegalStateException.class)
@@ -113,9 +115,9 @@ class InterceptedCapabilityTest {
         new FlowEngine(
             tasks,
             new Capabilities(List.of(new Ships(log)), List.of()),
-            agents,
+            new FactSources(agents, ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThat(engine.run("ABC-1", TaskAction.SHIP)).isEqualTo("ship ABC-1: done");
     assertThat(log).containsExactly("shipped");

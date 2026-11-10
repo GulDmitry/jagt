@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.ConflictEnding;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -75,7 +76,7 @@ class DeployConflictJobTest {
 
     new DeployConflictJob(
             List.of(
-                new LaterGreenRead(config, pipelines, new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))),
+                new LaterGreenRead(config, pipelines, new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))))),
             state,
             Clock.systemUTC())
         .runOn(state.tasks());

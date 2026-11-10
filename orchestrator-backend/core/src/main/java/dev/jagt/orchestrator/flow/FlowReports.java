@@ -29,9 +29,18 @@ public class FlowReports {
   private final ReducingStore tasks;
   private final Clock clock;
   private final Checkers checkers;
+  private final FlowRules rules;
 
   /** The status a report found the task in, and the one it left it in. */
   public record Landed(TaskStatus previous, TaskStatus now) {}
+
+  public TaskStatus verified(boolean passed) {
+    return rules.verified(passed);
+  }
+
+  public boolean reportable(TaskStatus from, TaskStatus to) {
+    return rules.reportable(from, to);
+  }
 
   public boolean report(String taskId, TaskStatus status, @Nullable String message) {
     return report(taskId, status, AgentReport.PLAIN, message);
@@ -89,7 +98,7 @@ public class FlowReports {
           if (!standing.test(task)) {
             return task;
           }
-          Optional<String> why = FlowRules.refusedReport(task.status(), status, means);
+          Optional<String> why = rules.refusedReport(task.status(), status, means);
           if (why.isPresent()) {
             refused.set(why.get());
             return task.refused(Guard.STATUS_REPORT);
@@ -113,7 +122,7 @@ public class FlowReports {
                 () ->
                     FlowRules.reportable(status)
                         ? Optional.empty()
-                        : FlowRules.refusedReport(status, status));
+                        : rules.refusedReport(status, status));
     if (why.isPresent()) {
       throw Refusal.byState(why.get());
     }
@@ -242,7 +251,7 @@ public class FlowReports {
     tasks.reduce(
         taskId,
         (reducer, task) -> {
-          TaskStatus now = FlowRules.readLands(task.status(), concluded);
+          TaskStatus now = rules.readLands(task.status(), concluded);
           landed.set(new Landed(task.status(), now));
           if (now == task.status()) {
             return task;
@@ -273,7 +282,7 @@ public class FlowReports {
           if (!FlowRules.checkedWhereItLanded(task.status())) {
             return task;
           }
-          TaskStatus now = FlowRules.deployReadLands(task.status(), redOnTheCode);
+          TaskStatus now = rules.deployReadLands(task.status(), redOnTheCode);
           if (now == task.status() && message.equals(task.message())) {
             return task;
           }

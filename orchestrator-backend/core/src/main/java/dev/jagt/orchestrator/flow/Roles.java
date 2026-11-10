@@ -8,11 +8,6 @@ public final class Roles {
 
   private Roles() {}
 
-  /** Sets the roles every task is stepped on. */
-  public static void install(List<CheckerRole> checkers) {
-    TaskChart.install(Composition.of(checkers));
-  }
-
   /**
    * Why the chart refuses {@code checker} composed beside the core regions, or empty where it
    * stands.

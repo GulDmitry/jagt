@@ -27,6 +27,7 @@ import net.jqwik.api.Provide;
 class TaskReducerProperties {
 
   private static final TaskChart chart = new TaskChart(Composition.builtIn());
+  private static final FlowRules rules = new FlowRules(chart);
 
   private static final TaskReducer reducer = new TaskReducer(chart);
 
@@ -149,7 +150,7 @@ class TaskReducerProperties {
                   .ifPresent(
                       moved ->
                           assertThat(
-                                  FlowRules.allows(
+                                  rules.allows(
                                       moved.status(), TaskAction.SHIP, Facts.projected(moved)))
                               .isFalse());
               return next;

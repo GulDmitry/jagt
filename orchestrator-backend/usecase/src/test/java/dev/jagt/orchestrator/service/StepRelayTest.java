@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -427,7 +428,7 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
             new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
@@ -474,7 +475,7 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))),
+                    Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new FlowRules(new TaskChart(Composition.builtIn())))),
             new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told =
@@ -526,7 +527,7 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
             new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told =
@@ -577,7 +578,7 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
             new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told =
@@ -625,7 +626,7 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
             new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
@@ -672,7 +673,7 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
             new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in OrderTest", relay.standing("ABC-42"));
@@ -717,7 +718,7 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
             new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     List<Step> steps = List.of(Step.ROUND_THREADS, Step.ROUND_THREADS_DONE);
     relay.relayComposed(
@@ -791,7 +792,7 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
             new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in OrderTest", relay.standing("ABC-42"));
@@ -839,7 +840,7 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC())),
+                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
             new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told =

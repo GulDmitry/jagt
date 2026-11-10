@@ -41,6 +41,7 @@ public class AgentSessions implements SessionLines {
   private final ConfigService configService;
   private final StateService stateService;
   private final SessionHosting hosting;
+  private final FlowRules rules;
 
   /**
    * Never pruned: a lock dropped while a relay holds it lets a second writer in, and an entry costs
@@ -97,7 +98,7 @@ public class AgentSessions implements SessionLines {
     taskId = stateService.canonicalTaskId(taskId);
     TaskState task = requireTask(taskId);
     boolean plan = planMode(mode);
-    if (plan && !FlowRules.planMayComeFirst(task.status())) {
+    if (plan && !rules.planMayComeFirst(task.status())) {
       throw Refusal.byState(
           "Task "
               + taskId

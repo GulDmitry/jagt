@@ -13,7 +13,9 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Capabilities;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FactSources;
 import dev.jagt.orchestrator.flow.FlowEngine;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -34,6 +36,8 @@ import org.mockito.InOrder;
 import tools.jackson.databind.json.JsonMapper;
 
 class RepoCapabilityTest {
+
+  private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 
   private static final TaskReducer reducer =
       new TaskReducer(new TaskChart(Composition.builtIn()));
@@ -84,9 +88,9 @@ class RepoCapabilityTest {
         new FlowEngine(
             state,
             new Capabilities(List.of(new RepoCapability(attachment)), List.of()),
-            mock(AgentPresence.class),
+            new FactSources(mock(AgentPresence.class), ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThatThrownBy(() -> engine.run("ABC-7", TaskAction.ADD_REPO))
         .isInstanceOf(IllegalStateException.class);
@@ -122,9 +126,9 @@ class RepoCapabilityTest {
         new FlowEngine(
             state,
             new Capabilities(List.of(new RepoCapability(attachment)), List.of()),
-            mock(AgentPresence.class),
+            new FactSources(mock(AgentPresence.class), ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     engine.run("ABC-7", TaskAction.ADD_REPO);
 
@@ -149,9 +153,9 @@ class RepoCapabilityTest {
         new FlowEngine(
             state,
             new Capabilities(List.of(new RepoCapability(attachment)), List.of()),
-            mock(AgentPresence.class),
+            new FactSources(mock(AgentPresence.class), ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     engine.run("ABC-7", TaskAction.ADD_REPO, "registry");
 
@@ -176,9 +180,9 @@ class RepoCapabilityTest {
         new FlowEngine(
             state,
             new Capabilities(List.of(new RepoCapability(attachment)), List.of()),
-            mock(AgentPresence.class),
+            new FactSources(mock(AgentPresence.class), ignored -> false),
             Clock.systemUTC(),
-            ignored -> false);
+            rules);
 
     assertThatThrownBy(() -> engine.run("ABC-7", TaskAction.ADD_REPO, "gamma"))
         .isInstanceOf(Refusal.class);

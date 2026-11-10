@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -65,7 +66,7 @@ class MergedGuardTest {
                 new StopAnnouncements(
                     mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            clock);
+            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     when(merged.refresh("ABC-42")).thenReturn(true);
 
     new MergedGuard(merged)

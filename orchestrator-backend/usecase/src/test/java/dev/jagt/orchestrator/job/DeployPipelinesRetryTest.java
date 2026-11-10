@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.RedCause;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -84,7 +85,7 @@ class DeployPipelinesRetryTest {
     when(pipelines.retryFailed("shop", URL))
         .thenReturn(new Answer<>(Optional.of("re-run"), TokenUsage.NONE));
     DeployPipelines deploys =
-        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn()))));
+        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
 
     DeployPipelines.Reading reading = deploys.read("ABC-42", state.task("ABC-42").orElseThrow());
 
@@ -101,7 +102,7 @@ class DeployPipelinesRetryTest {
         stateWith(root, Deployment.Target.of("shop", "dev").withMerge(SHA).withRetried(SHA));
     redOnTheCode();
     DeployPipelines deploys =
-        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn()))));
+        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
 
     DeployPipelines.Reading reading = deploys.read("ABC-42", state.task("ABC-42").orElseThrow());
 
@@ -133,7 +134,7 @@ class DeployPipelinesRetryTest {
                         "success", "https://git.example.invalid/shop/web/-/pipelines/9")),
                 TokenUsage.NONE));
     DeployPipelines deploys =
-        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn()))));
+        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
 
     DeployPipelines.Reading reading = deploys.read("ABC-42", state.task("ABC-42").orElseThrow());
 
@@ -156,7 +157,7 @@ class DeployPipelinesRetryTest {
                         "success", "https://git.example.invalid/shop/web/-/pipelines/9")),
                 TokenUsage.NONE));
     DeployPipelines deploys =
-        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn()))));
+        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
 
     DeployPipelines.Reading reading = deploys.read("ABC-42", state.task("ABC-42").orElseThrow());
 
@@ -171,7 +172,7 @@ class DeployPipelinesRetryTest {
     when(pipelines.retryFailed("shop", URL))
         .thenReturn(Answer.failed(TokenUsage.NONE, "glab exited 1: 403"));
     DeployPipelines deploys =
-        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn()))));
+        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
 
     DeployPipelines.Reading reading = deploys.read("ABC-42", state.task("ABC-42").orElseThrow());
 
@@ -188,7 +189,7 @@ class DeployPipelinesRetryTest {
         .when(fixes)
         .open(task, "ABC-42", "shop");
     DeployPipelines deploys =
-        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn()))));
+        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
 
     DeployPipelines.Reading reading = deploys.read("ABC-42", task);
 

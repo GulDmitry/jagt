@@ -3,7 +3,10 @@ package dev.jagt.orchestrator.command;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.RoundState;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
@@ -21,6 +24,7 @@ class RepliesCommandTest {
   void isOfferedOnACardExactlyWhenItsRoundDraftedReplies(boolean drafted) {
     TaskView card =
         TaskView.of(
+            new FlowRules(new TaskChart(Composition.builtIn())),
             "ABC-1",
             TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build(),
             RoundState.of(AgentReport.PLAIN, drafted),

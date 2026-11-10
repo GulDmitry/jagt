@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 
 class StoppedDeployCardTest {
 
+  private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
+
   @Test
   void asksForTheLiftOfAStopThatOutlivedTheHumansDeploy() {
     TaskState deployed =
@@ -20,7 +22,7 @@ class StoppedDeployCardTest {
             .withStatus(TaskStatus.DEPLOYED, "deployed", true, 2_000);
 
     TaskView view =
-        TaskView.of("ABC-42", deployed, RoundState.of(deployed.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of(rules, "ABC-42", deployed, RoundState.of(deployed.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
 
     assertThat(view.ask()).isEqualTo("lift the stop — no case for this step");
   }

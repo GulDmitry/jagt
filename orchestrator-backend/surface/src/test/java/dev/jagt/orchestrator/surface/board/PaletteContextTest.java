@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.CommandAssistant;
@@ -49,7 +50,7 @@ class PaletteContextTest {
     PaletteContext board =
         new PaletteContext(
             state,
-            new TaskViews(state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()));
+            new TaskViews(state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
 
     CommandAssistant.Menu menu = board.menu();
 
@@ -75,7 +76,7 @@ class PaletteContextTest {
     PaletteContext board =
         new PaletteContext(
             state,
-            new TaskViews(state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()));
+            new TaskViews(state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
 
     CommandAssistant.Menu menu = board.menu();
 
@@ -150,7 +151,7 @@ class PaletteContextTest {
     PaletteContext board =
         new PaletteContext(
             state,
-            new TaskViews(state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC()));
+            new TaskViews(state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
 
     CommandAssistant.Menu menu = board.menu();
 

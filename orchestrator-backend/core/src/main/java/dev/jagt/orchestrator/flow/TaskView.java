@@ -304,6 +304,7 @@ public record TaskView(
   public record RepoView(@Nullable String project, @Nullable String reviewRequestUrl) {}
 
   public static TaskView of(
+      FlowRules rules,
       String id,
       TaskState task,
       RoundState round,
@@ -315,6 +316,7 @@ public record TaskView(
         Facts.projected(task).withReach(Facts.Reach.defaults().withScenarios(round.scenarios()));
     Move move =
         Move.forTask(
+            rules,
             task.status(),
             projected.withDelivery(
                 projected.delivery().withShippedWithoutRequest(round.requestless())),

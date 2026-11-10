@@ -54,6 +54,7 @@ public class TaskStops {
   private final StopPolicy policy;
   private final StateService stateService;
   private final Clock clock;
+  private final FlowRules rules;
 
   /** The stop standing once this one was set: an earlier stop stands, and keeps its own words. */
   public Optional<TaskStop> stop(String taskId, TaskStop.Trigger trigger, String evidence) {
@@ -73,7 +74,7 @@ public class TaskStops {
   public String pauseOnWord(String taskIdOrAlias, String reason) {
     String taskId = stateService.canonicalTaskId(taskIdOrAlias);
     TaskState task = stateService.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskIdOrAlias));
-    if (!FlowRules.allows(task.status(), TaskAction.PAUSE, Facts.projected(task))) {
+    if (!rules.allows(task.status(), TaskAction.PAUSE, Facts.projected(task))) {
       throw new Refusal(
           Refusal.Code.ACTION_NOT_AVAILABLE,
           "pause is not available for " + taskId + " (it is " + task.status() + ")");

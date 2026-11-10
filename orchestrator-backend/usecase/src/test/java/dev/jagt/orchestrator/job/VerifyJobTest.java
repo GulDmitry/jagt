@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
@@ -77,7 +78,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(statusReports).verified(true, "verified", "ABC-1");
@@ -110,7 +111,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay)
@@ -146,7 +147,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(verification, never()).failure(any());
@@ -182,7 +183,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     new VerifyJob(
@@ -198,7 +199,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(verification).failure(any());
@@ -237,7 +238,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     new VerifyJob(
@@ -253,7 +254,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(verification, times(2)).failure(any());
@@ -289,7 +290,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     String stored =
@@ -320,7 +321,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(verification, never()).failure(any());
@@ -355,7 +356,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay)
@@ -405,7 +406,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(statusReports, never()).verified(eq(false), any(), any());
@@ -444,7 +445,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never())
@@ -483,7 +484,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never())
@@ -520,7 +521,7 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC()))
+                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay)

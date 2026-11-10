@@ -24,8 +24,8 @@ public record Move(
     String hint) {
 
   public static Move forTask(
-      TaskStatus status, Facts facts, RoundState round, boolean agentSilent) {
-    return forTask(status, facts, round, agentSilent, AutoReviewWatch.none());
+      FlowRules rules, TaskStatus status, Facts facts, RoundState round, boolean agentSilent) {
+    return forTask(rules, status, facts, round, agentSilent, AutoReviewWatch.none());
   }
 
   /**
@@ -33,6 +33,7 @@ public record Move(
    * different cards.
    */
   public static Move forTask(
+      FlowRules rules,
       TaskStatus status,
       Facts facts,
       RoundState round,
@@ -44,14 +45,14 @@ public record Move(
           Owner.YOU,
           Attention.REQUIRED,
           "read what git changed",
-          FlowRules.allowed(status, facts),
+          rules.allowed(status, facts),
           TaskAction.TRUST,
           "git config or hooks changed since you trusted them; read the line, then trust");
     }
     if (facts.hold().stopped()
         && facts.hold().stopIsTheMasters()
         && round.master().may(MasterRight.LIFT)) {
-      return masterDecidesStop(status, facts);
+      return masterDecidesStop(rules, status, facts);
     }
     if (facts.hold().stopped()) {
       return new Move(
@@ -59,7 +60,7 @@ public record Move(
           Owner.YOU,
           Attention.REQUIRED,
           "lift the stop",
-          FlowRules.allowed(status, facts),
+          rules.allowed(status, facts),
           TaskAction.LIFT,
           "the task is stopped; hover for why and what to check, then lift or close");
     }
@@ -69,7 +70,7 @@ public record Move(
           Owner.YOU,
           Attention.REQUIRED,
           "add the repository",
-          FlowRules.allowed(status, facts),
+          rules.allowed(status, facts),
           TaskAction.ADD_REPO,
           "the session asked for another repository: add it, or answer in the Session tab");
     }
@@ -79,7 +80,7 @@ public record Move(
           Owner.YOU,
           Attention.OPTIONAL,
           "you can close the task",
-          FlowRules.allowed(status, facts),
+          rules.allowed(status, facts),
           TaskAction.DONE,
           "every request is merged: nothing is left to approve or deploy; done closes the task");
     }
@@ -91,7 +92,7 @@ public record Move(
           Owner.YOU,
           Attention.REQUIRED,
           "deploy it",
-          FlowRules.allowed(status, facts),
+          rules.allowed(status, facts),
           TaskAction.DEPLOY,
           "shipped without a request, so no review is open: deploy it, or ship again after more"
               + " work");
@@ -105,7 +106,7 @@ public record Move(
         owner,
         attention,
         ask(status, hasReviewRequest, round, agentSilent, attention),
-        FlowRules.allowed(status, facts),
+        rules.allowed(status, facts),
         revertLeads(status, facts, primaryOf(status, hasReviewRequest, round, polled)),
         hint(
             status,
@@ -116,13 +117,13 @@ public record Move(
             facts.delivery().revertConflict()));
   }
 
-  private static Move masterDecidesStop(TaskStatus status, Facts facts) {
+  private static Move masterDecidesStop(FlowRules rules, TaskStatus status, Facts facts) {
     return new Move(
         phaseOf(status),
         Owner.AGENT,
         Attention.NONE,
         null,
-        FlowRules.allowed(status, facts),
+        rules.allowed(status, facts),
         null,
         "the Master is deciding this stop; no action required");
   }

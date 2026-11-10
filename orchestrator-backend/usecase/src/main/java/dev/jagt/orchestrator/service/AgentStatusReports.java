@@ -118,7 +118,7 @@ public class AgentStatusReports {
 
   /** A verification run's own verdict, which owes no further run. */
   public String verified(boolean passed, String message, String taskId) {
-    TaskStatus verdict = FlowRules.verified(passed);
+    TaskStatus verdict = flow.verified(passed);
     AgentStatusMessage said = new AgentStatusMessage(verdict.name(), message, null, null, Map.of());
     String answer = report(accepted(said, taskId), taskId, task -> false, false);
     TaskStatus landed = stateService.task(taskId).map(TaskState::status).orElse(null);
@@ -180,13 +180,13 @@ public class AgentStatusReports {
    * A ship whose every link is foreign is a missed one: the report lands on the status the task
    * already holds.
    */
-  private static Reported withoutForeignLinks(Reported said, TaskState task) {
+  private Reported withoutForeignLinks(Reported said, TaskState task) {
     ForeignLinks.Judged judged = ForeignLinks.judge(task, said.requests(), said.link());
     if (judged.foreign().isEmpty()) {
       return said;
     }
     boolean missedShip = judged.refusedAll() && said.status() == TaskStatus.CI_POLLING;
-    if (missedShip && !FlowRules.reportable(task.status(), task.status())) {
+    if (missedShip && !flow.reportable(task.status(), task.status())) {
       throw Refusal.byState(
           "jagt refuses this report: "
               + judged.foreign().getFirst().url()
