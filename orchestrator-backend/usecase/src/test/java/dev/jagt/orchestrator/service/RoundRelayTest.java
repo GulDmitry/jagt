@@ -60,22 +60,24 @@ class RoundRelayTest {
             state,
             new MissLog(new JsonMapper(), paths, clock),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 clock));
     RoundRelay relay =
         new RoundRelay(
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 clock),
             new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock)),
             door,
@@ -118,22 +120,24 @@ class RoundRelayTest {
             state,
             new MissLog(new JsonMapper(), paths, clock),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 clock));
     RoundRelay relay =
         new RoundRelay(
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 clock),
             new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock)),
             door,
@@ -178,22 +182,24 @@ class RoundRelayTest {
             state,
             new MissLog(new JsonMapper(), paths, clock),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 clock));
     RoundRelay relay =
         new RoundRelay(
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 clock),
             new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock)),
             door,
@@ -238,12 +244,13 @@ class RoundRelayTest {
             state,
             new MissLog(new JsonMapper(), paths, clock),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 clock));
 
     SweepResult result =
@@ -294,12 +301,13 @@ class RoundRelayTest {
             state,
             new MissLog(new JsonMapper(), paths, clock),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 clock));
 
     new RoundRelay(
@@ -350,12 +358,13 @@ class RoundRelayTest {
             state,
             new MissLog(new JsonMapper(), paths, clock),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 clock));
     RoundRelay relay =
         new RoundRelay(
@@ -397,12 +406,13 @@ class RoundRelayTest {
             state,
             new MissLog(new JsonMapper(), paths, clock),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 clock));
     RoundRelay relay =
         new RoundRelay(

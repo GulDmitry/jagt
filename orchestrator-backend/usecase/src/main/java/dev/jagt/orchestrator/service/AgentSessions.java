@@ -41,9 +41,7 @@ public class AgentSessions implements SessionLines {
 
   private final ConfigService configService;
   private final StateService stateService;
-  private final SessionHost sessions;
-  private final AgentRuntime agentRuntime;
-  private final CarriedBlock carried;
+  private final SessionHosting hosting;
 
   /**
    * Never pruned: a lock dropped while a relay holds it lets a second writer in, and an entry costs
@@ -64,11 +62,11 @@ public class AgentSessions implements SessionLines {
    * that was.
    */
   public void forgetWorktree(Path worktreePath) {
-    agentRuntime.retireWorktree(worktreePath);
+    hosting.runtime().retireWorktree(worktreePath);
   }
 
   public void killWindows(String taskId) {
-    sessions.killTaskWindows(agentSession(configService.load(), taskId), taskId);
+    hosting.host().killTaskWindows(agentSession(configService.load(), taskId), taskId);
   }
 
   /** Reserving the viewer is the default: one placed by hand should survive task cycles. */
@@ -77,17 +75,19 @@ public class AgentSessions implements SessionLines {
     if (!stateService.tasks().isEmpty() || config.viewer().keepViewerOrDefault()) {
       return Optional.empty();
     }
-    return Optional.of(sessions.sessionName(config.viewer().session()));
+    return Optional.of(hosting.host().sessionName(config.viewer().session()));
   }
 
   /** A session that cannot list its windows throws: unknown is never missing. */
   public SessionHost.WindowState windowState(String taskId) {
-    return sessions.taskWindowState(agentSession(configService.load(), taskId), taskId);
+    return hosting.host().taskWindowState(agentSession(configService.load(), taskId), taskId);
   }
 
   /** When the task's window last printed, epoch millis, 0 where it never did. */
   public long printedAt(String taskId) {
-    return sessions.lastWindowActivityMillis(agentSession(configService.load(), taskId), taskId);
+    return hosting
+        .host()
+        .lastWindowActivityMillis(agentSession(configService.load(), taskId), taskId);
   }
 
   private TaskState requireTask(String taskId) {
@@ -111,7 +111,7 @@ public class AgentSessions implements SessionLines {
     String session =
         openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(), plan);
     return "New "
-        + agentRuntime.displayName()
+        + hosting.runtime().displayName()
         + " session started for "
         + taskId
         + " in tab '"
@@ -128,7 +128,7 @@ public class AgentSessions implements SessionLines {
   public String closeTaskTab(String taskId) {
     taskId = stateService.canonicalTaskId(taskId);
     TaskState task = requireTask(taskId);
-    int killed = sessions.killTaskWindows(agentSession(configService.load(), taskId), taskId);
+    int killed = hosting.host().killTaskWindows(agentSession(configService.load(), taskId), taskId);
     return killed == 0
         ? "No tab named '" + taskId + "' found — the session was already closed."
         : "Closed "
@@ -136,7 +136,7 @@ public class AgentSessions implements SessionLines {
             + " tab(s) for "
             + taskId
             + "; the "
-            + agentRuntime.displayName()
+            + hosting.runtime().displayName()
             + " session is terminated. Worktree kept: "
             + task.worktreePath();
   }
@@ -148,7 +148,8 @@ public class AgentSessions implements SessionLines {
   public Optional<String> screen(String taskId) {
     String id = stateService.canonicalTaskId(taskId);
     requireTask(id);
-    return sessions
+    return hosting
+        .host()
         .screenOf(agentSession(configService.load(), id), id)
         .map(shown -> Ansi.strip(shown).stripTrailing());
   }
@@ -158,7 +159,7 @@ public class AgentSessions implements SessionLines {
    * gone.
    */
   public Optional<String> exitTail(String taskId) {
-    return sessions.exitTail(agentSession(configService.load(), taskId), taskId);
+    return hosting.host().exitTail(agentSession(configService.load(), taskId), taskId);
   }
 
   /**
@@ -166,9 +167,10 @@ public class AgentSessions implements SessionLines {
    * Reads only.
    */
   public Optional<String> unansweredPrompt(String taskId) {
-    return sessions
+    return hosting
+        .host()
         .screenOf(agentSession(configService.load(), taskId), taskId)
-        .flatMap(agentRuntime::unansweredPrompt);
+        .flatMap(hosting.runtime()::unansweredPrompt);
   }
 
   /** A session that is gone or dead is re-entered first: focus must always land on a live agent. */
@@ -177,19 +179,22 @@ public class AgentSessions implements SessionLines {
     TaskState task = requireTask(taskId);
     ConfigService.ConfigFile config = configService.load();
     String session = agentSession(config, taskId);
-    String dedicatedTitle = sessions.sessionName(config.viewer().session());
+    String dedicatedTitle = hosting.host().sessionName(config.viewer().session());
     boolean revived;
     try {
-      revived = sessions.taskWindowState(session, taskId) != SessionHost.WindowState.AGENT_RUNNING;
+      revived =
+          hosting.host().taskWindowState(session, taskId) != SessionHost.WindowState.AGENT_RUNNING;
       if (revived) {
-        sessions.reviveTaskWindow(
-            session, dedicatedTitle, taskId, task.alias(), Path.of(task.worktreePath()));
+        hosting
+            .host()
+            .reviveTaskWindow(
+                session, dedicatedTitle, taskId, task.alias(), Path.of(task.worktreePath()));
       }
-      sessions.focusTaskWindow(session, dedicatedTitle, taskId);
+      hosting.host().focusTaskWindow(session, dedicatedTitle, taskId);
     } catch (SessionHost.WindowsUnreadable unread) {
       throw Refusal.byState("Nothing was focused: " + unread.getMessage());
     }
-    return new Focused(taskId, dedicatedTitle, revived ? agentRuntime.displayName() : null);
+    return new Focused(taskId, dedicatedTitle, revived ? hosting.runtime().displayName() : null);
   }
 
   /**
@@ -198,8 +203,10 @@ public class AgentSessions implements SessionLines {
   public record Focused(String taskId, String viewerTitle, @Nullable String revivedAs) {}
 
   public AgentRuntime.Admission admit(String taskId, Path directory) {
-    return agentRuntime.admit(
-        Path.of(requireTask(stateService.canonicalTaskId(taskId)).worktreePath()), directory);
+    return hosting
+        .runtime()
+        .admit(
+            Path.of(requireTask(stateService.canonicalTaskId(taskId)).worktreePath()), directory);
   }
 
   public String writeTaskContext(String taskId, String instructions) {
@@ -220,11 +227,11 @@ public class AgentSessions implements SessionLines {
     if (cold(task, config) && !promptOpen(session, id)) {
       return relayUnderCold(id, line);
     }
-    if (sessions.taskWindowState(session, id) != SessionHost.WindowState.AGENT_RUNNING
-        || !sessions.nudgeTaskWindow(session, id, line)) {
+    if (hosting.host().taskWindowState(session, id) != SessionHost.WindowState.AGENT_RUNNING
+        || !hosting.host().nudgeTaskWindow(session, id, line)) {
       throw new IllegalStateException(
           "No "
-              + agentRuntime.displayName()
+              + hosting.runtime().displayName()
               + " session is running for "
               + id
               + " — restart the agent, then say it again.");
@@ -305,9 +312,9 @@ public class AgentSessions implements SessionLines {
     if (freshBecause != null || cold(task, config)) {
       return relayFreshStart(taskId, task, config, freshBecause);
     }
-    if (sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING) {
+    if (hosting.host().taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING) {
       Optional<String> screen = shown(session, taskId);
-      if (screen.filter(agentRuntime::holdsDraft).isPresent()) {
+      if (screen.filter(hosting.runtime()::holdsDraft).isPresent()) {
         if (resubmittedOwnNudge(screen.get(), session, taskId, task.alias())) {
           return "Instructions written to task_context.md; the nudge already sat unsent in the"
               + " agent's window, so it was sent.";
@@ -316,7 +323,7 @@ public class AgentSessions implements SessionLines {
         return "Instructions written to task_context.md; the human is typing in the agent's window,"
             + " so the nudge waits until they send it.";
       }
-      if (sessions.nudgeTaskWindow(session, taskId, NUDGE)) {
+      if (hosting.host().nudgeTaskWindow(session, taskId, NUDGE)) {
         return undelivered(session, taskId, NUDGE)
             .map(
                 cause ->
@@ -334,12 +341,14 @@ public class AgentSessions implements SessionLines {
         .log();
     // A re-entered session reads task_context.md again, so a relay cannot dead-end against a dead
     // agent.
-    sessions.reviveTaskWindow(
-        session,
-        sessions.sessionName(config.viewer().session()),
-        taskId,
-        task.alias(),
-        Path.of(task.worktreePath()));
+    hosting
+        .host()
+        .reviveTaskWindow(
+            session,
+            hosting.host().sessionName(config.viewer().session()),
+            taskId,
+            task.alias(),
+            Path.of(task.worktreePath()));
     return "Instructions written to task_context.md; the agent session was down, so it was"
         + " re-entered to read and follow them.";
   }
@@ -363,7 +372,7 @@ public class AgentSessions implements SessionLines {
   }
 
   private boolean running(String session, String taskId) {
-    return sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING;
+    return hosting.host().taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING;
   }
 
   /**
@@ -372,7 +381,11 @@ public class AgentSessions implements SessionLines {
    */
   private boolean composing(String session, String taskId) {
     try {
-      return sessions.screenOf(session, taskId).filter(agentRuntime::holdsDraft).isPresent();
+      return hosting
+          .host()
+          .screenOf(session, taskId)
+          .filter(hosting.runtime()::holdsDraft)
+          .isPresent();
     } catch (RuntimeException unread) {
       log.atDebug()
           .setMessage("session screen unread")
@@ -391,8 +404,8 @@ public class AgentSessions implements SessionLines {
   /** Our own nudge left unsent is no human's draft: Enter is pressed on it, never waited for. */
   private boolean resubmittedOwnNudge(
       String screen, String session, String taskId, @Nullable String alias) {
-    boolean own = agentRuntime.draft(screen).filter(AgentSessions::isNudge).isPresent();
-    if (!own || !sessions.submitTaskWindow(session, taskId)) {
+    boolean own = hosting.runtime().draft(screen).filter(AgentSessions::isNudge).isPresent();
+    if (!own || !hosting.host().submitTaskWindow(session, taskId)) {
       return false;
     }
     log.atInfo()
@@ -407,7 +420,7 @@ public class AgentSessions implements SessionLines {
   /** A screen that cannot be read is no screen. */
   private Optional<String> shown(String session, String taskId) {
     try {
-      return sessions.screenOf(session, taskId);
+      return hosting.host().screenOf(session, taskId);
     } catch (RuntimeException unread) {
       log.atDebug()
           .setMessage("session screen unread")
@@ -426,7 +439,8 @@ public class AgentSessions implements SessionLines {
   }
 
   private boolean cold(TaskState task, ConfigService.ConfigFile config) {
-    return SessionPhase.cold(task.session(), agentRuntime, config.agent().cacheLifetimeOrDefault());
+    return SessionPhase.cold(
+        task.session(), hosting.runtime(), config.agent().cacheLifetimeOrDefault());
   }
 
   /**
@@ -437,7 +451,7 @@ public class AgentSessions implements SessionLines {
     return stateService
         .task(stateService.canonicalTaskId(taskId))
         .map(TaskState::worktreePath)
-        .flatMap(worktree -> agentRuntime.sessionLogOf(Path.of(worktree)))
+        .flatMap(worktree -> hosting.runtime().sessionLogOf(Path.of(worktree)))
         .filter(log -> FileStamps.modified(log) > millis)
         .isPresent();
   }
@@ -471,7 +485,7 @@ public class AgentSessions implements SessionLines {
                         startFreshWhenFree(
                             taskId, task, config, "conversation idle past its cache lifetime");
                       } else if (running(session, taskId)
-                          && sessions.nudgeTaskWindow(session, taskId, NUDGE)) {
+                          && hosting.host().nudgeTaskWindow(session, taskId, NUDGE)) {
                         undelivered(session, taskId, NUDGE);
                       }
                     });
@@ -494,7 +508,7 @@ public class AgentSessions implements SessionLines {
         if (!stillTyped(session, taskId, line)) {
           return Optional.empty();
         }
-        if (pressed < RESUBMITS && !sessions.submitTaskWindow(session, taskId)) {
+        if (pressed < RESUBMITS && !hosting.host().submitTaskWindow(session, taskId)) {
           return Optional.of("its window closed before the line left its input");
         }
       }
@@ -517,9 +531,10 @@ public class AgentSessions implements SessionLines {
   /** A screen that cannot be read shows no line of ours, so nothing is pressed blind. */
   private boolean stillTyped(String session, String taskId, String line) {
     try {
-      return sessions
+      return hosting
+          .host()
           .screenOf(session, taskId)
-          .flatMap(agentRuntime::draft)
+          .flatMap(hosting.runtime()::draft)
           .filter(line.strip()::startsWith)
           .isPresent();
     } catch (RuntimeException unread) {
@@ -541,10 +556,11 @@ public class AgentSessions implements SessionLines {
     String session = agentSession(configService.load(), id);
     try {
       boolean unsent =
-          sessions
+          hosting
+              .host()
               .screenOf(session, id)
-              .filter(shown -> !agentRuntime.working(shown))
-              .flatMap(agentRuntime::draft)
+              .filter(shown -> !hosting.runtime().working(shown))
+              .flatMap(hosting.runtime()::draft)
               .filter(AgentSessions::isNudge)
               .isPresent();
       if (unsent && cold(id)) {
@@ -559,7 +575,7 @@ public class AgentSessions implements SessionLines {
                         "conversation idle past its cache lifetime"));
         return false;
       }
-      return unsent && sessions.submitTaskWindow(session, id);
+      return unsent && hosting.host().submitTaskWindow(session, id);
     } catch (RuntimeException unread) {
       log.atDebug()
           .setMessage("session screen unread")
@@ -596,13 +612,15 @@ public class AgentSessions implements SessionLines {
   }
 
   private boolean promptOpen(String session, String taskId) {
-    return shown(session, taskId).flatMap(agentRuntime::unansweredPrompt).isPresent();
+    return shown(session, taskId).flatMap(hosting.runtime()::unansweredPrompt).isPresent();
   }
 
   private boolean humanTurnOpen(String taskId) {
     return stateService
         .task(taskId)
-        .filter(task -> agentRuntime.humanExchangeOpen(Path.of(task.worktreePath()), Set.of(NUDGE)))
+        .filter(
+            task ->
+                hosting.runtime().humanExchangeOpen(Path.of(task.worktreePath()), Set.of(NUDGE)))
         .isPresent();
   }
 
@@ -719,7 +737,7 @@ public class AgentSessions implements SessionLines {
     Path contextFile = Path.of(task.worktreePath()).resolve(Artifact.CONTEXT.fileName());
     synchronized (relayLock(taskId)) {
       WorktreeFiles.read(contextFile)
-          .ifPresent(held -> WorktreeFiles.write(contextFile, carried.after(held, task)));
+          .ifPresent(held -> WorktreeFiles.write(contextFile, hosting.carried().after(held, task)));
     }
     openTab(taskId, task.alias(), Path.of(task.worktreePath()), config, false, at);
   }
@@ -750,24 +768,26 @@ public class AgentSessions implements SessionLines {
       boolean planMode,
       @Nullable ModelTier at) {
     String own = modelFor(worktreePath, config);
-    ModelTier tier = at == null ? ModelTier.above(own, config.agent().tiersFor(agentRuntime)) : at;
-    stateService.updateTask(
-        taskId, task -> TaskReducer.sessionStartedOver(task).withTier(tier));
+    ModelTier tier =
+        at == null ? ModelTier.above(own, config.agent().tiersFor(hosting.runtime())) : at;
+    stateService.updateTask(taskId, task -> TaskReducer.sessionStartedOver(task).withTier(tier));
     String session = agentSession(config, taskId);
-    sessions.openTaskWindow(
-        session,
-        sessions.sessionName(config.viewer().session()),
-        taskId,
-        alias,
-        worktreePath,
-        planMode,
-        tier == null ? own : tier.current());
+    hosting
+        .host()
+        .openTaskWindow(
+            session,
+            hosting.host().sessionName(config.viewer().session()),
+            taskId,
+            alias,
+            worktreePath,
+            planMode,
+            tier == null ? own : tier.current());
     return session;
   }
 
   /** The notes' `next-model:` wins over `agent.model`; blank is the CLI's own default. */
   private String modelFor(Path worktree, ConfigService.ConfigFile config) {
-    List<String> models = config.agent().modelsFor(agentRuntime);
+    List<String> models = config.agent().modelsFor(hosting.runtime());
     return WorktreeFiles.read(worktree.resolve(Artifact.NOTES.fileName()))
         .flatMap(TaskNotes::nextModel)
         .or(() -> Optional.of(config.agent().modelOrInherited()))
@@ -776,7 +796,7 @@ public class AgentSessions implements SessionLines {
   }
 
   private String agentSession(ConfigService.ConfigFile config, String taskId) {
-    String base = sessions.sessionName(config.viewer().session());
+    String base = hosting.host().sessionName(config.viewer().session());
     return config.viewer().sharedView() ? base : base + "-" + TaskName.slug(taskId);
   }
 

@@ -28,6 +28,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
+import dev.jagt.orchestrator.service.StopPolicy;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.WorktreeChanges;
@@ -79,12 +80,13 @@ class AcceptanceRoundFlowTest {
     FlowReports flow = new FlowReports(state, Clock.systemUTC());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(
-                new Notifications(List.of(), state, Runnable::run),
-                new StopLog(new JsonMapper(), paths)),
             Clock.systemUTC());
     CaseDoor door =
         new CaseDoor(
@@ -103,7 +105,10 @@ class AcceptanceRoundFlowTest {
             state,
             new LinkRefusals(new ReachLedger(), (session, line) -> "", state),
             flow,
-            new HandBack(mock(WorktreeChanges.class), new Rounds(config, ignored -> false, () -> false), config),
+            new HandBack(
+                mock(WorktreeChanges.class),
+                new Rounds(config, ignored -> false, () -> false),
+                config),
             config);
     AcceptanceVerdict verdict =
         new AcceptanceVerdict(
@@ -163,12 +168,13 @@ class AcceptanceRoundFlowTest {
     FlowReports flow = new FlowReports(state, Clock.systemUTC());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(
-                new Notifications(List.of(), state, Runnable::run),
-                new StopLog(new JsonMapper(), paths)),
             Clock.systemUTC());
     CaseDoor door =
         new CaseDoor(
@@ -186,7 +192,10 @@ class AcceptanceRoundFlowTest {
             state,
             new LinkRefusals(new ReachLedger(), (session, line) -> "", state),
             flow,
-            new HandBack(mock(WorktreeChanges.class), new Rounds(config, ignored -> false, () -> false), config),
+            new HandBack(
+                mock(WorktreeChanges.class),
+                new Rounds(config, ignored -> false, () -> false),
+                config),
             config);
     AcceptanceVerdict verdict =
         new AcceptanceVerdict(

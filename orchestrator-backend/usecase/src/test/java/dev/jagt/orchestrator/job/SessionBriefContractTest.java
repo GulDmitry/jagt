@@ -30,12 +30,13 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
+import dev.jagt.orchestrator.service.StopPolicy;
 import dev.jagt.orchestrator.service.SubAgentBriefing;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.TaskStops;
-import dev.jagt.orchestrator.service.TicketScenarios;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.TicketReader;
+import dev.jagt.orchestrator.service.TicketScenarios;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.Conflict;
@@ -84,7 +85,8 @@ class SessionBriefContractTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
+                        OrchestratorProperties.defaults().withRoot(root.toString()))),
+                scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 repo,
@@ -112,12 +114,13 @@ class SessionBriefContractTest {
             state,
             new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 Clock.systemUTC()));
 
     new ConflictHandOff(
@@ -178,7 +181,8 @@ class SessionBriefContractTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
+                        OrchestratorProperties.defaults().withRoot(root.toString()))),
+                scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
                 web,
@@ -223,12 +227,13 @@ class SessionBriefContractTest {
             state,
             new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 Clock.systemUTC()));
 
     ShipService ships =
@@ -275,7 +280,8 @@ class SessionBriefContractTest {
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
+                        OrchestratorProperties.defaults().withRoot(root.toString()))),
+                scenarios)
             .of(
                 NewTask.builder("widget-fix", "web").build(),
                 repo,

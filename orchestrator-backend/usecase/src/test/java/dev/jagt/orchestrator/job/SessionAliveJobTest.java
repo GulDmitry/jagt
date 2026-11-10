@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
+import dev.jagt.orchestrator.service.StopPolicy;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -41,10 +42,11 @@ class SessionAliveJobTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC));
     stops.stop("ABC-42", TaskStop.Trigger.UNDELIVERED, "the step could not be told to the session");
     when(agents.agentLive("ABC-42")).thenReturn(true);
@@ -65,10 +67,11 @@ class SessionAliveJobTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC));
     stops.stop("ABC-42", TaskStop.Trigger.UNDELIVERED, "the step could not be told to the session");
     when(agents.agentLive("ABC-42")).thenReturn(false);
@@ -89,10 +92,11 @@ class SessionAliveJobTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC));
     stops.stop("ABC-42", TaskStop.Trigger.UNDELIVERED, "the step could not be told to the session");
     when(agents.agentLive("ABC-42")).thenThrow(new AgentPresence.Unread("tmux timed out"));

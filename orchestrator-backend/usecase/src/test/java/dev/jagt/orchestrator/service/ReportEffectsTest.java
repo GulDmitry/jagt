@@ -126,10 +126,12 @@ class ReportEffectsTest {
     TaskTurns turns = new TaskTurns(state, clock);
     TaskStops realStops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)),
             clock);
     ReportEffects effects =
         new ReportEffects(
@@ -158,10 +160,12 @@ class ReportEffectsTest {
     TaskTurns turns = new TaskTurns(state, clock);
     TaskStops realStops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)),
             clock);
     ReportEffects effects =
         new ReportEffects(
@@ -192,10 +196,12 @@ class ReportEffectsTest {
     TaskTurns turns = new TaskTurns(state, clock);
     TaskStops realStops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)),
             clock);
     ReportEffects effects =
         new ReportEffects(

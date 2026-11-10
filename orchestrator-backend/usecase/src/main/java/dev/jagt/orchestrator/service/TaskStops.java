@@ -49,10 +49,8 @@ public class TaskStops {
       EnumSet.of(
           ReviewSweepService.SweepResult.Kind.GONE, ReviewSweepService.SweepResult.Kind.NO_MR);
 
-  private final PhaseProfiles profiles;
+  private final StopPolicy policy;
   private final StateService stateService;
-  private final LoopBreaker.Current breakers;
-  private final StopAnnouncements announcements;
   private final Clock clock;
 
   /** The stop standing once this one was set: an earlier stop stands, and keeps its own words. */
@@ -79,7 +77,7 @@ public class TaskStops {
    * task, or a stop stands.
    */
   public boolean roundDue(String taskId, String step) {
-    LoopBreaker breaker = breakers.current();
+    LoopBreaker breaker = policy.breakers().current();
     return trip(
             taskId,
             task -> task,
@@ -97,7 +95,7 @@ public class TaskStops {
    * or a stop stands.
    */
   public boolean moveDue(String taskId) {
-    LoopBreaker breaker = breakers.current();
+    LoopBreaker breaker = policy.breakers().current();
     return trip(
             taskId,
             task -> task,
@@ -115,7 +113,7 @@ public class TaskStops {
     String key = factKey(facts, failing, notes, tip);
     String digest = Turn.digestOf(key.isEmpty() ? brief : key);
     AtomicReference<Relay> verdict = new AtomicReference<>(Relay.RELAY);
-    LoopBreaker breaker = breakers.current();
+    LoopBreaker breaker = policy.breakers().current();
     Optional<TaskStop> stop =
         trip(
             taskId,
@@ -162,7 +160,7 @@ public class TaskStops {
   }
 
   public boolean mayShip(String taskId) {
-    LoopBreaker breaker = breakers.current();
+    LoopBreaker breaker = policy.breakers().current();
     return trip(
             taskId,
             task -> task,
@@ -181,14 +179,14 @@ public class TaskStops {
 
   /** Whose the standing stop is to lift, in the phase the task stands in. */
   private StopHold holdOf(TaskState task) {
-    return StopHold.of(task, profiles.at(task));
+    return StopHold.of(task, policy.profiles().at(task));
   }
 
   /** Whether the human keeps this verb from the Master, whatever phase the task stands in. */
   public boolean masterKeeps(String taskId, TaskAction action) {
     return stateService
         .task(stateService.canonicalTaskId(taskId))
-        .filter(task -> profiles.at(task).keeps(action))
+        .filter(task -> policy.profiles().at(task).keeps(action))
         .isPresent();
   }
 
@@ -324,11 +322,13 @@ public class TaskStops {
     Optional.ofNullable(tripped.get())
         .ifPresent(
             stop ->
-                announcements.announce(
-                    taskId,
-                    Objects.requireNonNull(stoppedTask.get()),
-                    stop,
-                    holdOf(stoppedTask.get())));
+                policy
+                    .announcements()
+                    .announce(
+                        taskId,
+                        Objects.requireNonNull(stoppedTask.get()),
+                        stop,
+                        holdOf(stoppedTask.get())));
     return Optional.ofNullable(standing.get());
   }
 

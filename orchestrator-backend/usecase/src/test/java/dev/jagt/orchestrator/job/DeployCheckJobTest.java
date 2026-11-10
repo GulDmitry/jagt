@@ -28,6 +28,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
+import dev.jagt.orchestrator.service.StopPolicy;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.task.Deployment;
@@ -90,15 +91,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
@@ -151,15 +153,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()));
     job.runOn(state.tasks());
 
@@ -204,15 +207,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()));
     job.runOn(state.tasks());
     job.runOn(state.tasks());
@@ -263,15 +267,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()));
     job.runOn(state.tasks());
     job.runOn(state.tasks());
@@ -325,15 +330,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
@@ -376,15 +382,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
@@ -429,15 +436,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
@@ -492,12 +500,13 @@ class DeployCheckJobTest {
                 before,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), before, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     before,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), before, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())),
             new TaskTurns(before, Clock.systemUTC()));
     new DeployCheckJob(
@@ -506,12 +515,13 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(before, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), before, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 before,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), before, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 Clock.systemUTC()))
         .runOn(before.tasks());
     relay.relay(
@@ -532,23 +542,25 @@ class DeployCheckJobTest {
                     restarted,
                     new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                     new TaskStops(
-                        ignored -> Arbiter.Profile.OFF,
+                        new StopPolicy(
+                            ignored -> Arbiter.Profile.OFF,
+                            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                            new StopAnnouncements(
+                                new Notifications(List.of(), restarted, Runnable::run),
+                                new StopLog(new JsonMapper(), paths))),
                         restarted,
-                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), restarted, Runnable::run),
-                            new StopLog(new JsonMapper(), paths)),
                         Clock.systemUTC())),
                 new TaskTurns(restarted, Clock.systemUTC())),
             pipelines,
             new FlowReports(restarted, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), restarted, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 restarted,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), restarted, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 Clock.systemUTC()))
         .runOn(restarted.tasks());
 
@@ -578,15 +590,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
@@ -624,15 +637,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
@@ -663,15 +677,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
@@ -707,15 +722,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
@@ -755,15 +771,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
@@ -801,15 +818,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
@@ -842,15 +860,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
@@ -904,15 +923,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
@@ -961,15 +981,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
@@ -1015,15 +1036,16 @@ class DeployCheckJobTest {
             pipelines,
             new FlowReports(state, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(
+                            new JsonMapper(),
+                            new OrchestratorPaths(
+                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
-                    new StopLog(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults().withRoot(root.toString())))),
                 Clock.systemUTC()))
         .runOn(state.tasks());
 

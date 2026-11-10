@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.service.MergedRequests;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
+import dev.jagt.orchestrator.service.StopPolicy;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.StatusChange;
@@ -52,10 +53,12 @@ class MergedGuardTest {
             .build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)),
             clock);
     when(merged.refresh("ABC-42")).thenReturn(true);
 

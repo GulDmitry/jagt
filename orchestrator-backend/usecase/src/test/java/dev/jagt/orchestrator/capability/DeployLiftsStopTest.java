@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
+import dev.jagt.orchestrator.service.StopPolicy;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.Master;
@@ -47,10 +48,12 @@ class DeployLiftsStopTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)),
             clock);
     stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "ships without a new note");
     DeployLiftsStop lifter = new DeployLiftsStop(stops);
@@ -85,10 +88,12 @@ class DeployLiftsStopTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)),
             clock);
     stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "ships without a new note");
     DeployLiftsStop lifter = new DeployLiftsStop(stops);
@@ -117,10 +122,12 @@ class DeployLiftsStopTest {
             .build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(mock(Notifications.class), new StopLog(new JsonMapper(), paths)),
             clock);
     DeployLiftsStop lifter = new DeployLiftsStop(stops);
 

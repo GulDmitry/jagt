@@ -19,6 +19,7 @@ import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
+import dev.jagt.orchestrator.service.StopPolicy;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.triage.StopTriageFailed;
 import dev.jagt.orchestrator.service.triage.StopTriagePanel;
@@ -74,10 +75,11 @@ class StopTriageJobTest {
         ignored -> masterProfile,
         panel,
         new TaskStops(
-            ignored -> masterProfile,
+            new StopPolicy(
+                ignored -> masterProfile,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             Clock.systemUTC()));
   }
 
@@ -92,8 +94,7 @@ class StopTriageJobTest {
   void aStopIsReadOnceAndItsHoverGainsTheTriageLine(@TempDir Path root) {
     OrchestratorPaths paths = pathsIn(root);
     StateService state =
-        stateWith(
-            paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());
+        stateWith(paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());
     triage(true);
     when(panel.read(anyString(), any(), any(), anyString())).thenReturn(jagtRead);
     StopTriageJob job = job(paths, state, Arbiter.Profile.OFF);
@@ -110,8 +111,7 @@ class StopTriageJobTest {
   void nothingIsReadWhereTriageIsNotEnabled(@TempDir Path root) {
     OrchestratorPaths paths = pathsIn(root);
     StateService state =
-        stateWith(
-            paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());
+        stateWith(paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());
     triage(false);
 
     job(paths, state, Arbiter.Profile.OFF).runOn(state.tasks());
@@ -124,8 +124,7 @@ class StopTriageJobTest {
   void aLiftEndsTheReadAndTheNextStopIsReadAfresh(@TempDir Path root) {
     OrchestratorPaths paths = pathsIn(root);
     StateService state =
-        stateWith(
-            paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());
+        stateWith(paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());
     triage(true);
     when(panel.read(anyString(), any(), any(), anyString())).thenReturn(jagtRead);
     StopTriageJob job = job(paths, state, Arbiter.Profile.OFF);
@@ -177,8 +176,7 @@ class StopTriageJobTest {
   void aFailedReadSaysSoOnTheHoverAndTheStopIsNotAskedAgain(@TempDir Path root) {
     OrchestratorPaths paths = pathsIn(root);
     StateService state =
-        stateWith(
-            paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());
+        stateWith(paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());
     triage(true);
     when(panel.read(anyString(), any(), any(), anyString()))
         .thenThrow(new StopTriageFailed("git state changed"));
@@ -196,8 +194,7 @@ class StopTriageJobTest {
   void aLiftThatLooksSafeStillLeavesTheStopStandingAndTellsNobody(@TempDir Path root) {
     OrchestratorPaths paths = pathsIn(root);
     StateService state =
-        stateWith(
-            paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());
+        stateWith(paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());
     triage(true);
     when(panel.read(anyString(), any(), any(), anyString())).thenReturn(jagtRead);
 

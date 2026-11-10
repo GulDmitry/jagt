@@ -99,12 +99,13 @@ class CommandServiceTest {
                 state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(
-                    ignored -> new Arbiter.Profile(MasterMode.ACT, Set.of("done")),
+                    new StopPolicy(
+                        ignored -> new Arbiter.Profile(MasterMode.ACT, Set.of("done")),
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())));
 
     assertThatThrownBy(
@@ -144,12 +145,13 @@ class CommandServiceTest {
                     paths,
                     Clock.fixed(Instant.ofEpochMilli(1000), ZoneOffset.UTC)),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())));
 
     OriginContext.as(ActionOrigin.MASTER, () -> guarded.execute("ABC-1", TaskAction.DEPLOY));

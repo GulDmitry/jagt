@@ -47,13 +47,15 @@ class OwnStatusReportsTest {
     TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(
+                        new JsonMapper(),
+                        new OrchestratorPaths(OrchestratorProperties.defaults())))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(
-                new Notifications(List.of(), state, Runnable::run),
-                new StopLog(
-                    new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()))),
             Clock.systemUTC());
     return new ReportEffects(
         new SessionWakes(state, turns, Clock.systemUTC()),
@@ -245,12 +247,13 @@ class OwnStatusReportsTest {
                     paths,
                     Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())),
             effects(state));
 
@@ -294,12 +297,13 @@ class OwnStatusReportsTest {
                     paths,
                     Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())),
             effects(state));
 
@@ -344,12 +348,13 @@ class OwnStatusReportsTest {
                     paths,
                     Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())),
             effects(state));
 
@@ -395,12 +400,13 @@ class OwnStatusReportsTest {
                     paths,
                     Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())),
             effects(state));
 

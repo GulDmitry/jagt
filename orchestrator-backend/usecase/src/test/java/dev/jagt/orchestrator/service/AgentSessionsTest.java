@@ -25,8 +25,8 @@ import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.master.MasterBrake;
-import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.ModelTier;
+import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -79,7 +79,9 @@ class AgentSessionsTest {
     when(tmux.killTaskWindows("jagt", "TEST-1")).thenReturn(1);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.closeTaskTab("TEST-1")).contains("Closed 1 tab(s) for TEST-1");
   }
@@ -93,7 +95,9 @@ class AgentSessionsTest {
         .thenReturn(java.util.Optional.of("\u001B[31m✗ two tests fail\u001B[0m\n\n"));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.screen("ABC-1")).contains("✗ two tests fail");
   }
@@ -112,7 +116,9 @@ class AgentSessionsTest {
     when(tmux.screenOf("jagt", "ABC-1")).thenReturn(java.util.Optional.of(shown));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.screen("ABC-1")).contains("✗ two tests fail");
   }
@@ -126,7 +132,9 @@ class AgentSessionsTest {
         .thenThrow(new IllegalStateException("tmux capture-pane failed (exit 1)"));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThatThrownBy(() -> sessions.screen("ABC-1")).isInstanceOf(IllegalStateException.class);
   }
@@ -145,7 +153,9 @@ class AgentSessionsTest {
     when(tmux.killTaskWindows("jagt-TEST-1", "TEST-1")).thenReturn(1);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.closeTaskTab("TEST-1");
 
@@ -156,7 +166,9 @@ class AgentSessionsTest {
   void refusesToCloseTheTabOfATaskNobodyOwns() {
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThatThrownBy(() -> sessions.closeTaskTab("ABC-9"))
         .isInstanceOf(IllegalArgumentException.class)
@@ -172,7 +184,9 @@ class AgentSessionsTest {
     when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.writeTaskContext("ABC-1", "new instructions")).contains("nudged");
   }
@@ -200,7 +214,9 @@ class AgentSessionsTest {
     when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.writeTaskContext("ABC-1", "probes failed");
 
@@ -224,7 +240,9 @@ class AgentSessionsTest {
     when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.writeTaskContext("ABC-1", "probes failed");
 
@@ -242,7 +260,9 @@ class AgentSessionsTest {
     when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.writeTaskContext("ABC-1", "new instructions");
 
@@ -262,7 +282,9 @@ class AgentSessionsTest {
     when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.writeTaskContext("ABC-1", "new instructions");
 
@@ -281,7 +303,9 @@ class AgentSessionsTest {
     when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.writeTaskContext("ABC-1", "new instructions");
 
@@ -299,7 +323,9 @@ class AgentSessionsTest {
     when(tmux.nudgeTaskWindow("jagt", "ABC-1", "no, answer 2 differently")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.say("ABC-1", "no, answer 2 differently");
 
@@ -316,7 +342,9 @@ class AgentSessionsTest {
     when(agentRuntime.displayName()).thenReturn("Claude");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThatThrownBy(() -> sessions.say("ABC-1", "no, answer 2 differently"))
         .isInstanceOf(IllegalStateException.class)
@@ -336,7 +364,9 @@ class AgentSessionsTest {
     when(agentRuntime.pastCacheLifetime(5_000L, java.time.Duration.ofHours(1))).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
@@ -359,7 +389,9 @@ class AgentSessionsTest {
     when(agentRuntime.pastCacheLifetime(5_000L, java.time.Duration.ofHours(1))).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
@@ -385,7 +417,9 @@ class AgentSessionsTest {
         .thenReturn(false, true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
@@ -401,7 +435,9 @@ class AgentSessionsTest {
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -422,7 +458,9 @@ class AgentSessionsTest {
     when(agentRuntime.displayName()).thenReturn("Claude");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.openTaskTab("ABC-1", mode);
 
@@ -441,7 +479,9 @@ class AgentSessionsTest {
     when(tmux.sessionName(null)).thenReturn("jagt");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.openTaskTab("ABC-1", "plan");
 
@@ -454,7 +494,9 @@ class AgentSessionsTest {
     state.putTask("ABC-1", TaskState.builder("proj", root.toString(), status).build());
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThatThrownBy(() -> sessions.openTaskTab("ABC-1", "plan"))
         .isInstanceOfSatisfying(
@@ -478,7 +520,9 @@ class AgentSessionsTest {
     when(agentRuntime.pastCacheLifetime(5_000L, java.time.Duration.ofHours(1))).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.say("ABC-1", "jagt was restarted.");
 
@@ -503,7 +547,9 @@ class AgentSessionsTest {
         .thenReturn(pastLifetime);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.cold("ABC-1")).isEqualTo(cold);
   }
@@ -517,7 +563,9 @@ class AgentSessionsTest {
     when(tmux.nudgeTaskWindow("jagt", "ABC-1", "answer 2 differently")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.say("ABC-1", "answer 2 differently")).isEqualTo("Said to the agent.");
   }
@@ -530,7 +578,9 @@ class AgentSessionsTest {
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.DEAD_SHELL);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.windowState("ABC-1")).isEqualTo(SessionHost.WindowState.DEAD_SHELL);
   }
@@ -545,7 +595,9 @@ class AgentSessionsTest {
     when(agentRuntime.displayName()).thenReturn("Claude");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -563,7 +615,9 @@ class AgentSessionsTest {
     when(agentRuntime.displayName()).thenReturn("Claude");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -582,7 +636,9 @@ class AgentSessionsTest {
     when(agentRuntime.displayName()).thenReturn("Claude");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -601,7 +657,9 @@ class AgentSessionsTest {
     when(agentRuntime.tiers()).thenReturn(List.of("sonnet", "opus"));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String said = sessions.restartOnTier("ABC-1");
 
@@ -625,7 +683,9 @@ class AgentSessionsTest {
     when(agentRuntime.displayName()).thenReturn("Claude");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -643,7 +703,9 @@ class AgentSessionsTest {
     when(agentRuntime.displayName()).thenReturn("Claude");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -656,7 +718,9 @@ class AgentSessionsTest {
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThatThrownBy(() -> sessions.restartOnTier("ABC-1")).isInstanceOf(Refusal.class);
   }
@@ -670,7 +734,9 @@ class AgentSessionsTest {
     when(agentRuntime.displayName()).thenReturn("Claude");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -686,7 +752,9 @@ class AgentSessionsTest {
     when(agentRuntime.displayName()).thenReturn("Codex");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.openTaskTab("ABC-1", "auto");
 
@@ -702,7 +770,9 @@ class AgentSessionsTest {
     when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
@@ -719,7 +789,9 @@ class AgentSessionsTest {
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.MISSING);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.writeTaskContext("ABC-1", "new instructions")).contains("re-entered");
     verify(tmux).reviveTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any());
@@ -734,7 +806,9 @@ class AgentSessionsTest {
     when(agentRuntime.displayName()).thenReturn("Claude");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.focusTask("ABC-1").revivedAs()).isEqualTo("Claude");
     verify(tmux).reviveTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any());
@@ -748,7 +822,9 @@ class AgentSessionsTest {
     when(agentRuntime.displayName()).thenReturn("Claude");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.openTaskTab("ABC-1", "auto")).contains("New Claude session started");
     verify(tmux)
@@ -771,7 +847,9 @@ class AgentSessionsTest {
     when(agentRuntime.pastCacheLifetime(5_000L, java.time.Duration.ofHours(1))).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
     sessions.openTaskTab("ABC-1", "auto");
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
@@ -792,7 +870,9 @@ class AgentSessionsTest {
         "ABC-1", TaskState.builder("demo", worktree.toString(), TaskStatus.CI_POLLING).build());
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.writeTaskContext("ABC-1", "NEW ROUND: fix the pipeline");
 
@@ -811,7 +891,9 @@ class AgentSessionsTest {
         TaskState.builder("demo", worktree.toString(), TaskStatus.DEPLOY_CONFLICT).build());
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.relayUnder("ABC-42", "Keep both imports.", false);
 
@@ -829,7 +911,9 @@ class AgentSessionsTest {
         TaskState.builder("demo", worktree.toString(), TaskStatus.DEPLOY_CONFLICT).build());
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
     sessions.relayUnder("ABC-42", "Keep both imports.", false);
 
     sessions.relayUnder("ABC-42", "Drop the old import.", false);
@@ -847,7 +931,9 @@ class AgentSessionsTest {
     when(tmux.sessionName("jagt")).thenReturn("jagt");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.viewerToClose()).isEmpty();
   }
@@ -860,7 +946,9 @@ class AgentSessionsTest {
     when(tmux.sessionName("jagt")).thenReturn("jagt");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.viewerToClose()).contains("jagt");
   }
@@ -874,7 +962,9 @@ class AgentSessionsTest {
     when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.composing("ABC-1")).isTrue();
   }
@@ -887,7 +977,9 @@ class AgentSessionsTest {
     when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> "));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.composing("ABC-1")).isFalse();
   }
@@ -903,7 +995,9 @@ class AgentSessionsTest {
     when(tmux.nudgeTaskWindow("jagt", "ABC-1", AgentSessions.NUDGE)).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.writeTaskContext("ABC-1", "new instructions");
 
@@ -925,7 +1019,9 @@ class AgentSessionsTest {
     when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.writeTaskContext("ABC-1", "new instructions");
 
@@ -947,7 +1043,9 @@ class AgentSessionsTest {
     when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.resubmitUnsentNudge("ABC-1")).isTrue();
     verify(tmux).submitTaskWindow("jagt", "ABC-1");
@@ -971,7 +1069,9 @@ class AgentSessionsTest {
     when(agentRuntime.pastCacheLifetime(5_000L, java.time.Duration.ofHours(1))).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     boolean pressed = sessions.resubmitUnsentNudge("ABC-1");
 
@@ -990,7 +1090,9 @@ class AgentSessionsTest {
         .thenReturn(Optional.of("where is the merge request for the nudge"));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
     verify(tmux, never()).submitTaskWindow(anyString(), anyString());
@@ -1009,7 +1111,9 @@ class AgentSessionsTest {
                 "task_context.md changed \u2014 re-read it now and follow the new instructions."));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
     verify(tmux, never()).submitTaskWindow(anyString(), anyString());
@@ -1019,7 +1123,9 @@ class AgentSessionsTest {
   void retiresWhatProvisioningWroteOutsideTheWorktreeThroughTheRuntime() {
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.forgetWorktree(Path.of("/wt"));
 
@@ -1033,7 +1139,9 @@ class AgentSessionsTest {
     when(tmux.exitTail("jagt", "ABC-1")).thenReturn(Optional.of("Error: usage limit reached"));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.exitTail("ABC-1")).contains("Error: usage limit reached");
   }
@@ -1047,7 +1155,9 @@ class AgentSessionsTest {
         .thenReturn(Optional.of("a trust dialog"));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.unansweredPrompt("ABC-1")).contains("a trust dialog");
   }
@@ -1059,7 +1169,9 @@ class AgentSessionsTest {
         .thenReturn(AgentRuntime.Admission.GRANTED);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.admit("ABC-1", Path.of("/other")))
         .isEqualTo(AgentRuntime.Admission.GRANTED);
@@ -1072,7 +1184,9 @@ class AgentSessionsTest {
     when(tmux.sessionName(null)).thenReturn("jagt");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -1086,7 +1200,9 @@ class AgentSessionsTest {
     when(tmux.sessionName(null)).thenReturn("jagt");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.relayUnder("ABC-1", "Keep both imports.", false);
 
@@ -1103,7 +1219,9 @@ class AgentSessionsTest {
     when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> "));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.say("ABC-1", "use the cache");
 
@@ -1127,7 +1245,9 @@ class AgentSessionsTest {
     when(tmux.nudgeTaskWindow("jagt", "ABC-1", "1")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.say("ABC-1", "1");
 
@@ -1145,7 +1265,9 @@ class AgentSessionsTest {
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.MISSING);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThatThrownBy(() -> sessions.say("ABC-1", "use the cache"))
         .isInstanceOf(IllegalStateException.class)
@@ -1165,7 +1287,9 @@ class AgentSessionsTest {
     when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(false);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThatThrownBy(() -> sessions.say("ABC-1", "use the cache"))
         .isInstanceOf(IllegalStateException.class)
@@ -1184,7 +1308,9 @@ class AgentSessionsTest {
     when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThatThrownBy(() -> sessions.say("ABC-1", "use the cache"))
         .isInstanceOf(IllegalStateException.class)
@@ -1207,7 +1333,9 @@ class AgentSessionsTest {
     when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.resubmitUnsentNudge("ABC-1")).isEqualTo(pressed);
   }
@@ -1225,7 +1353,9 @@ class AgentSessionsTest {
     when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(false);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
   }
@@ -1239,7 +1369,9 @@ class AgentSessionsTest {
         .thenThrow(new IllegalStateException("capture-pane failed"));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThat(sessions.resubmitUnsentNudge("ABC-1")).isFalse();
     verify(tmux, never()).submitTaskWindow(anyString(), anyString());
@@ -1264,7 +1396,9 @@ class AgentSessionsTest {
     when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.writeTaskContext("ABC-1", "probes failed");
 
@@ -1286,7 +1420,9 @@ class AgentSessionsTest {
             });
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     Throwable refused = catchThrowable(() -> sessions.say("ABC-1", "use the cache"));
     boolean stopKept = Thread.interrupted();
@@ -1313,7 +1449,9 @@ class AgentSessionsTest {
     when(tmux.submitTaskWindow("jagt", "ABC-1")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.writeTaskContext("ABC-1", "new instructions");
 
@@ -1328,7 +1466,9 @@ class AgentSessionsTest {
     when(tmux.sessionName(null)).thenReturn("jagt");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger sessionsLog = (Logger) LoggerFactory.getLogger(AgentSessions.class);
@@ -1351,7 +1491,9 @@ class AgentSessionsTest {
     when(tmux.sessionName(null)).thenReturn("jagt");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.relayUnderCold("ABC-1", "and handle empty files");
 
@@ -1374,7 +1516,9 @@ class AgentSessionsTest {
     when(tmux.sessionName(null)).thenReturn("jagt");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.relayUnderCold("ABC-1", "and handle empty files");
 
@@ -1393,7 +1537,9 @@ class AgentSessionsTest {
                 "tmux list-windows jagt failed (exit 1): server timed out"));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     assertThatThrownBy(() -> sessions.focusTask("ABC-1"))
         .isInstanceOf(Refusal.class)
@@ -1410,7 +1556,9 @@ class AgentSessionsTest {
     when(agentRuntime.holdsDraft("typed")).thenReturn(true, true, false);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     String answer = sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -1437,7 +1585,9 @@ class AgentSessionsTest {
         .thenReturn(true, true, false);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -1464,7 +1614,9 @@ class AgentSessionsTest {
     when(agentRuntime.holdsDraft("typed")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
     sessions.startWaitingFreshWhenFree("ABC-1");
@@ -1488,7 +1640,9 @@ class AgentSessionsTest {
     when(changes.history(any(TaskState.class), eq(40))).thenReturn("abc123 Add export");
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -1507,7 +1661,9 @@ class AgentSessionsTest {
     when(agentRuntime.holdsDraft("typed")).thenReturn(true, true, false, true, false);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -1533,7 +1689,9 @@ class AgentSessionsTest {
     when(agentRuntime.holdsDraft("typed")).thenReturn(true);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger sessionsLog = (Logger) LoggerFactory.getLogger(AgentSessions.class);
@@ -1569,7 +1727,9 @@ class AgentSessionsTest {
     when(agentRuntime.holdsDraft("typed")).thenReturn(true, false);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
     sessions.startWaitingFreshWhenFree("ABC-1");
@@ -1591,7 +1751,9 @@ class AgentSessionsTest {
     when(agentRuntime.humanExchangeOpen(root, Set.of(AgentSessions.NUDGE))).thenReturn(false);
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
@@ -1607,7 +1769,9 @@ class AgentSessionsTest {
     when(agentRuntime.sessionLogOf(root)).thenReturn(Optional.of(log));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     boolean logged = sessions.loggedSince("ABC-1", 1793862000000L);
 
@@ -1623,7 +1787,9 @@ class AgentSessionsTest {
     when(agentRuntime.sessionLogOf(root)).thenReturn(Optional.of(log));
     AgentSessions sessions =
         new AgentSessions(
-            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
 
     boolean logged = sessions.loggedSince("ABC-1", 1793862000000L);
 

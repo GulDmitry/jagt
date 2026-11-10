@@ -408,12 +408,13 @@ class StepRelayTest {
                 state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())),
             new TaskTurns(state, Clock.systemUTC()));
 
@@ -454,12 +455,13 @@ class StepRelayTest {
                     paths,
                     Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC))),
             new TaskTurns(state, Clock.systemUTC()));
 
@@ -505,12 +507,13 @@ class StepRelayTest {
                     paths,
                     Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())),
             new TaskTurns(state, Clock.systemUTC()));
 
@@ -555,12 +558,13 @@ class StepRelayTest {
                 state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())),
             new TaskTurns(state, Clock.systemUTC()));
 
@@ -602,12 +606,13 @@ class StepRelayTest {
                 state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())),
             new TaskTurns(state, Clock.systemUTC()));
 
@@ -648,12 +653,13 @@ class StepRelayTest {
                 state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())),
             new TaskTurns(state, Clock.systemUTC()));
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
@@ -692,12 +698,13 @@ class StepRelayTest {
                 state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())),
             new TaskTurns(state, Clock.systemUTC()));
     List<Step> steps = List.of(Step.ROUND_THREADS, Step.ROUND_THREADS_DONE);
@@ -765,12 +772,13 @@ class StepRelayTest {
                 state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())),
             new TaskTurns(state, Clock.systemUTC()));
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
@@ -812,12 +820,13 @@ class StepRelayTest {
                 state,
                 new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
                 new TaskStops(
-                    ignored -> Arbiter.Profile.OFF,
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths)),
                     Clock.systemUTC())),
             new TaskTurns(state, Clock.systemUTC()));
 

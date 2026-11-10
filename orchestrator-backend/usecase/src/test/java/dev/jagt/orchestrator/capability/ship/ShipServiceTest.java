@@ -29,6 +29,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
+import dev.jagt.orchestrator.service.StopPolicy;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.task.ActionOrigin;
@@ -73,12 +74,13 @@ class ShipServiceTest {
             stateService,
             new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
             new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), stateService, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
                 stateService,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new Notifications(List.of(), stateService, Runnable::run),
-                    new StopLog(new JsonMapper(), paths)),
                 Clock.systemUTC()));
     when(configService.load())
         .thenReturn(

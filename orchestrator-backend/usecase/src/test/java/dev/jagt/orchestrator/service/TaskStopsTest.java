@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.TaskAction;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -14,6 +13,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.ActionOrigin;
@@ -63,10 +63,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     ReviewFacts round =
         new ReviewFacts(
@@ -113,10 +114,11 @@ class TaskStopsTest {
 
     boolean may =
         new TaskStops(
-                ignored -> Arbiter.Profile.OFF,
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
                 state,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
                 clock)
             .mayShip("ABC-42");
 
@@ -142,10 +144,11 @@ class TaskStopsTest {
             .build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     stops.lift("ABC-42");
@@ -182,10 +185,11 @@ class TaskStopsTest {
             .withMrUrl("https://host/mr/572", 1));
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "4 ships");
@@ -207,10 +211,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     assertThat(stops.mayShip("ABC-42")).isTrue();
@@ -233,10 +238,11 @@ class TaskStopsTest {
             .build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     assertThat(stops.stopped("ABC-1")).isFalse();
@@ -255,10 +261,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     TaskStop first = new TaskStop(TaskStop.Trigger.CHECKS, 5, "3 reads could not list the checks");
 
@@ -281,10 +288,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     ReviewFacts round =
         new ReviewFacts(
@@ -311,10 +319,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     stops.round(
@@ -351,10 +360,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     ReviewFacts first =
         new ReviewFacts(
@@ -391,10 +401,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     ReviewFacts first =
         new ReviewFacts(
@@ -429,10 +440,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     ReviewFacts first =
         new ReviewFacts(
@@ -462,10 +474,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     ReviewFacts round =
         new ReviewFacts(
@@ -491,10 +504,11 @@ class TaskStopsTest {
         "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("cart").build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     stops.stop("ABC-42", TaskStop.Trigger.CHECKS, "3 reads could not list the checks");
@@ -517,10 +531,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     stops.stop("ABC-42", TaskStop.Trigger.CHECKS, "3 reads could not list the checks");
 
@@ -546,10 +561,11 @@ class TaskStopsTest {
             .build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     ReviewFacts answered =
         new ReviewFacts(
@@ -576,10 +592,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     stops.stop("ABC-42", trigger, "host down");
 
@@ -610,10 +627,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     stops.stop("ABC-42", trigger, "host down");
 
@@ -646,10 +664,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     stops.stop("ABC-42", trigger, "host down");
 
@@ -675,10 +694,11 @@ class TaskStopsTest {
             .build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     stops.endOnRefusal("ABC-42", ReviewSweepService.SweepResult.Kind.GONE, "http://mr/A");
@@ -703,10 +723,11 @@ class TaskStopsTest {
             .build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     stops.endOnRefusal("ABC-42", ReviewSweepService.SweepResult.Kind.GONE, "http://mr/B");
@@ -735,10 +756,11 @@ class TaskStopsTest {
             .build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     boolean due = stops.roundDue("ABC-42", "review");
@@ -764,10 +786,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     stops.stop("ABC-42", trigger, "down");
 
@@ -811,10 +834,11 @@ class TaskStopsTest {
     state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     assertThat(stops.standing("ABC-1", TaskStop.Trigger.INFRA)).isTrue();
@@ -839,10 +863,11 @@ class TaskStopsTest {
     state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     assertThat(stops.asking("ABC-1")).isTrue();
@@ -861,10 +886,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     ReviewFacts round =
         new ReviewFacts(
@@ -889,10 +915,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     ReviewFacts round =
         new ReviewFacts(
@@ -917,10 +944,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
     stops.round(
         "ABC-42",
@@ -954,10 +982,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     stops.pauseOnWord("ABC-42", "until the managers answer");
@@ -978,10 +1007,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     assertThatThrownBy(() -> stops.pauseOnWord("ABC-42", "until the managers answer"))
@@ -1002,10 +1032,11 @@ class TaskStopsTest {
         "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).stop(stop).build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     OriginContext.as(ActionOrigin.MASTER, () -> stops.lift("ABC-42"));
@@ -1037,10 +1068,11 @@ class TaskStopsTest {
             1));
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     stops.escalate("ABC-42");
@@ -1062,10 +1094,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(
-            task -> new Arbiter.Profile(MasterMode.ACT, Set.of()),
+            new StopPolicy(
+                task -> new Arbiter.Profile(MasterMode.ACT, Set.of()),
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     stops.stop("ABC-42", TaskStop.Trigger.ROUNDS, "verify sent 3 rounds");
@@ -1084,10 +1117,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(
-            task -> new Arbiter.Profile(MasterMode.ACT, Set.of("lift")),
+            new StopPolicy(
+                task -> new Arbiter.Profile(MasterMode.ACT, Set.of("lift")),
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     stops.stop("ABC-42", TaskStop.Trigger.ROUNDS, "verify sent 3 rounds");
@@ -1110,10 +1144,11 @@ class TaskStopsTest {
             .build());
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     stops.triaged("ABC-42", "ROUNDS@5", StopTriage.failed("a stop that is gone"));
@@ -1137,10 +1172,11 @@ class TaskStopsTest {
             .withTier(new ModelTier(List.of("sonnet", "opus"), 0)));
     TaskStops stops =
         new TaskStops(
-            ignored -> Arbiter.Profile.OFF,
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     OriginContext.as(ActionOrigin.MASTER, () -> stops.escalate("ABC-42"));
@@ -1159,10 +1195,11 @@ class TaskStopsTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(
-            task -> new Arbiter.Profile(MasterMode.ACT, Set.of("done")),
+            new StopPolicy(
+                task -> new Arbiter.Profile(MasterMode.ACT, Set.of("done")),
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths)),
             clock);
 
     assertThat(stops.masterKeeps("ABC-42", TaskAction.DONE)).isTrue();

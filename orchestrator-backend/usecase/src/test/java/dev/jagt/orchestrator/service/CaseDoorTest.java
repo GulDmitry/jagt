@@ -45,12 +45,13 @@ class CaseDoorTest {
         state,
         new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
         new TaskStops(
-            task -> master.profile(),
+            new StopPolicy(
+                task -> master.profile(),
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths))),
             state,
-            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-            new StopAnnouncements(
-                new Notifications(List.of(), state, Runnable::run),
-                new StopLog(new JsonMapper(), paths)),
             Clock.systemUTC()));
   }
 
@@ -94,8 +95,7 @@ class CaseDoorTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
-    boolean admitted =
-        OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", action));
+    boolean admitted = OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", action));
 
     assertThat(admitted).isTrue();
   }
