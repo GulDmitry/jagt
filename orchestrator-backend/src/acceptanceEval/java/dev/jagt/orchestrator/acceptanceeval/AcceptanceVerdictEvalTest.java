@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.eval.AcceptanceJudgement;
 import dev.jagt.orchestrator.eval.AcceptanceScore;
 import dev.jagt.orchestrator.eval.AcceptanceScoreboard;
 import dev.jagt.orchestrator.eval.AcceptanceWorkspaceFiles;
+import dev.jagt.orchestrator.eval.EvalEndpoints;
 import dev.jagt.orchestrator.eval.EvalPorts;
 import dev.jagt.orchestrator.eval.EvalQuorum;
 import dev.jagt.orchestrator.eval.EvalStalled;
@@ -76,11 +77,7 @@ abstract class AcceptanceVerdictEvalTest {
   @DynamicPropertySource
   static void orchestratorLivesInTheTrustedEvalRoot(DynamicPropertyRegistry registry)
       throws Exception {
-    registry.add("server.port", () -> GATE_PORT);
-    registry.add("orchestrator.mcp-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/mcp");
-    registry.add(
-        "orchestrator.hook-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/api/agent/session");
-    registry.add("orchestrator.gate-url", () -> "http://127.0.0.1:" + GATE_PORT + "/api/agent");
+    EvalEndpoints.register(registry, GATE_PORT, DEAD_PORT);
     registry.add("orchestrator.assistant.max-cost-usd", () -> "0.10");
     AcceptanceEvalWorkspace.clean();
     Path root = AcceptanceEvalWorkspace.root();

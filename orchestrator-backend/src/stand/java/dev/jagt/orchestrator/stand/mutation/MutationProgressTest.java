@@ -11,13 +11,30 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class MutationProgressTest {
 
   private static final Instant AT = Instant.parse("2026-10-25T08:33:00Z");
   private static final Step BOARD_OPENED = new Step(TaskStatus.NEW, AT, "BOARD");
   private static final Step SESSION_STARTED = new Step(TaskStatus.IN_PROGRESS, AT, "MCP");
+
+  private final StandOutcome heldAtDeployConflict =
+      new StandOutcome(
+          "DEPLOY_CONFLICT",
+          "YOU",
+          Duration.ofSeconds(200),
+          List.of(),
+          Path.of("/stand"),
+          Ending.HELD,
+          "",
+          new StandOutcome.Signals("", "PLAIN", 0));
+
+  private final List<Step> stepsAtDeployConflict =
+      List.of(BOARD_OPENED, SESSION_STARTED, new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD"));
 
   @Test
   void runWhereTheSessionNeverReportedFailsEvenHandedToTheHuman() {
@@ -285,85 +302,20 @@ class MutationProgressTest {
         .isPresent();
   }
 
-  @Test
-  void taskStoppedAtDeployConflictWhoseConflictStepReachedTheSessionPasses() {
-    StandOutcome outcome =
-        new StandOutcome(
-            "DEPLOY_CONFLICT",
-            "YOU",
-            Duration.ofSeconds(200),
-            List.of(),
-            Path.of("/stand"),
-            Ending.HELD,
-            "",
-            new StandOutcome.Signals("", "PLAIN", 0));
+  @ParameterizedTest
+  @CsvSource({"true, true, true, false", "false, true, true, true", "false, true, false, false"})
+  void taskStoppedAtDeployConflictIsJudgedByWhetherItsConflictStepIsOwedToTheSession(
+      boolean relayed, boolean expected, boolean stepComes, boolean lacking) {
+    Optional<String> why =
+        MutationProgress.lacking(
+            Kind.WORLD,
+            heldAtDeployConflict,
+            stepsAtDeployConflict,
+            0,
+            false,
+            new MutationProgress.Conflict(relayed, expected, stepComes));
 
-    assertThat(
-            MutationProgress.lacking(
-                Kind.WORLD,
-                outcome,
-                List.of(
-                    BOARD_OPENED,
-                    SESSION_STARTED,
-                    new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")),
-                0,
-                false,
-                new MutationProgress.Conflict(true, true, true)))
-        .isEmpty();
-  }
-
-  @Test
-  void taskStoppedAtDeployConflictWithoutTheConflictStepReachingTheSessionFails() {
-    StandOutcome outcome =
-        new StandOutcome(
-            "DEPLOY_CONFLICT",
-            "YOU",
-            Duration.ofSeconds(200),
-            List.of(),
-            Path.of("/stand"),
-            Ending.HELD,
-            "",
-            new StandOutcome.Signals("", "PLAIN", 0));
-
-    assertThat(
-            MutationProgress.lacking(
-                Kind.WORLD,
-                outcome,
-                List.of(
-                    BOARD_OPENED,
-                    SESSION_STARTED,
-                    new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")),
-                0,
-                false,
-                new MutationProgress.Conflict(false, true, true)))
-        .isPresent();
-  }
-
-  @Test
-  void taskStoppedAtDeployConflictPassesWithoutTheConflictStepWhereNoStepComes() {
-    StandOutcome outcome =
-        new StandOutcome(
-            "DEPLOY_CONFLICT",
-            "YOU",
-            Duration.ofSeconds(200),
-            List.of(),
-            Path.of("/stand"),
-            Ending.HELD,
-            "",
-            new StandOutcome.Signals("", "PLAIN", 0));
-
-    assertThat(
-            MutationProgress.lacking(
-                Kind.WORLD,
-                outcome,
-                List.of(
-                    BOARD_OPENED,
-                    SESSION_STARTED,
-                    new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")),
-                0,
-                false,
-                new MutationProgress.Conflict(false, true, false)))
-        .isEmpty();
+    assertThat(why.isPresent()).isEqualTo(lacking);
   }
 
   @Test
@@ -392,25 +344,11 @@ class MutationProgressTest {
 
   @Test
   void deployConflictNoMutationExpectedFailsNamingIt() {
-    StandOutcome outcome =
-        new StandOutcome(
-            "DEPLOY_CONFLICT",
-            "YOU",
-            Duration.ofSeconds(200),
-            List.of(),
-            Path.of("/stand"),
-            Ending.HELD,
-            "",
-            new StandOutcome.Signals("", "PLAIN", 0));
-
     assertThat(
             MutationProgress.lacking(
                 Kind.WORLD,
-                outcome,
-                List.of(
-                    BOARD_OPENED,
-                    SESSION_STARTED,
-                    new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")),
+                heldAtDeployConflict,
+                stepsAtDeployConflict,
                 0,
                 false,
                 new MutationProgress.Conflict(true, false, false)))

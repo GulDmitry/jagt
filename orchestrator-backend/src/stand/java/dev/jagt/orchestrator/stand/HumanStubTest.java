@@ -20,32 +20,29 @@ class HumanStubTest {
         "actions":[{"id":"ship","primary":true},{"id":"done","primary":false}]}]}\
       """;
 
+  private final StandBoard verbs = mock(StandBoard.class);
+  private final JsonNode shipIsYours = JsonMapper.builder().build().readTree(SHIP_IS_YOURS);
+
   @Test
   void pressesTheHumansVerbOnceInJudge() {
-    StandBoard verbs = mock(StandBoard.class);
     when(verbs.press("ABC-42", "ship")).thenReturn(JsonMapper.builder().build().createObjectNode());
-    JsonNode board = JsonMapper.builder().build().readTree(SHIP_IS_YOURS);
     HumanStub human = new HumanStub(StandMode.JUDGE);
 
-    human.take(board, verbs, mock(Timeline.class));
-    human.take(board, verbs, mock(Timeline.class));
+    human.take(shipIsYours, verbs, mock(Timeline.class));
+    human.take(shipIsYours, verbs, mock(Timeline.class));
 
     verify(verbs, times(1)).press("ABC-42", "ship");
   }
 
   @Test
   void leavesTheShipToTheMasterInAct() {
-    StandBoard verbs = mock(StandBoard.class);
-    JsonNode board = JsonMapper.builder().build().readTree(SHIP_IS_YOURS);
-
-    new HumanStub(StandMode.ACT).take(board, verbs, mock(Timeline.class));
+    new HumanStub(StandMode.ACT).take(shipIsYours, verbs, mock(Timeline.class));
 
     verify(verbs, never()).press(anyString(), anyString());
   }
 
   @Test
   void approvesPlanWaitingOnAnotherOwnerInAct() {
-    StandBoard verbs = mock(StandBoard.class);
     when(verbs.press("ABC-42", "approve-plan"))
         .thenReturn(JsonMapper.builder().build().createObjectNode());
     JsonNode board =
@@ -64,7 +61,6 @@ class HumanStubTest {
 
   @Test
   void deploysGreenRequestOwnedByCiInJudge() {
-    StandBoard verbs = mock(StandBoard.class);
     when(verbs.press("ABC-42", "deploy"))
         .thenReturn(JsonMapper.builder().build().createObjectNode());
     JsonNode board =
@@ -83,7 +79,6 @@ class HumanStubTest {
 
   @Test
   void doesNotDeployRequestWhosePipelineIsStillRunning() {
-    StandBoard verbs = mock(StandBoard.class);
     JsonNode board =
         JsonMapper.builder()
             .build()
@@ -100,7 +95,6 @@ class HumanStubTest {
 
   @Test
   void leavesTheDeployToTheMasterInAct() {
-    StandBoard verbs = mock(StandBoard.class);
     JsonNode board =
         JsonMapper.builder()
             .build()
@@ -133,22 +127,19 @@ class HumanStubTest {
 
   @Test
   void stillHasShipToPressWhenYouOwnsAnUnpressedOne() {
-    JsonNode board = JsonMapper.builder().build().readTree(SHIP_IS_YOURS);
 
-    boolean nothing = new HumanStub(StandMode.JUDGE).nothingToPress(board);
+    boolean nothing = new HumanStub(StandMode.JUDGE).nothingToPress(shipIsYours);
 
     assertThat(nothing).isFalse();
   }
 
   @Test
   void hasNothingLeftToPressOnceTheShipWasPressed() {
-    StandBoard verbs = mock(StandBoard.class);
     when(verbs.press("ABC-42", "ship")).thenReturn(JsonMapper.builder().build().createObjectNode());
-    JsonNode board = JsonMapper.builder().build().readTree(SHIP_IS_YOURS);
     HumanStub human = new HumanStub(StandMode.JUDGE);
-    human.take(board, verbs, mock(Timeline.class));
+    human.take(shipIsYours, verbs, mock(Timeline.class));
 
-    boolean nothing = human.nothingToPress(board);
+    boolean nothing = human.nothingToPress(shipIsYours);
 
     assertThat(nothing).isTrue();
   }

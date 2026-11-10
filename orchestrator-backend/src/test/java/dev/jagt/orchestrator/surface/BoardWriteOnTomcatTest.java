@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.surface;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.jagt.orchestrator.eval.ShippedRoot;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.UserNotifier;
 import java.io.IOException;
@@ -9,7 +10,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -42,18 +42,7 @@ class BoardWriteOnTomcatTest {
 
   @DynamicPropertySource
   static void keepConfigAndStateInTheTempRoot(DynamicPropertyRegistry registry) throws IOException {
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    Files.copy(
-        Path.of("../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.copy(
-        Path.of("../roles/acceptance/role.yml.dist"),
-        root.resolve("roles/acceptance/role.yml.dist"));
-    registry.add("orchestrator.root", () -> root.toString());
-    registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
-    registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
+    ShippedRoot.configure(registry, root);
   }
 
   @ParameterizedTest

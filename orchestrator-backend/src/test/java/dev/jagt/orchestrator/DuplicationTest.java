@@ -3,6 +3,7 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.StreamSupport;
@@ -17,13 +18,22 @@ class DuplicationTest {
 
   private static final int MINIMUM_TOKENS = 75;
 
+  private static final List<Path> SKIPPED =
+      List.of(
+          Path.of("adapter/src/test/java"),
+          Path.of("core/src/test/java"),
+          Path.of("src/boardTest/java"),
+          Path.of("src/e2e/java"),
+          Path.of("surface/src/test/java"),
+          Path.of("usecase/src/test/java"));
+
   @Test
-  void noBlockOfMainIsCopiedElsewhereInMain() throws IOException {
+  void noBlockOfCodeIsCopiedElsewhere() throws IOException {
     CPDConfiguration configuration = new CPDConfiguration();
     configuration.setOnlyRecognizeLanguage(LanguageRegistry.CPD.getLanguageById("java"));
     configuration.setMinimumTileSize(MINIMUM_TOKENS);
     SourceRoots.ROOTS.stream()
-        .filter(root -> !SourceRoots.isTest(root))
+        .filter(root -> !SKIPPED.contains(root))
         .forEach(configuration::addInputPath);
     List<String> duplicates = new ArrayList<>();
 
@@ -44,7 +54,7 @@ class DuplicationTest {
           });
     }
 
-    assertThat(duplicates).isEmpty();
+    assertThat(String.join(System.lineSeparator(), duplicates)).isEmpty();
   }
 
   private static String place(Mark mark) {

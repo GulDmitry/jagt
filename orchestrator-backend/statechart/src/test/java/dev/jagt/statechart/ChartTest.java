@@ -18,6 +18,19 @@ import org.junit.jupiter.api.Test;
 
 class ChartTest {
 
+  private final ChartBuilder<Event, Readings, String> stageFromLow =
+      Chart.<Event, Readings, String>builder()
+          .region(Lamp.STAGE, Stage.LOW)
+          .on(Lamp.STAGE, Stage.LOW, Press.class)
+          .to(Stage.MID);
+
+  private final Chart<Event, Readings, String> pressMovesPower =
+      Chart.<Event, Readings, String>builder()
+          .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+          .on(Lamp.POWER, Power.OFF, Press.class)
+          .to(Power.ON)
+          .build();
+
   @Test
   void stateNothingReachesIsReported() {
     ChartBuilder<Event, Readings, String> builder =
@@ -174,15 +187,9 @@ class ChartTest {
 
   @Test
   void configurationNamingAnUnknownStateIsRejected() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .on(Lamp.POWER, Power.OFF, Press.class)
-            .to(Power.ON)
-            .build();
     Map<String, String> plain = Map.of("power", "BROKEN");
 
-    assertThatThrownBy(() -> chart.configuration(plain))
+    assertThatThrownBy(() -> pressMovesPower.configuration(plain))
         .isInstanceOfSatisfying(
             InvalidConfiguration.class,
             invalid ->
@@ -192,15 +199,9 @@ class ChartTest {
 
   @Test
   void configurationNamingAnUnknownRegionIsRejected() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .on(Lamp.POWER, Power.OFF, Press.class)
-            .to(Power.ON)
-            .build();
     Map<String, String> plain = Map.of("power", "OFF", "mode", "DIM");
 
-    assertThatThrownBy(() -> chart.configuration(plain))
+    assertThatThrownBy(() -> pressMovesPower.configuration(plain))
         .isInstanceOfSatisfying(
             InvalidConfiguration.class,
             invalid -> assertThat(invalid.problems()).containsExactly("no stored region mode"));
@@ -208,13 +209,7 @@ class ChartTest {
 
   @Test
   void configurationCannotBeAskedForRegionTheChartDoesNotStore() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .on(Lamp.POWER, Power.OFF, Press.class)
-            .to(Power.ON)
-            .build();
-    Configuration start = chart.initial();
+    Configuration start = pressMovesPower.initial();
 
     assertThatThrownBy(() -> start.get(Lamp.MODE)).isInstanceOf(IllegalArgumentException.class);
   }
@@ -261,10 +256,7 @@ class ChartTest {
   @Test
   void anEdgeDeclaredFromSetIsDrawnAsOneLabelledEdgeFromTheSet() {
     Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.STAGE, Stage.LOW)
-            .on(Lamp.STAGE, Stage.LOW, Press.class)
-            .to(Stage.MID)
+        stageFromLow
             .onMatching(Lamp.STAGE, Set.of(Stage.LOW, Stage.MID), "tick", Tick.class::isInstance)
             .to(Stage.HIGH)
             .onMatching(Lamp.STAGE, Set.of(Stage.HIGH), "hit", Hit.class::isInstance)
@@ -323,10 +315,7 @@ class ChartTest {
   @Test
   void anEdgeDeclaredFromEveryStateIsDrawnOnce() {
     Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.STAGE, Stage.LOW)
-            .on(Lamp.STAGE, Stage.LOW, Press.class)
-            .to(Stage.MID)
+        stageFromLow
             .onMatching(
                 Lamp.STAGE,
                 Set.of(Stage.LOW, Stage.MID, Stage.HIGH),

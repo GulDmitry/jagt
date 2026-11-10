@@ -8,8 +8,6 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -108,7 +106,7 @@ class RingsTest {
                 .filter(
                     path ->
                         Pattern.compile("\\b[A-Z]\\w+")
-                            .matcher(read(path))
+                            .matcher(SourceRoots.read(path))
                             .results()
                             .map(MatchResult::group)
                             .anyMatch(outerTypes::contains))
@@ -126,7 +124,7 @@ class RingsTest {
                                 "^import (?:static )?"
                                     + "(?!java\\.|dev\\.jagt\\.statechart\\.|org\\.jspecify\\.)",
                                 Pattern.MULTILINE)
-                            .matcher(read(path))
+                            .matcher(SourceRoots.read(path))
                             .find())
                 .map(Path::getFileName))
         .isEmpty();
@@ -177,7 +175,9 @@ class RingsTest {
 
     assertThat(
             filesOutsideTheEdge(true)
-                .filter(path -> osOnly.stream().anyMatch(name -> read(path).contains(name)))
+                .filter(
+                    path ->
+                        osOnly.stream().anyMatch(name -> SourceRoots.read(path).contains(name)))
                 .map(Path::getFileName))
         .isEmpty();
   }
@@ -207,7 +207,7 @@ class RingsTest {
                         vendors.stream()
                             .anyMatch(
                                 keysNamingVendorByDesign
-                                        .matcher(read(path))
+                                        .matcher(SourceRoots.read(path))
                                         .replaceAll("")
                                         .toLowerCase(Locale.ROOT)
                                     ::contains))
@@ -223,7 +223,7 @@ class RingsTest {
     assertThat(
             filesOutsideTheEdge(false)
                 .filter(path -> !worktreeFilling.contains(path.getFileName().toString()))
-                .filter(path -> ideFolders.stream().anyMatch(read(path)::contains))
+                .filter(path -> ideFolders.stream().anyMatch(SourceRoots.read(path)::contains))
                 .map(Path::getFileName))
         .isEmpty();
   }
@@ -246,8 +246,8 @@ class RingsTest {
     return ROOTS.stream()
         .map(root -> root.resolve(ring))
         .filter(Files::isDirectory)
-        .flatMap(RingsTest::javaFilesUnder)
-        .map(RingsTest::read);
+        .flatMap(SourceRoots::javaFilesUnder)
+        .map(SourceRoots::read);
   }
 
   private static Stream<Path> javaFilesIn(String module, boolean mainOnly) {
@@ -257,19 +257,4 @@ class RingsTest {
         .flatMap(SourceRoots::javaFilesUnder);
   }
 
-  private static Stream<Path> javaFilesUnder(Path root) {
-    try (Stream<Path> files = Files.walk(root)) {
-      return files.filter(path -> path.toString().endsWith(".java")).toList().stream();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  private static String read(Path path) {
-    try {
-      return Files.readString(path);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
 }

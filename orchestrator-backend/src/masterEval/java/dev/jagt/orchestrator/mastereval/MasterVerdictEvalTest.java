@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import dev.jagt.orchestrator.adapter.agent.MasterEvalTranscripts;
+import dev.jagt.orchestrator.eval.EvalEndpoints;
 import dev.jagt.orchestrator.eval.EvalPorts;
 import dev.jagt.orchestrator.eval.EvalQuorum;
 import dev.jagt.orchestrator.eval.EvalStalled;
@@ -84,11 +85,7 @@ abstract class MasterVerdictEvalTest {
   @DynamicPropertySource
   static void orchestratorLivesInTheTrustedEvalRoot(DynamicPropertyRegistry registry)
       throws Exception {
-    registry.add("server.port", () -> GATE_PORT);
-    registry.add("orchestrator.mcp-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/mcp");
-    registry.add(
-        "orchestrator.hook-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/api/agent/session");
-    registry.add("orchestrator.gate-url", () -> "http://127.0.0.1:" + GATE_PORT + "/api/agent");
+    EvalEndpoints.register(registry, GATE_PORT, DEAD_PORT);
     MasterEvalWorkspace.clean();
     Path root = MasterEvalWorkspace.root();
     Files.createDirectories(root);

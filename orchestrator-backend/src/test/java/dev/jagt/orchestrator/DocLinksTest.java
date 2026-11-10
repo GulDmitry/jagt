@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator;
 
+import static dev.jagt.orchestrator.DocFiles.markdownIn;
+import static dev.jagt.orchestrator.DocFiles.specs;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
@@ -130,17 +132,6 @@ class DocLinksTest {
         .toList();
   }
 
-  private static List<Path> specs() {
-    try (Stream<Path> capabilities = Files.list(Path.of("../openspec/specs"))) {
-      return capabilities
-          .map(capability -> capability.resolve("spec.md"))
-          .filter(Files::isRegularFile)
-          .toList();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
   private static List<String> namesIn(Path directory) {
     return markdownIn(directory).stream().map(path -> path.getFileName().toString()).toList();
   }
@@ -153,11 +144,4 @@ class DocLinksTest {
     }
   }
 
-  private static List<Path> markdownIn(Path directory) {
-    try (Stream<Path> files = Files.list(directory)) {
-      return files.filter(path -> path.toString().endsWith(".md")).toList();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
 }

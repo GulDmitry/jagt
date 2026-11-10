@@ -15,68 +15,66 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ChartStepTest {
 
+  private final ChartBuilder<Event, Readings, String> powerOnly =
+      Chart.<Event, Readings, String>builder().region(Lamp.POWER, Power.OFF, Set.of(Power.ON));
+
+  private final ChartBuilder<Event, Readings, String> powerAndMode =
+      Chart.<Event, Readings, String>builder()
+          .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+          .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT));
+
+  private final Chart<Event, Readings, String> litByPress =
+      Chart.<Event, Readings, String>builder()
+          .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+          .on(Lamp.POWER, Power.OFF, Press.class)
+          .emit("lit")
+          .to(Power.ON)
+          .build();
+
+  private final Chart<Event, Readings, String> pressMovesPower =
+      Chart.<Event, Readings, String>builder()
+          .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+          .on(Lamp.POWER, Power.OFF, Press.class)
+          .to(Power.ON)
+          .build();
+
   @Test
   void regionMovesOnItsEventAndEmitsTheEffect() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .on(Lamp.POWER, Power.OFF, Press.class)
-            .emit("lit")
-            .to(Power.ON)
-            .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
+    ChartStep<String> step =
+        litByPress.step(litByPress.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
     assertThat(step.effects()).containsExactly("lit");
   }
 
-  @Test
-  void guardReadsAnotherRegion() {
+  @ParameterizedTest
+  @CsvSource({"BRIGHT, ON", "DIM, OFF"})
+  void guardOnAnotherRegionDecidesWhetherTheEdgeIsTaken(String mode, String power) {
     Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
+        powerAndMode
             .on(Lamp.POWER, Power.OFF, Press.class)
             .when((others, event) -> others.get(Lamp.MODE) == Mode.BRIGHT)
             .to(Power.ON)
             .on(Lamp.MODE, Mode.DIM, Tick.class)
             .to(Mode.BRIGHT)
             .build();
-
-    Configuration start = chart.configuration(Map.of("power", "OFF", "mode", "BRIGHT"));
+    Configuration start = chart.configuration(Map.of("power", "OFF", "mode", mode));
 
     ChartStep<String> step = chart.step(start, new Readings(Mode.DIM), new Press());
 
-    assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
-  }
-
-  @Test
-  void guardThatDoesNotHoldKeepsTheRegionWhereItIs() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
-            .on(Lamp.POWER, Power.OFF, Press.class)
-            .when((others, event) -> others.get(Lamp.MODE) == Mode.BRIGHT)
-            .to(Power.ON)
-            .on(Lamp.MODE, Mode.DIM, Tick.class)
-            .to(Mode.BRIGHT)
-            .build();
-
-    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
-
-    assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.OFF);
+    assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.valueOf(power));
   }
 
   @Test
   void guardCannotReadTheRegionItsEdgeLeaves() {
     Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+        powerOnly
             .on(Lamp.POWER, Power.OFF, Press.class)
             .when((others, event) -> others.get(Lamp.POWER) == Power.OFF)
             .to(Power.ON)
@@ -126,8 +124,7 @@ class ChartStepTest {
   @Test
   void stayEdgeEmitsItsEffectAndNoExitEffect() {
     Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+        powerOnly
             .onExit(Lamp.POWER, Power.OFF, "left off")
             .on(Lamp.POWER, Power.OFF, Press.class)
             .emit("pressed")
@@ -145,8 +142,7 @@ class ChartStepTest {
   @Test
   void anExternalSelfEdgeStillExitsItsState() {
     Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+        powerOnly
             .onExit(Lamp.POWER, Power.OFF, "left off")
             .on(Lamp.POWER, Power.OFF, Press.class)
             .emit("pressed")
@@ -163,9 +159,7 @@ class ChartStepTest {
   @Test
   void parallelRegionsTakeTheSameEventAgainstTheConfigurationFromBeforeTheStep() {
     Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
+        powerAndMode
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON)
             .on(Lamp.MODE, Mode.DIM, Press.class)
@@ -243,16 +237,9 @@ class ChartStepTest {
 
   @Test
   void anEventNoEdgeTakesChangesNothing() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .on(Lamp.POWER, Power.OFF, Press.class)
-            .emit("lit")
-            .to(Power.ON)
-            .build();
-    Configuration start = chart.initial();
+    Configuration start = litByPress.initial();
 
-    ChartStep<String> step = chart.step(start, new Readings(Mode.DIM), new Hit());
+    ChartStep<String> step = litByPress.step(start, new Readings(Mode.DIM), new Hit());
 
     assertThat(step.configuration()).isEqualTo(start);
     assertThat(step.effects()).isEmpty();
@@ -297,8 +284,7 @@ class ChartStepTest {
   @Test
   void guardCannotReadRegionTheChartDoesNotHave() {
     Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
+        powerOnly
             .on(Lamp.POWER, Power.OFF, Press.class)
             .when((others, event) -> others.get(Lamp.MODE) == Mode.BRIGHT)
             .to(Power.ON)
@@ -381,15 +367,10 @@ class ChartStepTest {
 
   @Test
   void takesCannotBeAskedOfRegionTheChartDoesNotStore() {
-    Chart<Event, Readings, String> chart =
-        Chart.<Event, Readings, String>builder()
-            .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .on(Lamp.POWER, Power.OFF, Press.class)
-            .to(Power.ON)
-            .build();
-    Configuration start = chart.initial();
+    Configuration start = pressMovesPower.initial();
 
-    assertThatThrownBy(() -> chart.takes(Lamp.MODE, start, new Readings(Mode.DIM), new Press()))
+    assertThatThrownBy(
+            () -> pressMovesPower.takes(Lamp.MODE, start, new Readings(Mode.DIM), new Press()))
         .isInstanceOf(IllegalArgumentException.class);
   }
 }

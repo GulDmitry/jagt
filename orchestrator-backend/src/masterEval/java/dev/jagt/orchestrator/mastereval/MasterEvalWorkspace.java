@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.mastereval;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import dev.jagt.orchestrator.adapter.agent.MasterEvalTranscripts;
+import dev.jagt.orchestrator.eval.EvalGit;
 import dev.jagt.orchestrator.eval.EvalShards;
 import dev.jagt.orchestrator.eval.MasterCase;
 import java.io.IOException;
@@ -96,19 +97,19 @@ final class MasterEvalWorkspace {
 
   static Path worktreeFor(Path repo, MasterCase round, String taskId) throws Exception {
     Files.createDirectories(repo);
-    git(repo, "init", "--initial-branch=main", ".");
-    git(repo, "config", "user.email", "eval@example.com");
-    git(repo, "config", "user.name", "jagt master eval");
+    EvalGit.run(repo, "init", "--initial-branch=main", ".");
+    EvalGit.run(repo, "config", "user.email", "eval@example.com");
+    EvalGit.run(repo, "config", "user.name", "jagt master eval");
     write(repo, round.baseline());
-    git(repo, "add", "-A");
-    git(repo, "commit", "-m", "Baseline");
+    EvalGit.run(repo, "add", "-A");
+    EvalGit.run(repo, "commit", "-m", "Baseline");
     Path origin = Objects.requireNonNull(repo.getParent()).resolve("origin.git");
-    git(repo.getParent(), "init", "--bare", "--initial-branch=main", origin.toString());
-    git(repo, "remote", "add", "origin", origin.toString());
-    git(repo, "push", "origin", "main");
-    git(repo, "fetch", "origin");
+    EvalGit.run(repo.getParent(), "init", "--bare", "--initial-branch=main", origin.toString());
+    EvalGit.run(repo, "remote", "add", "origin", origin.toString());
+    EvalGit.run(repo, "push", "origin", "main");
+    EvalGit.run(repo, "fetch", "origin");
     Path worktree = repo.getParent().resolve(taskId);
-    git(repo, "worktree", "add", "-b", taskId, worktree.toString(), "main");
+    EvalGit.run(repo, "worktree", "add", "-b", taskId, worktree.toString(), "main");
     write(worktree, round.change());
     Files.writeString(worktree.resolve("task_request.md"), round.instructions());
     if (!round.plan().isBlank()) {
@@ -151,20 +152,4 @@ final class MasterEvalWorkspace {
     }
   }
 
-  static void git(Path directory, String... arguments) throws Exception {
-    String[] command = new String[arguments.length + 1];
-    command[0] = "git";
-    System.arraycopy(arguments, 0, command, 1, arguments.length);
-    Process process =
-        new ProcessBuilder(command).directory(directory.toFile()).redirectErrorStream(true).start();
-    if (!process.waitFor(2, TimeUnit.MINUTES) || process.exitValue() != 0) {
-      throw new IllegalStateException(
-          "git "
-              + String.join(" ", arguments)
-              + " failed in "
-              + directory
-              + ": "
-              + new String(process.getInputStream().readAllBytes(), UTF_8));
-    }
-  }
 }

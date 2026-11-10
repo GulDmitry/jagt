@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import org.springframework.test.context.DynamicPropertyRegistry;
 
 public final class ShippedRoot {
 
@@ -29,6 +30,13 @@ public final class ShippedRoot {
     for (Path file : files) {
       copy(file, root.resolve("roles").resolve(roles.relativize(file).toString()));
     }
+  }
+
+  public static void configure(DynamicPropertyRegistry registry, Path root) throws IOException {
+    copyInto(root);
+    registry.add("orchestrator.root", () -> root.toString());
+    registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
+    registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
   }
 
   private static boolean shipped(Path inRoles) {

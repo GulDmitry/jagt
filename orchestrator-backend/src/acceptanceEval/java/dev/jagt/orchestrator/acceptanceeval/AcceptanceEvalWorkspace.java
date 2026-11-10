@@ -5,6 +5,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import dev.jagt.orchestrator.config.RoleOptions;
 import dev.jagt.orchestrator.eval.AcceptanceCase;
 import dev.jagt.orchestrator.eval.AcceptanceRoleYml;
+import dev.jagt.orchestrator.eval.EvalGit;
 import dev.jagt.orchestrator.eval.EvalShards;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -55,20 +56,20 @@ final class AcceptanceEvalWorkspace {
 
   static Path worktreeFor(Path repo, AcceptanceCase deployed) throws Exception {
     Files.createDirectories(repo);
-    git(repo, "init", "--initial-branch=main", ".");
-    git(repo, "config", "user.email", "eval@example.com");
-    git(repo, "config", "user.name", "jagt acceptance eval");
+    EvalGit.run(repo, "init", "--initial-branch=main", ".");
+    EvalGit.run(repo, "config", "user.email", "eval@example.com");
+    EvalGit.run(repo, "config", "user.name", "jagt acceptance eval");
     Files.writeString(repo.resolve("README.md"), "baseline\n");
-    git(repo, "add", "README.md");
-    git(repo, "commit", "-m", "Baseline");
+    EvalGit.run(repo, "add", "README.md");
+    EvalGit.run(repo, "commit", "-m", "Baseline");
     for (String change : deployed.landing().deploy().diff()) {
       String[] fileAndWhat = change.split(": ", 2);
       Path target = repo.resolve(fileAndWhat[0]);
       Files.createDirectories(target.getParent());
       Files.writeString(target, fileAndWhat[1] + "\n");
-      git(repo, "add", fileAndWhat[0]);
+      EvalGit.run(repo, "add", fileAndWhat[0]);
     }
-    git(repo, "commit", "-m", deployed.ticket().title());
+    EvalGit.run(repo, "commit", "-m", deployed.ticket().title());
     return repo;
   }
 
@@ -141,23 +142,6 @@ final class AcceptanceEvalWorkspace {
         + "\nPages the environment serves:\n"
         + served
         + "\nEach page answers with what it renders, as JSON; a sign-in GET needs no session.";
-  }
-
-  static void git(Path directory, String... arguments) throws Exception {
-    String[] command = new String[arguments.length + 1];
-    command[0] = "git";
-    System.arraycopy(arguments, 0, command, 1, arguments.length);
-    Process process =
-        new ProcessBuilder(command).directory(directory.toFile()).redirectErrorStream(true).start();
-    if (!process.waitFor(2, TimeUnit.MINUTES) || process.exitValue() != 0) {
-      throw new IllegalStateException(
-          "git "
-              + String.join(" ", arguments)
-              + " failed in "
-              + directory
-              + ": "
-              + new String(process.getInputStream().readAllBytes(), UTF_8));
-    }
   }
 
   static void writeRole(String environment, String landed, RoleOptions.Flows flows)

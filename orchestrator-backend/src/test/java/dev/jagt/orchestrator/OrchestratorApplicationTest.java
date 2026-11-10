@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.eval.ShippedRoot;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.TicketReader;
@@ -11,7 +12,6 @@ import dev.jagt.orchestrator.surface.mcp.McpController;
 import dev.jagt.orchestrator.surface.ui.LogFileRoll;
 import dev.jagt.orchestrator.surface.ui.PortGuard;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -49,18 +49,7 @@ class OrchestratorApplicationTest {
   @DynamicPropertySource
   static void keepConfigAndStateOutOfTheDevelopersOwnFilesEvenWhereTheyExportedThemOverTheRoot(
       DynamicPropertyRegistry registry) throws IOException {
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    Files.copy(
-        Path.of("../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.copy(
-        Path.of("../roles/acceptance/role.yml.dist"),
-        root.resolve("roles/acceptance/role.yml.dist"));
-    registry.add("orchestrator.root", () -> root.toString());
-    registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
-    registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
+    ShippedRoot.configure(registry, root);
   }
 
   @Test

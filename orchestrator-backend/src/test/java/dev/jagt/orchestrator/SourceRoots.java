@@ -41,6 +41,14 @@ final class SourceRoots {
     }
   }
 
+  static String read(Path path) {
+    try {
+      return Files.readString(path);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   static Path moduleOf(Path path) {
     return path.getName(0).toString().equals("src") ? Path.of(".") : path.getName(0);
   }

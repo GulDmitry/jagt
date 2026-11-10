@@ -5,10 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.ToolchainProperties;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.reflect.RecordComponent;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +25,7 @@ class ConfigReferenceTest {
 
   @Test
   void jagtYmlDistDescribesEveryKeyTheBackendReads() {
-    String dist = read(Path.of("../jagt.yml.dist"));
+    String dist = SourceRoots.read(Path.of("../jagt.yml.dist"));
     Pattern named = Pattern.compile("[\"{]orchestrator\\.([a-z][a-z-]*)");
     Stream<String> bound =
         Stream.of(
@@ -37,8 +34,8 @@ class ConfigReferenceTest {
             .map(RecordComponent::getName);
     Stream<String> looked =
         ROOTS.stream()
-            .flatMap(ConfigReferenceTest::javaFilesUnder)
-            .flatMap(path -> named.matcher(read(path)).results())
+            .flatMap(SourceRoots::javaFilesUnder)
+            .flatMap(path -> named.matcher(SourceRoots.read(path)).results())
             .map(
                 match ->
                     Pattern.compile("-([a-z])")
@@ -53,19 +50,4 @@ class ConfigReferenceTest {
         .isEmpty();
   }
 
-  private static Stream<Path> javaFilesUnder(Path root) {
-    try (Stream<Path> files = Files.walk(root)) {
-      return files.filter(path -> path.toString().endsWith(".java")).toList().stream();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  private static String read(Path path) {
-    try {
-      return Files.readString(path);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
 }
