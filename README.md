@@ -153,6 +153,7 @@ It does not run your CI or run on Windows.
 | [Configuration](docs/configuration.md) | where a setting goes, and what outranks what |
 | [Add a language](docs/languages.md) | translate the board: one catalog file, no rebuild |
 | [Local models](docs/local-models.md) | a local model for the reads that need no tool: quick start, what it serves |
+| [Remote access](docs/remote-access.md) | the board from a phone or another device, over your own private network |
 | [Troubleshooting](docs/troubleshooting.md) | symptom → cause → fix |
 | [Development](docs/development.md) | test suites, CI, running the Linux suite from a Mac |
 | [Architecture](ARCHITECTURE.md) | the code map: what kinds of thing jagt has, and where a new one goes |
