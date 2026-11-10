@@ -20,7 +20,7 @@ class ReplayCodeHostTest {
               null, null, List.of(), List.of(), List.of(), List.of(), List.of()));
 
   @Test
-  void aReplayedFailureReadsAsTheCodesSoTheSessionHearsOfIt() {
+  void replayedFailureReadsAsTheCodesSoTheSessionHearsOfIt() {
     Answer<List<FailedJob>> answer =
         replay.failedJobs(host, "https://git.example.invalid/shop/web/-/pipelines/77");
 
@@ -28,7 +28,7 @@ class ReplayCodeHostTest {
   }
 
   @Test
-  void aReplayedRunSendsNothingToAHost() {
+  void replayedRunSendsNothingToHost() {
     Answer<String> answer =
         replay.retryFailed(host, "https://git.example.invalid/shop/web/-/pipelines/77");
 
@@ -36,13 +36,13 @@ class ReplayCodeHostTest {
   }
 
   @Test
-  void aReplayedRunReadsEveryCommitAsGreenSoItsDeploysAreChecked() {
+  void replayedRunReadsEveryCommitAsGreenSoItsDeploysAreChecked() {
     assertThat(replay.onCommit(host, "/tmp/shop.git", "0123abc").facts().orElseThrow().status())
         .isEqualTo("success");
   }
 
   @Test
-  void aReplayedRunClosesNoRequest() {
+  void replayedRunClosesNoRequest() {
     assertThat(
             replay
                 .closeRequest(host, "https://git.example.invalid/shop/web/-/merge_requests/7")

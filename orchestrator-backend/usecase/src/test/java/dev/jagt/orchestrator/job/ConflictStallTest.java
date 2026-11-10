@@ -41,14 +41,13 @@ import tools.jackson.databind.json.JsonMapper;
 
 class ConflictStallTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ConfigService config = mock(ConfigService.class);
   private final Notifications notifications = mock(Notifications.class);
 
   @Test
-  void tellsTheHumanOnceWhenAHandedConflictStopsMoving(@TempDir Path root) {
+  void tellsTheHumanOnceWhenHandedConflictStopsMoving(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -56,7 +55,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -78,20 +77,26 @@ class ConflictStallTest {
             false,
             Standing.ABSENT);
     new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            state,
+            notifications,
+            config,
+            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     new ConflictStall(
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
     new ConflictStall(
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(2_401_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            Clock.fixed(Instant.ofEpochMilli(2_401_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     verify(notifications, times(1)).send(any());
@@ -108,7 +113,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -134,14 +139,19 @@ class ConflictStallTest {
             false,
             Standing.ABSENT);
     new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            state,
+            notifications,
+            config,
+            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     new ConflictStall(
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     TaskState asked = state.task("ABC-42").orElseThrow();
@@ -152,7 +162,7 @@ class ConflictStallTest {
   }
 
   @Test
-  void tellsTheHumanOnTheSecondStallOfAConflictTheMasterWasAsked(@TempDir Path root) {
+  void tellsTheHumanOnTheSecondStallOfConflictTheMasterWasAsked(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -160,7 +170,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -186,20 +196,26 @@ class ConflictStallTest {
             false,
             Standing.ABSENT);
     new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            state,
+            notifications,
+            config,
+            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
     new ConflictStall(
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     new ConflictStall(
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(2_401_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            Clock.fixed(Instant.ofEpochMilli(2_401_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     verify(notifications, times(1)).send(any());
@@ -208,7 +224,7 @@ class ConflictStallTest {
   }
 
   @Test
-  void tellsTheHumanOnTheFirstStallWhereAQuestionOfTheSessionAlreadyStands(@TempDir Path root) {
+  void tellsTheHumanOnTheFirstStallWhereQuestionOfTheSessionAlreadyStands(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -216,7 +232,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -225,8 +241,8 @@ class ConflictStallTest {
         reducer.deployStepped(
             conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
     TaskState asking =
-        reducer.deployStepped(
-                opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000)
+        reducer
+            .deployStepped(opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000)
             .withReport(AgentReport.QUESTION);
     state.putTask("ABC-42", asking);
     when(config.load())
@@ -243,14 +259,19 @@ class ConflictStallTest {
             false,
             Standing.ABSENT);
     new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            state,
+            notifications,
+            config,
+            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     new ConflictStall(
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     verify(notifications, times(1)).send(any());
@@ -259,7 +280,7 @@ class ConflictStallTest {
   }
 
   @Test
-  void leavesAConflictWhoseWorktreeChangedWithinTheWindowToTheSession(@TempDir Path root) {
+  void leavesConflictWhoseWorktreeChangedWithinTheWindowToTheSession(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -267,7 +288,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -282,7 +303,11 @@ class ConflictStallTest {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     Path worktree = Path.of("/src/ABC-42-deploy");
     new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            state,
+            notifications,
+            config,
+            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
@@ -291,7 +316,8 @@ class ConflictStallTest {
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_141_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            Clock.fixed(Instant.ofEpochMilli(1_141_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
@@ -301,7 +327,8 @@ class ConflictStallTest {
             state,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_501_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            Clock.fixed(Instant.ofEpochMilli(1_501_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
@@ -311,7 +338,7 @@ class ConflictStallTest {
   }
 
   @Test
-  void aRestartNeitherTellsTheHumanAgainNorHandsTheConflictAgain(@TempDir Path root) {
+  void restartNeitherTellsTheHumanAgainNorHandsTheConflictAgain(@TempDir Path root) {
     Path file = root.resolve("state.json");
     StateService before =
         new StateService(
@@ -320,7 +347,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(file.toString())),
-                    reducer);
+            reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -342,13 +369,18 @@ class ConflictStallTest {
             false,
             Standing.ABSENT);
     new ConflictStall(
-            before, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            before,
+            notifications,
+            config,
+            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
     new ConflictStall(
             before,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
     StateService after =
         new StateService(
@@ -357,21 +389,23 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(file.toString())),
-                    reducer);
+            reducer);
     ConflictStall restarted =
         new ConflictStall(
             after,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(3_601_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())));
+            Clock.fixed(Instant.ofEpochMilli(3_601_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())));
 
-    boolean handed = restarted.handed("ABC-42");
+    final boolean handed = restarted.handed("ABC-42");
     restarted.watch("ABC-42", conflict);
     new ConflictStall(
             after,
             notifications,
             config,
-            Clock.fixed(Instant.ofEpochMilli(4_801_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            Clock.fixed(Instant.ofEpochMilli(4_801_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
 
     verify(notifications, times(1)).send(any());
@@ -379,7 +413,7 @@ class ConflictStallTest {
   }
 
   @Test
-  void aConflictFromANewDeployPressIsHandedAgain(@TempDir Path root) {
+  void conflictFromNewDeployPressIsHandedAgain(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -387,7 +421,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -402,7 +436,11 @@ class ConflictStallTest {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     ConflictStall stall =
         new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())));
+            state,
+            notifications,
+            config,
+            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())));
     stall.watch(
         "ABC-42",
         new DeployConflicts.WaitingConflict(
@@ -425,7 +463,7 @@ class ConflictStallTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void pointsAStalledRevertConflictAtTheRevertWorktreeAndRevert(@TempDir Path root) {
+  void pointsStalledRevertConflictAtTheRevertWorktreeAndRevert(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -433,7 +471,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -455,7 +493,11 @@ class ConflictStallTest {
             false,
             Standing.ABSENT);
     new ConflictStall(
-            state, notifications, config, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            state,
+            notifications,
+            config,
+            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
@@ -466,7 +508,8 @@ class ConflictStallTest {
               state,
               notifications,
               config,
-              Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+              Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC),
+              new Checkers(new TaskChart(Composition.builtIn())))
           .watch("ABC-42", conflict);
     } finally {
       stallLog.detachAppender(log);

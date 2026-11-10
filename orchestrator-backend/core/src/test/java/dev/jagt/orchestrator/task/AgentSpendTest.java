@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 class AgentSpendTest {
 
   @Test
-  void addsWhatALogSpentToTheTotalAndRemembersWhereItStopped() {
+  void addsWhatLogSpentToTheTotalAndRemembersWhereItStopped() {
     AgentSpend spend =
         AgentSpend.NONE
             .plus(TokenUsage.ofCall(5, 100, 10, 0), "/logs/one.jsonl", 300)

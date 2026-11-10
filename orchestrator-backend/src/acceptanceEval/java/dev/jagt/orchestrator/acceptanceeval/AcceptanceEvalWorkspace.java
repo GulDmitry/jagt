@@ -58,14 +58,14 @@ final class AcceptanceEvalWorkspace {
     Files.writeString(repo.resolve("README.md"), "baseline\n");
     git(repo, "add", "README.md");
     git(repo, "commit", "-m", "Baseline");
-    for (String change : deployed.deploy().diff()) {
+    for (String change : deployed.landing().deploy().diff()) {
       String[] fileAndWhat = change.split(": ", 2);
       Path target = repo.resolve(fileAndWhat[0]);
       Files.createDirectories(target.getParent());
       Files.writeString(target, fileAndWhat[1] + "\n");
       git(repo, "add", fileAndWhat[0]);
     }
-    git(repo, "commit", "-m", deployed.title());
+    git(repo, "commit", "-m", deployed.ticket().title());
     return repo;
   }
 
@@ -81,7 +81,7 @@ final class AcceptanceEvalWorkspace {
 
   static String ticket(AcceptanceCase deployed, String environmentUrl, String sha) {
     String criteria =
-        deployed.criteria().stream()
+        deployed.ticket().criteria().stream()
             .map(
                 criterion ->
                     "- "
@@ -93,21 +93,23 @@ final class AcceptanceEvalWorkspace {
                             : " (a non-functional wish, no threshold is named)"))
             .collect(Collectors.joining("\n"));
     String landed =
-        switch (deployed.deploy().landed()) {
+        switch (deployed.landing().deploy().landed()) {
           case "host-job" -> "The host's deploy job for " + sha + " succeeded.";
           default -> "The host reports no deploy job for this change.";
         };
     String roles =
-        ((java.util.Map<?, ?>) deployed.environment().getOrDefault("login", java.util.Map.of()))
+        ((java.util.Map<?, ?>)
+                deployed.landing().environment().getOrDefault("login", java.util.Map.of()))
             .keySet().stream()
                 .map(
                     role -> "- " + role + ": sign in with GET " + environmentUrl + "/login/" + role)
                 .collect(Collectors.joining("\n"));
     java.util.List<String> pages = new java.util.ArrayList<>();
-    ((java.util.Map<?, ?>) deployed.environment().getOrDefault("ui", java.util.Map.of()))
+    ((java.util.Map<?, ?>) deployed.landing().environment().getOrDefault("ui", java.util.Map.of()))
         .keySet()
         .forEach(page -> pages.add("GET " + page));
-    ((java.util.Map<?, ?>) deployed.environment().getOrDefault("http", java.util.Map.of()))
+    ((java.util.Map<?, ?>)
+            deployed.landing().environment().getOrDefault("http", java.util.Map.of()))
         .keySet()
         .forEach(call -> pages.add(String.valueOf(call)));
     String served =
@@ -123,9 +125,9 @@ final class AcceptanceEvalWorkspace {
                 })
             .collect(Collectors.joining("\n"));
     return "\n\nThe ticket "
-        + deployed.key()
+        + deployed.ticket().key()
         + ", "
-        + deployed.title()
+        + deployed.ticket().title()
         + ", has these acceptance criteria:\n"
         + criteria
         + "\n"
@@ -161,7 +163,8 @@ final class AcceptanceEvalWorkspace {
     Files.createDirectories(folder);
     Files.writeString(
         folder.resolve("role.yml"),
-        "environments: [{url: \"%s\", landed: \"%s\"}]\nflows: {driver: \"%s\", path: \"%s\", command: [%s]}\n"
+        "environments: [{url: \"%s\", landed: \"%s\"}]\nflows: {driver: \"%s\", path: \"%s\", com"
+        + "mand: [%s]}\n"
             .formatted(
                 environment,
                 landed,

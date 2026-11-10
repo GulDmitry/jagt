@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 class BoardCardTest extends BoardPageContext {
 
   @Test
-  void aCardShowsTheTaskAsTheProjectionDescribesIt() {
+  void cardShowsTheTaskAsTheProjectionDescribesIt() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.APPROVED)
@@ -42,7 +42,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aFlaggedCardStaysFlaggedAfterTheBoardIsReloaded() {
+  void flaggedCardStaysFlaggedAfterTheBoardIsReloaded() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -62,7 +62,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aCardSaysHowLongTheReviewRequestHasBeenOpen() {
+  void cardSaysHowLongTheReviewRequestHasBeenOpen() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -144,7 +144,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void namesEachRequestByProjectAndAgesNoneWhenATaskSpansRepositories() {
+  void namesEachRequestByProjectAndAgesNoneWhenTaskSpansRepositories() {
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -175,7 +175,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aTaskSpanningRepositoriesNamesEachOnceWithItsRequestOnTheName() {
+  void taskSpanningRepositoriesNamesEachOnceWithItsRequestOnTheName() {
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -198,7 +198,7 @@ class BoardCardTest extends BoardPageContext {
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
     assertThat(page.locator("article .meta > *")).hasCount(3);
-    assertThat(page.locator("article .meta .repos")).hasText("alpha + beta \u2713");
+    assertThat(page.locator("article .meta .repos")).hasText("alpha + beta ✓");
   }
 
   @Test
@@ -222,7 +222,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void saysNothingUnderACardAboutARequestItAlreadyLinksTo() {
+  void saysNothingUnderCardAboutRequestItAlreadyLinksTo() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -242,7 +242,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aPollThatStoppedRingsTheRequestRatherThanTakingAFifthPlaceInTheRow() {
+  void pollThatStoppedRingsTheRequestRatherThanTakingFifthPlaceInTheRow() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -273,7 +273,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aRequestNothingPollsAnyMoreSaysWhyInItsHover() {
+  void requestNothingPollsAnyMoreSaysWhyInItsHover() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -317,7 +317,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void showsTheTaskNumberAsPlainTextWhenNoTrackerGaveItAUrl() {
+  void showsTheTaskNumberAsPlainTextWhenNoTrackerGaveItUrl() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -362,7 +362,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aCardColoursItsLineByTheKindTheServerNamesNotByItsWords() {
+  void cardColoursItsLineByTheKindTheServerNamesNotByItsWords() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
@@ -390,7 +390,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void doesNotShoutAboutAQuestionWhileAPollIsStillReadingTheRoundItWasAskedOn() {
+  void doesNotShoutAboutQuestionWhilePollIsStillReadingTheRoundItWasAskedOn() {
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -415,7 +415,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void interruptsForABlockedTaskAndOnlyOffersTheNextMoveForOneThatCanWait() {
+  void interruptsForBlockedTaskAndOnlyOffersTheNextMoveForOneThatCanWait() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
@@ -444,7 +444,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void asksForNothingOnACardWhoseChangeIsAlreadyDeployed() {
+  void asksForNothingOnCardWhoseChangeIsAlreadyDeployed() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.DEPLOYED)
@@ -464,7 +464,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aCardStaysInsideAWindowTooNarrowForItsBadgeAndItsTitleAtOnce() {
+  void cardStaysInsideWindowTooNarrowForItsBadgeAndItsTitleAtOnce() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
@@ -487,7 +487,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aPhoneShowsTheOpenTaskWithItsVerbsAndSayFormAndNoSidewaysScroll() {
+  void phoneShowsTheOpenTaskWithItsVerbsAndSayFormAndNoSidewaysScroll() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
@@ -501,16 +501,20 @@ class BoardCardTest extends BoardPageContext {
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
     Object listSpills =
-        page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth");
+        page.evaluate(
+            "document.documentElement.scrollWidth > document.documentElement.clientWidth");
 
     page.locator("#tasks .row .pick").click();
     page.locator("#pane .tabs button[data-tab=session]").click();
     Object paneSpills =
-        page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth");
+        page.evaluate(
+            "document.documentElement.scrollWidth > document.documentElement.clientWidth");
 
     Object pastTheEdge =
         page.evaluate(
-            "[...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().width > 0 && e.getBoundingClientRect().right > innerWidth + 1 && !e.closest('dialog, .screen, .doc')).map(e => e.tagName + '.' + e.className + '#' + e.id)");
+            "[...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().width >"
+                + " 0 && e.getBoundingClientRect().right > innerWidth + 1 && !e.closest('dialog,"
+                + " .screen, .doc')).map(e => e.tagName + '.' + e.className + '#' + e.id)");
 
     org.assertj.core.api.Assertions.assertThat(listSpills).isEqualTo(false);
     org.assertj.core.api.Assertions.assertThat(paneSpills).isEqualTo(false);
@@ -527,7 +531,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aPhoneShowsTheWholeReportsMenu() {
+  void phoneShowsTheWholeReportsMenu() {
     Page page = session.newPage();
     page.setViewportSize(390, 844);
     page.navigate("http://localhost:" + port + "/");
@@ -540,7 +544,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aPhoneGivesTheNewTaskBaseBranchFieldRoomToType() {
+  void phoneGivesTheNewTaskBaseBranchFieldRoomToType() {
     Page page = session.newPage();
     page.setViewportSize(390, 844);
     page.navigate("http://localhost:" + port + "/");
@@ -553,7 +557,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aTitleWithNoPlaceToBreakStillStaysInsideTheCard() {
+  void titleWithNoPlaceToBreakStillStaysInsideTheCard() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -574,7 +578,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aBadgeOpensItsHintFromTheKeyboard() {
+  void badgeOpensItsHintFromTheKeyboard() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.REVIEWED)
@@ -592,7 +596,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aPollThatStoppedOnARequestWithNoLinkRingsTheStatus() {
+  void pollThatStoppedOnRequestWithNoLinkRingsTheStatus() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -617,7 +621,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void showsAHandEditedAliasAsTextRatherThanAsMarkup() {
+  void showsHandEditedAliasAsTextRatherThanAsMarkup() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -636,7 +640,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aCardGroupsWhatMovesTheTaskOnAwayFromWhatOnlyLooksAtItAndMarksTheObviousOne() {
+  void cardGroupsWhatMovesTheTaskOnAwayFromWhatOnlyLooksAtItAndMarksTheObviousOne() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.APPROVED)
@@ -754,7 +758,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void keepsALongTipInsideAScrollingTipInsteadOfCoveringTheBoard() {
+  void keepsLongTipInsideScrollingTipInsteadOfCoveringTheBoard() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -778,7 +782,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aStatusChipCarriesNoHistoryInItsHover() {
+  void statusChipCarriesNoHistoryInItsHover() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -797,7 +801,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aLiveStatusOpensItsHoverFromTheKeyboard() {
+  void liveStatusOpensItsHoverFromTheKeyboard() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -818,7 +822,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aTipBeingReadStaysOpenInItsNewWordsWhenARepaintRebuildsItsCard() {
+  void tipBeingReadStaysOpenInItsNewWordsWhenRepaintRebuildsItsCard() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.APPROVED)
@@ -843,7 +847,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aTooltipGoesAwayWithThePointerThatOpenedIt() {
+  void tooltipGoesAwayWithThePointerThatOpenedIt() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -864,7 +868,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aCardShowsTheChecksAsRedAndCarriesWhatTheHostSaidAboutThem() {
+  void cardShowsTheChecksAsRedAndCarriesWhatTheHostSaidAboutThem() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -886,7 +890,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aMarkWithoutWordsIsNamedToAScreenReaderAndReachableByKeyboard() {
+  void markWithoutWordsIsNamedToScreenReaderAndReachableByKeyboard() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -910,7 +914,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aCardIsNamedToAScreenReaderByBothTheNamesItAnswersTo() {
+  void cardIsNamedToScreenReaderByBothTheNamesItAnswersTo() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -926,12 +930,12 @@ class BoardCardTest extends BoardPageContext {
 
     assertThat(
             page.getByRole(
-                AriaRole.ARTICLE, new Page.GetByRoleOptions().setName("a1 \u00b7 ABC-1")))
+                AriaRole.ARTICLE, new Page.GetByRoleOptions().setName("a1 · ABC-1")))
         .hasCount(1);
   }
 
   @Test
-  void aRunStillGoingPulsesBesideTheRequestInsteadOfColouringIt() {
+  void runStillGoingPulsesBesideTheRequestInsteadOfColouringIt() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -953,7 +957,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void theRequestWearsATickOnceSomebodyHasApprovedIt() {
+  void theRequestWearsTickOnceSomebodyHasApprovedIt() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -981,11 +985,11 @@ class BoardCardTest extends BoardPageContext {
     assertThat(page.locator("article .meta a.mr-age"))
         .hasAttribute("data-tip", Pattern.compile("not approved yet"));
     page.locator("#tasks .row:has-text(\"a2\") .pick").click();
-    assertThat(page.locator("article .meta a.mr-age.approved")).hasText("request \u2713");
+    assertThat(page.locator("article .meta a.mr-age.approved")).hasText("request ✓");
   }
 
   @Test
-  void aRedRunDoesNotSwallowTheApprovalItLandedOn() {
+  void redRunDoesNotSwallowTheApprovalItLandedOn() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -1002,7 +1006,7 @@ class BoardCardTest extends BoardPageContext {
 
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
-    assertThat(page.locator("article .meta a.mr-age.approved")).hasText("request \u2713");
+    assertThat(page.locator("article .meta a.mr-age.approved")).hasText("request ✓");
     assertThat(page.locator("article .meta .checks.red")).hasCount(1);
   }
 
@@ -1031,7 +1035,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aVerdictNothingCanReadWearsNoDotAndKeepsTheHostsWordOnTheRequest() {
+  void verdictNothingCanReadWearsNoDotAndKeepsTheHostsWordOnTheRequest() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -1053,7 +1057,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aRequestNoReadHasSeenYetWearsNoVerdictAndSaysSoOnHover() {
+  void requestNoReadHasSeenYetWearsNoVerdictAndSaysSoOnHover() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -1075,7 +1079,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aTaskSpanningRepositoriesWearsOneTickForAllOfThem() {
+  void taskSpanningRepositoriesWearsOneTickForAllOfThem() {
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -1126,7 +1130,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void theDeployVerbKeepsItsFillAndTakesTheMarkAsARingWhileItIsTheHighlightedMove() {
+  void theDeployVerbKeepsItsFillAndTakesTheMarkAsRingWhileItIsTheHighlightedMove() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.APPROVED)
@@ -1190,7 +1194,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aCardsHoverSaysWhatTheSessionJudgedOnEachSwitch() {
+  void cardsHoverSaysWhatTheSessionJudgedOnEachSwitch() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -1208,7 +1212,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aStoppedCardAsksToLiftTheStopWithItsReasonAndHoldsTheEvidenceInTheSameHover() {
+  void stoppedCardAsksToLiftTheStopWithItsReasonAndHoldsTheEvidenceInTheSameHover() {
     state.putTask(
         "ABC-42",
         TaskState.builder("alpha", root.resolve("ABC-42-alpha").toString(), TaskStatus.CI_POLLING)
@@ -1229,7 +1233,7 @@ class BoardCardTest extends BoardPageContext {
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
     assertThat(page.locator("article .badge"))
-        .hasText("lift the stop \u2014 ships with no new note");
+        .hasText("lift the stop — ships with no new note");
     assertThat(page.locator("article .badge"))
         .hasAttribute(
             "data-tip",
@@ -1241,7 +1245,7 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
-  void aTriagedStopCarriesItsReadAsTheLastLineOfTheHover() {
+  void triagedStopCarriesItsReadAsTheLastLineOfTheHover() {
     state.putTask(
         "ABC-42",
         TaskState.builder("alpha", root.resolve("ABC-42-alpha").toString(), TaskStatus.CI_POLLING)
@@ -1272,7 +1276,7 @@ class BoardCardTest extends BoardPageContext {
             "data-tip",
             Pattern.compile(
                 "stopped 14 Nov 2023, 22:13 UTC\\n"
-                    + "triage reads: jagt \u2014 ships counted past a merge \\(H\\), lift looks"
+                    + "triage reads: jagt — ships counted past a merge \\(H\\), lift looks"
                     + " safe"));
   }
 }

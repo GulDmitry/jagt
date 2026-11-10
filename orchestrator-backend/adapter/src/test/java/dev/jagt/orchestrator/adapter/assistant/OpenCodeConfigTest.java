@@ -112,7 +112,7 @@ class OpenCodeConfigTest {
   }
 
   @Test
-  void offersAWebFetchAndAllowsItOnlyWhereTheRoleFetches() {
+  void offersWebFetchAndAllowsItOnlyWhereTheRoleFetches() {
     OpenCodeScope fetching =
         OpenCodeScope.of(
             List.of(),

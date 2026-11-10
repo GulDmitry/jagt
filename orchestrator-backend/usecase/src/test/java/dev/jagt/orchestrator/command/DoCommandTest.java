@@ -19,14 +19,14 @@ class DoCommandTest {
   private final DoCommand command = new DoCommand(launcher);
 
   @Test
-  void answersWithTheLaunchersSentenceWhenATaskIsCreated() {
+  void answersWithTheLaunchersSentenceWhenTaskIsCreated() {
     when(launcher.launchLine("ABC-9")).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
     assertThat(command.run("ABC-9")).isEqualTo("Started ABC-9.");
   }
 
   @Test
-  void refusesALaunchThatCreatedNoTaskSoTheTypedLineIsKept() {
+  void refusesLaunchThatCreatedNoTaskSoTheTypedLineIsKept() {
     when(launcher.launchLine("ABC-9"))
         .thenReturn(Launched.refused("branch 'ABC-9' already exists in alpha"));
 

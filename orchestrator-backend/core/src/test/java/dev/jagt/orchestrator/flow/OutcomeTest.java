@@ -25,7 +25,7 @@ class OutcomeTest {
   }
 
   @Test
-  void stoppingOnAConflictCarriesTheStampAndDoesNotRefuse() {
+  void stoppingOnConflictCarriesTheStampAndDoesNotRefuse() {
     Outcome outcome = Outcome.conflict("conflict in the deploy worktree", "deploy conflict");
 
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.CONFLICT);
@@ -34,7 +34,7 @@ class OutcomeTest {
   }
 
   @Test
-  void aPartialLandingRefusesAndKeepsItsCause() {
+  void partialLandingRefusesAndKeepsItsCause() {
     IllegalStateException cause = new IllegalStateException("push rejected");
 
     Outcome outcome = Outcome.partial("php reverted, java not", "half reverted", cause);
@@ -44,7 +44,7 @@ class OutcomeTest {
   }
 
   @Test
-  void aGoneTaskHasNothingToStamp() {
+  void goneTaskHasNothingToStamp() {
     Outcome outcome = Outcome.gone("closed meanwhile");
 
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.GONE);

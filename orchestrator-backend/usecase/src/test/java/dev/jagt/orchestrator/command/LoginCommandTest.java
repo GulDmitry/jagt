@@ -23,7 +23,7 @@ class LoginCommandTest {
   private final LoginCommand login = new LoginCommand(reach, sessions, config);
 
   @Test
-  void opensTheFixAsTheProcessOfAWindowOfItsOwn() {
+  void opensTheFixAsTheProcessOfWindowOfItsOwn() {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     when(sessions.sessionName(any())).thenReturn("jagt");
     reach.lost(

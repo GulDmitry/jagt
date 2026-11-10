@@ -26,7 +26,7 @@ class StopReadJobTest {
   private final StopReads reads = mock(StopReads.class);
 
   @Test
-  void readsTheChecksOfATaskStoppedByAnOutsideConditionWhateverAutoReviewSays(@TempDir Path root) {
+  void readsTheChecksOfTaskStoppedByAnOutsideConditionWhateverAutoReviewSays(@TempDir Path root) {
     StateService state = state(root);
     state.putTask(
         "ABC-42",
@@ -42,7 +42,7 @@ class StopReadJobTest {
   }
 
   @Test
-  void readsTheChecksOfAResolvedDeployConflictHeldByAnInfrastructureStop(@TempDir Path root) {
+  void readsTheChecksOfResolvedDeployConflictHeldByAnInfrastructureStop(@TempDir Path root) {
     StateService state = state(root);
     state.putTask(
         "ABC-42",
@@ -56,7 +56,7 @@ class StopReadJobTest {
   }
 
   @Test
-  void readsNothingForAStopOnlyAHumanLifts(@TempDir Path root) {
+  void readsNothingForStopOnlyHumanLifts(@TempDir Path root) {
     StateService state = state(root);
     state.putTask(
         "ABC-42",

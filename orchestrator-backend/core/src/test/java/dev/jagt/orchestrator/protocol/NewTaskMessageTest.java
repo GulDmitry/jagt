@@ -9,7 +9,7 @@ import tools.jackson.databind.json.JsonMapper;
 class NewTaskMessageTest {
 
   @Test
-  void refusesALaunchWithNothingToNameTheBranchOrTheRepositoryBy() {
+  void refusesLaunchWithNothingToNameTheBranchOrTheRepositoryBy() {
     var said =
         new NewTaskMessage(
             null,
@@ -26,7 +26,7 @@ class NewTaskMessageTest {
   }
 
   @Test
-  void refusesABranchStrategyThisMachineDoesNotHave() {
+  void refusesBranchStrategyThisMachineDoesNotHave() {
     var said =
         new NewTaskMessage(
             "ABC-42",
@@ -43,7 +43,7 @@ class NewTaskMessageTest {
   }
 
   @Test
-  void refusesATicketLinkNobodyCanOpen() {
+  void refusesTicketLinkNobodyCanOpen() {
     var said =
         new NewTaskMessage(
             "ABC-42",
@@ -77,7 +77,7 @@ class NewTaskMessageTest {
   }
 
   @Test
-  void acceptsTheOrdinaryLaunchWithNothingButATaskAProjectAndAReason() {
+  void acceptsTheOrdinaryLaunchWithNothingButTaskProjectAndReason() {
     var said =
         new NewTaskMessage(
             "ABC-42",
@@ -92,7 +92,7 @@ class NewTaskMessageTest {
   }
 
   @Test
-  void acceptsALaunchNamingEveryOptionInAnyCase() {
+  void acceptsLaunchNamingEveryOptionInAnyCase() {
     var said =
         new NewTaskMessage(
             "ABC-42",
@@ -107,7 +107,7 @@ class NewTaskMessageTest {
   }
 
   @Test
-  void refusesASessionModeThisMachineDoesNotHave() {
+  void refusesSessionModeThisMachineDoesNotHave() {
     var said =
         new NewTaskMessage(
             "ABC-42",
@@ -124,7 +124,7 @@ class NewTaskMessageTest {
   }
 
   @Test
-  void readsBlankFieldsAsLeftOutSoALaunchOfBlanksIsRefusedForTheThreeItNeeds() {
+  void readsBlankFieldsAsLeftOutSoLaunchOfBlanksIsRefusedForTheThreeItNeeds() {
     var said =
         new NewTaskMessage(
             " ", new NewTaskMessage.Placement(" ", null, " ", " "), " ", " ", " ", " ", " ");
@@ -135,7 +135,7 @@ class NewTaskMessageTest {
   }
 
   @Test
-  void refusesALaunchGivingNoReason() {
+  void refusesLaunchGivingNoReason() {
     var said =
         new NewTaskMessage(
             "ABC-42",

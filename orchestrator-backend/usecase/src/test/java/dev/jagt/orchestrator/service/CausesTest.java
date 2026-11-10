@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 class CausesTest {
 
   @Test
-  void aFailureWithABlankMessageIsNamedByItsType() {
+  void failureWithBlankMessageIsNamedByItsType() {
     String cause = Causes.of(new IllegalStateException(" "));
 
     assertThat(cause).isEqualTo("IllegalStateException");

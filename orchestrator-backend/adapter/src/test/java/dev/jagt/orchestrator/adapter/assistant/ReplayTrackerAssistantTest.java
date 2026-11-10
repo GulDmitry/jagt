@@ -15,7 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 class ReplayTrackerAssistantTest {
 
   @Test
-  void aReplayReadsTheTicketAsTheRunsModelAnsweredIt(@TempDir Path root) throws Exception {
+  void replayReadsTheTicketAsTheRunsModelAnsweredIt(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(
         file,
@@ -31,7 +31,7 @@ class ReplayTrackerAssistantTest {
   }
 
   @Test
-  void aReplayHasNoTicketWhereTheRunNeverReadOneAndDiverges(@TempDir Path root) throws Exception {
+  void replayHasNoTicketWhereTheRunNeverReadOneAndDiverges(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(file, "\n");
     Recording recording = new Recording(file.toString());
@@ -44,7 +44,7 @@ class ReplayTrackerAssistantTest {
   }
 
   @Test
-  void aReplayHasNoTicketWhereTheRecordedReadFailedAndKeepsItsCause(@TempDir Path root)
+  void replayHasNoTicketWhereTheRecordedReadFailedAndKeepsItsCause(@TempDir Path root)
       throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(
@@ -62,7 +62,7 @@ class ReplayTrackerAssistantTest {
   }
 
   @Test
-  void aReplayReadsTheTicketTextTheMasterReviewedStripped(@TempDir Path root) throws Exception {
+  void replayReadsTheTicketTextTheMasterReviewedStripped(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(
         file,
@@ -78,7 +78,7 @@ class ReplayTrackerAssistantTest {
   }
 
   @Test
-  void aReplayHasNoTicketTextWhereTheRecordedTextWasBlank(@TempDir Path root) throws Exception {
+  void replayHasNoTicketTextWhereTheRecordedTextWasBlank(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(
         file,
@@ -94,7 +94,7 @@ class ReplayTrackerAssistantTest {
   }
 
   @Test
-  void aReplayFindsTheCandidatesIntakeRecordedForAnyQuery(@TempDir Path root) throws Exception {
+  void replayFindsTheCandidatesIntakeRecordedForAnyQuery(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(
         file,

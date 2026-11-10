@@ -22,7 +22,7 @@ class RoleCasesTest {
   }
 
   @Test
-  void aRoleWithoutLocalCasesReadsOnlyTheShippedOnes(@TempDir Path role) throws Exception {
+  void roleWithoutLocalCasesReadsOnlyTheShippedOnes(@TempDir Path role) throws Exception {
     Files.createDirectories(role.resolve("eval"));
     Files.writeString(role.resolve("eval/01-shipped.yml"), "shipped");
 

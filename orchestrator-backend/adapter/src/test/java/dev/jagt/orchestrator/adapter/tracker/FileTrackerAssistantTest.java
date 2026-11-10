@@ -64,7 +64,7 @@ class FileTrackerAssistantTest {
   }
 
   @Test
-  void readsAnUncheckedItemAsOpenWithAFileLink() throws IOException {
+  void readsAnUncheckedItemAsOpenWithFileLink() throws IOException {
     Path file = configured(LIST);
 
     TicketFacts facts = assistant.readTicket("ABC-42").facts().orElseThrow();
@@ -77,7 +77,7 @@ class FileTrackerAssistantTest {
   }
 
   @Test
-  void readsACheckedItemAsDone() throws IOException {
+  void readsCheckedItemAsDone() throws IOException {
     configured(LIST);
 
     assertThat(assistant.readTicket("ABC-7").facts().orElseThrow().trackerStatus())
@@ -100,14 +100,14 @@ class FileTrackerAssistantTest {
   }
 
   @Test
-  void endsABodyAtAHeading() throws IOException {
+  void endsBodyAtHeading() throws IOException {
     configured(LIST);
 
     assertThat(assistant.readTicketText("XYZ-9").facts()).contains("Last");
   }
 
   @Test
-  void doesNotTakeALineWithoutAKeyForAnItem() throws IOException {
+  void doesNotTakeLineWithoutKeyForAnItem() throws IOException {
     configured(LIST);
 
     assertThat(assistant.findCandidates("").facts().orElseThrow())
@@ -115,7 +115,7 @@ class FileTrackerAssistantTest {
   }
 
   @Test
-  void asksTheDelegateAboutAKeyTheFileDoesNotHold() throws IOException {
+  void asksTheDelegateAboutKeyTheFileDoesNotHold() throws IOException {
     configured(LIST);
     Answer<TicketFacts> other = Answer.unavailable();
     when(elsewhere.readTicket("QQQ-1", List.of())).thenReturn(other);
@@ -124,7 +124,7 @@ class FileTrackerAssistantTest {
   }
 
   @Test
-  void asksTheDelegateAboutAUrlWithoutOpeningTheFile() {
+  void asksTheDelegateAboutUrlWithoutOpeningTheFile() {
     Answer<TicketFacts> other = Answer.unavailable();
     when(elsewhere.readTicket("https://tracker/ABC-42", List.of())).thenReturn(other);
 
@@ -133,7 +133,7 @@ class FileTrackerAssistantTest {
   }
 
   @Test
-  void asksTheDelegateForTheTextOfAKeyTheFileDoesNotHold() throws IOException {
+  void asksTheDelegateForTheTextOfKeyTheFileDoesNotHold() throws IOException {
     configured(LIST);
     when(elsewhere.readTicketText("QQQ-1"))
         .thenReturn(new Answer<>(Optional.of("elsewhere"), TokenUsage.NONE));

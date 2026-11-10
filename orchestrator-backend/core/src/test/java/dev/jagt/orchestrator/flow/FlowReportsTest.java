@@ -25,15 +25,18 @@ import org.mockito.ArgumentCaptor;
 
 class FlowReportsTest {
 
-  private final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ReducingStore stateService = mock(ReducingStore.class);
-  private final FlowReports reports = new FlowReports(stateService, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())),
+  private final FlowReports reports =
+      new FlowReports(
+          stateService,
+          Clock.systemUTC(),
+          new Checkers(new TaskChart(Composition.builtIn())),
           new FlowRules(new TaskChart(Composition.builtIn())));
 
   @Test
-  void letsATaskSayItIsWaitingOnTheHuman() {
+  void letsTaskSayItIsWaitingOnTheHuman() {
     when(stateService.reduce(eq("ABC-1"), any())).thenReturn(true);
 
     reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed");
@@ -49,7 +52,7 @@ class FlowReportsTest {
   }
 
   @Test
-  void landsNoReportOnATaskWhoseStatusMovedOnSinceItWasRead() {
+  void landsNoReportOnTaskWhoseStatusMovedOnSinceItWasRead() {
     TaskState read = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
     TaskState live = read.withStatus(TaskStatus.SHIPPING, null, 6_000);
     AtomicReference<TaskState> written = new AtomicReference<>();
@@ -70,7 +73,7 @@ class FlowReportsTest {
   }
 
   @Test
-  void landsTheReportOnATaskStillWhereItWasRead() {
+  void landsTheReportOnTaskStillWhereItWasRead() {
     TaskState read = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
     AtomicReference<TaskState> written = new AtomicReference<>();
     when(stateService.reduce(eq("ABC-1"), any()))
@@ -90,7 +93,7 @@ class FlowReportsTest {
   }
 
   @Test
-  void refusesToLetATaskTalkItselfOntoASharedBranch() {
+  void refusesToLetTaskTalkItselfOntoSharedBranch() {
     assertThatThrownBy(() -> reports.report("ABC-1", TaskStatus.DEPLOYED, "merged"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("DEPLOYED")
@@ -101,21 +104,23 @@ class FlowReportsTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"REVIEWED", "APPROVED"})
-  void refusesASessionThatReportsItsOwnReviewVerdict(TaskStatus verdict) {
+  void refusesSessionThatReportsItsOwnReviewVerdict(TaskStatus verdict) {
     assertThatThrownBy(() -> reports.report("ABC-1", verdict, "lgtm"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("jagt's to set");
   }
 
   @Test
-  void countsAReportTheTasksStatusForbidsOnTheTask() {
+  void countsReportTheTasksStatusForbidsOnTheTask() {
     AtomicReference<TaskState> written = new AtomicReference<>();
     when(stateService.reduce(eq("ABC-1"), any()))
         .thenAnswer(
             call -> {
               BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
               written.set(
-                  write.apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build()));
+                  write.apply(
+                      reducer,
+                      TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build()));
               return true;
             });
 
@@ -146,7 +151,7 @@ class FlowReportsTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"REVERTED", "DEPLOY_CONFLICT"})
-  void keepsTheLineOfAStatusAHumanHoldsWhenItsSessionReports(TaskStatus held) {
+  void keepsTheLineOfStatusHumanHoldsWhenItsSessionReports(TaskStatus held) {
     when(stateService.reduce(eq("ABC-1"), any())).thenReturn(true);
 
     reports.report("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.NO_CHANGES, "clean worktree");
@@ -156,7 +161,8 @@ class FlowReportsTest {
     TaskState after =
         write
             .getValue()
-            .apply(reducer,
+            .apply(
+                reducer,
                 TaskState.builder("proj", "/wt", held)
                     .message("deploy ABC-1: conflict in Foo.java")
                     .build());
@@ -165,7 +171,7 @@ class FlowReportsTest {
   }
 
   @Test
-  void putsAQuestionOnTheCardOfAStatusAHumanHolds() {
+  void putsQuestionOnTheCardOfStatusHumanHolds() {
     when(stateService.reduce(eq("ABC-1"), any())).thenReturn(true);
 
     reports.report(
@@ -176,7 +182,8 @@ class FlowReportsTest {
     TaskState after =
         write
             .getValue()
-            .apply(reducer,
+            .apply(
+                reducer,
                 TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
                     .message("deploy ABC-1: conflict in Foo.java")
                     .build());
@@ -195,7 +202,8 @@ class FlowReportsTest {
     TaskState after =
         write
             .getValue()
-            .apply(reducer,
+            .apply(
+                reducer,
                 TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
                     .message("keep both sides of Foo.java?")
                     .report(AgentReport.QUESTION)
@@ -218,7 +226,9 @@ class FlowReportsTest {
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState after =
-        write.getValue().apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
+        write
+            .getValue()
+            .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
     assertThat(after.status()).isEqualTo(TaskStatus.CI_POLLING);
     assertThat(after.mrUrl()).isEqualTo("http://host/1");
   }
@@ -229,7 +239,8 @@ class FlowReportsTest {
         .thenAnswer(
             call -> {
               BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              write.apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+              write.apply(
+                  reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
               return true;
             });
 
@@ -255,12 +266,13 @@ class FlowReportsTest {
   }
 
   @Test
-  void landsAHandBackAtVerifyingWhileTheVerificationIsOwed() {
+  void landsHandBackAtVerifyingWhileTheVerificationIsOwed() {
     when(stateService.reduce(eq("ABC-1"), any()))
         .thenAnswer(
             call -> {
               BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              write.apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+              write.apply(
+                  reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
               return true;
             });
 
@@ -278,12 +290,13 @@ class FlowReportsTest {
   }
 
   @Test
-  void aQuestionIsNotHeldForAVerificationRun() {
+  void questionIsNotHeldForVerificationRun() {
     when(stateService.reduce(eq("ABC-1"), any()))
         .thenAnswer(
             call -> {
               BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              write.apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+              write.apply(
+                  reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
               return true;
             });
 
@@ -306,7 +319,8 @@ class FlowReportsTest {
         .thenAnswer(
             call -> {
               BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              write.apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
+              write.apply(
+                  reducer, TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
               return true;
             });
 
@@ -319,7 +333,7 @@ class FlowReportsTest {
   @EnumSource(
       value = AgentReport.class,
       names = {"QUESTION", "PERMISSION"})
-  void refusesAQuestionThatParksAtCiPolling(AgentReport asked) {
+  void refusesQuestionThatParksAtCiPolling(AgentReport asked) {
     when(stateService.reduce(eq("ABC-1"), any()))
         .thenAnswer(
             call -> {
@@ -334,14 +348,15 @@ class FlowReportsTest {
   }
 
   @Test
-  void landsAQuestionReportedAtReviewPendingFromCiPolling() {
+  void landsQuestionReportedAtReviewPendingFromCiPolling() {
     AtomicReference<TaskState> written = new AtomicReference<>();
     when(stateService.reduce(eq("ABC-1"), any()))
         .thenAnswer(
             call -> {
               BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
               written.set(
-                  write.apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
+                  write.apply(
+                      reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
               return true;
             });
 
@@ -351,7 +366,7 @@ class FlowReportsTest {
   }
 
   @Test
-  void answersWhatARoundReadFoundAndLeftWhenItMovedTheTask() {
+  void answersWhatRoundReadFoundAndLeftWhenItMovedTheTask() {
     when(stateService.reduce(eq("ABC-1"), any()))
         .thenAnswer(
             call -> {
@@ -366,7 +381,7 @@ class FlowReportsTest {
   }
 
   @Test
-  void writesNothingWhenARoundReadFindsTheTaskWhereItAlreadyIs() {
+  void writesNothingWhenRoundReadFindsTheTaskWhereItAlreadyIs() {
     AtomicReference<TaskState> written = new AtomicReference<>();
     TaskState before = TaskState.builder("proj", "/wt", TaskStatus.APPROVED).build();
     when(stateService.reduce(eq("ABC-1"), any()))
@@ -386,7 +401,7 @@ class FlowReportsTest {
   @EnumSource(
       value = AgentReport.class,
       names = {"QUESTION", "PERMISSION"})
-  void keepsTheQuestionOfASessionWhenARoundReadConcludesGreen(AgentReport asked) {
+  void keepsTheQuestionOfSessionWhenRoundReadConcludesGreen(AgentReport asked) {
     AtomicReference<TaskState> written = new AtomicReference<>();
     TaskState before =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -409,13 +424,15 @@ class FlowReportsTest {
   }
 
   @Test
-  void handsADeployedTaskBackWhenItsDeployPipelineIsRedOnTheCode() {
+  void handsDeployedTaskBackWhenItsDeployPipelineIsRedOnTheCode() {
     reports.readDeploy("ABC-1", "web", "deploy pipeline red");
 
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState handed =
-        write.getValue().apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        write
+            .getValue()
+            .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     assertThat(handed.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
     assertThat(handed.message()).isEqualTo("deploy pipeline red");
   }
@@ -432,14 +449,15 @@ class FlowReportsTest {
     TaskState handed =
         write
             .getValue()
-            .apply(reducer,
+            .apply(
+                reducer,
                 TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).deployment(recorded).build());
     assertThat(handed.deployment().conflictedTarget().get().progress().conflict().cause())
         .isEqualTo(Deployment.Cause.RED_PIPELINE);
   }
 
   @Test
-  void endsAConflictHeldByARedPipelineAlone() {
+  void endsConflictHeldByRedPipelineAlone() {
     reports.endRedConflict("ABC-1", "deployed to dev");
 
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
@@ -454,7 +472,8 @@ class FlowReportsTest {
     TaskState ended =
         write
             .getValue()
-            .apply(reducer,
+            .apply(
+                reducer,
                 TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
                     .deployment(held)
                     .build());
@@ -463,7 +482,7 @@ class FlowReportsTest {
   }
 
   @Test
-  void leavesAConflictOfAMergeStandingWhateverTheDeployBranchPipelinesSay() {
+  void leavesConflictOfMergeStandingWhateverTheDeployBranchPipelinesSay() {
     reports.endRedConflict("ABC-1", "deployed to dev");
 
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
@@ -481,13 +500,15 @@ class FlowReportsTest {
   }
 
   @Test
-  void keepsADeployedTaskDeployedWhileItsPipelineIsOnlyWaited() {
+  void keepsDeployedTaskDeployedWhileItsPipelineIsOnlyWaited() {
     reports.readDeploy("ABC-1", null, "waiting on its pipeline");
 
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState said =
-        write.getValue().apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+        write
+            .getValue()
+            .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     assertThat(said.status()).isEqualTo(TaskStatus.DEPLOYED);
     assertThat(said.message()).isEqualTo("waiting on its pipeline");
   }

@@ -15,14 +15,14 @@ import org.junit.jupiter.params.provider.EnumSource;
 class FactsTest {
 
   @Test
-  void projectsEveryTaskAsHavingNoLiveAgentSoADashboardSpawnsNoProbe() {
+  void projectsEveryTaskAsHavingNoLiveAgentSoDashboardSpawnsNoProbe() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build();
 
     assertThat(Facts.projected(task).hold().agentLive().getAsBoolean()).isFalse();
   }
 
   @Test
-  void projectsATaskHoldingTwoRepositoriesAsHoldingSeveral() {
+  void projectsTaskHoldingTwoRepositoriesAsHoldingSeveral() {
     TaskState task =
         TaskState.builder(
                 List.of(TaskRepo.of("api", "/wt"), TaskRepo.of("web", "/wt2")),
@@ -33,7 +33,7 @@ class FactsTest {
   }
 
   @Test
-  void projectsATaskHoldingOneRepositoryAsHoldingNoSeveral() {
+  void projectsTaskHoldingOneRepositoryAsHoldingNoSeveral() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
 
     assertThat(Facts.projected(task).workspace().severalRepos()).isFalse();
@@ -43,7 +43,7 @@ class FactsTest {
   @EnumSource(
       value = TaskStop.Trigger.class,
       names = {"STALLED", "SHIPS", "ROUNDS", "UNCHANGED_FAILURE", "ACCEPTANCE_FAILED"})
-  void projectsATierAboveOnAStopThatCountsAsAFailureWhenTheLadderHasOne(TaskStop.Trigger trigger) {
+  void projectsTierAboveOnStopThatCountsAsFailureWhenTheLadderHasOne(TaskStop.Trigger trigger) {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .stop(new TaskStop(trigger, 1_000, "same failure"))
@@ -57,7 +57,7 @@ class FactsTest {
   @EnumSource(
       value = TaskStop.Trigger.class,
       names = {"PAUSE", "CHECKS", "INFRA", "PACE", "MISS"})
-  void projectsNoTierAboveOnAStopThatIsNoFailureOfTheModel(TaskStop.Trigger trigger) {
+  void projectsNoTierAboveOnStopThatIsNoFailureOfTheModel(TaskStop.Trigger trigger) {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .stop(new TaskStop(trigger, 1_000, "waiting"))
@@ -79,7 +79,7 @@ class FactsTest {
   }
 
   @Test
-  void projectsNoTierAboveWithoutAStop() {
+  void projectsNoTierAboveWithoutStop() {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .build()
@@ -89,7 +89,7 @@ class FactsTest {
   }
 
   @Test
-  void projectsNoTierAboveForASessionWithNoLadder() {
+  void projectsNoTierAboveForSessionWithNoLadder() {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .stop(new TaskStop(TaskStop.Trigger.STALLED, 1_000, "rounds"))

@@ -26,8 +26,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class PaletteContextTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void tellsTheModelOnlyAboutRealTasksAndTheirLegalActions(@TempDir Path root) {
@@ -38,7 +37,7 @@ class PaletteContextTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -50,7 +49,16 @@ class PaletteContextTest {
     PaletteContext board =
         new PaletteContext(
             state,
-            new TaskViews(state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+            new TaskViews(
+                state,
+                config,
+                new Rounds(
+                    config,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     CommandAssistant.Menu menu = board.menu();
 
@@ -61,7 +69,7 @@ class PaletteContextTest {
   }
 
   @Test
-  void namesATaskWithoutAnAliasByItsIdAlone(@TempDir Path root) {
+  void namesTaskWithoutAnAliasByItsIdAlone(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -69,14 +77,23 @@ class PaletteContextTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     PaletteContext board =
         new PaletteContext(
             state,
-            new TaskViews(state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+            new TaskViews(
+                state,
+                config,
+                new Rounds(
+                    config,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     CommandAssistant.Menu menu = board.menu();
 
@@ -84,7 +101,7 @@ class PaletteContextTest {
   }
 
   @Test
-  void resolvesAProposedAliasToTheTaskItNames(@TempDir Path root) {
+  void resolvesProposedAliasToTheTaskItNames(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -92,7 +109,7 @@ class PaletteContextTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     PaletteContext board = new PaletteContext(state, mock(TaskViews.class));
@@ -101,7 +118,7 @@ class PaletteContextTest {
   }
 
   @Test
-  void refusesABlankProposal(@TempDir Path root) {
+  void refusesBlankProposal(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -109,14 +126,14 @@ class PaletteContextTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     PaletteContext board = new PaletteContext(state, mock(TaskViews.class));
 
     assertThat(board.existingTask("  ")).isNull();
   }
 
   @Test
-  void refusesAProposedTaskThatDoesNotExist(@TempDir Path root) {
+  void refusesProposedTaskThatDoesNotExist(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -124,7 +141,7 @@ class PaletteContextTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     PaletteContext board = new PaletteContext(state, mock(TaskViews.class));
 
     assertThat(board.existingTask("ABC-99")).isNull();
@@ -139,7 +156,7 @@ class PaletteContextTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -151,7 +168,16 @@ class PaletteContextTest {
     PaletteContext board =
         new PaletteContext(
             state,
-            new TaskViews(state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+            new TaskViews(
+                state,
+                config,
+                new Rounds(
+                    config,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     CommandAssistant.Menu menu = board.menu();
 

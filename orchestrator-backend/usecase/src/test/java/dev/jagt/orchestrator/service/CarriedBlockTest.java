@@ -40,7 +40,7 @@ class CarriedBlockTest {
             ## Carried from the previous session
 
             ### Where it stood
-            \u2014 Add export. On the board: IN_PROGRESS; your last report: two tests left
+            — Add export. On the board: IN_PROGRESS; your last report: two tests left
 
             ### Git
             # proj
@@ -64,7 +64,8 @@ class CarriedBlockTest {
             .build();
     when(changes.history(task, 40)).thenReturn("# proj\ncommits:\nabc123 Add export\n");
     when(runtime.sessionLogOf(Path.of("/wt/ABC-42"))).thenReturn(Optional.empty());
-    when(runtime.conversationTail(Path.of("/wt/ABC-42"), 16_000, Set.of(AgentSessions.NUDGE))).thenReturn(Optional.empty());
+    when(runtime.conversationTail(Path.of("/wt/ABC-42"), 16_000, Set.of(AgentSessions.NUDGE)))
+        .thenReturn(Optional.empty());
 
     String carried = new CarriedBlock(changes, runtime).after("the round", task);
 
@@ -76,7 +77,7 @@ class CarriedBlockTest {
             ## Carried from the previous session
 
             ### Where it stood
-            \u2014 Add export. On the board: IN_PROGRESS; your last report: two tests left
+            — Add export. On the board: IN_PROGRESS; your last report: two tests left
 
             ### Git
             # proj

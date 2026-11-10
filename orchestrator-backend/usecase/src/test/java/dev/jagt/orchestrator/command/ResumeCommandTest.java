@@ -29,7 +29,7 @@ class ResumeCommandTest {
   }
 
   @Test
-  void refusesAResumeThatTriesToNameTheTaskBesideTheRequestUrl() {
+  void refusesResumeThatTriesToNameTheTaskBesideTheRequestUrl() {
     assertThatThrownBy(() -> command.run("https://host/mr/42 ABC-9"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("carries its own branches");
@@ -37,7 +37,7 @@ class ResumeCommandTest {
   }
 
   @Test
-  void refusesAResumeThatCreatedNoTaskSoTheTypedLineIsKept() {
+  void refusesResumeThatCreatedNoTaskSoTheTypedLineIsKept() {
     when(launcher.resume("https://host/mr/42")).thenReturn(Launched.refused("no such request"));
 
     assertThatThrownBy(() -> command.run("https://host/mr/42"))
@@ -46,7 +46,7 @@ class ResumeCommandTest {
   }
 
   @Test
-  void refusesAResumeWithNoUrlAtAll() {
+  void refusesResumeWithNoUrlAtAll() {
     assertThatThrownBy(() -> command.run("ABC-9"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("usage: resume <request-url>");

@@ -33,12 +33,11 @@ public final class EvalStats {
       String suite,
       String name,
       boolean passed,
-      int runs,
       String model,
       String brief,
-      double seconds,
-      OptionalDouble costUsd,
-      int stalled) {}
+      Tally tally) {}
+
+  public record Tally(int runs, double seconds, OptionalDouble costUsd, int stalled) {}
 
   static String briefHash(String file) {
     if (file == null) {
@@ -65,12 +64,9 @@ public final class EvalStats {
             System.getProperty("eval.suite", "unknown"),
             name,
             passed,
-            runs,
             System.getProperty("eval.model", "default"),
             briefHash(System.getProperty("eval.brief.file")),
-            seconds,
-            costUsd,
-            stalled);
+            new Tally(runs, seconds, costUsd, stalled));
     try {
       append(Path.of(file), entry);
     } catch (IOException | JacksonException unwritable) {
@@ -108,12 +104,12 @@ public final class EvalStats {
             .put("suite", entry.suite())
             .put("case", entry.name())
             .put("passed", entry.passed())
-            .put("runs", entry.runs())
+            .put("runs", entry.tally().runs())
             .put("model", entry.model())
             .put("brief", entry.brief())
-            .put("seconds", entry.seconds());
-    entry.costUsd().ifPresent(cost -> node.put("costUsd", cost));
-    String line = node.put("stalled", entry.stalled()).toString() + "\n";
+            .put("seconds", entry.tally().seconds());
+    entry.tally().costUsd().ifPresent(cost -> node.put("costUsd", cost));
+    String line = node.put("stalled", entry.tally().stalled()).toString() + "\n";
     Files.writeString(
         file, line, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
   }

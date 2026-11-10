@@ -26,7 +26,7 @@ class HostCliTest {
       new HostCli(processes, reach, "sh", host -> List.of("auth", "login", "--hostname", host));
 
   @Test
-  void startupRefusesASelectedCliMissingFromPathNamingTheKey() {
+  void startupRefusesSelectedCliMissingFromPathNamingTheKey() {
     HostCli missing = new HostCli(processes, reach, "no-such-host-cli", host -> List.of());
 
     assertThat(missing.missing("orchestrator.codeHost"))
@@ -35,7 +35,7 @@ class HostCliTest {
   }
 
   @Test
-  void aCliMissingFromPathIsLostReachWithNoCommandToFixIt() {
+  void cliMissingFromPathIsLostReachWithNoCommandToFixIt() {
     HostCli missing = new HostCli(processes, reach, "no-such-host-cli", host -> List.of());
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenThrow(new IllegalStateException("Failed to start"));
@@ -52,7 +52,7 @@ class HostCliTest {
   }
 
   @Test
-  void aCliSignedOutNamesItsOwnLoginAsTheFix() {
+  void cliSignedOutNamesItsOwnLoginAsTheFix() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "HTTP 404"))
         .thenReturn(new Processes.Result(1, "", "not authenticated"));
@@ -65,7 +65,7 @@ class HostCliTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"HTTP 401: Bad credentials", "HTTP 403: Forbidden"})
-  void aHostRefusingTheLoginIsLostReachWithTheClisLoginAsTheFix(String refusal) {
+  void hostRefusingTheLoginIsLostReachWithTheClisLoginAsTheFix(String refusal) {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", refusal));
 
@@ -75,7 +75,7 @@ class HostCliTest {
   }
 
   @Test
-  void aHostRefusingARequestOnItsRateLimitIsAFailedReadNotLostReach() {
+  void hostRefusingRequestOnItsRateLimitIsFailedReadNotLostReach() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "HTTP 403: API rate limit exceeded"));
 
@@ -86,7 +86,7 @@ class HostCliTest {
   }
 
   @Test
-  void aHostThatCannotBeReachedIsLostReachWithNoCommandToFixIt() {
+  void hostThatCannotBeReachedIsLostReachWithNoCommandToFixIt() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(1, "", "dial tcp: lookup git.example.invalid: no such host"));
@@ -97,7 +97,7 @@ class HostCliTest {
   }
 
   @Test
-  void aHostAnsweringWithAServerErrorIsAFailedReadNotLostReach() {
+  void hostAnsweringWithServerErrorIsFailedReadNotLostReach() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "HTTP 500"));
 
@@ -108,7 +108,7 @@ class HostCliTest {
   }
 
   @Test
-  void aCliTimingOutIsAFailedReadNotLostReach() {
+  void cliTimingOutIsFailedReadNotLostReach() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenThrow(new IllegalStateException("Command timed out after PT30S"));
 
@@ -131,7 +131,7 @@ class HostCliTest {
   }
 
   @Test
-  void aHostAnsweringWithAServerErrorEndsTheLostReachOfThatHost() {
+  void hostAnsweringWithServerErrorEndsTheLostReachOfThatHost() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "HTTP 401"))
         .thenReturn(new Processes.Result(1, "", "HTTP 500"));
@@ -143,7 +143,7 @@ class HostCliTest {
   }
 
   @Test
-  void aReadSucceedingOnAnotherHostLeavesTheLostReachStanding() {
+  void readSucceedingOnAnotherHostLeavesTheLostReachStanding() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "HTTP 401"))
         .thenReturn(new Processes.Result(0, "ok", ""));

@@ -56,7 +56,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void namesLogicHardToFollowFromItsCodeAsWorthAPictureWhenVisualizeIsOn(@TempDir Path root)
+  void namesLogicHardToFollowFromItsCodeAsWorthPictureWhenVisualizeIsOn(@TempDir Path root)
       throws Exception {
     NewRepo repo =
         new NewRepo(
@@ -89,7 +89,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void grantsTheRebaseOntoTheMovedTargetWithALeaseAndStillForbidsForceAndMerge(@TempDir Path root)
+  void grantsTheRebaseOntoTheMovedTargetWithLeaseAndStillForbidsForceAndMerge(@TempDir Path root)
       throws Exception {
     NewRepo repo =
         new NewRepo(
@@ -124,7 +124,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void addsNothingForAContextSectionTheBriefLeavesEmpty(@TempDir Path root) throws Exception {
+  void addsNothingForContextSectionTheBriefLeavesEmpty(@TempDir Path root) throws Exception {
     Path blank = Files.createDirectories(root.resolve("blank"));
     Path absent = Files.createDirectories(root.resolve("absent"));
     Files.createDirectories(blank.resolve("roles/session"));
@@ -204,7 +204,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void listsTheDeployWorktreeAConflictIsHandedOverInAsTheSessionsOwn(@TempDir Path root)
+  void listsTheDeployWorktreeConflictIsHandedOverInAsTheSessionsOwn(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
@@ -325,7 +325,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void saysNothingOfADeployBranchWhenTheTaskHasNone(@TempDir Path root) throws Exception {
+  void saysNothingOfDeployBranchWhenTheTaskHasNone(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -357,7 +357,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void asksForAPlanFirstWhenAutoplanIsOnNamingTheFileCount(@TempDir Path root) throws Exception {
+  void asksForPlanFirstWhenAutoplanIsOnNamingTheFileCount(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -489,7 +489,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void namesTheOtherWorktreesOfATaskAndNotTheOneTheAgentRunsIn(@TempDir Path root)
+  void namesTheOtherWorktreesOfTaskAndNotTheOneTheAgentRunsIn(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
@@ -535,7 +535,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void saysATaskWorksInOneRepositoryOnlyWhereItHasNoOther(@TempDir Path root) throws Exception {
+  void saysTaskWorksInOneRepositoryOnlyWhereItHasNoOther(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -605,7 +605,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void tablesAndCallsBetweenServersAreAlwaysWorthAPictureWhenVisualizeIsOn(@TempDir Path root)
+  void tablesAndCallsBetweenServersAreAlwaysWorthPictureWhenVisualizeIsOn(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
@@ -643,7 +643,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void warnsThatASemicolonEndsAMermaidStatementWhenVisualizeIsOn(@TempDir Path root)
+  void warnsThatSemicolonEndsMermaidStatementWhenVisualizeIsOn(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
@@ -676,7 +676,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void saysNothingOfAPictureWhenVisualizeIsLeftAtItsDefault(@TempDir Path root) throws Exception {
+  void saysNothingOfPictureWhenVisualizeIsLeftAtItsDefault(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -708,7 +708,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void asksForFactsAndAControlBeforeACauseWhenDiagnoseIsOn(@TempDir Path root) throws Exception {
+  void asksForFactsAndControlBeforeCauseWhenDiagnoseIsOn(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -842,7 +842,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void tellsATaskWithNoRepositoryToNameEveryProjectItChangesInItsPlan(@TempDir Path root)
+  void tellsTaskWithNoRepositoryToNameEveryProjectItChangesInItsPlan(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(

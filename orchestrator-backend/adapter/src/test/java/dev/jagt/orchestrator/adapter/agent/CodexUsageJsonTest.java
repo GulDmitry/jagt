@@ -77,7 +77,7 @@ class CodexUsageJsonTest {
     "90000, 25h",
     "172800, 2d",
   })
-  void namesAWindowInWholeDaysOnlyWhenItIsOne(long seconds, String name) {
+  void namesWindowInWholeDaysOnlyWhenItIsOne(long seconds, String name) {
     var answer =
         CodexUsageJson.parse(
             """

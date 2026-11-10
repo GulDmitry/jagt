@@ -9,14 +9,14 @@ import tools.jackson.databind.json.JsonMapper;
 class DeploymentTest {
 
   @Test
-  void findsNoTargetForAProjectNoTargetHas() {
+  void findsNoTargetForProjectNoTargetHas() {
     Deployment deployment = new Deployment(0, List.of(Deployment.Target.of("api", "dev")), 0, null);
 
     assertThat(deployment.indexOf("web")).isEqualTo(-1);
   }
 
   @Test
-  void takesAFixAsTheMergeWhereTheTargetRecordedNone() {
+  void takesFixAsTheMergeWhereTheTargetRecordedNone() {
     Deployment.Target fixed = Deployment.Target.of("api", "dev").withFix("f1");
 
     assertThat(fixed.landing().merge()).isEqualTo("f1");
@@ -24,7 +24,7 @@ class DeploymentTest {
   }
 
   @Test
-  void isConflictedOnlyWhereAConflictIsRecorded() {
+  void isConflictedOnlyWhereConflictIsRecorded() {
     Deployment.Target clean = Deployment.Target.of("api", "dev");
 
     assertThat(clean.conflicted()).isFalse();
@@ -32,7 +32,7 @@ class DeploymentTest {
   }
 
   @Test
-  void owesAReRunOfThePipelineOfAFixPushedAfterTheOneReRun() {
+  void owesReRunOfThePipelineOfFixPushedAfterTheOneReRun() {
     Deployment.Target retried =
         Deployment.Target.of("api", "dev").withMerge("m1").withRetried("m1");
 
@@ -41,10 +41,11 @@ class DeploymentTest {
   }
 
   @Test
-  void readsAndWritesATargetAsOneFlatObject() {
+  void readsAndWritesTargetAsOneFlatObject() {
     String json =
         "{\"project\":\"api\",\"deployBranch\":\"dev\",\"merge\":\"m1\",\"fixes\":[\"f1\"],"
-            + "\"pushedAt\":7,\"revertCommit\":\"r1\",\"blocked\":true,\"bare\":true,\"unread\":2,\"retried\":\"f1\"}";
+            + "\"pushedAt\":7,\"revertCommit\":\"r1\",\"blocked\":true,\"bare\":true,\"unread\":2,"
+            + "\"retried\":\"f1\"}";
     JsonMapper mapper = new JsonMapper();
 
     Deployment.Target target = mapper.readValue(json, Deployment.Target.class);
@@ -59,7 +60,7 @@ class DeploymentTest {
   }
 
   @Test
-  void readsAConflictedTargetFromItsFlatConflictedKey() {
+  void readsConflictedTargetFromItsFlatConflictedKey() {
     Deployment.Target held =
         Deployment.Target.of("api", "dev").withConflict(Conflict.of(Deployment.Cause.MERGE, 1));
     JsonMapper mapper = new JsonMapper();

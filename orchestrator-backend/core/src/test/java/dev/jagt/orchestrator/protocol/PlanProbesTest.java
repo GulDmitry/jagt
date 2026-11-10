@@ -49,7 +49,7 @@ class PlanProbesTest {
         "deploy now",
         "command",
       })
-  void refusesALineNoProbeKindReads(String line) {
+  void refusesLineNoProbeKindReads(String line) {
     PlanProbes.Read read = PlanProbes.of("```probes\n" + line + "\n```\n");
 
     assertThat(read.probes()).isEmpty();
@@ -59,7 +59,7 @@ class PlanProbesTest {
   @ParameterizedTest
   @ValueSource(
       strings = {"command repo=front exit=1 npm test", "command exit=1 repo=front npm test"})
-  void readsTheRepositoryAndTheExitOfACommandInEitherOrder(String line) {
+  void readsTheRepositoryAndTheExitOfCommandInEitherOrder(String line) {
     PlanProbes.Read read = PlanProbes.of("```probes\n" + line + "\n```\n");
 
     assertThat(read.violations()).isEmpty();
@@ -76,7 +76,7 @@ class PlanProbesTest {
         "command repo=front",
         "ref repo=front main",
       })
-  void refusesACommandWhoseRepositoryIsNoNameOrIsGivenTwice(String line) {
+  void refusesCommandWhoseRepositoryIsNoNameOrIsGivenTwice(String line) {
     PlanProbes.Read read = PlanProbes.of("```probes\n" + line + "\n```\n");
 
     assertThat(read.probes()).isEmpty();
@@ -93,7 +93,7 @@ class PlanProbesTest {
   }
 
   @Test
-  void refusesABlockNeverClosed() {
+  void refusesBlockNeverClosed() {
     PlanProbes.Read read = PlanProbes.of("```probes\nref main\n");
 
     assertThat(read.violations()).singleElement().asString().contains("close the ```probes block");
@@ -107,7 +107,7 @@ class PlanProbesTest {
   }
 
   @Test
-  void readsAQuotedWordWithSpacesAsOneWordWhicheverQuoteGroupsIt() {
+  void readsQuotedWordWithSpacesAsOneWordWhicheverQuoteGroupsIt() {
     PlanProbes.Read read =
         PlanProbes.of("```probes\ncommand sh -c \"git status\"\ncommand echo 'a b' \"c d\"\n```\n");
 
@@ -119,7 +119,7 @@ class PlanProbesTest {
   }
 
   @Test
-  void refusesALineWithAnUnclosedDoubleQuote() {
+  void refusesLineWithAnUnclosedDoubleQuote() {
     PlanProbes.Read read = PlanProbes.of("```probes\ncommand echo \"unclosed\n```\n");
 
     assertThat(read.probes()).isEmpty();
@@ -127,7 +127,7 @@ class PlanProbesTest {
   }
 
   @Test
-  void readsAnExitCodeUpToTheLargestAProcessCanGive() {
+  void readsAnExitCodeUpToTheLargestProcessCanGive() {
     PlanProbes.Read read = PlanProbes.of("```probes\ncommand exit=255 ./check\n```\n");
 
     assertThat(read.probes())
@@ -145,7 +145,7 @@ class PlanProbesTest {
   @ParameterizedTest
   @ValueSource(
       strings = {"ref main", "ref main2", "command echo 'a' \"b\" c", "command echo 'a' \"b\""})
-  void readsALineWhateverItsLengthSoLongAsItsQuotesAreClosed(String line) {
+  void readsLineWhateverItsLengthSoLongAsItsQuotesAreClosed(String line) {
     PlanProbes.Read read = PlanProbes.of("```probes\n" + line + "\n```\n");
 
     assertThat(read.violations()).isEmpty();

@@ -19,7 +19,7 @@ public record AcceptanceJudgement(
 
   public static AcceptanceJudgement ofVerdict(AcceptanceCase expected, AcceptanceVerdict verdict) {
     Map<String, Status> rows = new LinkedHashMap<>();
-    for (AcceptanceCase.Criterion criterion : expected.criteria()) {
+    for (AcceptanceCase.Criterion criterion : expected.ticket().criteria()) {
       verdict.rows().stream()
           .filter(row -> answers(row.criterion(), criterion))
           .findFirst()
@@ -45,7 +45,7 @@ public record AcceptanceJudgement(
     Status accepted = disputed ? Status.NOT_MET : Status.MET;
     Map<String, Status> rows = new LinkedHashMap<>();
     if (!failed) {
-      expected.criteria().forEach(criterion -> rows.put(criterion.id(), accepted));
+      expected.ticket().criteria().forEach(criterion -> rows.put(criterion.id(), accepted));
     }
     AcceptanceEnding ending =
         failed

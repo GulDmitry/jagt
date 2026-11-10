@@ -28,7 +28,7 @@ class LocalModelReachTest {
   }
 
   @Test
-  void anEndpointServingAnotherModelIsALostReach() throws IOException {
+  void anEndpointServingAnotherModelIsLostReach() throws IOException {
     AtomicReference<String> body = new AtomicReference<>("{\"data\":[{\"id\":\"other\"}]}");
     server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     server.createContext(
@@ -82,7 +82,7 @@ class LocalModelReachTest {
   }
 
   @Test
-  void anUnreachableAssistantEndpointIsALostReach() throws IOException {
+  void anUnreachableAssistantEndpointIsLostReach() throws IOException {
     AtomicReference<String> body = new AtomicReference<>("{}");
     server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     server.createContext(

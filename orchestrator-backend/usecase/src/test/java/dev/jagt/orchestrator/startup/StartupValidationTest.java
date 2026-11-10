@@ -38,7 +38,7 @@ class StartupValidationTest {
   }
 
   @Test
-  void treatsACheckThatCannotAnswerAsAPartThatIsNotThere() {
+  void treatsCheckThatCannotAnswerAsPartThatIsNotThere() {
     StartupValidation validation =
         new StartupValidation(
             List.of(

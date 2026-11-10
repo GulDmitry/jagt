@@ -33,7 +33,7 @@ class WithersTest {
           .toList();
 
   @Test
-  void aWitherChangesItsOwnComponentAndNoOther() {
+  void witherChangesItsOwnComponentAndNoOther() {
     assertThat(withers().map(WithersTest::defect).filter(defect -> !defect.isEmpty())).isEmpty();
   }
 

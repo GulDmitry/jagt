@@ -19,7 +19,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class MasterDecisionsTest {
 
   @Test
-  void countsTheAnswersGivenOverATreeNothingChangedIn(@TempDir Path worktree) {
+  void countsTheAnswersGivenOverTreeNothingChangedIn(@TempDir Path worktree) {
     WorktreeChanges changes = mock(WorktreeChanges.class);
     MasterDecisions decisions = new MasterDecisions(changes);
     TaskState task =
@@ -72,7 +72,7 @@ class MasterDecisionsTest {
   }
 
   @Test
-  void keepsTheAnswersOverATreeAcrossARestart(@TempDir Path worktree) {
+  void keepsTheAnswersOverTreeAcrossRestart(@TempDir Path worktree) {
     WorktreeChanges changes = mock(WorktreeChanges.class);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
@@ -86,7 +86,7 @@ class MasterDecisionsTest {
   }
 
   @Test
-  void knowsARepeatAcrossARestart(@TempDir Path worktree) {
+  void knowsRepeatAcrossRestart(@TempDir Path worktree) {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
     var delay =
@@ -113,7 +113,7 @@ class MasterDecisionsTest {
           Bar.java  | delay  | test      | the delay is never pinned | false
           Foo.java  | lock   | test      | the delay is never pinned | false
           """)
-  void repeatsAFindingOnlyUnderTheSameFileAnchorAndKindWhateverItsWords(
+  void repeatsFindingOnlyUnderTheSameFileAnchorAndKindWhateverItsWords(
       String file,
       String anchor,
       String kind,
@@ -156,7 +156,7 @@ class MasterDecisionsTest {
   }
 
   @Test
-  void countsARoundActedOnAgainOnceSoItIsNoRepeatOfItself(@TempDir Path worktree) {
+  void countsRoundActedOnAgainOnceSoItIsNoRepeatOfItself(@TempDir Path worktree) {
     MasterDecisions decisions = new MasterDecisions(mock(WorktreeChanges.class));
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();

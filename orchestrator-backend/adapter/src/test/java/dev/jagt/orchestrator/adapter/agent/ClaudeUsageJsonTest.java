@@ -44,7 +44,7 @@ class ClaudeUsageJsonTest {
   }
 
   @Test
-  void addsAModelWindowOnlyTheLimitsListCarries() {
+  void addsModelWindowOnlyTheLimitsListCarries() {
     var answer =
         (SubscriptionUsage.Read)
             ClaudeUsageJson.parse(
@@ -61,7 +61,7 @@ class ClaudeUsageJsonTest {
   }
 
   @Test
-  void leavesOutAWindowNoUsageHasStartedYet() {
+  void leavesOutWindowNoUsageHasStartedYet() {
     var answer =
         (SubscriptionUsage.Read)
             ClaudeUsageJson.parse(

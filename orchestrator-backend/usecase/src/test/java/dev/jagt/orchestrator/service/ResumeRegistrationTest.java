@@ -109,7 +109,7 @@ class ResumeRegistrationTest {
   }
 
   @Test
-  void asksNoTrackerForASourceBranchThatIsNoTicketKey() {
+  void asksNoTrackerForSourceBranchThatIsNoTicketKey() {
     registration.register(
         "feature/widget-layout", "proj", "https://host/mr/455", "Widget layout is off", "main");
 
@@ -117,7 +117,7 @@ class ResumeRegistrationTest {
   }
 
   @Test
-  void refusesARequestWhoseTicketTheTrackerNeverAnswersAbout() {
+  void refusesRequestWhoseTicketTheTrackerNeverAnswersAbout() {
     when(tickets.read("ABC-42")).thenReturn(Answer.unavailable());
 
     String result =
@@ -135,7 +135,7 @@ class ResumeRegistrationTest {
   }
 
   @Test
-  void refusesToOpenACardWhenTheTrackerAnswersAboutAnotherItem() {
+  void refusesToOpenCardWhenTheTrackerAnswersAboutAnotherItem() {
     when(tickets.read("ABC-42"))
         .thenReturn(
             new Answer<>(
@@ -192,7 +192,7 @@ class ResumeRegistrationTest {
   }
 
   @Test
-  void asksNoTrackerForAKeyShapedBranchWhereTheInstallsTrackerDoesNotKnowItAsAnItem() {
+  void asksNoTrackerForKeyShapedBranchWhereTheInstallsTrackerDoesNotKnowItAsAnItem() {
     ResumeRegistration untracked =
         new ResumeRegistration(
             provisioning, mock(AgentStatusReports.class), tickets, new NoTracker());
@@ -217,7 +217,7 @@ class ResumeRegistrationTest {
   }
 
   @Test
-  void tellsASessionOfARepositoryKeptOnThisMachineToPushNothing() {
+  void tellsSessionOfRepositoryKeptOnThisMachineToPushNothing() {
     when(provisioning.remoteOf("proj")).thenReturn(Remote.LOCAL);
 
     registration.register(

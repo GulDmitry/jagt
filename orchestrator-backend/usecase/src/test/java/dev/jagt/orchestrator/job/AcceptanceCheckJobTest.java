@@ -18,8 +18,8 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.Deployment;
@@ -106,7 +106,7 @@ class AcceptanceCheckJobTest {
   @Test
   void waitsForTheDeploysPipelineToBeGreenBeforeItChecks(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
-    CheckerReads reader = mock(CheckerReads.class);
+    final CheckerReads reader = mock(CheckerReads.class);
     when(config.load()).thenReturn(ON);
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
@@ -132,13 +132,13 @@ class AcceptanceCheckJobTest {
   }
 
   @Test
-  void checksADeployOnceThenLeavesItAloneAcrossARestart(@TempDir Path root) throws IOException {
+  void checksDeployOnceThenLeavesItAloneAcrossRestart(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     when(config.load()).thenReturn(ON);
     when(reader.check(any(), any(), any(), any()))
         .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
-    OrchestratorPaths paths =
+    final OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.writeString(
@@ -177,10 +177,10 @@ class AcceptanceCheckJobTest {
   }
 
   @Test
-  void sendsARowNotMetBackToTheSession(@TempDir Path root) throws IOException {
+  void sendsRowNotMetBackToTheSession(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
-    CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
+    final CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
     when(config.load()).thenReturn(ON);
     when(reader.check(any(), any(), any(), any()))
         .thenReturn(new Answer<>(Optional.of(notMet()), TokenUsage.NONE));
@@ -209,10 +209,10 @@ class AcceptanceCheckJobTest {
   }
 
   @Test
-  void handsAMetVerdictToTheOutcomesToMarkPassed(@TempDir Path root) throws IOException {
+  void handsMetVerdictToTheOutcomesToMarkPassed(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
-    CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
+    final CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
     when(config.load()).thenReturn(ON);
     when(reader.check(any(), any(), any(), any()))
         .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
@@ -240,7 +240,7 @@ class AcceptanceCheckJobTest {
   }
 
   @Test
-  void runsACheckAgainOnTheSameShaWhereItsTurnWasLeftOpenUnanswered(@TempDir Path root)
+  void runsCheckAgainOnTheSameShaWhereItsTurnWasLeftOpenUnanswered(@TempDir Path root)
       throws IOException {
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
@@ -366,7 +366,7 @@ class AcceptanceCheckJobTest {
   }
 
   @Test
-  void opensOnATaskNoLongerOpenWhereTheRolesTriggerOmitsTrackerOpen(@TempDir Path root)
+  void opensOnTaskNoLongerOpenWhereTheRolesTriggerOmitsTrackerOpen(@TempDir Path root)
       throws IOException {
     Files.writeString(
         root.resolve("role.yml"),

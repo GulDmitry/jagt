@@ -32,7 +32,7 @@ class SystemHostTest {
   }
 
   @Test
-  void seesAShellOnPathAndNoSuchBinary() {
+  void seesShellOnPathAndNoSuchBinary() {
     SystemHost host = new SystemHost();
 
     assertThat(host.onPath("sh")).isTrue();
@@ -40,7 +40,7 @@ class SystemHostTest {
   }
 
   @Test
-  void handsBackTheBareNameOfABinaryNothingHas() {
+  void handsBackTheBareNameOfBinaryNothingHas() {
     assertThat(new SystemHost().resolve("jagt-no-such-binary")).isEqualTo("jagt-no-such-binary");
   }
 

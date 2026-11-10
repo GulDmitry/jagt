@@ -67,7 +67,7 @@ class RepoRemovalTest {
   }
 
   @Test
-  void takesARepositoryWithNoRequestOutWithoutAskingAHost(@TempDir Path root) {
+  void takesRepositoryWithNoRequestOutWithoutAskingHost(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -119,7 +119,7 @@ class RepoRemovalTest {
   }
 
   @Test
-  void closesNothingForARequestTheHostMerged(@TempDir Path root) {
+  void closesNothingForRequestTheHostMerged(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -145,7 +145,7 @@ class RepoRemovalTest {
   }
 
   @Test
-  void refusesAProjectTheTaskDoesNotWorkIn() {
+  void refusesProjectTheTaskDoesNotWorkIn() {
     TaskState task =
         TaskState.builder(
                 List.of(TaskRepo.of("api", "/api-wt"), TaskRepo.of("web", "/web-wt")),
@@ -177,7 +177,7 @@ class RepoRemovalTest {
   }
 
   @Test
-  void refusesARepositoryAlreadyDeployedAndNamesTheRevert() {
+  void refusesRepositoryAlreadyDeployedAndNamesTheRevert() {
     Deployment deployed =
         Deployment.defaults()
             .withTargets(List.of(Deployment.Target.of("web", "dev").withMerge("abc123")));
@@ -197,7 +197,7 @@ class RepoRemovalTest {
   }
 
   @Test
-  void acceptsARepositoryTheTaskHoldsBesideItsPrimary() {
+  void acceptsRepositoryTheTaskHoldsBesideItsPrimary() {
     TaskState task =
         TaskState.builder(
                 List.of(TaskRepo.of("api", "/api-wt"), TaskRepo.of("web", "/web-wt")),

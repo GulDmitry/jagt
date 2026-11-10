@@ -31,8 +31,9 @@ class TaskChartCompositionTest {
           "session");
 
   @Test
-  void aChartWithNoRoleComposedIsValidAndNamesNoRoleRegion() {
-    Chart<TaskMove, ChartFacts, TaskEffect> chart = new TaskChart(new Composition(List.of())).chart();
+  void chartWithNoRoleComposedIsValidAndNamesNoRoleRegion() {
+    Chart<TaskMove, ChartFacts, TaskEffect> chart =
+        new TaskChart(new Composition(List.of())).chart();
 
     assertThat(chart.initial().toPlain().keySet()).containsExactlyInAnyOrderElementsOf(CORE);
   }
@@ -41,8 +42,10 @@ class TaskChartCompositionTest {
   void eachRoleComposedAloneLeavesEveryCoreRegionAsDrawn() {
     Chart<TaskMove, ChartFacts, TaskEffect> alone =
         new TaskChart(
-            new Composition(
-                List.of(new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read")))))).chart();
+                new Composition(
+                    List.of(
+                        new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"))))))
+            .chart();
 
     assertThat(alone.initial().toPlain().keySet())
         .containsAll(CORE)
@@ -54,10 +57,11 @@ class TaskChartCompositionTest {
   void everyRoleOnComposesOneRegionPerRole() {
     Chart<TaskMove, ChartFacts, TaskEffect> chart =
         new TaskChart(
-            new Composition(
-                List.of(
-                    CheckerRegion.ACCEPTANCE,
-                    new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read")))))).chart();
+                new Composition(
+                    List.of(
+                        CheckerRegion.ACCEPTANCE,
+                        new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"))))))
+            .chart();
 
     assertThat(chart.initial().toPlain())
         .containsEntry("acceptance", "NONE")
@@ -65,13 +69,14 @@ class TaskChartCompositionTest {
   }
 
   @Test
-  void aChartWithTwoCheckersTellsWhoseRoundTheSessionDeclined() {
+  void chartWithTwoCheckersTellsWhoseRoundTheSessionDeclined() {
     Chart<TaskMove, ChartFacts, TaskEffect> chart =
         new TaskChart(
-            new Composition(
-                List.of(
-                    CheckerRegion.ACCEPTANCE,
-                    new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read")))))).chart();
+                new Composition(
+                    List.of(
+                        CheckerRegion.ACCEPTANCE,
+                        new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"))))))
+            .chart();
     Map<String, String> lintRound = new HashMap<>(chart.initial().toPlain());
     lintRound.put("lifecycle", TaskStatus.IN_PROGRESS.name());
     lintRound.put("turn", TurnKind.OPEN.name());
@@ -102,13 +107,14 @@ class TaskChartCompositionTest {
   }
 
   @Test
-  void aComposedCheckerOpensItsReadOnItsOwnStepAndNotOnAcceptances() {
+  void composedCheckerOpensItsReadOnItsOwnStepAndNotOnAcceptances() {
     Chart<TaskMove, ChartFacts, TaskEffect> chart =
         new TaskChart(
-            new Composition(
-                List.of(
-                    CheckerRegion.ACCEPTANCE,
-                    new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read")))))).chart();
+                new Composition(
+                    List.of(
+                        CheckerRegion.ACCEPTANCE,
+                        new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"))))))
+            .chart();
     Map<String, String> deployed = new HashMap<>(chart.initial().toPlain());
     deployed.put("lifecycle", TaskStatus.DEPLOYED.name());
     ChartFacts facts = new ChartFacts(false, Map.of(), Facts.defaults());
@@ -158,7 +164,8 @@ class TaskChartCompositionTest {
   void twoChartsOfDifferentCompositionsStandSideBySideInOneJvm() {
     TaskChart acceptanceOnly = new TaskChart(Composition.builtIn());
     TaskChart lintOnly =
-        new TaskChart(Composition.of(List.of(new CheckerRole("lint", false, List.of("lint-read")))));
+        new TaskChart(
+            Composition.of(List.of(new CheckerRole("lint", false, List.of("lint-read")))));
 
     assertThat(acceptanceOnly.installedCheckers()).containsExactly("acceptance");
     assertThat(lintOnly.installedCheckers()).containsExactly("lint");

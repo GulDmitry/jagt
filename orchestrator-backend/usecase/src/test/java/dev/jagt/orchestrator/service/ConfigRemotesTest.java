@@ -34,7 +34,7 @@ class ConfigRemotesTest {
   }
 
   @Test
-  void namesNoRemoteForARepositoryNoProjectPointsAt() {
+  void namesNoRemoteForRepositoryNoProjectPointsAt() {
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
     assertThat(remotes.of(Path.of("/repo/other"))).isEmpty();

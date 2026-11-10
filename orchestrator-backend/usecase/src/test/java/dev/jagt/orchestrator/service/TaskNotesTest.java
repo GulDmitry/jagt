@@ -26,7 +26,7 @@ class TaskNotesTest {
   }
 
   @Test
-  void owesARewriteWhenTheNotesPredateTheRound(@TempDir Path worktree) throws Exception {
+  void owesRewriteWhenTheNotesPredateTheRound(@TempDir Path worktree) throws Exception {
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("task_notes.md"), "kept the retry"),
         FileTime.from(Instant.parse("2026-01-01T09:00:00Z")));
@@ -39,7 +39,7 @@ class TaskNotesTest {
   }
 
   @Test
-  void owesACompressionWhenTheNotesPassTheirCap(@TempDir Path worktree) throws Exception {
+  void owesCompressionWhenTheNotesPassTheirCap(@TempDir Path worktree) throws Exception {
     Files.writeString(worktree.resolve("task_notes.md"), "x".repeat(16_001));
 
     assertThat(TaskNotes.owed(worktree))
@@ -55,7 +55,7 @@ class TaskNotesTest {
   }
 
   @Test
-  void owesNothingWhenTheNotesAndTheRoundShareATimestamp(@TempDir Path worktree) throws Exception {
+  void owesNothingWhenTheNotesAndTheRoundShareTimestamp(@TempDir Path worktree) throws Exception {
     FileTime same = FileTime.from(Instant.parse("2026-01-01T10:00:00Z"));
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("task_notes.md"), "kept the retry"), same);
@@ -85,7 +85,7 @@ class TaskNotesTest {
   }
 
   @Test
-  void owesAJustificationForEachLineTheTaskAddedToTheProjectsAgentFile(@TempDir Path worktree)
+  void owesJustificationForEachLineTheTaskAddedToTheProjectsAgentFile(@TempDir Path worktree)
       throws Exception {
     Files.writeString(
         worktree.resolve("task_notes.md"), "agent-file: the build needs the local registry\n");
@@ -97,7 +97,7 @@ class TaskNotesTest {
   }
 
   @Test
-  void owesACutWhenTheTaskAddedMoreThanThreeLinesToTheProjectsAgentFile(@TempDir Path worktree)
+  void owesCutWhenTheTaskAddedMoreThanThreeLinesToTheProjectsAgentFile(@TempDir Path worktree)
       throws Exception {
     Files.writeString(
         worktree.resolve("task_notes.md"),

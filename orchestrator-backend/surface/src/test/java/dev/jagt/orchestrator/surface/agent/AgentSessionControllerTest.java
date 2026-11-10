@@ -54,7 +54,7 @@ class AgentSessionControllerTest {
   }
 
   @Test
-  void armsTheWakeForATurnFailureThatIsAUsageLimit() {
+  void armsTheWakeForTurnFailureThatIsUsageLimit() {
     StateService state = mock(StateService.class);
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
@@ -77,7 +77,7 @@ class AgentSessionControllerTest {
   }
 
   @Test
-  void armsNoWakeForATurnFailureThatIsNotAUsageLimit() {
+  void armsNoWakeForTurnFailureThatIsNotUsageLimit() {
     StateService state = mock(StateService.class);
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
@@ -136,7 +136,7 @@ class AgentSessionControllerTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void dropsATranscriptPathItCannotBelieveAndSaysSoOnceInTheLog() {
+  void dropsTranscriptPathItCannotBelieveAndSaysSoOnceInTheLog() {
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger controllerLog = (Logger) LoggerFactory.getLogger(AgentSessionController.class);
@@ -151,7 +151,7 @@ class AgentSessionControllerTest {
             "working",
             "/wt/ABC-1-proj",
             new SessionHookReport("/logs/session.jsonl", "compact", null));
-    int warnedForAbsolute = log.list.size();
+    final int warnedForAbsolute = log.list.size();
     new AgentSessionController(state, reports, wakes)
         .report(
             "working",
@@ -237,7 +237,7 @@ class AgentSessionControllerTest {
   }
 
   @Test
-  void tellsTheTurnEndWhetherARefusalAlreadySentItOn() {
+  void tellsTheTurnEndWhetherRefusalAlreadySentItOn() {
     StateService state = mock(StateService.class);
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
@@ -272,7 +272,7 @@ class AgentSessionControllerTest {
   }
 
   @Test
-  void refusesAReportFromADirectoryNoTaskRunsIn() {
+  void refusesReportFromDirectoryNoTaskRunsIn() {
     StateService state = mock(StateService.class);
     when(state.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
@@ -285,7 +285,7 @@ class AgentSessionControllerTest {
   }
 
   @Test
-  void refusesAStateThatIsNotOneOfJagtsOwn() {
+  void refusesStateThatIsNotOneOfJagtsOwn() {
     StateService state = mock(StateService.class);
     when(state.findByWorktree("/wt/ABC-1-proj"))
         .thenReturn(

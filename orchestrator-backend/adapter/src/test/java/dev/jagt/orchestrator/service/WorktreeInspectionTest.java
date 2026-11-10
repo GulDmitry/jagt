@@ -25,7 +25,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class WorktreeInspectionTest {
 
   @Test
-  void readsTheWorkAWorktreeHoldsUncommittedAndIgnoresJagtsOwnFiles(@TempDir Path dir)
+  void readsTheWorkWorktreeHoldsUncommittedAndIgnoresJagtsOwnFiles(@TempDir Path dir)
       throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
@@ -41,7 +41,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     Files.writeString(repo.resolve("task_context.md"), "the round brief");
@@ -68,7 +71,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
     Files.writeString(repo.resolve("A.java"), "class A { int x; }");
     String answered = git.treeState(repo, repo);
@@ -81,7 +87,7 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void readsTheTreeWithoutRunningADiffProgramTheSessionSet(@TempDir Path dir) throws Exception {
+  void readsTheTreeWithoutRunningDiffProgramTheSessionSet(@TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path repo = dir.resolve("repo");
@@ -102,7 +108,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     git.treeState(repo, repo);
@@ -148,7 +157,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     String changes = git.changesSince(repo, repo, baseBranch);
@@ -163,7 +175,7 @@ class WorktreeInspectionTest {
       @TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
-    List<String> commit =
+    final List<String> commit =
         List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "c");
     Path origin = dir.resolve("origin.git");
     Path repo = dir.resolve("repo");
@@ -180,9 +192,12 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
-    String before = git.ownDiffId(repo, repo, "main").orElseThrow();
+    final String before = git.ownDiffId(repo, repo, "main").orElseThrow();
 
     runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
     Files.writeString(repo.resolve("a.txt"), "0\n1\n2\n3\n4\n5\n6\n7\n8\n");
@@ -202,7 +217,7 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void cannotIdentifyAnOwnDiffWhileANewFileIsUntracked(@TempDir Path dir) throws Exception {
+  void cannotIdentifyAnOwnDiffWhileNewFileIsUntracked(@TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path repo = dir.resolve("repo");
@@ -218,7 +233,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.ownDiffId(repo, repo, "main")).isEmpty();
@@ -256,7 +274,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.commitsSince(repo, repo, "main"))
@@ -266,7 +287,7 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void namesEveryChangedPathCommittedUncommittedNewAndBothSidesOfARenameButNotJagtsOwn(
+  void namesEveryChangedPathCommittedUncommittedNewAndBothSidesOfRenameButNotJagtsOwn(
       @TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
@@ -303,7 +324,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     List<String> paths = git.changedPaths(repo, repo, "main");
@@ -347,7 +371,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     int added = git.agentFileLinesAdded(repo, repo, "main");
@@ -356,7 +383,7 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void readsABranchAsAheadOfItsTargetOnlyOnceItCarriesACommitTheTargetLacks(@TempDir Path dir)
+  void readsBranchAsAheadOfItsTargetOnlyOnceItCarriesCommitTheTargetLacks(@TempDir Path dir)
       throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
@@ -375,7 +402,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.aheadOfTarget(repo, repo, "main")).isFalse();
@@ -399,7 +429,7 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void readsABranchAsUnpublishedUntilItsRemoteBranchHoldsItsHead(@TempDir Path dir)
+  void readsBranchAsUnpublishedUntilItsRemoteBranchHoldsItsHead(@TempDir Path dir)
       throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
@@ -418,7 +448,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.unpublished(repo, repo)).isTrue();
@@ -463,7 +496,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.pushedTip(repo, repo)).isEmpty();
@@ -501,7 +537,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.ownDiffId(repo, repo, "main")).isPresent();
@@ -527,7 +566,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     int added = git.agentFileLinesAdded(repo, repo, "main");
@@ -536,7 +578,7 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void readsAFileRenamedIntoJagtsOwnFileAsNoUncommittedWork(@TempDir Path dir) throws Exception {
+  void readsFileRenamedIntoJagtsOwnFileAsNoUncommittedWork(@TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path origin = dir.resolve("origin.git");
@@ -554,14 +596,17 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.hasUncommittedChanges(repo, repo)).isFalse();
   }
 
   @Test
-  void readsABranchMergedByAMergeCommitAsMerged(@TempDir Path dir) throws Exception {
+  void readsBranchMergedByMergeCommitAsMerged(@TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path origin = dir.resolve("origin.git");
@@ -604,14 +649,17 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.mergedIntoTarget(repo, repo, "main")).isTrue();
   }
 
   @Test
-  void readsABranchWithCommitsTheTargetLacksAsNotMerged(@TempDir Path dir) throws Exception {
+  void readsBranchWithCommitsTheTargetLacksAsNotMerged(@TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path origin = dir.resolve("origin.git");
@@ -636,14 +684,17 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.mergedIntoTarget(repo, repo, "main")).isFalse();
   }
 
   @Test
-  void readsABranchThatNeverDivergedAsNotMerged(@TempDir Path dir) throws Exception {
+  void readsBranchThatNeverDivergedAsNotMerged(@TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path origin = dir.resolve("origin.git");
@@ -671,7 +722,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.mergedIntoTarget(repo, repo, "main")).isFalse();
@@ -692,7 +746,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThatThrownBy(() -> git.mergedIntoTarget(repo, repo, "main"))
@@ -700,7 +757,7 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void readsAWorktreeAheadOfItsTargetAndNeverUnpublishedWhereTheRepositoryHasNoRemote(
+  void readsWorktreeAheadOfItsTargetAndNeverUnpublishedWhereTheRepositoryHasNoRemote(
       @TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
@@ -754,7 +811,10 @@ class WorktreeInspectionTest {
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}),
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}),
             new StubAgentRuntime(StubAgentProperties.defaults()));
 
     try (OriginContext.Scope ignored = SweepFetches.create().open()) {

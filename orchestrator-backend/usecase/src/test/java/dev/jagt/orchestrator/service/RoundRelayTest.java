@@ -42,8 +42,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class RoundRelayTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final Clock clock = Clock.fixed(Instant.ofEpochMilli(1_000_000), ZoneOffset.UTC);
@@ -75,7 +74,8 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
+                clock,
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     RoundRelay relay =
         new RoundRelay(
             new TaskStops(
@@ -86,8 +86,13 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock, new FlowRules(new TaskChart(Composition.builtIn()))),
-            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
+                clock,
+                new FlowRules(new TaskChart(Composition.builtIn()))),
+            new StepRelay(
+                new SessionBrief(paths),
+                sessions,
+                door,
+                new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths));
     ReviewFacts round =
@@ -135,7 +140,8 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
+                clock,
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     RoundRelay relay =
         new RoundRelay(
             new TaskStops(
@@ -146,8 +152,13 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock, new FlowRules(new TaskChart(Composition.builtIn()))),
-            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
+                clock,
+                new FlowRules(new TaskChart(Composition.builtIn()))),
+            new StepRelay(
+                new SessionBrief(paths),
+                sessions,
+                door,
+                new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths));
 
@@ -168,7 +179,7 @@ class RoundRelayTest {
   }
 
   @Test
-  void relaysNothingIntoATaskJagtStopped(@TempDir Path root) throws Exception {
+  void relaysNothingIntoTaskJagtStopped(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -197,7 +208,8 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
+                clock,
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     RoundRelay relay =
         new RoundRelay(
             new TaskStops(
@@ -208,8 +220,13 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock, new FlowRules(new TaskChart(Composition.builtIn()))),
-            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
+                clock,
+                new FlowRules(new TaskChart(Composition.builtIn()))),
+            new StepRelay(
+                new SessionBrief(paths),
+                sessions,
+                door,
+                new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths));
 
@@ -231,7 +248,7 @@ class RoundRelayTest {
 
   @Test
   void relaysTheThreadsAsDraftsAndCountsThem(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
+    final OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
@@ -259,12 +276,18 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
+                clock,
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     SweepResult result =
         new RoundRelay(
                 stops,
-                new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
+                new StepRelay(
+                    new SessionBrief(paths),
+                    sessions,
+                    door,
+                    new TaskTurns(
+                        state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
                 door,
                 new SessionBrief(paths))
             .relay(
@@ -287,7 +310,7 @@ class RoundRelayTest {
   @Test
   void relaysTheThreadsWithoutTheChecksWhileTheAgentsQuestionAboutThemStands(@TempDir Path root)
       throws Exception {
-    OrchestratorPaths paths =
+    final OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
@@ -316,11 +339,16 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
+                clock,
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     new RoundRelay(
             stops,
-            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
+            new StepRelay(
+                new SessionBrief(paths),
+                sessions,
+                door,
+                new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths))
         .relay(
@@ -343,7 +371,7 @@ class RoundRelayTest {
   }
 
   @Test
-  void reportsARoundUnchangedWhileTheSessionHoldsTheTurnItOpened(@TempDir Path root)
+  void reportsRoundUnchangedWhileTheSessionHoldsTheTurnItOpened(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -373,11 +401,16 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
+                clock,
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     RoundRelay relay =
         new RoundRelay(
             stops,
-            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
+            new StepRelay(
+                new SessionBrief(paths),
+                sessions,
+                door,
+                new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths));
     ReviewFacts round =
@@ -421,11 +454,16 @@ class RoundRelayTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                clock, new FlowRules(new TaskChart(Composition.builtIn()))));
+                clock,
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     RoundRelay relay =
         new RoundRelay(
             stops,
-            new StepRelay(new SessionBrief(paths), sessions, door, new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
+            new StepRelay(
+                new SessionBrief(paths),
+                sessions,
+                door,
+                new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
             door,
             new SessionBrief(paths));
 

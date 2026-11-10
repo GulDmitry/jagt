@@ -20,7 +20,7 @@ class BoardInteractionLogTest extends BoardPageContext {
   @Autowired Jobs jobs;
 
   @Test
-  void aPressIsLoggedByItsVerbAndItsTasksStatusAlone() throws Exception {
+  void pressIsLoggedByItsVerbAndItsTasksStatusAlone() throws Exception {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -46,7 +46,7 @@ class BoardInteractionLogTest extends BoardPageContext {
   }
 
   @Test
-  void pickingARowIsLoggedWithTheRowsStatus() throws Exception {
+  void pickingRowIsLoggedWithTheRowsStatus() throws Exception {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -65,7 +65,7 @@ class BoardInteractionLogTest extends BoardPageContext {
   }
 
   @Test
-  void aKeyIsLoggedByItsLetterAndTheOpenTasksStatus() throws Exception {
+  void keyIsLoggedByItsLetterAndTheOpenTasksStatus() throws Exception {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -83,7 +83,7 @@ class BoardInteractionLogTest extends BoardPageContext {
   }
 
   @Test
-  void aTaskTurningRequiredIsLoggedOnceByItsStatusAloneWhateverBoardsAreOpen() throws Exception {
+  void taskTurningRequiredIsLoggedOnceByItsStatusAloneWhateverBoardsAreOpen() throws Exception {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -127,7 +127,7 @@ class BoardInteractionLogTest extends BoardPageContext {
 
   @Test
   @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
-  void theFailedJobsChipAppearingIsLoggedWithoutAStatus() throws Exception {
+  void theFailedJobsChipAppearingIsLoggedWithoutStatus() throws Exception {
     breakable.breakIt();
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");

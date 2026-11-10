@@ -34,7 +34,7 @@ class StateServiceTest {
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
-  void tellsListenersAboutAChangeOnlyAfterItIsOnDisk(@TempDir Path root) {
+  void tellsListenersAboutChangeOnlyAfterItIsOnDisk(@TempDir Path root) {
     Path stateFile = root.resolve("state.json");
     StateService state =
         new StateService(
@@ -55,7 +55,7 @@ class StateServiceTest {
   }
 
   @Test
-  void clearsARequestItsRepositorysRemoteDoesNotHoldOnTheFirstRead(@TempDir Path root) {
+  void clearsRequestItsRepositorysRemoteDoesNotHoldOnTheFirstRead(@TempDir Path root) {
     Path stateFile = root.resolve("state.json");
     StateService writer =
         new StateService(
@@ -91,7 +91,7 @@ class StateServiceTest {
   }
 
   @Test
-  void resolvesACallerFromAnyRepositoryItsTaskWorksIn(@TempDir Path root) throws IOException {
+  void resolvesCallerFromAnyRepositoryItsTaskWorksIn(@TempDir Path root) throws IOException {
     Path api = Files.createDirectories(root.resolve("ABC-1-alpha"));
     Path client = Files.createDirectories(root.resolve("ABC-1-beta"));
     StateService state =
@@ -146,7 +146,7 @@ class StateServiceTest {
   }
 
   @Test
-  void staysQuietWhenAMutationChangedNothing(@TempDir Path root) {
+  void staysQuietWhenMutationChangedNothing(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -166,7 +166,7 @@ class StateServiceTest {
   }
 
   @Test
-  void reportsEveryKindOfChangeIncludingARemoval(@TempDir Path root) {
+  void reportsEveryKindOfChangeIncludingRemoval(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -390,7 +390,7 @@ class StateServiceTest {
   }
 
   @Test
-  void picksUpAStateFileThatSomethingElseRewrote(@TempDir Path root) throws IOException {
+  void picksUpStateFileThatSomethingElseRewrote(@TempDir Path root) throws IOException {
     Path stateFile = root.resolve("state.json");
     StateService state =
         new StateService(
@@ -412,7 +412,7 @@ class StateServiceTest {
   }
 
   @Test
-  void keepsItsOwnCopyWhenACallerMutatesTheTasksItWasHanded(@TempDir Path root) {
+  void keepsItsOwnCopyWhenCallerMutatesTheTasksItWasHanded(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -429,7 +429,7 @@ class StateServiceTest {
   }
 
   @Test
-  void writesOnlyRealStateForATaskThatHasSpentTokens(@TempDir Path root) throws IOException {
+  void writesOnlyRealStateForTaskThatHasSpentTokens(@TempDir Path root) throws IOException {
     Path stateFile = root.resolve("state.json");
     StateService state =
         new StateService(
@@ -452,7 +452,7 @@ class StateServiceTest {
   }
 
   @Test
-  void loadsAStateFileWrittenBeforeTheAutoReviewFieldsExisted(@TempDir Path root)
+  void loadsStateFileWrittenBeforeTheAutoReviewFieldsExisted(@TempDir Path root)
       throws IOException {
     Path stateFile = root.resolve("state.json");
     Files.writeString(
@@ -500,7 +500,7 @@ class StateServiceTest {
   }
 
   @Test
-  void recordsWhoAskedForEachStepATaskTakes(@TempDir Path root) {
+  void recordsWhoAskedForEachStepTaskTakes(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -550,7 +550,7 @@ class StateServiceTest {
   }
 
   @Test
-  void keepsAReasonGivenWithNoStepOffTheEarlierStep(@TempDir Path root) {
+  void keepsReasonGivenWithNoStepOffTheEarlierStep(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -571,7 +571,7 @@ class StateServiceTest {
   }
 
   @Test
-  void readsAStepWrittenBeforeReasonsExistedAsGivingNone(@TempDir Path root) throws IOException {
+  void readsStepWrittenBeforeReasonsExistedAsGivingNone(@TempDir Path root) throws IOException {
     Path stateFile = root.resolve("state.json");
     Files.writeString(
         stateFile,
@@ -593,7 +593,7 @@ class StateServiceTest {
   }
 
   @Test
-  void leavesTheEarlierStepAloneWhenAKeepAliveChangesNothing(@TempDir Path root) {
+  void leavesTheEarlierStepAloneWhenKeepAliveChangesNothing(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -617,7 +617,7 @@ class StateServiceTest {
   }
 
   @Test
-  void doesNotSignTheStatusItReconstructsForATaskThatPredatesHistory(@TempDir Path root)
+  void doesNotSignTheStatusItReconstructsForTaskThatPredatesHistory(@TempDir Path root)
       throws IOException {
     Path stateFile = root.resolve("state.json");
     Files.writeString(
@@ -695,7 +695,7 @@ class StateServiceTest {
   }
 
   @Test
-  void resolvesACallerToTheTaskWhoseWorktreeHoldsItNotTheFirstTask(@TempDir Path root)
+  void resolvesCallerToTheTaskWhoseWorktreeHoldsItNotTheFirstTask(@TempDir Path root)
       throws IOException {
     Path first = Files.createDirectories(root.resolve("ABC-1"));
     Path second = Files.createDirectories(root.resolve("ABC-2"));
@@ -717,7 +717,7 @@ class StateServiceTest {
   }
 
   @Test
-  void answersFromTheParseOfAStateFileWrittenByAnotherProcessWhileItHasNotMoved(@TempDir Path root)
+  void answersFromTheParseOfStateFileWrittenByAnotherProcessWhileItHasNotMoved(@TempDir Path root)
       throws IOException {
     Path stateFile = root.resolve("state.json");
     String written =
@@ -778,7 +778,7 @@ class StateServiceTest {
   }
 
   @Test
-  void findsNoTaskForADirectoryThatIsNoWorktreeAndDoesNotExist(@TempDir Path root) {
+  void findsNoTaskForDirectoryThatIsNoWorktreeAndDoesNotExist(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),

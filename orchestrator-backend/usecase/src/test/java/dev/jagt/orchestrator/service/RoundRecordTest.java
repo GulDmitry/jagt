@@ -265,7 +265,7 @@ class RoundRecordTest {
   }
 
   @Test
-  void answersWhoseFaultAFailedRunIsWhereTheChecksWereRead() {
+  void answersWhoseFaultFailedRunIsWhereTheChecksWereRead() {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),
@@ -281,7 +281,7 @@ class RoundRecordTest {
   }
 
   @Test
-  void writesOnlyTheChecksOfAReadThatListedThemWithoutJudgingOrStopping() {
+  void writesOnlyTheChecksOfReadThatListedThemWithoutJudgingOrStopping() {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
@@ -312,7 +312,7 @@ class RoundRecordTest {
   }
 
   @Test
-  void writesNothingForAReadThatListedNoChecks() {
+  void writesNothingForReadThatListedNoChecks() {
     roundRecord.recordListed(
         "ABC-1",
         new ReviewFacts(

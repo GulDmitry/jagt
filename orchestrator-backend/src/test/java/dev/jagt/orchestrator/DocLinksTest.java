@@ -20,7 +20,7 @@ class DocLinksTest {
       Pattern.compile("]\\(([^)\\s#]*)#([^)\\s]+)[^)]*\\)");
 
   @Test
-  void everyRelativeLinkReachesAFile() {
+  void everyRelativeLinkReachesFile() {
     List<String> broken =
         documents().stream()
             .flatMap(
@@ -37,7 +37,7 @@ class DocLinksTest {
   }
 
   @Test
-  void everyAnchoredLinkReachesAHeading() {
+  void everyAnchoredLinkReachesHeading() {
     List<String> broken =
         documents().stream()
             .flatMap(
@@ -88,12 +88,12 @@ class DocLinksTest {
   }
 
   @Test
-  void everyRuleHasAPathScopedPointer() {
+  void everyRuleHasPathScopedPointer() {
     assertThat(namesIn(Path.of("../.claude/rules"))).containsAll(namesIn(Path.of("../docs/rules")));
   }
 
   @Test
-  void everyPointerNamesARuleOrASpec() {
+  void everyPointerNamesRuleOrSpec() {
     List<String> sources =
         Stream.concat(
                 namesIn(Path.of("../docs/rules")).stream(),

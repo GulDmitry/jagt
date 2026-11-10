@@ -8,7 +8,7 @@ import tools.jackson.databind.json.JsonMapper;
 class StateFileCompatibilityTest {
 
   @Test
-  void aStateFileWrittenBeforeRolesLoadsWithTheQaRolesPassAsAcceptancesAndTheMastersSeal() {
+  void stateFileWrittenBeforeRolesLoadsWithTheQaRolesPassAsAcceptancesAndTheMastersSeal() {
     String json =
         """
         {"status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
@@ -27,7 +27,7 @@ class StateFileCompatibilityTest {
   }
 
   @Test
-  void aStateFileCarryingTheSilenceAndVerifyMarksLoadsThemAsToldAndKeepsTheOtherMarks() {
+  void stateFileCarryingTheSilenceAndVerifyMarksLoadsThemAsToldAndKeepsTheOtherMarks() {
     String json =
         """
         {"status":"IN_PROGRESS","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
@@ -44,7 +44,7 @@ class StateFileCompatibilityTest {
   }
 
   @Test
-  void aCurrentStateFileIsWrittenBackKeyForKey() {
+  void currentStateFileIsWrittenBackKeyForKey() {
     String json =
         """
         {
@@ -95,7 +95,7 @@ class StateFileCompatibilityTest {
   }
 
   @Test
-  void aStateFileInTheOldFlatShapeIsWrittenBackAsTheCurrentOne() {
+  void stateFileInTheOldFlatShapeIsWrittenBackAsTheCurrentOne() {
     String old =
         """
         {
@@ -193,7 +193,7 @@ class StateFileCompatibilityTest {
   }
 
   @Test
-  void aStateFileWrittenWhileTheRoleWasCalledQaLoadsItsRecordStopAndOriginUnderTheNewNames() {
+  void stateFileWrittenWhileTheRoleWasCalledQaLoadsItsRecordStopAndOriginUnderTheNewNames() {
     String json =
         """
         {"status":"IN_PROGRESS","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,

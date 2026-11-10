@@ -15,8 +15,8 @@ import org.junit.jupiter.api.io.TempDir;
 class StepCheckTest {
 
   @Test
-  void refusesAStepNoCaseSends(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
+  void refusesStepNoCaseSends(@TempDir Path root) throws Exception {
+    final OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
@@ -34,8 +34,8 @@ class StepCheckTest {
   }
 
   @Test
-  void refusesAStepTheBriefHoldsNoSectionFor(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
+  void refusesStepTheBriefHoldsNoSectionFor(@TempDir Path root) throws Exception {
+    final OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## wake\n\ngo on\n");
@@ -52,7 +52,7 @@ class StepCheckTest {
 
   @Test
   void passesTheShippedBriefAndCases(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
+    final OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(

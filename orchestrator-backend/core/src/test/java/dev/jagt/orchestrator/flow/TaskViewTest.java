@@ -3,9 +3,21 @@ package dev.jagt.orchestrator.flow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import dev.jagt.orchestrator.task.*;
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.AutoReviewWatch;
+import dev.jagt.orchestrator.task.Deployment;
+import dev.jagt.orchestrator.task.InfraRetry;
+import dev.jagt.orchestrator.task.Master;
+import dev.jagt.orchestrator.task.MasterMode;
+import dev.jagt.orchestrator.task.ModelTier;
+import dev.jagt.orchestrator.task.RoleRecord;
+import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.Step;
+import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.Wake;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -17,8 +29,7 @@ class TaskViewTest {
 
   private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> watches() {
     return java.util.stream.Stream.of(
@@ -32,7 +43,7 @@ class TaskViewTest {
 
   @ParameterizedTest
   @org.junit.jupiter.params.provider.MethodSource("watches")
-  void asksForAHumanOnlyWhereAnExpectedPollHasStopped(AutoReviewWatch watch, Owner expected) {
+  void asksForHumanOnlyWhereAnExpectedPollHasStopped(AutoReviewWatch watch, Owner expected) {
     TaskView view =
         TaskView.of(
             rules,
@@ -48,7 +59,7 @@ class TaskViewTest {
   }
 
   @Test
-  void namesTheModelASessionRunsOnWhileItIsATierUp() {
+  void namesTheModelSessionRunsOnWhileItIsTierUp() {
     TaskView view =
         TaskView.of(
             rules,
@@ -64,7 +75,7 @@ class TaskViewTest {
   }
 
   @Test
-  void namesNoModelForASessionOnItsOwn() {
+  void namesNoModelForSessionOnItsOwn() {
     TaskView view =
         TaskView.of(
             rules,
@@ -156,10 +167,11 @@ class TaskViewTest {
   }
 
   @Test
-  void asksYouToAnswerTheSessionWhenItsHookReportedABlockingPromptWhileItsReportIsPlain() {
+  void asksYouToAnswerTheSessionWhenItsHookReportedBlockingPromptWhileItsReportIsPlain() {
     TaskState working = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
     TaskState asked =
-        reducer.signed(
+        reducer
+            .signed(
                 working,
                 new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK),
                 1_000)
@@ -169,7 +181,13 @@ class TaskViewTest {
                     .withQuietSince(500));
 
     TaskView view =
-        TaskView.of(rules, "ABC-1", asked, RoundState.of(asked.report(), false), AutoReviewWatch.none(), Map.of("proj", "dev"));
+        TaskView.of(
+            rules,
+            "ABC-1",
+            asked,
+            RoundState.of(asked.report(), false),
+            AutoReviewWatch.none(),
+            Map.of("proj", "dev"));
 
     assertThat(view.owner()).isEqualTo(Owner.YOU);
     assertThat(view.ask()).isEqualTo("answer the session");
@@ -177,7 +195,7 @@ class TaskViewTest {
   }
 
   @Test
-  void drawsNoButtonForARepositoryRemovalWhichIsOnlyTyped() {
+  void drawsNoButtonForRepositoryRemovalWhichIsOnlyTyped() {
     TaskState several =
         TaskState.builder(
                 List.of(TaskRepo.of("api", "/wt"), TaskRepo.of("web", "/wt2")),
@@ -185,7 +203,13 @@ class TaskViewTest {
             .build();
 
     TaskView view =
-        TaskView.of(rules, "ABC-1", several, RoundState.of(several.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of(
+            rules,
+            "ABC-1",
+            several,
+            RoundState.of(several.report(), false),
+            AutoReviewWatch.none(),
+            Map.of("api", "dev"));
 
     assertThat(view.actions()).extracting(TaskView.ActionView::id).doesNotContain("remove-repo");
   }
@@ -199,7 +223,7 @@ class TaskViewTest {
         "file:///etc/passwd",
         "not a url at all",
       })
-  void dropsALinkThatIsNotHttpRatherThanHandingItToAnAnchor(String hostile) {
+  void dropsLinkThatIsNotHttpRatherThanHandingItToAnAnchor(String hostile) {
     TaskView view =
         TaskView.of(
             rules,
@@ -402,7 +426,7 @@ class TaskViewTest {
   }
 
   @Test
-  void onlyFocusRidesOnTheRowOfAWorkingTask() {
+  void onlyFocusRidesOnTheRowOfWorkingTask() {
     TaskView view =
         TaskView.of(
             rules,
@@ -419,7 +443,7 @@ class TaskViewTest {
   }
 
   @Test
-  void offersASweepAsSoonAsANYRepositoryHasARequestOpen() {
+  void offersSweepAsSoonAsAnyRepositoryHasRequestOpen() {
     TaskView view =
         TaskView.of(
             rules,
@@ -448,7 +472,7 @@ class TaskViewTest {
   }
 
   @Test
-  void marksATaskWhoseWorkIsOnASharedBranchAfterTheDeployStatusHasMovedOn() {
+  void marksTaskWhoseWorkIsOnSharedBranchAfterTheDeployStatusHasMovedOn() {
     TaskView view =
         TaskView.of(
             rules,
@@ -510,13 +534,19 @@ class TaskViewTest {
             .build();
 
     TaskView view =
-        TaskView.of(rules, "ABC-1", reverted, RoundState.of(reverted.report(), false), AutoReviewWatch.none(), Map.of("proj", "dev"));
+        TaskView.of(
+            rules,
+            "ABC-1",
+            reverted,
+            RoundState.of(reverted.report(), false),
+            AutoReviewWatch.none(),
+            Map.of("proj", "dev"));
 
     assertThat(view.deployed()).isFalse();
   }
 
   @Test
-  void marksTheDeployVerbAsARepeatWhileItsLastRunIsStillLive() {
+  void marksTheDeployVerbAsRepeatWhileItsLastRunIsStillLive() {
     TaskView view =
         TaskView.of(
             rules,
@@ -543,7 +573,7 @@ class TaskViewTest {
   }
 
   @Test
-  void offersTheRevertOnACardWhoseDeployBrokeOffAfterARepositoryLanded() {
+  void offersTheRevertOnCardWhoseDeployBrokeOffAfterRepositoryLanded() {
     TaskView view =
         TaskView.of(
             rules,
@@ -569,7 +599,7 @@ class TaskViewTest {
   }
 
   @Test
-  void marksAMultiRepoTaskAsSoonAsONERepositoryHasLanded() {
+  void marksMultiRepoTaskAsSoonAsOneRepositoryHasLanded() {
     TaskView view =
         TaskView.of(
             rules,
@@ -615,7 +645,7 @@ class TaskViewTest {
   }
 
   @Test
-  void carriesTheRequestAgeAndTheApprovalOnlyWhileARequestIsOpen() {
+  void carriesTheRequestAgeAndTheApprovalOnlyWhileRequestIsOpen() {
     TaskState open =
         TaskState.builder("api", "/wt", TaskStatus.CI_POLLING)
             .mrUrl("http://host/mr/1")
@@ -629,9 +659,21 @@ class TaskViewTest {
             .build();
 
     TaskView withRequest =
-        TaskView.of(rules, "ABC-1", open, RoundState.of(open.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of(
+            rules,
+            "ABC-1",
+            open,
+            RoundState.of(open.report(), false),
+            AutoReviewWatch.none(),
+            Map.of("api", "dev"));
     TaskView withoutRequest =
-        TaskView.of(rules, "ABC-1", none, RoundState.of(none.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of(
+            rules,
+            "ABC-1",
+            none,
+            RoundState.of(none.report(), false),
+            AutoReviewWatch.none(),
+            Map.of("api", "dev"));
 
     assertThat(withRequest.requestOpenedAt()).isEqualTo(1_700_000_000_000L);
     assertThat(withRequest.approved()).isTrue();
@@ -640,7 +682,7 @@ class TaskViewTest {
   }
 
   @Test
-  void readsATaskWithNoWatchAsOneNothingPolls() {
+  void readsTaskWithNoWatchAsOneNothingPolls() {
     TaskView view =
         TaskView.of(
             rules,
@@ -656,7 +698,7 @@ class TaskViewTest {
   }
 
   @Test
-  void namesAReviewedTaskAsAwaitingTheApprovalOfItsReviewers() {
+  void namesReviewedTaskAsAwaitingTheApprovalOfItsReviewers() {
     TaskView view =
         TaskView.of(
             rules,
@@ -684,7 +726,7 @@ class TaskViewTest {
   }
 
   @Test
-  void ABC42StoppedOnROUNDSInActIsTheMastersToDecideBeforeItWasAsked() {
+  void abc42StoppedOnRoundsInActIsTheMastersToDecideBeforeItWasAsked() {
     TaskState stopped =
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
             .stop(new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds"))
@@ -707,7 +749,7 @@ class TaskViewTest {
   }
 
   @Test
-  void ABC42StoppedOnROUNDSInActIsTheHumansToLiftOnceTheMasterWasAsked() {
+  void abc42StoppedOnRoundsInActIsTheHumansToLiftOnceTheMasterWasAsked() {
     TaskStop stop = new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds");
     TaskState asked =
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
@@ -726,7 +768,7 @@ class TaskViewTest {
             Map.of("api", "dev"));
 
     assertThat(view.owner()).isEqualTo(Owner.YOU);
-    assertThat(view.ask()).isEqualTo("lift the stop \u2014 same round sent too often");
+    assertThat(view.ask()).isEqualTo("lift the stop — same round sent too often");
   }
 
   @Test
@@ -741,9 +783,15 @@ class TaskViewTest {
             .build();
 
     TaskView view =
-        TaskView.of(rules, "ABC-42", stopped, RoundState.of(stopped.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of(
+            rules,
+            "ABC-42",
+            stopped,
+            RoundState.of(stopped.report(), false),
+            AutoReviewWatch.none(),
+            Map.of("api", "dev"));
 
-    assertThat(view.ask()).isEqualTo("lift the stop \u2014 ships with no new note");
+    assertThat(view.ask()).isEqualTo("lift the stop — ships with no new note");
     assertThat(view.stop())
         .isEqualTo(
             new TaskView.Stop(
@@ -769,7 +817,7 @@ class TaskViewTest {
   }
 
   @Test
-  void showsARedWhoseRetryIsArmedAsRunningWithWhatItWaitsOn() {
+  void showsRedWhoseRetryIsArmedAsRunningWithWhatItWaitsOn() {
     TaskView view =
         TaskView.of(
             rules,
@@ -798,7 +846,7 @@ class TaskViewTest {
   }
 
   @Test
-  void showsARedWithNoRetryArmedAsRed() {
+  void showsRedWithNoRetryArmedAsRed() {
     TaskView view =
         TaskView.of(
             rules,
@@ -829,13 +877,19 @@ class TaskViewTest {
                 .withMark(Wake.MARK, new Wake(0, 36_000_000, Step.WAIT_OVER).mark()));
 
     TaskView view =
-        TaskView.of(rules, "ABC-1", waiting, RoundState.of(waiting.report(), false), AutoReviewWatch.none(), Map.of("proj", "dev"));
+        TaskView.of(
+            rules,
+            "ABC-1",
+            waiting,
+            RoundState.of(waiting.report(), false),
+            AutoReviewWatch.none(),
+            Map.of("proj", "dev"));
 
     assertThat(view.waiting()).isEqualTo("db down: ping db.internal\nnext try 10:00 UTC");
   }
 
   @Test
-  void saysNothingOfAWaitForASessionThatDoesNotWait() {
+  void saysNothingOfWaitForSessionThatDoesNotWait() {
     TaskView view =
         TaskView.of(
             rules,
@@ -849,7 +903,7 @@ class TaskViewTest {
   }
 
   @Test
-  void namesAReviewedTaskMergedWhenEveryRequestOfItIs() {
+  void namesReviewedTaskMergedWhenEveryRequestOfItIs() {
     TaskState merged =
         TaskState.builder("api", "/wt", TaskStatus.REVIEWED)
             .mrUrl("https://host/x/-/merge_requests/1")
@@ -858,8 +912,7 @@ class TaskViewTest {
 
     TaskView view =
         TaskView.of(
-            rules,
-            "ABC-42", merged, RoundState.NONE, AutoReviewWatch.none(), Map.of("api", "dev"));
+            rules, "ABC-42", merged, RoundState.NONE, AutoReviewWatch.none(), Map.of("api", "dev"));
 
     assertThat(view.statusLabel()).isEqualTo("merged");
   }

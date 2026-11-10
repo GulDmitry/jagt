@@ -79,7 +79,7 @@ class TaskFlowMatrixTest {
 
   @ParameterizedTest(name = "[{index}] {0}")
   @MethodSource("dev.jagt.orchestrator.e2e.TaskFlowCase#matrix")
-  void aTaskIsCreatedProvisionedAndThenTornDownLeavingOnlyItsBranch(TaskFlowCase flowCase)
+  void taskIsCreatedProvisionedAndThenTornDownLeavingOnlyItsBranch(TaskFlowCase flowCase)
       throws Exception {
     E2eWorkspace.writeConfig(paths.configFile(), workspace.resolve("proj"), flowCase);
     Path worktree = workspace.resolve("ABC-1-proj");
@@ -91,7 +91,7 @@ class TaskFlowMatrixTest {
                 .title("Widget layout is off")
                 .build());
 
-    E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-feed");
+    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-feed");
     assertThat(created).contains("ABC-1 is a1", "agent running on ABC-1");
     assertThat(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)).exists();
     assertThat(worktree.resolve("task_context.md")).exists();

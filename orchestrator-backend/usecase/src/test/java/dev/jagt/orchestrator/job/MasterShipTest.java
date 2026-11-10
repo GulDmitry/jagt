@@ -20,7 +20,7 @@ class MasterShipTest {
   private final ShipRecord record = mock(ShipRecord.class);
 
   @Test
-  void shipsATaskThatHoldsWork() {
+  void shipsTaskThatHoldsWork() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(due.due("ABC-1", task)).thenReturn(true);
     when(press.press("ABC-1", task, TaskAction.SHIP)).thenReturn(true);
@@ -31,7 +31,7 @@ class MasterShipTest {
   }
 
   @Test
-  void leavesATaskNoShipIsDueOnForTheHuman() {
+  void leavesTaskNoShipIsDueOnForTheHuman() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
 
     boolean shipped = new MasterShip(due, press, record).ship("ABC-1", task);
@@ -41,7 +41,7 @@ class MasterShipTest {
   }
 
   @Test
-  void aPressRecordsTheTreeItShipped() {
+  void pressRecordsTheTreeItShipped() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(due.due("ABC-1", task)).thenReturn(true);
     when(press.press("ABC-1", task, TaskAction.SHIP)).thenReturn(true);

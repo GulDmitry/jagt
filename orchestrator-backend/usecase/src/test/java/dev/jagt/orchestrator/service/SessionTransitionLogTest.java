@@ -20,7 +20,7 @@ class SessionTransitionLogTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void logsOnceWhenASessionsWindowGoesFromRunningToMissing() {
+  void logsOnceWhenSessionsWindowGoesFromRunningToMissing() {
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger watched = (Logger) LoggerFactory.getLogger(SessionTransitionLog.class);

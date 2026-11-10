@@ -88,7 +88,7 @@ class RevertServiceTest {
   }
 
   @Test
-  void revertsTheFixesOfADeployWithItsMergeNewestFirst(@TempDir Path root) {
+  void revertsTheFixesOfDeployWithItsMergeNewestFirst(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -180,7 +180,7 @@ class RevertServiceTest {
   }
 
   @Test
-  void revertsAPreUpgradeDeployOnTheProjectsConfiguredDeployBranch(@TempDir Path root) {
+  void revertsPreUpgradeDeployOnTheProjectsConfiguredDeployBranch(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -218,7 +218,7 @@ class RevertServiceTest {
   }
 
   @Test
-  void refusesToGuessTheMergeCommitOfADeployItDidNotRecord(@TempDir Path root) {
+  void refusesToGuessTheMergeCommitOfDeployItDidNotRecord(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -381,7 +381,7 @@ class RevertServiceTest {
   }
 
   @Test
-  void refusesAPickThatIsNoneOfTheCandidates(@TempDir Path root) {
+  void refusesPickThatIsNoneOfTheCandidates(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -832,7 +832,7 @@ class RevertServiceTest {
   }
 
   @Test
-  void revertsWhatLandedWhenARepositoryThatNeverLandedHasLeftTheConfiguration(@TempDir Path root) {
+  void revertsWhatLandedWhenRepositoryThatNeverLandedHasLeftTheConfiguration(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -883,7 +883,7 @@ class RevertServiceTest {
   }
 
   @Test
-  void discardsTheConflictedMergeOfASecondDeployAfterRevertingTheFirst(@TempDir Path root) {
+  void discardsTheConflictedMergeOfSecondDeployAfterRevertingTheFirst(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -932,7 +932,7 @@ class RevertServiceTest {
   }
 
   @Test
-  void refusesToUndoADeployOntoABranchThatIsTheBaseBranch(@TempDir Path root) {
+  void refusesToUndoDeployOntoBranchThatIsTheBaseBranch(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -972,7 +972,7 @@ class RevertServiceTest {
   }
 
   @Test
-  void refusesATaskThatIsNotThereNamingIt(@TempDir Path root) {
+  void refusesTaskThatIsNotThereNamingIt(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -999,7 +999,7 @@ class RevertServiceTest {
   }
 
   @Test
-  void handsAConflictingRevertBackAsAConflictNamingItsWorktreeAndPushesNothing(@TempDir Path root) {
+  void handsConflictingRevertBackAsConflictNamingItsWorktreeAndPushesNothing(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),

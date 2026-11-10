@@ -91,7 +91,7 @@ class CodexAgentRuntimeTest {
   }
 
   @Test
-  void refusesToWireAnAgentOntoAScriptTheRepositoryAlreadyShipsUnderThatName(@TempDir Path root)
+  void refusesToWireAnAgentOntoScriptTheRepositoryAlreadyShipsUnderThatName(@TempDir Path root)
       throws Exception {
     Path worktree = root.resolve("ABC-1-proj");
     worktree.toFile().mkdirs();
@@ -210,7 +210,7 @@ class CodexAgentRuntimeTest {
   }
 
   @Test
-  void leavesACodexConfigTheRepositoryShipsExactlyAsItCheckedOut(@TempDir Path root)
+  void leavesCodexConfigTheRepositoryShipsExactlyAsItCheckedOut(@TempDir Path root)
       throws Exception {
     Path worktree = root.resolve("ABC-1-proj");
     Files.createDirectories(worktree.resolve(".codex"));
@@ -230,7 +230,7 @@ class CodexAgentRuntimeTest {
   }
 
   @Test
-  void writesNoClaudeArtifactsIntoACodexWorktree(@TempDir Path root) {
+  void writesNoClaudeArtifactsIntoCodexWorktree(@TempDir Path root) {
     Path worktree = root.resolve("ABC-1-proj");
     worktree.toFile().mkdirs();
 
@@ -283,7 +283,7 @@ class CodexAgentRuntimeTest {
   }
 
   @Test
-  void keepsAConfiguredCommand() {
+  void keepsConfiguredCommand() {
     assertThat(new CodexProperties("/opt/bin/codex").command()).isEqualTo("/opt/bin/codex");
   }
 

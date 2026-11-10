@@ -11,7 +11,7 @@ import org.junit.jupiter.api.io.TempDir;
 class RollingFileTest {
 
   @Test
-  void keepsAFileThatReachedExactlyTheLimit(@TempDir Path dir) throws IOException {
+  void keepsFileThatReachedExactlyTheLimit(@TempDir Path dir) throws IOException {
     RollingFile file = new RollingFile(dir.resolve("log.jsonl"));
 
     file.append("x".repeat(1024 * 1024));
@@ -21,7 +21,7 @@ class RollingFileTest {
   }
 
   @Test
-  void rollsAFilePastTheLimitIntoItsDotOneSiblingReplacingTheLastOne(@TempDir Path dir)
+  void rollsFilePastTheLimitIntoItsDotOneSiblingReplacingTheLastOne(@TempDir Path dir)
       throws IOException {
     Files.writeString(dir.resolve("log.jsonl.1"), "older");
     RollingFile file = new RollingFile(dir.resolve("log.jsonl"));

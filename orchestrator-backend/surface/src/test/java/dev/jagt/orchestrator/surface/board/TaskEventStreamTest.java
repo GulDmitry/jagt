@@ -61,7 +61,7 @@ class TaskEventStreamTest {
   }
 
   @Test
-  void keepsOnlyOnePendingBroadcastForABurstOfChanges() {
+  void keepsOnlyOnePendingBroadcastForBurstOfChanges() {
     StateService stateService = mock(StateService.class);
     ExecutorService broadcaster = mock(ExecutorService.class);
     TaskEventStream stream =
@@ -110,7 +110,7 @@ class TaskEventStreamTest {
   }
 
   @Test
-  void handsBackAnAlreadyEndedStreamToATabThatReconnectsDuringShutdown() {
+  void handsBackAnAlreadyEndedStreamToTabThatReconnectsDuringShutdown() {
     TaskEventStream stream =
         new TaskEventStream(
             mock(StateService.class),
@@ -123,7 +123,7 @@ class TaskEventStreamTest {
   }
 
   @Test
-  void endsAConnectionWhoseWriteFailedInsteadOfMerelyForgettingIt() {
+  void endsConnectionWhoseWriteFailedInsteadOfMerelyForgettingIt() {
     TaskEventStream stream =
         new TaskEventStream(
             mock(StateService.class),
@@ -150,7 +150,7 @@ class TaskEventStreamTest {
   }
 
   @Test
-  void namesTheRunAndBeatsOnceToABrowserThatOpens() {
+  void namesTheRunAndBeatsOnceToBrowserThatOpens() {
     TaskEventStream stream =
         spy(
             new TaskEventStream(
@@ -249,7 +249,7 @@ class TaskEventStreamTest {
   }
 
   @Test
-  void stopsTheBroadcasterWithoutInterruptingAWriteWhenTheBackendShutsDown() {
+  void stopsTheBroadcasterWithoutInterruptingWriteWhenTheBackendShutsDown() {
     ExecutorService broadcaster = mock(ExecutorService.class);
     TaskEventStream stream =
         new TaskEventStream(
@@ -272,7 +272,7 @@ class TaskEventStreamTest {
                 scheduler,
                 Executors.newSingleThreadExecutor()));
     stream.followStateChanges();
-    SseEmitter browser = stream.open();
+    final SseEmitter browser = stream.open();
     ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
     verify(scheduler)
         .scheduleAtFixedRate(heartbeat.capture(), any(Instant.class), any(Duration.class));

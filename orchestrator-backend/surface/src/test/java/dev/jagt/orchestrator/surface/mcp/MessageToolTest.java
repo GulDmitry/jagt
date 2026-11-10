@@ -15,7 +15,7 @@ class MessageToolTest {
   private final JsonMapper mapper = new JsonMapper();
 
   @Test
-  void refusesABrokenMessageBeforeTheToolItselfRunsAtAll() {
+  void refusesBrokenMessageBeforeTheToolItselfRunsAtAll() {
     AtomicBoolean ran = new AtomicBoolean();
     ToolHandler tool =
         MessageTool.of(
@@ -35,7 +35,7 @@ class MessageToolTest {
   }
 
   @Test
-  void countsAnArgumentOfTheWrongShapeAsACallToCorrect() {
+  void countsAnArgumentOfTheWrongShapeAsCallToCorrect() {
     ToolHandler tool =
         MessageTool.of(
             mapper,
@@ -52,7 +52,7 @@ class MessageToolTest {
   }
 
   @Test
-  void namesAMissingFieldBesideEverythingElseWrongRatherThanOnItsOwn() {
+  void namesMissingFieldBesideEverythingElseWrongRatherThanOnItsOwn() {
     ToolHandler tool =
         MessageTool.of(
             mapper,
@@ -68,7 +68,7 @@ class MessageToolTest {
   }
 
   @Test
-  void ignoresAFieldTheMessageDoesNotDeclare() {
+  void ignoresFieldTheMessageDoesNotDeclare() {
     ToolHandler tool =
         MessageTool.of(
             mapper,
@@ -81,14 +81,15 @@ class MessageToolTest {
     String answer =
         tool.call(
             mapper.readTree(
-                "{\"status\":\"IN_PROGRESS\",\"message\":\"working\",\"mood\":\"cheerful\",\"why\":\"started\"}"),
+                "{\"status\":\"IN_PROGRESS\",\"message\":\"working\",\"mood\":\"cheerful\",\"wh"
+                + "y\":\"started\"}"),
             "ABC-1");
 
     assertThat(answer).isEqualTo("working");
   }
 
   @Test
-  void refusesAMisspellingOfAFieldItLeftOutRatherThanActingOnTheCallersOwnTask() {
+  void refusesMisspellingOfFieldItLeftOutRatherThanActingOnTheCallersOwnTask() {
     AtomicBoolean ran = new AtomicBoolean();
     ToolHandler tool =
         MessageTool.of(
@@ -133,7 +134,7 @@ class MessageToolTest {
   }
 
   @Test
-  void readsAFieldLeftBlankAsOneLeftOut() {
+  void readsFieldLeftBlankAsOneLeftOut() {
     ToolHandler tool =
         MessageTool.of(
             mapper,
@@ -146,14 +147,15 @@ class MessageToolTest {
     String answer =
         tool.call(
             mapper.readTree(
-                "{\"status\":\"IN_PROGRESS\",\"message\":\"working\",\"outcome\":\"\",\"why\":\"started\"}"),
+                "{\"status\":\"IN_PROGRESS\",\"message\":\"working\",\"outcome\":\"\",\"why\":"
+                + "\"started\"}"),
             "ABC-1");
 
     assertThat(answer).isEqualTo("null");
   }
 
   @Test
-  void readsACallCarryingNoArgumentsAsOneWithEveryFieldLeftOut() {
+  void readsCallCarryingNoArgumentsAsOneWithEveryFieldLeftOut() {
     ToolHandler tool =
         MessageTool.of(
             mapper,
@@ -169,7 +171,7 @@ class MessageToolTest {
   }
 
   @Test
-  void refusesAReportGivingNoReasonAsACallToCorrect() {
+  void refusesReportGivingNoReasonAsCallToCorrect() {
     ToolHandler tool =
         MessageTool.of(
             mapper,

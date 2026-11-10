@@ -28,7 +28,7 @@ import org.springframework.test.annotation.DirtiesContext;
 class BoardConnectionTest extends BoardPageContext {
 
   @Test
-  void aPageThatOutlivedARestartLoadsTheNewBoardWhenItReconnects() {
+  void pageThatOutlivedRestartLoadsTheNewBoardWhenItReconnects() {
     Page page = session.newPage();
     page.route(
         "**/api/events",
@@ -51,7 +51,7 @@ class BoardConnectionTest extends BoardPageContext {
   }
 
   @Test
-  void theManifestTheBoardPageLinksIsServedAsAManifest() {
+  void theManifestTheBoardPageLinksIsServedAsManifest() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     String href = (String) page.locator("link[rel=manifest]").evaluate("link => link.href");
@@ -66,7 +66,7 @@ class BoardConnectionTest extends BoardPageContext {
   }
 
   @Test
-  void aStateChangeRepaintsAnOpenBoardWithNobodyReloadingIt() {
+  void stateChangeRepaintsAnOpenBoardWithNobodyReloadingIt() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -82,7 +82,7 @@ class BoardConnectionTest extends BoardPageContext {
   }
 
   @Test
-  void aPageReadsTheBoardAndItsVerbsOnceWhenItOpens() {
+  void pageReadsTheBoardAndItsVerbsOnceWhenItOpens() {
     List<String> reads = new java.util.concurrent.CopyOnWriteArrayList<>();
     session.onRequest(request -> reads.add(request.url().replaceFirst("^http://[^/]+", "")));
 
@@ -102,7 +102,7 @@ class BoardConnectionTest extends BoardPageContext {
   }
 
   @Test
-  void anOlderReadArrivingLastDoesNotPaintOverANewerOne() {
+  void anOlderReadArrivingLastDoesNotPaintOverNewerOne() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -153,7 +153,7 @@ class BoardConnectionTest extends BoardPageContext {
   }
 
   @Test
-  void aRepaintLeavesKeyboardFocusOnTheButtonItWasOn() {
+  void repaintLeavesKeyboardFocusOnTheButtonItWasOn() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -188,7 +188,7 @@ class BoardConnectionTest extends BoardPageContext {
   }
 
   @Test
-  void aButtonPressedFromTheKeyboardKeepsTheFocusOnceItsMoveHasRun() {
+  void buttonPressedFromTheKeyboardKeepsTheFocusOnceItsMoveHasRun() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -213,7 +213,7 @@ class BoardConnectionTest extends BoardPageContext {
   }
 
   @Test
-  void aRepaintLeavesKeyboardFocusOnTheChipOfTheCardItRebuilt() {
+  void repaintLeavesKeyboardFocusOnTheChipOfTheCardItRebuilt() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -240,7 +240,7 @@ class BoardConnectionTest extends BoardPageContext {
   }
 
   @Test
-  void aRepaintKeepsTheTipOfAChipWhoseCardDidNotChange() {
+  void repaintKeepsTheTipOfChipWhoseCardDidNotChange() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -278,7 +278,7 @@ class BoardConnectionTest extends BoardPageContext {
   }
 
   @Test
-  void aBoardCutOffFromTheBackendSaysItIsStaleAndOffersNothingUntilItReconnects() {
+  void boardCutOffFromTheBackendSaysItIsStaleAndOffersNothingUntilItReconnects() {
     Page page = session.newPage();
     page.route("**/api/events", Route::abort);
     page.navigate("http://localhost:" + port + "/");
@@ -295,7 +295,7 @@ class BoardConnectionTest extends BoardPageContext {
 
   @Test
   @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
-  void aRoundOpenWhenTheBackendGoesAwayTakesNoLineForItsSession(
+  void roundOpenWhenTheBackendGoesAwayTakesNoLineForItsSession(
       @Autowired TaskEventStream events, @Autowired ApplicationContext context) throws IOException {
     Path worktree = Files.createDirectories(root.resolve("ABC-18-alpha"));
     Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
@@ -321,7 +321,7 @@ class BoardConnectionTest extends BoardPageContext {
   }
 
   @Test
-  void aBoardWhosePushConnectionFellSilentSaysItIsStaleAndConnectsAgain() {
+  void boardWhosePushConnectionFellSilentSaysItIsStaleAndConnectsAgain() {
     Page page = session.newPage();
     page.clock().install();
     page.navigate("http://localhost:" + port + "/");
@@ -335,7 +335,7 @@ class BoardConnectionTest extends BoardPageContext {
   }
 
   @Test
-  void aBoardWhosePushConnectionWasRefusedTriesAgainOnItsOwn() {
+  void boardWhosePushConnectionWasRefusedTriesAgainOnItsOwn() {
     Page page = session.newPage();
     page.route("**/api/events", route -> route.fulfill(new Route.FulfillOptions().setStatus(403)));
     page.navigate("http://localhost:" + port + "/");
@@ -348,7 +348,7 @@ class BoardConnectionTest extends BoardPageContext {
   }
 
   @Test
-  void aPageThatOutlivedARestartKeepsAnOpenFormUntilItCloses() {
+  void pageThatOutlivedRestartKeepsAnOpenFormUntilItCloses() {
     Page page = session.newPage();
     page.clock().install();
     page.navigate("http://localhost:" + port + "/");

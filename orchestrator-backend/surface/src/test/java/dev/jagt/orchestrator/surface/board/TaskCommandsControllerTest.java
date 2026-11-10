@@ -33,7 +33,7 @@ class TaskCommandsControllerTest {
   }
 
   @Test
-  void carriesTheProjectAHumanTypedAfterTheTicketToTheSameAction() {
+  void carriesTheProjectHumanTypedAfterTheTicketToTheSameAction() {
     when(commands.execute("ABC-1", TaskAction.ADD_REPO, "beta"))
         .thenReturn("add-repo ABC-1: beta is at /wt");
 
@@ -42,7 +42,7 @@ class TaskCommandsControllerTest {
   }
 
   @Test
-  void namesTheRefusalKindSoAStalePageCanTellItselfApartFromARealRefusal() {
+  void namesTheRefusalKindSoStalePageCanTellItselfApartFromRealRefusal() {
     var refused =
         refusals.refused(new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, "Deploy is not available"));
 
@@ -52,7 +52,7 @@ class TaskCommandsControllerTest {
   }
 
   @Test
-  void carriesNoCodeForARefusalNothingOnThePageBranchesOn() {
+  void carriesNoCodeForRefusalNothingOnThePageBranchesOn() {
     var refused = refusals.refused(new IllegalStateException("ship: ABC-1 is DEPLOYED"));
 
     assertThat(refused.getBody()).containsOnlyKeys("error");
@@ -67,7 +67,7 @@ class TaskCommandsControllerTest {
   }
 
   @Test
-  void startsATaskThroughTheSameLauncherTheTypedCommandUses() {
+  void startsTaskThroughTheSameLauncherTheTypedCommandUses() {
     LaunchRequest posted =
         LaunchRequest.of("ABC-42")
             .withProject("demo")
@@ -82,7 +82,7 @@ class TaskCommandsControllerTest {
   }
 
   @Test
-  void refusesALaunchThatCreatedNoTaskLikeTheTypedDo() {
+  void refusesLaunchThatCreatedNoTaskLikeTheTypedDo() {
     LaunchRequest posted = LaunchRequest.of("ABC-42").withProject("demo");
     when(launcher.launch(posted)).thenReturn(Launched.refused("error: read failed: ABC-42"));
 
@@ -93,7 +93,7 @@ class TaskCommandsControllerTest {
   }
 
   @Test
-  void treatsBlankModifiersAsAbsentSoAnEmptyFormFieldIsNotAProjectNamedEmptyString() {
+  void treatsBlankModifiersAsAbsentSoAnEmptyFormFieldIsNotProjectNamedEmptyString() {
     when(launcher.launchUnplaced(any()))
         .thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
 
@@ -103,7 +103,7 @@ class TaskCommandsControllerTest {
   }
 
   @Test
-  void takesAFormWithNoTicketToTheLauncherRatherThanHoldingARuleOfItsOwn() {
+  void takesFormWithNoTicketToTheLauncherRatherThanHoldingRuleOfItsOwn() {
     LaunchRequest written =
         LaunchRequest.defaults().withProject("demo").withNotes("split the invoice mailer");
     when(launcher.launch(written))
@@ -116,7 +116,7 @@ class TaskCommandsControllerTest {
   }
 
   @Test
-  void turnsARefusalIntoA400WithTheSentenceTheHumanShouldRead() {
+  void turnsRefusalIntoA400WithTheSentenceTheHumanShouldRead() {
     var response =
         refusals.refused(new IllegalStateException("ship: ABC-1 is DONE — nothing to ship onto"));
 
@@ -126,7 +126,7 @@ class TaskCommandsControllerTest {
   }
 
   @Test
-  void startsAPlanFirstFormWithNoProjectWithoutTheRouterBeingAsked() {
+  void startsPlanFirstFormWithNoProjectWithoutTheRouterBeingAsked() {
     LaunchRequest posted = LaunchRequest.of("ABC-42").withMode("plan");
     when(launcher.launchUnplaced(posted))
         .thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));

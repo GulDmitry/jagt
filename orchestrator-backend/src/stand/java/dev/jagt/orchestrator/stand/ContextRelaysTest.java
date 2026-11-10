@@ -16,7 +16,7 @@ class ContextRelaysTest {
   @TempDir Path root;
 
   @Test
-  void namesEveryBriefStepARelayedTextCarries() throws Exception {
+  void namesEveryBriefStepRelayedTextCarries() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/brief.md.dist"),

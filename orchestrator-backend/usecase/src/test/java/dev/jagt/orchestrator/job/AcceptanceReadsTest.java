@@ -36,8 +36,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class AcceptanceReadsTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final CheckerReader.Run RUN =
       new CheckerReader.Run(
@@ -72,7 +71,7 @@ class AcceptanceReadsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString())),
-                reducer);
+        reducer);
   }
 
   @Test
@@ -98,7 +97,8 @@ class AcceptanceReadsTest {
     new CheckerReads(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             reader,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
             mock(CheckerFlows.class))
         .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
 
@@ -125,7 +125,8 @@ class AcceptanceReadsTest {
             List.of(),
             "",
             "",
-            new AcceptanceVerdict.Flows(List.of(new AcceptanceVerdict.Flows.Flow("AC-1", "")), "https://alpha.test"));
+            new AcceptanceVerdict.Flows(
+                List.of(new AcceptanceVerdict.Flows.Flow("AC-1", "")), "https://alpha.test"));
     AcceptanceVerdict withFlows =
         new AcceptanceVerdict(
             "proj@0123",
@@ -143,7 +144,8 @@ class AcceptanceReadsTest {
         new CheckerReads(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 reader,
-                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+                new TaskTurns(
+                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
                 flows)
             .check("ABC-42", AcceptanceVerdict.ACCEPT, "digest", RUN);
 

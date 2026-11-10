@@ -184,7 +184,7 @@ class PlanPlacementTest {
   }
 
   @Test
-  void leavesTheScratchFolderWhereACutFails() throws Exception {
+  void leavesTheScratchFolderWhereCutFails() throws Exception {
     Path scratch = Files.createDirectories(root.resolve("scratch/ABC-9"));
     Files.writeString(scratch.resolve("plan.md"), "## Repositories\n- [changed] api\n");
     when(worktrees.place(any(), any(), any())).thenThrow(new IllegalStateException("git failed"));
@@ -200,7 +200,7 @@ class PlanPlacementTest {
   }
 
   @Test
-  void placesNothingOfATaskThatAlreadyHoldsARepository() {
+  void placesNothingOfTaskThatAlreadyHoldsRepository() {
     state.putTask("ABC-9", TaskState.builder("api", "/wt", TaskStatus.PLAN_PENDING).build());
 
     boolean placed = placement.place("ABC-9");
@@ -210,7 +210,7 @@ class PlanPlacementTest {
   }
 
   @Test
-  void refusesAPlanThatChangesNoRepository() throws Exception {
+  void refusesPlanThatChangesNoRepository() throws Exception {
     Path scratch = Files.createDirectories(root.resolve("scratch/ABC-9"));
     Files.writeString(
         scratch.resolve("plan.md"), "## Repositories\n- [unaffected: nothing to do] api\n");

@@ -9,7 +9,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class MutationPlanTest {
 
   @Test
-  void rewritesATicketMutationThroughTheRewriteWithItsAsk() {
+  void rewritesTicketMutationThroughTheRewriteWithItsAsk() {
     Mutation mutation = MutationBook.shipped().named("vague-ticket").getFirst();
 
     MutationPlan.Applied applied =
@@ -31,7 +31,7 @@ class MutationPlanTest {
         "human-types-mid-turn",
         "restart-mid-turn"
       })
-  void playsAWorldMutationAsOneEventOnTheSeedTicket(String name) {
+  void playsWorldMutationAsOneEventOnTheSeedTicket(String name) {
     Mutation mutation = MutationBook.shipped().named(name).getFirst();
 
     MutationPlan.Applied applied =
@@ -54,7 +54,7 @@ class MutationPlanTest {
   }
 
   @Test
-  void playsAnAttackThatIsAnEventAsAReviewerThread() {
+  void playsAnAttackThatIsAnEventAsReviewerThread() {
     Mutation mutation = MutationBook.shipped().named("injected-rule").getFirst();
 
     MutationPlan.Applied applied =
@@ -65,7 +65,7 @@ class MutationPlanTest {
   }
 
   @Test
-  void onlyTheDeployConflictMutationExpectsADeployConflict() {
+  void onlyTheDeployConflictMutationExpectsDeployConflict() {
     Mutation mutation = MutationBook.shipped().named("deploy-conflict").getFirst();
 
     MutationPlan.Applied applied =

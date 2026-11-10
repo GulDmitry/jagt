@@ -31,7 +31,7 @@ class InfraRetryJobTest {
           1_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3);
 
   @Test
-  void reRunsAPipelineWhoseFailedJobsStillDiedOnInfrastructure() {
+  void reRunsPipelineWhoseFailedJobsStillDiedOnInfrastructure() {
     when(retries.due()).thenReturn(Map.of("ABC-42", armed));
     when(retries.stillWaiting("ABC-42")).thenReturn(true);
     when(stops.moveDue("ABC-42")).thenReturn(true);
@@ -50,7 +50,7 @@ class InfraRetryJobTest {
   }
 
   @Test
-  void dropsTheRetryWhenAHumanAlreadyMovedTheChecksOnFromRed() {
+  void dropsTheRetryWhenHumanAlreadyMovedTheChecksOnFromRed() {
     when(retries.due()).thenReturn(Map.of("ABC-42", armed));
     when(retries.stillWaiting("ABC-42")).thenReturn(false);
 
@@ -61,7 +61,7 @@ class InfraRetryJobTest {
   }
 
   @Test
-  void dropsTheRetryOfATaskThatWasClosed() {
+  void dropsTheRetryOfTaskThatWasClosed() {
     when(retries.due()).thenReturn(Map.of("ABC-42", armed));
     when(retries.stillWaiting("ABC-42")).thenReturn(false);
 
@@ -72,7 +72,7 @@ class InfraRetryJobTest {
   }
 
   @Test
-  void dropsTheRetryOfAStoppedTask() {
+  void dropsTheRetryOfStoppedTask() {
     when(retries.due()).thenReturn(Map.of("ABC-42", armed));
     when(retries.stillWaiting("ABC-42")).thenReturn(true);
     when(stops.moveDue("ABC-42")).thenReturn(false);

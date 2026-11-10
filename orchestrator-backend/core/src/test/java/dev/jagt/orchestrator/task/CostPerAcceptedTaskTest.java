@@ -11,7 +11,7 @@ class CostPerAcceptedTaskTest {
   private static final long WEEK = 7L * 24 * 3600 * 1000;
 
   @Test
-  void countsWhatAFailedAndAStoppedTaskCostButOnlyAShippedTaskAsAccepted() {
+  void countsWhatFailedAndStoppedTaskCostButOnlyShippedTaskAsAccepted() {
     var shipped =
         new FinishedTask(
             new FinishedTask.Identity("ABC-1", null, null, List.of(), null),
@@ -70,7 +70,7 @@ class CostPerAcceptedTaskTest {
   }
 
   @Test
-  void aWeekRunsFromItsFirstInstantUpToButNotIncludingTheNextWeeksFirst() {
+  void weekRunsFromItsFirstInstantUpToButNotIncludingTheNextWeeksFirst() {
     var first =
         new FinishedTask(
             new FinishedTask.Identity("ABC-1", null, null, List.of(), null),

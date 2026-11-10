@@ -11,7 +11,7 @@ import org.junit.jupiter.api.io.TempDir;
 class SessionBriefTest {
 
   @Test
-  void readsTheHumansCopyOfAStepUpToTheNextStep(@TempDir Path root) throws Exception {
+  void readsTheHumansCopyOfStepUpToTheNextStep(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/brief.md"),
@@ -69,7 +69,7 @@ class SessionBriefTest {
   }
 
   @Test
-  void keepsAStepTheHumanEmptiedEmpty(@TempDir Path root) throws Exception {
+  void keepsStepTheHumanEmptiedEmpty(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n\n## verify\n\nrun it\n");
     Files.writeString(
@@ -82,7 +82,7 @@ class SessionBriefTest {
   }
 
   @Test
-  void keepsAHeadingThatNamesNoStepInsideItsStep(@TempDir Path root) throws Exception {
+  void keepsHeadingThatNamesNoStepInsideItsStep(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/brief.md"),
@@ -95,7 +95,7 @@ class SessionBriefTest {
   }
 
   @Test
-  void readsAStepAsOneLineForACommandLine(@TempDir Path root) throws Exception {
+  void readsStepAsOneLineForCommandLine(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/brief.md"), "## start\n\nRead the notes,\n  then work.\n");
@@ -107,7 +107,7 @@ class SessionBriefTest {
   }
 
   @Test
-  void aCarriedTaskKeepsItsBoardStatusUntilAChangeBegins(@TempDir Path root) throws Exception {
+  void carriedTaskKeepsItsBoardStatusUntilChangeBegins(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));

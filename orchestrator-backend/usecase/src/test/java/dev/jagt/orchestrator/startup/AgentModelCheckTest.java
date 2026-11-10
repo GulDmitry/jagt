@@ -18,7 +18,7 @@ class AgentModelCheckTest {
   private final AgentRuntime agentRuntime = mock(AgentRuntime.class);
 
   @Test
-  void refusesAModelTheRuntimeDoesNotListNamingIt() {
+  void refusesModelTheRuntimeDoesNotListNamingIt() {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withAgent(AgentConfig.defaults().withModel("gpt")));
     when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
@@ -30,7 +30,7 @@ class AgentModelCheckTest {
   }
 
   @Test
-  void acceptsAModelTheRuntimeLists() {
+  void acceptsModelTheRuntimeLists() {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withAgent(AgentConfig.defaults().withModel("sonnet")));
     when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
@@ -39,7 +39,7 @@ class AgentModelCheckTest {
   }
 
   @Test
-  void ignoresTheModelForARuntimeThatCannotChoose() {
+  void ignoresTheModelForRuntimeThatCannotChoose() {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withAgent(AgentConfig.defaults().withModel("sonnet")));
 
@@ -47,14 +47,14 @@ class AgentModelCheckTest {
   }
 
   @Test
-  void acceptsABlankModelWhateverTheRuntime() {
+  void acceptsBlankModelWhateverTheRuntime() {
     when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThat(new AgentModelCheck(configService, agentRuntime).problems()).isEmpty();
   }
 
   @Test
-  void acceptsAModelTheConfigListsWhereTheRuntimeListsNone() {
+  void acceptsModelTheConfigListsWhereTheRuntimeListsNone() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -67,7 +67,7 @@ class AgentModelCheckTest {
   }
 
   @Test
-  void refusesAModelOutsideTheConfigListEvenWhenTheRuntimeListsIt() {
+  void refusesModelOutsideTheConfigListEvenWhenTheRuntimeListsIt() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()

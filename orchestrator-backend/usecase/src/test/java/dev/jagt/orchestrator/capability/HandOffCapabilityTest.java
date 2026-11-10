@@ -63,7 +63,7 @@ class HandOffCapabilityTest {
   }
 
   @Test
-  void refusesAndSaysNothingWhereNoRepositoryStandsInAGitCase(@TempDir Path root) {
+  void refusesAndSaysNothingWhereNoRepositoryStandsInGitCase(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),

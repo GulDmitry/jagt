@@ -8,19 +8,19 @@ import java.util.Map;
 
 public record AcceptanceCase(
     String name,
-    String key,
-    String title,
-    List<Criterion> criteria,
-    Deploy deploy,
-    Map<String, Object> environment,
+    Ticket ticket,
+    Landing landing,
     Decline decline,
-    Map<String, Status> rows,
-    String report,
-    String probe,
-    String ending,
-    List<String> names,
+    Expect expect,
     Flows flows,
     Workspace workspace) {
+
+  public record Ticket(String key, String title, List<Criterion> criteria) {}
+
+  public record Landing(Deploy deploy, Map<String, Object> environment) {}
+
+  public record Expect(
+      Map<String, Status> rows, String report, String probe, String ending, List<String> names) {}
 
   public record Criterion(String id, String text, boolean testable) {}
 
@@ -52,6 +52,6 @@ public record AcceptanceCase(
   }
 
   public AcceptanceEnding expectedEnding() {
-    return AcceptanceEnding.valueOf(ending.toUpperCase(Locale.ROOT).replace('-', '_'));
+    return AcceptanceEnding.valueOf(expect.ending().toUpperCase(Locale.ROOT).replace('-', '_'));
   }
 }

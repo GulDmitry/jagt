@@ -54,13 +54,12 @@ import tools.jackson.databind.json.JsonMapper;
 
 class AcceptanceRoundFlowTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final AgentSessions sessions = mock(AgentSessions.class);
 
   @Test
-  void movesADeployedTaskToInProgressAndHoldsItThereUntilTheSessionReportsNoChanges(
+  void movesDeployedTaskToInProgressAndHoldsItThereUntilTheSessionReportsNoChanges(
       @TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -85,7 +84,12 @@ class AcceptanceRoundFlowTest {
                     1,
                     "digest"));
     state.putTask("ABC-42", task);
-    FlowReports flow = new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn())));
+    FlowReports flow =
+        new FlowReports(
+            state,
+            Clock.systemUTC(),
+            new Checkers(new TaskChart(Composition.builtIn())),
+            new FlowRules(new TaskChart(Composition.builtIn())));
     TaskStops stops =
         new TaskStops(
             new StopPolicy(
@@ -95,7 +99,8 @@ class AcceptanceRoundFlowTest {
                     new Notifications(List.of(), state, Runnable::run),
                     new StopLog(new JsonMapper(), paths))),
             state,
-            Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())));
+            Clock.systemUTC(),
+            new FlowRules(new TaskChart(Composition.builtIn())));
     CaseDoor door =
         new CaseDoor(
             new SessionCases(paths),
@@ -105,7 +110,11 @@ class AcceptanceRoundFlowTest {
             stops);
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     AgentStatusReports reports =
@@ -115,7 +124,11 @@ class AcceptanceRoundFlowTest {
             flow,
             new HandBack(
                 mock(WorktreeChanges.class),
-                new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
+                new Rounds(
+                    config,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
                 config),
             config);
     AcceptanceVerdict verdict =
@@ -148,7 +161,7 @@ class AcceptanceRoundFlowTest {
   }
 
   @Test
-  void holdsDeployedWhereTheSessionDeclinesARoundAfterItsQuestionWasAnsweredInsideTheRound(
+  void holdsDeployedWhereTheSessionDeclinesRoundAfterItsQuestionWasAnsweredInsideTheRound(
       @TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -173,7 +186,12 @@ class AcceptanceRoundFlowTest {
                     1,
                     "digest"));
     state.putTask("ABC-42", task);
-    FlowReports flow = new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn())));
+    FlowReports flow =
+        new FlowReports(
+            state,
+            Clock.systemUTC(),
+            new Checkers(new TaskChart(Composition.builtIn())),
+            new FlowRules(new TaskChart(Composition.builtIn())));
     TaskStops stops =
         new TaskStops(
             new StopPolicy(
@@ -183,7 +201,8 @@ class AcceptanceRoundFlowTest {
                     new Notifications(List.of(), state, Runnable::run),
                     new StopLog(new JsonMapper(), paths))),
             state,
-            Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())));
+            Clock.systemUTC(),
+            new FlowRules(new TaskChart(Composition.builtIn())));
     CaseDoor door =
         new CaseDoor(
             new SessionCases(paths),
@@ -191,7 +210,8 @@ class AcceptanceRoundFlowTest {
             state,
             new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
             stops);
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+    TaskTurns turns =
+        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door, turns);
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -202,7 +222,11 @@ class AcceptanceRoundFlowTest {
             flow,
             new HandBack(
                 mock(WorktreeChanges.class),
-                new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
+                new Rounds(
+                    config,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
                 config),
             config);
     AcceptanceVerdict verdict =
@@ -235,8 +259,7 @@ class AcceptanceRoundFlowTest {
   }
 
   @Test
-  void asksTheHumanThroughTheFlowWhereARowIsUnprovableAndKeepsTheStatusDeployed(
-      @TempDir Path root) {
+  void asksTheHumanThroughTheFlowWhereRowIsUnprovableAndKeepsTheStatusDeployed(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -268,7 +291,11 @@ class AcceptanceRoundFlowTest {
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             mock(StepRelay.class),
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             mock(TaskStops.class),
             state)
         .apply("ABC-42", task, verdict);
@@ -280,7 +307,7 @@ class AcceptanceRoundFlowTest {
   }
 
   @Test
-  void refusesAVerdictAtTheDoorWhereTheTaskWasClosedWhileAcceptanceRead(@TempDir Path root) {
+  void refusesVerdictAtTheDoorWhereTheTaskWasClosedWhileAcceptanceRead(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -313,7 +340,11 @@ class AcceptanceRoundFlowTest {
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 relay,
-                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .apply("ABC-42", task, verdict);

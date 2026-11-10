@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 class RecordingTest {
 
   @Test
-  void readsBackTheLinesAWriteRecorded(@TempDir Path root) {
+  void readsBackTheLinesWriteRecorded(@TempDir Path root) {
     Path file = root.resolve("recording.jsonl");
     List<RecordingLine> lines =
         List.of(
@@ -46,7 +46,7 @@ class RecordingTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void logsOnlyTheFirstDivergenceBecauseALaterOneFollowsFromIt(@TempDir Path root)
+  void logsOnlyTheFirstDivergenceBecauseLaterOneFollowsFromIt(@TempDir Path root)
       throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(file, "\n");

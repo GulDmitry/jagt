@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class FlowDoorsTest {
 
   @Test
-  void aStatusIsWrittenOnlyByTheReducer() {
+  void statusIsWrittenOnlyByTheReducer() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
@@ -22,7 +22,7 @@ class FlowDoorsTest {
   }
 
   @Test
-  void aStopIsWrittenOnlyByTheReducer() {
+  void stopIsWrittenOnlyByTheReducer() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
@@ -36,7 +36,7 @@ class FlowDoorsTest {
   }
 
   @Test
-  void aPlanGateIsWrittenOnlyByTheReducer() {
+  void planGateIsWrittenOnlyByTheReducer() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
@@ -48,7 +48,7 @@ class FlowDoorsTest {
   }
 
   @Test
-  void aGitTrustIsWrittenOnlyByTheReducer() {
+  void gitTrustIsWrittenOnlyByTheReducer() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
@@ -72,7 +72,7 @@ class FlowDoorsTest {
   }
 
   @Test
-  void aRepositoryRequestIsWrittenOnlyByTheReducer() {
+  void repositoryRequestIsWrittenOnlyByTheReducer() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
@@ -88,7 +88,7 @@ class FlowDoorsTest {
   }
 
   @Test
-  void aReviewRequestIsLinkedAndMergedOnlyByTheReducer() {
+  void reviewRequestIsLinkedAndMergedOnlyByTheReducer() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
@@ -130,7 +130,7 @@ class FlowDoorsTest {
   }
 
   @Test
-  void whatARoleLeftOnATaskIsWrittenOnlyByTheReducer() {
+  void whatRoleLeftOnTaskIsWrittenOnlyByTheReducer() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
@@ -146,7 +146,7 @@ class FlowDoorsTest {
   }
 
   @Test
-  void whatTheMasterLeftOnATaskIsWrittenOnlyByTheReducer() {
+  void whatTheMasterLeftOnTaskIsWrittenOnlyByTheReducer() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
@@ -173,7 +173,7 @@ class FlowDoorsTest {
   }
 
   @Test
-  void aReportIsWrittenOnlyByTheReducer() {
+  void reportIsWrittenOnlyByTheReducer() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
@@ -185,7 +185,7 @@ class FlowDoorsTest {
   }
 
   @Test
-  void aTurnIsOpenedAndClosedOnlyByTheReducer() {
+  void turnIsOpenedAndClosedOnlyByTheReducer() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
@@ -201,7 +201,7 @@ class FlowDoorsTest {
   }
 
   @Test
-  void aDeploymentIsWrittenOnlyByTheReducer() {
+  void deploymentIsWrittenOnlyByTheReducer() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
@@ -213,7 +213,7 @@ class FlowDoorsTest {
   }
 
   @Test
-  void aSessionIsWrittenOnlyByTheReducer() {
+  void sessionIsWrittenOnlyByTheReducer() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.TaskReducer")
@@ -225,7 +225,7 @@ class FlowDoorsTest {
   }
 
   @Test
-  void aSessionSignIsStampedOnlyByTheSessionRecordItself() {
+  void sessionSignIsStampedOnlyByTheSessionRecordItself() {
     noClasses()
         .that()
         .resideOutsideOfPackage("dev.jagt.orchestrator.flow..")
@@ -249,7 +249,7 @@ class FlowDoorsTest {
   }
 
   @Test
-  void aStatusIsRestoredOnlyByTheClaimUndo() {
+  void statusIsRestoredOnlyByTheClaimUndo() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.flow.FlowReports")

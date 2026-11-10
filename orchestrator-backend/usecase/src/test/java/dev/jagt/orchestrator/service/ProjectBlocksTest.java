@@ -64,7 +64,7 @@ class ProjectBlocksTest {
   }
 
   @Test
-  void dropsAManagedListWhoseDashesSitAtTheIndentOfItsKey() {
+  void dropsManagedListWhoseDashesSitAtTheIndentOfItsKey() {
     String file =
         """
         orchestrator:
@@ -92,7 +92,7 @@ class ProjectBlocksTest {
   }
 
   @Test
-  void keepsTheCommentThatFollowsAManagedKey() {
+  void keepsTheCommentThatFollowsManagedKey() {
     String file =
         """
         orchestrator:
@@ -152,7 +152,7 @@ class ProjectBlocksTest {
   }
 
   @Test
-  void rewritesTheLabelsOfABlockAndKeepsItsCodeHostAndComment() {
+  void rewritesTheLabelsOfBlockAndKeepsItsCodeHostAndComment() {
     String file =
         """
         orchestrator:
@@ -184,7 +184,7 @@ class ProjectBlocksTest {
   }
 
   @Test
-  void holdsNoBlockForAProjectKeyUnderAnotherSectionOfOrchestrator() {
+  void holdsNoBlockForProjectKeyUnderAnotherSectionOfOrchestrator() {
     String file =
         """
         orchestrator:

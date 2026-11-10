@@ -24,7 +24,7 @@ import org.junit.jupiter.api.io.TempDir;
 class RoleStartupTest {
 
   @Test
-  void aRoleYmlWithAStateWithoutAnExitIsRefusedAndJagtStarts(@TempDir Path root) throws Exception {
+  void roleYmlWithStateWithoutAnExitIsRefusedAndJagtStarts(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
         Path.of("../../roles/acceptance/role.yml.dist"),
@@ -69,7 +69,7 @@ class RoleStartupTest {
   }
 
   @Test
-  void aCopyOfRoleYmlChangesOnlyTheKeysItWritesAndAListItWritesReplacesTheShippedOne(
+  void copyOfRoleYmlChangesOnlyTheKeysItWritesAndListItWritesReplacesTheShippedOne(
       @TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
@@ -91,7 +91,7 @@ class RoleStartupTest {
   }
 
   @Test
-  void aCopyOfRoleYmlThatBreaksTheRoleIsRefusedAndTheShippedFileStands(@TempDir Path root)
+  void copyOfRoleYmlThatBreaksTheRoleIsRefusedAndTheShippedFileStands(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
@@ -116,7 +116,7 @@ class RoleStartupTest {
   }
 
   @Test
-  void aDisabledAcceptanceWithNoAcceptanceRoleInstalledNeverFailsTheStartAndTheNoteSaysWhy(
+  void disabledAcceptanceWithNoAcceptanceRoleInstalledNeverFailsTheStartAndTheNoteSaysWhy(
       @TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
@@ -157,7 +157,7 @@ class RoleStartupTest {
   }
 
   @Test
-  void aRolesKeyNamingAFolderWithABriefAndNoRoleFileIsNoUnknownRole(@TempDir Path root)
+  void rolesKeyNamingFolderWithBriefAndNoRoleFileIsNoUnknownRole(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
@@ -179,7 +179,7 @@ class RoleStartupTest {
   }
 
   @Test
-  void aRolesKeyNamingNoInstalledRoleIsANoteNamingTheKey(@TempDir Path root) throws Exception {
+  void rolesKeyNamingNoInstalledRoleIsNoteNamingTheKey(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
         Path.of("../../roles/acceptance/role.yml.dist"),
@@ -208,6 +208,12 @@ class RoleStartupTest {
 
   private static RoleCheck check(InstalledRoles roles, OrchestratorPaths paths) {
     return new RoleCheck(
-        roles, new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))), paths);
+        roles,
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn()))),
+        paths);
   }
 }

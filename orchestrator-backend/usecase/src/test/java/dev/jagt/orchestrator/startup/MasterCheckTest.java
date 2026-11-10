@@ -57,7 +57,11 @@ class MasterCheckTest {
                 .withRoot(root.toString())
                 .withConfigFile(root.resolve("jagt.yml").toString()));
     ConfigService real =
-        new ConfigService(paths, agentRuntime, mock(dev.jagt.orchestrator.service.ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
+        new ConfigService(
+            paths,
+            agentRuntime,
+            mock(dev.jagt.orchestrator.service.ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
 
     MasterCheck check =
         new MasterCheck(real, new MasterBriefs(paths, new SessionBrief(paths)), agentRuntime);
@@ -72,7 +76,7 @@ class MasterCheckTest {
   }
 
   @Test
-  void refusesAModeThisMachineDoesNotHave(@TempDir Path root) {
+  void refusesModeThisMachineDoesNotHave(@TempDir Path root) {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("supervise")));
@@ -92,7 +96,7 @@ class MasterCheckTest {
   }
 
   @Test
-  void refusesAMasterThatShipsWhileEveryDraftedReplyStillWaitsForYouToPostIt(@TempDir Path root)
+  void refusesMasterThatShipsWhileEveryDraftedReplyStillWaitsForYouToPostIt(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
@@ -245,7 +249,7 @@ class MasterCheckTest {
   }
 
   @Test
-  void refusesToRunAReviewerWhoseBriefWasNeverCopiedFromTheShippedOne(@TempDir Path root) {
+  void refusesToRunReviewerWhoseBriefWasNeverCopiedFromTheShippedOne(@TempDir Path root) {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("judge")));
     MasterCheck check =
@@ -283,7 +287,7 @@ class MasterCheckTest {
   }
 
   @Test
-  void refusesABriefNamedByHandThatIsNotThere(@TempDir Path root) {
+  void refusesBriefNamedByHandThatIsNotThere(@TempDir Path root) {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -304,7 +308,7 @@ class MasterCheckTest {
   }
 
   @Test
-  void refusesAModelTheRuntimeRunningTheSessionsCannotBeTold(@TempDir Path root) throws Exception {
+  void refusesModelTheRuntimeRunningTheSessionsCannotBeTold(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
     when(agentRuntime.displayName()).thenReturn("Codex");
@@ -328,7 +332,7 @@ class MasterCheckTest {
   }
 
   @Test
-  void acceptsAMasterModelWhenTheConfigListsModelsForARuntimeListingNone(@TempDir Path root)
+  void acceptsMasterModelWhenTheConfigListsModelsForRuntimeListingNone(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
@@ -351,7 +355,7 @@ class MasterCheckTest {
   }
 
   @Test
-  void acceptsAModeWhoseBriefTheInstallActuallyCarries(@TempDir Path root) throws Exception {
+  void acceptsModeWhoseBriefTheInstallActuallyCarries(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md"), "what I care about\n");
     when(configService.load())
@@ -370,7 +374,7 @@ class MasterCheckTest {
   }
 
   @Test
-  void acceptsKeepingTheAttachingOfARepositoryForYourself(@TempDir Path root) throws Exception {
+  void acceptsKeepingTheAttachingOfRepositoryForYourself(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/brief.md"), "judge like me");
     when(configService.load())

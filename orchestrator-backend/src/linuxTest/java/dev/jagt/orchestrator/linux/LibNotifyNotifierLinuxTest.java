@@ -42,7 +42,7 @@ class LibNotifyNotifierLinuxTest {
   }
 
   @Test
-  void sendsATitleThatLooksLikeAnOptionInsteadOfSwallowingIt() throws Exception {
+  void sendsTitleThatLooksLikeAnOptionInsteadOfSwallowingIt() throws Exception {
     Path capture = Files.createTempFile("jagt-bus", ".txt");
     Process monitor =
         new ProcessBuilder(

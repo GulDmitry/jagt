@@ -68,7 +68,7 @@ class RoundOutcomeTest {
   }
 
   @Test
-  void advancesToApprovedOnceAHumanApprovedAndNoThreadIsLeftOpen() {
+  void advancesToApprovedOnceHumanApprovedAndNoThreadIsLeftOpen() {
     var result =
         outcome.settle(
             "ABC-1",
@@ -86,7 +86,7 @@ class RoundOutcomeTest {
   }
 
   @Test
-  void marksAGreenRoundReviewedWhileNobodyHasApprovedItYet() {
+  void marksGreenRoundReviewedWhileNobodyHasApprovedItYet() {
     var result =
         outcome.settle(
             "ABC-1",
@@ -104,7 +104,7 @@ class RoundOutcomeTest {
   }
 
   @Test
-  void leavesAGreenThisSweepCouldNotReReadOutOfTheReviewedDecision() {
+  void leavesGreenThisSweepCouldNotReReadOutOfTheReviewedDecision() {
     var result =
         outcome.settle(
             "ABC-1",
@@ -121,7 +121,7 @@ class RoundOutcomeTest {
   }
 
   @Test
-  void holdsATaskBackWhileItsChecksAreStillRunning() {
+  void holdsTaskBackWhileItsChecksAreStillRunning() {
     var result =
         outcome.settle(
             "ABC-1",
@@ -154,7 +154,7 @@ class RoundOutcomeTest {
   }
 
   @Test
-  void neverAdvancesARoundWithThreadsLeftEvenWhenApproved() {
+  void neverAdvancesRoundWithThreadsLeftEvenWhenApproved() {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, true, false, false, 0),
@@ -197,7 +197,7 @@ class RoundOutcomeTest {
   }
 
   @Test
-  void aPipelineWhoseRunnerWasKilledIsRetriedRatherThanHandedToTheSession() {
+  void pipelineWhoseRunnerWasKilledIsRetriedRatherThanHandedToTheSession() {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),
@@ -223,7 +223,7 @@ class RoundOutcomeTest {
   }
 
   @Test
-  void aPipelineFailedOnInfrastructureStaysOutForReviewWithoutAQuestion() {
+  void pipelineFailedOnInfrastructureStaysOutForReviewWithoutQuestion() {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),

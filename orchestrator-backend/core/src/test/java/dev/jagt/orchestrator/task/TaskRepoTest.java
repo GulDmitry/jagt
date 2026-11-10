@@ -10,7 +10,7 @@ import tools.jackson.databind.json.JsonMapper;
 class TaskRepoTest {
 
   @Test
-  void forgetsTheCredentialARemoteWasStoredWithBeforeItWasStripped() {
+  void forgetsTheCredentialRemoteWasStoredWithBeforeItWasStripped() {
     String stored =
         """
         {"project":"proj","worktreePath":"/w/ABC-42","remoteUrl":"https://u:t0ken@example.com/g/proj.git"}\
@@ -25,7 +25,7 @@ class TaskRepoTest {
   @CsvSource(
       nullValues = "NULL",
       value = {"https://host/mr/1,true", "'  ',false", "NULL,false"})
-  void holdsAReviewRequestOnlyWhereALinkWasWritten(String mrUrl, boolean holds) {
+  void holdsReviewRequestOnlyWhereLinkWasWritten(String mrUrl, boolean holds) {
     assertThat(TaskRepo.of("proj", "/w").withMrUrl(mrUrl).hasReviewRequest()).isEqualTo(holds);
   }
 

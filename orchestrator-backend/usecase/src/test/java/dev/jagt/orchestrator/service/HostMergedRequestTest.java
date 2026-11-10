@@ -30,7 +30,7 @@ class HostMergedRequestTest {
   private final MergedRequests mergedRequests = mock(MergedRequests.class);
 
   @Test
-  void aSquashMergedRequestIsSeenMergedByTheHostsWord(@TempDir Path root) {
+  void squashMergedRequestIsSeenMergedByTheHostsWord(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),

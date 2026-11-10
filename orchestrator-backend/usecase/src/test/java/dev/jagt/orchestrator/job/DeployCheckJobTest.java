@@ -54,8 +54,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class DeployCheckJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final DeployPipelines.Reading GREEN =
       new DeployPipelines.Reading(DeployPipelines.Kind.GREEN, "", "", "", List.of());
@@ -67,13 +66,13 @@ class DeployCheckJobTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString())),
-                reducer);
+        reducer);
   }
 
   @Test
-  void asksADeployedTasksSessionToCheckItWhereItLandedOnceItsPipelineIsGreen(@TempDir Path root) {
+  void asksDeployedTasksSessionToCheckItWhereItLandedOnceItsPipelineIsGreen(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
+    final StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state = state(root);
     state.putTask(
@@ -98,7 +97,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -110,7 +113,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay)
@@ -122,11 +126,11 @@ class DeployCheckJobTest {
   }
 
   @Test
-  void handsBackAPipelineRedOnTheCodeThatTheHostListedAfterTheDeployStoodWithNone(
+  void handsBackPipelineRedOnTheCodeThatTheHostListedAfterTheDeployStoodWithNone(
       @TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
     StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
+    final DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state = state(root);
     state.putTask(
         "ABC-42",
@@ -160,7 +164,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -172,7 +180,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     job.runOn(state.tasks());
 
     job.runOn(state.tasks());
@@ -183,7 +192,7 @@ class DeployCheckJobTest {
   @Test
   void stopsTheTaskOnTheThirdReadRunningThatCannotListItsDeployPipeline(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
+    final StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state = state(root);
     state.putTask(
@@ -214,7 +223,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -226,7 +239,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     job.runOn(state.tasks());
     job.runOn(state.tasks());
 
@@ -239,7 +253,7 @@ class DeployCheckJobTest {
   @Test
   void stopsNoTaskAndKeepsItsUnreadCountWhileJagtCannotReachTheHost(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
+    final StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state = state(root);
     state.putTask(
@@ -274,7 +288,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -286,7 +304,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     job.runOn(state.tasks());
     job.runOn(state.tasks());
 
@@ -300,7 +319,7 @@ class DeployCheckJobTest {
   @Test
   void endsTheUnreadDeployStopOnTheFirstReadThatListsThePipeline(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
+    final StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state = state(root);
     state.putTask(
@@ -337,7 +356,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -349,7 +372,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
@@ -358,7 +382,7 @@ class DeployCheckJobTest {
   @Test
   void asksNothingAndSaysItWaitsOnItsPipelineWhileTheDeployPipelineIsRunning(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
+    final StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state = state(root);
     state.putTask(
@@ -389,7 +413,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -401,7 +429,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
@@ -410,10 +439,10 @@ class DeployCheckJobTest {
   }
 
   @Test
-  void handsADeployBackToItsSessionWhenItsPipelineIsRedOnTheCodeAndAsksNothing(@TempDir Path root) {
+  void handsDeployBackToItsSessionWhenItsPipelineIsRedOnTheCodeAndAsksNothing(@TempDir Path root) {
     StateService state = state(root);
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
+    final StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     state.putTask(
         "ABC-42",
@@ -443,7 +472,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -455,7 +488,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     TaskState handed = state.task("ABC-42").orElseThrow();
@@ -469,8 +503,8 @@ class DeployCheckJobTest {
   @Test
   void asksOncePerDeployThoughAnotherRelayFollowedAndJagtRestarted(@TempDir Path root)
       throws Exception {
-    ConfigService config = mock(ConfigService.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
+    final ConfigService config = mock(ConfigService.class);
+    final DeployPipelines pipelines = mock(DeployPipelines.class);
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -516,13 +550,19 @@ class DeployCheckJobTest {
                             new Notifications(List.of(), before, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     before,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     new DeployCheckJob(
             config,
             relay,
             pipelines,
-            new FlowReports(before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                before,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -531,7 +571,8 @@ class DeployCheckJobTest {
                         new Notifications(List.of(), before, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 before,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(before.tasks());
     relay.relay(
         "ABC-42",
@@ -558,10 +599,18 @@ class DeployCheckJobTest {
                                 new Notifications(List.of(), restarted, Runnable::run),
                                 new StopLog(new JsonMapper(), paths))),
                         restarted,
-                        Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(restarted, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
+                        Clock.systemUTC(),
+                        new FlowRules(new TaskChart(Composition.builtIn())))),
+                new TaskTurns(
+                    restarted,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())))),
             pipelines,
-            new FlowReports(restarted, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                restarted,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -570,14 +619,15 @@ class DeployCheckJobTest {
                         new Notifications(List.of(), restarted, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 restarted,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(restarted.tasks());
 
     verify(sessions, times(1)).writeTaskContext(eq("ABC-42"), contains("ABC-42 is deployed"));
   }
 
   @Test
-  void asksNothingWhileTheFixOfAFailedCheckIsUnderway(@TempDir Path root) {
+  void asksNothingWhileTheFixOfFailedCheckIsUnderway(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
     StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
@@ -597,7 +647,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -609,7 +663,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
@@ -619,7 +674,7 @@ class DeployCheckJobTest {
   @Test
   void namesAnEightCharacterCommitWhole(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
+    final StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state = state(root);
     state.putTask(
@@ -644,7 +699,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -656,7 +715,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay)
@@ -668,7 +728,7 @@ class DeployCheckJobTest {
   }
 
   @Test
-  void asksNothingOfADeployedTaskWhoseDeployLeftNoCommit(@TempDir Path root) {
+  void asksNothingOfDeployedTaskWhoseDeployLeftNoCommit(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
     StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
@@ -684,7 +744,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -696,14 +760,15 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
   }
 
   @Test
-  void readsNoPipelineAgainForADeployWhoseCheckWasAlreadyAsked(@TempDir Path root) {
+  void readsNoPipelineAgainForDeployWhoseCheckWasAlreadyAsked(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
     StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
@@ -729,7 +794,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -741,7 +810,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
@@ -751,7 +821,7 @@ class DeployCheckJobTest {
   @Test
   void recordsTheDeployAskedOnceItsSessionWasHanded(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
+    final StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state = state(root);
     state.putTask(
@@ -778,7 +848,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -790,7 +864,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().deployment().askedDigest())
@@ -800,7 +875,7 @@ class DeployCheckJobTest {
   @Test
   void recordsNoDeployAskedWhereTheSessionWasNotHanded(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
+    final StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state = state(root);
     state.putTask(
@@ -825,7 +900,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -837,7 +916,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().deployment().askedDigest()).isNull();
@@ -846,7 +926,7 @@ class DeployCheckJobTest {
   @Test
   void namesTheDeployBranchOfNoProjectTheConfigDoesNotHold(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
+    final StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state = state(root);
     state.putTask(
@@ -867,7 +947,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -879,7 +963,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay)
@@ -893,7 +978,7 @@ class DeployCheckJobTest {
   @Test
   void keepsTheUnreadDeployStopWhileTheReadStillCannotListThePipeline(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
+    final StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state = state(root);
     state.putTask(
@@ -930,7 +1015,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -942,7 +1031,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
@@ -951,7 +1041,7 @@ class DeployCheckJobTest {
   @Test
   void keepsTheUnreadDeployStopWhileJagtCannotReachTheHost(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
+    final StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state = state(root);
     state.putTask(
@@ -988,7 +1078,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -1000,16 +1094,17 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
   }
 
   @Test
-  void forgetsTheUnreadReadsOnceAReadListsThePipeline(@TempDir Path root) {
+  void forgetsTheUnreadReadsOnceReadListsThePipeline(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
+    final StepRelay relay = mock(StepRelay.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state = state(root);
     state.putTask(
@@ -1043,7 +1138,11 @@ class DeployCheckJobTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -1055,7 +1154,8 @@ class DeployCheckJobTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().deployment().targets().getFirst().unreadReads())

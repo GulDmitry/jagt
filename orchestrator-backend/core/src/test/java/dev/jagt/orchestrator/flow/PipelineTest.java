@@ -10,17 +10,17 @@ class PipelineTest {
 
   @ParameterizedTest
   @CsvSource({"success,GREEN", "failed,RED", "running,RUNNING", "none,NONE", "unknown,UNKNOWN"})
-  void readsJagtsFiveWordsAsAVerdict(String said, Pipeline verdict) {
+  void readsJagtsFiveWordsAsVerdict(String said, Pipeline verdict) {
     assertThat(Pipeline.of(said)).isEqualTo(verdict);
   }
 
   @Test
-  void refusesToReadAFinishedRunAsAPassedOne() {
+  void refusesToReadFinishedRunAsPassedOne() {
     assertThat(Pipeline.of("COMPLETED")).isEqualTo(Pipeline.UNKNOWN);
   }
 
   @Test
-  void ranksARedRunAsWorseNewsThanNoAnswerYetAndThatWorseThanGreen() {
+  void ranksRedRunAsWorseNewsThanNoAnswerYetAndThatWorseThanGreen() {
     assertThat(Pipeline.RED.severity()).isLessThan(Pipeline.RUNNING.severity());
     assertThat(Pipeline.RUNNING.severity()).isLessThan(Pipeline.UNKNOWN.severity());
     assertThat(Pipeline.UNKNOWN.severity()).isLessThan(Pipeline.NONE.severity());
@@ -43,7 +43,7 @@ class PipelineTest {
 
   @ParameterizedTest
   @CsvSource({"wobbly", "sideways", "canceled", "in_progress"})
-  void reportsTheChecksUnreadRatherThanGuessingAtAWordOutsideTheFive(String hostStatus) {
+  void reportsTheChecksUnreadRatherThanGuessingAtWordOutsideTheFive(String hostStatus) {
     assertThat(Pipeline.of(hostStatus)).isEqualTo(Pipeline.UNKNOWN);
   }
 }

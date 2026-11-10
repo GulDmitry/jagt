@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class ProbeTest {
 
   @Test
-  void writesACommandAsAPlanWouldWriteItWithItsExpectedExit() {
+  void writesCommandAsPlanWouldWriteItWithItsExpectedExit() {
     Probe probe = Probe.specified(Probe.Kind.COMMAND, List.of("make", "check"), 2);
 
     assertThat(probe.toString()).isEqualTo("command exit=2 make check");
@@ -30,7 +30,7 @@ class ProbeTest {
   }
 
   @Test
-  void saysNotRunBeforeAProbeRan() {
+  void saysNotRunBeforeProbeRan() {
     Probe probe = Probe.specified(Probe.Kind.ARTIFACT, List.of("docs/out.md"), 0);
 
     assertThat(probe.result()).isEqualTo("artifact docs/out.md — not run");
@@ -38,7 +38,7 @@ class ProbeTest {
   }
 
   @Test
-  void reportsAPassedProbeWithoutAnExcerptAsOneLine() {
+  void reportsPassedProbeWithoutAnExcerptAsOneLine() {
     Probe probe =
         Probe.specified(Probe.Kind.ARTIFACT, List.of("docs/out.md"), 0).probed(true, "  ");
 
@@ -47,7 +47,7 @@ class ProbeTest {
   }
 
   @Test
-  void reportsAFailedProbeWithWhatItPrinted() {
+  void reportsFailedProbeWithWhatItPrinted() {
     Probe probe =
         Probe.specified(Probe.Kind.COMMAND, List.of("make", "check"), 0).probed(false, "2 failed");
 

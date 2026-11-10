@@ -44,7 +44,7 @@ class DeployLiftsStopTest {
   @EnumSource(
       value = ActionOrigin.class,
       names = {"BOARD", "PALETTE"})
-  void deployedTaskIsCheckedAgainWhenAHumanDeployedItPastAStop(
+  void deployedTaskIsCheckedAgainWhenHumanDeployedItPastStop(
       ActionOrigin human, @TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -114,7 +114,7 @@ class DeployLiftsStopTest {
   @EnumSource(
       value = ActionOrigin.class,
       names = {"BOARD", "PALETTE"})
-  void aHumansDeployRestoresTheMastersLiftWhereNoStopStands(
+  void humansDeployRestoresTheMastersLiftWhereNoStopStands(
       ActionOrigin human, @TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(

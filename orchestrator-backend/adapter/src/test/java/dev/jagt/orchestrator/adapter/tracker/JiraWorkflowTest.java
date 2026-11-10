@@ -46,7 +46,7 @@ class JiraWorkflowTest {
 
   @ParameterizedTest
   @CsvSource({"ABC,true", "abc,true", "XYZ,false", "'',false"})
-  void startsWorkOnlyOnAnItemOfABoardTheInstallNamed(String board, boolean starts) {
+  void startsWorkOnlyOnAnItemOfBoardTheInstallNamed(String board, boolean starts) {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -149,7 +149,7 @@ class JiraWorkflowTest {
     "42-ABC,false",
     "https://tracker/ABC-42,false"
   })
-  void takesABareIssueKeyForAnItemAndNothingParsedOutOfAUrl(String name, boolean item) {
+  void takesBareIssueKeyForAnItemAndNothingParsedOutOfUrl(String name, boolean item) {
     assertThat(workflow.isItemKey(name)).isEqualTo(item);
   }
 }

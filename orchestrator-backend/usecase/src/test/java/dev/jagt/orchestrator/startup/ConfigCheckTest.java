@@ -30,7 +30,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class ConfigCheckTest {
 
   @Test
-  void acceptsAProjectThatPointsAtARealRepository(@TempDir Path root) throws Exception {
+  void acceptsProjectThatPointsAtRealRepository(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.writeString(
         root.resolve("jagt.yml"),
@@ -84,7 +84,7 @@ class ConfigCheckTest {
 
   @ParameterizedTest
   @MethodSource
-  void namesAKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt(
+  void namesKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt(
       String key, String expected, @TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.writeString(
@@ -116,7 +116,7 @@ class ConfigCheckTest {
         .containsExactly(expected);
   }
 
-  static Stream<Arguments> namesAKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt() {
+  static Stream<Arguments> namesKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt() {
     return Stream.of(
         Arguments.of("ui: tui", "orchestrator.ui"),
         Arguments.of("terminal: warp", "orchestrator.terminal"),
@@ -170,7 +170,7 @@ class ConfigCheckTest {
 
   @ParameterizedTest
   @MethodSource
-  void namesWhatAConfiguredProjectWouldFailOn(String config, String expected, @TempDir Path root)
+  void namesWhatConfiguredProjectWouldFailOn(String config, String expected, @TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.createDirectories(root.resolve("plain-dir"));
@@ -195,7 +195,7 @@ class ConfigCheckTest {
         .containsExactly(expected);
   }
 
-  static Stream<Arguments> namesWhatAConfiguredProjectWouldFailOn() {
+  static Stream<Arguments> namesWhatConfiguredProjectWouldFailOn() {
     return Stream.of(
         Arguments.of(
             """
@@ -272,7 +272,7 @@ class ConfigCheckTest {
   }
 
   @Test
-  void ignoresTheOldConfigFileOnceAJagtYmlHoldsTheProjects(@TempDir Path root) throws Exception {
+  void ignoresTheOldConfigFileOnceJagtYmlHoldsTheProjects(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.writeString(root.resolve("config.json"), "{}");
     Files.writeString(
@@ -303,7 +303,7 @@ class ConfigCheckTest {
   }
 
   @Test
-  void refusesAViewerSessionNameTheHostCannotAddress(@TempDir Path root) throws Exception {
+  void refusesViewerSessionNameTheHostCannotAddress(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.writeString(
         root.resolve("jagt.yml"),
@@ -337,7 +337,7 @@ class ConfigCheckTest {
   }
 
   @Test
-  void refusesAConfigDirectoryThatOutranksJagtYmlForEveryKeyItNames(@TempDir Path root)
+  void refusesConfigDirectoryThatOutranksJagtYmlForEveryKeyItNames(@TempDir Path root)
       throws Exception {
     Path shadowing =
         Files.writeString(

@@ -19,12 +19,12 @@ class RetryPolicyTest {
   }
 
   @Test
-  void allowsAPolicyOfASingleAttempt() {
+  void allowsPolicyOfSingleAttempt() {
     assertThat(new RetryPolicy(1, Duration.ZERO, Duration.ofMinutes(1)).lastAttempt(1)).isTrue();
   }
 
   @Test
-  void refusesAPolicyThatSendsNothing() {
+  void refusesPolicyThatSendsNothing() {
     assertThatThrownBy(() -> new RetryPolicy(0, Duration.ZERO, Duration.ofMinutes(1)))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("A policy that sends nothing is not a retry policy");

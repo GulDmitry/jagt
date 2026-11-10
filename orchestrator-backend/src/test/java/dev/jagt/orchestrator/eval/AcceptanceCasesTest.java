@@ -17,13 +17,15 @@ class AcceptanceCasesTest {
         .hasSize(17)
         .allSatisfy(
             loaded ->
-                assertThat(loaded.rows().keySet())
+                assertThat(loaded.expect().rows().keySet())
                     .containsExactlyInAnyOrderElementsOf(
-                        loaded.criteria().stream().map(AcceptanceCase.Criterion::id).toList()));
+                        loaded.ticket().criteria().stream()
+                            .map(AcceptanceCase.Criterion::id)
+                            .toList()));
   }
 
   @Test
-  void aCaseKeepsWhatItExpectsOfTheVerdict() {
+  void caseKeepsWhatItExpectsOfTheVerdict() {
     AcceptanceCase loaded =
         AcceptanceCases.parse(
             """
@@ -43,16 +45,16 @@ class AcceptanceCasesTest {
             names: ["one|two"]
             """);
 
-    assertThat(loaded.rows()).containsEntry("C2", Status.NOT_MET);
-    assertThat(loaded.criteria().get(1).testable()).isFalse();
-    assertThat(loaded.deploy().sha()).isEqualTo("1829304");
+    assertThat(loaded.expect().rows()).containsEntry("C2", Status.NOT_MET);
+    assertThat(loaded.ticket().criteria().get(1).testable()).isFalse();
+    assertThat(loaded.landing().deploy().sha()).isEqualTo("1829304");
     assertThat(loaded.expectedEnding()).isEqualTo(AcceptanceEnding.NOT_MET);
-    assertThat(loaded.probe()).isEqualTo("GET /version");
+    assertThat(loaded.expect().probe()).isEqualTo("GET /version");
     assertThat(loaded.declines()).isFalse();
   }
 
   @Test
-  void aCaseWithASessionReplyIsADeclineCase() {
+  void caseWithSessionReplyIsDeclineCase() {
     AcceptanceCase loaded =
         AcceptanceCases.all().stream().filter(AcceptanceCase::declines).findFirst().orElseThrow();
 
@@ -60,7 +62,7 @@ class AcceptanceCasesTest {
   }
 
   @Test
-  void aCaseKeepsTheWorkspaceItSeedsAndWhatItExpectsRunToWrite() {
+  void caseKeepsTheWorkspaceItSeedsAndWhatItExpectsRunToWrite() {
     AcceptanceCase loaded =
         AcceptanceCases.parse(
             """
@@ -87,7 +89,7 @@ class AcceptanceCasesTest {
   }
 
   @Test
-  void aCaseKeepsTheFlowsDirectoryAndCommandItPointsAt() {
+  void caseKeepsTheFlowsDirectoryAndCommandItPointsAt() {
     AcceptanceCase loaded =
         AcceptanceCases.parse(
             """

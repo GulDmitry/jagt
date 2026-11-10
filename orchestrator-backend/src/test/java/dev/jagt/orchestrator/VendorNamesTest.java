@@ -19,7 +19,8 @@ class VendorNamesTest {
   private static final Pattern VENDOR =
       Pattern.compile(
           "(?i)\\b(claude|anthropic|codex|openai|gemini|tmux|kitty|"
-              + "iterm2?|wezterm|ghostty|warp|intellij|osascript|gitlab|github|glab|gh|bitbucket|gitea|jira|gradle|gradlew|"
+              + "iterm2?|wezterm|ghostty|warp|intellij|osascript|gitlab|github|glab|gh|bitbucket|gi"
+              + "tea|jira|gradle|gradlew|"
               + "maven|mvn|npm|fable|opus|sonnet|haiku)\\b");
 
   private static final String JOB = "usecase/src/main/java/dev/jagt/orchestrator/job/";
@@ -34,11 +35,12 @@ class VendorNamesTest {
               "build tools' cache directories; iteration 2"),
           Map.entry(
               SERVICE + "WorktreeSandbox.java npm", "build tools' cache directories; iteration 2"),
-          Map.entry(SERVICE + "WorktreeNoise.java gradle", "a build tool's directory; iteration 2"));
+          Map.entry(
+              SERVICE + "WorktreeNoise.java gradle", "a build tool's directory; iteration 2"));
 
   @Test
   void
-      namesNoVendorOfAnAgentTerminalEditorCodeHostTrackerBuildToolOrModelInCodeOutsideTheAdapters() {
+      namesNoVendorOfAnAgentTerminalEditorCodeHostTrackerBuildToolOrModelOutsideTheAdapters() {
     List<String> named =
         namings().filter(naming -> !ALLOWED.containsKey(naming.key())).map(Naming::where).toList();
 

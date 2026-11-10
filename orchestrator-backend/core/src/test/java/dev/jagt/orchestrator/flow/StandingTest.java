@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class StandingTest {
 
   @Test
-  void staysTheSameWhereOnlyAPollWasWritten() {
+  void staysTheSameWhereOnlyPollWasWritten() {
     TaskState read = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
     TaskState polled = read.withLastPolledAt(5_000);

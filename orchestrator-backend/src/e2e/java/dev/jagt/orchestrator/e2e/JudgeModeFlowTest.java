@@ -118,13 +118,13 @@ class JudgeModeFlowTest {
   }
 
   @Test
-  void readsAReadyRoundAndLeavesEveryPressToTheHuman() throws Exception {
+  void readsReadyRoundAndLeavesEveryPressToTheHuman() throws Exception {
     judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
     handBackTheFirstRound();
 
     assertThat(awaitReview()).contains("VERDICT: ready");
-    E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-review");
+    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-review");
     assertThat(task().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
     assertThat(task().history())
         .extracting(StatusChange::status)
@@ -132,7 +132,7 @@ class JudgeModeFlowTest {
   }
 
   @Test
-  void sendsANotReadyRoundBackToTheSessionThatWroteIt() throws Exception {
+  void sendsNotReadyRoundBackToTheSessionThatWroteIt() throws Exception {
     judges(
         new Judgement(
             "",
@@ -177,8 +177,8 @@ class JudgeModeFlowTest {
             .build());
 
     agentReports("IN_PROGRESS", "keep v2?", ", \"outcome\": \"question\"");
-    E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-answer");
-    E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-review");
+    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-answer");
+    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-review");
 
     assertThat(task().message()).contains("keep v2?");
     verify(reviewer, never()).review(any());
@@ -207,7 +207,7 @@ class JudgeModeFlowTest {
                 TokenUsage.NONE));
     act("sweep");
     assertThat(task().status()).isEqualTo(TaskStatus.REVIEWED);
-    E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
+    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-deploy");
     assertThat(task().status()).isEqualTo(TaskStatus.REVIEWED);
 
     assertThat(act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");

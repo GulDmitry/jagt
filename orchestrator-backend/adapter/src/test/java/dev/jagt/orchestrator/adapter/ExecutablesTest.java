@@ -16,7 +16,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class ExecutablesTest {
 
   @Test
-  void answersForABareSpawnByLookingAtPathAndNowhereElse() {
+  void answersForBareSpawnByLookingAtPathAndNowhereElse() {
     assertThat(
             Executables.onPath("git", "/usr/bin", path -> path.toString().equals("/usr/bin/git")))
         .isTrue();
@@ -51,7 +51,7 @@ class ExecutablesTest {
   }
 
   @Test
-  void findsALauncherInAPerUserScriptDirectory() {
+  void findsLauncherInPerUserScriptDirectory() {
     assertThat(
             Executables.resolve(
                 "idea",
@@ -98,7 +98,7 @@ class ExecutablesTest {
   }
 
   @Test
-  void findsALauncherThatSitsOnlyInsideItsApplicationBundle(@TempDir Path applications)
+  void findsLauncherThatSitsOnlyInsideItsApplicationBundle(@TempDir Path applications)
       throws IOException {
     Files.createDirectories(applications.resolve("Notes.app"));
     Path bundle = Files.createDirectories(applications.resolve("IntelliJ IDEA.app"));
@@ -111,7 +111,7 @@ class ExecutablesTest {
   }
 
   @Test
-  void looksForALauncherInApplicationBundlesAndInNoOtherDirectory(@TempDir Path applications)
+  void looksForLauncherInApplicationBundlesAndInNoOtherDirectory(@TempDir Path applications)
       throws IOException {
     Files.createDirectories(applications.resolve("Stray"));
 

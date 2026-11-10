@@ -14,7 +14,7 @@ Preact card, fictional tasks in the page; *suite* names the `boardTest` class th
 | `ship` | flow row | pane flow row, `s` | walked render; suite |
 | `deploy`, deploy again (green) | flow row | pane flow row, `d` | walked render; suite |
 | `revert` — asks first | flow row + confirm | pane + confirm | `BoardActionsTest.revertingAsksFirst…` |
-| `done` — asks first | flow row + confirm | pane, apart, + confirm | walked; `closingATaskAsksBeforeAnythingRuns` |
+| `done` — asks first | flow row + confirm | pane, apart, + confirm | walked; `closingTaskAsksBeforeAnythingRuns` |
 | `trust` git | flow row | pane flow row | walked render |
 | `ide`, `diff` | tool row | pane tools; Diff tab | walked render |
 | `respawn` | tool row | pane tools | walked render |

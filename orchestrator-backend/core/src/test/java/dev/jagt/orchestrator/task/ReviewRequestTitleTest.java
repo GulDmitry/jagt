@@ -15,7 +15,7 @@ class ReviewRequestTitleTest {
     "Widget layout is off,        ABC-42, Widget layout is off",
     "ABC-42,                      ABC-42, ''"
   })
-  void stripsALeadingTicketSoTheTitleNeverDoublesIt(String stored, String ticket, String expected) {
+  void stripsLeadingTicketSoTheTitleNeverDoublesIt(String stored, String ticket, String expected) {
     assertThat(ReviewRequestTitle.stripTicketPrefix(stored, ticket)).isEqualTo(expected);
   }
 
@@ -29,7 +29,7 @@ class ReviewRequestTitleTest {
   }
 
   @Test
-  void keepsANullTitleNullRatherThanInventingOne() {
+  void keepsNullTitleNullRatherThanInventingOne() {
     assertThat(ReviewRequestTitle.stripTicketPrefix(null, "ABC-42")).isNull();
   }
 
@@ -40,12 +40,12 @@ class ReviewRequestTitleTest {
     "'{ticket} — {title}', ABC-42",
     "'{title} — {ticket}', ABC-42"
   })
-  void namesARequestAfterItsTicketAloneWhenTheTaskNeverGotATitle(String pattern, String ticket) {
+  void namesRequestAfterItsTicketAloneWhenTheTaskNeverGotTitle(String pattern, String ticket) {
     assertThat(ReviewRequestTitle.expand(pattern, ticket, null)).isEqualTo("ABC-42");
   }
 
   @Test
-  void neverEditsATitleThatEndsInAPatternSeparator() {
+  void neverEditsTitleThatEndsInPatternSeparator() {
     assertThat(ReviewRequestTitle.expand("{ticket}: {title}", "ABC-42", "Rework endpoint /users/"))
         .isEqualTo("ABC-42: Rework endpoint /users/");
   }

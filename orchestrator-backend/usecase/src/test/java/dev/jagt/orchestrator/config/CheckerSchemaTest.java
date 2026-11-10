@@ -23,11 +23,17 @@ class CheckerSchemaTest {
     assertThat(answer)
         .isEqualTo(
             "{\"type\":\"object\",\"properties\":{\"failure\":{\"type\":\"string\"},"
-                + "\"rows\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"criterion\":{\"type\":\"string\"},\"status\":{\"type\":\"string\",\"enum\":[\"met\",\"not"
+                + "\"rows\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"cr"
+                + "iterion\":{\"type\":\"string\"},\"status\":{\"type\":\"string\",\"enum\":[\"met"
+                + "\",\"not"
                 + " met\","
-                + "\"unprovable\"]},\"evidence\":{\"type\":\"string\"}},\"required\":[\"criterion\",\"status\","
-                + "\"evidence\"]}},\"question\":{\"type\":\"string\"},\"waitingOn\":{\"type\":\"string\"},"
-                + "\"flows\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\"},\"criterion\":{\"type\":\"string\"}},\"required\":[\"id\",\"criterion\"]}},"
+                + "\"unprovable\"]},\"evidence\":{\"type\":\"string\"}},\"required\":[\"criterion\""
+                + ",\"status\","
+                + "\"evidence\"]}},\"question\":{\"type\":\"string\"},\"waitingOn\":{\"type\":\"str"
+                + "ing\"},"
+                + "\"flows\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"i"
+                + "d\":{\"type\":\"string\"},\"criterion\":{\"type\":\"string\"}},\"required\":[\"i"
+                + "d\",\"criterion\"]}},"
                 + "\"environment\":{\"type\":\"string\"}},\"required\":[\"failure\"]}");
     assertThat(decline)
         .isEqualTo(

@@ -33,8 +33,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class TaskTurnsTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   @ResourceLock(Resources.GLOBAL)
@@ -46,13 +45,14 @@ class TaskTurnsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     ((Logger) LoggerFactory.getLogger(TaskTurns.class)).addAppender(log);
 
-    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.DEPLOYED);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
+        .opened("ABC-42", "deploy", "a1b2", TaskStatus.DEPLOYED);
 
     assertThat(List.copyOf(log.list))
         .filteredOn(event -> "turn opened".equals(event.getMessage()))
@@ -75,13 +75,14 @@ class TaskTurnsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     ((Logger) LoggerFactory.getLogger(TaskTurns.class)).addAppender(log);
 
-    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
+        .opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
 
     assertThat(List.copyOf(log.list))
         .filteredOn(event -> "turn opened".equals(event.getMessage()))
@@ -92,7 +93,7 @@ class TaskTurnsTest {
   }
 
   @Test
-  void doesNotReadARootSessionsMoveAsTheTaskSessionsAnswer(@TempDir Path root) {
+  void doesNotReadRootSessionsMoveAsTheTaskSessionsAnswer(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -100,14 +101,15 @@ class TaskTurnsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1, ActionOrigin.ROOT)))
             .build());
 
-    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.IN_PROGRESS);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
+        .opened("ABC-42", "deploy", "a1b2", TaskStatus.IN_PROGRESS);
 
     assertThat(state.task("ABC-42").orElseThrow().turnOrNone().mark("deploy:answers"))
         .isEqualTo(Turn.digestOf(""));
@@ -124,7 +126,7 @@ class TaskTurnsTest {
   }
 
   @Test
-  void leavesAQuestionToTheHumanOnceTheMasterGaveItNoUsableAnswer() {
+  void leavesQuestionToTheHumanOnceTheMasterGaveItNoUsableAnswer() {
     TaskState asking =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .report(AgentReport.QUESTION)
@@ -137,7 +139,7 @@ class TaskTurnsTest {
   }
 
   @Test
-  void leavesAQuestionToTheMasterBeforeItHasFailedToAnswerIt() {
+  void leavesQuestionToTheMasterBeforeItHasFailedToAnswerIt() {
     TaskState asking =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .report(AgentReport.QUESTION)
@@ -160,7 +162,7 @@ class TaskTurnsTest {
   }
 
   @Test
-  void leavesAMarkedAnswerToTheMasterWhereTheTaskIsNotAsking() {
+  void leavesMarkedAnswerToTheMasterWhereTheTaskIsNotAsking() {
     TaskState working =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .message("which cache")
@@ -171,7 +173,7 @@ class TaskTurnsTest {
   }
 
   @Test
-  void leavesADeployTheMasterPressedToTheHumanWhileTheTaskStillWaitsForIt() {
+  void leavesDeployTheMasterPressedToTheHumanWhileTheTaskStillWaitsForIt() {
     TaskState deployed =
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED).lastActiveTimestamp(7).build();
     TaskState pressed =
@@ -191,21 +193,22 @@ class TaskTurnsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.SHIPPING)
             .history(List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, null)))
             .build());
 
-    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).shippedOn("ABC-42", "tree-1;");
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
+        .shippedOn("ABC-42", "tree-1;");
 
     assertThat(state.task("ABC-42").orElseThrow().history().getLast().tree())
         .isEqualTo("23189593ac33d3bc37d365b9805c4c248103ce3d9980acdee9801672208b9a44");
   }
 
   @Test
-  void setsAndClearsAMarkOnTheTasksTurn(@TempDir Path root) {
+  void setsAndClearsMarkOnTheTasksTurn(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -213,11 +216,12 @@ class TaskTurnsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).message("which cache").build());
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+    TaskTurns turns =
+        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
 
     turns.left("ABC-42", "deploy src/Login.java");
     turns.unanswered("ABC-42");

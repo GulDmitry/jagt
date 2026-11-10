@@ -31,7 +31,7 @@ class LaunchdCheckTest {
   }
 
   @Test
-  void acceptsLaunchdOnAMacWithItsControlTool() {
+  void acceptsLaunchdOnMacWithItsControlTool() {
     when(host.osName()).thenReturn("Mac OS X");
     when(host.onPath("launchctl")).thenReturn(true);
 

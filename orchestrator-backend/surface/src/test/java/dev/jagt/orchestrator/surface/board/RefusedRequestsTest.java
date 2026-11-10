@@ -29,7 +29,7 @@ class RefusedRequestsTest {
   }
 
   @Test
-  void keepsTheStatusTheFrameworkChoseForARequestItCouldNotBind() {
+  void keepsTheStatusTheFrameworkChoseForRequestItCouldNotBind() {
     var answered = refusals.malformed(new HttpRequestMethodNotSupportedException("PUT"), request);
 
     assertThat(answered.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
@@ -37,7 +37,7 @@ class RefusedRequestsTest {
   }
 
   @Test
-  void answersABadRequestForAParameterOfTheWrongType() {
+  void answersBadRequestForParameterOfTheWrongType() {
     var answered =
         refusals.malformed(
             new MethodArgumentTypeMismatchException(

@@ -32,14 +32,13 @@ import tools.jackson.databind.json.JsonMapper;
 
 class SessionAliveJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final AgentPresence agents = mock(AgentPresence.class);
   private final Notifications notifications = mock(Notifications.class);
 
   @Test
-  void endsAStopForAStepThatNeverLandedOnceTheSessionsWindowRunsAgain(@TempDir Path root) {
+  void endsStopForStepThatNeverLandedOnceTheSessionsWindowRunsAgain(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -54,7 +53,8 @@ class SessionAliveJobTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC), new FlowRules(new TaskChart(Composition.builtIn())));
+            Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC),
+            new FlowRules(new TaskChart(Composition.builtIn())));
     stops.stop("ABC-42", TaskStop.Trigger.UNDELIVERED, "the step could not be told to the session");
     when(agents.agentLive("ABC-42")).thenReturn(true);
 
@@ -64,7 +64,7 @@ class SessionAliveJobTest {
   }
 
   @Test
-  void keepsAStopForAStepThatNeverLandedWhileTheSessionsWindowIsNotRunning(@TempDir Path root) {
+  void keepsStopForStepThatNeverLandedWhileTheSessionsWindowIsNotRunning(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -79,7 +79,8 @@ class SessionAliveJobTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC), new FlowRules(new TaskChart(Composition.builtIn())));
+            Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC),
+            new FlowRules(new TaskChart(Composition.builtIn())));
     stops.stop("ABC-42", TaskStop.Trigger.UNDELIVERED, "the step could not be told to the session");
     when(agents.agentLive("ABC-42")).thenReturn(false);
 
@@ -89,7 +90,7 @@ class SessionAliveJobTest {
   }
 
   @Test
-  void keepsAStopForAStepThatNeverLandedWhileTheSessionsWindowCannotBeRead(@TempDir Path root) {
+  void keepsStopForStepThatNeverLandedWhileTheSessionsWindowCannotBeRead(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -104,7 +105,8 @@ class SessionAliveJobTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC), new FlowRules(new TaskChart(Composition.builtIn())));
+            Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC),
+            new FlowRules(new TaskChart(Composition.builtIn())));
     stops.stop("ABC-42", TaskStop.Trigger.UNDELIVERED, "the step could not be told to the session");
     when(agents.agentLive("ABC-42")).thenThrow(new AgentPresence.Unread("tmux timed out"));
 

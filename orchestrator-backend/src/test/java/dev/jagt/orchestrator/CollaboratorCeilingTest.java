@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 class CollaboratorCeilingTest {
 
   @Test
-  void aComponentTakesFiveCollaboratorsAtMost() {
+  void componentTakesFiveCollaboratorsAtMost() {
     constructors()
         .that()
         .areDeclaredInClassesThat()

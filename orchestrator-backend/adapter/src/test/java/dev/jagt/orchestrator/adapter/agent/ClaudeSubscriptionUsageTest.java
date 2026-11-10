@@ -47,7 +47,7 @@ class ClaudeSubscriptionUsageTest {
   }
 
   @Test
-  void answersNoSubscriptionWithoutCallingTheEndpointForALoginHoldingNone() {
+  void answersNoSubscriptionWithoutCallingTheEndpointForLoginHoldingNone() {
     ClaudeCredentials credentials = mock(ClaudeCredentials.class);
     UsageEndpoint endpoint = mock(UsageEndpoint.class);
     when(credentials.read(any())).thenReturn(new OauthCredential.None());
@@ -62,7 +62,7 @@ class ClaudeSubscriptionUsageTest {
     "403, http 403, 'http 403, running claude refreshes the token'",
     "500, http 500, http 500",
   })
-  void asksForANewLoginOnlyWhenTheTokenWasRefused(int status, String cause, String expected) {
+  void asksForNewLoginOnlyWhenTheTokenWasRefused(int status, String cause, String expected) {
     ClaudeCredentials credentials = mock(ClaudeCredentials.class);
     UsageEndpoint endpoint = mock(UsageEndpoint.class);
     when(credentials.read(any())).thenReturn(new OauthCredential.Token("tok-abc", ""));

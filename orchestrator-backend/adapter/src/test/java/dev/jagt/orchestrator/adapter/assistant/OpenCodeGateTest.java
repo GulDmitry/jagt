@@ -60,7 +60,7 @@ class OpenCodeGateTest {
   }
 
   @Test
-  void hearsACallOnlyOnceTheGateWasAsked(@TempDir Path root) {
+  void hearsCallOnlyOnceTheGateWasAsked(@TempDir Path root) {
     OpenCodeGate gate =
         new OpenCodeGate(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),

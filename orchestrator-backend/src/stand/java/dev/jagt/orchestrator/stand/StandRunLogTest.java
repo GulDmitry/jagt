@@ -14,7 +14,7 @@ import org.junit.jupiter.api.io.TempDir;
 class StandRunLogTest {
 
   @Test
-  void aFailedRunKeepsItsViolationsAndAnUnknownSpend(@TempDir Path dir) throws Exception {
+  void failedRunKeepsItsViolationsAndAnUnknownSpend(@TempDir Path dir) throws Exception {
     StandRunLog.keep(
         dir,
         new StandRunLog.Entry(
@@ -22,10 +22,8 @@ class StandRunLogTest {
             "happy-path",
             "act",
             "live",
-            false,
-            "timed out",
-            "",
-            List.of("NoForcePush at 2026-10-24T10:00:00Z: pushed -f"),
+            new StandRunLog.Verdict(
+                false, "timed out", "", List.of("NoForcePush at 2026-10-24T10:00:00Z: pushed -f")),
             93,
             new StandSpend("unknown: no usage file", Map.of())),
         "jagt-stand-1-1");
@@ -57,10 +55,7 @@ class StandRunLogTest {
                         "plan",
                         "judge",
                         "live",
-                        true,
-                        "reached",
-                        "",
-                        List.of(),
+                        new StandRunLog.Verdict(true, "reached", "", List.of()),
                         1,
                         new StandSpend("unknown: no usage file", Map.of())),
                     "jagt-stand-1-" + n));

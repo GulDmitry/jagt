@@ -69,7 +69,7 @@ class PressLogTest {
     "action:ship, 'ABC-42', 1800000000000",
     "action:ship, REVIEW_PENDING, 1700000000000"
   })
-  void refusesTheWholeBatchWhenOnePressCarriesMoreThanAControlAndAStatus(
+  void refusesTheWholeBatchWhenOnePressCarriesMoreThanControlAndStatus(
       String control, String status, long at) {
     Path file = dir.resolve("interactions.jsonl");
     PressLog presses =
@@ -90,7 +90,7 @@ class PressLogTest {
   }
 
   @Test
-  void refusesABatchHoldingMoreThanFiftyPresses() {
+  void refusesBatchHoldingMoreThanFiftyPresses() {
     PressLog presses =
         new PressLog(
             new JsonMapper(),
@@ -103,7 +103,7 @@ class PressLogTest {
   }
 
   @Test
-  void acceptsABatchOfExactlyFiftyPresses() throws IOException {
+  void acceptsBatchOfExactlyFiftyPresses() throws IOException {
     PressLog presses =
         new PressLog(
             new JsonMapper(),
@@ -116,7 +116,7 @@ class PressLogTest {
   }
 
   @Test
-  void acceptsAPressDatedExactlyADayBeforeNow() {
+  void acceptsPressDatedExactlyDayBeforeNow() {
     PressLog presses =
         new PressLog(
             new JsonMapper(),
@@ -143,7 +143,7 @@ class PressLogTest {
   }
 
   @Test
-  void refusesABatchHoldingAnEmptyEntry() {
+  void refusesBatchHoldingAnEmptyEntry() {
     PressLog presses =
         new PressLog(
             new JsonMapper(),

@@ -81,7 +81,7 @@ class BoardActionsTest extends BoardPageContext {
   }
 
   @Test
-  void closingATaskAsksBeforeAnythingRuns() throws Exception {
+  void closingTaskAsksBeforeAnythingRuns() throws Exception {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -182,7 +182,7 @@ class BoardActionsTest extends BoardPageContext {
   }
 
   @Test
-  void aRefusedActionAlsoSaysTheBoardHasCaughtUp() {
+  void refusedActionAlsoSaysTheBoardHasCaughtUp() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -209,7 +209,7 @@ class BoardActionsTest extends BoardPageContext {
   }
 
   @Test
-  void aMoveInFlightLocksTheButtonsThatWriteAndLeavesTheLookOnlyOnesClickable() throws Exception {
+  void moveInFlightLocksTheButtonsThatWriteAndLeavesTheLookOnlyOnesClickable() throws Exception {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -262,7 +262,7 @@ class BoardActionsTest extends BoardPageContext {
   }
 
   @Test
-  void aLookOnlyClickThatFinishesLeavesTheLockOfTheMoveStillRunning() throws Exception {
+  void lookOnlyClickThatFinishesLeavesTheLockOfTheMoveStillRunning() throws Exception {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -307,7 +307,7 @@ class BoardActionsTest extends BoardPageContext {
   }
 
   @Test
-  void aTypedMoveIsRefusedWhileAnotherOneIsStillRunningOnTheSameTask() throws Exception {
+  void typedMoveIsRefusedWhileAnotherOneIsStillRunningOnTheSameTask() throws Exception {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -345,7 +345,7 @@ class BoardActionsTest extends BoardPageContext {
   }
 
   @Test
-  void aTypedLaunchThatIsRefusedSaysSoInsteadOfSittingThere() {
+  void typedLaunchThatIsRefusedSaysSoInsteadOfSittingThere() {
     when(launcher.launchLine(any()))
         .thenThrow(new IllegalArgumentException("No ticket ABC-9 anywhere"));
 
@@ -362,7 +362,7 @@ class BoardActionsTest extends BoardPageContext {
   }
 
   @Test
-  void aClickActsOnTheTaskWhoseCardItIsWhenAnotherTasksAliasReadsLikeItsId() {
+  void clickActsOnTheTaskWhoseCardItIsWhenAnotherTasksAliasReadsLikeItsId() {
     state.putTask(
         "4",
         TaskState.builder("alpha", root.resolve("4-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -395,7 +395,7 @@ class BoardActionsTest extends BoardPageContext {
   }
 
   @Test
-  void aRefusalIsAnnouncedAsAnAlertAndDismissedByAButton() {
+  void refusalIsAnnouncedAsAnAlertAndDismissedByButton() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)

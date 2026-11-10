@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 class ActionOriginTest {
 
   @Test
-  void labelsAnOriginWithTheDottedIWhateverTheMachineLocale() {
+  void labelsAnOriginWithTheDottedEyeWhateverTheMachineLocale() {
     assertThat(ActionOrigin.AUTO_REVIEW.label()).isEqualTo("auto-review");
   }
 }

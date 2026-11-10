@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class WorldEventTest {
 
   @Test
-  void jagtIsRestartedOnTheFirstRecognisedRelayOfAPendingStep() {
+  void jagtIsRestartedOnTheFirstRecognisedRelayOfPendingStep() {
     StandWorld world = mock(StandWorld.class);
     when(world.relaysSeen()).thenReturn(1);
 

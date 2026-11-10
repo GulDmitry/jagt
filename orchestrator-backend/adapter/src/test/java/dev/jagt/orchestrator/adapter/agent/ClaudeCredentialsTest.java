@@ -20,7 +20,7 @@ class ClaudeCredentialsTest {
   private static final Instant NOW = Instant.parse("2026-10-10T12:00:00Z");
 
   @Test
-  void takesTheAccessTokenOfAStoredSubscriptionLogin() {
+  void takesTheAccessTokenOfStoredSubscriptionLogin() {
     var credential =
         ClaudeCredentials.parse(
             """

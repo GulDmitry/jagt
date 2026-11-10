@@ -42,7 +42,7 @@ class HostCliLineTest {
         "bash -c 'echo ok; hc change merge 1'",
         "eval \"hc change merge 1\"",
       })
-  void writesWhenAHostCliRunsAVerbThatIsNotAReadOfItsGroup(String segment) {
+  void writesWhenHostCliRunsVerbThatIsNotReadOfItsGroup(String segment) {
     assertThat(line.writes(segment)).isTrue();
   }
 
@@ -62,7 +62,7 @@ class HostCliLineTest {
         "sh -c \"hc change view 1\"",
         "echo 'hc change merge 1'",
       })
-  void allowsAHostCliReadAndAWordThatIsNotACall(String segment) {
+  void allowsHostCliReadAndWordThatIsNotCall(String segment) {
     assertThat(line.writes(segment)).isFalse();
   }
 
@@ -77,7 +77,7 @@ class HostCliLineTest {
   }
 
   @Test
-  void refusesAWriteNamingTheHostClisItJudges() {
+  void refusesWriteNamingTheHostClisItJudges() {
     ToolGate gate = new ToolGate(List.of(SECOND, FIRST));
 
     assertThat(gate.refusal("hc change merge 1", "ABC-42", 8290, Remote.ORIGIN))
@@ -86,7 +86,7 @@ class HostCliLineTest {
   }
 
   @Test
-  void refusesAnUnreadQuotingOnAHostCliLine() {
+  void refusesAnUnreadQuotingOnHostCliLine() {
     ToolGate gate = new ToolGate(List.of(SECOND, FIRST));
 
     assertThat(gate.refusal("xc change show $'1'", "ABC-42", 8290, Remote.ORIGIN))
@@ -95,7 +95,7 @@ class HostCliLineTest {
   }
 
   @Test
-  void allowsAnUnreadQuotingOnALineNamingNoHostCliOrGit() {
+  void allowsAnUnreadQuotingOnLineNamingNoHostCliOrGit() {
     ToolGate gate = new ToolGate(List.of(SECOND, FIRST));
 
     assertThat(gate.refusal("echo $'1'", "ABC-42", 8290, Remote.ORIGIN)).isEmpty();

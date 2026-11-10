@@ -63,8 +63,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class SessionBriefContractTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final TicketScenarios scenarios =
       new TicketScenarios(
@@ -74,7 +73,7 @@ class SessionBriefContractTest {
               new OrchestratorPaths(OrchestratorProperties.defaults())));
 
   @Test
-  void aDeployConflictIsHandedOnlyInAWorktreeTheBriefGrantsAsTheSessionsWithItsMergeExcepted(
+  void deployConflictIsHandedOnlyInWorktreeTheBriefGrantsAsTheSessionsWithItsMergeExcepted(
       @TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
@@ -89,7 +88,7 @@ class SessionBriefContractTest {
             "origin/main",
             "git@host:g/web.git",
             true);
-    String brief =
+    final String brief =
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
@@ -129,12 +128,17 @@ class SessionBriefContractTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     new ConflictHandOff(
             sessions,
             new StepRelay(
-                new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
+                new SessionBrief(paths),
+                sessions,
+                door,
+                new TaskTurns(
+                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             mock(ConflictStall.class),
             mock(ConflictFinish.class))
         .handle(
@@ -160,7 +164,7 @@ class SessionBriefContractTest {
   }
 
   @Test
-  void aShipNamesOnlyWorktreesTheBriefListsAsTheSessionsAndPushesOnlyItsBranch(@TempDir Path root)
+  void shipNamesOnlyWorktreesTheBriefListsAsTheSessionsAndPushesOnlyItsBranch(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
@@ -185,7 +189,7 @@ class SessionBriefContractTest {
             "origin/main",
             "git@host:g/api.git",
             false);
-    String brief =
+    final String brief =
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(
@@ -242,14 +246,19 @@ class SessionBriefContractTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     ShipService ships =
         new ShipService(
             state,
             config,
             new StepRelay(
-                new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
+                new SessionBrief(paths),
+                sessions,
+                door,
+                new TaskTurns(
+                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             changes,
             door);
 
@@ -269,7 +278,7 @@ class SessionBriefContractTest {
   }
 
   @Test
-  void aResumeAsksForTheOneRewriteTheBriefExceptsOnItsOwnBranch(@TempDir Path root)
+  void resumeAsksForTheOneRewriteTheBriefExceptsOnItsOwnBranch(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
@@ -284,7 +293,7 @@ class SessionBriefContractTest {
             "origin/main",
             "git@host:g/web.git",
             true);
-    String brief =
+    final String brief =
         new SubAgentBriefing(
                 new SessionBrief(
                     new OrchestratorPaths(

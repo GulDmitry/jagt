@@ -39,8 +39,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class DeployPipelinesTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final String REMOTE = "https://git.example.invalid/shop/web.git";
   private static final String SHA = "0123456789abcdef";
@@ -57,9 +56,12 @@ class DeployPipelinesTest {
           Clock.fixed(NOW, ZoneOffset.UTC),
           new FlowReports(
               new StateService(
-                  new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()),
+                  new JsonMapper(),
+                  new OrchestratorPaths(OrchestratorProperties.defaults()),
                   reducer),
-              Clock.fixed(NOW, ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
+              Clock.fixed(NOW, ZoneOffset.UTC),
+              new Checkers(new TaskChart(Composition.builtIn())),
+              new FlowRules(new TaskChart(Composition.builtIn()))));
   private final TaskState deployed =
       TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)), TaskStatus.DEPLOYED)
           .deployment(
@@ -83,7 +85,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aDeployStandsOnceThePipelineOnItsCommitIsGreen() {
+  void deployStandsOnceThePipelineOnItsCommitIsGreen() {
     when(pipelines.onCommit("shop", REMOTE, SHA))
         .thenReturn(
             new Answer<>(
@@ -99,7 +101,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aRedPipelineConflictIsDisprovedByAGreenPipelineOnTheDeployBranchSinceItsCommit() {
+  void redPipelineConflictIsDisprovedByGreenPipelineOnTheDeployBranchSinceItsCommit() {
     when(pipelines.onBranchSince("shop", REMOTE, "dev", SHA))
         .thenReturn(
             new Answer<>(
@@ -113,7 +115,7 @@ class DeployPipelinesTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"failed", "running", "none"})
-  void aRedPipelineConflictStandsWhileThePipelineOnTheDeployBranchSinceItsCommitIsNotGreen(
+  void redPipelineConflictStandsWhileThePipelineOnTheDeployBranchSinceItsCommitIsNotGreen(
       String status) {
     when(pipelines.onBranchSince("shop", REMOTE, "dev", SHA))
         .thenReturn(new Answer<>(Optional.of(new CommitPipeline(status, "")), TokenUsage.NONE));
@@ -122,7 +124,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aRedPipelineConflictInTwoRepositoriesStandsWhileOneOfThemIsStillRed() {
+  void redPipelineConflictInTwoRepositoriesStandsWhileOneOfThemIsStillRed() {
     when(pipelines.onBranchSince("shop", REMOTE, "dev", SHA))
         .thenReturn(new Answer<>(Optional.of(new CommitPipeline("success", "")), TokenUsage.NONE));
     when(pipelines.onBranchSince("api", REMOTE, "dev", SHA))
@@ -151,7 +153,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aRedPipelineConflictStandsWhereTheDeployBranchCannotBeRead() {
+  void redPipelineConflictStandsWhereTheDeployBranchCannotBeRead() {
     when(pipelines.onBranchSince("shop", REMOTE, "dev", SHA))
         .thenReturn(Answer.failed(TokenUsage.NONE, "HTTP 500"));
 
@@ -159,7 +161,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aRedPipelineConflictOfARepositoryWithNoRemoteStands() {
+  void redPipelineConflictOfRepositoryWithNoRemoteStands() {
     TaskState noRemote =
         TaskState.builder(
                 List.of(new TaskRepo("shop", "/wt", null, null)), TaskStatus.DEPLOY_CONFLICT)
@@ -180,7 +182,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aRedPipelineConflictOfARepositoryTheTaskNoLongerHoldsIsDisproved() {
+  void redPipelineConflictOfRepositoryTheTaskNoLongerHoldsIsDisproved() {
     TaskState left =
         TaskState.builder(
                 List.of(new TaskRepo("shop", "/wt", REMOTE, null)), TaskStatus.DEPLOY_CONFLICT)
@@ -202,14 +204,14 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aMergeConflictIsNeverReadAgainstThePipelines() {
+  void mergeConflictIsNeverReadAgainstThePipelines() {
     assertThat(deploys.redConflictDisproved(conflicted(Deployment.Cause.MERGE))).isFalse();
 
     verifyNoInteractions(pipelines);
   }
 
   @Test
-  void aDeployStaysOpenWhileThePipelineOnItsCommitIsRunning() {
+  void deployStaysOpenWhileThePipelineOnItsCommitIsRunning() {
     when(pipelines.onCommit("shop", REMOTE, SHA))
         .thenReturn(
             new Answer<>(
@@ -225,7 +227,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aDeployStaysOpenWhereTheHostCannotBeRead() {
+  void deployStaysOpenWhereTheHostCannotBeRead() {
     when(pipelines.onCommit("shop", REMOTE, SHA))
         .thenReturn(Answer.failed(TokenUsage.NONE, "glab not logged in to git.example.invalid"));
 
@@ -237,7 +239,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aDeployWaitsWithoutBeingUnreadWhereJagtCannotReachTheHost() {
+  void deployWaitsWithoutBeingUnreadWhereJagtCannotReachTheHost() {
     when(pipelines.onCommit("shop", REMOTE, SHA))
         .thenReturn(
             Answer.unreached(
@@ -280,7 +282,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aReadThatReachedTheHostOutranksOneThatDidNotWhenTwoRepositoriesAreOpen() {
+  void readThatReachedTheHostOutranksOneThatDidNotWhenTwoRepositoriesAreOpen() {
     when(pipelines.onCommit("shop", REMOTE, SHA))
         .thenReturn(
             Answer.unreached(
@@ -314,7 +316,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aDeployWhosePipelineDiedOnInfrastructureWaitsForItsRetry() {
+  void deployWhosePipelineDiedOnInfrastructureWaitsForItsRetry() {
     String url = "https://git.example.invalid/shop/web/-/pipelines/7";
     when(pipelines.onCommit("shop", REMOTE, SHA))
         .thenReturn(new Answer<>(Optional.of(new CommitPipeline("failed", url)), TokenUsage.NONE));
@@ -336,7 +338,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aDeployIsReadOnTheFixPushedAfterItsMergeNotOnTheMerge() {
+  void deployIsReadOnTheFixPushedAfterItsMergeNotOnTheMerge() {
     TaskState fixed =
         deployed.withDeployment(
             new Deployment(
@@ -354,7 +356,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aDeployStaysOpenWhileTheHostListsNoPipelineWithinTheGraceAfterThePush() {
+  void deployStaysOpenWhileTheHostListsNoPipelineWithinTheGraceAfterThePush() {
     TaskState pushed =
         TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)), TaskStatus.DEPLOYED)
             .deployment(
@@ -377,7 +379,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aDeployStandsOnceTheHostStillListsNoPipelineAfterTheGrace() {
+  void deployStandsOnceTheHostStillListsNoPipelineAfterTheGrace() {
     TaskState pushed =
         TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)), TaskStatus.DEPLOYED)
             .deployment(
@@ -399,7 +401,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void namesTheRepositoryWhoseDeployStoodWithNoPipelineListedSoALaterOneIsStillRead() {
+  void namesTheRepositoryWhoseDeployStoodWithNoPipelineListedSoLaterOneIsStillRead() {
     TaskState pushed =
         TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)), TaskStatus.DEPLOYED)
             .deployment(
@@ -421,7 +423,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aDeployStandsWhenTheHostListsNoPipelineTenMinutesAfterThePushWhateverTheStatusSince() {
+  void deployStandsWhenTheHostListsNoPipelineTenMinutesAfterThePushWhateverTheStatusSince() {
     Deployment recorded =
         Deployment.defaults()
             .withTargets(
@@ -443,7 +445,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aDeployStandsWhereTheRepositoryHasNoCodeHostAddress() {
+  void deployStandsWhereTheRepositoryHasNoCodeHostAddress() {
     when(pipelines.onCommit("shop", REMOTE, SHA))
         .thenReturn(new Answer<>(Optional.of(CommitPipeline.unhosted()), TokenUsage.NONE));
 
@@ -453,7 +455,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aDeployStandsWhereNoRemoteWasRecordedForTheRepository() {
+  void deployStandsWhereNoRemoteWasRecordedForTheRepository() {
     TaskState unrecorded =
         TaskState.builder(List.of(new TaskRepo("shop", "/wt", null, null)), TaskStatus.DEPLOYED)
             .deployment(
@@ -467,7 +469,7 @@ class DeployPipelinesTest {
   }
 
   @Test
-  void aDeployStaysOpenWhileTheHostDoesNotAnswerAndStandsOnceItDoes() {
+  void deployStaysOpenWhileTheHostDoesNotAnswerAndStandsOnceItDoes() {
     when(pipelines.onCommit("shop", REMOTE, SHA))
         .thenReturn(
             Answer.failed(TokenUsage.NONE, "glab exited 1"),

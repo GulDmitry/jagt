@@ -45,7 +45,7 @@ class TaskLauncherTest {
   }
 
   @Test
-  void leavesAnItemNobodyNamedAProjectForToTheRouter() {
+  void leavesAnItemNobodyNamedProjectForToTheRouter() {
     launcher.launch(LaunchRequest.of("ABC-42"));
 
     verify(launches).ticket(LaunchRequest.of("ABC-42"), null);
@@ -68,7 +68,7 @@ class TaskLauncherTest {
   }
 
   @Test
-  void refusesWordsTypedAsATicketBeforeAnyReadIsPaidFor() {
+  void refusesWordsTypedAsTicketBeforeAnyReadIsPaidFor() {
     Launched refused = launcher.launch(LaunchRequest.of("widgets try the board"));
 
     assertThat(refused.created()).isFalse();
@@ -93,7 +93,7 @@ class TaskLauncherTest {
   }
 
   @Test
-  void makesATaskOfATypedLineThatOpensOnAProjectAndNamesNoTicket() {
+  void makesTaskOfTypedLineThatOpensOnProjectAndNamesNoTicket() {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -108,7 +108,7 @@ class TaskLauncherTest {
   }
 
   @Test
-  void refusesATaskWithNeitherATicketNorAnythingToDo() {
+  void refusesTaskWithNeitherTicketNorAnythingToDo() {
     var refused = launcher.launch(LaunchRequest.defaults().withProject("group-a"));
 
     assertThat(refused.created()).isFalse();
@@ -117,7 +117,7 @@ class TaskLauncherTest {
   }
 
   @Test
-  void answersWhatTheTicketLaunchAnsweredForARequestNamingATicket() {
+  void answersWhatTheTicketLaunchAnsweredForRequestNamingTicket() {
     LaunchRequest request = LaunchRequest.of("ABC-42");
     when(launches.ticket(request, null)).thenReturn(Launched.created("ABC-42", "started"));
 
@@ -125,7 +125,7 @@ class TaskLauncherTest {
   }
 
   @Test
-  void answersWhatTheWrittenLaunchAnsweredForARequestCarryingOnlyWords() {
+  void answersWhatTheWrittenLaunchAnsweredForRequestCarryingOnlyWords() {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -157,7 +157,7 @@ class TaskLauncherTest {
   }
 
   @Test
-  void answersWhatTheWrittenLaunchAnsweredForATypedLine() {
+  void answersWhatTheWrittenLaunchAnsweredForTypedLine() {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -171,7 +171,7 @@ class TaskLauncherTest {
   }
 
   @Test
-  void skipsEmptyEntriesInAListOfProjects() {
+  void skipsEmptyEntriesInListOfProjects() {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -213,7 +213,7 @@ class TaskLauncherTest {
   }
 
   @Test
-  void refusesAStartWithNoProjectThatIsNotPlanFirstAndCreatesNothing() {
+  void refusesStartWithNoProjectThatIsNotPlanFirstAndCreatesNothing() {
     Launched refused = launcher.launchUnplaced(LaunchRequest.of("ABC-42"));
 
     assertThat(refused.created()).isFalse();
@@ -221,7 +221,7 @@ class TaskLauncherTest {
   }
 
   @Test
-  void startsAPlanFirstRequestWithNoProjectWithoutResolvingAProject() {
+  void startsPlanFirstRequestWithNoProjectWithoutResolvingProject() {
     LaunchRequest request = LaunchRequest.of("ABC-42").withMode("plan");
     when(launches.unplaced(request)).thenReturn(Launched.created("ABC-42", "initialized"));
 
@@ -232,7 +232,7 @@ class TaskLauncherTest {
   }
 
   @Test
-  void refusesAPlanFirstStartNamingNeitherATicketNorNotes() {
+  void refusesPlanFirstStartNamingNeitherTicketNorNotes() {
     Launched refused = launcher.launchUnplaced(LaunchRequest.defaults().withMode("plan"));
 
     assertThat(refused.reason()).isEqualTo(Launched.Reason.NOTHING_TO_DO);

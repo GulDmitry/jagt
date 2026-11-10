@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class TurnTest {
 
   @Test
-  void opensWhenTheSessionHoldsAStepItWasRelayed() {
+  void opensWhenTheSessionHoldsStepItWasRelayed() {
     Turn relayed = Turn.none().relayed("round", "d1", "", 100);
 
     assertThat(relayed.open()).isTrue();
@@ -71,7 +71,7 @@ class TurnTest {
   }
 
   @Test
-  void setsAndClearsAMarkWithoutMovingTheTurn() {
+  void setsAndClearsMarkWithoutMovingTheTurn() {
     Turn open = Turn.none().relayed("round", "d1", "", 100);
 
     Turn marked = open.withMark("ship", "s1");
@@ -95,7 +95,7 @@ class TurnTest {
   }
 
   @Test
-  void keepsOnlyTheLastTwentyRelaysOfAStepRunning() {
+  void keepsOnlyTheLastTwentyRelaysOfStepRunning() {
     Turn turn = Turn.none();
     for (long at = 1; at <= 21; at++) {
       turn = turn.relayed("round", "d" + at, "", at);
@@ -106,7 +106,7 @@ class TurnTest {
   }
 
   @Test
-  void readsAMissingStepDigestMarksAndRunAsNothing() {
+  void readsMissingStepDigestMarksAndRunAsNothing() {
     Turn bare = new Turn(null, 0, null, 0, null, null);
 
     assertThat(bare).isEqualTo(Turn.none());

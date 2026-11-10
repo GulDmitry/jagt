@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 class FailureCausesTest {
 
   @Test
-  void noLogLineTakesItsCauseFromAMessageThatMayBeNull() throws IOException {
+  void noLogLineTakesItsCauseFromMessageThatMayBeNull() throws IOException {
     Pattern messageAsCause =
         Pattern.compile("addKeyValue\\(\\s*\"cause\",[^;]*?\\.getMessage\\(\\)");
 

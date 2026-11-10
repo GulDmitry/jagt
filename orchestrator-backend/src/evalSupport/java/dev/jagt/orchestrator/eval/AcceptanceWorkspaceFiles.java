@@ -81,7 +81,8 @@ public final class AcceptanceWorkspaceFiles {
     Path log = watched.resolve(RUNS);
     try {
       return Files.exists(log)
-          && Files.readAllLines(log).stream().anyMatch(line -> line.startsWith(environmentUrl + " "));
+          && Files.readAllLines(log).stream()
+              .anyMatch(line -> line.startsWith(environmentUrl + " "));
     } catch (IOException unreadable) {
       throw new UncheckedIOException(unreadable);
     }

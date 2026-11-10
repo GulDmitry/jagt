@@ -31,11 +31,10 @@ import tools.jackson.databind.json.JsonMapper;
 
 class FinishedArtifactsTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
-  void keepsTheDocumentsAndTheRecordOfAFinishedTaskWhereAHumanCanStillReadThem(@TempDir Path root)
+  void keepsTheDocumentsAndTheRecordOfFinishedTaskWhereHumanCanStillReadThem(@TempDir Path root)
       throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
     Path worktree = root.resolve("ABC-42-proj");
@@ -57,7 +56,12 @@ class FinishedArtifactsTest {
                 new AgentSpend(TokenUsage.ofCall(30, 5, 20, 2.0), Map.of("/logs/a.jsonl", 9L)))
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
+    ConfigService config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
 
     new FinishedArtifacts(
             state,
@@ -79,7 +83,7 @@ class FinishedArtifactsTest {
   }
 
   @Test
-  void keepsTheRecordOfATaskThatLeftNoDocumentBehind(@TempDir Path root) throws Exception {
+  void keepsTheRecordOfTaskThatLeftNoDocumentBehind(@TempDir Path root) throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
     Path worktree = root.resolve("ABC-42-proj");
     Files.createDirectories(worktree);
@@ -95,7 +99,12 @@ class FinishedArtifactsTest {
             .title("a thing")
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
+    ConfigService config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
 
     new FinishedArtifacts(
             state,
@@ -111,7 +120,7 @@ class FinishedArtifactsTest {
   }
 
   @Test
-  void keepsALineNamingADocumentPastTheSizeLimitInsteadOfTheDocument(@TempDir Path root)
+  void keepsLineNamingDocumentPastTheSizeLimitInsteadOfTheDocument(@TempDir Path root)
       throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
     Path worktree = root.resolve("ABC-42-proj");
@@ -129,7 +138,12 @@ class FinishedArtifactsTest {
             .title("a thing")
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
+    ConfigService config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
 
     new FinishedArtifacts(
             state,
@@ -146,7 +160,7 @@ class FinishedArtifactsTest {
   }
 
   @Test
-  void keepsADocumentExactlyAsLargeAsTheSizeLimit(@TempDir Path root) throws Exception {
+  void keepsDocumentExactlyAsLargeAsTheSizeLimit(@TempDir Path root) throws Exception {
     Path worktree = root.resolve("ABC-42-proj");
     Files.createDirectories(worktree);
     try (RandomAccessFile plan = new RandomAccessFile(worktree.resolve("plan.md").toFile(), "rw")) {
@@ -166,7 +180,12 @@ class FinishedArtifactsTest {
             .title("a thing")
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
+    ConfigService config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
 
     new FinishedArtifacts(
             state,
@@ -182,7 +201,7 @@ class FinishedArtifactsTest {
   }
 
   @Test
-  void keepsEverySnapshotOfATaskDoneTwiceTheSameDay(@TempDir Path root) throws Exception {
+  void keepsEverySnapshotOfTaskDoneTwiceTheSameDay(@TempDir Path root) throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
     Path worktree = root.resolve("ABC-42-proj");
     Files.createDirectories(worktree);
@@ -198,7 +217,12 @@ class FinishedArtifactsTest {
             .title("a thing")
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
+    ConfigService config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
     Files.writeString(worktree.resolve("plan.md"), "the first plan");
     new FinishedArtifacts(
             state,
@@ -242,7 +266,12 @@ class FinishedArtifactsTest {
             .title("a thing")
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
+    ConfigService config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
 
     new FinishedArtifacts(
             state,
@@ -276,7 +305,12 @@ class FinishedArtifactsTest {
             .title("a thing")
             .build();
     state.putTask("ABC-42", task);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
+    ConfigService config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
 
     new FinishedArtifacts(
             state,

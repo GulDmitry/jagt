@@ -23,7 +23,7 @@ class TicketTextsTest {
   private final UsageTracker usage = mock(UsageTracker.class);
 
   @Test
-  void holdsTheTextOfATicketAsReadAndChargesTheReadToItsTask() {
+  void holdsTheTextOfTicketAsReadAndChargesTheReadToItsTask() {
     TicketTexts texts = new TicketTexts(assistant, usage, new KeptTicketTexts(paths()));
     TokenUsage spent = TokenUsage.ofCall(9_000, 0, 80, 0.02);
     when(assistant.readTicketText("ABC-42"))
@@ -36,7 +36,7 @@ class TicketTextsTest {
   }
 
   @Test
-  void holdsNoTextForATaskNobodyReadAndAnswersNoReadSince() {
+  void holdsNoTextForTaskNobodyReadAndAnswersNoReadSince() {
     TicketTexts texts = new TicketTexts(assistant, usage, new KeptTicketTexts(paths()));
 
     assertThat(texts.of("ABC-42")).isEmpty();
@@ -44,7 +44,7 @@ class TicketTextsTest {
   }
 
   @Test
-  void saysWhetherAFailedReadWasMadeAtOrAfterAMoment() {
+  void saysWhetherFailedReadWasMadeAtOrAfterMoment() {
     TicketTexts texts = new TicketTexts(assistant, usage, new KeptTicketTexts(paths()));
     when(assistant.readTicketText("ABC-42")).thenReturn(Answer.unavailable());
 
@@ -55,10 +55,11 @@ class TicketTextsTest {
   }
 
   @Test
-  void keepsAReadTextForEveryLaterStintAndAfterARestart() {
+  void keepsReadTextForEveryLaterStintAndAfterRestart() {
     when(assistant.readTicketText("ABC-42"))
         .thenReturn(new Answer<>(Optional.of("Widget layout is off"), TokenUsage.NONE));
-    new TicketTexts(assistant, usage, new KeptTicketTexts(paths())).read("ABC-42", "ABC-42", 1_000L);
+    new TicketTexts(assistant, usage, new KeptTicketTexts(paths()))
+        .read("ABC-42", "ABC-42", 1_000L);
 
     TicketTexts restarted = new TicketTexts(assistant, usage, new KeptTicketTexts(paths()));
 

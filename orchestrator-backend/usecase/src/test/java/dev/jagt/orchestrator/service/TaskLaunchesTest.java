@@ -33,7 +33,7 @@ class TaskLaunchesTest {
   private final TaskLaunches launches = new TaskLaunches(provisioning, worktrees, placement);
 
   @Test
-  void namesTheTaskByTheCanonicalKeyTheReadGaveBackWhenGivenAUrl() {
+  void namesTheTaskByTheCanonicalKeyTheReadGaveBackWhenGivenUrl() {
     TicketFacts item =
         TicketFacts.defaults()
             .withExists(true)
@@ -113,7 +113,7 @@ class TaskLaunchesTest {
   }
 
   @Test
-  void warnsAboutALeftoverBranchWithoutSpendingATicketRead() {
+  void warnsAboutLeftoverBranchWithoutSpendingTicketRead() {
     when(placement.namesAnItem("ABC-9")).thenReturn(true);
     when(worktrees.existingBranchProject(eq("ABC-9"), any())).thenReturn("group-a");
 
@@ -146,7 +146,7 @@ class TaskLaunchesTest {
   }
 
   @Test
-  void intakeContinuesALeftoverBranchHoldingWorkInsteadOfRefusingIt() {
+  void intakeContinuesLeftoverBranchHoldingWorkInsteadOfRefusingIt() {
     when(worktrees.strategyForExisting("ABC-9", "group-a")).thenReturn(BranchStrategy.RESUME);
     TicketFacts item =
         TicketFacts.defaults()
@@ -168,7 +168,7 @@ class TaskLaunchesTest {
   }
 
   @Test
-  void warnsAboutALeftoverBranchWhenTheHumanAskedForAFreshOne() {
+  void warnsAboutLeftoverBranchWhenTheHumanAskedForFreshOne() {
     when(placement.namesAnItem("ABC-9")).thenReturn(true);
     when(worktrees.existingBranchProject(eq("ABC-9"), any())).thenReturn("group-a");
 
@@ -304,7 +304,7 @@ class TaskLaunchesTest {
   }
 
   @Test
-  void makesATaskOfWhatTheHumanWroteWithoutSpendingATrackerRead() {
+  void makesTaskOfWhatTheHumanWroteWithoutSpendingTrackerRead() {
     when(worktrees.freeTaskName("split-the-invoice-mailer", List.of("group-a")))
         .thenReturn("split-the-invoice-mailer");
 
@@ -325,7 +325,7 @@ class TaskLaunchesTest {
   }
 
   @Test
-  void refusesWrittenWordsThatCannotNameABranchByTheirReason() {
+  void refusesWrittenWordsThatCannotNameBranchByTheirReason() {
     var refused =
         launches.written(
             LaunchRequest.defaults().withProject("group-a").withNotes("!!! ???"),
@@ -337,7 +337,7 @@ class TaskLaunchesTest {
   }
 
   @Test
-  void answersTheTaskItCreatedWithWhatProvisioningSaidForATicket() {
+  void answersTheTaskItCreatedWithWhatProvisioningSaidForTicket() {
     TicketFacts item =
         TicketFacts.defaults()
             .withExists(true)
@@ -392,7 +392,7 @@ class TaskLaunchesTest {
   }
 
   @Test
-  void asksOnlyTheProjectsTheCallerChoseWhetherALeftoverBranchExists() {
+  void asksOnlyTheProjectsTheCallerChoseWhetherLeftoverBranchExists() {
     when(placement.namesAnItem("ABC-9")).thenReturn(true);
     when(worktrees.existingBranchProject("ABC-9", List.of("api"))).thenReturn("api");
 
@@ -403,7 +403,7 @@ class TaskLaunchesTest {
 
   @ParameterizedTest
   @CsvSource({"80, 80, false", "81, 80, true"})
-  void titlesATypedTaskInAtMostEightyCharactersAndMarksACut(int length, int kept, boolean cut) {
+  void titlesTypedTaskInAtMostEightyCharactersAndMarksCut(int length, int kept, boolean cut) {
     String words = "a".repeat(length);
     when(worktrees.freeTaskName(any(), any())).thenReturn("a-task");
 
@@ -416,7 +416,7 @@ class TaskLaunchesTest {
   }
 
   @Test
-  void createsATaskInNoProjectWithItsTypedBaseBranchWhenItPlansBeforeItHasARepository() {
+  void createsTaskInNoProjectWithItsTypedBaseBranchWhenItPlansBeforeItHasRepository() {
     TicketFacts item =
         TicketFacts.defaults()
             .withExists(true)
@@ -443,7 +443,7 @@ class TaskLaunchesTest {
   }
 
   @Test
-  void createsATaskInNoProjectNamedByTheWordsOfAHumanWhoFiledNoTicket() {
+  void createsTaskInNoProjectNamedByTheWordsOfHumanWhoFiledNoTicket() {
     when(worktrees.freeTaskName("split-the-invoice-mailer", List.of()))
         .thenReturn("split-the-invoice-mailer");
     when(provisioning.initializeTask(any())).thenReturn("split-the-invoice-mailer is a1");

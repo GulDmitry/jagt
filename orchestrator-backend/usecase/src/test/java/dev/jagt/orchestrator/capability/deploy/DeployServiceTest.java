@@ -40,11 +40,10 @@ import tools.jackson.databind.json.JsonMapper;
 
 class DeployServiceTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
-  void reportsAFullDeployAsDoneAndStampsTheBranchItLandedOn(@TempDir Path root) {
+  void reportsFullDeployAsDoneAndStampsTheBranchItLandedOn(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -52,7 +51,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -74,7 +73,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void aBlockedDeployWithNothingLandedNamesTheObstacleInsteadOfAdvisingTheSameRunAgain(
+  void blockedDeployWithNothingLandedNamesTheObstacleInsteadOfAdvisingTheSameRunAgain(
       @TempDir Path root) {
     StateService state =
         new StateService(
@@ -83,7 +82,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
@@ -114,7 +113,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
@@ -143,7 +142,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
@@ -164,7 +163,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void recordsAFixPushedAfterTheMergeAsTheTipAndKeepsTheMergeForRevert(@TempDir Path root) {
+  void recordsFixPushedAfterTheMergeAsTheTipAndKeepsTheMergeForRevert(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -172,7 +171,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
@@ -211,7 +210,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void refusesAPressWhileTheDeployWaitsOnTheSessionsFixAndLeavesTheStatusAlone(@TempDir Path root) {
+  void refusesPressWhileTheDeployWaitsOnTheSessionsFixAndLeavesTheStatusAlone(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -219,7 +218,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
@@ -261,7 +260,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void handsBackAConflictWithoutOpeningAnEditorOrTouchingTheTaskBranch(@TempDir Path root)
+  void handsBackConflictWithoutOpeningAnEditorOrTouchingTheTaskBranch(@TempDir Path root)
       throws Exception {
     StateService state =
         new StateService(
@@ -270,7 +269,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     Path worktree = java.nio.file.Files.createDirectories(root.resolve("wt"));
     state.putTask(
         "ABC-1",
@@ -306,7 +305,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void refusesToLandATaskOntoTheVeryBranchItWasCutFrom(@TempDir Path root) {
+  void refusesToLandTaskOntoTheVeryBranchItWasCutFrom(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -314,7 +313,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -339,7 +338,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void refusesToGuessWhereToLandAProjectThatNamesNoDeployBranch(@TempDir Path root) {
+  void refusesToGuessWhereToLandProjectThatNamesNoDeployBranch(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -347,7 +346,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
@@ -366,7 +365,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void landsEveryRepositoryATaskSpansInTheOrderItHoldsThem(@TempDir Path root) {
+  void landsEveryRepositoryTaskSpansInTheOrderItHoldsThem(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -374,7 +373,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -406,8 +405,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void namesWhatIsLiveAndWhatIsNotWhenARepositoryConflictsAfterAnotherHasLanded(
-      @TempDir Path root) {
+  void namesWhatIsLiveAndWhatIsNotWhenRepositoryConflictsAfterAnotherHasLanded(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -415,7 +413,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -457,7 +455,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void countsNothingAsLiveWhenTheFirstRepositoryOfAFreshRoundConflicts(@TempDir Path root) {
+  void countsNothingAsLiveWhenTheFirstRepositoryOfFreshRoundConflicts(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -465,7 +463,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -507,7 +505,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void startsFromTheTopWhenADeployWorktreeIsLeftOverFromSomeRoundOtherThanAConflict(
+  void startsFromTheTopWhenDeployWorktreeIsLeftOverFromSomeRoundOtherThanConflict(
       @TempDir Path root) {
     StateService state =
         new StateService(
@@ -516,7 +514,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -544,7 +542,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void aRepeatedDeployPicksUpAtTheRepositoryTheConflictLeftBehind(@TempDir Path root) {
+  void repeatedDeployPicksUpAtTheRepositoryTheConflictLeftBehind(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -552,7 +550,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -603,7 +601,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void aPressAfterTheConflictedRepositoryLeftLandsTheUnpushedOnesWithoutOpeningAgain(
+  void pressAfterTheConflictedRepositoryLeftLandsTheUnpushedOnesWithoutOpeningAgain(
       @TempDir Path root) {
     StateService state =
         new StateService(
@@ -612,7 +610,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -664,7 +662,7 @@ class DeployServiceTest {
 
   @Test
   void
-      refusesAPressWhenTheRecordedConflictsDeployWorktreeIsGoneInsteadOfMergingTheFirstRepositoryAgain(
+      refusesPressWhenTheRecordedConflictsDeployWorktreeIsGoneInsteadOfMergingAgain(
           @TempDir Path root) {
     StateService state =
         new StateService(
@@ -673,7 +671,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState pressed =
         TaskState.builder(
                 List.of(TaskRepo.of("api", "/api-wt"), TaskRepo.of("web", "/web-wt")),
@@ -725,7 +723,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -765,7 +763,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -794,8 +792,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void reportsAndRecordsWhatIsLiveWhenADeployBreaksOffForAReasonNoWorktreeCanFix(
-      @TempDir Path root) {
+  void reportsAndRecordsWhatIsLiveWhenDeployBreaksOffForReasonNoWorktreeCanFix(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -803,7 +800,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -847,7 +844,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -885,7 +882,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -912,7 +909,7 @@ class DeployServiceTest {
   }
 
   @Test
-  void refusesATaskThatIsNotThereNamingIt(@TempDir Path root) {
+  void refusesTaskThatIsNotThereNamingIt(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -920,7 +917,7 @@ class DeployServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     GitDeploy git = mock(GitDeploy.class);
     DeployTargets targets = new DeployTargets(mock(ConfigService.class));
     DeployService deploys =

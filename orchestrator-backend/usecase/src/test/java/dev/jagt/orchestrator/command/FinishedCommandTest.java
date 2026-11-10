@@ -19,7 +19,7 @@ class FinishedCommandTest {
   private static final long HOUR = 3_600_000L;
 
   @Test
-  void givesTheMedianTimeAFinishedTaskTook() {
+  void givesTheMedianTimeFinishedTaskTook() {
     TaskState oneHour =
         TaskState.builder("proj", "/wt", TaskStatus.DONE)
             .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 0, null)))
@@ -110,7 +110,7 @@ class FinishedCommandTest {
   }
 
   @Test
-  void writesAMinusForATaskWhoseDurationIsUnknownAndCountsItInNoMedian() {
+  void writesMinusForTaskWhoseDurationIsUnknownAndCountsItInNoMedian() {
     TaskState unknown =
         TaskState.builder("proj", "/wt", TaskStatus.DONE)
             .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 0, null)))

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class ReadScopesTest {
 
   @Test
-  void cutsACallWhoseArgumentsRunPastTwoHundredCharacters() {
+  void cutsCallWhoseArgumentsRunPastTwoHundredCharacters() {
     ReadScopes scopes = new ReadScopes();
     scopes.open("f1", new ReadScope(List.of(), List.of(), false));
 
@@ -20,7 +20,7 @@ class ReadScopesTest {
   }
 
   @Test
-  void keepsACallWhoseArgumentsAreExactlyTwoHundredCharacters() {
+  void keepsCallWhoseArgumentsAreExactlyTwoHundredCharacters() {
     ReadScopes scopes = new ReadScopes();
     scopes.open("f1", new ReadScope(List.of(), List.of(), false));
 
@@ -30,7 +30,7 @@ class ReadScopesTest {
   }
 
   @Test
-  void keepsAtMostFiftyCallsOfARun() {
+  void keepsAtMostFiftyCallsOfRun() {
     ReadScopes scopes = new ReadScopes();
     scopes.open("f1", new ReadScope(List.of(), List.of(), false));
 
@@ -40,7 +40,7 @@ class ReadScopesTest {
   }
 
   @Test
-  void handsOutTheScopeOpenedUnderAFenceAndCountsTheAsk() {
+  void handsOutTheScopeOpenedUnderFenceAndCountsTheAsk() {
     ReadScopes scopes = new ReadScopes();
     ReadScope scope = new ReadScope(List.of(), List.of("Read"), false);
     scopes.open("f1", scope);
@@ -50,7 +50,7 @@ class ReadScopesTest {
   }
 
   @Test
-  void reportsAFenceNobodyAskedUnderAsOneWhoseHookNeverRan() {
+  void reportsFenceNobodyAskedUnderAsOneWhoseHookNeverRan() {
     ReadScopes scopes = new ReadScopes();
     scopes.open("f1", new ReadScope(List.of(), List.of("Read"), false));
 
@@ -58,7 +58,7 @@ class ReadScopesTest {
   }
 
   @Test
-  void handsOutNoScopeForAFenceThatWasNeverOpened() {
+  void handsOutNoScopeForFenceThatWasNeverOpened() {
     ReadScopes scopes = new ReadScopes();
 
     assertThat(scopes.ask("unknown")).isEmpty();
@@ -66,7 +66,7 @@ class ReadScopesTest {
   }
 
   @Test
-  void forgetsTheCallsOfAClosedRun() {
+  void forgetsTheCallsOfClosedRun() {
     ReadScopes scopes = new ReadScopes();
     scopes.open("f1", new ReadScope(List.of(), List.of(), false));
     scopes.hear("f1", "tool", "{}");
@@ -77,7 +77,7 @@ class ReadScopesTest {
   }
 
   @Test
-  void keepsNoCallOfARunAlreadyOver() {
+  void keepsNoCallOfRunAlreadyOver() {
     ReadScopes scopes = new ReadScopes();
 
     scopes.hear("gone", "mcp__acme__get_issue", "{}");

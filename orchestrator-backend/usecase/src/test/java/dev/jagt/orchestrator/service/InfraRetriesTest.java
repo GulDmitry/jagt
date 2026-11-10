@@ -84,7 +84,7 @@ class InfraRetriesTest {
   }
 
   @Test
-  void keepsTheTimeOfARetryAlreadyArmedForTheSamePipeline(@TempDir Path dir) {
+  void keepsTheTimeOfRetryAlreadyArmedForTheSamePipeline(@TempDir Path dir) {
     StateService state = state(dir);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     InfraRetries retries = retries(state);
@@ -228,7 +228,7 @@ class InfraRetriesTest {
   }
 
   @Test
-  void recordsASentRetryAsAMoveWithoutChangingTheStatus(@TempDir Path dir) {
+  void recordsSentRetryAsMoveWithoutChangingTheStatus(@TempDir Path dir) {
     StateService state = state(dir);
     InfraRetry armed =
         InfraRetry.armed(
@@ -300,7 +300,7 @@ class InfraRetriesTest {
   @Test
   void doesNotApplyWhereTheTaskIsPastItsReview(@TempDir Path dir) {
     StateService state = state(dir);
-    InfraRetries retries = retries(state);
+    final InfraRetries retries = retries(state);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     state.putTask("ABC-43", TaskState.builder("proj", "/wt2", TaskStatus.DEPLOYED).build());
     state.putTask("ABC-44", TaskState.builder("proj", "/wt3", TaskStatus.DEPLOY_CONFLICT).build());
@@ -313,7 +313,7 @@ class InfraRetriesTest {
   }
 
   @Test
-  void sendsTheDueRetryOfADeployedTaskWhoseDeployPipelineDiedOnInfrastructure(@TempDir Path dir) {
+  void sendsTheDueRetryOfDeployedTaskWhoseDeployPipelineDiedOnInfrastructure(@TempDir Path dir) {
     StateService state = state(dir);
     state.putTask(
         "ABC-42",

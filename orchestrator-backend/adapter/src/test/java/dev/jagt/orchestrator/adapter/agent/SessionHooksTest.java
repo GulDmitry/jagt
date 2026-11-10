@@ -7,12 +7,12 @@ import org.junit.jupiter.api.Test;
 class SessionHooksTest {
 
   @Test
-  void mapsNothingForARuntimeThatDeclaresNoEvents() {
+  void mapsNothingForRuntimeThatDeclaresNoEvents() {
     assertThat(SessionHooks.of("a-cli-that-ships-no-hooks")).isEmpty();
   }
 
   @Test
-  void declaresTheEventAPermissionPromptOpensOnWithoutMappingItToAState() {
+  void declaresTheEventPermissionPromptOpensOnWithoutMappingItToState() {
     assertThat(SessionHooks.permissionRequest("claude")).contains("PermissionRequest");
     assertThat(SessionHooks.of("claude")).doesNotContainKey("PermissionRequest");
   }
@@ -23,35 +23,35 @@ class SessionHooksTest {
   }
 
   @Test
-  void namesTheErrorWordThatMeansAUsageLimit() {
+  void namesTheErrorWordThatMeansUsageLimit() {
     assertThat(SessionHooks.rateLimitError("claude")).isEqualTo("rate_limit");
   }
 
   @Test
-  void namesTheEndReasonsANewStartFollowsAtOnce() {
+  void namesTheEndReasonsNewStartFollowsAtOnce() {
     assertThat(SessionHooks.continuingEnds("claude")).containsExactlyInAnyOrder("clear", "resume");
   }
 
   @Test
-  void namesTheStartThatFollowsACompaction() {
+  void namesTheStartThatFollowsCompaction() {
     assertThat(SessionHooks.compactedStart("claude")).isEqualTo("compact");
   }
 
   @Test
-  void saysNothingForARuntimeThatShipsNoHooks() {
+  void saysNothingForRuntimeThatShipsNoHooks() {
     assertThat(SessionHooks.rateLimitError("a-cli-that-ships-no-hooks")).isEmpty();
     assertThat(SessionHooks.continuingEnds("a-cli-that-ships-no-hooks")).isEmpty();
     assertThat(SessionHooks.compactedStart("a-cli-that-ships-no-hooks")).isEmpty();
   }
 
   @Test
-  void declaresTheEventAPromptIsAnsweredOnWithoutMappingItToAState() {
+  void declaresTheEventPromptIsAnsweredOnWithoutMappingItToState() {
     assertThat(SessionHooks.promptGate("claude")).contains("UserPromptSubmit");
     assertThat(SessionHooks.of("claude")).doesNotContainKey("UserPromptSubmit");
   }
 
   @Test
-  void declaresNoTrustDialogPhraseForARuntimeThatShipsNoHooks() {
+  void declaresNoTrustDialogPhraseForRuntimeThatShipsNoHooks() {
     assertThat(SessionHooks.trustDialog("a-cli-that-ships-no-hooks")).isEmpty();
   }
 }

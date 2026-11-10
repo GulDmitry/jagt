@@ -31,7 +31,7 @@ class ClaudePricesTest {
     "claude-opus-5-2025",
     "claude-nova-9",
   })
-  void leavesUnpricedAModelIdOnlyContainingAKnownModelsName(String model) {
+  void leavesUnpricedModelIdOnlyContainingKnownModelsName(String model) {
     assertThat(ClaudePrices.of(model)).isEmpty();
   }
 
@@ -41,7 +41,7 @@ class ClaudePricesTest {
     "claude-sonnet-5-5, 12.1",
     "claude-haiku-5-5, 3.05",
   })
-  void pricesAMillionOfInputCacheReadAndOutputAtTheModelsOwnListPrice(
+  void pricesMillionOfInputCacheReadAndOutputAtTheModelsOwnListPrice(
       String model, double expected) {
     double cost =
         ClaudePrices.of(model).orElseThrow().costOf(1_000_000, 0, 0, 1_000_000, 1_000_000);
@@ -65,7 +65,7 @@ class ClaudePricesTest {
     "0, 100001, 0, 0, 2.562500625",
     "0, 0, 100001, 0, 2.600001",
   })
-  void chargesHaikuFiveFiveItsLongContextRateOnlyForAPromptAbove100KTokens(
+  void chargesHaikuFiveFiveItsLongContextRateOnlyForPromptAbove100kTokens(
       long input, long write5m, long write1h, long cacheRead, double expected) {
     double cost = ClaudePrices.HAIKU_5_5.costOf(input, write5m, write1h, cacheRead, 1_000_000);
 
@@ -73,7 +73,7 @@ class ClaudePricesTest {
   }
 
   @Test
-  void keepsOpusFiveFiveAtOneRateForAPromptOfAMillionTokens() {
+  void keepsOpusFiveFiveAtOneRateForPromptOfMillionTokens() {
     double cost = ClaudePrices.OPUS_5_5.costOf(1_000_000, 0, 0, 0, 0);
 
     assertThat(cost).isCloseTo(4, within(1e-9));

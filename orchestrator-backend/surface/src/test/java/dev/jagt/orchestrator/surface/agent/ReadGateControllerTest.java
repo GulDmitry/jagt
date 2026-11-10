@@ -21,7 +21,7 @@ class ReadGateControllerTest {
   }
 
   @Test
-  void refusesACallUnderAFenceNoReadHolds() {
+  void refusesCallUnderFenceNoReadHolds() {
     var answered =
         new ReadGateController(new ReadScopes(), envelope)
             .gate(
@@ -34,7 +34,7 @@ class ReadGateControllerTest {
   }
 
   @Test
-  void refusesAToolTheHeldReadWasNotGiven() {
+  void refusesToolTheHeldReadWasNotGiven() {
     ReadScopes scopes = new ReadScopes();
     scopes.open("f1", new ReadScope(List.of(), List.of("mcp__acme__get*"), false));
 
@@ -49,7 +49,7 @@ class ReadGateControllerTest {
   }
 
   @Test
-  void marksTheFenceRefusedOnceAToolIsRefusedUnderIt() {
+  void marksTheFenceRefusedOnceToolIsRefusedUnderIt() {
     ReadScopes scopes = new ReadScopes();
     scopes.open("f1", new ReadScope(List.of(), List.of("mcp__acme__get*"), false));
 
@@ -60,7 +60,7 @@ class ReadGateControllerTest {
   }
 
   @Test
-  void answersAToolTheReadWasGivenWithNothing() {
+  void answersToolTheReadWasGivenWithNothing() {
     ReadScopes scopes = new ReadScopes();
     scopes.open("f1", new ReadScope(List.of(), List.of("mcp__acme__get*"), false));
 
@@ -72,7 +72,7 @@ class ReadGateControllerTest {
   }
 
   @Test
-  void marksTheFenceAsHeardOnceACallAsksUnderIt() {
+  void marksTheFenceAsHeardOnceCallAsksUnderIt() {
     ReadScopes scopes = new ReadScopes();
     scopes.open("f1", new ReadScope(List.of(), List.of("StructuredOutput"), false));
 

@@ -12,9 +12,10 @@ public record MasterCase(
     Map<String, String> baseline,
     Map<String, String> change,
     String plan,
-    MasterReview.Kind verdict,
-    List<String> names,
+    Expect expect,
     Answer answer) {
+
+  public record Expect(MasterReview.Kind verdict, List<String> names) {}
 
   public record Answer(String question, List<String> said, List<String> refused) {
 

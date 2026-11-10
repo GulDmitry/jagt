@@ -87,7 +87,7 @@ class InterceptedCapabilityTest {
   }
 
   @Test
-  void stopsTheWorkAndTheTransitionWhenAStepAroundItRefuses() {
+  void stopsTheWorkAndTheTransitionWhenStepAroundItRefuses() {
     when(tasks.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(tasks.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build()));
@@ -107,7 +107,7 @@ class InterceptedCapabilityTest {
   }
 
   @Test
-  void leavesAVerbNobodyWrappedExactlyAsItWas() {
+  void leavesVerbNobodyWrappedExactlyAsItWas() {
     when(tasks.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(tasks.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build()));

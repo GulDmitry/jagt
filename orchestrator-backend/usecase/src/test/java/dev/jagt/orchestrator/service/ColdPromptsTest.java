@@ -10,7 +10,7 @@ class ColdPromptsTest {
   private final AgentSessions sessions = mock(AgentSessions.class);
 
   @Test
-  void handsAPromptToAFreshSessionWhichCarriesWhatTheOldOneKnew() {
+  void handsPromptToFreshSessionWhichCarriesWhatTheOldOneKnew() {
     new ColdPrompts(sessions).relay("ABC-42", "now handle empty files");
 
     verify(sessions).relayUnderCold("ABC-42", "now handle empty files");

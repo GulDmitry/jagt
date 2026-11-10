@@ -28,13 +28,12 @@ import tools.jackson.databind.json.JsonMapper;
 
 class TrustedGitStateTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final GitWorktrees git = mock(GitWorktrees.class);
 
   @Test
-  void trustsWhatItFindsForATaskWithNothingRecorded(@TempDir Path root) {
+  void trustsWhatItFindsForTaskWithNothingRecorded(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -42,7 +41,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).build());
     when(git.gitState(List.of(Path.of("/wt"))))
         .thenReturn(Map.of("core.editor in /r/.git/config", "a1"));
@@ -63,7 +62,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -89,7 +88,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -107,7 +106,7 @@ class TrustedGitStateTest {
   }
 
   @Test
-  void namesAllThreeChangesWithoutACountWhereExactlyThreeChanged(@TempDir Path root) {
+  void namesAllThreeChangesWithoutCountWhereExactlyThreeChanged(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -115,7 +114,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -133,14 +132,15 @@ class TrustedGitStateTest {
   }
 
   @Test
-  void showsWhatAddedAndRemovedEntriesHoldAsAReadableDiff(@TempDir Path root) {
+  void showsWhatAddedAndRemovedEntriesHoldAsReadableDiff(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -171,7 +171,8 @@ class TrustedGitStateTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -190,14 +191,16 @@ class TrustedGitStateTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
             .gitTrust(GitTrust.of(Map.of()))
             .build());
     when(git.gitState(List.of(Path.of("/wt")))).thenReturn(Map.of("a in /c", "1"));
-    when(git.gitContents(List.of(Path.of("/wt")))).thenReturn(Map.of("a in /c", "x".repeat(30_000)));
+    when(git.gitContents(List.of(Path.of("/wt"))))
+        .thenReturn(Map.of("a in /c", "x".repeat(30_000)));
 
     Optional<TaskDiff.RepoDiff> shown = new TrustedGitState(state, git).changes("ABC-42");
 
@@ -213,7 +216,8 @@ class TrustedGitStateTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -229,21 +233,7 @@ class TrustedGitStateTest {
   }
 
   @Test
-  void refusesToShowChangesOfATaskThatDoesNotExist(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
-
-    assertThatThrownBy(() -> new TrustedGitState(state, git).changes("ABC-42"))
-        .isInstanceOf(Refusal.class);
-  }
-
-  @Test
-  void readsNoWorktreeForARepoThatHasNone(@TempDir Path root) {
+  void refusesToShowChangesOfTaskThatDoesNotExist(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -251,7 +241,22 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
+
+    assertThatThrownBy(() -> new TrustedGitState(state, git).changes("ABC-42"))
+        .isInstanceOf(Refusal.class);
+  }
+
+  @Test
+  void readsNoWorktreeForRepoThatHasNone(@TempDir Path root) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "", TaskStatus.APPROVED).build());
     when(git.gitState(List.of())).thenReturn(Map.of("core.editor in /r/.git/config", "a1"));
 
@@ -262,7 +267,7 @@ class TrustedGitStateTest {
   }
 
   @Test
-  void refusesToTrustATaskThatDoesNotExist(@TempDir Path root) {
+  void refusesToTrustTaskThatDoesNotExist(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -270,14 +275,14 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
 
     assertThatThrownBy(() -> new TrustedGitState(state, git).trust("ABC-42"))
         .isInstanceOf(Refusal.class);
   }
 
   @Test
-  void distrustsNothingForATaskThatDoesNotExist(@TempDir Path root) {
+  void distrustsNothingForTaskThatDoesNotExist(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -285,13 +290,13 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
 
     assertThat(new TrustedGitState(state, git).distrust("ABC-42")).isEmpty();
   }
 
   @Test
-  void countsAChangeFoundAsTheTasksGitStateRefusal(@TempDir Path root) {
+  void countsChangeFoundAsTheTasksGitStateRefusal(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -299,7 +304,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -322,7 +327,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -344,7 +349,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -357,7 +362,7 @@ class TrustedGitStateTest {
   }
 
   @Test
-  void keepsAParkedTaskParkedWithoutReadingGitAgain(@TempDir Path root) {
+  void keepsParkedTaskParkedWithoutReadingGitAgain(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -365,7 +370,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -387,7 +392,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -411,7 +416,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)

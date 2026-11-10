@@ -25,7 +25,7 @@ class LegacyMasterTest {
   }
 
   @Test
-  void keepsTheMasterRecordAStateFileWrittenNowCarries() {
+  void keepsTheMasterRecordStateFileWrittenNowCarries() {
     String json =
         """
         {"status":"REVIEWED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,

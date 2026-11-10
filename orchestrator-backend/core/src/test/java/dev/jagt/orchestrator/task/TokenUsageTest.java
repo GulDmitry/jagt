@@ -10,13 +10,13 @@ import tools.jackson.databind.json.JsonMapper;
 class TokenUsageTest {
 
   @Test
-  void doesNotCountACallThatNeverReachedAModel() {
+  void doesNotCountCallThatNeverReachedModel() {
     assertThat(TokenUsage.ofCall(0, 0, 0, 0)).isEqualTo(TokenUsage.NONE);
   }
 
   @ParameterizedTest
   @CsvSource({"1,0,0", "0,1,0", "0,0,1"})
-  void countsACallAsSoonAsAnyTokenWasSpent(long input, long cached, long output) {
+  void countsCallAsSoonAsAnyTokenWasSpent(long input, long cached, long output) {
     assertThat(TokenUsage.ofCall(input, cached, output, 0).calls()).isEqualTo(1);
   }
 
@@ -34,7 +34,7 @@ class TokenUsageTest {
 
   @ParameterizedTest
   @CsvSource({"500,0,1,0", "500,9000,0,1", "0,9000,0,1"})
-  void callsAStartColdOnlyWhenItHadInputAndReadNothingFromTheCache(
+  void callsStartColdOnlyWhenItHadInputAndReadNothingFromTheCache(
       long input, long cached, int cold, int warm) {
     TokenUsage start = TokenUsage.ofCall(input, cached, 10, 0).asStart();
 
@@ -43,7 +43,7 @@ class TokenUsageTest {
   }
 
   @Test
-  void leavesACallWithoutCacheFieldsOutOfBothStartCounts() {
+  void leavesCallWithoutCacheFieldsOutOfBothStartCounts() {
     TokenUsage total =
         TokenUsage.ofCall(500, 0, 10, 0).asStart().plus(TokenUsage.ofCall(500, 0, 10, 0));
 
@@ -66,12 +66,12 @@ class TokenUsageTest {
   }
 
   @Test
-  void marksNothingAsAStartWhenNoCallWasMade() {
+  void marksNothingAsStartWhenNoCallWasMade() {
     assertThat(TokenUsage.NONE.asStart()).isEqualTo(TokenUsage.NONE);
   }
 
   @Test
-  void callsAStartWarmWhenItSpentOnlyOutputTokens() {
+  void callsStartWarmWhenItSpentOnlyOutputTokens() {
     TokenUsage start = TokenUsage.ofCall(0, 0, 10, 0).asStart();
 
     assertThat(start.coldStarts()).isZero();
@@ -79,7 +79,7 @@ class TokenUsageTest {
   }
 
   @Test
-  void readsAnUnpricedCallAsALowerBoundOnceSummedWithAPricedOne() {
+  void readsAnUnpricedCallAsLowerBoundOnceSummedWithPricedOne() {
     TokenUsage total =
         TokenUsage.ofCall(500, 0, 10, 0.25).plus(TokenUsage.ofUnpricedCall(500, 0, 10));
 
@@ -90,28 +90,29 @@ class TokenUsageTest {
   }
 
   @Test
-  void keepsACostCompleteWhileEveryCallIsPriced() {
+  void keepsCostCompleteWhileEveryCallIsPriced() {
     TokenUsage total = TokenUsage.ofCall(500, 0, 10, 0).plus(TokenUsage.ofCall(500, 0, 10, 0.25));
 
     assertThat(total.costIsLowerBound()).isFalse();
   }
 
   @Test
-  void doesNotCountAnUnpricedCallThatNeverReachedAModel() {
+  void doesNotCountAnUnpricedCallThatNeverReachedModel() {
     assertThat(TokenUsage.ofUnpricedCall(0, 0, 0)).isEqualTo(TokenUsage.NONE);
   }
 
   @Test
-  void keepsTheLowerBoundWhenACallIsMarkedAsAStart() {
+  void keepsTheLowerBoundWhenCallIsMarkedAsStart() {
     assertThat(TokenUsage.ofUnpricedCall(500, 0, 10).asStart().costIsLowerBound()).isTrue();
   }
 
   @Test
-  void readsARecordWrittenBeforeUnpricedCallsWereCountedAsComplete() throws Exception {
+  void readsRecordWrittenBeforeUnpricedCallsWereCountedAsComplete() throws Exception {
     TokenUsage read =
         new JsonMapper()
             .readValue(
-                "{\"calls\":2,\"inputTokens\":300,\"cachedInputTokens\":0,\"outputTokens\":0,\"costUsd\":0.5,"
+                "{\"calls\":2,\"inputTokens\":300,\"cachedInputTokens\":0,\"outputTokens\":0,\"co"
+                + "stUsd\":0.5,"
                     + "\"coldStarts\":0,\"warmStarts\":0}",
                 TokenUsage.class);
 
@@ -119,7 +120,7 @@ class TokenUsageTest {
   }
 
   @Test
-  void writesNoFieldForACompleteCost() {
+  void writesNoFieldForCompleteCost() {
     assertThat(new JsonMapper().writeValueAsString(TokenUsage.ofCall(500, 0, 10, 0.25)))
         .doesNotContain("unpricedCalls");
   }

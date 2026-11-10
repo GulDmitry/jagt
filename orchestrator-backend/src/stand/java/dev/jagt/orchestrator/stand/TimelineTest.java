@@ -23,7 +23,7 @@ class TimelineTest {
       """;
 
   @Test
-  void aMasterReadIsNotedOnceAndBreaksTheQuiet(@TempDir Path dir) throws Exception {
+  void masterReadIsNotedOnceAndBreaksTheQuiet(@TempDir Path dir) throws Exception {
     Timeline timeline = new Timeline(dir.resolve("timeline.log"), mock(ContextRelays.class));
 
     timeline.masterReads(1);
@@ -36,7 +36,7 @@ class TimelineTest {
   }
 
   @Test
-  void aStoppedTaskIsReadWithItsTriggerAndEvidenceAndNotedOnce(@TempDir Path dir) throws Exception {
+  void stoppedTaskIsReadWithItsTriggerAndEvidenceAndNotedOnce(@TempDir Path dir) throws Exception {
     Timeline timeline = new Timeline(dir.resolve("timeline.log"), mock(ContextRelays.class));
     JsonNode state = JsonMapper.builder().build().readTree(STOPPED);
     JsonNode board = JsonMapper.builder().build().readTree(BOARD);

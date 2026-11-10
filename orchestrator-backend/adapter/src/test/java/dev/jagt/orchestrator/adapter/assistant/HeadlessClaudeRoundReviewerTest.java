@@ -32,7 +32,10 @@ class HeadlessClaudeRoundReviewerTest {
           new HeadlessClaude(
               new AssistantProcess(
                   runner,
-                  new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                  new AssistantBreaker(
+                      AssistantProperties.empty(),
+                      java.time.Clock.systemUTC(),
+                      new dev.jagt.orchestrator.service.ReachLedger())),
               ClaudeProperties.defaults(),
               AssistantProperties.empty(),
               usage,
@@ -41,13 +44,16 @@ class HeadlessClaudeRoundReviewerTest {
           AssistantProperties.empty());
 
   @Test
-  void callsOnlyTheMcpToolsTheHumanNamesSoADiffCannotSendTextToAnyServer() {
+  void callsOnlyTheMcpToolsTheHumanNamesSoDiffCannotSendTextToAnyServer() {
     HeadlessClaudeRoundReviewer named =
         new HeadlessClaudeRoundReviewer(
             new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 usage,
@@ -70,13 +76,16 @@ class HeadlessClaudeRoundReviewerTest {
   }
 
   @Test
-  void givesTheReviewOnlyTheReadsOfABareServerTheHumanNames() {
+  void givesTheReviewOnlyTheReadsOfBareServerTheHumanNames() {
     HeadlessClaudeRoundReviewer named =
         new HeadlessClaudeRoundReviewer(
             new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 usage,
@@ -107,13 +116,16 @@ class HeadlessClaudeRoundReviewerTest {
   }
 
   @Test
-  void saysItLoadsAServerWhereTheHumanNamesOne() {
+  void saysItLoadsServerWhereTheHumanNamesOne() {
     HeadlessClaudeRoundReviewer named =
         new HeadlessClaudeRoundReviewer(
             new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 usage,
@@ -131,7 +143,10 @@ class HeadlessClaudeRoundReviewerTest {
             new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 usage,
@@ -235,7 +250,7 @@ class HeadlessClaudeRoundReviewerTest {
   }
 
   @Test
-  void refusesGitsOutputFlagBecauseItWritesAFile() {
+  void refusesGitsOutputFlagBecauseItWritesFile() {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
 
@@ -248,7 +263,7 @@ class HeadlessClaudeRoundReviewerTest {
   }
 
   @Test
-  void refusesEveryMcpToolNamedAsAWrite() {
+  void refusesEveryMcpToolNamedAsWrite() {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
 
@@ -301,13 +316,16 @@ class HeadlessClaudeRoundReviewerTest {
   }
 
   @Test
-  void loadsOnlyTheServersPinnedForAReview() {
+  void loadsOnlyTheServersPinnedForReview() {
     HeadlessClaudeRoundReviewer pinned =
         new HeadlessClaudeRoundReviewer(
             new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 usage,
@@ -328,7 +346,7 @@ class HeadlessClaudeRoundReviewerTest {
   }
 
   @Test
-  void answersARunThatPrintedNothingReadableAsAFailureRatherThanAVerdict() {
+  void answersRunThatPrintedNothingReadableAsFailureRatherThanVerdict() {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(1, "", "session limit reached"));
 
@@ -347,7 +365,8 @@ class HeadlessClaudeRoundReviewerTest {
         .thenReturn(
             new Processes.Result(
                 0,
-                "{\"structured_output\":{\"verdict\":\"ready\"},\"total_cost_usd\":0,\"usage\":{\"input_tokens\":900,\"output_tokens\":40}}",
+                "{\"structured_output\":{\"verdict\":\"ready\"},\"total_cost_usd\":0,\"usage\":{"
+                + "\"input_tokens\":900,\"output_tokens\":40}}",
                 ""));
 
     reviewer.review(
@@ -442,7 +461,7 @@ class HeadlessClaudeRoundReviewerTest {
   }
 
   @Test
-  void answersAFailureWhenTheEnvelopeCarriesNoStructuredObject() {
+  void answersFailureWhenTheEnvelopeCarriesNoStructuredObject() {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(0, "{\"result\":\"looks fine\"}", ""));
 

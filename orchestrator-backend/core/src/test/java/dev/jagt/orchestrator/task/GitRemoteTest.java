@@ -31,13 +31,13 @@ class GitRemoteTest {
   }
 
   @Test
-  void readsNothingOutOfABlankRemote() {
+  void readsNothingOutOfBlankRemote() {
     assertThat(GitRemote.projectPath(" ")).isNull();
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"https://example.com", "nowhere"})
-  void readsNothingOutOfARemoteWithNoPathPart(String remote) {
+  void readsNothingOutOfRemoteWithNoPathPart(String remote) {
     assertThat(GitRemote.projectPath(remote)).isNull();
   }
 
@@ -63,7 +63,7 @@ class GitRemoteTest {
   }
 
   @Test
-  void holdsAnAddressUnderTheExactPathOfAFileRemoteWhichNamesNoHost() {
+  void holdsAnAddressUnderTheExactPathOfFileRemoteWhichNamesNoHost() {
     assertThat(
             GitRemote.holds(
                 "file:///srv/git/shop.git", "https://code.example/srv/git/shop/-/merge_requests/1"))

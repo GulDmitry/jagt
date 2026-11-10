@@ -31,7 +31,10 @@ class HeadlessClaudeRoutingAssistantTest {
           new HeadlessClaude(
               new AssistantProcess(
                   runner,
-                  new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                  new AssistantBreaker(
+                      AssistantProperties.empty(),
+                      java.time.Clock.systemUTC(),
+                      new dev.jagt.orchestrator.service.ReachLedger())),
               ClaudeProperties.defaults(),
               AssistantProperties.empty(),
               mock(UsageTracker.class),
@@ -122,7 +125,7 @@ class HeadlessClaudeRoutingAssistantTest {
   }
 
   @Test
-  void asksNothingAboutAStaleRuleWhereNoRuleIsWritten() {
+  void asksNothingAboutStaleRuleWhereNoRuleIsWritten() {
     var answer = assistant.staleRule("ABC-42", "ledger", List.of());
 
     assertThat(answer.facts()).isEmpty();
@@ -130,7 +133,7 @@ class HeadlessClaudeRoutingAssistantTest {
   }
 
   @Test
-  void asksNothingAboutAStaleRuleWhereAnArgumentIsMissing() {
+  void asksNothingAboutStaleRuleWhereAnArgumentIsMissing() {
     var answer = assistant.staleRule(null, "ledger", List.of("VAT goes to ledger"));
 
     assertThat(answer.facts()).isEmpty();

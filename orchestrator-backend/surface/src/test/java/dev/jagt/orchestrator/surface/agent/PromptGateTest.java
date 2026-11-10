@@ -41,7 +41,7 @@ class PromptGateTest {
   }
 
   @Test
-  void blocksAColdPromptOnlyAfterItWasRelayedToAFreshSession() {
+  void blocksColdPromptOnlyAfterItWasRelayedToFreshSession() {
     when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(true);
     when(runtime.blockedPrompt(anyString())).thenReturn("{\"decision\": \"block\"}");
 
@@ -56,7 +56,7 @@ class PromptGateTest {
   }
 
   @Test
-  void callsASessionColdFromTheStampTheRelayUses() {
+  void callsSessionColdFromTheStampTheRelayUses() {
     when(runtime.pastCacheLifetime(1_000L, Duration.ofHours(1))).thenReturn(true);
 
     String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", idle, "go on");
@@ -66,7 +66,7 @@ class PromptGateTest {
   }
 
   @Test
-  void relaysAPromptToAFreshSessionWhenAnOpenTurnSignedNothingPastTheCacheLifetime() {
+  void relaysPromptToFreshSessionWhenAnOpenTurnSignedNothingPastTheCacheLifetime() {
     TaskState working = idle.withSession(Session.defaults().withMovedAt(5_000));
     when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(true);
 
@@ -76,7 +76,7 @@ class PromptGateTest {
   }
 
   @Test
-  void letsAPromptThroughWhenTheSessionHasSignedNothing() {
+  void letsPromptThroughWhenTheSessionHasSignedNothing() {
     TaskState unsigned = idle.withSession(Session.defaults());
     when(runtime.pastCacheLifetime(anyLong(), any())).thenReturn(true);
 
@@ -88,7 +88,7 @@ class PromptGateTest {
   }
 
   @Test
-  void letsAColdPromptThroughWhenItCouldNotBeRelayed() {
+  void letsColdPromptThroughWhenItCouldNotBeRelayed() {
     when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(true);
     doThrow(new IllegalStateException("tmux down")).when(coldPrompts).relay("ABC-1", "go on");
 
@@ -99,7 +99,7 @@ class PromptGateTest {
   }
 
   @Test
-  void letsAPromptThroughWhenNoTaskOwnsTheWorktree() {
+  void letsPromptThroughWhenNoTaskOwnsTheWorktree() {
     String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", null, "go on");
 
     assertThat(answered).isEmpty();
@@ -107,7 +107,7 @@ class PromptGateTest {
   }
 
   @Test
-  void letsAPromptThroughWhileTheSessionIsWithinItsCacheLifetime() {
+  void letsPromptThroughWhileTheSessionIsWithinItsCacheLifetime() {
     when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(false);
 
     String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", idle, "go on");
@@ -118,7 +118,7 @@ class PromptGateTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"/compact", "/clear", "look at [Image #1] please"})
-  void letsASlashCommandOrAPastedImageThroughEvenInAColdSession(String typed) {
+  void letsSlashCommandOrPastedImageThroughEvenInColdSession(String typed) {
     when(runtime.pastCacheLifetime(5_000L, Duration.ofHours(1))).thenReturn(true);
 
     String answered = new PromptGate(coldPrompts, runtime, config).answer("ABC-1", idle, typed);

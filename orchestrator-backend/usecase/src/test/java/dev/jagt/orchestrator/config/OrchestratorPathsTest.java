@@ -20,7 +20,7 @@ class OrchestratorPathsTest {
   }
 
   @Test
-  void answersInsideTheRootItWasGivenRatherThanWalkingUpForAMarker(@TempDir Path root) {
+  void answersInsideTheRootItWasGivenRatherThanWalkingUpForMarker(@TempDir Path root) {
     assertThat(OrchestratorPaths.configFileOutside(new String[] {"--orchestrator.root=" + root}))
         .isEqualTo(root.resolve("jagt.yml"));
   }
@@ -37,7 +37,7 @@ class OrchestratorPathsTest {
   }
 
   @Test
-  void aTestJvmNeverResolvesTheHumansRoot() {
+  void testJvmNeverResolvesTheHumansRoot() {
     Path root = new OrchestratorPaths(OrchestratorProperties.defaults()).root();
 
     assertThat(root)

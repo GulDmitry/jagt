@@ -35,7 +35,7 @@ class AgentRuntimeTest {
   }
 
   @Test
-  void startsTheSameSessionWhateverModelOrPromptARuntimeCannotBeTold() {
+  void startsTheSameSessionWhateverModelOrPromptRuntimeCannotBeTold() {
     AgentRuntime runtime = new Minimal();
 
     assertThat(runtime.launchCommand(Path.of("/wt"), true, "fast"))
@@ -45,12 +45,12 @@ class AgentRuntimeTest {
   }
 
   @Test
-  void revivesASessionByStartingAFreshOneWhereTheRuntimeKeepsNothingToReEnter() {
+  void revivesSessionByStartingFreshOneWhereTheRuntimeKeepsNothingToReEnter() {
     assertThat(new Minimal().reviveCommand(Path.of("/wt"))).isEqualTo("run in /wt");
   }
 
   @Test
-  void startsAWorkspaceSessionAsAPlainOneWhereTheRuntimeCannotBeTold() {
+  void startsWorkspaceSessionAsPlainOneWhereTheRuntimeCannotBeTold() {
     assertThat(
             new Minimal()
                 .workspaceCommand(

@@ -13,7 +13,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class CaseBookTest {
 
   @Test
-  void readsACaseAsItsStepStatusesWhoSetsItOffAndTheRepliesItTakes() {
+  void readsCaseAsItsStepStatusesWhoSetsItOffAndTheRepliesItTakes() {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",
@@ -39,7 +39,7 @@ class CaseBookTest {
   }
 
   @Test
-  void readsAcceptanceAsWhoSetsAStepOff() {
+  void readsAcceptanceAsWhoSetsStepOff() {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",
@@ -62,7 +62,7 @@ class CaseBookTest {
   }
 
   @Test
-  void refusesAByNamingNoPartyAndNoInstalledChecker() {
+  void refusesByNamingNoPartyAndNoInstalledChecker() {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",
@@ -90,7 +90,7 @@ class CaseBookTest {
   }
 
   @Test
-  void refusesACaseWrittenTwice() {
+  void refusesCaseWrittenTwice() {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",
@@ -125,7 +125,7 @@ class CaseBookTest {
   @CsvSource(
       delimiter = '|',
       value = {"''", "IN_PROGRESS", "IN_PROGRESS; maybe", "WAITING; plain"})
-  void refusesACaseWhoseRepliesAreMissingOrNameNoStatusOrKind(String replies) {
+  void refusesCaseWhoseRepliesAreMissingOrNameNoStatusOrKind(String replies) {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",
@@ -141,7 +141,7 @@ class CaseBookTest {
   }
 
   @Test
-  void takesForAJoinedStepWhatAnyCaseOfItsStepsTakes() {
+  void takesForJoinedStepWhatAnyCaseOfItsStepsTakes() {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",

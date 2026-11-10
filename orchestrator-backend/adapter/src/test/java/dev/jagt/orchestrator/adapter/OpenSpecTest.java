@@ -47,7 +47,7 @@ class OpenSpecTest {
   }
 
   @Test
-  void asksForAChangeWhereTheTaskOpenedNone(@TempDir Path worktree) throws IOException {
+  void asksForChangeWhereTheTaskOpenedNone(@TempDir Path worktree) throws IOException {
     Files.createDirectories(worktree.resolve("openspec/changes/archive"));
     OpenSpec specs = new OpenSpec(mock(Processes.class), host);
 
@@ -86,7 +86,7 @@ class OpenSpecTest {
   }
 
   @Test
-  void refusesAHandBackWhoseDeltaArchiveWouldRefuse(@TempDir Path worktree) throws IOException {
+  void refusesHandBackWhoseDeltaArchiveWouldRefuse(@TempDir Path worktree) throws IOException {
     when(host.resolve("openspec")).thenReturn("/bin/openspec");
     Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
     Processes processes = mock(Processes.class);
@@ -138,7 +138,7 @@ class OpenSpecTest {
   }
 
   @Test
-  void refusesToFoldAChangeThatDoesNotValidate(@TempDir Path worktree) throws IOException {
+  void refusesToFoldChangeThatDoesNotValidate(@TempDir Path worktree) throws IOException {
     when(host.resolve("openspec")).thenReturn("/bin/openspec");
     Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
     Processes processes = mock(Processes.class);
@@ -158,7 +158,7 @@ class OpenSpecTest {
   }
 
   @Test
-  void foldsAValidChangeWithTelemetryOff(@TempDir Path worktree) throws IOException {
+  void foldsValidChangeWithTelemetryOff(@TempDir Path worktree) throws IOException {
     when(host.resolve("openspec")).thenReturn("/bin/openspec");
     Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
     Processes processes = mock(Processes.class);
@@ -231,7 +231,7 @@ class OpenSpecTest {
   }
 
   @Test
-  void asksForAChangeWhenOnlyAnotherTasksChangeIsOpen(@TempDir Path worktree) throws IOException {
+  void asksForChangeWhenOnlyAnotherTasksChangeIsOpen(@TempDir Path worktree) throws IOException {
     Files.createDirectories(worktree.resolve("openspec/changes/xyz-7"));
     OpenSpec specs = new OpenSpec(mock(Processes.class), host);
 
@@ -242,7 +242,7 @@ class OpenSpecTest {
   }
 
   @Test
-  void asksForAChangeWhenOnlyAnotherTasksChangeWasArchived(@TempDir Path worktree)
+  void asksForChangeWhenOnlyAnotherTasksChangeWasArchived(@TempDir Path worktree)
       throws IOException {
     Files.createDirectories(worktree.resolve("openspec/changes/archive/2026-10-06-xyz-7"));
     OpenSpec specs = new OpenSpec(mock(Processes.class), host);
@@ -254,7 +254,7 @@ class OpenSpecTest {
   }
 
   @Test
-  void asksForAChangeWhenTheOnlyEntryNamedAfterTheTaskIsAFile(@TempDir Path worktree)
+  void asksForChangeWhenTheOnlyEntryNamedAfterTheTaskIsFile(@TempDir Path worktree)
       throws IOException {
     Files.createDirectories(worktree.resolve("openspec/changes"));
     Files.writeString(worktree.resolve("openspec/changes/abc-42"), "notes");
@@ -267,7 +267,7 @@ class OpenSpecTest {
   }
 
   @Test
-  void validatesALaterRoundsChangeOpenedUnderTheTasksNameWithASuffix(@TempDir Path worktree)
+  void validatesLaterRoundsChangeOpenedUnderTheTasksNameWithSuffix(@TempDir Path worktree)
       throws IOException {
     when(host.resolve("openspec")).thenReturn("/bin/openspec");
     Files.createDirectories(worktree.resolve("openspec/changes/abc-42-2"));

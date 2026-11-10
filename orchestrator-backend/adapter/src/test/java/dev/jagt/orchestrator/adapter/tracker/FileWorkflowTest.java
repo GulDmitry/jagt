@@ -59,7 +59,7 @@ class FileWorkflowTest {
 
   @ParameterizedTest
   @CsvSource({"ABC-42,true", "AB1-7,true", "abc-42,false", "ABC-,false", "A-1,false"})
-  void takesOnlyAnItemKeyAsAName(String name, boolean isKey) {
+  void takesOnlyAnItemKeyAsName(String name, boolean isKey) {
     assertThat(workflow.isItemKey(name)).isEqualTo(isKey);
   }
 }

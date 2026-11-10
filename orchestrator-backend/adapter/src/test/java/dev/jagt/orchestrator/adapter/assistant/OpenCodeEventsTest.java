@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class OpenCodeEventsTest {
 
   @Test
-  void readsTheLastTextTheTokensOfEveryStepAndEveryToolCallOfARun() throws IOException {
+  void readsTheLastTextTheTokensOfEveryStepAndEveryToolCallOfRun() throws IOException {
     OpenCodeEvents events =
         OpenCodeEvents.parse(Files.readString(Path.of("src/test/resources/opencode/run.jsonl")));
 
@@ -32,7 +32,8 @@ class OpenCodeEventsTest {
   @Test
   void countsReasoningTokensAndCacheWritesAsTheModelsOwnWork() {
     String line =
-        "{\"type\":\"step_finish\",\"part\":{\"cost\":0,\"tokens\":{\"input\":10,\"output\":5,\"reasoning\":7,"
+        "{\"type\":\"step_finish\",\"part\":{\"cost\":0,\"tokens\":{\"input\":10,\"output\":5,\"r"
+        + "easoning\":7,"
             + "\"cache\":{\"read\":3,\"write\":2}}}}";
 
     OpenCodeEvents events = OpenCodeEvents.parse(line);
@@ -53,7 +54,7 @@ class OpenCodeEventsTest {
   }
 
   @Test
-  void countsAStepThatReportsNoCostAsUnpricedButAZeroCostAsPriced() {
+  void countsStepThatReportsNoCostAsUnpricedButZeroCostAsPriced() {
     String free =
         "{\"type\":\"step_finish\",\"part\":{\"cost\":0,\"tokens\":{\"input\":10,\"output\":5}}}\n";
     String unknown = "{\"type\":\"step_finish\",\"part\":{\"tokens\":{\"input\":10,\"output\":5}}}";

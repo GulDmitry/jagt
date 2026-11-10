@@ -141,7 +141,7 @@ class RetiredWorktreesTest {
   }
 
   @Test
-  void ignoresAStayingRepositoryWithNoCheckoutWhenNamingTheLeavingOnesEntries() {
+  void ignoresStayingRepositoryWithNoCheckoutWhenNamingTheLeavingOnesEntries() {
     TaskRepo web = TaskRepo.of("web", "/web-wt");
     TaskState task =
         TaskState.builder(List.of(TaskRepo.of("api", null), web), TaskStatus.PLAN_PENDING).build();
@@ -155,7 +155,7 @@ class RetiredWorktreesTest {
   }
 
   @Test
-  void deletesTheScratchFolderOfATaskThatNeverLeftIt(@TempDir Path root) throws Exception {
+  void deletesTheScratchFolderOfTaskThatNeverLeftIt(@TempDir Path root) throws Exception {
     OrchestratorPaths real =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     Path folder = Files.createDirectories(real.scratch().resolve("ABC-1"));
@@ -170,7 +170,7 @@ class RetiredWorktreesTest {
   }
 
   @Test
-  void keepsAFolderOutsideTheScratchRootThatAStateFileNamedAsAScratchFolder(@TempDir Path root)
+  void keepsFolderOutsideTheScratchRootThatStateFileNamedAsScratchFolder(@TempDir Path root)
       throws Exception {
     OrchestratorPaths real =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));

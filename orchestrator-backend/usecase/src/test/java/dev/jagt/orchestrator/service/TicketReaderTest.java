@@ -61,7 +61,7 @@ class TicketReaderTest {
   }
 
   @Test
-  void readsTheTicketOnASecondAttemptWhenTheModelFirstSaidItDoesNotExist() {
+  void readsTheTicketOnSecondAttemptWhenTheModelFirstSaidItDoesNotExist() {
     TicketFacts read =
         TicketFacts.defaults()
             .withExists(true)
@@ -132,7 +132,7 @@ class TicketReaderTest {
   }
 
   @Test
-  void chargesWhatAReadCostToTheTaskItNamed() {
+  void chargesWhatReadCostToTheTaskItNamed() {
     TokenUsage spent = TokenUsage.ofCall(25_000, 0, 120, 0.05);
 
     new TicketReader(assistant, mcp, usage, RetryPolicy.PAID_READ).charge("ABC-42", spent);

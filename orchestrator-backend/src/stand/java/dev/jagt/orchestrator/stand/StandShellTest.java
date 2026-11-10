@@ -10,13 +10,13 @@ import org.junit.jupiter.api.Test;
 class StandShellTest {
 
   @Test
-  void aMacHoldsTheWakeLockWithCaffeinateForTheStandJvm() {
+  void macHoldsTheWakeLockWithCaffeinateForTheStandJvm() {
     assertThat(StandShell.awakeCommand("Mac OS X", 4242, name -> name.equals("caffeinate")))
         .contains(List.of("caffeinate", "-i", "-s", "-w", "4242"));
   }
 
   @Test
-  void aLinuxWithSystemdInhibitBlocksSleepForTheStandJvm() {
+  void linuxWithSystemdInhibitBlocksSleepForTheStandJvm() {
     assertThat(
             StandShell.awakeCommand("Linux", 4242, name -> name.equals("systemd-inhibit"))
                 .orElseThrow())
@@ -25,12 +25,12 @@ class StandShellTest {
   }
 
   @Test
-  void aHostWithoutTheToolHoldsNoWakeLock() {
+  void hostWithoutTheToolHoldsNoWakeLock() {
     assertThat(StandShell.awakeCommand("Linux", 4242, name -> false)).isEmpty();
   }
 
   @Test
-  void aStandRootIsDeletedAfterItsHupIgnoringPaneWriterIsStopped() throws Exception {
+  void standRootIsDeletedAfterItsHupIgnoringPaneWriterIsStopped() throws Exception {
     Path base = Files.createTempDirectory(Path.of("/tmp"), "j");
     Path root = base.resolve("jagt-stand-1-1");
     Files.createDirectories(root.resolve("tmux/x"));

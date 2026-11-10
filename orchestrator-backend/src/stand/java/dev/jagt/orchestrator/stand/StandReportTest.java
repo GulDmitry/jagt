@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class StandReportTest {
 
   @Test
-  void givesAPassRatePerScenarioAndMode() {
+  void givesPassRatePerScenarioAndMode() {
     List<String> rates =
         StandReport.rates(
             List.of("plan/act passed", "plan/act failed", "plan/act passed", "plan/judge passed"));
@@ -18,7 +18,7 @@ class StandReportTest {
   }
 
   @Test
-  void aSuspendedRunIsNamedAndNeitherPassedNorFailed() {
+  void suspendedRunIsNamedAndNeitherPassedNorFailed() {
     List<String> rates =
         StandReport.rates(List.of("plan/act passed", "plan/act suspended", "plan/judge suspended"));
 

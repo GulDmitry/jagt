@@ -22,7 +22,8 @@ class SeamSelectionTest {
 
   private static final Pattern HEADER =
       Pattern.compile(
-          "(?:public\\s+|final\\s+|abstract\\s+)*(class|interface)\\s+(\\w+)(?:<[^>{]*>)?(?:\\s+extends\\s+(\\w+))?"
+          "(?:public\\s+|final\\s+|abstract\\s+)*(class|interface)\\s+(\\w+)(?:<[^>{]*>)?(?:\\s+e"
+          + "xtends\\s+(\\w+))?"
               + "(?:\\s+implements\\s+([^{]+))?\\s*\\{");
   private static final Pattern SELECTED =
       Pattern.compile("@ConditionalOnExpression\\(|@ConditionalOnProperty\\([^)]*orchestrator");
@@ -30,7 +31,7 @@ class SeamSelectionTest {
       Set.of("StartupCheck", "Notifier", "CodeHostCommands");
 
   @Test
-  void selectsEveryAdapterOfAPortWithSeveralAdaptersByAnOrchestratorKey() {
+  void selectsEveryAdapterOfPortWithSeveralAdaptersByAnOrchestratorKey() {
     Set<String> ports = portNames();
     Map<String, List<String>> adapters = new HashMap<>();
     Map<String, String> sources = new HashMap<>();

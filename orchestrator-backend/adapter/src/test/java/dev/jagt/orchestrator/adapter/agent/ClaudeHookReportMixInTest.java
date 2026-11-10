@@ -35,7 +35,7 @@ class ClaudeHookReportMixInTest {
   }
 
   @Test
-  void readsAHookThatSaidNeitherAsAStopWithNothingInFlight() {
+  void readsHookThatSaidNeitherAsStopWithNothingInFlight() {
     var said = mapper.readValue("{\"stop_hook_active\": false}", SessionHookReport.class);
 
     assertThat(said.sentOn()).isFalse();

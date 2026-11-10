@@ -19,7 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 class GitCommandsTest {
 
   @Test
-  void readsTwoSpellingsOfAPathThatDoesNotExistAsTheSameDirectory(@TempDir Path dir) {
+  void readsTwoSpellingsOfPathThatDoesNotExistAsTheSameDirectory(@TempDir Path dir) {
     boolean same = GitCommands.sameDirectory(dir.resolve("a/../missing"), dir.resolve("missing"));
 
     assertThat(same).isTrue();
@@ -33,7 +33,7 @@ class GitCommandsTest {
   }
 
   @Test
-  void killsTheProcessesRootedInADirectoryOnEveryOfFourPassesWhenItWillNotGo(@TempDir Path root)
+  void killsTheProcessesRootedInDirectoryOnEveryOfFourPassesWhenItWillNotGo(@TempDir Path root)
       throws Exception {
     Path dir = Files.createDirectories(root.resolve("held"));
     Files.writeString(dir.resolve("kept.txt"), "held by a process");
@@ -50,7 +50,7 @@ class GitCommandsTest {
   }
 
   @Test
-  void letsASecondCallerIntoARepositoryOnceTheFirstActionReturned(@TempDir Path repo)
+  void letsSecondCallerIntoRepositoryOnceTheFirstActionReturned(@TempDir Path repo)
       throws Exception {
     GitCommands git =
         new GitCommands(

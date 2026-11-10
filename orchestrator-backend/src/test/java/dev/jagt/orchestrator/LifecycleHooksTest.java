@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class LifecycleHooksTest {
 
   @Test
-  void noMethodRunsWorkAsAPostConstructHook() {
+  void noMethodRunsWorkAsPostConstructHook() {
     FreezingArchRule.freeze(
             noMethods()
                 .that()

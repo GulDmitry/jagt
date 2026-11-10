@@ -61,14 +61,14 @@ class WatchdogServiceTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"NEW", "IN_PROGRESS", "SHIPPING"})
-  void alertsTheHumanWhenAnAgentStoppedInAStatusItShouldBeWorkingIn(
+  void alertsTheHumanWhenAnAgentStoppedInStatusItShouldBeWorkingIn(
       TaskStatus status, @TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", status).alias("a1").lastActiveTimestamp(1_000).build());
@@ -90,13 +90,13 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void leavesASessionRestartedWhileItsWindowWasReadAsNotGone(@TempDir Path root) {
+  void leavesSessionRestartedWhileItsWindowWasReadAsNotGone(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     long now = Clock.systemUTC().millis();
     state.putTask(
         "ABC-1",
@@ -122,13 +122,13 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void leavesASessionRestartedTwiceWhileItsWindowWasReadAsNotGone(@TempDir Path root) {
+  void leavesSessionRestartedTwiceWhileItsWindowWasReadAsNotGone(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     long now = Clock.systemUTC().millis();
     state.putTask(
         "ABC-1",
@@ -155,13 +155,13 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void aMissingWindowBeforeAFreshSessionsFirstReadIsNotAnEnding(@TempDir Path root) {
+  void missingWindowBeforeFreshSessionsFirstReadIsNotAnEnding(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     long now = Clock.systemUTC().millis();
     state.putTask(
         "ABC-1",
@@ -183,13 +183,13 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void endsAFreshSessionWhoseCliExitedBeforeItsFirstRead(@TempDir Path root) {
+  void endsFreshSessionWhoseCliExitedBeforeItsFirstRead(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.NEW)
@@ -229,13 +229,13 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void readsTheSessionOfATaskWhoseStatusIdlesByDesign(@TempDir Path root) {
+  void readsTheSessionOfTaskWhoseStatusIdlesByDesign(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     SessionProbe probe = mock(SessionProbe.class);
@@ -247,13 +247,13 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void readsNothingOfAClosedTask(@TempDir Path root) {
+  void readsNothingOfClosedTask(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
     SessionProbe probe = mock(SessionProbe.class);
 
@@ -270,7 +270,7 @@ class WatchdogServiceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -289,13 +289,13 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void alertsNobodyAboutASessionThatToldJagtItWaitsOnADependency(@TempDir Path root) {
+  void alertsNobodyAboutSessionThatToldJagtItWaitsOnDependency(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -322,7 +322,7 @@ class WatchdogServiceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -350,7 +350,7 @@ class WatchdogServiceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -375,7 +375,7 @@ class WatchdogServiceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -399,7 +399,7 @@ class WatchdogServiceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -422,13 +422,13 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void writesNothingOnTheTicksOfATaskThatKeepsMoving(@TempDir Path root) {
+  void writesNothingOnTheTicksOfTaskThatKeepsMoving(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     SessionProbe probe = mock(SessionProbe.class);
@@ -446,13 +446,13 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void bannersADeadSessionEvenWhereTheQuestionItAskedIsStillUnanswered(@TempDir Path root) {
+  void bannersDeadSessionEvenWhereTheQuestionItAskedIsStillUnanswered(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -479,7 +479,7 @@ class WatchdogServiceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -503,7 +503,7 @@ class WatchdogServiceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -525,13 +525,13 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void alertsOnceForOneSilenceAcrossARestart(@TempDir Path root) {
+  void alertsOnceForOneSilenceAcrossRestart(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -557,7 +557,7 @@ class WatchdogServiceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -582,13 +582,13 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void alertsAgainWhenTheSilenceEndedAndANewOneBegan(@TempDir Path root) {
+  void alertsAgainWhenTheSilenceEndedAndNewOneBegan(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -625,7 +625,7 @@ class WatchdogServiceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -659,7 +659,7 @@ class WatchdogServiceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.NEW)
@@ -691,13 +691,13 @@ class WatchdogServiceTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void logsSilentAsTheCauseOfASessionThatWentQuietWithoutAWord(@TempDir Path root) {
+  void logsSilentAsTheCauseOfSessionThatWentQuietWithoutWord(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.NEW)
@@ -723,13 +723,13 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void endsASessionThatPrintedNothingWithNoCauseRatherThanAnEmptyOne(@TempDir Path root) {
+  void endsSessionThatPrintedNothingWithNoCauseRatherThanAnEmptyOne(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
@@ -748,7 +748,7 @@ class WatchdogServiceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     SessionProbe probe = mock(SessionProbe.class);
@@ -769,7 +769,7 @@ class WatchdogServiceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -790,13 +790,13 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void endsAGoneVerdictOnTheCardAndTheBannerWhenTheWorktreeCallsMcp(@TempDir Path root) {
+  void endsGoneVerdictOnTheCardAndTheBannerWhenTheWorktreeCallsMcp(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -830,14 +830,14 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void namesTheRunningProcessInTheQuietOfASessionThatMovedNothingWhileItsWindowRuns(
+  void namesTheRunningProcessInTheQuietOfSessionThatMovedNothingWhileItsWindowRuns(
       @TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -859,14 +859,14 @@ class WatchdogServiceTest {
   @EnumSource(
       value = Session.Window.State.class,
       names = {"DEAD_SHELL", "MISSING"})
-  void endsTheSessionOfATaskInProgressWhoseWindowHoldsNoAgentProcess(
+  void endsTheSessionOfTaskInProgressWhoseWindowHoldsNoAgentProcess(
       Session.Window.State window, @TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-    reducer);
+        reducer);
     long now = Clock.systemUTC().millis();
     state.putTask(
         "ABC-1",

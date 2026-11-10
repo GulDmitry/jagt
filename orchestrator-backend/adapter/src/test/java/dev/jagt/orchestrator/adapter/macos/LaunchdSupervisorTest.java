@@ -65,7 +65,7 @@ class LaunchdSupervisorTest {
   @Test
   void pointsTheAgentAtTheStableLinkWhenTheStampedJarRuns(@TempDir Path dir) throws Exception {
     Files.createFile(dir.resolve("jagt-run.jar"));
-    Path stamped = Files.createFile(dir.resolve("jagt-run-20261110-101010.jar"));
+    final Path stamped = Files.createFile(dir.resolve("jagt-run-20261110-101010.jar"));
     when(host.home()).thenReturn(dir);
     when(host.workingDir()).thenReturn(dir);
     when(processes.run(isNull(), any(), any())).thenReturn(new Processes.Result(0, "501", ""));
@@ -78,7 +78,7 @@ class LaunchdSupervisorTest {
   }
 
   @Test
-  void refusesAJarThatIsNotStaged(@TempDir Path dir) throws Exception {
+  void refusesJarThatIsNotStaged(@TempDir Path dir) throws Exception {
     Path built = Files.createFile(dir.resolve("jagt.jar"));
     when(host.home()).thenReturn(dir);
 

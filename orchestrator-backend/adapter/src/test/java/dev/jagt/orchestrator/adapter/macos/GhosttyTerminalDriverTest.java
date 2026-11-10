@@ -37,7 +37,7 @@ class GhosttyTerminalDriverTest {
   }
 
   @Test
-  void opensTheViewerAsATabAttachedToTmuxTitledWithTheViewerTitle() {
+  void opensTheViewerAsTabAttachedToTmuxTitledWithTheViewerTitle() {
     OsaScript osaScript = mock(OsaScript.class);
     var driver =
         new GhosttyTerminalDriver(
@@ -111,7 +111,7 @@ class GhosttyTerminalDriverTest {
   }
 
   @Test
-  void revealsTheWindowWhereAWindowHoldsTheTitle() {
+  void revealsTheWindowWhereWindowHoldsTheTitle() {
     OsaScript osaScript = mock(OsaScript.class);
     when(osaScript.answer(anyString())).thenReturn("window");
     var driver =

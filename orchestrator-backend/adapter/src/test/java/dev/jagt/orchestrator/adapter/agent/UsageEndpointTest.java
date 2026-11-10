@@ -59,7 +59,7 @@ class UsageEndpointTest {
   }
 
   @Test
-  void returnsTheBodyOfASuccessfulCallAndSendsEveryHeader() throws Exception {
+  void returnsTheBodyOfSuccessfulCallAndSendsEveryHeader() throws Exception {
     AtomicReference<String> authorization = new AtomicReference<>();
     HttpServer server =
         HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);

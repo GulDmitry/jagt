@@ -58,7 +58,7 @@ class LogFileRollTest {
   }
 
   @Test
-  void keepsTheOlderRunAsADatedArchiveWhenAnotherRunStarts(@TempDir Path root) throws IOException {
+  void keepsTheOlderRunAsDatedArchiveWhenAnotherRunStarts(@TempDir Path root) throws IOException {
     Path log = root.resolve("jagt.log");
     Files.writeString(log, "yesterday\n");
     Path previous = root.resolve("jagt.log.1");
@@ -95,11 +95,14 @@ class LogFileRollTest {
     Path log = root.resolve("jagt.log");
     Files.writeString(log, "yesterday\n");
     Path oldest =
-        sparseArchive(root.resolve("jagt.log.2026-01-01-000000"), 100, Instant.parse("2026-11-07T12:00:00Z"));
+        sparseArchive(
+            root.resolve("jagt.log.2026-01-01-000000"), 100, Instant.parse("2026-11-07T12:00:00Z"));
     Path middle =
-        sparseArchive(root.resolve("jagt.log.2026-01-02-000000"), 100, Instant.parse("2026-11-08T12:00:00Z"));
-    Path newest =
-        sparseArchive(root.resolve("jagt.log.2026-01-03-000000"), 100, Instant.parse("2026-11-09T12:00:00Z"));
+        sparseArchive(
+            root.resolve("jagt.log.2026-01-02-000000"), 100, Instant.parse("2026-11-08T12:00:00Z"));
+    final Path newest =
+        sparseArchive(
+            root.resolve("jagt.log.2026-01-03-000000"), 100, Instant.parse("2026-11-09T12:00:00Z"));
 
     new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).start(log);
 
@@ -112,8 +115,12 @@ class LogFileRollTest {
   void keepsArchivesTotallingExactlyTwoHundredMegabytes(@TempDir Path root) throws IOException {
     Path log = root.resolve("jagt.log");
     Files.writeString(log, "yesterday\n");
-    Path older = sparseArchive(root.resolve("jagt.log.2026-01-01-000000"), 100, Instant.parse("2026-11-08T12:00:00Z"));
-    Path newer = sparseArchive(root.resolve("jagt.log.2026-01-02-000000"), 100, Instant.parse("2026-11-09T12:00:00Z"));
+    Path older =
+        sparseArchive(
+            root.resolve("jagt.log.2026-01-01-000000"), 100, Instant.parse("2026-11-08T12:00:00Z"));
+    Path newer =
+        sparseArchive(
+            root.resolve("jagt.log.2026-01-02-000000"), 100, Instant.parse("2026-11-09T12:00:00Z"));
 
     new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).start(log);
 
@@ -130,11 +137,11 @@ class LogFileRollTest {
   }
 
   @Test
-  void leavesADirectoryNamedAsTheLogAndItsDottedSiblingsInPlace(@TempDir Path root)
+  void leavesDirectoryNamedAsTheLogAndItsDottedSiblingsInPlace(@TempDir Path root)
       throws IOException {
     Path folder = Files.createDirectories(root.resolve("surface"));
     Files.writeString(folder.resolve("Kept.java"), "class Kept {}");
-    Path sibling = Files.createDirectories(root.resolve("surface.gradle"));
+    final Path sibling = Files.createDirectories(root.resolve("surface.gradle"));
     int freePort;
     try (ServerSocket probe = new ServerSocket()) {
       probe.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
@@ -173,7 +180,7 @@ class LogFileRollTest {
   }
 
   @Test
-  void leavesTheLogOfAJagtThatIsStillListeningAlone(@TempDir Path root) throws Exception {
+  void leavesTheLogOfJagtThatIsStillListeningAlone(@TempDir Path root) throws Exception {
     Path log = root.resolve("jagt.log");
     Files.writeString(log, "the running instance's own record\n");
 
@@ -193,7 +200,7 @@ class LogFileRollTest {
   }
 
   @Test
-  void rollsTheLogWhenTheConfiguredPortIsNotANumber(@TempDir Path root) throws IOException {
+  void rollsTheLogWhenTheConfiguredPortIsNotNumber(@TempDir Path root) throws IOException {
     Path log = root.resolve("jagt.log");
     Files.writeString(log, "yesterday\n");
 
@@ -235,12 +242,17 @@ class LogFileRollTest {
 
   @Test
   void rollsNothingWhenNoLogFileIsConfigured() {
-    assertThat(new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).apply(new MockEnvironment())).isFalse();
+    assertThat(
+            new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
+                .apply(new MockEnvironment()))
+        .isFalse();
   }
 
   @Test
   void runsAfterTheConfigFilesAreReadAndBeforeLoggingIsInitialised() {
-    assertThat(new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).getOrder())
+    assertThat(
+            new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
+                .getOrder())
         .isGreaterThan(new EnvironmentPostProcessorApplicationListener().getOrder())
         .isLessThan(new LoggingApplicationListener().getOrder());
   }

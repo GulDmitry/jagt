@@ -21,7 +21,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesAStatusThisMachineDoesNotHave() {
+  void refusesStatusThisMachineDoesNotHave() {
     var said = AgentStatusMessage.of("ALMOST_DONE", "still going");
 
     assertThat(said.reportViolations(MessageContext.NONE))
@@ -30,7 +30,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesAStatusOnlyJagtSetsNamingOnlyTheReportableOnes() {
+  void refusesStatusOnlyJagtSetsNamingOnlyTheReportableOnes() {
     var said = AgentStatusMessage.of("DEPLOYED", "landed");
 
     assertThat(said.reportViolations(MessageContext.NONE))
@@ -44,7 +44,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesARoundThatIsOutForReviewWithNoRequestAnywhereInIt() {
+  void refusesRoundThatIsOutForReviewWithNoRequestAnywhereInIt() {
     var said = AgentStatusMessage.of("CI_POLLING", "shipped it");
 
     assertThat(said.reportViolations(MessageContext.NONE))
@@ -53,7 +53,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void acceptsARoundWhoseRequestWasWrittenIntoTheMessage() {
+  void acceptsRoundWhoseRequestWasWrittenIntoTheMessage() {
     var said = AgentStatusMessage.of("CI_POLLING", "review request: https://host/mr/9");
 
     assertThat(said.reportViolations(MessageContext.NONE)).isEmpty();
@@ -74,7 +74,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesALinkNobodyCanOpen() {
+  void refusesLinkNobodyCanOpen() {
     var said =
         AgentStatusMessage.of("CI_POLLING", "shipped")
             .withRequest(new AgentStatusMessage.Request("git@host:proj.git", null));
@@ -85,7 +85,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesARequestFiledUnderAProjectTheTaskDoesNotHave() {
+  void refusesRequestFiledUnderProjectTheTaskDoesNotHave() {
     var said =
         AgentStatusMessage.of("CI_POLLING", "shipped")
             .withRequest(new AgentStatusMessage.Request(null, Map.of("nope", "https://host/mr/9")));
@@ -98,7 +98,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void namesEveryBrokenRuleAtOnceSoASenderFixesThemInOneGo() {
+  void namesEveryBrokenRuleAtOnceSoSenderFixesThemInOneGo() {
     var said =
         new AgentStatusMessage("ALMOST_DONE", "shipped", "done", "git@host:proj.git", Map.of());
 
@@ -106,7 +106,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void readsTheSessionsOwnRepositoryAsTheLinkAHumanFollowsFirst() {
+  void readsTheSessionsOwnRepositoryAsTheLinkHumanFollowsFirst() {
     var said =
         AgentStatusMessage.of("CI_POLLING", "shipped")
             .withRequest(
@@ -139,7 +139,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesEveryRequestUnderAProjectTheTaskDoesNotHaveByNamingIt() {
+  void refusesEveryRequestUnderProjectTheTaskDoesNotHaveByNamingIt() {
     var said =
         AgentStatusMessage.of("CI_POLLING", "shipped")
             .withRequest(new AgentStatusMessage.Request(null, Map.of("nope", "https://host/mr/9")));
@@ -156,7 +156,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void acceptsARequestFiledUnderAProjectOfTheTask() {
+  void acceptsRequestFiledUnderProjectOfTheTask() {
     var said =
         AgentStatusMessage.of("CI_POLLING", "shipped")
             .withRequest(new AgentStatusMessage.Request(null, Map.of("web", "https://host/mr/9")));
@@ -247,7 +247,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void acceptsNothingThatBrokeARule() {
+  void acceptsNothingThatBrokeRule() {
     assertThat(AgentStatusMessage.of("ALMOST_DONE", "x").accepted(MessageContext.NONE)).isEmpty();
   }
 
@@ -262,7 +262,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesNoPlanForATaskOpenedInPlanMode() {
+  void refusesNoPlanForTaskOpenedInPlanMode() {
     var said = new AgentStatusMessage("IN_PROGRESS", "touches one file", "no_plan", null, Map.of());
 
     assertThat(said.reportViolations(new MessageContext(List.of("api"), true, java.util.List.of())))
@@ -281,7 +281,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void carriesTheProjectAQuestionNeedsWhenItIsConfiguredAndNotOnTheTask() {
+  void carriesTheProjectQuestionNeedsWhenItIsConfiguredAndNotOnTheTask() {
     var said =
         new AgentStatusMessage(
             "IN_PROGRESS",
@@ -299,7 +299,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesAProjectNoConfigurationHasNamingTheOnesThereAre() {
+  void refusesProjectNoConfigurationHasNamingTheOnesThereAre() {
     var said =
         new AgentStatusMessage(
             "IN_PROGRESS",
@@ -324,7 +324,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesAProjectTheTaskAlreadyHoldsNamingItsProjects() {
+  void refusesProjectTheTaskAlreadyHoldsNamingItsProjects() {
     var said =
         new AgentStatusMessage(
             "IN_PROGRESS",
@@ -347,7 +347,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesAProjectNeededOutsideAQuestion() {
+  void refusesProjectNeededOutsideQuestion() {
     var said =
         new AgentStatusMessage(
             "IN_PROGRESS",
@@ -368,7 +368,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesAReportGivingNoReason() {
+  void refusesReportGivingNoReason() {
     var said = AgentStatusMessage.of("IN_PROGRESS", "working");
 
     assertThat(said.violations(MessageContext.NONE))
@@ -377,7 +377,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesAReasonLongerThanOneSentenceNamingTheLimit() {
+  void refusesReasonLongerThanOneSentenceNamingTheLimit() {
     var said =
         new AgentStatusMessage(
             "IN_PROGRESS",
@@ -397,7 +397,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void acceptsAReportWithItsReason() {
+  void acceptsReportWithItsReason() {
     var said =
         new AgentStatusMessage(
             "REVIEW_PENDING",
@@ -413,7 +413,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesTheFirstReportThatLeavesOutASwitchThatIsOn() {
+  void refusesTheFirstReportThatLeavesOutSwitchThatIsOn() {
     var said =
         new AgentStatusMessage(
             "IN_PROGRESS",
@@ -433,7 +433,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesAPlanHandBackThatLeavesOutASwitchThatIsOn() {
+  void refusesPlanHandBackThatLeavesOutSwitchThatIsOn() {
     var said =
         new AgentStatusMessage(
             "PLAN_PENDING",
@@ -452,7 +452,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesAPlanHandBackJudgingVisualizeYesWhileThePictureIsMissing() {
+  void refusesPlanHandBackJudgingVisualizeYesWhileThePictureIsMissing() {
     var said =
         new AgentStatusMessage(
             "PLAN_PENDING",
@@ -472,7 +472,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void acceptsAPlanHandBackJudgingVisualizeYesOnceThePictureIsThere() {
+  void acceptsPlanHandBackJudgingVisualizeYesOnceThePictureIsThere() {
     var said =
         new AgentStatusMessage(
             "PLAN_PENDING",
@@ -488,7 +488,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void acceptsAPlanHandBackJudgingVisualizeNoWhileThePictureIsMissing() {
+  void acceptsPlanHandBackJudgingVisualizeNoWhileThePictureIsMissing() {
     var said =
         new AgentStatusMessage(
             "PLAN_PENDING",
@@ -507,7 +507,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void owesNoSwitchOnALaterReportThatHandsBackNoPlan() {
+  void owesNoSwitchOnLaterReportThatHandsBackNoPlan() {
     var said =
         new AgentStatusMessage(
             "IN_PROGRESS",
@@ -556,7 +556,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void acceptsAWaitFromAWorkingSessionNamingWhatIsDown() {
+  void acceptsWaitFromWorkingSessionNamingWhatIsDown() {
     var said =
         new AgentStatusMessage("IN_PROGRESS", "db down: ping db.internal", "wait", null, Map.of());
 
@@ -566,7 +566,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesAWaitThatNamesNothing() {
+  void refusesWaitThatNamesNothing() {
     var said = new AgentStatusMessage("IN_PROGRESS", null, "wait", null, Map.of());
 
     assertThat(said.reportViolations(MessageContext.NONE))
@@ -575,7 +575,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesAQuestionThatAsksNothing() {
+  void refusesQuestionThatAsksNothing() {
     var said = new AgentStatusMessage("REVIEW_PENDING", null, "question", null, Map.of());
 
     assertThat(said.reportViolations(MessageContext.NONE))
@@ -584,7 +584,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesAWaitFromAnyStatusButInProgress() {
+  void refusesWaitFromAnyStatusButInProgress() {
     var said =
         new AgentStatusMessage(
             "REVIEW_PENDING", "db down: ping db.internal", "wait", null, Map.of());
@@ -595,7 +595,7 @@ class AgentStatusMessageTest {
   }
 
   @Test
-  void refusesAWaitWhereNothingWaits() {
+  void refusesWaitWhereNothingWaits() {
     var said =
         new AgentStatusMessage("IN_PROGRESS", "db down: ping db.internal", "wait", null, Map.of());
 

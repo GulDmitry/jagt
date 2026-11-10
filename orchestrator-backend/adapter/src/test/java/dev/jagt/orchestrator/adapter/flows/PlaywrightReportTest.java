@@ -32,7 +32,7 @@ class PlaywrightReportTest {
   }
 
   @Test
-  void flowFailsWhenATestOfItsSpecWasUnexpectedAndKeepsItsAttachments() {
+  void flowFailsWhenTestOfItsSpecWasUnexpectedAndKeepsItsAttachments() {
     String json =
         """
         {"suites":[{"suites":[{"specs":[{"title":"alpha search @AC-2","tags":[],
@@ -119,7 +119,7 @@ class PlaywrightReportTest {
   }
 
   @Test
-  void aFailedSpecDoesNotFailAnotherFlow() {
+  void failedSpecDoesNotFailAnotherFlow() {
     String json =
         """
         {"suites":[{"specs":[

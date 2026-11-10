@@ -24,7 +24,7 @@ class LegacyQaTest {
   }
 
   @Test
-  void readsAnOpenQaTurnOnADeployedTaskAsARunningRead() {
+  void readsAnOpenQaTurnOnDeployedTaskAsRunningRead() {
     String json =
         """
         {"status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,"repos":[{"project":"proj","worktreePath":"/wt"}],
@@ -37,7 +37,7 @@ class LegacyQaTest {
   }
 
   @Test
-  void keepsTheQaRecordAStateFileWrittenNowCarries() {
+  void keepsTheQaRecordStateFileWrittenNowCarries() {
     String json =
         """
         {"status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,"repos":[{"project":"proj","worktreePath":"/wt"}],
@@ -50,7 +50,7 @@ class LegacyQaTest {
   }
 
   @Test
-  void leavesATurnWithoutQaMarksAsItIs() {
+  void leavesTurnWithoutQaMarksAsItIs() {
     Turn turn =
         new Turn("ship", 3, "", 4, java.util.Map.of("press:ship", "tree"), java.util.List.of());
 
@@ -58,7 +58,7 @@ class LegacyQaTest {
   }
 
   @Test
-  void dropsAnyOneOfTheQaMarksFromATurn() {
+  void dropsAnyOneOfTheQaMarksFromTurn() {
     Turn turn =
         new Turn(
             "ship",

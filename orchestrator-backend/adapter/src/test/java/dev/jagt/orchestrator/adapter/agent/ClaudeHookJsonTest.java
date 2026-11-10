@@ -18,7 +18,7 @@ class ClaudeHookJsonTest {
           .withUserConfiguration(ClaudeHookJson.class);
 
   @Test
-  void theContextsMapperReadsAClaudeHookPayloadWhenClaudeIsTheDefaultAgent() {
+  void theContextsMapperReadsClaudeHookPayloadWhenClaudeIsTheDefaultAgent() {
     runner.run(
         context -> {
           var said =
@@ -47,7 +47,7 @@ class ClaudeHookJsonTest {
   }
 
   @Test
-  void theContextsMapperReadsAClaudeToolCallAsAShellCommand() {
+  void theContextsMapperReadsClaudeToolCallAsShellCommand() {
     runner.run(
         context -> {
           var call =
@@ -63,7 +63,7 @@ class ClaudeHookJsonTest {
   }
 
   @Test
-  void theContextsMapperReadsANotebookPathAsTheFileOfAClaudeToolCall() {
+  void theContextsMapperReadsNotebookPathAsTheFileOfClaudeToolCall() {
     runner.run(
         context -> {
           var call =
@@ -79,7 +79,7 @@ class ClaudeHookJsonTest {
   }
 
   @Test
-  void theContextsMapperReadsAClaudeToolCallWithNoInputAsNamingNeitherCommandNorFile() {
+  void theContextsMapperReadsClaudeToolCallWithNoInputAsNamingNeitherCommandNorFile() {
     runner.run(
         context -> {
           var call =

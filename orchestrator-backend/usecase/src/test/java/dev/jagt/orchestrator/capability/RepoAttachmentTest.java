@@ -19,8 +19,8 @@ import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
@@ -116,7 +116,7 @@ class RepoAttachmentTest {
   }
 
   @Test
-  void refusesATaskThatAskedForNoRepositoryWithoutCuttingAnything() {
+  void refusesTaskThatAskedForNoRepositoryWithoutCuttingAnything() {
     state.putTask(
         "ABC-7",
         TaskState.builder("api", "/wt/ABC-7-api", TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -127,7 +127,7 @@ class RepoAttachmentTest {
   }
 
   @Test
-  void acceptsAProjectJagtYmlHolds() {
+  void acceptsProjectJagtYmlHolds() {
     when(config.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -138,7 +138,7 @@ class RepoAttachmentTest {
   }
 
   @Test
-  void refusesAProjectJagtYmlDoesNotHoldNamingTheOnesItDoes() {
+  void refusesProjectJagtYmlDoesNotHoldNamingTheOnesItDoes() {
     when(config.load())
         .thenReturn(
             ConfigFile.defaults()

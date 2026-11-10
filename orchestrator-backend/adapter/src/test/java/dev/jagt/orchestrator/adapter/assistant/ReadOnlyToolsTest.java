@@ -43,7 +43,7 @@ class ReadOnlyToolsTest {
         "mcp__gitlab__get_merge_request_notes",
         "mcp__gitlab__issue_notes"
       })
-  void allowsAReadNamedByTheDiscussionsOrNotesItReturns(String tool) {
+  void allowsReadNamedByTheDiscussionsOrNotesItReturns(String tool) {
     var pinned =
         AssistantProperties.empty()
             .withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
@@ -68,7 +68,7 @@ class ReadOnlyToolsTest {
         "mcp__gitlab__get_job_trace",
         "mcp__gitlab__list_pipeline_jobs"
       })
-  void allowsAReadThatAsksWhoIsSignedInOrWhichToolsTheHostHas(String tool) {
+  void allowsReadThatAsksWhoIsSignedInOrWhichToolsTheHostHas(String tool) {
     var pinned =
         AssistantProperties.empty()
             .withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
@@ -94,7 +94,7 @@ class ReadOnlyToolsTest {
         "mcp__gitlab__delete_branch",
         "mcp__gitlab__post_note"
       })
-  void neverAllowsAWriteOfTheServerWhoseReadsAreAllowed(String tool) {
+  void neverAllowsWriteOfTheServerWhoseReadsAreAllowed(String tool) {
     var pinned =
         AssistantProperties.empty()
             .withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
@@ -118,7 +118,7 @@ class ReadOnlyToolsTest {
         "mcp__gitlab__create_note",
         "mcp__gitlab__resolve_discussions"
       })
-  void refusesAWriteWhoseNameHoldsDiscussionsOrNotes(String tool) {
+  void refusesWriteWhoseNameHoldsDiscussionsOrNotes(String tool) {
     assertThat(ReadOnlyTools.MCP_WRITES)
         .anyMatch(
             glob ->
@@ -155,7 +155,7 @@ class ReadOnlyToolsTest {
   }
 
   @Test
-  void grantsABareServerTheHumanNamesOnlyItsReads() {
+  void grantsBareServerTheHumanNamesOnlyItsReads() {
     var named = AssistantProperties.empty().withAllowedTools(List.of("mcp__your-jira-mcp"));
 
     List<String> allowed =
@@ -179,7 +179,7 @@ class ReadOnlyToolsTest {
         "mcp__x__getOrCreateSession",
         "mcp__x__get-delete"
       })
-  void refusesAWriteNamedByItsVerbMidNameToo(String tool) {
+  void refusesWriteNamedByItsVerbMidNameToo(String tool) {
     assertThat(ReadOnlyTools.MCP_WRITES)
         .anyMatch(
             glob ->
@@ -199,7 +199,7 @@ class ReadOnlyToolsTest {
         "mcp__atlassian__searchJiraIssuesUsingJql",
         "mcp__atlassian__getConfluencePageFooterComments"
       })
-  void letsAReadWhoseNameHoldsAWriteVerbThrough(String tool) {
+  void letsReadWhoseNameHoldsWriteVerbThrough(String tool) {
     assertThat(ReadOnlyTools.MCP_WRITES)
         .noneMatch(
             glob ->
@@ -209,7 +209,7 @@ class ReadOnlyToolsTest {
   }
 
   @Test
-  void putsEveryCallOfAFencedRunToJagtAndRefusesItWhenJagtCannotAnswer() {
+  void putsEveryCallOfFencedRunToJagtAndRefusesItWhenJagtCannotAnswer() {
     ReadScopes scopes = new ReadScopes();
     ReadScope scope = new ReadScope(List.of(), List.of("StructuredOutput"), false);
 
@@ -229,7 +229,7 @@ class ReadOnlyToolsTest {
   }
 
   @Test
-  void saysAFenceNoCallReachedHeldNothing() {
+  void saysFenceNoCallReachedHeldNothing() {
     ReadOnlyTools tools =
         new ReadOnlyTools(
             mock(McpHealth.class),
@@ -276,7 +276,7 @@ class ReadOnlyToolsTest {
   }
 
   @Test
-  void sayswhetherTheFenceRefusedACallOfTheRun() {
+  void sayswhetherTheFenceRefusedCallOfTheRun() {
     ReadScopes scopes = new ReadScopes();
     ReadOnlyTools tools =
         new ReadOnlyTools(

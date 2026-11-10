@@ -23,7 +23,7 @@ class RunCommandTest {
   }
 
   @Test
-  void refusesARunThatNamesNoJob() {
+  void refusesRunThatNamesNoJob() {
     assertThatThrownBy(() -> command.run(" "))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("usage: run <job>");

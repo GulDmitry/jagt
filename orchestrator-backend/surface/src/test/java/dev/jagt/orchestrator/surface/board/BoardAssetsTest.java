@@ -24,8 +24,10 @@ class BoardAssetsTest {
   private static final Path STATIC = Path.of("src/main/resources/static");
   private static final Pattern LOADED_FROM_OUTSIDE =
       Pattern.compile(
-          "(src|href)=[\"'](https?:)?//|import\\s*\\(?\\s*[\"'](https?:)?//|from\\s+[\"'](https?:)?//"
-              + "|@import\\s+(url\\()?[\"']?(https?:)?//|url\\(\\s*[\"']?(https?:)?//|\"(https?:)?//[^\"]*\\.m?js\"");
+          "(src|href)=[\"'](https?:)?//|import\\s*\\(?\\s*[\"'](https?:)?//|from\\s+[\"'](https?:"
+          + ")?//"
+              + "|@import\\s+(url\\()?[\"']?(https?:)?//|url\\(\\s*[\"']?(https?:)?//|\"(https?:)"
+              + "?//[^\"]*\\.m?js\"");
 
   @ParameterizedTest
   @CsvSource({
@@ -34,7 +36,7 @@ class BoardAssetsTest {
     "htm.mjs, ab33dd3f38059b9be4d5f5350128eefb2356639c4e0bbe9d9e8b3ba75847e9e4",
     "mermaid.min.js, 6484afc32872a3aa16cac9a76ba1816a1ed4cc870a6593cc2e17757750f518b2"
   })
-  void aVendoredLibraryIsTheExactFileTheRegistryServed(String file, String sha256)
+  void vendoredLibraryIsTheExactFileTheRegistryServed(String file, String sha256)
       throws IOException, NoSuchAlgorithmException {
     byte[] bytes = Files.readAllBytes(STATIC.resolve("vendor").resolve(file));
 
@@ -44,7 +46,7 @@ class BoardAssetsTest {
   }
 
   @Test
-  void theBoardInstallsAsAStandaloneAppStartingAtItsOwnRoot() throws IOException {
+  void theBoardInstallsAsStandaloneAppStartingAtItsOwnRoot() throws IOException {
     JsonNode manifest =
         JsonMapper.builder().build().readTree(STATIC.resolve("manifest.webmanifest").toFile());
 
@@ -115,7 +117,7 @@ class BoardAssetsTest {
   }
 
   @Test
-  void noBoardScriptFormatsATimeInTheBrowsersLocaleOrZone() throws IOException {
+  void noBoardScriptFormatsTimeInTheBrowsersLocaleOrZone() throws IOException {
     List<Path> scripts;
     try (Stream<Path> files = Files.walk(STATIC)) {
       scripts =

@@ -33,13 +33,13 @@ class StubAgentRuntimeTest {
   }
 
   @Test
-  void treatsABlankScriptAsNoneAndStripsAnyOther() {
+  void treatsBlankScriptAsNoneAndStripsAnyOther() {
     assertThat(new StubAgentProperties("  ").script()).isNull();
     assertThat(new StubAgentProperties(" /s/run.sh ").script()).isEqualTo("/s/run.sh");
   }
 
   @Test
-  void hearsNothingFromAScriptedSessionAndKnowsOfNoActivity() {
+  void hearsNothingFromScriptedSessionAndKnowsOfNoActivity() {
     var runtime = new StubAgentRuntime(StubAgentProperties.defaults());
 
     assertThat(runtime.humanSaid(Path.of("/w/task"), Set.of())).contains(List.of());

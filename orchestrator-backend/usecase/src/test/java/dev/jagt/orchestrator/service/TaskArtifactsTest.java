@@ -58,7 +58,7 @@ class TaskArtifactsTest {
   }
 
   @Test
-  void listsNothingForAWorktreeHoldingNoDocument() {
+  void listsNothingForWorktreeHoldingNoDocument() {
     taskWithWorktree();
 
     assertThat(artifacts.present("ABC-42")).isEmpty();
@@ -75,7 +75,7 @@ class TaskArtifactsTest {
   }
 
   @Test
-  void refusesANameOutsideTheDocumentsOfATaskWithoutTouchingTheDisk() throws Exception {
+  void refusesNameOutsideTheDocumentsOfTaskWithoutTouchingTheDisk() throws Exception {
     taskWithWorktree();
     Files.writeString(worktree.resolve("secret.txt"), "x");
 
@@ -86,7 +86,7 @@ class TaskArtifactsTest {
   }
 
   @Test
-  void saysAKnownDocumentIsAbsentWhenTheWorktreeHoldsNoSuchFile() {
+  void saysKnownDocumentIsAbsentWhenTheWorktreeHoldsNoSuchFile() {
     taskWithWorktree();
 
     assertThatThrownBy(() -> artifacts.read("ABC-42", "plan.md"))
@@ -94,7 +94,7 @@ class TaskArtifactsTest {
   }
 
   @Test
-  void saysADocumentIsUnreadableRatherThanAbsentWhenItCannotBeRead() throws Exception {
+  void saysDocumentIsUnreadableRatherThanAbsentWhenItCannotBeRead() throws Exception {
     taskWithWorktree();
     Files.write(worktree.resolve("plan.md"), new byte[(int) TaskArtifacts.MAX_BYTES + 1]);
 
@@ -103,7 +103,7 @@ class TaskArtifactsTest {
   }
 
   @Test
-  void refusesATaskThatIsGone() {
+  void refusesTaskThatIsGone() {
     when(state.canonicalTaskId("ABC-9")).thenReturn("ABC-9");
     when(state.task("ABC-9")).thenReturn(Optional.empty());
 
@@ -112,7 +112,7 @@ class TaskArtifactsTest {
   }
 
   @Test
-  void readsADocumentOfExactlyTheSizeCeiling() throws Exception {
+  void readsDocumentOfExactlyTheSizeCeiling() throws Exception {
     taskWithWorktree();
     Files.write(worktree.resolve("plan.md"), new byte[(int) TaskArtifacts.MAX_BYTES]);
 
@@ -120,7 +120,7 @@ class TaskArtifactsTest {
   }
 
   @Test
-  void refusesATaskWhoseWorktreePathIsBlankRatherThanReadingTheWorkingDirectory() {
+  void refusesTaskWhoseWorktreePathIsBlankRatherThanReadingTheWorkingDirectory() {
     when(state.canonicalTaskId("ABC-42")).thenReturn("ABC-42");
     when(state.task("ABC-42"))
         .thenReturn(Optional.of(TaskState.builder("web", "", TaskStatus.IN_PROGRESS).build()));

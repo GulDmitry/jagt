@@ -37,7 +37,7 @@ class LocalModelCheckTest {
   }
 
   @Test
-  void refusesAnEndpointWithoutAModelNamingTheKey() {
+  void refusesAnEndpointWithoutModelNamingTheKey() {
     LocalModelProperties local =
         LocalModelProperties.off().withEndpoint("http://127.0.0.1:8080/v1");
 
@@ -47,7 +47,7 @@ class LocalModelCheckTest {
   }
 
   @Test
-  void refusesAKindThatReadsToolsNamingTheKey() {
+  void refusesKindThatReadsToolsNamingTheKey() {
     LocalModelProperties local =
         LocalModelProperties.off()
             .withEndpoint("http://127.0.0.1:8080/v1")

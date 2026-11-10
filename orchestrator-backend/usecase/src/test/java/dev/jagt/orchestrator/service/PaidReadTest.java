@@ -36,7 +36,7 @@ class PaidReadTest {
   }
 
   @Test
-  void asksOnceWhenTheReadGateRefusedATool() {
+  void asksOnceWhenTheReadGateRefusedTool() {
     AtomicInteger asked = new AtomicInteger();
     RetryPolicy policy = new RetryPolicy(3, Duration.ofMillis(1), Duration.ofMinutes(2));
 

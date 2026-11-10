@@ -18,7 +18,7 @@ class TmuxArgvTest {
   }
 
   @Test
-  void namesTheServerWhereASocketIsNamed() {
+  void namesTheServerWhereSocketIsNamed() {
     assertThat(TmuxArgv.prefix("tmux", " jagt-sock "))
         .isEqualTo(List.of("tmux", "-L", "jagt-sock"));
   }

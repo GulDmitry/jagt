@@ -24,7 +24,7 @@ class HttpEnvironmentProbeTest {
   }
 
   @Test
-  void answersWhereTheEnvironmentRespondsWithAPageThatNeedsALogin() throws IOException {
+  void answersWhereTheEnvironmentRespondsWithPageThatNeedsLogin() throws IOException {
     HttpServer server = answering(401);
     try {
       assertThat(probe.answers("http://127.0.0.1:" + server.getAddress().getPort() + "/")).isTrue();
@@ -34,7 +34,7 @@ class HttpEnvironmentProbeTest {
   }
 
   @Test
-  void doesNotAnswerWhereTheEnvironmentRespondsWithAServerFault() throws IOException {
+  void doesNotAnswerWhereTheEnvironmentRespondsWithServerFault() throws IOException {
     HttpServer server = answering(503);
     try {
       assertThat(probe.answers("http://127.0.0.1:" + server.getAddress().getPort() + "/"))

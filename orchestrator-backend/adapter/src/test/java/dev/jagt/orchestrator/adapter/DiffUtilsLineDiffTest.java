@@ -25,7 +25,7 @@ class DiffUtilsLineDiffTest {
   }
 
   @Test
-  void marksARewrittenLineAndKeepsTheOldOneAsRemovedBeforeIt() {
+  void marksRewrittenLineAndKeepsTheOldOneAsRemovedBeforeIt() {
     LineChange change =
         new DiffUtilsLineDiff()
             .between("# Plan\n- retry once\n- ship\n", "# Plan\n- retry twice\n- ship\n");
@@ -35,7 +35,7 @@ class DiffUtilsLineDiffTest {
   }
 
   @Test
-  void keepsADeletedLineWithoutMarkingAnythingChanged() {
+  void keepsDeletedLineWithoutMarkingAnythingChanged() {
     LineChange change = new DiffUtilsLineDiff().between("# Plan\n- a\n- b\n", "# Plan\n- b\n");
 
     assertThat(change.changed()).isEmpty();

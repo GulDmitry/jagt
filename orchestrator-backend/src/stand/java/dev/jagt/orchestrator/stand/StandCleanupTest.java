@@ -12,7 +12,7 @@ class StandCleanupTest {
   @TempDir Path directory;
 
   @Test
-  void copiesTheEvidenceOfADeadFailedRunUnderTheFailedDirectoryBeforeDeletingItsRoot()
+  void copiesTheEvidenceOfDeadFailedRunUnderTheFailedDirectoryBeforeDeletingItsRoot()
       throws Exception {
     Path base = Files.createDirectories(directory.resolve("tmp")).toRealPath();
     Path root = Files.createDirectory(base.resolve("jagt-stand-41-1"));
@@ -33,7 +33,7 @@ class StandCleanupTest {
   }
 
   @Test
-  void forgetsTheTracesOfARootAlreadyGoneButNotOfOneWhoseProcessLives() throws Exception {
+  void forgetsTheTracesOfRootAlreadyGoneButNotOfOneWhoseProcessLives() throws Exception {
     Path base = Files.createDirectories(directory.resolve("tmp")).toRealPath();
     Path config =
         Files.writeString(

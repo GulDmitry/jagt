@@ -61,7 +61,7 @@ class PlanApprovalLeavesTest {
   }
 
   @Test
-  void aRefusedApprovalTakesNoRepositoryOutOfTheTask(@TempDir Path root) {
+  void refusedApprovalTakesNoRepositoryOutOfTheTask(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()

@@ -23,7 +23,7 @@ class ReportMarkerMigrationTest {
           outcome=question — keep v2?                              | QUESTION   | keep v2?
           no changesets were needed                                | PLAIN      | no changesets were needed
           """)
-  void keepsWhatAPreviousVersionWroteIntoTheLineAsTheTasksReport(
+  void keepsWhatPreviousVersionWroteIntoTheLineAsTheTasksReport(
       String message, AgentReport report, String line) {
     TaskState task =
         new JsonMapper()

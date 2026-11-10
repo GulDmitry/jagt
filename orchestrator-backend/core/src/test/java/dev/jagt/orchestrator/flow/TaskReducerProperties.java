@@ -32,7 +32,7 @@ class TaskReducerProperties {
   private static final TaskReducer reducer = new TaskReducer(chart);
 
   @Property
-  void aDeployConflictNeverTravelsWithAStatusChange(
+  void deployConflictNeverTravelsWithStatusChange(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
     moves.stream()
         .reduce(
@@ -59,7 +59,7 @@ class TaskReducerProperties {
   }
 
   @Property
-  void aStopEndsOnlyOnALiftOrOnItsOwnEnd(
+  void stopEndsOnlyOnLiftOrOnItsOwnEnd(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
     moves.stream()
         .reduce(
@@ -79,7 +79,7 @@ class TaskReducerProperties {
   }
 
   @Property
-  void aRequiredPlanGateOpensOnlyOnTheApproval(
+  void requiredPlanGateOpensOnlyOnTheApproval(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
     moves.stream()
         .reduce(
@@ -96,7 +96,7 @@ class TaskReducerProperties {
   }
 
   @Property
-  void aQuestionStandsUntilTheSessionSpeaksOrAVerdictOrADeployReadMovesTheStatus(
+  void questionStandsUntilTheSessionSpeaksOrVerdictOrDeployReadMovesTheStatus(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
     moves.stream()
         .reduce(
@@ -121,7 +121,7 @@ class TaskReducerProperties {
   }
 
   @Property
-  void aGitChangeLeavesOnlyOnATrustMove(
+  void gitChangeLeavesOnlyOnTrustMove(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
     moves.stream()
         .reduce(
@@ -138,7 +138,7 @@ class TaskReducerProperties {
   }
 
   @Property
-  void aMergedRequestNeverLetsShipRun(
+  void mergedRequestNeverLetsShipRun(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
     moves.stream()
         .reduce(
@@ -159,7 +159,7 @@ class TaskReducerProperties {
   }
 
   @Property
-  void aNewHeadNeverLeavesAnInfraRetryArmed(
+  void newHeadNeverLeavesAnInfraRetryArmed(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
     moves.stream()
         .reduce(
@@ -176,7 +176,7 @@ class TaskReducerProperties {
   }
 
   @Property
-  void aMoveTheChartHasNoEdgeForLeavesStatusDeploymentAndStopAlone(
+  void moveTheChartHasNoEdgeForLeavesStatusDeploymentAndStopAlone(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
     moves.stream()
         .reduce(
@@ -197,7 +197,7 @@ class TaskReducerProperties {
   }
 
   @Property
-  void aTurnCountsExactlyOneMoreOnEveryRelayAndCloseAndOtherwiseNotAtAll(
+  void turnCountsExactlyOneMoreOnEveryRelayAndCloseAndOtherwiseNotAtAll(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
     moves.stream()
         .reduce(
@@ -251,7 +251,7 @@ class TaskReducerProperties {
   }
 
   @Property
-  void aDoneTaskStaysDone(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
+  void doneTaskStaysDone(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
     moves.stream()
         .reduce(
             start,
@@ -331,7 +331,8 @@ class TaskReducerProperties {
                                           moved.status(),
                                           moved.report(),
                                           false,
-                                          new Checkers(new TaskChart(Composition.builtIn())).of(moved),
+                                          new Checkers(new TaskChart(Composition.builtIn()))
+                                              .of(moved),
                                           Arbiter.Profile.OFF)
                                       .equals(new Turn.Holder.Role("acceptance")))
                               .isEqualTo(

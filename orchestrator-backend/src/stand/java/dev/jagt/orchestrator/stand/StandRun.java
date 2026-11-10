@@ -77,15 +77,6 @@ public final class StandRun implements AutoCloseable {
     return start(scenario, mode, null);
   }
 
-  /**
-   * jagt as built, its sessions, reads and Master answered from {@code recording} instead of a
-   * model.
-   */
-  public static StandRun replay(String scenario, StandMode mode, Path recording)
-      throws IOException {
-    return start(scenario, mode, recording);
-  }
-
   private static StandRun start(String scenario, StandMode mode, @Nullable Path replayed)
       throws IOException {
     StandSlots.LIVE.take();
@@ -95,6 +86,15 @@ public final class StandRun implements AutoCloseable {
       StandSlots.LIVE.free();
       throw e;
     }
+  }
+
+  /**
+   * jagt as built, its sessions, reads and Master answered from {@code recording} instead of a
+   * model.
+   */
+  public static StandRun replay(String scenario, StandMode mode, Path recording)
+      throws IOException {
+    return start(scenario, mode, recording);
   }
 
   private static StandRun begin(String scenario, StandMode mode, @Nullable Path replayed)
@@ -191,8 +191,8 @@ public final class StandRun implements AutoCloseable {
   public StandOutcome drive(Script script) {
     Timeline timeline =
         new Timeline(root.resolve("timeline.log"), new ContextRelays(new StandBooks(root).brief()));
-    Pipelines pipelines = new Pipelines(host.store(), PIPELINE);
-    HumanStub human = new HumanStub(mode);
+    final Pipelines pipelines = new Pipelines(host.store(), PIPELINE);
+    final HumanStub human = new HumanStub(mode);
     end = new RunEnd(mode, script.expectsDeployConflict(), script.conflictStepComes());
     StandWorld world = new World(timeline, script.ref());
     List<WorldEvent> pending = new ArrayList<>(script.events());
@@ -255,9 +255,8 @@ public final class StandRun implements AutoCloseable {
         root,
         ending,
         detail,
-        stop.map(Timeline.Stop::trigger).orElse(""),
-        timeline.lastReport(),
-        unfired);
+        new StandOutcome.Signals(
+            stop.map(Timeline.Stop::trigger).orElse(""), timeline.lastReport(), unfired));
   }
 
   private boolean held(Timeline timeline) {
@@ -370,10 +369,11 @@ public final class StandRun implements AutoCloseable {
             named[0],
             named.length > 1 ? named[1] : "",
             replayed == null ? "live" : "replay",
-            marker.outcome().equals(StandMarker.PASSED),
-            last == null ? "not driven" : last.ending().words(),
-            last == null ? "" : last.detail(),
-            found,
+            new StandRunLog.Verdict(
+                marker.outcome().equals(StandMarker.PASSED),
+                last == null ? "not driven" : last.ending().words(),
+                last == null ? "" : last.detail(),
+                found),
             Duration.between(began, Instant.now()).toSeconds(),
             StandSpend.read(root)),
         root.getFileName().toString());

@@ -30,8 +30,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class AcceptanceDeclineFlowTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static TaskState deployed() {
     return TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -54,14 +53,18 @@ class AcceptanceDeclineFlowTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", deployed());
 
     AcceptanceEnding ending =
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .declined("ABC-42", new AcceptanceDecline("proj@0123456789abcdef", "", ""), false);
@@ -71,7 +74,7 @@ class AcceptanceDeclineFlowTest {
   }
 
   @Test
-  void putsAFirstDisputeAsAQuestionWhichTheMasterInActAnswersBeforeTheHuman(@TempDir Path root) {
+  void putsFirstDisputeAsQuestionWhichTheMasterInActAnswersBeforeTheHuman(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -79,14 +82,18 @@ class AcceptanceDeclineFlowTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", deployed());
 
     AcceptanceEnding ending =
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .declined(
@@ -102,7 +109,7 @@ class AcceptanceDeclineFlowTest {
   }
 
   @Test
-  void putsASecondDisputeWhereOnlyTheHumanAnswersIt(@TempDir Path root) {
+  void putsSecondDisputeWhereOnlyTheHumanAnswersIt(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -110,14 +117,18 @@ class AcceptanceDeclineFlowTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", deployed());
 
     AcceptanceEnding ending =
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .declined(
@@ -131,7 +142,7 @@ class AcceptanceDeclineFlowTest {
   }
 
   @Test
-  void dropsADisputeOnAShaThatIsNoLongerTheDeployTip(@TempDir Path root) {
+  void dropsDisputeOnShaThatIsNoLongerTheDeployTip(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -139,14 +150,18 @@ class AcceptanceDeclineFlowTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", deployed());
 
     AcceptanceEnding ending =
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .declined("ABC-42", new AcceptanceDecline("proj@fedcba9876543210", "", "x"), false);

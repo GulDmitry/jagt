@@ -18,21 +18,21 @@ class SwitchJudgementsTest {
         "No: nothing to draw",
         "yes - two screens"
       })
-  void acceptsAYesOrNoCarryingItsWhy(String answer) {
+  void acceptsYesOrNoCarryingItsWhy(String answer) {
     assertThat(SwitchJudgements.violations(Map.of("visualize", answer), List.of("visualize")))
         .isEmpty();
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"yes", "no", "no —", "no — ", "maybe — unsure", "worth a picture"})
-  void refusesAnAnswerWithoutAWhyOrAVerdict(String answer) {
+  void refusesAnAnswerWithoutWhyOrVerdict(String answer) {
     assertThat(SwitchJudgements.violations(Map.of("visualize", answer), List.of("visualize")))
         .extracting(Violation::field)
         .containsExactly("switches");
   }
 
   @Test
-  void namesASwitchThatIsOnAndLeftUnanswered() {
+  void namesSwitchThatIsOnAndLeftUnanswered() {
     List<Violation> violations =
         SwitchJudgements.violations(
             Map.of("visualize", "no — one-line fix"), List.of("autoplan", "visualize"));
@@ -45,7 +45,7 @@ class SwitchJudgementsTest {
   }
 
   @Test
-  void refusesASwitchJagtDoesNotHave() {
+  void refusesSwitchJagtDoesNotHave() {
     assertThat(SwitchJudgements.violations(Map.of("telepathy", "yes — why"), List.of()))
         .singleElement()
         .satisfies(violation -> assertThat(violation.expected()).contains("telepathy"));

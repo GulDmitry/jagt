@@ -18,7 +18,7 @@ class HappyPathStandTest {
   @ParameterizedTest(allowZeroInvocations = true)
   @MethodSource("runs")
   @Execution(ExecutionMode.CONCURRENT)
-  void aTicketLandsOnTheDeployBranchThroughOneMergeRequest(StandMode mode, int run)
+  void ticketLandsOnTheDeployBranchThroughOneMergeRequest(StandMode mode, int run)
       throws Exception {
     try (StandRun stand = StandRun.start("happy-path", mode)) {
       stand

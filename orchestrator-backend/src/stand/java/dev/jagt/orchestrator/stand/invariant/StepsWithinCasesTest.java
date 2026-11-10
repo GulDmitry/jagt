@@ -38,7 +38,7 @@ class StepsWithinCasesTest {
   }
 
   @Test
-  void aMasterRoundNotReadyIsWithinItsCaseAtTheStatusTheDoorChecked(@TempDir Path dir)
+  void masterRoundNotReadyIsWithinItsCaseAtTheStatusTheDoorChecked(@TempDir Path dir)
       throws Exception {
     List<Violation> violations =
         check(
@@ -51,7 +51,7 @@ class StepsWithinCasesTest {
   }
 
   @Test
-  void aStepOpenedAtAStatusNoCaseNamesIsAViolationAtThatStatus(@TempDir Path dir) throws Exception {
+  void stepOpenedAtStatusNoCaseNamesIsViolationAtThatStatus(@TempDir Path dir) throws Exception {
     List<Violation> violations =
         check(
             dir,
@@ -67,7 +67,7 @@ class StepsWithinCasesTest {
   }
 
   @Test
-  void aLineWithoutAStatusIsReadAtTheStatusTheHistoryHeldAtThatTime(@TempDir Path dir)
+  void lineWithoutStatusIsReadAtTheStatusTheHistoryHeldAtThatTime(@TempDir Path dir)
       throws Exception {
     List<Violation> violations =
         check(

@@ -26,7 +26,7 @@ class TaskFilesControllerTest {
   }
 
   @Test
-  void answersADocumentAsHtmlUnderItsName() {
+  void answersDocumentAsHtmlUnderItsName() {
     when(artifacts.read("ABC-42", "plan.md")).thenReturn("# Plan");
     when(baseline.since("ABC-42", "# Plan")).thenReturn(LineChange.none());
 

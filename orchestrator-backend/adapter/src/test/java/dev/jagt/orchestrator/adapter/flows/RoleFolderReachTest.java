@@ -37,10 +37,11 @@ class RoleFolderReachTest {
         "'{environments: [{url: a}], tools: {mcp: [browser]}}' | tools.mcp browser",
         "'{environments: [{url: a}], flows: {timeout: soon}}' | flows.timeout soon"
       })
-  void anEnabledRoleWhoseFolderCannotRunACheckIsOneMarkOnTheBoardsHead(
+  void anEnabledRoleWhoseFolderCannotRunCheckIsOneMarkOnTheBoardsHead(
       String written, String said, @TempDir Path root) throws Exception {
     Files.writeString(
-        root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
         Path.of("../../roles/acceptance/role.yml.dist"),
@@ -56,7 +57,11 @@ class RoleFolderReachTest {
     new RoleFolderReach(
             new RoleSettings(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+                new ConfigService(
+                    paths,
+                    mock(AgentRuntime.class),
+                    mock(ActStops.class),
+                    new Checkers(new TaskChart(Composition.builtIn()))),
                 paths),
             reach)
         .run();
@@ -74,7 +79,8 @@ class RoleFolderReachTest {
   void theMarkEndsOnTheFirstReadAfterTheFolderNamesAnEnvironment(@TempDir Path root)
       throws Exception {
     Files.writeString(
-        root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
         Path.of("../../roles/acceptance/role.yml.dist"),
@@ -88,7 +94,11 @@ class RoleFolderReachTest {
     new RoleFolderReach(
             new RoleSettings(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+                new ConfigService(
+                    paths,
+                    mock(AgentRuntime.class),
+                    mock(ActStops.class),
+                    new Checkers(new TaskChart(Composition.builtIn()))),
                 paths),
             reach)
         .run();
@@ -101,9 +111,10 @@ class RoleFolderReachTest {
   }
 
   @Test
-  void aFolderNamingAnEnvironmentAndAnMcpServerRaisesNoMark(@TempDir Path root) throws Exception {
+  void folderNamingAnEnvironmentAndAnMcpServerRaisesNoMark(@TempDir Path root) throws Exception {
     Files.writeString(
-        root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
         Path.of("../../roles/acceptance/role.yml.dist"),
@@ -121,7 +132,11 @@ class RoleFolderReachTest {
     new RoleFolderReach(
             new RoleSettings(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+                new ConfigService(
+                    paths,
+                    mock(AgentRuntime.class),
+                    mock(ActStops.class),
+                    new Checkers(new TaskChart(Composition.builtIn()))),
                 paths),
             reach)
         .run();
@@ -130,7 +145,7 @@ class RoleFolderReachTest {
   }
 
   @Test
-  void aRoleTurnedOffRaisesNoMarkWhateverItsFolderLacks(@TempDir Path root) throws Exception {
+  void roleTurnedOffRaisesNoMarkWhateverItsFolderLacks(@TempDir Path root) throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
@@ -146,7 +161,11 @@ class RoleFolderReachTest {
     new RoleFolderReach(
             new RoleSettings(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+                new ConfigService(
+                    paths,
+                    mock(AgentRuntime.class),
+                    mock(ActStops.class),
+                    new Checkers(new TaskChart(Composition.builtIn()))),
                 paths),
             reach)
         .run();

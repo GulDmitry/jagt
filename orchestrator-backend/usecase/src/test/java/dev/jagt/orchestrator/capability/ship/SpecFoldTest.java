@@ -52,7 +52,7 @@ class SpecFoldTest {
   }
 
   @Test
-  void shipsNothingWhenAChangeCannotBeFolded(@TempDir Path root) {
+  void shipsNothingWhenChangeCannotBeFolded(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),

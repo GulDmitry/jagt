@@ -30,7 +30,7 @@ class TextBudgetTest {
           + " (docs/rules/testing.md)";
 
   @Test
-  void aDecisionIsOneRecordOfFiftyLines() {
+  void decisionIsOneRecordOfFiftyLines() {
     assertThat(decisions())
         .allSatisfy(
             record ->
@@ -40,14 +40,14 @@ class TextBudgetTest {
   }
 
   @Test
-  void aRuleIsStatedInAHundredLinesOrItIsBeingArgued() {
+  void ruleIsStatedInHundredLinesOrItIsBeingArgued() {
     assertThat(markdownIn(Path.of("../docs/rules")))
         .allSatisfy(
             rule -> assertThat(lines(rule)).describedAs("%s", rule).hasSizeLessThanOrEqualTo(RULE));
   }
 
   @Test
-  void aPageReadWholeStaysUnderTwoHundredLines() {
+  void pageReadWholeStaysUnderTwoHundredLines() {
     assertThat(pages())
         .allSatisfy(
             page ->
@@ -57,7 +57,7 @@ class TextBudgetTest {
   }
 
   @Test
-  void aStepOfTheSessionBriefStaysUnderTwoHundredLines() {
+  void stepOfTheSessionBriefStaysUnderTwoHundredLines() {
     assertThat(STEP.split(String.join("\n", lines(SESSION_BRIEF))))
         .allSatisfy(
             step ->
@@ -72,7 +72,7 @@ class TextBudgetTest {
   }
 
   @Test
-  void noLineOutsideATableRunsPastOneHundredFiftyCharacters() {
+  void noLineOutsideTableRunsPastOneHundredFiftyCharacters() {
     assertThat(
             Stream.of(
                     pages(),
@@ -89,7 +89,7 @@ class TextBudgetTest {
   }
 
   @Test
-  void noSentenceAModelOrAHumanFollowsRunsPastTwentyFiveWords() {
+  void noSentenceModelOrHumanFollowsRunsPastTwentyFiveWords() {
     List<Path> read =
         Stream.of(
                 markdownIn(Path.of("../docs/rules")),

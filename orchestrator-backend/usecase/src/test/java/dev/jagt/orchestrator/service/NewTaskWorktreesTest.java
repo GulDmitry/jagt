@@ -67,7 +67,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void stepsOverAWrittenNameALiveTaskAlreadyTookRatherThanRefusingIt() {
+  void stepsOverWrittenNameLiveTaskAlreadyTookRatherThanRefusingIt() {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     state.putTask(
         "split-the-mailer",
@@ -79,7 +79,7 @@ class NewTaskWorktreesTest {
 
   @ParameterizedTest
   @CsvSource({"false, false, FRESH", "true, false, RECREATE", "true, true, RESUME"})
-  void intakeRecreatesOnlyALeftoverBranchHoldingNoWorkOfItsOwn(
+  void intakeRecreatesOnlyLeftoverBranchHoldingNoWorkOfItsOwn(
       boolean exists, boolean holdsWork, BranchStrategy expected) {
     when(config.load())
         .thenReturn(
@@ -94,7 +94,7 @@ class NewTaskWorktreesTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"../escape", "a b", "-lead", "feature/", "feature//x", "x.lock"})
-  void rejectsTaskIdBeforeTouchingGitWhenGitWouldRefuseItAsABranch(String unsafeTaskId) {
+  void rejectsTaskIdBeforeTouchingGitWhenGitWouldRefuseItAsBranch(String unsafeTaskId) {
     assertThatThrownBy(
             () ->
                 worktrees.cut(
@@ -108,7 +108,7 @@ class NewTaskWorktreesTest {
 
   @ParameterizedTest
   @CsvSource({"main,", "Main,", "origin/main,", "dev,", "release,release"})
-  void refusesATaskWhoseBranchIsASharedOneBeforeTouchingGit(String taskId, String baseBranch) {
+  void refusesTaskWhoseBranchIsSharedOneBeforeTouchingGit(String taskId, String baseBranch) {
     ConfigService.ConfigFile configured =
         ConfigService.ConfigFile.defaults()
             .withProjects(
@@ -132,7 +132,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void refusesABaseBranchGitWouldReadAsAnOptionBeforeTouchingGit() {
+  void refusesBaseBranchGitWouldReadAsAnOptionBeforeTouchingGit() {
     ConfigService.ConfigFile configured =
         ConfigService.ConfigFile.defaults()
             .withProjects(
@@ -153,7 +153,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void cutsOneFlatWorktreeForASlashedBranchTakenOverFromSomeoneElse() {
+  void cutsOneFlatWorktreeForSlashedBranchTakenOverFromSomeoneElse() {
     ConfigService.ConfigFile configured =
         ConfigService.ConfigFile.defaults()
             .withProjects(
@@ -175,7 +175,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void refusesASecondTaskWhoseBranchBecomesTheDirectoryOfALiveOne() {
+  void refusesSecondTaskWhoseBranchBecomesTheDirectoryOfLiveOne() {
     state.putTask(
         "feature/ABC-42",
         TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).alias("f1").build());
@@ -260,7 +260,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void keepsAResumedBranchWhenTheUnwindRemovesItsWorktree() {
+  void keepsResumedBranchWhenTheUnwindRemovesItsWorktree() {
     ConfigService.ConfigFile configured =
         ConfigService.ConfigFile.defaults()
             .withProjects(
@@ -320,7 +320,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void unwindsTheWorktreesItAlreadyCutWhenALaterRepositoryFails() {
+  void unwindsTheWorktreesItAlreadyCutWhenLaterRepositoryFails() {
     ConfigService.ConfigFile configured =
         ConfigService.ConfigFile.defaults()
             .withProjects(
@@ -429,7 +429,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void refusesABaseBranchOriginDoesNotHaveBeforeCreatingAnything() {
+  void refusesBaseBranchOriginDoesNotHaveBeforeCreatingAnything() {
     ConfigService.ConfigFile configured =
         ConfigService.ConfigFile.defaults()
             .withProjects(
@@ -486,7 +486,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void findsTheProjectHoldingABranchOfTheTaskAmongEveryConfiguredProjectWhenNoneIsNamed() {
+  void findsTheProjectHoldingBranchOfTheTaskAmongEveryConfiguredProjectWhenNoneIsNamed() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -548,7 +548,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void refusesAProjectKeyThatIsNotPlainBeforeTouchingGit() {
+  void refusesProjectKeyThatIsNotPlainBeforeTouchingGit() {
     ConfigService.ConfigFile configured =
         ConfigService.ConfigFile.defaults()
             .withProjects(
@@ -603,7 +603,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void removesTheBranchItCreatedAndLeavesTheRepositoryAloneWhenARegistrationFailedAfterTheCut() {
+  void removesTheBranchItCreatedAndLeavesTheRepositoryAloneWhenRegistrationFailedAfterTheCut() {
     NewRepo repo =
         new NewRepo(
             "api",
@@ -622,7 +622,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void keepsTheResumedBranchAndGivesTheRepositoryBackWhenARegistrationFailedAfterTheCut() {
+  void keepsTheResumedBranchAndGivesTheRepositoryBackWhenRegistrationFailedAfterTheCut() {
     NewRepo repo =
         new NewRepo(
             "api",
@@ -782,7 +782,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void adoptsAWorktreeAlreadyStandingOnTheTaskBranchInsteadOfCuttingOne() {
+  void adoptsWorktreeAlreadyStandingOnTheTaskBranchInsteadOfCuttingOne() {
     ConfigService.ConfigFile configured =
         ConfigService.ConfigFile.defaults()
             .withProjects(
@@ -885,7 +885,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void refusesAProjectTheTaskAlreadyWorksInBeforeCuttingAnything() {
+  void refusesProjectTheTaskAlreadyWorksInBeforeCuttingAnything() {
     ConfigService.ConfigFile configured =
         ConfigService.ConfigFile.defaults()
             .withProjects(
@@ -909,7 +909,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void handsBackTheScratchFolderOfATaskThatPlansBeforeItHasARepository() {
+  void handsBackTheScratchFolderOfTaskThatPlansBeforeItHasRepository() {
     NewTask request = NewTask.unplacedBuilder("ABC-9").build();
     when(setup.scratch(request)).thenReturn(root.resolve("scratch/ABC-9"));
 
@@ -919,7 +919,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void refusesAScratchFolderForATaskNameAnotherTaskHolds() {
+  void refusesScratchFolderForTaskNameAnotherTaskHolds() {
     state.putTask("ABC-9", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).build());
 
     assertThatThrownBy(
@@ -960,7 +960,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void resumesABranchHoldingOwnCommitsAndRecreatesALeftoverOneWhenPlacing() {
+  void resumesBranchHoldingOwnCommitsAndRecreatesLeftoverOneWhenPlacing() {
     ConfigService.ConfigFile configured =
         ConfigService.ConfigFile.defaults()
             .withProjects(
@@ -989,7 +989,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void cutsNothingWhereAProjectIsNotConfigured() {
+  void cutsNothingWhereProjectIsNotConfigured() {
     ConfigService.ConfigFile configured =
         ConfigService.ConfigFile.defaults()
             .withProjects(
@@ -1010,7 +1010,7 @@ class NewTaskWorktreesTest {
   }
 
   @Test
-  void cutsNothingWhereATypedBaseBranchIsNotOnAProjectsOrigin() {
+  void cutsNothingWhereTypedBaseBranchIsNotOnProjectsOrigin() {
     ConfigService.ConfigFile configured =
         ConfigService.ConfigFile.defaults()
             .withProjects(

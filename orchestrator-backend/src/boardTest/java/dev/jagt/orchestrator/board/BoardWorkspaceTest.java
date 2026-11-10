@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
-  void aTaskWaitingOnTheHumanStandsFirstInItsOwnBand() {
+  void taskWaitingOnTheHumanStandsFirstInItsOwnBand() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -60,7 +60,7 @@ class BoardWorkspaceTest extends BoardPageContext {
   }
 
   @Test
-  void pickingARowOpensThatTaskInThePane() {
+  void pickingRowOpensThatTaskInThePane() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -84,7 +84,7 @@ class BoardWorkspaceTest extends BoardPageContext {
   }
 
   @Test
-  void nOpensTheNextTaskWaitingOnTheHuman() {
+  void theNextKeyOpensTheNextTaskWaitingOnTheHuman() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
@@ -160,7 +160,7 @@ class BoardWorkspaceTest extends BoardPageContext {
   }
 
   @Test
-  void aRowWhoseStatusMovedWhileItWasClosedIsBoldUntilItIsOpened() {
+  void rowWhoseStatusMovedWhileItWasClosedIsBoldUntilItIsOpened() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
@@ -190,7 +190,7 @@ class BoardWorkspaceTest extends BoardPageContext {
   }
 
   @Test
-  void aRowThatMovedWhileThePageWasClosedIsBoldWhenItOpensAgain() {
+  void rowThatMovedWhileThePageWasClosedIsBoldWhenItOpensAgain() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
@@ -221,7 +221,7 @@ class BoardWorkspaceTest extends BoardPageContext {
   }
 
   @Test
-  void aPollThatStoppedRingsTheRowOfATaskThatIsNotOpen() {
+  void pollThatStoppedRingsTheRowOfTaskThatIsNotOpen() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -248,7 +248,7 @@ class BoardWorkspaceTest extends BoardPageContext {
   }
 
   @Test
-  void aRowWaitingOnTheHumanNamesItsProjectWhereSeveralShareTheBand() {
+  void rowWaitingOnTheHumanNamesItsProjectWhereSeveralShareTheBand() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
@@ -366,7 +366,7 @@ class BoardWorkspaceTest extends BoardPageContext {
   }
 
   @Test
-  void aLinkedTaskStaysOpenOnceItsFilterIsCleared() {
+  void linkedTaskStaysOpenOnceItsFilterIsCleared() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
@@ -401,7 +401,7 @@ class BoardWorkspaceTest extends BoardPageContext {
   }
 
   @Test
-  void aTaskANarrowWindowNeverOpenedTurnsBoldWhenItMoves() {
+  void taskNarrowWindowNeverOpenedTurnsBoldWhenItMoves() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
@@ -424,7 +424,7 @@ class BoardWorkspaceTest extends BoardPageContext {
   }
 
   @Test
-  void aNarrowWindowShowsTheListOrTheOpenTaskAndGoesBack() {
+  void narrowWindowShowsTheListOrTheOpenTaskAndGoesBack() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -445,7 +445,7 @@ class BoardWorkspaceTest extends BoardPageContext {
   }
 
   @Test
-  void escapeClosesThePaletteButLeavesTheOpenTaskOnANarrowWindow() {
+  void escapeClosesThePaletteButLeavesTheOpenTaskOnNarrowWindow() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -466,7 +466,7 @@ class BoardWorkspaceTest extends BoardPageContext {
   }
 
   @Test
-  void aFlaggedRowLeadsItsGroup() {
+  void flaggedRowLeadsItsGroup() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)

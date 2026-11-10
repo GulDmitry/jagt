@@ -53,7 +53,7 @@ class AgentSpendReaderTest {
   }
 
   @Test
-  void dropsAWindowAnotherReportHasAlreadyBooked(@TempDir Path dir) throws IOException {
+  void dropsWindowAnotherReportHasAlreadyBooked(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(log, "x".repeat(400));
     when(stateService.task("ABC-42"))
@@ -75,7 +75,7 @@ class AgentSpendReaderTest {
   }
 
   @Test
-  void countsNothingFromALogThatShrankAndKeepsWhatItAlreadyCost(@TempDir Path dir)
+  void countsNothingFromLogThatShrankAndKeepsWhatItAlreadyCost(@TempDir Path dir)
       throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(log, "x".repeat(50));
@@ -97,7 +97,7 @@ class AgentSpendReaderTest {
   }
 
   @Test
-  void keepsAMarkPerLogSoTwoLiveSessionsDoNotRecountEachOther(@TempDir Path dir)
+  void keepsMarkPerLogSoTwoLiveSessionsDoNotRecountEachOther(@TempDir Path dir)
       throws IOException {
     Path second = dir.resolve("second.jsonl");
     Files.writeString(second, "x".repeat(120));
@@ -122,7 +122,7 @@ class AgentSpendReaderTest {
   }
 
   @Test
-  void chargesNothingForALogThatIsNotThere(@TempDir Path dir) {
+  void chargesNothingForLogThatIsNotThere(@TempDir Path dir) {
     new AgentSpendReader(stateService, sessionLog).charge("ABC-42", dir.resolve("gone.jsonl"));
 
     verify(stateService, never()).updateTask(eq("ABC-42"), any());

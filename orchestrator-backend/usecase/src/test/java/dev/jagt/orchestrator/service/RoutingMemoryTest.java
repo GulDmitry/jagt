@@ -33,7 +33,7 @@ class RoutingMemoryTest {
   }
 
   @Test
-  void letsTheNewestRuleForAKeyReplaceTheOneItChanged() {
+  void letsTheNewestRuleForKeyReplaceTheOneItChanged() {
     when(paths.root()).thenReturn(root);
     RoutingMemory memory = new RoutingMemory(paths, Clock.systemUTC());
 
@@ -116,7 +116,7 @@ class RoutingMemoryTest {
   }
 
   @Test
-  void readsARuleAHumanWroteByHandWithNoCountOnIt() throws IOException {
+  void readsRuleHumanWroteByHandWithNoCountOnIt() throws IOException {
     when(paths.root()).thenReturn(root);
     Files.createDirectories(root.resolve("memory"));
     Files.writeString(root.resolve("memory/routing.md"), "ABC items about quote import -> sc\n");
@@ -126,7 +126,7 @@ class RoutingMemoryTest {
   }
 
   @Test
-  void readsPastTheNotesAHumanLeftBetweenTheRules() throws IOException {
+  void readsPastTheNotesHumanLeftBetweenTheRules() throws IOException {
     when(paths.root()).thenReturn(root);
     Files.createDirectories(root.resolve("memory"));
     Files.writeString(
@@ -138,7 +138,7 @@ class RoutingMemoryTest {
   }
 
   @Test
-  void mergesASecondWordingIntoTheRuleItRepeatsKeepingBothCounts() throws IOException {
+  void mergesSecondWordingIntoTheRuleItRepeatsKeepingBothCounts() throws IOException {
     when(paths.root()).thenReturn(root);
     Clock frozen = Clock.fixed(Instant.parse("2026-10-07T00:00:00Z"), ZoneOffset.UTC);
     RoutingMemory memory = new RoutingMemory(paths, frozen);
@@ -167,7 +167,7 @@ class RoutingMemoryTest {
 
   @ParameterizedTest
   @CsvSource(value = {"'',api", "quote import,''"})
-  void remembersNothingWithoutBothAKeyAndAProject(String key, String project) {
+  void remembersNothingWithoutBothKeyAndProject(String key, String project) {
     when(paths.root()).thenReturn(root);
     RoutingMemory memory = new RoutingMemory(paths, Clock.systemUTC());
 
@@ -178,7 +178,7 @@ class RoutingMemoryTest {
   }
 
   @Test
-  void retiresARuleOutOfUseKeepingItDated() throws IOException {
+  void retiresRuleOutOfUseKeepingItDated() throws IOException {
     when(paths.root()).thenReturn(root);
     Clock frozen = Clock.fixed(Instant.parse("2026-10-07T00:00:00Z"), ZoneOffset.UTC);
     RoutingMemory memory = new RoutingMemory(paths, frozen);
@@ -225,7 +225,7 @@ class RoutingMemoryTest {
   }
 
   @Test
-  void readsARuleWhoseCountIsNotANumberAsOneWithNoCount() throws IOException {
+  void readsRuleWhoseCountIsNotNumberAsOneWithNoCount() throws IOException {
     when(paths.root()).thenReturn(root);
     Files.createDirectories(root.resolve("memory"));
     Files.writeString(root.resolve("memory/routing.md"), "quote import -> api #many\n");

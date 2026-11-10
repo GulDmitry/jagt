@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class RedCauseTest {
 
   @Test
-  void aRunFailedOnInfrastructureWhenEveryJobDiedOnTheRunnerOrTheHost() {
+  void runFailedOnInfrastructureWhenEveryJobDiedOnTheRunnerOrTheHost() {
     RedCause cause =
         RedCause.of(
             List.of(
@@ -20,7 +20,7 @@ class RedCauseTest {
   }
 
   @Test
-  void aRunFailedForTheCodeWhenOneJobDiedOnInfrastructureAndAnotherOnItsScript() {
+  void runFailedForTheCodeWhenOneJobDiedOnInfrastructureAndAnotherOnItsScript() {
     RedCause cause =
         RedCause.of(
             List.of(
@@ -31,14 +31,14 @@ class RedCauseTest {
   }
 
   @Test
-  void aRunFailedForTheCodeWhenTheHostGivesNoReasonForAJob() {
+  void runFailedForTheCodeWhenTheHostGivesNoReasonForJob() {
     RedCause cause = RedCause.of(List.of(new FailedJob("1", "unit-tests", "", false)));
 
     assertThat(cause).isEqualTo(RedCause.CODE);
   }
 
   @Test
-  void aRunFailedForTheCodeWhenTheHostListsNoFailedJob() {
+  void runFailedForTheCodeWhenTheHostListsNoFailedJob() {
     RedCause cause = RedCause.of(List.of());
 
     assertThat(cause).isEqualTo(RedCause.CODE);

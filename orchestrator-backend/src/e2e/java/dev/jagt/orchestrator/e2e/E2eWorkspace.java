@@ -26,7 +26,7 @@ final class E2eWorkspace {
 
   private E2eWorkspace() {}
 
-  static void awaitAFullRunStartedAfterNow(Jobs jobs, String job) {
+  static void awaitFullRunStartedAfterNow(Jobs jobs, String job) {
     long since = System.currentTimeMillis();
     await()
         .atMost(Duration.ofSeconds(10))
@@ -126,25 +126,6 @@ final class E2eWorkspace {
         StandardOpenOption.APPEND);
   }
 
-  static void failVerificationWith(Path configFile, String shellScript) throws IOException {
-    String configured = Files.readString(configFile);
-    Files.writeString(
-        configFile,
-        configured.replace(
-            "deployBranch: dev }",
-            "deployBranch: dev, verifyCommand: [\"sh\", \"-c\", \"" + shellScript + "\"] }"));
-  }
-
-  static void stopRoundsOfOneStepAfter(Path configFile, int rounds) throws IOException {
-    Files.writeString(
-        configFile, "  loopBreaker: { rounds: " + rounds + " }\n", StandardOpenOption.APPEND);
-  }
-
-  static void stallConflictsAfterMinutes(Path configFile, int minutes) throws IOException {
-    Files.writeString(
-        configFile, "  conflictStallMinutes: " + minutes + "\n", StandardOpenOption.APPEND);
-  }
-
   static void writeConfig(
       Path configFile, Map<String, Path> projects, String viewMode, boolean autoReview)
       throws IOException {
@@ -168,6 +149,25 @@ final class E2eWorkspace {
           autoReview: { enabled: %s }
         """
             .formatted(configured, TMUX_SESSION, viewMode, autoReview));
+  }
+
+  static void failVerificationWith(Path configFile, String shellScript) throws IOException {
+    String configured = Files.readString(configFile);
+    Files.writeString(
+        configFile,
+        configured.replace(
+            "deployBranch: dev }",
+            "deployBranch: dev, verifyCommand: [\"sh\", \"-c\", \"" + shellScript + "\"] }"));
+  }
+
+  static void stopRoundsOfOneStepAfter(Path configFile, int rounds) throws IOException {
+    Files.writeString(
+        configFile, "  loopBreaker: { rounds: " + rounds + " }\n", StandardOpenOption.APPEND);
+  }
+
+  static void stallConflictsAfterMinutes(Path configFile, int minutes) throws IOException {
+    Files.writeString(
+        configFile, "  conflictStallMinutes: " + minutes + "\n", StandardOpenOption.APPEND);
   }
 
   static void resetDeployBranch(Path repo) {
@@ -241,7 +241,7 @@ final class E2eWorkspace {
       return ProcessHandle.of(Long.parseLong(pid))
           .map(handle -> !handle.isAlive() || handle.pid() == ProcessHandle.current().pid())
           .orElse(true);
-    } catch (NumberFormatException notARunsSession) {
+    } catch (NumberFormatException notRunsSession) {
       return false;
     }
   }
@@ -300,6 +300,7 @@ final class E2eWorkspace {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     } catch (Exception ignored) {
+      // quiet by contract: a failed call must not mask the test's own failure
     }
   }
 

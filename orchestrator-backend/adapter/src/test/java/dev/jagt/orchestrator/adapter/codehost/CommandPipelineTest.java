@@ -53,7 +53,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void aBranchIsNotReadByACommandThatReadsOneCommit() {
+  void branchIsNotReadByCommandThatReadsOneCommit() {
     Answer<CommitPipeline> answer =
         command.onBranchSince(host, "git@anywhere:shop/web.git", "dev", "0123abc");
 
@@ -63,7 +63,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void aWordOutsideTheFiveIsAnUnreadPipelineNamingTheKey() {
+  void wordOutsideTheFiveIsAnUnreadPipelineNamingTheKey() {
     when(processes.run(any(Path.class), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "green", ""));
 
@@ -75,7 +75,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void aCommandExitingNonZeroSaysWhatItSaid() {
+  void commandExitingNonZeroSaysWhatItSaid() {
     when(processes.run(any(Path.class), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(3, "", "token expired"));
 
@@ -86,7 +86,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void aCommandExitingSeventySevenIsSignedOutAndTheProjectsLoginCommandIsTheFix() {
+  void commandExitingSeventySevenIsSignedOutAndTheProjectsLoginCommandIsTheFix() {
     HostSettings withLogin =
         new HostSettings(
             "shop",
@@ -110,7 +110,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void aCommandExitingSeventySevenIsHeldAsLostReachUntilAReadSucceeds() {
+  void commandExitingSeventySevenIsHeldAsLostReachUntilReadSucceeds() {
     when(processes.run(any(Path.class), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(77, "", ""));
 
@@ -120,7 +120,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void aCommandNotInstalledIsLostReachWithNoCommandToFixIt() {
+  void commandNotInstalledIsLostReachWithNoCommandToFixIt() {
     HostSettings uninstalled =
         new HostSettings(
             "shop",
@@ -144,7 +144,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void theNextCommandThatPrintsAStateEndsTheLostReach() {
+  void theNextCommandThatPrintsStateEndsTheLostReach() {
     when(processes.run(any(Path.class), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(77, "", ""))
         .thenReturn(new Processes.Result(0, "success\n", ""));
@@ -156,7 +156,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void aProjectWithoutAPipelineCommandIsUnreadWithoutRunningAnything() {
+  void projectWithoutPipelineCommandIsUnreadWithoutRunningAnything() {
     HostSettings bare =
         new HostSettings(
             "shop",
@@ -186,7 +186,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void withoutARetryCommandNothingIsReRun() {
+  void withoutRetryCommandNothingIsReRun() {
     HostSettings noRetry =
         new HostSettings(
             "shop",
@@ -207,7 +207,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void startupRefusesACommandWhoseProgramIsNowhereNamingTheKey() {
+  void startupRefusesCommandWhoseProgramIsNowhereNamingTheKey() {
     HostSettings missing =
         new HostSettings(
             "shop",
@@ -228,7 +228,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void startupRefusesACommandHostWithoutAPipelineCommand() {
+  void startupRefusesCommandHostWithoutPipelineCommand() {
     HostSettings bare =
         new HostSettings(
             "shop",
@@ -270,7 +270,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void withoutACloseCommandNoRequestIsClosed() {
+  void withoutCloseCommandNoRequestIsClosed() {
     Answer<String> answer = command.closeRequest(host, "https://ci.example.invalid/requests/9");
 
     assertThat(answer.failure()).isEqualTo("orchestrator.projects.shop.closeCommand is not set");
@@ -278,7 +278,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void aCommandHostReadsNoNotesAndRunsNothing() {
+  void commandHostReadsNoNotesAndRunsNothing() {
     Answer<List<String>> answer =
         command.unresolvedNotes(host, "https://ci.example.invalid/requests/9");
 
@@ -315,7 +315,7 @@ class CommandPipelineTest {
   }
 
   @Test
-  void aFailingNotesCommandLeavesTheNoteIdsUnknownNamingTheKey() {
+  void failingNotesCommandLeavesTheNoteIdsUnknownNamingTheKey() {
     HostSettings noting =
         new HostSettings(
             "shop",

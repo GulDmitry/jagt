@@ -134,7 +134,7 @@ class ReviewAndDeployFlowTest {
 
   @ParameterizedTest(name = "[{index}] {0}")
   @MethodSource("dev.jagt.orchestrator.e2e.ReviewRoundCase#matrix")
-  void aSweptRoundEndsWhereItsFactsSayAndBriefsTheAgentOnlyWhenThereIsWork(ReviewRoundCase round)
+  void sweptRoundEndsWhereItsFactsSayAndBriefsTheAgentOnlyWhenThereIsWork(ReviewRoundCase round)
       throws Exception {
     shipTheFirstRound();
     reads(round.round());
@@ -148,7 +148,7 @@ class ReviewAndDeployFlowTest {
   }
 
   @Test
-  void aRoundTripFromShipToDeployAndBackOutAgain() throws Exception {
+  void roundTripFromShipToDeployAndBackOutAgain() throws Exception {
     String shipped = shipTheFirstRound();
     assertThat(shipped).contains("relayed to the agent", "SHIPPING");
     assertThat(Files.readString(worktree().resolve("task_context.md")))
@@ -400,7 +400,7 @@ class ReviewAndDeployFlowTest {
   }
 
   @Test
-  void aTaskOpenedOnTheBoardRecordsTheBoardAsItsOpener() throws Exception {
+  void taskOpenedOnTheBoardRecordsTheBoardAsItsOpener() throws Exception {
     when(tracker.readTicket(eq(TASK), any()))
         .thenReturn(
             new Answer<>(
@@ -421,7 +421,7 @@ class ReviewAndDeployFlowTest {
   }
 
   @Test
-  void aTaskOpenedByTheRootSessionRecordsTheRootAsItsOpener() throws Exception {
+  void taskOpenedByTheRootSessionRecordsTheRootAsItsOpener() throws Exception {
     String call =
         """
         {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
@@ -441,7 +441,7 @@ class ReviewAndDeployFlowTest {
   }
 
   @Test
-  void aFollowUpRequestAfterAMergedOneLiftsTheStopAndIsReadByTheNextSweep(@TempDir Path clone)
+  void followUpRequestAfterMergedOneLiftsTheStopAndIsReadByTheNextSweep(@TempDir Path clone)
       throws Exception {
     shipTheFirstRound();
     for (String round : List.of("second", "third", "fourth")) {

@@ -29,7 +29,7 @@ class LaunchExitsTest {
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
-  void endsASessionThatExitedBeforeItsFirstReportWithWhatItPrinted(@TempDir Path root) {
+  void endsSessionThatExitedBeforeItsFirstReportWithWhatItPrinted(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -50,7 +50,7 @@ class LaunchExitsTest {
   }
 
   @Test
-  void signsASessionWaitingAtLaunchOnAPromptJagtNeverAnswersAsAskedByItsScreen(@TempDir Path root) {
+  void signsSessionWaitingAtLaunchOnPromptJagtNeverAnswersAsAskedByItsScreen(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -75,7 +75,7 @@ class LaunchExitsTest {
   }
 
   @Test
-  void signsNothingForASessionWhoseReportAlreadyAsks(@TempDir Path root) {
+  void signsNothingForSessionWhoseReportAlreadyAsks(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -99,7 +99,7 @@ class LaunchExitsTest {
   }
 
   @Test
-  void readsNoWindowOfATaskPastItsFirstReport(@TempDir Path root) {
+  void readsNoWindowOfTaskPastItsFirstReport(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),

@@ -37,7 +37,7 @@ class MasterMineCheckTest {
   }
 
   @Test
-  void refusesAWordKeptForYourselfThatNamesNoStepVerbOrCommand() {
+  void refusesWordKeptForYourselfThatNamesNoStepVerbOrCommand() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -54,7 +54,7 @@ class MasterMineCheckTest {
   }
 
   @Test
-  void acceptsAStepAVerbOfATaskAndACommandKeptForYourself() {
+  void acceptsStepVerbOfTaskAndCommandKeptForYourself() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.io.TempDir;
 class WorkspaceCheckTest {
 
   @Test
-  void acceptsARootItCanWriteItsStateInto(@TempDir Path root) {
+  void acceptsRootItCanWriteItsStateInto(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -24,7 +24,7 @@ class WorkspaceCheckTest {
   }
 
   @Test
-  void refusesAStateFileInADirectoryThatIsNotThere(@TempDir Path root) {
+  void refusesStateFileInDirectoryThatIsNotThere(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -36,7 +36,7 @@ class WorkspaceCheckTest {
   }
 
   @Test
-  void refusesARootThatIsNotThere(@TempDir Path root) {
+  void refusesRootThatIsNotThere(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.resolve("gone").toString())
@@ -48,7 +48,7 @@ class WorkspaceCheckTest {
   }
 
   @Test
-  void refusesAStateDirectoryItCannotWriteInBecauseNoTaskCouldBeRecorded(@TempDir Path root)
+  void refusesStateDirectoryItCannotWriteInBecauseNoTaskCouldBeRecorded(@TempDir Path root)
       throws Exception {
     Path stateDir = Files.createDirectory(root.resolve("locked"));
     OrchestratorProperties properties =
@@ -70,7 +70,7 @@ class WorkspaceCheckTest {
   }
 
   @Test
-  void refusesAStateFileItCannotWrite(@TempDir Path root) throws Exception {
+  void refusesStateFileItCannotWrite(@TempDir Path root) throws Exception {
     Path state = Files.createFile(root.resolve("state.json"));
     OrchestratorProperties properties =
         OrchestratorProperties.defaults().withRoot(root.toString()).withStateFile(state.toString());

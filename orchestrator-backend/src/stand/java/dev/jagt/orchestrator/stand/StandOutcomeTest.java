@@ -11,27 +11,27 @@ import org.junit.jupiter.api.Test;
 class StandOutcomeTest {
 
   @Test
-  void aSuspendedHostOutranksTheStallItLeftBehind() {
+  void suspendedHostOutranksTheStallItLeftBehind() {
     assertThat(Ending.of(false, true, true, false, false, true)).isEqualTo(Ending.SUSPENDED);
   }
 
   @Test
-  void theStatusReachedOutranksASuspensionAfterIt() {
+  void theStatusReachedOutranksSuspensionAfterIt() {
     assertThat(Ending.of(true, true, true, false, false, false)).isEqualTo(Ending.REACHED);
   }
 
   @Test
-  void aStoppedTaskEndsAsStoppedNotAsAStallOrATimeout() {
+  void stoppedTaskEndsAsStoppedNotAsStallOrTimeout() {
     assertThat(Ending.of(false, false, true, false, false, true)).isEqualTo(Ending.STOPPED);
   }
 
   @Test
-  void aQuietRunStalls() {
+  void quietRunStalls() {
     assertThat(Ending.of(false, false, false, false, false, true)).isEqualTo(Ending.STALLED);
   }
 
   @Test
-  void aStoppedRunDescribesItselfWithTheStopsTriggerAndEvidence() {
+  void stoppedRunDescribesItselfWithTheStopsTriggerAndEvidence() {
     StandOutcome outcome =
         new StandOutcome(
             "IN_PROGRESS",
@@ -41,16 +41,14 @@ class StandOutcomeTest {
             Path.of("/stand"),
             Ending.STOPPED,
             "MISS: a push to main was refused",
-            "MISS",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("MISS", "PLAIN", 0));
 
     assertThat(outcome.describe())
         .startsWith("stopped, human needed (MISS: a push to main was refused): last status");
   }
 
   @Test
-  void aRunWaitingOnTheReviewerEndsAsSuchBeforeItCountsAsStalled() {
+  void runWaitingOnTheReviewerEndsAsSuchBeforeItCountsAsStalled() {
     assertThat(Ending.of(false, false, false, false, true, true))
         .isEqualTo(Ending.WAITING_ON_THE_REVIEWER);
   }

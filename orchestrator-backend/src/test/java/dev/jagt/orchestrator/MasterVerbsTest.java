@@ -73,7 +73,7 @@ class MasterVerbsTest {
 
   @ParameterizedTest
   @EnumSource(TaskAction.class)
-  void theMasterHasAMoveHeldToACaseForEveryVerbTheBoardOffers(TaskAction action)
+  void theMasterHasMoveHeldToCaseForEveryVerbTheBoardOffers(TaskAction action)
       throws IOException {
     String shipped = Files.readString(Path.of("../roles/master/cases.md.dist"));
 

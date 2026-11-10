@@ -31,7 +31,7 @@ class WorktreeSetupTest {
     Path project = Files.createDirectories(root.resolve("repo"));
     Path worktree = Files.createDirectories(root.resolve("ABC-1-repo"));
     Path knowledge = worktree.resolve("AGENTS.md");
-    NewRepo repo =
+    final NewRepo repo =
         new NewRepo(
             "repo",
             new ProjectConfig(project.toString(), "origin/main", null, List.of()),
@@ -41,7 +41,8 @@ class WorktreeSetupTest {
             "origin/main",
             "git@host:g/r.git",
             true);
-    NewTask request = NewTask.builder("ABC-1", "repo").instructions("Implement ABC-1.").build();
+    final NewTask request =
+        NewTask.builder("ABC-1", "repo").instructions("Implement ABC-1.").build();
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     when(runtime.systemKnowledgeFile(worktree)).thenReturn(knowledge);
     when(briefing.of(any(), any(), any(), any(), any(), any())).thenReturn("the briefing");
@@ -60,7 +61,7 @@ class WorktreeSetupTest {
       throws Exception {
     Path project = Files.createDirectories(root.resolve("repo"));
     Path worktree = Files.createDirectories(root.resolve("ABC-1-repo"));
-    NewRepo repo =
+    final NewRepo repo =
         new NewRepo(
             "repo",
             new ProjectConfig(project.toString(), "origin/main", "dev", List.of()),
@@ -83,12 +84,12 @@ class WorktreeSetupTest {
   }
 
   @Test
-  void writesNoInstructionsIntoTheWorktreeOfARepositoryTheSessionDoesNotRunIn(@TempDir Path root)
+  void writesNoInstructionsIntoTheWorktreeOfRepositoryTheSessionDoesNotRunIn(@TempDir Path root)
       throws Exception {
     Path project = Files.createDirectories(root.resolve("repo"));
     Path worktree = Files.createDirectories(root.resolve("ABC-1-repo"));
     Path knowledge = worktree.resolve("AGENTS.md");
-    NewRepo repo =
+    final NewRepo repo =
         new NewRepo(
             "repo",
             new ProjectConfig(project.toString(), "origin/main", null, List.of()),
@@ -98,7 +99,8 @@ class WorktreeSetupTest {
             "origin/main",
             "git@host:g/r.git",
             false);
-    NewTask request = NewTask.builder("ABC-1", "repo").instructions("Implement ABC-1.").build();
+    final NewTask request =
+        NewTask.builder("ABC-1", "repo").instructions("Implement ABC-1.").build();
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     when(runtime.systemKnowledgeFile(worktree)).thenReturn(knowledge);
     when(briefing.of(any(), any(), any(), any(), any(), any())).thenReturn("the briefing");
@@ -116,7 +118,7 @@ class WorktreeSetupTest {
     Path project = Files.createDirectories(root.resolve("repo"));
     Path worktree = Files.createDirectories(root.resolve("ABC-1-repo"));
     Path knowledge = worktree.resolve("AGENTS.md");
-    NewRepo repo =
+    final NewRepo repo =
         new NewRepo(
             "repo",
             new ProjectConfig(project.toString(), "origin/main", null, List.of()),
@@ -126,7 +128,7 @@ class WorktreeSetupTest {
             "origin/main",
             "git@host:g/r.git",
             true);
-    NewTask request = NewTask.builder("ABC-1", "repo").instructions(" ").build();
+    final NewTask request = NewTask.builder("ABC-1", "repo").instructions(" ").build();
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     when(runtime.systemKnowledgeFile(worktree)).thenReturn(knowledge);
     when(briefing.of(any(), any(), any(), any(), any(), any())).thenReturn("the briefing");
@@ -139,7 +141,7 @@ class WorktreeSetupTest {
   }
 
   @Test
-  void equipsAFreshWorktreeWithTheProjectsUntrackedFilesAndTheGuardsThatKeepItSafe(
+  void equipsFreshWorktreeWithTheProjectsUntrackedFilesAndTheGuardsThatKeepItSafe(
       @TempDir Path root) throws Exception {
     Path project = Files.createDirectories(root.resolve("repo"));
     Files.writeString(
@@ -147,7 +149,7 @@ class WorktreeSetupTest {
     Files.writeString(Files.createDirectories(project.resolve("app")).resolve(".env"), "KEY=1");
     Path worktree = Files.createDirectories(root.resolve("ABC-1-repo"));
     Path gitDir = Files.createDirectories(project.resolve(".git"));
-    NewRepo repo =
+    final NewRepo repo =
         new NewRepo(
             "repo",
             new ProjectConfig(project.toString(), "origin/main", null, List.of()),
@@ -157,7 +159,7 @@ class WorktreeSetupTest {
             "origin/main",
             "git@host:g/r.git",
             true);
-    NewTask request = NewTask.builder("ABC-1", "repo").build();
+    final NewTask request = NewTask.builder("ABC-1", "repo").build();
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     when(runtime.systemKnowledgeFile(worktree)).thenReturn(worktree.resolve("AGENTS.md"));
     when(briefing.of(any(), any(), any(), any(), any(), any())).thenReturn("the briefing");
@@ -174,13 +176,13 @@ class WorktreeSetupTest {
   }
 
   @Test
-  void letsTheSessionEditTheWorktreeOfARepositoryAddedToItsTask(@TempDir Path root)
+  void letsTheSessionEditTheWorktreeOfRepositoryAddedToItsTask(@TempDir Path root)
       throws Exception {
     Path apiProject = Files.createDirectories(root.resolve("api-repo"));
     Path registryProject = Files.createDirectories(root.resolve("registry-repo"));
     Path apiWorktree = Files.createDirectories(root.resolve("ABC-1-api"));
     Path registryWorktree = Files.createDirectories(root.resolve("ABC-1-registry"));
-    NewRepo api =
+    final NewRepo api =
         new NewRepo(
             "api",
             new ProjectConfig(apiProject.toString(), "origin/main", null, List.of()),
@@ -190,7 +192,7 @@ class WorktreeSetupTest {
             "origin/main",
             "u",
             true);
-    NewRepo registry =
+    final NewRepo registry =
         new NewRepo(
             "registry",
             new ProjectConfig(registryProject.toString(), "origin/main", null, List.of()),
@@ -215,13 +217,13 @@ class WorktreeSetupTest {
   }
 
   @Test
-  void rewritesAHeldWorktreesBriefingWhereJagtWroteItRatherThanAskingForAFreshName(
-      @TempDir Path root) throws Exception {
+  void rewritesHeldWorktreesBriefingWhereJagtWroteItRatherThanAskingForFreshName(@TempDir Path root)
+      throws Exception {
     Path apiProject = Files.createDirectories(root.resolve("api-repo"));
     Path registryProject = Files.createDirectories(root.resolve("registry-repo"));
     Path apiWorktree = Files.createDirectories(root.resolve("ABC-1-api"));
     Path registryWorktree = Files.createDirectories(root.resolve("ABC-1-registry"));
-    NewRepo api =
+    final NewRepo api =
         new NewRepo(
             "api",
             new ProjectConfig(apiProject.toString(), "origin/main", null, List.of()),
@@ -231,7 +233,7 @@ class WorktreeSetupTest {
             "origin/main",
             "u",
             true);
-    NewRepo registry =
+    final NewRepo registry =
         new NewRepo(
             "registry",
             new ProjectConfig(registryProject.toString(), "origin/main", null, List.of()),
@@ -303,7 +305,7 @@ class WorktreeSetupTest {
   }
 
   @Test
-  void plansInAFolderBesideTheStateFileThatHoldsNoGit(@TempDir Path root) {
+  void plansInFolderBesideTheStateFileThatHoldsNoGit(@TempDir Path root) {
     Path folder = root.resolve("scratch/ABC-1");
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     when(runtime.systemKnowledgeFile(folder)).thenReturn(folder.resolve("AGENTS.md"));

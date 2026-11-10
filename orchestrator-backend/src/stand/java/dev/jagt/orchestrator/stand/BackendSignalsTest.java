@@ -26,14 +26,14 @@ class BackendSignalsTest {
   }
 
   @Test
-  void readsNothingFromALogNotWrittenYet(@TempDir Path dir) {
+  void readsNothingFromLogNotWrittenYet(@TempDir Path dir) {
     BackendSignals signals = BackendSignals.read(dir.resolve("jagt-backend.log"));
 
     assertThat(signals.masterReads()).isZero();
   }
 
   @Test
-  void waitsOnTheReviewerAfterThreeSweepsInARowSaidSo(@TempDir Path dir) throws Exception {
+  void waitsOnTheReviewerAfterThreeSweepsInRowSaidSo(@TempDir Path dir) throws Exception {
     Path log = dir.resolve("jagt-backend.log");
     Files.writeString(
         log,
@@ -50,7 +50,7 @@ class BackendSignalsTest {
   }
 
   @Test
-  void doesNotWaitOnTheReviewerWhenASweepInTheLastThreeRelayedAThread(@TempDir Path dir)
+  void doesNotWaitOnTheReviewerWhenSweepInTheLastThreeRelayedThread(@TempDir Path dir)
       throws Exception {
     Path log = dir.resolve("jagt-backend.log");
     Files.writeString(

@@ -65,7 +65,7 @@ class LsofWorktreeProcessesTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void logsOneLineForAWorktreeHowEverManyProcessesItHeld() {
+  void logsOneLineForWorktreeHowEverManyProcessesItHeld() {
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger reaperLog = (Logger) LoggerFactory.getLogger(LsofWorktreeProcesses.class);

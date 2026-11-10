@@ -93,7 +93,7 @@ class TaskResumeTest {
   }
 
   @Test
-  void refusesARequestTheHostItselfSaysDoesNotExist() {
+  void refusesRequestTheHostItselfSaysDoesNotExist() {
     when(reviewReader.readRequest("https://host/mr/1"))
         .thenReturn(
             new Answer<>(Optional.of(new MergeRequestFacts(false, "", "", "")), TokenUsage.NONE));
@@ -102,7 +102,7 @@ class TaskResumeTest {
   }
 
   @Test
-  void takesOverABranchNamedBySomeoneElsesConvention() {
+  void takesOverBranchNamedBySomeoneElsesConvention() {
     when(projects.of("https://host/group/proj/-/merge_requests/426")).thenReturn("proj");
     when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/426"))
         .thenReturn(
@@ -137,7 +137,7 @@ class TaskResumeTest {
         "-widget-layout, \"it starts with '-'\"",
         "feature/.widget, \"a part of it starts with '.'\"",
       })
-  void namesWhatInASourceBranchStopsItFromBecomingATask(String branch, String reason) {
+  void namesWhatInSourceBranchStopsItFromBecomingTask(String branch, String reason) {
     when(reviewReader.readRequest("https://host/mr/426"))
         .thenReturn(
             new Answer<>(
@@ -151,7 +151,7 @@ class TaskResumeTest {
   }
 
   @Test
-  void refusesARequestThatNamesNoSourceBranch() {
+  void refusesRequestThatNamesNoSourceBranch() {
     when(reviewReader.readRequest("https://host/mr/427"))
         .thenReturn(
             new Answer<>(

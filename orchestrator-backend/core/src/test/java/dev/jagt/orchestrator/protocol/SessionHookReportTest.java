@@ -9,7 +9,7 @@ import tools.jackson.databind.json.JsonMapper;
 class SessionHookReportTest {
 
   @Test
-  void refusesToBelieveALogPathThatWouldResolveAgainstJagtsOwnDirectory() {
+  void refusesToBelieveLogPathThatWouldResolveAgainstJagtsOwnDirectory() {
     var said = new SessionHookReport("logs/session.jsonl", "startup", null);
 
     assertThat(said.violations(MessageContext.NONE))
@@ -26,13 +26,13 @@ class SessionHookReportTest {
   }
 
   @Test
-  void readsAHookThatPostedNothingAtAllAsASessionThatNamedNoLog() {
+  void readsHookThatPostedNothingAtAllAsSessionThatNamedNoLog() {
     assertThat(SessionHookReport.none().sessionLog()).isEmpty();
     assertThat(SessionHookReport.none().violations(MessageContext.NONE)).isEmpty();
   }
 
   @Test
-  void readsBlankFieldsAsLeftOutSoABlankLogPathNamesNoLog() {
+  void readsBlankFieldsAsLeftOutSoBlankLogPathNamesNoLog() {
     var said = new SessionHookReport("  ", "  ", "  ");
 
     assertThat(said.transcriptPath()).isNull();
@@ -42,7 +42,7 @@ class SessionHookReportTest {
   }
 
   @Test
-  void readsAStopSentOnByARefusalAsOneThatCannotBeRefusedAgain() {
+  void readsStopSentOnByRefusalAsOneThatCannotBeRefusedAgain() {
     var said =
         new SessionHookReport(
             null,
@@ -70,7 +70,7 @@ class SessionHookReportTest {
   }
 
   @Test
-  void readsBackgroundWorkInFlightAsAPauseNotAStop() {
+  void readsBackgroundWorkInFlightAsPauseNotStop() {
     var said =
         new SessionHookReport(
             null,

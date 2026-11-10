@@ -210,7 +210,7 @@ class ShipServiceTest {
   }
 
   @Test
-  void shipsARepositoryAlreadyInReviewEvenWhenItHoldsNothingNew() {
+  void shipsRepositoryAlreadyInReviewEvenWhenItHoldsNothingNew() {
     when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class)))
         .thenReturn(true);
     stateService.putTask(
@@ -240,7 +240,7 @@ class ShipServiceTest {
   }
 
   @Test
-  void refusesASecondShipWhileTheFirstIsStillRunning() {
+  void refusesSecondShipWhileTheFirstIsStillRunning() {
     stateService.putTask(
         "ABC-42", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).title("t").build());
     ShipService shipService = new ShipService(stateService, configService, relay, changes, door);
@@ -287,7 +287,7 @@ class ShipServiceTest {
   }
 
   @Test
-  void asksForARoundMessageAndNoNewRequestWhereOneIsAlreadyOpen() {
+  void asksForRoundMessageAndNoNewRequestWhereOneIsAlreadyOpen() {
     String instruction =
         ShipService.shipFacts(
             "ABC-42 Widget layout is off",
@@ -302,7 +302,7 @@ class ShipServiceTest {
   }
 
   @Test
-  void asksForNoRequestAndOnlyAPushFromARepositoryWithNoCodeHost() {
+  void asksForNoRequestAndOnlyPushFromRepositoryWithNoCodeHost() {
     String instruction =
         ShipService.shipFacts(
             "ABC-42 Widget layout is off",
@@ -336,7 +336,7 @@ class ShipServiceTest {
   }
 
   @Test
-  void tellsTheAgentWhichRepositoryOfATwoRepoTaskIsARoundBehind() {
+  void tellsTheAgentWhichRepositoryOfTwoRepoTaskIsRoundBehind() {
     String instruction =
         ShipService.shipFacts(
             "ABC-42 Widget layout is off",
@@ -353,7 +353,7 @@ class ShipServiceTest {
   }
 
   @Test
-  void asksForOneLinkBackFromATaskWithASingleRepository() {
+  void asksForOneLinkBackFromTaskWithSingleRepository() {
     String instruction =
         ShipService.shipFacts(
             "ABC-42 Widget layout is off",
@@ -368,7 +368,7 @@ class ShipServiceTest {
   }
 
   @Test
-  void asksForOneLinkPerProjectFromATaskSpanningRepositories() {
+  void asksForOneLinkPerProjectFromTaskSpanningRepositories() {
     String instruction =
         ShipService.shipFacts(
             "ABC-42 Widget layout is off",
@@ -441,7 +441,7 @@ class ShipServiceTest {
   }
 
   @Test
-  void refusesATaskThatIsNotThereNamingIt() {
+  void refusesTaskThatIsNotThereNamingIt() {
     assertThatThrownBy(
             () -> new ShipService(stateService, configService, relay, changes, door).ship("ABC-9"))
         .isInstanceOf(Refusal.class)
@@ -451,7 +451,7 @@ class ShipServiceTest {
   }
 
   @Test
-  void forbidsTheRepliesOfAMasterShipWhereNoMasterCaseAllowsTheReply() {
+  void forbidsTheRepliesOfMasterShipWhereNoMasterCaseAllowsTheReply() {
     when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class)))
         .thenReturn(true);
     stateService.putTask(
@@ -476,7 +476,7 @@ class ShipServiceTest {
   }
 
   @Test
-  void leavesTheRepliesOfAMasterShipToTheSessionWhereAMasterCaseAllowsThem() throws Exception {
+  void leavesTheRepliesOfMasterShipToTheSessionWhereMasterCaseAllowsThem() throws Exception {
     when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class)))
         .thenReturn(true);
     Files.createDirectories(root.resolve("roles/master"));
@@ -506,7 +506,7 @@ class ShipServiceTest {
   }
 
   @Test
-  void asksForNoPushAndNoRequestFromARepositoryWithNoRemote() {
+  void asksForNoPushAndNoRequestFromRepositoryWithNoRemote() {
     String instruction =
         ShipService.shipFacts(
             "ABC-42 Widget layout is off",
@@ -522,7 +522,7 @@ class ShipServiceTest {
   }
 
   @Test
-  void asksForTheRequestMapWhereOnlyOneRepositoryOfATwoRepoTaskCarriesWork() {
+  void asksForTheRequestMapWhereOnlyOneRepositoryOfTwoRepoTaskCarriesWork() {
     when(relay.write(anyString(), any(Step.class), anyString(), any(Standing.class)))
         .thenReturn(true);
     stateService.putTask(

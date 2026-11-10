@@ -37,7 +37,7 @@ class GitLabCliTest {
               null, null, List.of(), List.of(), List.of(), List.of(), List.of()));
 
   @Test
-  void aPipelineIsRetriedThroughItsRetryEndpoint() {
+  void pipelineIsRetriedThroughItsRetryEndpoint() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "{\"status\":\"pending\"}", ""));
 
@@ -58,7 +58,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aHostWithPortKeepsItInTheHostnameWhereTheRemoteHasOne() {
+  void hostWithPortKeepsItInTheHostnameWhereTheRemoteHasOne() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "[]", ""));
 
@@ -95,7 +95,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aJobCarriesTheReasonTheHostGivesAndIsToldAsInfrastructure() {
+  void jobCarriesTheReasonTheHostGivesAndIsToldAsInfrastructure() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(
@@ -123,7 +123,7 @@ class GitLabCliTest {
     "pending,running",
     "manual,unknown"
   })
-  void aCommitsPipelineIsToldInJagtsOwnWords(String hostWord, String verdict) {
+  void commitsPipelineIsToldInJagtsOwnWords(String hostWord, String verdict) {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(
@@ -142,7 +142,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aLaterPipelineOnTheBranchWhoseCommitHasTheDeployCommitBehindItIsTheAnswer() {
+  void laterPipelineOnTheBranchWhoseCommitHasTheDeployCommitBehindItIsTheAnswer() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(
@@ -167,7 +167,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aPipelineOnTheBranchWhoseCommitDoesNotHaveTheDeployCommitBehindItReadsAsNone() {
+  void pipelineOnTheBranchWhoseCommitDoesNotHaveTheDeployCommitBehindItReadsAsNone() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(
@@ -181,7 +181,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void theDeployCommitsOwnPipelineIsTheNewestOneWithoutAskingForAMergeBase() {
+  void theDeployCommitsOwnPipelineIsTheNewestOneWithoutAskingForMergeBase() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(
@@ -195,7 +195,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aBranchWithNoFinishedPipelineReadsAsNone() {
+  void branchWithNoFinishedPipelineReadsAsNone() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "[]", ""));
 
@@ -206,7 +206,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aLocalPathRemoteHasNoHostToAskForABranch() {
+  void localPathRemoteHasNoHostToAskForBranch() {
     Answer<CommitPipeline> answer =
         gitlab.onBranchSince(host, "/srv/git/web.git", "dev", "0123abc");
 
@@ -215,7 +215,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aBranchListingTheHostRefusesIsAFailureNotAnAnswer() {
+  void branchListingTheHostRefusesIsFailureNotAnAnswer() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "HTTP 500"));
 
@@ -226,7 +226,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aCommitTheHostRanNoPipelineForReadsAsNone() {
+  void commitTheHostRanNoPipelineForReadsAsNone() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "[]", ""));
 
@@ -237,7 +237,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aProjectTheHostHidesFromACliSignedOutSaysNotLoggedIn() {
+  void projectTheHostHidesFromCliSignedOutSaysNotLoggedIn() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "glab: 404 Project Not Found (HTTP 404)"))
         .thenReturn(
@@ -251,7 +251,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aSignedOutGlabNamesItsLoginOnTheHostAsTheFix() {
+  void signedOutGlabNamesItsLoginOnTheHostAsTheFix() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "HTTP 401"));
 
@@ -263,7 +263,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aCliNotOnPathIsUnavailableNamingIt() {
+  void cliNotOnPathIsUnavailableNamingIt() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenThrow(new IllegalStateException("Failed to start command: glab"));
 
@@ -274,7 +274,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aCommitWhoseHostAnswersWithSomethingThatIsNotJsonSaysSo() {
+  void commitWhoseHostAnswersWithSomethingThatIsNotJsonSaysSo() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "<html>", ""));
 
@@ -285,7 +285,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aLocalPathRemoteHasNoHostToAsk() {
+  void localPathRemoteHasNoHostToAsk() {
     Answer<CommitPipeline> answer = gitlab.onCommit(host, "/srv/git/shop.git", "0123abc");
 
     assertThat(answer.facts().orElseThrow().hosted()).isFalse();
@@ -302,7 +302,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aRequestIsClosedByItsNumberInTheRepositoryItLivesIn() {
+  void requestIsClosedByItsNumberInTheRepositoryItLivesIn() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", "Closed"));
 
@@ -361,7 +361,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void aRequestsFingerprintChangesWithItsHeadPipelineAndApprovals() {
+  void requestsFingerprintChangesWithItsHeadPipelineAndApprovals() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(

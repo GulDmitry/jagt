@@ -21,7 +21,7 @@ class RepositoryBuildToolsTest {
   }
 
   @Test
-  void suggestsNpmWhereThereIsAPackageFile() throws Exception {
+  void suggestsNpmWhereThereIsPackageFile() throws Exception {
     Files.writeString(repo.resolve("package.json"), "{}");
 
     assertThat(new RepositoryBuildTools().testCommand(repo)).containsExactly("npm", "test");

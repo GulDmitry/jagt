@@ -15,7 +15,7 @@ class DeployTargetsTest {
   private final DeployTargets targets = new DeployTargets(config);
 
   @Test
-  void namesTheDeployBranchAProjectIsConfiguredWith() {
+  void namesTheDeployBranchProjectIsConfiguredWith() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -26,7 +26,7 @@ class DeployTargetsTest {
   }
 
   @Test
-  void namesNoDeployBranchForAProjectConfiguredWithABlankOne() {
+  void namesNoDeployBranchForProjectConfiguredWithBlankOne() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -37,7 +37,7 @@ class DeployTargetsTest {
   }
 
   @Test
-  void namesNoDeployBranchForAProjectThatIsNoLongerConfigured() {
+  void namesNoDeployBranchForProjectThatIsNoLongerConfigured() {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
     assertThat(targets.deployBranch("gone")).isEmpty();

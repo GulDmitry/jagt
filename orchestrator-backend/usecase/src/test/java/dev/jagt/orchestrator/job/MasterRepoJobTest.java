@@ -31,15 +31,14 @@ import tools.jackson.databind.json.JsonMapper;
 
 class MasterRepoJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final StateService state = mock(StateService.class);
   private final ConfigService config = mock(ConfigService.class);
   private final MasterPress press = mock(MasterPress.class);
 
   @Test
-  void attachesTheRepositoryASessionAskedForWhereTheMasterHoldsTheRight() {
+  void attachesTheRepositorySessionAskedForWhereTheMasterHoldsTheRight() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -55,7 +54,13 @@ class MasterRepoJobTest {
                     .repoRequest("registry")
                     .build()));
 
-    new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).run();
+    new MasterRepoJob(
+            state,
+            config,
+            press,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+        .run();
 
     verify(press).execute("ABC-1", TaskAction.ADD_REPO);
   }
@@ -78,7 +83,13 @@ class MasterRepoJobTest {
                     .repoRequest("registry")
                     .build()));
 
-    new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).run();
+    new MasterRepoJob(
+            state,
+            config,
+            press,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+        .run();
 
     verify(press, never()).execute(anyString(), any());
   }
@@ -100,13 +111,19 @@ class MasterRepoJobTest {
                     .repoRequest("registry")
                     .build()));
 
-    new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).run();
+    new MasterRepoJob(
+            state,
+            config,
+            press,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+        .run();
 
     verify(press, never()).execute(anyString(), any());
   }
 
   @Test
-  void attachesNothingForATaskThatAskedForNoRepository() {
+  void attachesNothingForTaskThatAskedForNoRepository() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -121,7 +138,13 @@ class MasterRepoJobTest {
                     .report(AgentReport.QUESTION)
                     .build()));
 
-    new MasterRepoJob(state, config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).run();
+    new MasterRepoJob(
+            state,
+            config,
+            press,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+        .run();
 
     verify(press, never()).execute(anyString(), any());
   }
@@ -147,10 +170,22 @@ class MasterRepoJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     StateService before = new StateService(new JsonMapper(), paths, reducer);
-    new MasterRepoJob(before, config, press, new TaskTurns(before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).run();
+    new MasterRepoJob(
+            before,
+            config,
+            press,
+            new TaskTurns(
+                before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+        .run();
     StateService restarted = new StateService(new JsonMapper(), paths, reducer);
 
-    new MasterRepoJob(restarted, config, press, new TaskTurns(restarted, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).run();
+    new MasterRepoJob(
+            restarted,
+            config,
+            press,
+            new TaskTurns(
+                restarted, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+        .run();
 
     verify(press, times(1)).execute("ABC-1", TaskAction.ADD_REPO);
   }
@@ -176,7 +211,12 @@ class MasterRepoJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     MasterRepoJob job =
-        new MasterRepoJob(tasks, config, press, new TaskTurns(tasks, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+        new MasterRepoJob(
+            tasks,
+            config,
+            press,
+            new TaskTurns(
+                tasks, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     job.run();
     tasks.updateTask("ABC-1", task -> task.withRepoRequest(null));

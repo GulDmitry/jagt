@@ -15,7 +15,7 @@ class ClaudeToolGateEnvelopeTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"Bash", "bash"})
-  void readsTheShellToolAsAShell(String tool) {
+  void readsTheShellToolAsShell(String tool) {
     assertThat(envelope.kindOf(tool)).isEqualTo(Kind.SHELL);
   }
 

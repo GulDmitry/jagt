@@ -24,13 +24,14 @@ public final class AcceptanceScoreboard {
   }
 
   public synchronized String summary() {
-    int rows = scores.stream().mapToInt(AcceptanceScore::rows).sum();
-    int correct = scores.stream().mapToInt(AcceptanceScore::correct).sum();
-    int expectedMet = scores.stream().mapToInt(AcceptanceScore::expectedMet).sum();
-    int falseNotMet = scores.stream().mapToInt(AcceptanceScore::falseNotMet).sum();
-    int falseMet = scores.stream().mapToInt(AcceptanceScore::falseMet).sum();
-    int judgedUnprovable = scores.stream().mapToInt(AcceptanceScore::judgedUnprovable).sum();
-    int expectedUnprovable = scores.stream().mapToInt(AcceptanceScore::expectedUnprovable).sum();
+    int rows = scores.stream().mapToInt(score -> score.rows().total()).sum();
+    int correct = scores.stream().mapToInt(score -> score.rows().correct()).sum();
+    int expectedMet = scores.stream().mapToInt(score -> score.rows().expectedMet()).sum();
+    int falseNotMet = scores.stream().mapToInt(score -> score.rows().falseNotMet()).sum();
+    int falseMet = scores.stream().mapToInt(score -> score.rows().falseMet()).sum();
+    int judgedUnprovable = scores.stream().mapToInt(score -> score.rows().judgedUnprovable()).sum();
+    int expectedUnprovable =
+        scores.stream().mapToInt(score -> score.rows().expectedUnprovable()).sum();
     long reports = scores.stream().filter(AcceptanceScore::reportMatches).count();
     long endings = scores.stream().filter(AcceptanceScore::endingMatches).count();
     return String.format(

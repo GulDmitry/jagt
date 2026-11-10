@@ -20,7 +20,7 @@ import org.slf4j.event.KeyValuePair;
 class TaskAliasFeedTest {
 
   @Test
-  void aTaskStoredBeforeStartLogsWithItsAlias() {
+  void taskStoredBeforeStartLogsWithItsAlias() {
     StateService stateService = mock(StateService.class);
     when(stateService.tasks())
         .thenReturn(
@@ -41,7 +41,7 @@ class TaskAliasFeedTest {
   }
 
   @Test
-  void aTaskStoredAfterStartLogsWithItsAlias() {
+  void taskStoredAfterStartLogsWithItsAlias() {
     StateService stateService = mock(StateService.class);
     ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
     var event =

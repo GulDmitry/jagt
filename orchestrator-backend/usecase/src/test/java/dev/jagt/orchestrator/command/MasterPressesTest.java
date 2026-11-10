@@ -49,7 +49,7 @@ class MasterPressesTest {
   private final ConfigService config = mock(ConfigService.class);
 
   @Test
-  void pressesAVerbOnATaskAsTheMasterAndAnswersWhatTheDoorSaid() {
+  void pressesVerbOnTaskAsTheMasterAndAnswersWhatTheDoorSaid() {
     AtomicReference<ActionOrigin> seen = new AtomicReference<>();
     when(commands.execute("ABC-42", TaskAction.REMOVE_REPO, "api"))
         .thenAnswer(
@@ -66,7 +66,7 @@ class MasterPressesTest {
   }
 
   @Test
-  void refusesAVerbNoTaskActionNames() {
+  void refusesVerbNoTaskActionNames() {
     MasterPresses presses = new MasterPresses(commands, new GlobalCommands(List.of()), config);
 
     assertThatThrownBy(() -> presses.press("ABC-42", "explode", null))
@@ -75,7 +75,7 @@ class MasterPressesTest {
   }
 
   @Test
-  void runsACommandAsTheMaster() {
+  void runsCommandAsTheMaster() {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     MasterPresses presses =
         new MasterPresses(commands, new GlobalCommands(List.of(new Spend())), config);
@@ -87,7 +87,7 @@ class MasterPressesTest {
   }
 
   @Test
-  void refusesACommandNoneDeclares() {
+  void refusesCommandNoneDeclares() {
     MasterPresses presses = new MasterPresses(commands, new GlobalCommands(List.of()), config);
 
     assertThatThrownBy(() -> presses.run("spend", ""))
@@ -96,7 +96,7 @@ class MasterPressesTest {
   }
 
   @Test
-  void refusesACommandItsHumanKeepsInMine() {
+  void refusesCommandItsHumanKeepsInMine() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -113,7 +113,7 @@ class MasterPressesTest {
   }
 
   @Test
-  void neverOpensATaskForTheMasterWithDo() {
+  void neverOpensTaskForTheMasterWithDo() {
     MasterPresses presses =
         new MasterPresses(
             commands,
@@ -127,7 +127,7 @@ class MasterPressesTest {
   }
 
   @Test
-  void neverOpensATaskForTheMasterWithResume() {
+  void neverOpensTaskForTheMasterWithResume() {
     MasterPresses presses =
         new MasterPresses(
             commands,

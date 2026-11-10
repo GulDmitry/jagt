@@ -20,7 +20,8 @@ class FailurePageTest {
   void listsEveryProblemAndTheFileToEdit(@TempDir Path dir) throws Exception {
     Path config = Files.writeString(dir.resolve("jagt.yml"), "orchestrator:\n  platform: linux\n");
 
-    try (FailurePage page = FailurePage.listen(0, config, "1. git <missing>\n2. no projects").get()) {
+    try (FailurePage page =
+        FailurePage.listen(0, config, "1. git <missing>\n2. no projects").get()) {
       HttpResponse<String> response =
           client.send(
               HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + page.port() + "/")).build(),
@@ -51,7 +52,7 @@ class FailurePageTest {
   }
 
   @Test
-  void refusesASaveFromAnotherOrigin(@TempDir Path dir) throws Exception {
+  void refusesSaveFromAnotherOrigin(@TempDir Path dir) throws Exception {
     Path config = Files.writeString(dir.resolve("jagt.yml"), "old: 1\n");
 
     try (FailurePage page = FailurePage.listen(0, config, "problem").get()) {

@@ -26,7 +26,7 @@ class TrackerCloseTest {
   private final TrackerClose close = new TrackerClose(tickets, workflow, changes);
 
   @Test
-  void closesATaskWhoseItemLandedAndWhoseWorktreeHoldsNothingUncommitted() {
+  void closesTaskWhoseItemLandedAndWhoseWorktreeHoldsNothingUncommitted() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
     TicketFacts item =
         TicketFacts.defaults()
@@ -77,7 +77,7 @@ class TrackerCloseTest {
   }
 
   @Test
-  void refusesToCloseOnAStageNobodyCouldRead() {
+  void refusesToCloseOnStageNobodyCouldRead() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
     when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
 
@@ -97,7 +97,7 @@ class TrackerCloseTest {
   }
 
   @Test
-  void leavesATaskOpenWhoseItemHasNotReachedTheClosingStage() {
+  void leavesTaskOpenWhoseItemHasNotReachedTheClosingStage() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
     TicketFacts item =
         TicketFacts.defaults()
@@ -114,7 +114,7 @@ class TrackerCloseTest {
   }
 
   @Test
-  void watchesATaskNamedAfterAnItemTheWorkflowKnowsAndNoOther() {
+  void watchesTaskNamedAfterAnItemTheWorkflowKnowsAndNoOther() {
     when(workflow.isItemKey("ABC-42")).thenReturn(true);
 
     assertThat(close.watches("ABC-42")).isTrue();

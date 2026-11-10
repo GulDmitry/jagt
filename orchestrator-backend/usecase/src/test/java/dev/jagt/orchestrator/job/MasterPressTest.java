@@ -36,8 +36,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class MasterPressTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final CommandService commands = mock(CommandService.class);
   private final HumanPaths humanPaths = mock(HumanPaths.class);
@@ -61,8 +60,9 @@ class MasterPressTest {
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
-                                reducer),
-                    Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+                        reducer),
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn()))))
             .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(pressed).isTrue();
@@ -70,7 +70,7 @@ class MasterPressTest {
   }
 
   @Test
-  void leavesTheVerbToTheHumanWhereTheTaskTouchedAPathKeptForThem(@TempDir Path root) {
+  void leavesTheVerbToTheHumanWhereTheTaskTouchedPathKeptForThem(@TempDir Path root) {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     when(humanPaths.touched(task)).thenReturn(Optional.of("demo/src/auth/Login.java"));
 
@@ -86,8 +86,9 @@ class MasterPressTest {
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
-                                reducer),
-                    Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+                        reducer),
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn()))))
             .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(pressed).isFalse();
@@ -95,7 +96,7 @@ class MasterPressTest {
   }
 
   @Test
-  void refusesAPressWhereTheTaskMadeTooManyUnattendedMovesInTheHour(@TempDir Path root) {
+  void refusesPressWhereTheTaskMadeTooManyUnattendedMovesInTheHour(@TempDir Path root) {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     when(humanPaths.touched(task)).thenReturn(Optional.empty());
     when(stops.moveDue("ABC-1")).thenReturn(false);
@@ -112,8 +113,9 @@ class MasterPressTest {
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
-                                reducer),
-                    Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+                        reducer),
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn()))))
             .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(pressed).isFalse();
@@ -121,7 +123,7 @@ class MasterPressTest {
   }
 
   @Test
-  void pressesAVerbNoPathCanKeepWithoutAskingWhatTheTaskTouched(@TempDir Path root) {
+  void pressesVerbNoPathCanKeepWithoutAskingWhatTheTaskTouched(@TempDir Path root) {
     when(stops.moveDue("ABC-1")).thenReturn(true);
     new MasterPress(
             commands,
@@ -134,8 +136,9 @@ class MasterPressTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
-                            reducer),
-                Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+                    reducer),
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn()))))
         .execute("ABC-1", TaskAction.ADD_REPO);
 
     verify(commands).execute("ABC-1", TaskAction.ADD_REPO);
@@ -151,12 +154,17 @@ class MasterPressTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     state.putTask("ABC-1", task);
     when(humanPaths.touched(task)).thenReturn(Optional.of("demo/src/auth/Login.java"));
 
-    new MasterPress(commands, humanPaths, stops, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+    new MasterPress(
+            commands,
+            humanPaths,
+            stops,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left())
@@ -172,7 +180,7 @@ class MasterPressTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState task =
         TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
             .master(Master.defaults().withLeft("deploy demo/src/old/Old.java"))
@@ -180,7 +188,12 @@ class MasterPressTest {
     state.putTask("ABC-1", task);
     when(humanPaths.touched(task)).thenReturn(Optional.of("demo/src/auth/Login.java"));
 
-    new MasterPress(commands, humanPaths, stops, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+    new MasterPress(
+            commands,
+            humanPaths,
+            stops,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left())
@@ -196,7 +209,7 @@ class MasterPressTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState task =
         TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
             .master(Master.defaults().withLeft("deploy demo/src/old/Old.java"))
@@ -205,14 +218,19 @@ class MasterPressTest {
     when(stops.moveDue("ABC-1")).thenReturn(true);
     when(humanPaths.touched(task)).thenReturn(Optional.empty());
 
-    new MasterPress(commands, humanPaths, stops, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+    new MasterPress(
+            commands,
+            humanPaths,
+            stops,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left()).isEmpty();
   }
 
   @Test
-  void takesARefusedDeployAsAnOutcomeNotAFault(@TempDir Path root) {
+  void takesRefusedDeployAsAnOutcomeNotFault(@TempDir Path root) {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     when(stops.moveDue("ABC-1")).thenReturn(true);
     when(humanPaths.touched(task)).thenReturn(Optional.empty());
@@ -232,15 +250,16 @@ class MasterPressTest {
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
-                                reducer),
-                    Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+                        reducer),
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn()))))
             .press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(pressed).isFalse();
   }
 
   @Test
-  void letsAFaultOtherThanARefusalEscape(@TempDir Path root) {
+  void letsFaultOtherThanRefusalEscape(@TempDir Path root) {
     when(stops.moveDue("ABC-1")).thenReturn(true);
     doThrow(new UncheckedIOException(new IOException("disk gone")))
         .when(commands)
@@ -257,15 +276,16 @@ class MasterPressTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
-                            reducer),
-                Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+                    reducer),
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn()))));
 
     assertThatThrownBy(() -> press.execute("ABC-1", TaskAction.DEPLOY))
         .isInstanceOf(UncheckedIOException.class);
   }
 
   @Test
-  void liftsAStopWithoutAskingWhetherAMoveIsDueForATaskThatIsStopped(@TempDir Path root) {
+  void liftsStopWithoutAskingWhetherMoveIsDueForTaskThatIsStopped(@TempDir Path root) {
     boolean lifted =
         new MasterPress(
                 commands,
@@ -278,8 +298,9 @@ class MasterPressTest {
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
-                                reducer),
-                    Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+                        reducer),
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn()))))
             .lift("ABC-1");
 
     assertThat(lifted).isTrue();
@@ -288,7 +309,7 @@ class MasterPressTest {
   }
 
   @Test
-  void reportsALiftTheDoorRefusedAsNotMade(@TempDir Path root) {
+  void reportsLiftTheDoorRefusedAsNotMade(@TempDir Path root) {
     doThrow(new IllegalStateException("not stopped"))
         .when(commands)
         .execute("ABC-1", TaskAction.LIFT);
@@ -305,8 +326,9 @@ class MasterPressTest {
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
-                                reducer),
-                    Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+                        reducer),
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn()))))
             .lift("ABC-1");
 
     assertThat(lifted).isFalse();

@@ -5,17 +5,20 @@ import java.util.Locale;
 import java.util.Map;
 
 public record AcceptanceScore(
-    int rows,
-    int correct,
-    int expectedMet,
-    int falseNotMet,
-    int falseMet,
-    int judgedUnprovable,
-    int expectedUnprovable,
+    Rows rows,
     boolean reportMatches,
     boolean endingMatches,
     boolean namesCited,
     boolean flowsNamed) {
+
+  public record Rows(
+      int total,
+      int correct,
+      int expectedMet,
+      int falseNotMet,
+      int falseMet,
+      int judgedUnprovable,
+      int expectedUnprovable) {}
 
   public static AcceptanceScore of(
       AcceptanceCase expected, AcceptanceJudgement judged, String environmentUrl) {
@@ -25,7 +28,7 @@ public record AcceptanceScore(
     int falseMet = 0;
     int judgedUnprovable = 0;
     int expectedUnprovable = 0;
-    for (Map.Entry<String, Status> row : expected.rows().entrySet()) {
+    for (Map.Entry<String, Status> row : expected.expect().rows().entrySet()) {
       Status want = row.getValue();
       Status got = judged.rows().get(row.getKey());
       correct += want == got ? 1 : 0;
@@ -36,14 +39,15 @@ public record AcceptanceScore(
       falseMet += want != Status.MET && got == Status.MET ? 1 : 0;
     }
     return new AcceptanceScore(
-        expected.rows().size(),
-        correct,
-        expectedMet,
-        falseNotMet,
-        falseMet,
-        judgedUnprovable,
-        expectedUnprovable,
-        expected.report().equals(judged.report()),
+        new Rows(
+            expected.expect().rows().size(),
+            correct,
+            expectedMet,
+            falseNotMet,
+            falseMet,
+            judgedUnprovable,
+            expectedUnprovable),
+        expected.expect().report().equals(judged.report()),
         expected.expectedEnding() == judged.ending(),
         cited(expected, judged),
         flowsNamed(expected, judged, environmentUrl));
@@ -60,15 +64,17 @@ public record AcceptanceScore(
   }
 
   private static boolean cited(AcceptanceCase expected, AcceptanceJudgement judged) {
-    boolean namesCited = expected.names().stream().allMatch(name -> anyOf(name, judged.cited()));
+    boolean namesCited =
+        expected.expect().names().stream().allMatch(name -> anyOf(name, judged.cited()));
     boolean probeNamed =
-        expected.probe().isEmpty()
+        expected.expect().probe().isEmpty()
             || judged
                 .cited()
                 .contains(
                     expected
+                        .expect()
                         .probe()
-                        .substring(expected.probe().indexOf(' ') + 1)
+                        .substring(expected.expect().probe().indexOf(' ') + 1)
                         .toLowerCase(Locale.ROOT));
     return namesCited && probeNamed;
   }
@@ -83,8 +89,8 @@ public record AcceptanceScore(
   }
 
   public boolean passed() {
-    return falseMet == 0
-        && correct == rows
+    return rows.falseMet() == 0
+        && rows.correct() == rows.total()
         && reportMatches
         && endingMatches
         && namesCited
@@ -93,13 +99,13 @@ public record AcceptanceScore(
 
   public String describe() {
     return "rows "
-        + correct
+        + rows.correct()
         + "/"
-        + rows
+        + rows.total()
         + ", false met "
-        + falseMet
+        + rows.falseMet()
         + ", false not met "
-        + falseNotMet
+        + rows.falseNotMet()
         + ", report "
         + reportMatches
         + ", ending "

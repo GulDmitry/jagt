@@ -13,7 +13,7 @@ class SchemaTest {
   private final JsonMapper mapper = new JsonMapper();
 
   @Test
-  void offersOnlyTheStatusesASessionMayReport() {
+  void offersOnlyTheStatusesSessionMayReport() {
     JsonNode schema = mapper.readTree(AgentStatusMessage.SCHEMA.json());
 
     assertThat(schema.path("properties").path("status").path("enum"))
@@ -41,7 +41,7 @@ class SchemaTest {
   }
 
   @Test
-  void holdsAFindingToTheSeveritiesARoundIsJudgedBy() {
+  void holdsFindingToTheSeveritiesRoundIsJudgedBy() {
     JsonNode schema = mapper.readTree(RoundRead.SCHEMA.json());
 
     assertThat(
@@ -57,7 +57,7 @@ class SchemaTest {
   }
 
   @Test
-  void holdsACommandMappingToTheWordsTheBoardOffers() {
+  void holdsCommandMappingToTheWordsTheBoardOffers() {
     JsonNode properties =
         mapper
             .readTree(CommandRead.schemaFor(List.of("ship", "do"), List.of("ABC-42", "a1")).json())
@@ -72,7 +72,7 @@ class SchemaTest {
   }
 
   @Test
-  void escapesADescriptionCarryingTheBracesOfAnExample() {
+  void escapesDescriptionCarryingTheBracesOfAnExample() {
     JsonNode schema = mapper.readTree(AgentStatusMessage.SCHEMA.json());
 
     assertThat(schema.path("properties").path("reviewRequests").path("description").asString())
@@ -92,26 +92,30 @@ class SchemaTest {
     assertThat(json)
         .isEqualTo(
             "{\"description\":\"What it"
-                + " does\",\"type\":\"object\",\"properties\":{\"note\":{\"type\":\"string\",\"description\":\"Free"
+                + " does\",\"type\":\"object\",\"properties\":{\"note\":{\"type\":\"string\",\"desc"
+                + "ription\":\"Free"
                 + " words\"},"
-                + "\"count\":{\"type\":\"integer\"},\"kind\":{\"type\":\"string\",\"description\":\"One"
+                + "\"count\":{\"type\":\"integer\"},\"kind\":{\"type\":\"string\",\"description\":"
+                + "\"One"
                 + " of them\",\"enum\":[\"a\",\"b\"]},"
-                + "\"mood\":{\"type\":\"string\",\"enum\":[\"calm\"]}},\"required\":[\"count\",\"kind\"]}");
+                + "\"mood\":{\"type\":\"string\",\"enum\":[\"calm\"]}},\"required\":[\"count\",\""
+                + "kind\"]}");
   }
 
   @Test
-  void rendersAListOfStringsAsOptionalOrRequired() {
+  void rendersListOfStringsAsOptionalOrRequired() {
     String json = Schema.answer().texts("tags", null).requiredTexts("labels", null).json();
 
     assertThat(json)
         .isEqualTo(
             "{\"type\":\"object\",\"properties\":{"
                 + "\"tags\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}},"
-                + "\"labels\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}},\"required\":[\"labels\"]}");
+                + "\"labels\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}},\"required\":"
+                + "[\"labels\"]}");
   }
 
   @Test
-  void rendersEveryFieldOfARecordAsRequiredAndOnlyTheChosenOnesAsAnEnum() {
+  void rendersEveryFieldOfRecordAsRequiredAndOnlyTheChosenOnesAsAnEnum() {
     String json =
         Schema.answer()
             .records(
@@ -130,7 +134,7 @@ class SchemaTest {
   }
 
   @Test
-  void rendersAStringToStringObjectWithItsExamplesOnlyWhereThereAreSome() {
+  void rendersStringToStringObjectWithItsExamplesOnlyWhereThereAreSome() {
     String shown =
         Schema.answer().pairs("urls", null, List.of(Map.of("api", "https://host/1"))).json();
     String bare = Schema.answer().pairs("urls", null, List.of()).json();
@@ -144,7 +148,7 @@ class SchemaTest {
   }
 
   @Test
-  void constrainsAProjectAnswerToTheConfiguredProjectsPlusNone() {
+  void constrainsProjectAnswerToTheConfiguredProjectsPlusNone() {
     JsonNode schema = mapper.readTree(ProjectRead.schemaFor(List.of("api", "web")).json());
 
     assertThat(schema.path("properties").path("project").path("enum"))
@@ -156,7 +160,7 @@ class SchemaTest {
   }
 
   @Test
-  void constrainsARuleAnswerToTheHeldRulesPlusNone() {
+  void constrainsRuleAnswerToTheHeldRulesPlusNone() {
     JsonNode single = mapper.readTree(RuleRead.schemaFor(List.of("labels carry it")).json());
     JsonNode pair = mapper.readTree(RuleRead.pairSchemaFor(List.of("labels carry it")).json());
 
@@ -172,7 +176,7 @@ class SchemaTest {
   }
 
   @Test
-  void asksATaskToolForTheTaskAndAToolWithNoArgumentsForNothing() {
+  void asksTaskToolForTheTaskAndToolWithNoArgumentsForNothing() {
     JsonNode task = mapper.readTree(TaskRef.schema("Do it").json());
     JsonNode nothing = mapper.readTree(NoArguments.schema("Just do it").json());
 

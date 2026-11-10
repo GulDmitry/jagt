@@ -19,7 +19,7 @@ class PlanCriteriaTest {
         "- [wrong: the ticket names a field the API lacks] the page shows the status",
         "- [wrong: contradicts the ticket's second item, own] the page shows the status",
       })
-  void acceptsACriterionCarryingATag(String item) {
+  void acceptsCriterionCarryingTag(String item) {
     List<Violation> violations =
         PlanCriteria.violationsIn("# Plan\n\n## Acceptance criteria\n" + item + "\n");
 
@@ -39,7 +39,7 @@ class PlanCriteriaTest {
         "- [wrong: ] the page shows the status",
         "- [here, mine] the list shows the status",
       })
-  void refusesACriterionWithoutAValidTag(String item) {
+  void refusesCriterionWithoutValidTag(String item) {
     List<Violation> violations =
         PlanCriteria.violationsIn("## Acceptance criteria\n" + item + "\n");
 
@@ -47,7 +47,7 @@ class PlanCriteriaTest {
   }
 
   @Test
-  void refusesAPlanWithoutTheSection() {
+  void refusesPlanWithoutTheSection() {
     List<Violation> violations =
         PlanCriteria.violationsIn("# Plan\n- [here] a criterion outside the section\n");
 
@@ -55,7 +55,7 @@ class PlanCriteriaTest {
   }
 
   @Test
-  void refusesASectionHoldingNoItem() {
+  void refusesSectionHoldingNoItem() {
     List<Violation> violations =
         PlanCriteria.violationsIn("## Acceptance criteria\n\nTBD\n\n## Files\n- [here] x\n");
 

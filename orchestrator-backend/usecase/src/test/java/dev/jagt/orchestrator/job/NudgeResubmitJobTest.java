@@ -27,11 +27,10 @@ import tools.jackson.databind.json.JsonMapper;
 
 class NudgeResubmitJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
-  void marksTheTurnWhenItPressesEnterOnANudgeLeftInAnIdleInput(@TempDir Path root) {
+  void marksTheTurnWhenItPressesEnterOnNudgeLeftInAnIdleInput(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -39,8 +38,9 @@ class NudgeResubmitJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+            reducer);
+    TaskTurns turns =
+        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
     AgentSessions sessions = mock(AgentSessions.class);
@@ -52,7 +52,7 @@ class NudgeResubmitJobTest {
   }
 
   @Test
-  void stopsPressingAfterAFewTimesWithinOneTurn(@TempDir Path root) {
+  void stopsPressingAfterFewTimesWithinOneTurn(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -60,8 +60,9 @@ class NudgeResubmitJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+            reducer);
+    TaskTurns turns =
+        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
     AgentSessions sessions = mock(AgentSessions.class);
@@ -84,8 +85,9 @@ class NudgeResubmitJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+            reducer);
+    TaskTurns turns =
+        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -101,7 +103,7 @@ class NudgeResubmitJobTest {
   }
 
   @Test
-  void readsNoWindowOfATaskWhoseTurnTheSessionDoesNotHold(@TempDir Path root) {
+  void readsNoWindowOfTaskWhoseTurnTheSessionDoesNotHold(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -109,11 +111,15 @@ class NudgeResubmitJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     AgentSessions sessions = mock(AgentSessions.class);
 
-    new NudgeResubmitJob(sessions, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))).runOn(state.tasks());
+    new NudgeResubmitJob(
+            sessions,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+        .runOn(state.tasks());
 
     verify(sessions, never()).resubmitUnsentNudge("ABC-42");
   }

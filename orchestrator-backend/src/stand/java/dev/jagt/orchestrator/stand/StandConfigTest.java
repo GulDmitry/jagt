@@ -23,9 +23,9 @@ class StandConfigTest {
   }
 
   @Test
-  void theStandRootHoldsOnlyTheShippedFilesOfARoleNotADevelopersOverride() throws Exception {
-    Path repo = Files.createDirectory(root.resolve("repo"));
-    Path stand = Files.createDirectory(root.resolve("stand"));
+  void theStandRootHoldsOnlyTheShippedFilesOfRoleNotDevelopersOverride() throws Exception {
+    final Path repo = Files.createDirectory(root.resolve("repo"));
+    final Path stand = Files.createDirectory(root.resolve("stand"));
     Path source = Files.createDirectories(root.resolve("source/roles/acceptance"));
     Files.createDirectory(source.resolve("eval"));
     Files.writeString(source.resolve("role.yml.dist"), "id: acceptance\n");

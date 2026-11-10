@@ -22,7 +22,7 @@ class WorktreeChangesTest {
   private final WorktreeInspection inspection = mock(WorktreeInspection.class);
 
   @Test
-  void readsARepositoryGitCannotAnswerForAsHoldingWorkSoNoShipPassesItOver() {
+  void readsRepositoryGitCannotAnswerForAsHoldingWorkSoNoShipPassesItOver() {
     when(configService.project("demo"))
         .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     when(inspection.hasUncommittedChanges(any(Path.class), any(Path.class)))
@@ -48,7 +48,7 @@ class WorktreeChangesTest {
   }
 
   @Test
-  void namesWhyARepositorysDiffCouldNotBeReadRatherThanQuotingNothing() {
+  void namesWhyRepositorysDiffCouldNotBeReadRatherThanQuotingNothing() {
     when(configService.project("demo"))
         .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     when(inspection.changesSince(any(Path.class), any(Path.class), any(String.class)))
@@ -77,7 +77,7 @@ class WorktreeChangesTest {
   }
 
   @Test
-  void quotesNoDiffTooLargeForAPromptSoEachRoleReadsItItself() {
+  void quotesNoDiffTooLargeForPromptSoEachRoleReadsItItself() {
     when(configService.project("demo"))
         .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     when(inspection.changesSince(any(Path.class), any(Path.class), any(String.class)))
@@ -136,7 +136,7 @@ class WorktreeChangesTest {
   }
 
   @Test
-  void readsAWorktreeGitCannotAnswerForAsCleanForTheYesNoQuestionAndUnknownForTheOther() {
+  void readsWorktreeGitCannotAnswerForAsCleanForTheYesNoQuestionAndUnknownForTheOther() {
     when(configService.project("demo"))
         .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     when(inspection.hasUncommittedChanges(any(Path.class), any(Path.class)))
@@ -200,7 +200,7 @@ class WorktreeChangesTest {
   }
 
   @Test
-  void shipsNothingNewWhereARequestIsOpenAndTheBranchIsPushedUnchanged() {
+  void shipsNothingNewWhereRequestIsOpenAndTheBranchIsPushedUnchanged() {
     when(configService.project("demo"))
         .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     when(inspection.aheadOfTarget(Path.of("/repo"), Path.of("/wt"), "main")).thenReturn(true);
@@ -214,7 +214,7 @@ class WorktreeChangesTest {
   }
 
   @Test
-  void shipsACommitTheRemoteBranchDoesNotHoldYet() {
+  void shipsCommitTheRemoteBranchDoesNotHoldYet() {
     when(configService.project("demo"))
         .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     when(inspection.unpublished(Path.of("/repo"), Path.of("/wt"))).thenReturn(true);
@@ -268,7 +268,7 @@ class WorktreeChangesTest {
   }
 
   @Test
-  void quotesADiffOfExactlyTheLargestSizeAPromptTakes() {
+  void quotesDiffOfExactlyTheLargestSizePromptTakes() {
     when(configService.project("demo"))
         .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     when(inspection.changesSince(any(Path.class), any(Path.class), any(String.class)))
@@ -355,7 +355,7 @@ class WorktreeChangesTest {
   }
 
   @Test
-  void namesThePushedTipOfOnlyTheRepositoriesCarryingARequest() {
+  void namesThePushedTipOfOnlyTheRepositoriesCarryingRequest() {
     when(configService.project("demo"))
         .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     when(configService.project("web"))
@@ -388,7 +388,7 @@ class WorktreeChangesTest {
   }
 
   @Test
-  void measuresNoGitForATaskStillPlanningInItsScratchFolder() {
+  void measuresNoGitForTaskStillPlanningInItsScratchFolder() {
     TaskState task =
         TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.IN_PROGRESS)
             .build();

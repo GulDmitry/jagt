@@ -42,7 +42,7 @@ class MergedGuardTest {
   private final MergedRequests merged = mock(MergedRequests.class);
 
   @Test
-  void doesNotCountAShipPressedAfterTheRequestMergedTowardTheLoopStop(@TempDir Path root) {
+  void doesNotCountShipPressedAfterTheRequestMergedTowardTheLoopStop(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -83,7 +83,7 @@ class MergedGuardTest {
   }
 
   @Test
-  void runsTheShipWhereARequestIsStillOpen() {
+  void runsTheShipWhereRequestIsStillOpen() {
     when(merged.refresh("ABC-42")).thenReturn(false);
 
     Outcome outcome =

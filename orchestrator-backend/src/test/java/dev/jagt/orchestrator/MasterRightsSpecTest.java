@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 class MasterRightsSpecTest {
 
   @Test
-  void everyStepAHumanMayKeepIsNamedInAMineScenarioOfTheMasterSpec() throws IOException {
+  void everyStepHumanMayKeepIsNamedInMineScenarioOfTheMasterSpec() throws IOException {
     String spec = Files.readString(Path.of("../openspec/specs/master/spec.md"));
     List<String> named =
         Pattern.compile("mine: \\[([^\\]]*)]")

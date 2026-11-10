@@ -72,7 +72,7 @@ class ProjectCardsTest {
   }
 
   @Test
-  void refusesAProjectJagtYmlDoesNotHold() {
+  void refusesProjectJagtYmlDoesNotHold() {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of()));
 
     assertThatThrownBy(() -> cards.of("nope")).isInstanceOf(IllegalArgumentException.class);

@@ -119,7 +119,9 @@ public final class StandShell {
   public static void killTmux(Path root) {
     for (Path socket : sockets(root)) {
       List<ProcessHandle> panes =
-          run(root, List.of("tmux", "-S", socket.toString(), "list-panes", "-a", "-F", "#{pane_pid}"))
+          run(
+                  root,
+                  List.of("tmux", "-S", socket.toString(), "list-panes", "-a", "-F", "#{pane_pid}"))
               .output()
               .lines()
               .map(String::strip)

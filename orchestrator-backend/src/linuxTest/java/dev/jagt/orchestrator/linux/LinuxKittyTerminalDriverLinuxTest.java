@@ -44,7 +44,7 @@ class LinuxKittyTerminalDriverLinuxTest {
   }
 
   @Test
-  void bringsUpADetachedRemoteControllableViewerAttachedToTheSession() {
+  void bringsUpDetachedRemoteControllableViewerAttachedToTheSession() {
     runner.run(null, T, List.of("tmux", "new-session", "-d", "-s", SESSION));
 
     driver()
@@ -67,7 +67,7 @@ class LinuxKittyTerminalDriverLinuxTest {
   @org.junit.jupiter.api.Disabled(
       "closeViewerWindow did not kill the instance under the container harness")
   @Test
-  void revealsARunningViewerAndThenClosesItByItsOwnSocket() {
+  void revealsRunningViewerAndThenClosesItByItsOwnSocket() {
     runner.run(null, T, List.of("tmux", "new-session", "-d", "-s", SESSION));
     LinuxKittyTerminalDriver driver = driver();
     driver.openViewer(

@@ -15,7 +15,7 @@ class EvalShardsTest {
   static class MasterVerdictEvalShard0Test {}
 
   @Test
-  void aLateShardClassClaimsItsOwnNumberWhileShardZeroIsFree(@TempDir Path base)
+  void lateShardClassClaimsItsOwnNumberWhileShardZeroIsFree(@TempDir Path base)
       throws IOException {
     EvalShards shards = EvalShards.under(base, 6);
 
@@ -26,24 +26,24 @@ class EvalShardsTest {
   }
 
   @Test
-  void aShardClassReadsItsNumberFromItsName() {
+  void shardClassReadsItsNumberFromItsName() {
     assertThat(EvalShards.indexOf(MasterVerdictEvalShard0Test.class)).isZero();
   }
 
   @Test
-  void aClassWithoutAShardNumberClaimsNothing(@TempDir Path base) {
+  void classWithoutShardNumberClaimsNothing(@TempDir Path base) {
     assertThatThrownBy(() -> EvalShards.under(base, 6).claim(EvalShardsTest.class))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
-  void aShardNumberPastTheRunsShardsClaimsNothing(@TempDir Path base) {
+  void shardNumberPastTheRunsShardsClaimsNothing(@TempDir Path base) {
     assertThatThrownBy(() -> EvalShards.under(base, 3).claim(AcceptanceVerdictEvalShard3Test.class))
         .isInstanceOf(IllegalStateException.class);
   }
 
   @Test
-  void aShardAnotherRunHoldsIsRefusedNotReplacedByAFreeOne(@TempDir Path base) throws IOException {
+  void shardAnotherRunHoldsIsRefusedNotReplacedByFreeOne(@TempDir Path base) throws IOException {
     EvalShards other = EvalShards.under(base, 6);
     other.claim(AcceptanceVerdictEvalShard3Test.class);
 

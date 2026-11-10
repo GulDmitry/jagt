@@ -33,9 +33,12 @@ class DiffCheckoutsTest {
     runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
     GitCommands commands =
         new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {});
+            runner,
+            new LsofWorktreeProcesses(runner),
+            path -> java.util.Optional.empty(),
+            stopped -> {});
     GitWorktrees git = new GitWorktrees(commands);
-    DiffCheckouts diffs = new DiffCheckouts(commands);
+    final DiffCheckouts diffs = new DiffCheckouts(commands);
     Path wt = dir.resolve("wt");
     git.createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
     Files.writeString(wt.resolve("f.txt"), "task change");
@@ -47,7 +50,7 @@ class DiffCheckoutsTest {
 
     boolean plumbing = Files.exists(clean.resolve("mcp_client.js"));
     String changed = Files.readString(clean.resolve("f.txt"));
-    String added = Files.readString(clean.resolve("new.js"));
+    final String added = Files.readString(clean.resolve("new.js"));
     git.removeDiffWorktrees(repo, "ABC-1", "proj");
 
     assertThat(plumbing).isFalse();
@@ -56,7 +59,7 @@ class DiffCheckoutsTest {
   }
 
   @Test
-  void prunesTheAdminEntryOfADiffCheckoutSomethingElseAlreadyDeleted(@TempDir Path dir)
+  void prunesTheAdminEntryOfDiffCheckoutSomethingElseAlreadyDeleted(@TempDir Path dir)
       throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
@@ -74,7 +77,10 @@ class DiffCheckoutsTest {
     runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
     GitCommands commands =
         new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {});
+            runner,
+            new LsofWorktreeProcesses(runner),
+            path -> java.util.Optional.empty(),
+            stopped -> {});
     GitWorktrees git = new GitWorktrees(commands);
     DiffCheckouts diffs = new DiffCheckouts(commands);
     Path base = diffs.checkoutBaseForDiff(repo, "origin/main", "ABC-8", "proj");
@@ -104,7 +110,10 @@ class DiffCheckoutsTest {
     runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
     GitCommands commands =
         new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {});
+            runner,
+            new LsofWorktreeProcesses(runner),
+            path -> java.util.Optional.empty(),
+            stopped -> {});
     GitWorktrees git = new GitWorktrees(commands);
     DiffCheckouts diffs = new DiffCheckouts(commands);
     Path wt = dir.resolve("wt");
@@ -149,7 +158,10 @@ class DiffCheckoutsTest {
     runner.run(web, timeout, List.of("git", "push", "-q", "origin", "main"));
     GitCommands commands =
         new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {});
+            runner,
+            new LsofWorktreeProcesses(runner),
+            path -> java.util.Optional.empty(),
+            stopped -> {});
     GitWorktrees git = new GitWorktrees(commands);
     DiffCheckouts diffs = new DiffCheckouts(commands);
 
@@ -157,7 +169,7 @@ class DiffCheckoutsTest {
     Path webBase = diffs.checkoutBaseForDiff(web, "origin/main", "ABC-7", "web");
 
     String apiSaid = Files.readString(apiBase.resolve("f.txt"));
-    String webSaid = Files.readString(webBase.resolve("f.txt"));
+    final String webSaid = Files.readString(webBase.resolve("f.txt"));
     git.removeDiffWorktrees(api, "ABC-7", "api");
     git.removeDiffWorktrees(web, "ABC-7", "web");
     assertThat(apiSaid).isEqualTo("api base");
@@ -165,7 +177,7 @@ class DiffCheckoutsTest {
   }
 
   @Test
-  void replacesALeftoverSnapshotOfTheTasksWorkWhenTheDiffIsOpenedAgain(@TempDir Path dir)
+  void replacesLeftoverSnapshotOfTheTasksWorkWhenTheDiffIsOpenedAgain(@TempDir Path dir)
       throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
@@ -183,9 +195,12 @@ class DiffCheckoutsTest {
     runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
     GitCommands commands =
         new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {});
+            runner,
+            new LsofWorktreeProcesses(runner),
+            path -> java.util.Optional.empty(),
+            stopped -> {});
     GitWorktrees git = new GitWorktrees(commands);
-    DiffCheckouts diffs = new DiffCheckouts(commands);
+    final DiffCheckouts diffs = new DiffCheckouts(commands);
     Path wt = dir.resolve("wt");
     git.createWorktree(repo, wt, "ABC-6", "origin/main", BranchStrategy.FRESH);
     Files.writeString(wt.resolve("f.txt"), "task change");

@@ -23,18 +23,18 @@ class ConflictEndingTest {
   @EnumSource(
       value = Deployment.Cause.class,
       names = {"MERGE", "REVERT"})
-  void aMergeOrRevertConflictIsNeverEndedByALaterGreenPipeline(Deployment.Cause cause) {
+  void mergeOrRevertConflictIsNeverEndedByLaterGreenPipeline(Deployment.Cause cause) {
     assertThat(ConflictEnding.of(cause)).doesNotContain(ConflictEnding.LATER_GREEN);
   }
 
   @Test
-  void aRevertConflictReadsNoRequest() {
+  void revertConflictReadsNoRequest() {
     assertThat(ConflictEnding.of(Deployment.Cause.REVERT))
         .doesNotContain(ConflictEnding.REQUEST_CLOSED);
   }
 
   @Test
-  void aTaskInNoConflictHasNothingToRead() {
+  void taskInNoConflictHasNothingToRead() {
     TaskState deployed = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build();
 
     assertThat(ConflictEnding.of(deployed)).isEmpty();
@@ -48,7 +48,7 @@ class ConflictEndingTest {
     "STAGED_FIX,STALLED,true",
     "STAGED_FIX,PAUSE,false"
   })
-  void aReadRunsOnlyUnderTheStopsItNames(
+  void readRunsOnlyUnderTheStopsItNames(
       ConflictEnding ending, TaskStop.Trigger trigger, boolean reads) {
     TaskState stopped =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)

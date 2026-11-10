@@ -47,15 +47,14 @@ import tools.jackson.databind.json.JsonMapper;
 
 class ConflictHandOffTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final ConflictStall stall = mock(ConflictStall.class);
   private final ConflictFinish finish = mock(ConflictFinish.class);
 
   @Test
-  void handsAConflictToTheSessionAsAWorktreeOfItsOwn(@TempDir Path root) throws Exception {
+  void handsConflictToTheSessionAsWorktreeOfItsOwn(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -86,8 +85,10 @@ class ConflictHandOffTest {
                                 new Notifications(List.of(), state, Runnable::run),
                                 new StopLog(new JsonMapper(), paths))),
                         state,
-                        Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
+                        Clock.systemUTC(),
+                        new FlowRules(new TaskChart(Composition.builtIn())))),
+                new TaskTurns(
+                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(
@@ -105,7 +106,7 @@ class ConflictHandOffTest {
   }
 
   @Test
-  void handsAConflictOnlyOnce(@TempDir Path root) {
+  void handsConflictOnlyOnce(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -132,8 +133,10 @@ class ConflictHandOffTest {
                                 new Notifications(List.of(), state, Runnable::run),
                                 new StopLog(new JsonMapper(), paths))),
                         state,
-                        Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
+                        Clock.systemUTC(),
+                        new FlowRules(new TaskChart(Composition.builtIn())))),
+                new TaskTurns(
+                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(
@@ -150,7 +153,7 @@ class ConflictHandOffTest {
   }
 
   @Test
-  void watchesAHandedConflictForProgress(@TempDir Path root) {
+  void watchesHandedConflictForProgress(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -185,8 +188,10 @@ class ConflictHandOffTest {
                                 new Notifications(List.of(), state, Runnable::run),
                                 new StopLog(new JsonMapper(), paths))),
                         state,
-                        Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
+                        Clock.systemUTC(),
+                        new FlowRules(new TaskChart(Composition.builtIn())))),
+                new TaskTurns(
+                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle("ABC-42", conflict);
@@ -222,8 +227,10 @@ class ConflictHandOffTest {
                                 new Notifications(List.of(), state, Runnable::run),
                                 new StopLog(new JsonMapper(), paths))),
                         state,
-                        Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
+                        Clock.systemUTC(),
+                        new FlowRules(new TaskChart(Composition.builtIn())))),
+                new TaskTurns(
+                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(
@@ -265,8 +272,10 @@ class ConflictHandOffTest {
                                 new Notifications(List.of(), state, Runnable::run),
                                 new StopLog(new JsonMapper(), paths))),
                         state,
-                        Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
+                        Clock.systemUTC(),
+                        new FlowRules(new TaskChart(Composition.builtIn())))),
+                new TaskTurns(
+                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(
@@ -283,7 +292,7 @@ class ConflictHandOffTest {
   }
 
   @Test
-  void handsADeployWhosePipelineWentRedAsAFixOfTheMergeResultInItsWorktree(@TempDir Path root)
+  void handsDeployWhosePipelineWentRedAsFixOfTheMergeResultInItsWorktree(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -315,8 +324,10 @@ class ConflictHandOffTest {
                                 new Notifications(List.of(), state, Runnable::run),
                                 new StopLog(new JsonMapper(), paths))),
                         state,
-                        Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
+                        Clock.systemUTC(),
+                        new FlowRules(new TaskChart(Composition.builtIn())))),
+                new TaskTurns(
+                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(
@@ -339,7 +350,7 @@ class ConflictHandOffTest {
   }
 
   @Test
-  void handsARevertConflictToTheSessionAsTheRevertWorktreeToResolve(@TempDir Path root)
+  void handsRevertConflictToTheSessionAsTheRevertWorktreeToResolve(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -371,8 +382,10 @@ class ConflictHandOffTest {
                                 new Notifications(List.of(), state, Runnable::run),
                                 new StopLog(new JsonMapper(), paths))),
                         state,
-                        Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
+                        Clock.systemUTC(),
+                        new FlowRules(new TaskChart(Composition.builtIn())))),
+                new TaskTurns(
+                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(
@@ -421,8 +434,10 @@ class ConflictHandOffTest {
                                 new Notifications(List.of(), state, Runnable::run),
                                 new StopLog(new JsonMapper(), paths))),
                         state,
-                        Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
+                        Clock.systemUTC(),
+                        new FlowRules(new TaskChart(Composition.builtIn())))),
+                new TaskTurns(
+                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
             stall,
             finish)
         .handle(

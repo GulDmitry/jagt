@@ -54,14 +54,16 @@ class OpenCodeRoundReviewerTest {
               "opencode", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("master", "")));
 
   @Test
-  void mapsAFencedAnswerToTheJudgementItsVerdictAndFindingsCarry(@TempDir Path worktree) {
+  void mapsFencedAnswerToTheJudgementItsVerdictAndFindingsCarry(@TempDir Path worktree) {
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
         .thenReturn(
             new Processes.Result(
                 0,
                 "{\"type\":\"text\",\"part\":{\"text\":\"```json\\n"
-                    + "{\\\"failure\\\":\\\"\\\",\\\"verdict\\\":\\\"not ready\\\","
-                    + "\\\"findings\\\":[{\\\"file\\\":\\\"A.java\\\",\\\"issue\\\":\\\"unguarded\\\",\\\"pattern\\\":\\\"p\\\",\\\"severity\\\":\\\"Wrong\\\",\\\"anchor\\\":\\\"a\\\",\\\"kind\\\":\\\"behaviour\\\"}]}\\n"
+                    + "{\\\"failure\\\":\\\"\\\",\\\"verdict\\\":\\\"not"
+                    + " ready\\\",\\\"findings\\\":[{\\\"file\\\":\\\"A.java\\\",\\\"issue\\\":\\\""
+                    + "unguarded\\\",\\\"pattern\\\":\\\"p\\\",\\\"severity\\\":\\\"Wrong\\\",\\\"a"
+                    + "nchor\\\":\\\"a\\\",\\\"kind\\\":\\\"behaviour\\\"}]}\\n"
                     + "```\"}}",
                 ""));
 
@@ -75,7 +77,7 @@ class OpenCodeRoundReviewerTest {
   }
 
   @Test
-  void readsOnTheDefaultModelWhereMasterIsNamedWithABlankOneAndRunsNoBuild(@TempDir Path worktree) {
+  void readsOnTheDefaultModelWhereMasterIsNamedWithBlankOneAndRunsNoBuild(@TempDir Path worktree) {
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
         .thenReturn(new Processes.Result(0, "", ""));
 

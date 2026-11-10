@@ -56,7 +56,7 @@ class CycleTimeRendererTest {
   }
 
   @Test
-  void countsUnderByYouOnlyTheMovesAHumanMadeOnTheTask() {
+  void countsUnderByYouOnlyTheMovesHumanMadeOnTheTask() {
     Map<String, TaskState> tasks =
         Map.of(
             "ABC-1",
@@ -84,7 +84,7 @@ class CycleTimeRendererTest {
   }
 
   @Test
-  void marksTheFiguresAsFloorsForATaskWhoseOldestStepsHaveAgedOut() {
+  void marksTheFiguresAsFloorsForTaskWhoseOldestStepsHaveAgedOut() {
     List<StatusChange> fifty =
         IntStream.range(0, 50)
             .mapToObj(
@@ -129,7 +129,7 @@ class CycleTimeRendererTest {
   }
 
   @Test
-  void namesTheSlowestStepAsAShareOfTheTimeAnyoneHeldTheTasks() {
+  void namesTheSlowestStepAsShareOfTheTimeAnyoneHeldTheTasks() {
     Map<String, TaskState> tasks =
         Map.of(
             "ABC-1",
@@ -168,7 +168,7 @@ class CycleTimeRendererTest {
   }
 
   @Test
-  void saysSoWhenNoTaskHasAHistoryToAddUp() {
+  void saysSoWhenNoTaskHasHistoryToAddUp() {
     String out = new CycleTimeRenderer().render(Map.of(), NOW);
 
     assertThat(out).contains("(no task has a status history yet)").doesNotContain("ROUNDS");
@@ -223,7 +223,7 @@ class CycleTimeRendererTest {
   }
 
   @Test
-  void leavesATaskWithoutAHistoryOutOfTheTableAndTheAverage() {
+  void leavesTaskWithoutHistoryOutOfTheTableAndTheAverage() {
     Map<String, TaskState> tasks =
         Map.of(
             "ABC-1",
@@ -238,7 +238,7 @@ class CycleTimeRendererTest {
   }
 
   @Test
-  void totalsTheRoundsOfAllTasksAsAPositiveNumber() {
+  void totalsTheRoundsOfAllTasksAsPositiveNumber() {
     Map<String, TaskState> tasks =
         Map.of(
             "ABC-1",
@@ -261,7 +261,7 @@ class CycleTimeRendererTest {
   }
 
   @Test
-  void marksNoFigureAsAFloorWhileNoTaskHasLostItsOldestSteps() {
+  void marksNoFigureAsFloorWhileNoTaskHasLostItsOldestSteps() {
     Map<String, TaskState> tasks =
         Map.of(
             "ABC-1",
@@ -279,7 +279,7 @@ class CycleTimeRendererTest {
   }
 
   @Test
-  void marksTheTotalAsAFloorWhenOnlyTheSecondTaskLostItsOldestSteps() {
+  void marksTheTotalAsFloorWhenOnlyTheSecondTaskLostItsOldestSteps() {
     List<StatusChange> fifty =
         IntStream.range(0, 50)
             .mapToObj(

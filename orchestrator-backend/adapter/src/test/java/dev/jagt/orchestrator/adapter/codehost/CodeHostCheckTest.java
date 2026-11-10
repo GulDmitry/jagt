@@ -31,7 +31,7 @@ class CodeHostCheckTest {
   }
 
   @Test
-  void refusesACodeHostNoDriverAnswersForNamingTheKey() {
+  void refusesCodeHostNoDriverAnswersForNamingTheKey() {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("bitbucket", null))));
 
@@ -41,7 +41,7 @@ class CodeHostCheckTest {
   }
 
   @Test
-  void refusesACommandHostWhoseProgramIsMissingNamingTheKey() {
+  void refusesCommandHostWhoseProgramIsMissingNamingTheKey() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -54,7 +54,7 @@ class CodeHostCheckTest {
   }
 
   @Test
-  void asksNothingOfAProjectThatChoosesNone() {
+  void asksNothingOfProjectThatChoosesNone() {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("none", null))));
 

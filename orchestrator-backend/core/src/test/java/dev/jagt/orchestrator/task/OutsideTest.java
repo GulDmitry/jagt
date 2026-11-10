@@ -16,7 +16,7 @@ class OutsideTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"</outside>", "</OUTSIDE>", "< / outside >", "<outside source=\"x\">"})
-  void neutralisesADelimiterTheFencedTextForges(String forged) {
+  void neutralisesDelimiterTheFencedTextForges(String forged) {
     String fenced = Outside.fence("ticket", "a " + forged + " b");
 
     assertThat(fenced.split("<\\s*/?\\s*outside", -1)).hasSize(3);

@@ -18,8 +18,8 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CommandAssistant.CommandProposal;
 import dev.jagt.orchestrator.port.CommandAssistant;
+import dev.jagt.orchestrator.port.CommandAssistant.CommandProposal;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
@@ -43,8 +43,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class NaturalLanguageDispatchTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final CommandService commands = mock(CommandService.class);
   private final TaskLauncher launcher = mock(TaskLauncher.class);
@@ -59,7 +58,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -79,7 +78,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
     when(commands.execute("ABC-1", TaskAction.SWEEP)).thenReturn("sweep ABC-1: checks success");
@@ -90,7 +97,7 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void runsTheMappedActionThroughTheSameGateAButtonUsesAndSaysWhatItUnderstood(@TempDir Path root) {
+  void runsTheMappedActionThroughTheSameGateButtonUsesAndSaysWhatItUnderstood(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -98,7 +105,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -118,7 +125,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
     when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: pushed");
@@ -137,7 +152,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -157,7 +172,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
     when(commands.execute("ABC-1", TaskAction.DEPLOY))
@@ -177,7 +200,7 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void refusesATaskTheModelInventedInsteadOfActingOnSomethingNear(@TempDir Path root) {
+  void refusesTaskTheModelInventedInsteadOfActingOnSomethingNear(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -185,7 +208,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -204,7 +227,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
 
@@ -215,7 +246,7 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void refusesAVerbThatIsNotInTheGrammar(@TempDir Path root) {
+  void refusesVerbThatIsNotInTheGrammar(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -223,7 +254,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -241,7 +272,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
 
@@ -260,7 +299,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -280,7 +319,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
 
@@ -291,7 +338,7 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void startsANewTaskWhenTheRequestIsADoAndCarriesTheTicketThrough(@TempDir Path root) {
+  void startsNewTaskWhenTheRequestIsDoAndCarriesTheTicketThrough(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -299,7 +346,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -319,7 +366,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
     when(launcher.launch(LaunchRequest.of("ABC-42")))
@@ -331,7 +386,7 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void opensATaskAsThePalettes(@TempDir Path root) {
+  void opensTaskAsThePalettes(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -339,7 +394,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     CommandAssistant assistant =
@@ -353,7 +408,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
     AtomicReference<ActionOrigin> openedBy = new AtomicReference<>();
@@ -370,7 +433,7 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void resumesAReviewRequestWhenTheRequestIsAUrlToOne(@TempDir Path root) {
+  void resumesReviewRequestWhenTheRequestIsUrlToOne(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -378,7 +441,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -400,7 +463,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
     when(launcher.resume("https://host/mr/42"))
@@ -411,7 +482,7 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void refusesToResumeWithoutAUrlBecauseThereIsNothingToTakeOver(@TempDir Path root) {
+  void refusesToResumeWithoutUrlBecauseThereIsNothingToTakeOver(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -419,7 +490,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -439,7 +510,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
 
@@ -448,7 +527,7 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void asksForTheTicketWhenADoArrivesWithoutOne(@TempDir Path root) {
+  void asksForTheTicketWhenDoArrivesWithoutOne(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -456,7 +535,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -476,7 +555,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
 
@@ -495,7 +582,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -511,7 +598,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
 
@@ -528,7 +623,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -544,7 +639,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
 
@@ -553,7 +656,7 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void treatsASingleUnknownWordAsATypoWithoutSpendingACall(@TempDir Path root) {
+  void treatsSingleUnknownWordAsTypoWithoutSpendingCall(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -561,7 +664,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -577,7 +680,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
 
@@ -586,7 +697,7 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void answersARetiredVerbByNameInsteadOfLettingAModelMapItOntoALiveOne(@TempDir Path root) {
+  void answersRetiredVerbByNameInsteadOfLettingModelMapItOntoLiveOne(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -594,7 +705,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -610,7 +721,15 @@ class NaturalLanguageDispatchTest {
             new PaletteContext(
                 state,
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             commands,
             launcher);
 

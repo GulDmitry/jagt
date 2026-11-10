@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 class ClaudeToolScopeTest {
 
   @Test
-  void aGlobWithOnlyATrailingStarIsAPrefixRuleAndAnyOtherGlobStaysVerbatim() {
+  void globWithOnlyTrailingStarIsPrefixRuleAndAnyOtherGlobStaysVerbatim() {
     ClaudeToolScope scope =
         ClaudeToolScope.of(List.of("git log*"), List.of("git * --output*"), List.of(), false);
 
@@ -21,7 +21,7 @@ class ClaudeToolScopeTest {
   }
 
   @Test
-  void offersBashOnlyWhereAShellGlobIsNamedAndWebFetchOnlyWhereTheRoleFetches() {
+  void offersBashOnlyWhereShellGlobIsNamedAndWebFetchOnlyWhereTheRoleFetches() {
     assertThat(ClaudeToolScope.of(List.of(), List.of(), List.of(), false).tools())
         .isEqualTo("Read,Grep,Glob");
     assertThat(ClaudeToolScope.of(List.of("git log*"), List.of(), List.of(), true).tools())
@@ -29,7 +29,7 @@ class ClaudeToolScopeTest {
   }
 
   @Test
-  void refusesAPathGlobAsAReadRule() {
+  void refusesPathGlobAsReadRule() {
     ClaudeToolScope scope = ClaudeToolScope.of(List.of(), List.of(), List.of("**/notes.md"), false);
 
     assertThat(scope.refuse()).contains("Read(**/notes.md)");

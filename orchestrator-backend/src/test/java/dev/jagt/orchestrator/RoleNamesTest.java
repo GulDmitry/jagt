@@ -29,7 +29,7 @@ class RoleNamesTest {
               "a move of the arbiter's region, in the chart's one closed set of moves");
 
   @Test
-  void noClassOutsideARolesModuleNamesIt() {
+  void noClassOutsideRolesModuleNamesIt() {
     Map<String, List<String>> modules = new LinkedHashMap<>();
     modules.put("arbiter", RoleModules.ARBITER);
     roleFolderIds()
@@ -59,7 +59,7 @@ class RoleNamesTest {
   }
 
   @Test
-  void anAllowedNameIsAClassThatStillExists() {
+  void anAllowedNameIsClassThatStillExists() {
     assertThat(
             ALLOWED.keySet().stream()
                 .filter(
@@ -69,7 +69,7 @@ class RoleNamesTest {
   }
 
   @Test
-  void everyRoleFolderHoldsADesign() {
+  void everyRoleFolderHoldsDesign() {
     try (Stream<Path> folders = Files.list(Path.of("..", "roles"))) {
       assertThat(
               folders

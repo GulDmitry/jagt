@@ -21,7 +21,7 @@ class ShipDueTest {
   private final TaskStops stops = mock(TaskStops.class);
 
   @Test
-  void isNotDueForAHandBackWhoseBranchIsPushedUnchangedAndDraftsNothing() {
+  void isNotDueForHandBackWhoseBranchIsPushedUnchangedAndDraftsNothing() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(stops.mayShip("ABC-42")).thenReturn(true);
 
@@ -32,7 +32,7 @@ class ShipDueTest {
   }
 
   @Test
-  void isDueForAHandBackCarryingNewWork() {
+  void isDueForHandBackCarryingNewWork() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(changes.anythingNewToShip(task)).thenReturn(true);
     when(stops.mayShip("ABC-42")).thenReturn(true);
@@ -44,7 +44,7 @@ class ShipDueTest {
   }
 
   @Test
-  void isDueForAHandBackWhoseBranchIsUnchangedButDraftsReplies() {
+  void isDueForHandBackWhoseBranchIsUnchangedButDraftsReplies() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(drafts.drafted(task)).thenReturn(true);
     when(stops.mayShip("ABC-42")).thenReturn(true);
@@ -67,7 +67,7 @@ class ShipDueTest {
   }
 
   @Test
-  void aShipPressedOnThisVeryTreeIsNotDueAgain() {
+  void shipPressedOnThisVeryTreeIsNotDueAgain() {
     TaskState task =
         TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING)
             .build()
@@ -83,7 +83,7 @@ class ShipDueTest {
   }
 
   @Test
-  void aTreeChangedSinceTheLastPressIsDue() {
+  void treeChangedSinceTheLastPressIsDue() {
     TaskState task =
         TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING)
             .build()
@@ -99,7 +99,7 @@ class ShipDueTest {
   }
 
   @Test
-  void aRoundAnsweredByNewDraftsOnTheSameTreeIsDueAgain() {
+  void roundAnsweredByNewDraftsOnTheSameTreeIsDueAgain() {
     TaskState task =
         TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING)
             .build()

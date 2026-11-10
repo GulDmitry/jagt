@@ -28,7 +28,12 @@ class RoleBeansTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withConfigFile(root.resolve("jagt.yml").toString()));
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
+    ConfigService config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
     RoleBeans beans = new RoleBeans();
 
     RoleDefinition acceptance = beans.acceptanceDefinition(new InstalledRoles(paths));

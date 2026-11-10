@@ -19,14 +19,14 @@ class ProjectCommandTest {
   private final ProjectCommand command = new ProjectCommand(setup, removal);
 
   @Test
-  void handsTypedAloneOverToTheAddAProjectForm() {
+  void handsTypedAloneOverToTheAddProjectForm() {
     assertThat(command.part()).isEqualTo("project");
     assertThat(command.usage())
         .containsExactly("project", "project <path>", "project edit <key>", "project remove <key>");
   }
 
   @Test
-  void addsTheRepositoryWithWhatItsReadingSuggestsWhenAPathIsTyped() {
+  void addsTheRepositoryWithWhatItsReadingSuggestsWhenPathIsTyped() {
     when(setup.read("/work/billing"))
         .thenReturn(
             new ProjectSetup.Reading(
@@ -52,7 +52,7 @@ class ProjectCommandTest {
   }
 
   @Test
-  void refusesAPathThatIsNotReadyWithTheFirstThingWrongAndAddsNothing() {
+  void refusesPathThatIsNotReadyWithTheFirstThingWrongAndAddsNothing() {
     when(setup.read("/work/notes"))
         .thenReturn(
             new ProjectSetup.Reading(

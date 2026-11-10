@@ -112,7 +112,7 @@ abstract class AcceptanceVerdictEvalTest {
 
   @ParameterizedTest
   @MethodSource("cases")
-  void judgesTheDeployAsAHumanWouldHave(AcceptanceCase deployed) {
+  void judgesTheDeployAsHumanWouldHave(AcceptanceCase deployed) {
     EvalQuorum.configured().hold(deployed.name(), this::acceptanceSpend, () -> oneRun(deployed));
   }
 
@@ -130,7 +130,7 @@ abstract class AcceptanceVerdictEvalTest {
     AcceptanceJudgement judged;
     String fixtureUrl;
     try (AcceptanceFixtureEnvironment environment =
-        AcceptanceFixtureEnvironment.serve(deployed.environment())) {
+        AcceptanceFixtureEnvironment.serve(deployed.landing().environment())) {
       fixtureUrl = environment.url();
       judged = judge(deployed, fixtureUrl);
     }
@@ -164,9 +164,9 @@ abstract class AcceptanceVerdictEvalTest {
     Path watched = deployed.workspace().held() ? workspace : worktree;
     Set<String> before = AcceptanceWorkspaceFiles.snapshot(watched);
     String landedProbe =
-        deployed.probe().isEmpty()
+        deployed.expect().probe().isEmpty()
             ? ""
-            : url + deployed.probe().substring(deployed.probe().indexOf(' ') + 1);
+            : url + deployed.expect().probe().substring(deployed.expect().probe().indexOf(' ') + 1);
     RoleOptions.Flows scripted = flows(deployed);
     AcceptanceEvalWorkspace.writeRole(url, landedProbe, scripted);
     RoleOptions acceptance =
@@ -181,17 +181,21 @@ abstract class AcceptanceVerdictEvalTest {
     CheckerReader.Run run =
         deployed.declines()
             ? prompts.decline(
-                deployed.key(),
+                deployed.ticket().key(),
                 worktree.toString(),
                 sha,
                 acceptance,
                 "- "
-                    + deployed.criteria().getFirst().id()
+                    + deployed.ticket().criteria().getFirst().id()
                     + " — not met: "
                     + deployed.decline().evidence(),
                 deployed.decline().why())
             : prompts.accept(
-                deployed.key(), worktree.toString(), sha, acceptance, AcceptanceVerdict.ACCEPT);
+                deployed.ticket().key(),
+                worktree.toString(),
+                sha,
+                acceptance,
+                AcceptanceVerdict.ACCEPT);
     CheckerReader.Run told =
         new CheckerReader.Run(
             run.shared(),
@@ -217,8 +221,7 @@ abstract class AcceptanceVerdictEvalTest {
     assertThat(AcceptanceWorkspaceFiles.problem(deployed, before, watched, url))
         .describedAs(
             "%s: the workspace; acceptance said: %s",
-            deployed.name(),
-            judged.cited().substring(0, Math.min(400, judged.cited().length())))
+            deployed.name(), judged.cited().substring(0, Math.min(400, judged.cited().length())))
         .isEmpty();
     return judged;
   }

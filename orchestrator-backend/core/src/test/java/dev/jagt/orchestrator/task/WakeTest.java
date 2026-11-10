@@ -18,7 +18,7 @@ class WakeTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"", "1000", "a:b:wake", "7:1000:"})
-  void readsNoWakeFromAMarkInAnyOtherShape(String mark) {
+  void readsNoWakeFromMarkInAnyOtherShape(String mark) {
     assertThat(Wake.parse(mark)).isEqualTo(Optional.empty());
   }
 }

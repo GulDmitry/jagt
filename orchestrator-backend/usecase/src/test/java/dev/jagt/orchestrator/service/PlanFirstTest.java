@@ -20,7 +20,7 @@ class PlanFirstTest {
         "/wt/sub/plan.md",
         "/elsewhere/plan.md"
       })
-  void refusesAWriteToAnythingButThePlanningFilesWhileThePlanIsNotApproved(String file) {
+  void refusesWriteToAnythingButThePlanningFilesWhileThePlanIsNotApproved(String file) {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .planGate(PlanGate.REQUIRED)
@@ -60,7 +60,7 @@ class PlanFirstTest {
   @EnumSource(
       value = PlanGate.class,
       names = {"CLOSED", "REQUIRED"})
-  void refusesAWriteWhicheverWayTheGateWasClosed(PlanGate gate) {
+  void refusesWriteWhicheverWayTheGateWasClosed(PlanGate gate) {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).planGate(gate).build();
 

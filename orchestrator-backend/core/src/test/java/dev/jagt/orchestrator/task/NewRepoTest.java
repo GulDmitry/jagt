@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class NewRepoTest {
 
   @Test
-  void recordsARepositoryWithItsWorktreeAndRemoteAndNoRequestOrDeployYet() {
+  void recordsRepositoryWithItsWorktreeAndRemoteAndNoRequestOrDeployYet() {
     NewRepo cut =
         new NewRepo(
             "api",

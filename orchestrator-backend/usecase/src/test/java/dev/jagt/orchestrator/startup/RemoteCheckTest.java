@@ -31,7 +31,7 @@ class RemoteCheckTest {
   }
 
   @Test
-  void acceptsARemoteTheRepositoryLists() {
+  void acceptsRemoteTheRepositoryLists() {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -43,7 +43,7 @@ class RemoteCheckTest {
   }
 
   @Test
-  void refusesARemoteTheRepositoryDoesNotListNamingTheKey() {
+  void refusesRemoteTheRepositoryDoesNotListNamingTheKey() {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -57,7 +57,7 @@ class RemoteCheckTest {
   }
 
   @Test
-  void refusesTheDefaultOriginOfARepositoryWithNoRemote() {
+  void refusesTheDefaultOriginOfRepositoryWithNoRemote() {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults().withProjects(Map.of("shop", project(null, null))));
@@ -70,7 +70,7 @@ class RemoteCheckTest {
   }
 
   @Test
-  void refusesNoRemoteBesideACodeHostNamingBothKeys() {
+  void refusesNoRemoteBesideCodeHostNamingBothKeys() {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()

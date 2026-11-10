@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class HookEndpointTest {
 
   @Test
-  void namesTheWorktreeSoAReportIdentifiesItsTaskWithoutReadingAnyPayload() {
+  void namesTheWorktreeSoReportIdentifiesItsTaskWithoutReadingAnyPayload() {
     String command =
         new HookEndpoint(
                 "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent")

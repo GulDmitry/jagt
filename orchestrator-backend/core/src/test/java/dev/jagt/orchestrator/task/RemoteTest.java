@@ -17,7 +17,7 @@ class RemoteTest {
   }
 
   @Test
-  void holdsABranchAsTheRemotesTrackingRefWhereThereIsARemote() {
+  void holdsBranchAsTheRemotesTrackingRefWhereThereIsRemote() {
     Remote upstream = Remote.of("upstream");
 
     assertThat(upstream.track("main")).isEqualTo("upstream/main");
@@ -26,7 +26,7 @@ class RemoteTest {
   }
 
   @Test
-  void holdsABranchAsTheLocalBranchAndPushesToTheRepositoryItselfWhereThereIsNoRemote() {
+  void holdsBranchAsTheLocalBranchAndPushesToTheRepositoryItselfWhereThereIsNoRemote() {
     assertThat(Remote.LOCAL.track("main")).isEqualTo("main");
     assertThat(Remote.LOCAL.trackingRef("main")).isEqualTo("refs/heads/main");
     assertThat(Remote.LOCAL.pushTarget()).isEqualTo(".");
@@ -41,7 +41,7 @@ class RemoteTest {
     "upstream, origin/main, origin/main",
     "none, main, main"
   })
-  void readsTheBranchAConfiguredRefNamesWithItsOwnRemotesPrefixDropped(
+  void readsTheBranchConfiguredRefNamesWithItsOwnRemotesPrefixDropped(
       String remote, String ref, String branch) {
     assertThat(Remote.of(remote).branchOf(ref)).isEqualTo(branch);
   }

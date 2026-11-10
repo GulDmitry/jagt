@@ -20,7 +20,7 @@ import org.mockito.ArgumentCaptor;
 class AbstractKittyTerminalDriverTest {
 
   @Test
-  void launchesADetachedRemoteControllableInstanceAttachedToTheSession() {
+  void launchesDetachedRemoteControllableInstanceAttachedToTheSession() {
     List<String> cmd =
         AbstractKittyTerminalDriver.firstOpenCommand(
             "kitty",
@@ -85,7 +85,7 @@ class AbstractKittyTerminalDriverTest {
   }
 
   @Test
-  void passesAPlatformsOwnLaunchOptionsThrough() {
+  void passesPlatformsOwnLaunchOptionsThrough() {
     List<String> cmd =
         AbstractKittyTerminalDriver.firstOpenCommand(
             "kitty",
@@ -100,7 +100,7 @@ class AbstractKittyTerminalDriverTest {
   }
 
   @Test
-  void opensATabInTheViewerInstanceListeningOnTheSessionsOwnSocket() {
+  void opensTabInTheViewerInstanceListeningOnTheSessionsOwnSocket() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(isNull(), any(Duration.class), any()))
         .thenReturn(new Processes.Result(0, "", ""));

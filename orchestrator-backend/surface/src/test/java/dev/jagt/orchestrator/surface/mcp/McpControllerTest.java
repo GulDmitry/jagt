@@ -37,7 +37,7 @@ class McpControllerTest {
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
-  void refusesACallAFormCouldSendWithoutAPreflight() throws Exception {
+  void refusesCallFormCouldSendWithoutPreflight() throws Exception {
     McpProtocolService protocol = mock(McpProtocolService.class);
     MockMvc mvc =
         MockMvcBuilders.standaloneSetup(
@@ -78,7 +78,7 @@ class McpControllerTest {
   }
 
   @Test
-  void refusesAWrongMasterTokenUnauthorized(@TempDir Path root) throws Exception {
+  void refusesWrongMasterTokenUnauthorized(@TempDir Path root) throws Exception {
     JsonMapper mapper = new JsonMapper();
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -104,7 +104,7 @@ class McpControllerTest {
   }
 
   @Test
-  void refusesACallPresentingNoTokenUnauthorized(@TempDir Path root) throws Exception {
+  void refusesCallPresentingNoTokenUnauthorized(@TempDir Path root) throws Exception {
     JsonMapper mapper = new JsonMapper();
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -129,7 +129,7 @@ class McpControllerTest {
   }
 
   @Test
-  void answersANotificationWithNoContent() throws Exception {
+  void answersNotificationWithNoContent() throws Exception {
     McpProtocolService protocol = mock(McpProtocolService.class);
     when(protocol.handle(any(), any(), anyBoolean())).thenReturn(Optional.empty());
     MockMvc mvc =
@@ -146,7 +146,7 @@ class McpControllerTest {
   }
 
   @Test
-  void answersMalformedJsonWithAParseErrorNotAServerError(@TempDir Path root) throws Exception {
+  void answersMalformedJsonWithParseErrorNotServerError(@TempDir Path root) throws Exception {
     JsonMapper mapper = new JsonMapper();
     OrchestratorPaths paths =
         new OrchestratorPaths(

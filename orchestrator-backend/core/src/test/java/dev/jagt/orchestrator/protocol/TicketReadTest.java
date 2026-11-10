@@ -53,7 +53,7 @@ class TicketReadTest {
   }
 
   @Test
-  void asksNothingAboutTheKeyWhenTheReferenceWasAUrl() {
+  void asksNothingAboutTheKeyWhenTheReferenceWasUrl() {
     var facts =
         TicketFacts.defaults()
             .withExists(true)
@@ -66,7 +66,7 @@ class TicketReadTest {
   }
 
   @Test
-  void refusesALinkNobodyCanOpen() {
+  void refusesLinkNobodyCanOpen() {
     var facts =
         TicketFacts.defaults()
             .withExists(true)
@@ -81,7 +81,7 @@ class TicketReadTest {
   }
 
   @Test
-  void takesAFileLinkAsAnItemsOwn() {
+  void takesFileLinkAsAnItemsOwn() {
     var facts =
         TicketFacts.defaults()
             .withExists(true)

@@ -21,7 +21,7 @@ class RepliesCommandTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  void isOfferedOnACardExactlyWhenItsRoundDraftedReplies(boolean drafted) {
+  void isOfferedOnCardExactlyWhenItsRoundDraftedReplies(boolean drafted) {
     TaskView card =
         TaskView.of(
             new FlowRules(new TaskChart(Composition.builtIn())),

@@ -20,9 +20,9 @@ import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.AutoReviewCadence;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
 import dev.jagt.orchestrator.service.ReviewSweepService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StopAnnouncements;
@@ -85,7 +85,7 @@ class AutoReviewSchedulerTest {
   }
 
   @Test
-  void stopsPollingATaskThatHasBeenOutForReviewLongerThanTheWindow() {
+  void stopsPollingTaskThatHasBeenOutForReviewLongerThanTheWindow() {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .mrUrl("http://mr/1")
@@ -98,7 +98,7 @@ class AutoReviewSchedulerTest {
   }
 
   @Test
-  void skipsATaskThatOptedOutOfAutoReview() {
+  void skipsTaskThatOptedOutOfAutoReview() {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .mrUrl("http://mr/1")
@@ -111,7 +111,7 @@ class AutoReviewSchedulerTest {
   }
 
   @Test
-  void skipsATaskWithNoRequestToRead() {
+  void skipsTaskWithNoRequestToRead() {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .autoReview(true)
@@ -123,7 +123,7 @@ class AutoReviewSchedulerTest {
   }
 
   @Test
-  void sweepsADueTaskAndRecordsThatItLooked(@TempDir Path root) {
+  void sweepsDueTaskAndRecordsThatItLooked(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -142,7 +142,7 @@ class AutoReviewSchedulerTest {
             .build());
     ReviewSweepService sweep = mock(ReviewSweepService.class);
     Notifications notifications = mock(Notifications.class);
-    long before = System.currentTimeMillis();
+    final long before = System.currentTimeMillis();
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -180,7 +180,7 @@ class AutoReviewSchedulerTest {
   }
 
   @Test
-  void tapsTheHumanOnceForARoundNobodyCouldReadInsteadOfOnlyLoggingIt(@TempDir Path root) {
+  void tapsTheHumanOnceForRoundNobodyCouldReadInsteadOfOnlyLoggingIt(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -304,7 +304,7 @@ class AutoReviewSchedulerTest {
   }
 
   @Test
-  void pingsAgainForTheNewWindowAShippedRoundOpens(@TempDir Path root) {
+  void pingsAgainForTheNewWindowShippedRoundOpens(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -374,7 +374,7 @@ class AutoReviewSchedulerTest {
   @EnumSource(
       value = ToldOnce.Kind.class,
       names = {"AUTO_REVIEW_WINDOW", "AUTO_REVIEW_UNREADABLE"})
-  void forgetsOnlyTheAutoReviewReminderOfATaskThatLeftPolling(
+  void forgetsOnlyTheAutoReviewReminderOfTaskThatLeftPolling(
       ToldOnce.Kind reminder, @TempDir Path root) {
     StateService state =
         new StateService(
@@ -430,7 +430,7 @@ class AutoReviewSchedulerTest {
   }
 
   @Test
-  void forgetsTheRemindersOfATaskThatWasRetiredWhileStillPolling(@TempDir Path root) {
+  void forgetsTheRemindersOfTaskThatWasRetiredWhileStillPolling(@TempDir Path root) {
     long window = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
     StateService state =
         new StateService(
@@ -500,7 +500,7 @@ class AutoReviewSchedulerTest {
   }
 
   @Test
-  void keepsPollingARoundThatCameBackCleanUntilSomebodyApprovesIt(@TempDir Path root) {
+  void keepsPollingRoundThatCameBackCleanUntilSomebodyApprovesIt(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -739,7 +739,7 @@ class AutoReviewSchedulerTest {
   }
 
   @Test
-  void pingsAgainForARoundWhoseTaskLeftAutoReviewAndCameBack(@TempDir Path root) {
+  void pingsAgainForRoundWhoseTaskLeftAutoReviewAndCameBack(@TempDir Path root) {
     long window = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
     StateService state =
         new StateService(
@@ -1070,7 +1070,7 @@ class AutoReviewSchedulerTest {
   }
 
   @Test
-  void submitsATaskOnceWhileItsEarlierPollIsStillRunning(@TempDir Path root) {
+  void submitsTaskOnceWhileItsEarlierPollIsStillRunning(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1189,7 +1189,7 @@ class AutoReviewSchedulerTest {
   }
 
   @Test
-  void doesNotTapAgainAfterARestartForAnUnreadableRoundAlreadyTold(@TempDir Path root) {
+  void doesNotTapAgainAfterRestartForAnUnreadableRoundAlreadyTold(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1273,7 +1273,7 @@ class AutoReviewSchedulerTest {
   }
 
   @Test
-  void doesNotTapAgainAfterARestartForAnElapsedWindowAlreadyTold(@TempDir Path root) {
+  void doesNotTapAgainAfterRestartForAnElapsedWindowAlreadyTold(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),

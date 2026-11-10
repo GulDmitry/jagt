@@ -28,12 +28,12 @@ class TokenFormatTest {
     "9994000,10M",
     "12300000,12M"
   })
-  void writesATokenCountShortEnoughForItsColumnWithoutLosingItsScale(long tokens, String expected) {
+  void writesTokenCountShortEnoughForItsColumnWithoutLosingItsScale(long tokens, String expected) {
     assertThat(TokenFormat.compact(tokens)).isEqualTo(expected);
   }
 
   @Test
-  void writesACostWithAnUnpricedCallAsALowerBound() {
+  void writesCostWithAnUnpricedCallAsLowerBound() {
     assertThat(
             TokenFormat.cost(
                 TokenUsage.ofCall(500, 0, 10, 1.25).plus(TokenUsage.ofUnpricedCall(500, 0, 10))))
@@ -41,7 +41,7 @@ class TokenFormatTest {
   }
 
   @Test
-  void writesAFullyPricedCostAsAPlainFigure() {
+  void writesFullyPricedCostAsPlainFigure() {
     assertThat(TokenFormat.cost(TokenUsage.ofCall(500, 0, 10, 1.25))).isEqualTo("1.25");
   }
 }

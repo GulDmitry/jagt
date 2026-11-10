@@ -47,8 +47,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class StepRelayTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final AgentSessions sessions = mock(AgentSessions.class);
 
@@ -64,7 +63,7 @@ class StepRelayTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
@@ -74,7 +73,8 @@ class StepRelayTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
             sessions,
             door,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     relay.relay(
         "ABC-42",
@@ -168,10 +168,11 @@ class StepRelayTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
-    Standing read = Standing.of(state.task("ABC-42").orElseThrow());
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+    final Standing read = Standing.of(state.task("ABC-42").orElseThrow());
+    TaskTurns turns =
+        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     turns.opened("ABC-42", "answered", "the human answered", TaskStatus.DEPLOYED);
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -201,7 +202,7 @@ class StepRelayTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
@@ -211,7 +212,8 @@ class StepRelayTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
             sessions,
             door,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     StepRelay.Claim claim =
         new StepRelay.Claim(
             Standing.of(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()),
@@ -236,7 +238,7 @@ class StepRelayTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.WAKE))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
@@ -246,7 +248,8 @@ class StepRelayTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
             sessions,
             door,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     relay.say("ABC-42", Step.WAKE, "The usage limit has reset.", relay.standing("ABC-42"));
 
@@ -254,7 +257,7 @@ class StepRelayTest {
   }
 
   @Test
-  void tellsTheFactsAloneAtAStepTheBriefLeavesEmpty(@TempDir Path root) throws Exception {
+  void tellsTheFactsAloneAtStepTheBriefLeavesEmpty(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
     StateService state =
@@ -264,7 +267,7 @@ class StepRelayTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
@@ -274,7 +277,8 @@ class StepRelayTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
             sessions,
             door,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     relay.relay(
         "ABC-42",
@@ -286,7 +290,7 @@ class StepRelayTest {
   }
 
   @Test
-  void relaysAStepOnceWhileTheSessionHoldsTheTurnItOpened(@TempDir Path root) throws Exception {
+  void relaysStepOnceWhileTheSessionHoldsTheTurnItOpened(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -299,7 +303,11 @@ class StepRelayTest {
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
 
     boolean again =
@@ -310,7 +318,7 @@ class StepRelayTest {
   }
 
   @Test
-  void sendsAStepOnceWhenJagtDiesWhileTellingTheSession(@TempDir Path root) throws Exception {
+  void sendsStepOnceWhenJagtDiesWhileTellingTheSession(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -325,7 +333,11 @@ class StepRelayTest {
         .thenThrow(new Error("jagt died"));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     assertThatThrownBy(
             () ->
                 relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42")))
@@ -339,7 +351,7 @@ class StepRelayTest {
   }
 
   @Test
-  void sendsAStepAgainWhenTellingTheSessionFailed(@TempDir Path root) throws Exception {
+  void sendsStepAgainWhenTellingTheSessionFailed(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -355,7 +367,11 @@ class StepRelayTest {
         .thenReturn("written");
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     assertThatThrownBy(
             () ->
                 relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42")))
@@ -383,7 +399,11 @@ class StepRelayTest {
         .thenThrow(new IllegalStateException("window closed"));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     assertThatThrownBy(
             () ->
@@ -394,7 +414,7 @@ class StepRelayTest {
   }
 
   @Test
-  void relaysAStepACaseSendsAtTheTasksStatus(@TempDir Path root) throws Exception {
+  void relaysStepCaseSendsAtTheTasksStatus(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -428,8 +448,10 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
 
@@ -437,7 +459,7 @@ class StepRelayTest {
   }
 
   @Test
-  void sendsNothingAndRecordsAMissWhereNoCaseSendsTheStepAtTheTasksStatus(@TempDir Path root)
+  void sendsNothingAndRecordsMissWhereNoCaseSendsTheStepAtTheTasksStatus(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -475,8 +497,10 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC), new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+                    Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told =
         relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
@@ -485,11 +509,12 @@ class StepRelayTest {
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
     assertThat(Files.readString(root.resolve("misses.jsonl")))
         .isEqualTo(
-            "{\"at\":1000,\"task\":\"ABC-42\",\"step\":\"deploy\",\"status\":\"IN_PROGRESS\",\"by\":\"jagt\"}\n");
+            "{\"at\":1000,\"task\":\"ABC-42\",\"step\":\"deploy\",\"status\":\"IN_PROGRESS\",\""
+            + "by\":\"jagt\"}\n");
   }
 
   @Test
-  void sendsNothingAndRecordsAMissWhereTheStepWasSetOffBySomeoneItsCaseDoesNotName(
+  void sendsNothingAndRecordsMissWhereTheStepWasSetOffBySomeoneItsCaseDoesNotName(
       @TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -527,8 +552,10 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told =
         OriginContext.as(
@@ -540,11 +567,12 @@ class StepRelayTest {
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
     assertThat(Files.readString(root.resolve("misses.jsonl")))
         .isEqualTo(
-            "{\"at\":1000,\"task\":\"ABC-42\",\"step\":\"deploy\",\"status\":\"DEPLOYED\",\"by\":\"human\"}\n");
+            "{\"at\":1000,\"task\":\"ABC-42\",\"step\":\"deploy\",\"status\":\"DEPLOYED\",\"by"
+            + "\":\"human\"}\n");
   }
 
   @Test
-  void relaysAStepASessionsOwnCallSetsOffAsJagtsAnswerToIt(@TempDir Path root) throws Exception {
+  void relaysStepSessionsOwnCallSetsOffAsJagtsAnswerToIt(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -578,8 +606,10 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told =
         OriginContext.as(
@@ -626,8 +656,10 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
 
@@ -638,7 +670,7 @@ class StepRelayTest {
   }
 
   @Test
-  void stopsTheTaskInsteadOfSendingAFourthRedVerificationRunning(@TempDir Path root)
+  void stopsTheTaskInsteadOfSendingFourthRedVerificationRunning(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -673,8 +705,10 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in OrderTest", relay.standing("ABC-42"));
     relay.relayRound(
@@ -693,7 +727,7 @@ class StepRelayTest {
   }
 
   @Test
-  void stopsTheTaskInsteadOfSendingAFourthReviewRoundRunning(@TempDir Path root) throws Exception {
+  void stopsTheTaskInsteadOfSendingFourthReviewRoundRunning(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -718,8 +752,10 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     List<Step> steps = List.of(Step.ROUND_THREADS, Step.ROUND_THREADS_DONE);
     relay.relayComposed(
         "ABC-42",
@@ -758,7 +794,7 @@ class StepRelayTest {
   }
 
   @Test
-  void sendsAThirdRedVerificationRunning(@TempDir Path root) throws Exception {
+  void sendsThirdRedVerificationRunning(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -792,8 +828,10 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in OrderTest", relay.standing("ABC-42"));
 
@@ -840,8 +878,10 @@ class StepRelayTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told =
         OriginContext.as(
@@ -854,7 +894,7 @@ class StepRelayTest {
   }
 
   @Test
-  void sendsTheTextWrittenWhereACaseSendsItAndOpensTheTurn(@TempDir Path root) throws Exception {
+  void sendsTheTextWrittenWhereCaseSendsItAndOpensTheTurn(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
     StateService state =
@@ -864,7 +904,7 @@ class StepRelayTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -875,7 +915,8 @@ class StepRelayTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
             sessions,
             door,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told =
         relay.write("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
@@ -897,7 +938,7 @@ class StepRelayTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -908,7 +949,8 @@ class StepRelayTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
             sessions,
             door,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told =
         relay.write("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
@@ -919,7 +961,7 @@ class StepRelayTest {
   }
 
   @Test
-  void sendsTheLineTypedWhereACaseSendsItAndOpensTheTurn(@TempDir Path root) throws Exception {
+  void sendsTheLineTypedWhereCaseSendsItAndOpensTheTurn(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
     StateService state =
@@ -929,7 +971,7 @@ class StepRelayTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -940,7 +982,8 @@ class StepRelayTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
             sessions,
             door,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told = relay.say("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
 
@@ -961,7 +1004,7 @@ class StepRelayTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -972,7 +1015,8 @@ class StepRelayTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
             sessions,
             door,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told = relay.say("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
 
@@ -982,7 +1026,7 @@ class StepRelayTest {
   }
 
   @Test
-  void sendsBelowAPendingInstructionWhereACaseSendsItAndOpensTheTurn(@TempDir Path root)
+  void sendsBelowPendingInstructionWhereCaseSendsItAndOpensTheTurn(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
@@ -993,7 +1037,7 @@ class StepRelayTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -1004,7 +1048,8 @@ class StepRelayTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
             sessions,
             door,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told =
         relay.relayUnder(
@@ -1016,7 +1061,7 @@ class StepRelayTest {
   }
 
   @Test
-  void leavesBelowAPendingInstructionUnsentAndOpensNoTurnWhereNoCaseSendsIt(@TempDir Path root)
+  void leavesBelowPendingInstructionUnsentAndOpensNoTurnWhereNoCaseSendsIt(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
@@ -1027,7 +1072,7 @@ class StepRelayTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -1038,7 +1083,8 @@ class StepRelayTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
             sessions,
             door,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
 
     boolean told =
         relay.relayUnder(

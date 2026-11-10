@@ -41,7 +41,7 @@ class ProjectFoldersTest {
   }
 
   @Test
-  void listsHiddenFoldersOnlyWhereTheTypedPrefixStartsWithADot() throws Exception {
+  void listsHiddenFoldersOnlyWhereTheTypedPrefixStartsWithDot() throws Exception {
     Files.createDirectories(root.resolve(".config"));
 
     assertThat(new ProjectFolders().under(root + "/.c"))

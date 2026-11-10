@@ -70,7 +70,7 @@ class ConflictFinishTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void pressesNothingAndSaysOnceWhileJagtHoldsAResolvedConflictStopped(@TempDir Path root) {
+  void pressesNothingAndSaysOnceWhileJagtHoldsResolvedConflictStopped(@TempDir Path root) {
     StateService state = state(root);
     TaskState stopped =
         TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT)
@@ -100,7 +100,7 @@ class ConflictFinishTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void saysOnceAcrossARestartWhileJagtHoldsAResolvedConflictStopped(@TempDir Path root) {
+  void saysOnceAcrossRestartWhileJagtHoldsResolvedConflictStopped(@TempDir Path root) {
     StateService state = state(root);
     TaskState stopped =
         TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT)
@@ -156,7 +156,7 @@ class ConflictFinishTest {
   }
 
   @Test
-  void pressesTheRevertTheHumanStartedWhereTheConflictIsARevertsAndNotTheDeploy(
+  void pressesTheRevertTheHumanStartedWhereTheConflictIsRevertsAndNotTheDeploy(
       @TempDir Path root) {
     StateService state = state(root);
     TaskState conflicted =

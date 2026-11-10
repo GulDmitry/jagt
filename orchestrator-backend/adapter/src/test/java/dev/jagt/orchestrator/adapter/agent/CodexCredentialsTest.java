@@ -29,7 +29,8 @@ class CodexCredentialsTest {
     assertThat(credential)
         .isEqualTo(
             new OauthCredential.Token(
-                "h.eyJleHAiOjE4OTM0NTYwMDAsImh0dHBzOi8vYXBpLm9wZW5haS5jb20vYXV0aCI6eyJjaGF0Z3B0X2FjY291bnRfaWQiOiJhY2N0LTQyIn19.s",
+                "h.eyJleHAiOjE4OTM0NTYwMDAsImh0dHBzOi8vYXBpLm9wZW5haS5jb20vYXV0aCI6eyJjaGF0Z3B0X"
+                + "2FjY291bnRfaWQiOiJhY2N0LTQyIn19.s",
                 "acct-42"));
   }
 
@@ -91,12 +92,13 @@ class CodexCredentialsTest {
     assertThat(credential)
         .isEqualTo(
             new OauthCredential.Token(
-                "h.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdC03In19.s",
+                "h.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjd"
+                + "C03In19.s",
                 "acct-1"));
   }
 
   @Test
-  void readsTheClaimsOfATokenWithoutASignature() {
+  void readsTheClaimsOfTokenWithoutSignature() {
     var credential =
         CodexCredentials.parse(
             """
@@ -107,12 +109,13 @@ class CodexCredentialsTest {
     assertThat(credential)
         .isEqualTo(
             new OauthCredential.Token(
-                "h.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdC03In19",
+                "h.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjd"
+                + "C03In19",
                 "acct-7"));
   }
 
   @Test
-  void treatsATokenExpiringAtThisInstantAsExpired() {
+  void treatsTokenExpiringAtThisInstantAsExpired() {
     var credential =
         CodexCredentials.parse(
             """
@@ -179,7 +182,7 @@ class CodexCredentialsTest {
   }
 
   @Test
-  void readsATokenWhoseClaimsCannotBeDecodedAsCarryingNoAccount() {
+  void readsTokenWhoseClaimsCannotBeDecodedAsCarryingNoAccount() {
     var credential = CodexCredentials.parse("{\"tokens\": {\"access_token\": \"h.!!!.s\"}}", NOW);
 
     assertThat(credential).isEqualTo(new OauthCredential.Failed("stored login names no account"));

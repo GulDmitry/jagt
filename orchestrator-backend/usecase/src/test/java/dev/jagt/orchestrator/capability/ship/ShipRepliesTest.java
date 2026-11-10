@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 class ShipRepliesTest {
 
   @Test
-  void forbidsTheMasterFromAnsweringAPersonWhereThatRightWasWithheld() {
+  void forbidsTheMasterFromAnsweringPersonWhereThatRightWasWithheld() {
     ConfigFile config =
         ConfigFile.defaults()
             .withMaster(MasterConfig.defaults().withMode("act").withMine(List.of("reply")));
@@ -23,7 +23,7 @@ class ShipRepliesTest {
   }
 
   @Test
-  void leavesAHumansOwnShipPostingItsRepliesAsBefore() {
+  void leavesHumansOwnShipPostingItsRepliesAsBefore() {
     ConfigFile config =
         ConfigFile.defaults()
             .withMaster(MasterConfig.defaults().withMode("act").withMine(List.of("reply")));

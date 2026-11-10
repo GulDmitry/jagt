@@ -34,7 +34,7 @@ class HandBackTest {
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
-  void owesNoVerificationForAProjectTheConfigurationNoLongerNames(@TempDir Path root)
+  void owesNoVerificationForProjectTheConfigurationNoLongerNames(@TempDir Path root)
       throws IOException {
     Path configFile =
         Files.writeString(
@@ -63,7 +63,7 @@ class HandBackTest {
   }
 
   @Test
-  void owesVerificationForATaskCarryingProbesWhereNoProjectCommandIsConfigured(@TempDir Path root)
+  void owesVerificationForTaskCarryingProbesWhereNoProjectCommandIsConfigured(@TempDir Path root)
       throws IOException {
     Path configFile =
         Files.writeString(
@@ -108,7 +108,7 @@ class HandBackTest {
   }
 
   @Test
-  void refusesAPlanPutUpWithNoPlanFile(@TempDir Path worktree) {
+  void refusesPlanPutUpWithNoPlanFile(@TempDir Path worktree) {
     HandBack handBack =
         new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
 
@@ -121,7 +121,7 @@ class HandBackTest {
   }
 
   @Test
-  void refusesAPlanFileJagtCannotRead(@TempDir Path worktree) throws IOException {
+  void refusesPlanFileJagtCannotRead(@TempDir Path worktree) throws IOException {
     Path plan = Files.writeString(worktree.resolve("plan.md"), "1. tag v1");
     assertThat(plan.toFile().setReadable(false)).isTrue();
     HandBack handBack =
@@ -135,7 +135,7 @@ class HandBackTest {
   }
 
   @Test
-  void refusesAPlanOfASeveralRepositoryTaskThatNamesNoRepositories(@TempDir Path worktree)
+  void refusesPlanOfSeveralRepositoryTaskThatNamesNoRepositories(@TempDir Path worktree)
       throws IOException {
     Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n");
     HandBack handBack =
@@ -154,7 +154,7 @@ class HandBackTest {
   }
 
   @Test
-  void refusesAProbeNamingARepositoryTheTaskLacks(@TempDir Path worktree) throws IOException {
+  void refusesProbeNamingRepositoryTheTaskLacks(@TempDir Path worktree) throws IOException {
     Files.writeString(
         worktree.resolve("plan.md"),
         "## Acceptance criteria\n- [here] it works\n\n```probes\n"
@@ -174,7 +174,7 @@ class HandBackTest {
   }
 
   @Test
-  void acceptsAProbeNamingARepositoryOfTheTask(@TempDir Path worktree) throws IOException {
+  void acceptsProbeNamingRepositoryOfTheTask(@TempDir Path worktree) throws IOException {
     Files.writeString(
         worktree.resolve("plan.md"),
         "## Acceptance criteria\n- [here] it works\n\n"
@@ -196,7 +196,7 @@ class HandBackTest {
   }
 
   @Test
-  void acceptsAProbeNamingAChangedRepositoryOfATaskWithNoRepositoryYet(@TempDir Path worktree)
+  void acceptsProbeNamingChangedRepositoryOfTaskWithNoRepositoryYet(@TempDir Path worktree)
       throws IOException {
     Files.writeString(
         worktree.resolve("plan.md"),
@@ -214,7 +214,7 @@ class HandBackTest {
   }
 
   @Test
-  void refusesAProbeNamingNoChangedRepositoryOfATaskWithNoRepositoryYet(@TempDir Path worktree)
+  void refusesProbeNamingNoChangedRepositoryOfTaskWithNoRepositoryYet(@TempDir Path worktree)
       throws IOException {
     Files.writeString(
         worktree.resolve("plan.md"),

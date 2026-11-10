@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 class VerificationTest {
 
   @Test
-  void runsNothingForAProjectTheConfigurationNoLongerNames() {
+  void runsNothingForProjectTheConfigurationNoLongerNames() {
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of()));
     Processes processes = mock(Processes.class);
@@ -102,7 +102,7 @@ class VerificationTest {
   }
 
   @Test
-  void namesTheProjectTheCommandAndTheExitOfAFailedRunWithTheTailOfItsErrors() {
+  void namesTheProjectTheCommandAndTheExitOfFailedRunWithTheTailOfItsErrors() {
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -170,7 +170,7 @@ class VerificationTest {
   }
 
   @Test
-  void relaysTheStandardOutputOfAFailedRunThatSaidNothingOnTheErrorStream() {
+  void relaysTheStandardOutputOfFailedRunThatSaidNothingOnTheErrorStream() {
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -309,7 +309,7 @@ class VerificationTest {
   }
 
   @Test
-  void namesTheProjectsOwnRemoteWhereAProbeIsRefusedForAPushThatCouldSkipItsCheck() {
+  void namesTheProjectsOwnRemoteWhereProbeIsRefusedForPushThatCouldSkipItsCheck() {
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -349,7 +349,7 @@ class VerificationTest {
   }
 
   @Test
-  void runsAProbeNamingTheSecondRepositoryInThatWorktreeAndOthersInThePrimaryOne() {
+  void runsProbeNamingTheSecondRepositoryInThatWorktreeAndOthersInThePrimaryOne() {
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     Processes processes = mock(Processes.class);

@@ -37,7 +37,7 @@ class PlanApprovalPlacementTest {
   private final CaseDoor door = mock(CaseDoor.class);
 
   @Test
-  void startsAFreshSessionInTheNewPrimaryOfATaskItsApprovalPlaced(@TempDir Path root) {
+  void startsFreshSessionInTheNewPrimaryOfTaskItsApprovalPlaced(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -72,7 +72,7 @@ class PlanApprovalPlacementTest {
   }
 
   @Test
-  void startsAFreshSessionInTheNewPrimaryWhereTheMasterApprovedAndPlacedTheTask(
+  void startsFreshSessionInTheNewPrimaryWhereTheMasterApprovedAndPlacedTheTask(
       @TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(

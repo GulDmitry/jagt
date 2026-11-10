@@ -16,7 +16,7 @@ class PlanRepositoriesTest {
         "- [changed] api\n- [unaffected: only the page text moves] web",
         "- [unaffected: the contract stays] api\n- [changed] web",
       })
-  void acceptsAPlanNamingEveryRepositoryWithATag(String items) {
+  void acceptsPlanNamingEveryRepositoryWithTag(String items) {
     List<Violation> violations =
         PlanRepositories.violationsIn("## Repositories\n" + items + "\n", List.of("api", "web"));
 
@@ -24,12 +24,12 @@ class PlanRepositoriesTest {
   }
 
   @Test
-  void asksForNothingOfATaskWithOneRepository() {
+  void asksForNothingOfTaskWithOneRepository() {
     assertThat(PlanRepositories.violationsIn("# Plan\n", List.of("api"))).isEmpty();
   }
 
   @Test
-  void refusesAPlanWithoutTheSectionNamingEveryRepository() {
+  void refusesPlanWithoutTheSectionNamingEveryRepository() {
     List<Violation> violations =
         PlanRepositories.violationsIn(
             "## Acceptance criteria\n- [here] x\n", List.of("api", "web"));
@@ -50,7 +50,7 @@ class PlanRepositoriesTest {
         "- [unaffected] web",
         "- [unaffected: ] web",
       })
-  void refusesARepositoryWithoutAValidTag(String item) {
+  void refusesRepositoryWithoutValidTag(String item) {
     List<Violation> violations =
         PlanRepositories.violationsIn(
             "## Repositories\n- [changed] api\n" + item + "\n", List.of("api", "web"));
@@ -59,7 +59,7 @@ class PlanRepositoriesTest {
   }
 
   @Test
-  void refusesAKeyThatIsNoRepositoryOfTheTask() {
+  void refusesKeyThatIsNoRepositoryOfTheTask() {
     List<Violation> violations =
         PlanRepositories.violationsIn(
             "## Repositories\n- [changed] api\n- [changed] web\n- [changed] docs\n",
@@ -78,7 +78,7 @@ class PlanRepositoriesTest {
         "## Repositories\n",
         "## Repositories\n- [unaffected: no change] api\n",
       })
-  void refusesAPlanOfATaskWithNoRepositoryThatNamesNoChangedOne(String plan) {
+  void refusesPlanOfTaskWithNoRepositoryThatNamesNoChangedOne(String plan) {
     List<Violation> violations = PlanRepositories.violationsIn(plan, List.of());
 
     assertThat(violations)
@@ -89,13 +89,13 @@ class PlanRepositoriesTest {
   }
 
   @Test
-  void acceptsAnyChangedKeyForATaskWithNoRepository() {
+  void acceptsAnyChangedKeyForTaskWithNoRepository() {
     assertThat(PlanRepositories.violationsIn("## Repositories\n- [changed] billing\n", List.of()))
         .isEmpty();
   }
 
   @Test
-  void refusesATaskRepositoryTheSectionLeavesOut() {
+  void refusesTaskRepositoryTheSectionLeavesOut() {
     List<Violation> violations =
         PlanRepositories.violationsIn("## Repositories\n- [changed] api\n", List.of("api", "web"));
 

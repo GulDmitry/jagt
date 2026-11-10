@@ -40,7 +40,7 @@ class RingsTest {
     "flow, task port flow",
     "protocol, task port flow protocol"
   })
-  void aCentreRingDependsOnlyOnTheRingsItMaySee(String ring, String maySee) {
+  void centreRingDependsOnlyOnTheRingsItMaySee(String ring, String maySee) {
     classes()
         .that()
         .resideInAPackage(packageOf(ring))
@@ -98,7 +98,7 @@ class RingsTest {
     "core, usecase adapter surface .",
     "usecase, adapter surface ."
   })
-  void aModuleNamesNoTypeOfTheModulesAroundItEvenInAComment(String inner, String outer) {
+  void moduleNamesNoTypeOfTheModulesAroundItEvenInComment(String inner, String outer) {
     Set<String> outerTypes =
         Stream.of(outer.split(" "))
             .flatMap(module -> javaFilesUnder(Path.of(module, "src/main/java")))
@@ -201,7 +201,7 @@ class RingsTest {
             "anthropic",
             "openai",
             "mcp__");
-    Pattern keysNamingAVendorByDesign = Pattern.compile("tmuxCommand|tmuxSession|tmuxSocket");
+    Pattern keysNamingVendorByDesign = Pattern.compile("tmuxCommand|tmuxSession|tmuxSocket");
 
     assertThat(
             ROOTS.stream()
@@ -211,7 +211,7 @@ class RingsTest {
                     path ->
                         vendors.stream()
                             .anyMatch(
-                                keysNamingAVendorByDesign
+                                keysNamingVendorByDesign
                                         .matcher(read(path))
                                         .replaceAll("")
                                         .toLowerCase(Locale.ROOT)
@@ -221,7 +221,7 @@ class RingsTest {
   }
 
   @Test
-  void anIdesFolderIsNamedOnlyWhereAWorktreeIsFilled() {
+  void anIdesFolderIsNamedOnlyWhereWorktreeIsFilled() {
     List<String> ideFolders = List.of(".idea", ".vscode", ".fleet");
     List<String> worktreeFilling = List.of("WorktreeNoise.java", "WorktreeFiles.java");
 

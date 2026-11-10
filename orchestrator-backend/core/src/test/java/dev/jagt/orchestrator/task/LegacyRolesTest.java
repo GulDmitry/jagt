@@ -17,7 +17,7 @@ class LegacyRolesTest {
           "digest");
 
   @Test
-  void aStateFileWrittenBeforeRolesKeepsTheQaRolesPassOnTheDeploy() {
+  void stateFileWrittenBeforeRolesKeepsTheQaRolesPassOnTheDeploy() {
     String json =
         """
         {"status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
@@ -35,7 +35,7 @@ class LegacyRolesTest {
   }
 
   @Test
-  void aRolesRecordKeyedQaLoadsAsTheAcceptanceRecord() {
+  void rolesRecordKeyedQaLoadsAsTheAcceptanceRecord() {
     String json =
         """
         {"status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
@@ -50,7 +50,7 @@ class LegacyRolesTest {
   }
 
   @Test
-  void aTaskCarryingBothKeepsTheRolesRecord() {
+  void taskCarryingBothKeepsTheRolesRecord() {
     String json =
         """
         {"status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
@@ -65,7 +65,7 @@ class LegacyRolesTest {
   }
 
   @Test
-  void aStateFileWithANullRoleRecordLoadsWithoutIt() {
+  void stateFileWithNullRoleRecordLoadsWithoutIt() {
     String json =
         """
         {"status":"DEPLOYED","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,

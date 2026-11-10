@@ -73,10 +73,12 @@ class AssistantProcessTest {
       new AssistantProcess(
           runner,
           new AssistantBreaker(
-              AssistantProperties.empty().withBreakerFailures(3), Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger()));
+              AssistantProperties.empty().withBreakerFailures(3),
+              Clock.systemUTC(),
+              new dev.jagt.orchestrator.service.ReachLedger()));
 
   @Test
-  void startsNoProcessOnceThreeProviderFailuresInARowOpenedIt() {
+  void startsNoProcessOnceThreeProviderFailuresInRowOpenedIt() {
     when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(OVERLOADED);
     process.run(CWD, TIMEOUT, List.of("claude"));
     process.run(CWD, TIMEOUT, List.of("claude"));
@@ -89,7 +91,7 @@ class AssistantProcessTest {
   }
 
   @Test
-  void aUsageLimitNeverOpensIt() {
+  void usageLimitNeverOpensIt() {
     when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(LIMIT);
     for (int call = 0; call < 5; call++) {
       process.run(CWD, TIMEOUT, List.of("claude"));

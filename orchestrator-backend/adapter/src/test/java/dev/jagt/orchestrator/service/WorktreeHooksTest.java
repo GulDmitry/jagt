@@ -18,12 +18,12 @@ import org.junit.jupiter.api.io.TempDir;
 class WorktreeHooksTest {
 
   @Test
-  void leavesASessionUngatedRatherThanTakingAwayTheProjectsOwnHooks(@TempDir Path dir) {
+  void leavesSessionUngatedRatherThanTakingAwayTheProjectsOwnHooks(@TempDir Path dir) {
     assertThat(WorktreeHooks.gitEnv(dir.resolve("a worktree from before this existed"))).isEmpty();
   }
 
   @Test
-  void writesNoStubForAHookThatNeverRunsInAWorktree(@TempDir Path worktree) {
+  void writesNoStubForHookThatNeverRunsInWorktree(@TempDir Path worktree) {
     WorktreeHooks.install(worktree, "ABC-42");
 
     assertThat(worktree.resolve(".jagt/hooks"))
@@ -35,7 +35,7 @@ class WorktreeHooksTest {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path repo = dir.resolve("repo");
-    Path worktree = dir.resolve("wt");
+    final Path worktree = dir.resolve("wt");
     Files.createDirectories(repo);
     runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
     Files.writeString(repo.resolve("f.txt"), "base");
@@ -60,12 +60,12 @@ class WorktreeHooksTest {
   }
 
   @Test
-  void runsAProjectHookTheRepositoryGainedAfterTheWorktreeWasCut(@TempDir Path dir)
+  void runsProjectHookTheRepositoryGainedAfterTheWorktreeWasCut(@TempDir Path dir)
       throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path repo = dir.resolve("repo");
-    Path worktree = dir.resolve("wt");
+    final Path worktree = dir.resolve("wt");
     Files.createDirectories(repo);
     runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
     Files.writeString(repo.resolve("f.txt"), "base");
@@ -105,12 +105,12 @@ class WorktreeHooksTest {
   }
 
   @Test
-  void refusesAPushToAnyBranchButTheTaskBranch(@TempDir Path dir) throws Exception {
+  void refusesPushToAnyBranchButTheTaskBranch(@TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path origin = dir.resolve("origin.git");
     Path repo = dir.resolve("repo");
-    Path worktree = dir.resolve("wt");
+    final Path worktree = dir.resolve("wt");
     runner.run(
         dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
     runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
@@ -153,7 +153,7 @@ class WorktreeHooksTest {
     Duration timeout = Duration.ofSeconds(30);
     Path origin = dir.resolve("origin.git");
     Path repo = dir.resolve("repo");
-    Path worktree = dir.resolve("wt");
+    final Path worktree = dir.resolve("wt");
     runner.run(
         dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
     runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
@@ -188,7 +188,7 @@ class WorktreeHooksTest {
     Duration timeout = Duration.ofSeconds(30);
     Path origin = dir.resolve("origin.git");
     Path repo = dir.resolve("repo");
-    Path worktree = dir.resolve("wt");
+    final Path worktree = dir.resolve("wt");
     runner.run(
         dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
     runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
@@ -225,7 +225,7 @@ class WorktreeHooksTest {
     Duration timeout = Duration.ofSeconds(30);
     Path origin = dir.resolve("origin.git");
     Path repo = dir.resolve("repo");
-    Path worktree = dir.resolve("wt");
+    final Path worktree = dir.resolve("wt");
     runner.run(
         dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
     runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
@@ -270,9 +270,9 @@ class WorktreeHooksTest {
     Duration timeout = Duration.ofSeconds(30);
     Path origin = dir.resolve("origin.git");
     Path sessionRepo = dir.resolve("session");
-    Path siblingRepo = dir.resolve("sibling");
-    Path sessionWorktree = dir.resolve("session-wt");
-    Path siblingWorktree = dir.resolve("sibling-wt");
+    final Path siblingRepo = dir.resolve("sibling");
+    final Path sessionWorktree = dir.resolve("session-wt");
+    final Path siblingWorktree = dir.resolve("sibling-wt");
     runner.run(
         dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
     runner.run(

@@ -21,7 +21,7 @@ class ChosenCheckerReaderTest {
   private final OpenCodeCheckerReader opencode = mock(OpenCodeCheckerReader.class);
 
   @Test
-  void readsOnOpenCodeForARoleNamedUnderReads() {
+  void readsOnOpenCodeForRoleNamedUnderReads() {
     CheckerReader.Run run =
         new CheckerReader.Run(
             "",
@@ -47,7 +47,7 @@ class ChosenCheckerReaderTest {
   }
 
   @Test
-  void readsOnClaudeForARoleNotNamedUnderReads() {
+  void readsOnClaudeForRoleNotNamedUnderReads() {
     CheckerReader.Run run =
         new CheckerReader.Run(
             "",

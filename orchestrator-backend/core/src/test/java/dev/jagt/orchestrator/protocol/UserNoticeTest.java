@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 class UserNoticeTest {
 
   @Test
-  void takesABlankTitleAsNoneAndKeepsAGivenOne() {
+  void takesBlankTitleAsNoneAndKeepsGivenOne() {
     assertThat(new UserNotice(" ", "done").title()).isNull();
     assertThat(new UserNotice("jagt", "done").title()).isEqualTo("jagt");
   }

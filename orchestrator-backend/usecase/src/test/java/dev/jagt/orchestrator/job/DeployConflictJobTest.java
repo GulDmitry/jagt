@@ -37,11 +37,10 @@ import tools.jackson.databind.json.JsonMapper;
 
 class DeployConflictJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
-  void aRedPipelineConflictEndsAndTheTaskIsDeployedAgainWhenALaterPipelineOnTheDeployBranchIsGreen(
+  void redPipelineConflictEndsAndTheTaskIsDeployedAgainWhenLaterPipelineOnTheDeployBranchIsGreen(
       @TempDir Path root) {
     StateService state =
         new StateService(
@@ -50,7 +49,7 @@ class DeployConflictJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     ConfigService config = mock(ConfigService.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     state.putTask(
@@ -76,7 +75,14 @@ class DeployConflictJobTest {
 
     new DeployConflictJob(
             List.of(
-                new LaterGreenRead(config, pipelines, new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))))),
+                new LaterGreenRead(
+                    config,
+                    pipelines,
+                    new FlowReports(
+                        state,
+                        Clock.systemUTC(),
+                        new Checkers(new TaskChart(Composition.builtIn())),
+                        new FlowRules(new TaskChart(Composition.builtIn()))))),
             state,
             Clock.systemUTC())
         .runOn(state.tasks());
@@ -87,7 +93,7 @@ class DeployConflictJobTest {
   }
 
   @Test
-  void readsTheHostOnceAMinuteAndTheWorktreeEveryPass(@TempDir Path root) {
+  void readsTheHostOnceMinuteAndTheWorktreeEveryPass(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -95,16 +101,12 @@ class DeployConflictJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .build()
             .withDeployment(
-                new Deployment(
-                        1,
-                        List.of(Deployment.Target.of("proj", "dev")),
-                        0,
-                        null)
+                new Deployment(1, List.of(Deployment.Target.of("proj", "dev")), 0, null)
                     .withTarget(
                         "proj",
                         target -> target.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))));
@@ -126,7 +128,7 @@ class DeployConflictJobTest {
   }
 
   @Test
-  void aTaskConflictingAgainRightAfterItsConflictEndedReadsTheHostInTheFirstPass(
+  void taskConflictingAgainRightAfterItsConflictEndedReadsTheHostInTheFirstPass(
       @TempDir Path root) {
     StateService state =
         new StateService(
@@ -135,7 +137,7 @@ class DeployConflictJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .build()
@@ -162,7 +164,7 @@ class DeployConflictJobTest {
   }
 
   @Test
-  void aReadThatEndedTheConflictLeavesTheReadsAfterItUnread(@TempDir Path root) {
+  void readThatEndedTheConflictLeavesTheReadsAfterItUnread(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -170,16 +172,12 @@ class DeployConflictJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
-    TaskState conflicted =
+            reducer);
+    final TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .build()
             .withDeployment(
-                new Deployment(
-                        1,
-                        List.of(Deployment.Target.of("proj", "dev")),
-                        0,
-                        null)
+                new Deployment(1, List.of(Deployment.Target.of("proj", "dev")), 0, null)
                     .withTarget(
                         "proj",
                         target -> target.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))));
@@ -197,7 +195,7 @@ class DeployConflictJobTest {
   }
 
   @Test
-  void aReadThatLeftTheConflictStandingHandsTheNextReadTheTaskAsItNowIs(@TempDir Path root) {
+  void readThatLeftTheConflictStandingHandsTheNextReadTheTaskAsItNowIs(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -205,16 +203,12 @@ class DeployConflictJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .build()
             .withDeployment(
-                new Deployment(
-                        1,
-                        List.of(Deployment.Target.of("proj", "dev")),
-                        0,
-                        null)
+                new Deployment(1, List.of(Deployment.Target.of("proj", "dev")), 0, null)
                     .withTarget(
                         "proj",
                         target -> target.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))));

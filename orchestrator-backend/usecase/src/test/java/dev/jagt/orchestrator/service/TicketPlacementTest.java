@@ -25,7 +25,7 @@ class TicketPlacementTest {
   private final TicketPlacement placement = new TicketPlacement(tickets, routing, workflow);
 
   @Test
-  void refusesAnItemTheRouterCouldNotPlaceRatherThanPickingARepository() {
+  void refusesAnItemTheRouterCouldNotPlaceRatherThanPickingRepository() {
     when(routing.projectFor(any()))
         .thenReturn(new ProjectRouting.Undecided("placed in no configured project"));
     TicketFacts item =
@@ -45,7 +45,7 @@ class TicketPlacementTest {
   }
 
   @Test
-  void asksTheRouterWhereToPutAnItemNobodyNamedAProjectFor() {
+  void asksTheRouterWhereToPutAnItemNobodyNamedProjectFor() {
     when(routing.projectFor(any())).thenReturn(new ProjectRouting.Placed(List.of("group-a")));
     TicketFacts item =
         TicketFacts.defaults()
@@ -60,7 +60,7 @@ class TicketPlacementTest {
   }
 
   @Test
-  void asksNoRouterWhereAHumanNamedTheProjects() {
+  void asksNoRouterWhereHumanNamedTheProjects() {
     TicketFacts item =
         TicketFacts.defaults()
             .withExists(true)
@@ -115,7 +115,7 @@ class TicketPlacementTest {
   }
 
   @Test
-  void refusesWhenTheReadAnsweredAboutADifferentItem() {
+  void refusesWhenTheReadAnsweredAboutDifferentItem() {
     when(workflow.isItemKey("ABC-99")).thenReturn(true);
     when(workflow.isItemKey("ABC-42")).thenReturn(true);
     TicketFacts other =
@@ -143,21 +143,21 @@ class TicketPlacementTest {
   }
 
   @Test
-  void tellsTheRouterOnlyOfAPlacementAHumanMade() {
+  void tellsTheRouterOnlyOfPlacementHumanMade() {
     placement.created("ABC-123", null, TokenUsage.NONE);
 
     verify(routing, never()).placedByHand(anyString(), anyString());
   }
 
   @Test
-  void tellsTheRouterWhereAHumanPlacedTheItem() {
+  void tellsTheRouterWhereHumanPlacedTheItem() {
     placement.created("ABC-123", List.of("web", "api"), TokenUsage.NONE);
 
     verify(routing).placedByHand("ABC-123", "web");
   }
 
   @Test
-  void readsATicketThroughTheTrackerReader() {
+  void readsTicketThroughTheTrackerReader() {
     TicketFacts item =
         TicketFacts.defaults()
             .withExists(true)
@@ -171,7 +171,7 @@ class TicketPlacementTest {
   }
 
   @Test
-  void refusesAnItemTheReadAnsweredWithoutAKeyATitleOrALink() {
+  void refusesAnItemTheReadAnsweredWithoutKeyTitleOrLink() {
     var outcome =
         placement.place(
             "ABC-42",

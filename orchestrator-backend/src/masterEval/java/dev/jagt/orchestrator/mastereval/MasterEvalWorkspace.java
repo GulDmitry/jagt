@@ -44,14 +44,14 @@ final class MasterEvalWorkspace {
             .redirectErrorStream(true)
             .start();
     String listed = new String(listing.getInputStream().readAllBytes());
-    for (String session : listed.lines().filter(MasterEvalWorkspace::ofADeadRun).toList()) {
+    for (String session : listed.lines().filter(MasterEvalWorkspace::ofDeadRun).toList()) {
       new ProcessBuilder("tmux", "kill-session", "-t", "=" + session)
           .start()
           .waitFor(10, TimeUnit.SECONDS);
     }
   }
 
-  private static boolean ofADeadRun(String session) {
+  private static boolean ofDeadRun(String session) {
     if (!session.startsWith(TMUX_PREFIX + "-")) {
       return false;
     }

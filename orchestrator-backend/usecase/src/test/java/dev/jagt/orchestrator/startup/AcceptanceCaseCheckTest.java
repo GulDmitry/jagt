@@ -22,7 +22,8 @@ class AcceptanceCaseCheckTest {
   @Test
   void readsNothingWhereAcceptanceIsOff(@TempDir Path root) throws Exception {
     Files.writeString(
-        root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    acceptance:\n      enabled: false\n");
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  roles:\n    acceptance:\n      enabled: false\n");
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.writeString(root.resolve("roles/acceptance/cases.md"), "## broken\n\nnot a case\n");
 
@@ -33,7 +34,8 @@ class AcceptanceCaseCheckTest {
   void acceptsTheShippedCasesAgainstTheShippedBriefWhereAcceptanceIsOn(@TempDir Path root)
       throws Exception {
     Files.writeString(
-        root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
         Path.of("../../roles/acceptance/cases.md.dist"),
@@ -47,9 +49,10 @@ class AcceptanceCaseCheckTest {
   }
 
   @Test
-  void namesACaseWhoseStepNoBriefSectionHolds(@TempDir Path root) throws Exception {
+  void namesCaseWhoseStepNoBriefSectionHolds(@TempDir Path root) throws Exception {
     Files.writeString(
-        root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.writeString(
         root.resolve("roles/acceptance/cases.md"),
@@ -67,7 +70,16 @@ class AcceptanceCaseCheckTest {
             .withConfigFile(root.resolve("jagt.yml").toString())
             .withStateFile(root.resolve("state.json").toString());
     OrchestratorPaths paths = new OrchestratorPaths(properties);
-    ConfigService config = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn())));
-    return new AcceptanceCaseCheck(new RoleFiles(paths, "acceptance"), config, paths, new Checkers(new TaskChart(Composition.builtIn())));
+    ConfigService config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
+    return new AcceptanceCaseCheck(
+        new RoleFiles(paths, "acceptance"),
+        config,
+        paths,
+        new Checkers(new TaskChart(Composition.builtIn())));
   }
 }

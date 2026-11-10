@@ -78,7 +78,7 @@ class ReviewRoundTest {
   }
 
   @Test
-  void asksTheHostForNoNotesOfARequestTheModelFoundMissing() {
+  void asksTheHostForNoNotesOfRequestTheModelFoundMissing() {
     when(reader.read("ABC-1", "http://mr/1"))
         .thenReturn(
             new Answer<>(
@@ -96,7 +96,7 @@ class ReviewRoundTest {
   }
 
   @Test
-  void keepsTheLastVerdictAndPaysForNoReadWhenAPollFindsTheRequestUnchanged() {
+  void keepsTheLastVerdictAndPaysForNoReadWhenPollFindsTheRequestUnchanged() {
     when(reader.read("ABC-1", "http://mr/1"))
         .thenReturn(
             new Answer<>(
@@ -122,7 +122,7 @@ class ReviewRoundTest {
   }
 
   @Test
-  void readsTheRequestAgainWhenAPollFindsItsFingerprintChanged() {
+  void readsTheRequestAgainWhenPollFindsItsFingerprintChanged() {
     when(reader.read("ABC-1", "http://mr/1"))
         .thenReturn(
             new Answer<>(
@@ -145,7 +145,7 @@ class ReviewRoundTest {
   }
 
   @Test
-  void readsTheRequestAgainWhenAPollFindsANewNoteUnderAnUnchangedFingerprint() {
+  void readsTheRequestAgainWhenPollFindsNewNoteUnderAnUnchangedFingerprint() {
     when(reader.read("ABC-1", "http://mr/1"))
         .thenReturn(
             new Answer<>(
@@ -191,7 +191,7 @@ class ReviewRoundTest {
   }
 
   @Test
-  void readsAnUnchangedRequestAgainWhenAHumanAsksForTheSweep() {
+  void readsAnUnchangedRequestAgainWhenHumanAsksForTheSweep() {
     when(reader.read("ABC-1", "http://mr/1"))
         .thenReturn(
             new Answer<>(

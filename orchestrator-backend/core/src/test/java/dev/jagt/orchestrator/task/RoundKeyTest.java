@@ -31,12 +31,12 @@ class RoundKeyTest {
   }
 
   @Test
-  void aStoredBlankTextReadsAsUnknown() {
+  void storedBlankTextReadsAsUnknown() {
     assertThat(RoundKey.stored("").known()).isFalse();
   }
 
   @Test
-  void aStoredTextOfAnEarlierRunStaysTheSameAsItsKey() {
+  void storedTextOfAnEarlierRunStaysTheSameAsItsKey() {
     RoundKey stored = RoundKey.stored("l1 note_1\nl2 note_2");
     RoundKey read = RoundKey.of(List.of("l1 note_1", "l2 note_2"));
 

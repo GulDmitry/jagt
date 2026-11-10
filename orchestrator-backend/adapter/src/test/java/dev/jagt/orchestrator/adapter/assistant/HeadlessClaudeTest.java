@@ -42,7 +42,7 @@ import tools.jackson.databind.json.JsonMapper;
 class HeadlessClaudeTest {
 
   @Test
-  void aReadThatNamesWhatStoppedItComesBackUnreadableInsteadOfAsAMissingRequest() {
+  void readThatNamesWhatStoppedItComesBackUnreadableInsteadOfAsMissingRequest() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
@@ -58,7 +58,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -74,7 +77,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void aReadAnErrorEndedWithNoResultNamesWhatEndedIt() {
+  void readAnErrorEndedWithNoResultNamesWhatEndedIt() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
@@ -89,7 +92,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -101,7 +107,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void aReadWhoseCommandStoppedWithJagtIsNoFailure() {
+  void readWhoseCommandStoppedWithJagtIsNoFailure() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenThrow(new Processes.Stopped(List.of("claude")));
@@ -109,7 +115,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -126,7 +135,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void aReadRefusedByTheBreakerFailsAsUnavailableNotAsDidNotReturn() {
+  void readRefusedByTheBreakerFailsAsUnavailableNotAsDidNotReturn() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
@@ -188,7 +197,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -210,7 +222,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -227,7 +242,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void loadsNoBuiltInToolSoATicketCannotAskTheReadForAShell() {
+  void loadsNoBuiltInToolSoTicketCannotAskTheReadForShell() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
@@ -235,7 +250,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -249,7 +267,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void refusesEveryMcpToolNamedAsAWriteSoATicketCannotAskTheReadToChangeTheHost() {
+  void refusesEveryMcpToolNamedAsWriteSoTicketCannotAskTheReadToChangeTheHost() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
@@ -257,7 +275,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -287,7 +308,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty()
                 .withMcpConfig(
@@ -316,7 +340,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -339,7 +366,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty().withModel("haiku"),
             mock(UsageTracker.class),
@@ -361,7 +391,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty().withModel(""),
             mock(UsageTracker.class),
@@ -383,7 +416,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -405,7 +441,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -432,7 +471,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -454,7 +496,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void leavesNoTranscriptBehindSinceNothingResumesAOneShot() {
+  void leavesNoTranscriptBehindSinceNothingResumesOneShot() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
@@ -462,7 +504,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -488,7 +533,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -514,7 +562,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -541,7 +592,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -571,7 +625,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -586,7 +643,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void readsTheSchemasObjectAModelFencedInsideItsProse() {
+  void readsTheSchemasObjectModelFencedInsideItsProse() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
@@ -602,7 +659,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -638,7 +698,10 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -680,7 +743,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -711,7 +777,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -741,7 +810,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -756,7 +828,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void reportsTheCostOfACallTheModelAnsweredWithAnError() {
+  void reportsTheCostOfCallTheModelAnsweredWithAnError() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
@@ -773,7 +845,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -791,7 +866,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void booksACallUnderItsKindEvenWhenItsReadCameBackUnreadable() {
+  void booksCallUnderItsKindEvenWhenItsReadCameBackUnreadable() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
@@ -807,7 +882,10 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             usage,
@@ -845,7 +923,7 @@ class HeadlessClaudeTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void countsTheCallsOfAReadByToolRatherThanPrintingWhatEachRead() {
+  void countsTheCallsOfReadByToolRatherThanPrintingWhatEachRead() {
     ProcessRunner runner = mock(ProcessRunner.class);
     ReadOnlyTools reads = mock(ReadOnlyTools.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
@@ -863,7 +941,10 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -879,13 +960,14 @@ class HeadlessClaudeTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void warnsRatherThanErrsWhenTheReadWasDeniedACallAndAnsweredAnyway() {
+  void warnsRatherThanErrsWhenTheReadWasDeniedCallAndAnsweredAnyway() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
             new Processes.Result(
                 0,
-                "{\"structured_output\":{\"exists\":false},\"permission_denials\":[{\"tool_name\":\"Bash\"}]}",
+                "{\"structured_output\":{\"exists\":false},\"permission_denials\":[{\"tool_name"
+                + "\":\"Bash\"}]}",
                 ""));
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
@@ -894,7 +976,10 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -926,7 +1011,10 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -941,7 +1029,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void holdsAReadToItsOwnReadsAndItsAnswerUntilItReturns() {
+  void holdsReadToItsOwnReadsAndItsAnswerUntilItReturns() {
     ProcessRunner runner = mock(ProcessRunner.class);
     ReadOnlyTools reads = mock(ReadOnlyTools.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
@@ -952,7 +1040,10 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),
@@ -971,7 +1062,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void countsACallColdWhenItsCacheReadIsZero() {
+  void countsCallColdWhenItsCacheReadIsZero() {
     var envelope =
         new JsonMapper()
             .readTree(
@@ -984,7 +1075,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void countsACallInNeitherStartCountWhenItsUsageHasNoCacheFields() {
+  void countsCallInNeitherStartCountWhenItsUsageHasNoCacheFields() {
     var envelope =
         new JsonMapper().readTree("{\"usage\":{\"input_tokens\":4,\"output_tokens\":60}}");
 
@@ -1000,7 +1091,10 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty().withMaxCostUsd(1.5),
             mock(UsageTracker.class),
@@ -1013,7 +1107,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void aCallThatReachesTheSpendCeilingFailsNamingItInsteadOfAnsweringEmpty() {
+  void callThatReachesTheSpendCeilingFailsNamingItInsteadOfAnsweringEmpty() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
@@ -1029,7 +1123,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -1042,7 +1139,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void aCallThatExitsWithoutAnEnvelopeFailsNamingItsCauseInsteadOfAnsweringEmpty() {
+  void callThatExitsWithoutAnEnvelopeFailsNamingItsCauseInsteadOfAnsweringEmpty() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(2, "", "claude: not logged in"));
@@ -1051,7 +1148,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -1064,7 +1164,7 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  void aCallThatNeverReturnedFailsNamingWhyAndBooksNoCost() {
+  void callThatNeverReturnedFailsNamingWhyAndBooksNoCost() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenThrow(new IllegalStateException("Command timed out after PT2M"));
@@ -1073,7 +1173,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -1088,7 +1191,7 @@ class HeadlessClaudeTest {
 
   @ParameterizedTest
   @CsvSource({"true,false,true", "false,true,true", "false,false,false"})
-  void saysARetriedReadWasRefusedWhenEitherAttemptWasRefusedAtTheGate(
+  void saysRetriedReadWasRefusedWhenEitherAttemptWasRefusedAtTheGate(
       boolean first, boolean second, boolean expected) {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
@@ -1101,7 +1204,10 @@ class HeadlessClaudeTest {
         new HeadlessClaude(
                 new AssistantProcess(
                     runner,
-                    new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                    new AssistantBreaker(
+                        AssistantProperties.empty(),
+                        java.time.Clock.systemUTC(),
+                        new dev.jagt.orchestrator.service.ReachLedger())),
                 ClaudeProperties.defaults(),
                 AssistantProperties.empty(),
                 mock(UsageTracker.class),
@@ -1114,7 +1220,7 @@ class HeadlessClaudeTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void warnsWhereACallReportedNoUsageSoItsCostIsKnownToBeUnaccounted() {
+  void warnsWhereCallReportedNoUsageSoItsCostIsKnownToBeUnaccounted() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
@@ -1126,7 +1232,10 @@ class HeadlessClaudeTest {
     new HeadlessClaude(
             new AssistantProcess(
                 runner,
-                new AssistantBreaker(AssistantProperties.empty(), java.time.Clock.systemUTC(), new dev.jagt.orchestrator.service.ReachLedger())),
+                new AssistantBreaker(
+                    AssistantProperties.empty(),
+                    java.time.Clock.systemUTC(),
+                    new dev.jagt.orchestrator.service.ReachLedger())),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             mock(UsageTracker.class),

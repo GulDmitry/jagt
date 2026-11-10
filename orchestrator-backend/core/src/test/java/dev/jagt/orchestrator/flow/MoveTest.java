@@ -74,7 +74,7 @@ class MoveTest {
     "REVIEW_PENDING, false",
     "CI_POLLING, false"
   })
-  void callsATurnEndUnreportedOnlyWhileTheMoveIsStillTheAgents(
+  void callsTurnEndUnreportedOnlyWhileTheMoveIsStillTheAgents(
       TaskStatus status, boolean unreported) {
     assertThat(Move.endsUnreported(status)).isEqualTo(unreported);
   }
@@ -88,7 +88,7 @@ class MoveTest {
     "DEPLOY_CONFLICT, false",
     "DONE, false"
   })
-  void measuresATurnByTheTreeAtEveryStatusButTheEndedOnes(TaskStatus status, boolean onTheTree) {
+  void measuresTurnByTheTreeAtEveryStatusButTheEndedOnes(TaskStatus status, boolean onTheTree) {
     assertThat(Move.endsOnTheTree(status)).isEqualTo(onTheTree);
   }
 
@@ -111,7 +111,7 @@ class MoveTest {
   }
 
   @Test
-  void leadsWithTheRevertAndSaysSoWhereTheConflictIsARevertsAndNotADeploys() {
+  void leadsWithTheRevertAndSaysSoWhereTheConflictIsRevertsAndNotDeploys() {
     Move move =
         Move.forTask(
             rules,
@@ -130,7 +130,7 @@ class MoveTest {
   }
 
   @Test
-  void doesNotAdviseAShipForAReviewRoundThatChangedNothing() {
+  void doesNotAdviseShipForReviewRoundThatChangedNothing() {
     Move move =
         Move.forTask(
             rules,
@@ -147,7 +147,7 @@ class MoveTest {
   }
 
   @Test
-  void handsAReviewRoundBackToTheHumanOncePollingHasStoppedForIt() {
+  void handsReviewRoundBackToTheHumanOncePollingHasStoppedForIt() {
     Move move =
         Move.forTask(
             rules,
@@ -165,7 +165,7 @@ class MoveTest {
   }
 
   @Test
-  void leavesATaskWithItsAgentWhenThePollingWindowElapsedWhileItWorks() {
+  void leavesTaskWithItsAgentWhenThePollingWindowElapsedWhileItWorks() {
     Move move =
         Move.forTask(
             rules,
@@ -180,7 +180,7 @@ class MoveTest {
   }
 
   @Test
-  void stillAdvisesAShipWhenTheRoundLeftRepliesToPostEvenThoughItChangedNoCode() {
+  void stillAdvisesShipWhenTheRoundLeftRepliesToPostEvenThoughItChangedNoCode() {
     Move move =
         Move.forTask(
             rules,
@@ -195,7 +195,7 @@ class MoveTest {
   }
 
   @Test
-  void asksTheHumanToShipARoundThatChangedNothingBeforeAnyRequestExists() {
+  void asksTheHumanToShipRoundThatChangedNothingBeforeAnyRequestExists() {
     Move move =
         Move.forTask(
             rules,
@@ -211,7 +211,7 @@ class MoveTest {
   }
 
   @Test
-  void keepsTheRoundWithTheHumanWhenTheDraftedRepliesStillNeedAShip() {
+  void keepsTheRoundWithTheHumanWhenTheDraftedRepliesStillNeedShip() {
     Move move =
         Move.forTask(
             rules,
@@ -225,7 +225,7 @@ class MoveTest {
   }
 
   @Test
-  void asksTheHumanToSweepARoundThePollHasGivenUpOn() {
+  void asksTheHumanToSweepRoundThePollHasGivenUpOn() {
     Move move =
         Move.forTask(
             rules,
@@ -240,7 +240,7 @@ class MoveTest {
   }
 
   @Test
-  void leavesARoundStillBeingPolledWithTheHost() {
+  void leavesRoundStillBeingPolledWithTheHost() {
     Move move =
         Move.forTask(
             rules,
@@ -254,7 +254,7 @@ class MoveTest {
   }
 
   @Test
-  void asksTheHumanAboutATaskWaitingOnChecksWithNoRequestToRead() {
+  void asksTheHumanAboutTaskWaitingOnChecksWithNoRequestToRead() {
     Move move =
         Move.forTask(
             rules,
@@ -270,7 +270,7 @@ class MoveTest {
   }
 
   @Test
-  void pointsAtTheAgentWhenTheRoundEndedInAQuestionInsteadOfAtTheShipButton() {
+  void pointsAtTheAgentWhenTheRoundEndedInQuestionInsteadOfAtTheShipButton() {
     Move move =
         Move.forTask(
             rules,
@@ -285,7 +285,7 @@ class MoveTest {
   }
 
   @Test
-  void leavesAQuestionUnshoutedWhileAPollIsStillReadingTheRoundItWasAskedOn() {
+  void leavesQuestionUnshoutedWhilePollIsStillReadingTheRoundItWasAskedOn() {
     Move move =
         Move.forTask(
             rules,
@@ -318,7 +318,7 @@ class MoveTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"IN_PROGRESS", "CI_FAILED", "DEPLOY_CONFLICT", "APPROVED", "DEPLOYED"})
-  void interruptsForAQuestionNoCommentOnTheRequestCanReachEvenWhileThatRequestIsPolled(
+  void interruptsForQuestionNoCommentOnTheRequestCanReachEvenWhileThatRequestIsPolled(
       TaskStatus status) {
     Move move =
         Move.forTask(
@@ -350,7 +350,8 @@ class MoveTest {
   void handsAnAgentThatStoppedToAskBackToTheHumanInsteadOfSayingItIsStillWorking(
       TaskStatus status) {
     Move move =
-        Move.forTask(rules, status, Facts.defaults(), RoundState.of(AgentReport.QUESTION, false), false);
+        Move.forTask(
+            rules, status, Facts.defaults(), RoundState.of(AgentReport.QUESTION, false), false);
 
     assertThat(move.owner()).isEqualTo(Owner.YOU);
     assertThat(move.hint()).contains("answer the question");
@@ -385,7 +386,7 @@ class MoveTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"REVIEW_PENDING", "CI_POLLING", "DEPLOYED", "DONE"})
-  void keepsTheOwnerOfAStatusThatWasNeverTheAgentsEvenIfSilenceWasStamped(TaskStatus status) {
+  void keepsTheOwnerOfStatusThatWasNeverTheAgentsEvenIfSilenceWasStamped(TaskStatus status) {
     assertThat(
             Move.forTask(
                 rules,
@@ -547,7 +548,7 @@ class MoveTest {
   }
 
   @Test
-  void asksForTheApprovalRatherThanAReadOnARoundThatCameBackWithNothingUnresolved() {
+  void asksForTheApprovalRatherThanReadOnRoundThatCameBackWithNothingUnresolved() {
     Move move =
         Move.forTask(
             rules,
@@ -566,9 +567,10 @@ class MoveTest {
     "CI_FAILED, open the Session tab",
     "REVIEWED, close the task"
   })
-  void namesWhatIsLeftWhenTheStatusClaimsAReviewRequestThatIsNotThere(
+  void namesWhatIsLeftWhenTheStatusClaimsReviewRequestThatIsNotThere(
       TaskStatus status, String ask) {
-    assertThat(Move.forTask(rules, status, Facts.defaults(), RoundState.NONE, false).ask()).isEqualTo(ask);
+    assertThat(Move.forTask(rules, status, Facts.defaults(), RoundState.NONE, false).ask())
+        .isEqualTo(ask);
   }
 
   @ParameterizedTest
@@ -601,14 +603,15 @@ class MoveTest {
 
   @Test
   void asksForTheSessionToBeCheckedWhenItWentQuietWithoutReporting() {
-    Move move = Move.forTask(rules, TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, true);
+    Move move =
+        Move.forTask(rules, TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, true);
 
     assertThat(move.ask()).isEqualTo("check the stopped session");
   }
 
   @ParameterizedTest
   @EnumSource(TaskStatus.class)
-  void highlightsAButtonForTheActItsBadgeNames(TaskStatus status) {
+  void highlightsButtonForTheActItsBadgeNames(TaskStatus status) {
     List<Move> badged =
         Stream.of(
                 Move.forTask(
@@ -641,7 +644,7 @@ class MoveTest {
   }
 
   @Test
-  void pointsAtTheSessionRatherThanAShipWhenARevertedDeployHasNoRequestToShipOnto() {
+  void pointsAtTheSessionRatherThanShipWhenRevertedDeployHasNoRequestToShipOnto() {
     Move move = Move.forTask(rules, TaskStatus.REVERTED, Facts.defaults(), RoundState.NONE, false);
 
     assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
@@ -650,7 +653,7 @@ class MoveTest {
   }
 
   @Test
-  void pointsAtTheSessionRatherThanASweepWhenAFailedRunHasNoRequestToReadItFrom() {
+  void pointsAtTheSessionRatherThanSweepWhenFailedRunHasNoRequestToReadItFrom() {
     Move move = Move.forTask(rules, TaskStatus.CI_FAILED, Facts.defaults(), RoundState.NONE, false);
 
     assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
@@ -659,7 +662,7 @@ class MoveTest {
   }
 
   @Test
-  void saysNothingAboutARoundWhoseOpenThreadsAreTheReviewersToClose() {
+  void saysNothingAboutRoundWhoseOpenThreadsAreTheReviewersToClose() {
     Move move =
         Move.forTask(
             rules,
@@ -693,7 +696,7 @@ class MoveTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"REVIEW_PENDING", "CI_FAILED", "DEPLOY_CONFLICT"})
-  void interruptsForATaskThatMovesNoFurtherWithoutTheHuman(TaskStatus status) {
+  void interruptsForTaskThatMovesNoFurtherWithoutTheHuman(TaskStatus status) {
     assertThat(
             Move.forTask(
                     rules,
@@ -707,7 +710,7 @@ class MoveTest {
   }
 
   @Test
-  void interruptsWhenAnAgentAsksFromAStatusThatWouldOtherwiseWait() {
+  void interruptsWhenAnAgentAsksFromStatusThatWouldOtherwiseWait() {
     Move move =
         Move.forTask(
             rules,
@@ -721,13 +724,14 @@ class MoveTest {
 
   @Test
   void interruptsForAnAgentThatWentQuietWithoutReportingAnything() {
-    Move move = Move.forTask(rules, TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, true);
+    Move move =
+        Move.forTask(rules, TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, true);
 
     assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
   }
 
   @Test
-  void waitsOnTheReviewerAfterACleanRoundThatNobodyHasApprovedYet() {
+  void waitsOnTheReviewerAfterCleanRoundThatNobodyHasApprovedYet() {
     Move move =
         Move.forTask(
             rules,
@@ -762,7 +766,7 @@ class MoveTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"REVIEW_PENDING", "CI_FAILED", "REVIEWED", "APPROVED", "REVERTED", "DEPLOYED"})
-  void highlightsTheAnswerRatherThanAVerbThatActsWhileAQuestionIsOpen(TaskStatus status) {
+  void highlightsTheAnswerRatherThanVerbThatActsWhileQuestionIsOpen(TaskStatus status) {
     Move move =
         Move.forTask(
             rules,
@@ -775,7 +779,7 @@ class MoveTest {
   }
 
   @Test
-  void handsACleanRoundBackToTheHumanOnceNothingPollsItForTheApproval() {
+  void handsCleanRoundBackToTheHumanOnceNothingPollsItForTheApproval() {
     Move move =
         Move.forTask(
             rules,
@@ -794,7 +798,7 @@ class MoveTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"CI_POLLING", "REVIEWED"})
-  void handsTheTaskOverForAQuestionAskedFromAStatusThatWaitsOnTheCodeHost(TaskStatus status) {
+  void handsTheTaskOverForQuestionAskedFromStatusThatWaitsOnTheCodeHost(TaskStatus status) {
     Move move =
         Move.forTask(
             rules,
@@ -808,7 +812,7 @@ class MoveTest {
   }
 
   @Test
-  void leavesAClosedTaskAloneWhateverItsLastMessageSaid() {
+  void leavesClosedTaskAloneWhateverItsLastMessageSaid() {
     Move move =
         Move.forTask(
             rules,
@@ -842,7 +846,7 @@ class MoveTest {
   }
 
   @Test
-  void neverMakesDeployThePrimaryMoveOfATaskThatHasNoRequestToLand() {
+  void neverMakesDeployThePrimaryMoveOfTaskThatHasNoRequestToLand() {
     Move move = Move.forTask(rules, TaskStatus.REVIEWED, Facts.defaults(), RoundState.NONE, false);
 
     assertThat(move.actions()).doesNotContain(TaskAction.DEPLOY);
@@ -875,14 +879,15 @@ class MoveTest {
   }
 
   @Test
-  void offersShipForATaskStuckAtShippingBecauseTheDeadAgentIsWhatMakesItStuck() {
+  void offersShipForTaskStuckAtShippingBecauseTheDeadAgentIsWhatMakesItStuck() {
     assertThat(
-            Move.forTask(rules, TaskStatus.SHIPPING, Facts.defaults(), RoundState.NONE, false).actions())
+            Move.forTask(rules, TaskStatus.SHIPPING, Facts.defaults(), RoundState.NONE, false)
+                .actions())
         .contains(TaskAction.SHIP);
   }
 
   @Test
-  void advisesAFixOntoTheSameRequestForATaskWhoseDeployWasTakenBackOut() {
+  void advisesFixOntoTheSameRequestForTaskWhoseDeployWasTakenBackOut() {
     Move move =
         Move.forTask(
             rules,
@@ -896,14 +901,15 @@ class MoveTest {
   }
 
   @Test
-  void sendsTheHumanToTheAgentWhenAReversionHasNoRequestToShipOnto() {
+  void sendsTheHumanToTheAgentWhenReversionHasNoRequestToShipOnto() {
     assertThat(
-            Move.forTask(rules, TaskStatus.REVERTED, Facts.defaults(), RoundState.NONE, false).primary())
+            Move.forTask(rules, TaskStatus.REVERTED, Facts.defaults(), RoundState.NONE, false)
+                .primary())
         .isEqualTo(TaskAction.FOCUS);
   }
 
   @Test
-  void leavesAReversionInTheDeployPhaseBecauseThatIsWhereItWentWrong() {
+  void leavesReversionInTheDeployPhaseBecauseThatIsWhereItWentWrong() {
     assertThat(
             Move.forTask(
                     rules,
@@ -918,14 +924,15 @@ class MoveTest {
 
   @Test
   void asksTheHumanToCheckTheStoppedSessionWhereTheAgentWentSilent() {
-    Move move = Move.forTask(rules, TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, true);
+    Move move =
+        Move.forTask(rules, TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, true);
 
     assertThat(move.owner()).isEqualTo(Owner.YOU);
     assertThat(move.ask()).isEqualTo("check the stopped session");
   }
 
   @Test
-  void asksTheHumanToAnswerTheSessionWhereItStoppedOnAQuestion() {
+  void asksTheHumanToAnswerTheSessionWhereItStoppedOnQuestion() {
     Move move =
         Move.forTask(
             rules,
@@ -952,8 +959,9 @@ class MoveTest {
   }
 
   @Test
-  void asksNothingOfAHumanWhileTheAgentIsWorking() {
-    Move move = Move.forTask(rules, TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, false);
+  void asksNothingOfHumanWhileTheAgentIsWorking() {
+    Move move =
+        Move.forTask(rules, TaskStatus.IN_PROGRESS, Facts.defaults(), RoundState.NONE, false);
 
     assertThat(move.ask()).isNull();
   }
@@ -962,7 +970,7 @@ class MoveTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"IN_PROGRESS", "REVIEW_PENDING", "CI_FAILED"})
-  void putsAddRepoOnTheQuestionOfASessionAskingForARepository(TaskStatus status) {
+  void putsAddRepoOnTheQuestionOfSessionAskingForRepository(TaskStatus status) {
     Move move =
         Move.forTask(
             rules,
@@ -978,7 +986,7 @@ class MoveTest {
   }
 
   @Test
-  void keepsFocusOnTheQuestionOfASessionAskingForNothingTheBoardCanAdd() {
+  void keepsFocusOnTheQuestionOfSessionAskingForNothingTheBoardCanAdd() {
     Move move =
         Move.forTask(
             rules,
@@ -1026,7 +1034,7 @@ class MoveTest {
   }
 
   @Test
-  void advisesTheDeployOfATaskShippedWithoutARequestSinceNoReviewIsOpenOnIt() {
+  void advisesTheDeployOfTaskShippedWithoutRequestSinceNoReviewIsOpenOnIt() {
     Move move =
         Move.forTask(
             rules,
@@ -1041,8 +1049,9 @@ class MoveTest {
   }
 
   @Test
-  void offersNoDeployToATaskAtReviewPendingThatWasNeitherShippedNorRequested() {
-    Move move = Move.forTask(rules, TaskStatus.REVIEW_PENDING, Facts.defaults(), RoundState.NONE, false);
+  void offersNoDeployToTaskAtReviewPendingThatWasNeitherShippedNorRequested() {
+    Move move =
+        Move.forTask(rules, TaskStatus.REVIEW_PENDING, Facts.defaults(), RoundState.NONE, false);
 
     assertThat(move.actions()).doesNotContain(TaskAction.DEPLOY);
   }

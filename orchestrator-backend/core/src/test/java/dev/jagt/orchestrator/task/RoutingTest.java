@@ -10,7 +10,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class RoutingTest {
 
   @Test
-  void answersAQuestionNamingAnItemAndAtLeastOneProject() {
+  void answersQuestionNamingAnItemAndAtLeastOneProject() {
     RoutingQuestion question =
         RoutingQuestion.defaults()
             .withItem(TicketFacts.defaults().withKey("ABC-42"))
@@ -20,7 +20,7 @@ class RoutingTest {
   }
 
   @Test
-  void cannotAnswerAQuestionWithNoProjectToChooseFrom() {
+  void cannotAnswerQuestionWithNoProjectToChooseFrom() {
     RoutingQuestion question =
         RoutingQuestion.defaults().withItem(TicketFacts.defaults().withKey("ABC-42"));
 
@@ -28,7 +28,7 @@ class RoutingTest {
   }
 
   @Test
-  void cannotAnswerAQuestionWhoseItemHasNoKey() {
+  void cannotAnswerQuestionWhoseItemHasNoKey() {
     RoutingQuestion question =
         RoutingQuestion.defaults().withProjects(Map.of("api", "the backend"));
 
@@ -48,7 +48,7 @@ class RoutingTest {
   @CsvSource(
       nullValues = "NULL",
       value = {"api,labels carry it,true", "api,'  ',false", "api,NULL,false"})
-  void teachesOnlyWhenTheAnswerCameWithARule(String project, String rule, boolean teaches) {
+  void teachesOnlyWhenTheAnswerCameWithRule(String project, String rule, boolean teaches) {
     assertThat(new RoutingAnswer(project, rule).teaches()).isEqualTo(teaches);
   }
 
@@ -61,12 +61,12 @@ class RoutingTest {
   }
 
   @Test
-  void readsAMissingProjectAsBlank() {
+  void readsMissingProjectAsBlank() {
     assertThat(new RoutingAnswer(null, "x").project()).isEmpty();
   }
 
   @Test
-  void readsAMissingRuleOfAPairAsBlankAndStripsTheOthers() {
+  void readsMissingRuleOfPairAsBlankAndStripsTheOthers() {
     RulePair pair = new RulePair(" labels carry it ", null);
 
     assertThat(pair.kept()).isEqualTo("labels carry it");

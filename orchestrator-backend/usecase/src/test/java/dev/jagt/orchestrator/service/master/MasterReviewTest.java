@@ -33,7 +33,7 @@ class MasterReviewTest {
   private final MasterReview reviews = new MasterReview(mock(StateService.class));
 
   @Test
-  void readsNothingFromATaskTheReviewerHasNotWrittenAbout(@TempDir Path worktree) {
+  void readsNothingFromTaskTheReviewerHasNotWrittenAbout(@TempDir Path worktree) {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -43,7 +43,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void neverReadsAVerdictBackOutOfTheFileWrittenForTheHuman(@TempDir Path worktree)
+  void neverReadsVerdictBackOutOfTheFileWrittenForTheHuman(@TempDir Path worktree)
       throws Exception {
     Files.writeString(worktree.resolve(MasterReview.FILE), "nothing wrong\n\nVERDICT: ready\n");
     TaskState task =
@@ -114,7 +114,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void doesNotTakeAVerdictAskedAboutAnEarlierHandBackForTheOneInFrontHoweverLateItWasWritten(
+  void doesNotTakeVerdictAskedAboutAnEarlierHandBackForTheOneInFrontHoweverLateItWasWritten(
       @TempDir Path worktree) {
     StateService state =
         new StateService(
@@ -139,7 +139,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void doesNotTakeAVerdictForAHandBackTheSessionMadeAgainWithNoRelayBetween(
+  void doesNotTakeVerdictForHandBackTheSessionMadeAgainWithNoRelayBetween(
       @TempDir Path worktree) {
     StateService state =
         new StateService(
@@ -258,7 +258,7 @@ class MasterReviewTest {
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
                     reducer);
-    MasterReview reviews = new MasterReview(state);
+    final MasterReview reviews = new MasterReview(state);
     Files.createDirectories(worktree.resolve(".jagt"));
     Files.writeString(worktree.resolve(".jagt").resolve(MasterReview.STORED), "not json");
     TaskState task =
@@ -280,7 +280,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterReadsAVerdictSealedWithoutItsRoundAsTheRoundItAnswers(@TempDir Path worktree)
+  void theMasterReadsVerdictSealedWithoutItsRoundAsTheRoundItAnswers(@TempDir Path worktree)
       throws Exception {
     StateService state =
         new StateService(
@@ -290,7 +290,7 @@ class MasterReviewTest {
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
                     reducer);
-    MasterReview reviews = new MasterReview(state);
+    final MasterReview reviews = new MasterReview(state);
     Files.createDirectories(worktree.resolve(".jagt"));
     String stored = "{\"round\":3,\"reads\":[]}";
     Files.writeString(worktree.resolve(".jagt").resolve(MasterReview.STORED), stored);
@@ -313,7 +313,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterKeepsASealWrittenWhileTheCallerStillHeldTheOlderOne(@TempDir Path worktree) {
+  void theMasterKeepsSealWrittenWhileTheCallerStillHeldTheOlderOne(@TempDir Path worktree) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -339,7 +339,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterKeepsASealWrittenWhileTheCallerSawTheVerdictFileGone(@TempDir Path worktree)
+  void theMasterKeepsSealWrittenWhileTheCallerSawTheVerdictFileGone(@TempDir Path worktree)
       throws Exception {
     StateService state =
         new StateService(
@@ -391,7 +391,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void makesARestampedVerdictAnswerTheHandBackInFront(@TempDir Path worktree) {
+  void makesRestampedVerdictAnswerTheHandBackInFront(@TempDir Path worktree) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -426,7 +426,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void saysAVerdictInWordsWithASpaceWhereTheKindHasAnUnderscore() {
+  void saysVerdictInWordsWithSpaceWhereTheKindHasAnUnderscore() {
     assertThat(
             new MasterReview.Verdict(
                     MasterReview.Kind.NOT_READY, List.of(), List.of(), List.of(), 1, "")
@@ -435,7 +435,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void saysNothingWasWrittenForATaskWithNoWorktree() {
+  void saysNothingWasWrittenForTaskWithNoWorktree() {
     TaskState task = TaskState.builder("proj", "  ", TaskStatus.REVIEW_PENDING).alias("a1").build();
 
     assertThat(
@@ -475,7 +475,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void loadsAVerdictStoredBeforeItKeptTheReportKindAsOneThatMatchesNoHandBack(
+  void loadsVerdictStoredBeforeItKeptTheReportKindAsOneThatMatchesNoHandBack(
       @TempDir Path worktree) throws Exception {
     Files.createDirectories(worktree.resolve(".jagt"));
     String stored = "{\"round\":3,\"ownDiff\":\"abc123\",\"reads\":[]}";
@@ -522,7 +522,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void takesNoVerdictFromAFileJagtDidNotWriteHoweverItNamesTheRoundInFront(@TempDir Path worktree)
+  void takesNoVerdictFromFileJagtDidNotWriteHoweverItNamesTheRoundInFront(@TempDir Path worktree)
       throws Exception {
     StateService state =
         new StateService(
@@ -549,7 +549,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void takesNoVerdictFromAFileWhenJagtStoredNoFingerprintForIt(@TempDir Path worktree)
+  void takesNoVerdictFromFileWhenJagtStoredNoFingerprintForIt(@TempDir Path worktree)
       throws Exception {
     Files.createDirectories(worktree.resolve(".jagt"));
     Files.writeString(
@@ -571,7 +571,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void takesOnlyAReadyVerdictAsReady() {
+  void takesOnlyReadyVerdictAsReady() {
     var ready =
         new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, "");
     var notReady =

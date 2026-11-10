@@ -50,7 +50,7 @@ class IntakeStartTest {
   }
 
   @Test
-  void turnsAwayAnItemNothingCouldPlaceInAProject() {
+  void turnsAwayAnItemNothingCouldPlaceInProject() {
     TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42");
     when(routing.projectFor(item))
         .thenReturn(new ProjectRouting.Undecided("placed in no configured project"));
@@ -76,7 +76,7 @@ class IntakeStartTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void namesTheFailuresTypeAndKeepsItsStackWhereTheLaunchFailedWithoutAMessage() {
+  void namesTheFailuresTypeAndKeepsItsStackWhereTheLaunchFailedWithoutMessage() {
     TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1");
     when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
     when(launcher.launch(any(), any())).thenThrow(new NullPointerException());

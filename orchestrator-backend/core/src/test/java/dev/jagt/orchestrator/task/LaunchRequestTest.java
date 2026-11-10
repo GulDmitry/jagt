@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class LaunchRequestTest {
 
   @Test
-  void treatsFreeTextAfterPlanAsNotesNotAProject() {
+  void treatsFreeTextAfterPlanAsNotesNotProject() {
     LaunchRequest typed =
         LaunchRequest.ofLine("ABC-42 plan walk me through it", Set.of("demo", "widgets"));
 
@@ -30,7 +30,7 @@ class LaunchRequestTest {
   }
 
   @Test
-  void readsALineOpeningOnAProjectAsATaskTheHumanWroteThemselves() {
+  void readsLineOpeningOnProjectAsTaskTheHumanWroteThemselves() {
     LaunchRequest typed =
         LaunchRequest.ofLine("demo split the invoice mailer in two", Set.of("demo", "widgets"));
 
@@ -40,7 +40,7 @@ class LaunchRequestTest {
   }
 
   @Test
-  void sendsAMistypedTicketKeyToTheTrackerRatherThanMakingATaskOfIt() {
+  void sendsMistypedTicketKeyToTheTrackerRatherThanMakingTaskOfIt() {
     LaunchRequest typed = LaunchRequest.ofLine("ABC42 demo tighten the parser", Set.of("demo"));
 
     assertThat(typed.ref()).isEqualTo("ABC42");
@@ -48,7 +48,7 @@ class LaunchRequestTest {
   }
 
   @Test
-  void refusesFromWithoutABranchInsteadOfSwallowingTheNextWord() {
+  void refusesFromWithoutBranchInsteadOfSwallowingTheNextWord() {
     assertThatThrownBy(() -> LaunchRequest.ofLine("ABC-1 from", Set.of()))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("`from` needs the branch");
@@ -64,7 +64,7 @@ class LaunchRequestTest {
   }
 
   @Test
-  void keepsATokenAsNotesWhenOnlySomeOfItsCommaPartsAreProjects() {
+  void keepsTokenAsNotesWhenOnlySomeOfItsCommaPartsAreProjects() {
     LaunchRequest typed = LaunchRequest.ofLine("ABC-1 demo,whatever", Set.of("demo"));
 
     assertThat(typed.project()).isNull();
@@ -72,7 +72,7 @@ class LaunchRequestTest {
   }
 
   @Test
-  void readsTheBranchStrategyAsAModifierRatherThanAsNotes() {
+  void readsTheBranchStrategyAsModifierRatherThanAsNotes() {
     LaunchRequest typed = LaunchRequest.ofLine("ABC-1 recreate", Set.of("demo"));
 
     assertThat(typed.strategy()).isEqualTo("recreate");
@@ -87,7 +87,7 @@ class LaunchRequestTest {
   }
 
   @Test
-  void readsABranchAfterFromEvenWhenNothingFollowsIt() {
+  void readsBranchAfterFromEvenWhenNothingFollowsIt() {
     LaunchRequest typed = LaunchRequest.ofLine("ABC-1 from release", Set.of("demo"));
 
     assertThat(typed.baseBranch()).isEqualTo("release");
@@ -95,7 +95,7 @@ class LaunchRequestTest {
   }
 
   @Test
-  void readsAProjectTokenWithATrailingCommaAsThatProject() {
+  void readsProjectTokenWithTrailingCommaAsThatProject() {
     LaunchRequest typed = LaunchRequest.ofLine("ABC-1 demo, keep going", Set.of("demo"));
 
     assertThat(typed.project()).isEqualTo("demo,");
@@ -103,7 +103,7 @@ class LaunchRequestTest {
   }
 
   @Test
-  void readsAProjectTokenWithAnEmptyPartBetweenTwoCommasAsTheProjectsItNames() {
+  void readsProjectTokenWithAnEmptyPartBetweenTwoCommasAsTheProjectsItNames() {
     LaunchRequest typed = LaunchRequest.ofLine("ABC-1 demo,,php keep going", Set.of("demo", "php"));
 
     assertThat(typed.project()).isEqualTo("demo,,php");

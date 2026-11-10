@@ -42,14 +42,13 @@ import tools.jackson.databind.json.JsonMapper;
 
 class DeployCheckJobAcceptanceTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void asksTheSessionNothingWhereAcceptanceChecksTheDeploy(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
+    final StepRelay relay = mock(StepRelay.class);
+    final DeployPipelines pipelines = mock(DeployPipelines.class);
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -57,7 +56,7 @@ class DeployCheckJobAcceptanceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -83,7 +82,11 @@ class DeployCheckJobAcceptanceTest {
             config,
             relay,
             pipelines,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new TaskStops(
                 new StopPolicy(
                     ignored -> Arbiter.Profile.OFF,
@@ -95,7 +98,8 @@ class DeployCheckJobAcceptanceTest {
                             new OrchestratorPaths(
                                 OrchestratorProperties.defaults().withRoot(root.toString()))))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));

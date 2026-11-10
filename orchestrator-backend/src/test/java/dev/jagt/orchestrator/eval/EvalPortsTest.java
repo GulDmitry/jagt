@@ -21,7 +21,7 @@ class EvalPortsTest {
   }
 
   @Test
-  void aPortIsNeverHandedOutTwiceInOneJvm() {
+  void portIsNeverHandedOutTwiceInOneJvm() {
     long distinct = Stream.generate(EvalPorts::free).limit(50).distinct().count();
 
     assertThat(distinct).isEqualTo(50);

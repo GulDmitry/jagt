@@ -21,7 +21,7 @@ class ProjectRemovalTest {
   private final ProjectRemoval removal = new ProjectRemoval(setup, state);
 
   @Test
-  void refusesAProjectAnOpenTaskWorksInAndNamesTheTask() {
+  void refusesProjectAnOpenTaskWorksInAndNamesTheTask() {
     when(state.tasks())
         .thenReturn(
             Map.of(
@@ -35,7 +35,7 @@ class ProjectRemovalTest {
   }
 
   @Test
-  void refusesAProjectTheSecondRepositoryOfAnOpenTaskUses() {
+  void refusesProjectTheSecondRepositoryOfAnOpenTaskUses() {
     TaskState spanning =
         TaskState.builder("web", "/wt/abc-42-web", TaskStatus.IN_PROGRESS)
             .repos(
@@ -51,7 +51,7 @@ class ProjectRemovalTest {
   }
 
   @Test
-  void removesAProjectOnlyFinishedTasksWorkedIn() {
+  void removesProjectOnlyFinishedTasksWorkedIn() {
     when(state.tasks())
         .thenReturn(
             Map.of("ABC-42", TaskState.builder("billing", "/wt/abc-42", TaskStatus.DONE).build()));

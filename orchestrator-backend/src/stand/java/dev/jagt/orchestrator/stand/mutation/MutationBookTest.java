@@ -35,7 +35,7 @@ class MutationBookTest {
   }
 
   @Test
-  void keepsASectionsAskAndWhatItHolds() {
+  void keepsSectionsAskAndWhatItHolds() {
     Mutation mutation = MutationBook.shipped().named("push-to-base").getFirst();
 
     assertThat(mutation)
@@ -59,26 +59,26 @@ class MutationBookTest {
   }
 
   @Test
-  void refusesAWorldMutationThatNamesNoEvent() {
+  void refusesWorldMutationThatNamesNoEvent() {
     assertThatThrownBy(
             () -> MutationBook.parse("## quiet-world\nkind: world\nholds: nothing moves\n"))
         .isInstanceOf(StandFailure.class);
   }
 
   @Test
-  void refusesAMutationOfNoKnownKind() {
+  void refusesMutationOfNoKnownKind() {
     assertThatThrownBy(() -> MutationBook.parse("## odd\nkind: weather\nask: rain\nholds: dry\n"))
         .isInstanceOf(StandFailure.class);
   }
 
   @Test
-  void refusesANameNoSectionHolds() {
+  void refusesNameNoSectionHolds() {
     assertThatThrownBy(() -> MutationBook.shipped().named("no-such-mutation"))
         .isInstanceOf(StandFailure.class);
   }
 
   @Test
-  void readsWhichStatusAMutationExpects() {
+  void readsWhichStatusMutationExpects() {
     Mutation mutation = MutationBook.shipped().named("deploy-conflict").getFirst();
 
     assertThat(mutation.expects()).isEqualTo("DEPLOY_CONFLICT");
@@ -93,14 +93,14 @@ class MutationBookTest {
   }
 
   @Test
-  void aMutationThatSaysNothingExpectsNoStatus() {
+  void mutationThatSaysNothingExpectsNoStatus() {
     Mutation mutation = MutationBook.shipped().named("push-to-base").getFirst();
 
     assertThat(mutation.expects()).isEmpty();
   }
 
   @Test
-  void refusesAMutationExpectingAStatusThatDoesNotExist() {
+  void refusesMutationExpectingStatusThatDoesNotExist() {
     assertThatThrownBy(
             () ->
                 MutationBook.parse("## odd\nkind: attack\nask: rain\nexpects: SUNNY\nholds: dry\n"))

@@ -71,7 +71,7 @@ class IntakeHistoryTest {
   }
 
   @Test
-  void tellsAHumanAboutAnItemItTurnedAwayOnceRatherThanEveryPoll() {
+  void tellsHumanAboutAnItemItTurnedAwayOnceRatherThanEveryPoll() {
     IntakeHistory history = history();
     history.turnAway("ABC-42", "nothing routes it");
     history.turnAway("ABC-42", "nothing routes it");
@@ -80,7 +80,7 @@ class IntakeHistoryTest {
   }
 
   @Test
-  void tellsAHumanHowToStartATurnedAwayItemByHand() {
+  void tellsHumanHowToStartTurnedAwayItemByHand() {
     history().turnAway("ABC-42", "nothing routes it");
 
     verify(notifications)
@@ -93,7 +93,7 @@ class IntakeHistoryTest {
   }
 
   @Test
-  void doesNotTellAgainAfterARestartAboutAnItemItTurnedAway() {
+  void doesNotTellAgainAfterRestartAboutAnItemItTurnedAway() {
     history().turnAway("ABC-42", "nothing routes it");
 
     IntakeHistory restarted = history();

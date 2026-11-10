@@ -128,7 +128,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -171,7 +171,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -198,7 +198,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -233,12 +233,12 @@ class ProjectRoutingTest {
   }
 
   @Test
-  void retiresTheRuleAHumanHasJustContradicted() {
+  void retiresTheRuleHumanHasJustContradicted() {
     RoutingMemory memory =
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
     memory.remember("ABC items about quote import", "web");
     when(finished.all())
         .thenReturn(
@@ -291,7 +291,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -345,7 +345,7 @@ class ProjectRoutingTest {
   }
 
   @Test
-  void leavesTheItemForAHumanWhenTheRouterNamedARepositoryJagtDoesNotHave() {
+  void leavesTheItemForHumanWhenTheRouterNamedRepositoryJagtDoesNotHave() {
     RoutingMemory memory =
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
@@ -368,7 +368,7 @@ class ProjectRoutingTest {
   }
 
   @Test
-  void reportsARouterThatAnsweredNothingAsUnreadableRatherThanUndecided() {
+  void reportsRouterThatAnsweredNothingAsUnreadableRatherThanUndecided() {
     RoutingMemory memory =
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),

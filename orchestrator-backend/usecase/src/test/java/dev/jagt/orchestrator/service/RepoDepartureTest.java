@@ -52,7 +52,7 @@ class RepoDepartureTest {
   }
 
   @Test
-  void takesASecondaryRepositoryOutOfTheTask(@TempDir Path root) {
+  void takesSecondaryRepositoryOutOfTheTask(@TempDir Path root) {
     StateService state = stateOf(root);
     state.putTask(
         "ABC-42",
@@ -70,7 +70,7 @@ class RepoDepartureTest {
   }
 
   @Test
-  void keepsThePrimaryRepositoryOfATaskHoldingOthers(@TempDir Path root) {
+  void keepsThePrimaryRepositoryOfTaskHoldingOthers(@TempDir Path root) {
     StateService state = stateOf(root);
     TaskRepo primary = TaskRepo.of("api", "/api-wt");
     state.putTask("ABC-42", TaskState.builder(List.of(primary, web), TaskStatus.REVIEWED).build());
@@ -85,7 +85,7 @@ class RepoDepartureTest {
   }
 
   @Test
-  void keepsARepositoryAlreadyDeployedUntilItIsReverted(@TempDir Path root) {
+  void keepsRepositoryAlreadyDeployedUntilItIsReverted(@TempDir Path root) {
     StateService state = stateOf(root);
     state.putTask(
         "ABC-42",
@@ -106,7 +106,7 @@ class RepoDepartureTest {
   }
 
   @Test
-  void takesARepositoryOutWhereTheDeployNeverLandedIt(@TempDir Path root) {
+  void takesRepositoryOutWhereTheDeployNeverLandedIt(@TempDir Path root) {
     StateService state = stateOf(root);
     state.putTask(
         "ABC-42",
@@ -124,7 +124,7 @@ class RepoDepartureTest {
   }
 
   @Test
-  void keepsTheOnlyRepositoryOfATask(@TempDir Path root) {
+  void keepsTheOnlyRepositoryOfTask(@TempDir Path root) {
     StateService state = stateOf(root);
     TaskRepo only = TaskRepo.of("api", "/api-wt");
     state.putTask("ABC-42", TaskState.builder(List.of(only), TaskStatus.REVIEWED).build());
@@ -163,7 +163,7 @@ class RepoDepartureTest {
   }
 
   @Test
-  void removesTheCheckoutOfARepositoryThatLeftTheTask(@TempDir Path root) {
+  void removesTheCheckoutOfRepositoryThatLeftTheTask(@TempDir Path root) {
     StateService state = stateOf(root);
     state.putTask(
         "ABC-42",

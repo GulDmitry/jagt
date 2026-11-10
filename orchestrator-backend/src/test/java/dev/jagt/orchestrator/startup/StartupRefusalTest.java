@@ -14,7 +14,7 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 class StartupRefusalTest {
 
   @Test
-  void anIncompleteInstallationStopsTheStartInsteadOfServingABoardThatCannotWork(@TempDir Path root)
+  void anIncompleteInstallationStopsTheStartInsteadOfServingBoardThatCannotWork(@TempDir Path root)
       throws Exception {
     Files.writeString(root.resolve("mcp_client.js"), "// bridge");
     Files.createDirectories(root.resolve("roles/acceptance"));

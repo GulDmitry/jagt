@@ -65,7 +65,7 @@ class DesktopNotifierTest {
   }
 
   @Test
-  void takesWhatTheDefaultConfigListsAndNotADeploy() {
+  void takesWhatTheDefaultConfigListsAndNotDeploy() {
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigFile.defaults());
     DesktopNotifier desktop =
@@ -77,7 +77,7 @@ class DesktopNotifierTest {
   }
 
   @Test
-  void takesADeployOnlyWhenTheConfigListsDeployed() {
+  void takesDeployOnlyWhenTheConfigListsDeployed() {
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(

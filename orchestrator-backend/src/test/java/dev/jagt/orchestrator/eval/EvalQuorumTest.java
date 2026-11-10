@@ -22,7 +22,7 @@ class EvalQuorumTest {
 
   @Test
   @ResourceLock(value = Resources.SYSTEM_PROPERTIES, mode = ResourceAccessMode.READ)
-  void aCaseHoldsWhenOneRunInThreeFlakes() {
+  void caseHoldsWhenOneRunInThreeFlakes() {
     Deque<Executable> answers =
         new ArrayDeque<>(
             List.of(
@@ -41,7 +41,7 @@ class EvalQuorumTest {
 
   @Test
   @ResourceLock(value = Resources.SYSTEM_PROPERTIES, mode = ResourceAccessMode.READ)
-  void aCaseFailsWithBothJudgesReasonsWhenTwoRunsInThreeFail() {
+  void caseFailsWithBothJudgesReasonsWhenTwoRunsInThreeFail() {
     Deque<Executable> answers =
         new ArrayDeque<>(
             List.of(
@@ -64,7 +64,7 @@ class EvalQuorumTest {
 
   @Test
   @ResourceLock(value = Resources.SYSTEM_PROPERTIES, mode = ResourceAccessMode.READ)
-  void aThirdRunIsNeverMadeOnceTwoPassesInARowDecideTheCase() {
+  void thirdRunIsNeverMadeOnceTwoPassesInRowDecideTheCase() {
     AtomicInteger made = new AtomicInteger();
 
     new EvalQuorum(3, 2).hold("steady", EvalSpend.UNMETERED, made::incrementAndGet);
@@ -74,7 +74,7 @@ class EvalQuorumTest {
 
   @Test
   @ResourceLock(value = Resources.SYSTEM_PROPERTIES, mode = ResourceAccessMode.READ_WRITE)
-  void aStalledRunIsCountedAsStalledAndAWrongAnswerIsNot(@TempDir Path dir) throws Exception {
+  void stalledRunIsCountedAsStalledAndWrongAnswerIsNot(@TempDir Path dir) throws Exception {
     Path file = dir.resolve("eval-stats.jsonl");
     System.setProperty("eval.stats", file.toString());
     Deque<Executable> answers =
@@ -106,7 +106,7 @@ class EvalQuorumTest {
 
   @Test
   @ResourceLock(value = Resources.SYSTEM_PROPERTIES, mode = ResourceAccessMode.READ_WRITE)
-  void aCaseRecordsTheSpendBetweenItsFirstRunAndItsLast(@TempDir Path dir) throws Exception {
+  void caseRecordsTheSpendBetweenItsFirstRunAndItsLast(@TempDir Path dir) throws Exception {
     Path file = dir.resolve("eval-stats.jsonl");
     System.setProperty("eval.stats", file.toString());
     Deque<Double> meter = new ArrayDeque<>(List.of(1.0, 1.75));

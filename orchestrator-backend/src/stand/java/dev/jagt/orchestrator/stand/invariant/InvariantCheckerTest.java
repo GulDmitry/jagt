@@ -14,7 +14,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class InvariantCheckerTest {
 
   @Test
-  void findsNothingInARunThatKeptTheFrameAndRecordedAMiss() throws Exception {
+  void findsNothingInRunThatKeptTheFrameAndRecordedMiss() throws Exception {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md.dist",
@@ -38,7 +38,7 @@ class InvariantCheckerTest {
     "relay-outside-case, steps-within-cases, 2026-10-24T00:01:00.500Z, deploy at IN_PROGRESS",
     "master-after-miss, miss-stops-the-master, 2026-10-24T00:10:00Z, moved to DEPLOYED by MASTER"
   })
-  void namesTheInvariantTheTimeAndTheEvidenceOfARunThatBrokeIt(
+  void namesTheInvariantTheTimeAndTheEvidenceOfRunThatBrokeIt(
       String run, String invariant, Instant at, String evidence) throws Exception {
     CaseBook book =
         CaseBook.parse(

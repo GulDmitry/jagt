@@ -27,7 +27,7 @@ class BoardLanguagesTest {
   }
 
   @Test
-  void aCatalogFileInTheRootIsALanguageOfferedWithNoRebuild() throws IOException {
+  void catalogFileInTheRootIsLanguageOfferedWithNoRebuild() throws IOException {
     Files.createDirectories(root.resolve("i18n"));
     Files.writeString(root.resolve("i18n/pt-BR.json"), "{\"language.name\": \"Português\"}");
 
@@ -36,7 +36,7 @@ class BoardLanguagesTest {
   }
 
   @Test
-  void aFileInTheRootThatIsNoCatalogOffersNoLanguage() throws IOException {
+  void fileInTheRootThatIsNoCatalogOffersNoLanguage() throws IOException {
     Files.createDirectories(root.resolve("i18n"));
     Files.writeString(root.resolve("i18n/de"), "{}");
     Files.writeString(root.resolve("i18n/not a code.json"), "{}");
@@ -45,7 +45,7 @@ class BoardLanguagesTest {
   }
 
   @Test
-  void aCatalogInTheRootOverridesTheShippedWordAndKeepsTheRest() throws IOException {
+  void catalogInTheRootOverridesTheShippedWordAndKeepsTheRest() throws IOException {
     Files.createDirectories(root.resolve("i18n"));
     Files.writeString(root.resolve("i18n/pl.json"), "{\"common.close\": \"Zamknij teraz\"}");
 
@@ -55,7 +55,7 @@ class BoardLanguagesTest {
   }
 
   @Test
-  void aCodeThatIsNotALanguageCodeFindsNoFile() {
+  void codeThatIsNotLanguageCodeFindsNoFile() {
     assertThatThrownBy(() -> languages().catalog("..%2Fjagt"))
         .isInstanceOf(ResponseStatusException.class);
   }

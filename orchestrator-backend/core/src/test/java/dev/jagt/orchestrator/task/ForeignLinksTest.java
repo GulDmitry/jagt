@@ -17,7 +17,7 @@ class ForeignLinksTest {
           .build();
 
   @Test
-  void takesALinkOnThePrimaryRepositoryForForeignWhenItsRemoteDoesNotHoldIt() {
+  void takesLinkOnThePrimaryRepositoryForForeignWhenItsRemoteDoesNotHoldIt() {
     ForeignLinks.Judged judged =
         ForeignLinks.judge(task, Map.of(), "https://host/other/proj/-/merge_requests/9");
 
@@ -28,7 +28,7 @@ class ForeignLinksTest {
   }
 
   @Test
-  void judgesNothingOfARepositoryWhoseRemoteIsUnknown() {
+  void judgesNothingOfRepositoryWhoseRemoteIsUnknown() {
     ForeignLinks.Judged judged =
         ForeignLinks.judge(
             task,
@@ -40,7 +40,7 @@ class ForeignLinksTest {
   }
 
   @Test
-  void judgesNothingOfARepositoryWhoseRemoteIsALocalBareRepository() {
+  void judgesNothingOfRepositoryWhoseRemoteIsLocalBareRepository() {
     TaskState local =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .repos(List.of(new TaskRepo("proj", "/wt", "file:///srv/git/origin.git", null)))

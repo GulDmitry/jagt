@@ -67,42 +67,43 @@ public final class StandConfig {
       StandMode mode,
       @Nullable Replay replay,
       String acceptance) {
-    return """
-    orchestrator:
-      %s
-      projects:
-        proj: { path: "%s", baseBranch: origin/main, deployBranch: dev, verifyCommand: ["./check.sh"] }
-      startupChecks: false
-      openTerminalWindow: false
-      viewer: { tmuxSession: "%s", viewMode: shared, keepViewer: false }
-      agent:
-        cli: %s
-        model: sonnet
-        autoplan: { enabled: false }
-        visualize: { enabled: false }
-        diagnose: { enabled: false }
-      claude: { mcpConfig: "%s" }
-      agentAllowedTools: mcp__stand-host
-      assistant:
-        model: haiku
-        allowedTools: [mcp__stand-host]
-        mcpConfig: "%s"
-      master: { mode: %s, mine: [], model: sonnet }
-      autoReview: { enabled: true, minIntervalMinutes: 1, maxIntervalMinutes: 2 }
-      tracker: { mode: "off" }
-      replay: { file: "%s" }
-      %s
-    """
-        .formatted(
-            replay == null ? "" : "codeHost: replay",
-            repo,
-            tmuxSession,
-            replay == null ? "claude" : "replay",
-            servers,
-            servers,
-            mode.id(),
-            replay == null ? "" : replay.recording(),
-            acceptance);
+    String template =
+        """
+        orchestrator:
+          %s
+          projects:
+            proj: { path: "%s", baseBranch: origin/main, deployBranch: dev, verifyCommand: ["./check.sh"] }
+          startupChecks: false
+          openTerminalWindow: false
+          viewer: { tmuxSession: "%s", viewMode: shared, keepViewer: false }
+          agent:
+            cli: %s
+            model: sonnet
+            autoplan: { enabled: false }
+            visualize: { enabled: false }
+            diagnose: { enabled: false }
+          claude: { mcpConfig: "%s" }
+          agentAllowedTools: mcp__stand-host
+          assistant:
+            model: haiku
+            allowedTools: [mcp__stand-host]
+            mcpConfig: "%s"
+          master: { mode: %s, mine: [], model: sonnet }
+          autoReview: { enabled: true, minIntervalMinutes: 1, maxIntervalMinutes: 2 }
+          tracker: { mode: "off" }
+          replay: { file: "%s" }
+          %s
+        """;
+    return template.formatted(
+        replay == null ? "" : "codeHost: replay",
+        repo,
+        tmuxSession,
+        replay == null ? "claude" : "replay",
+        servers,
+        servers,
+        mode.id(),
+        replay == null ? "" : replay.recording(),
+        acceptance);
   }
 
   private static String acceptance(Path root, @Nullable Replay replay) throws IOException {

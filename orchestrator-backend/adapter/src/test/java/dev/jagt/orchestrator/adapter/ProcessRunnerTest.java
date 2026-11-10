@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 class ProcessRunnerTest {
 
   @Test
-  void takesNoOptionalGitLockSoAReadNeverBlocksAnAgentsCommit() {
+  void takesNoOptionalGitLockSoReadNeverBlocksAnAgentsCommit() {
     ProcessRunner runner = new ProcessRunner();
 
     String optionalLocks =
@@ -69,7 +69,7 @@ class ProcessRunnerTest {
   }
 
   @Test
-  void launchesTheAppOutsideTheProcessGroupTheTerminalSendsCtrlCTo() {
+  void launchesTheAppOutsideTheProcessGroupTheTerminalSendsInterruptTo() {
     ProcessRunner runner = new ProcessRunner();
     Process launched = runner.runDetached(null, List.of("sleep", "5"));
 
@@ -123,7 +123,7 @@ class ProcessRunnerTest {
   }
 
   @Test
-  void killsWhatATimedOutCommandSpawnedSoNoChildOutlivesIt(@TempDir Path dir) throws Exception {
+  void killsWhatTimedOutCommandSpawnedSoNoChildOutlivesIt(@TempDir Path dir) throws Exception {
     Path childPid = dir.resolve("pid");
 
     assertThatThrownBy(
@@ -221,7 +221,7 @@ class ProcessRunnerTest {
   }
 
   @Test
-  void tellsTheCallerACommandEndingWhileJagtClosesWasStoppedWithItRatherThanAnswered() {
+  void tellsTheCallerCommandEndingWhileJagtClosesWasStoppedWithItRatherThanAnswered() {
     ProcessRunner runner = new ProcessRunner();
     runner.closes();
 
@@ -249,14 +249,14 @@ class ProcessRunnerTest {
     "128, with exit 128",
     "1, with exit 1"
   })
-  void namesTheSignalAKilledLaunchDiedOnAndLeavesEveryOtherEndACode(
+  void namesTheSignalKilledLaunchDiedOnAndLeavesEveryOtherEndCode(
       int exitValue, String expected) {
     assertThat(ProcessRunner.endedBy(exitValue)).isEqualTo(expected);
   }
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void recordsHowALaunchEndedSoADeathNobodyAskedForCanBeAttributed() throws Exception {
+  void recordsHowLaunchEndedSoDeathNobodyAskedForCanBeAttributed() throws Exception {
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger runnerLog = (Logger) LoggerFactory.getLogger(ProcessRunner.class);
@@ -281,7 +281,7 @@ class ProcessRunnerTest {
   }
 
   @Test
-  void namesTheLaunchThatCouldNotStartInsteadOfAnsweringWithAProcess() {
+  void namesTheLaunchThatCouldNotStartInsteadOfAnsweringWithProcess() {
     assertThatThrownBy(() -> new ProcessRunner().runDetached(null, List.of("jagt-no-such-binary")))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("jagt-no-such-binary");
@@ -305,7 +305,7 @@ class ProcessRunnerTest {
   }
 
   @Test
-  void answersTheExitCodeAndBothStreamsOfACommandThatFailed() {
+  void answersTheExitCodeAndBothStreamsOfCommandThatFailed() {
     var result =
         new ProcessRunner()
             .run(
@@ -381,7 +381,7 @@ class ProcessRunnerTest {
   }
 
   @Test
-  void handsBackALauncherThatHandedOffToARunningInstanceAndExitedZero() {
+  void handsBackLauncherThatHandedOffToRunningInstanceAndExitedZero() {
     Process launched = new ProcessRunner().runDetached(null, List.of("/bin/sh", "-c", "exit 0"));
 
     assertThat(launched).isNotNull();

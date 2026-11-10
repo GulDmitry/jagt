@@ -11,7 +11,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 class BoardWriteFilterTest {
 
   @Test
-  void refusesAWriteFromAProcessThatIsNeitherThePageNorTheMaster() throws Exception {
+  void refusesWriteFromProcessThatIsNeitherThePageNorTheMaster() throws Exception {
     MockHttpServletRequest request =
         new MockHttpServletRequest("POST", "/api/tasks/actions/deploy");
     MockHttpServletResponse response = new MockHttpServletResponse();
@@ -24,7 +24,7 @@ class BoardWriteFilterTest {
   }
 
   @Test
-  void refusesAWriteCarryingOnlyTheMastersToken() throws Exception {
+  void refusesWriteCarryingOnlyTheMastersToken() throws Exception {
     MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/tasks/say");
     request.addHeader(MasterToken.HEADER, "t0ken");
     MockHttpServletResponse response = new MockHttpServletResponse();
@@ -35,7 +35,7 @@ class BoardWriteFilterTest {
   }
 
   @Test
-  void admitsAWriteCarryingTheBoardsOrigin() throws Exception {
+  void admitsWriteCarryingTheBoardsOrigin() throws Exception {
     MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/tasks/say");
     request.addHeader("Origin", "http://localhost:8290");
     MockFilterChain chain = new MockFilterChain();
@@ -57,7 +57,7 @@ class BoardWriteFilterTest {
   }
 
   @Test
-  void leavesASessionsHookToItsWorktree() throws Exception {
+  void leavesSessionsHookToItsWorktree() throws Exception {
     MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/agent/session/gone");
     request.setServletPath("/api/agent/session/gone");
     MockFilterChain chain = new MockFilterChain();

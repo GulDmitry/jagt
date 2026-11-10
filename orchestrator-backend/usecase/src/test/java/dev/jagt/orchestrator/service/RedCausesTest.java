@@ -35,7 +35,7 @@ class RedCausesTest {
           new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
 
   @Test
-  void waitsOutARunWhoseEveryFailedJobDiedOnInfrastructure() {
+  void waitsOutRunWhoseEveryFailedJobDiedOnInfrastructure() {
     when(retries.applies("ABC-42")).thenReturn(true);
     when(pipelines.failedJobs("shop", "https://host.invalid/p/1"))
         .thenReturn(
@@ -67,7 +67,7 @@ class RedCausesTest {
   }
 
   @Test
-  void handsARunToTheSessionWhenOneFailedJobFailedItsScript() {
+  void handsRunToTheSessionWhenOneFailedJobFailedItsScript() {
     when(retries.applies("ABC-42")).thenReturn(true);
     when(pipelines.failedJobs("shop", "https://host.invalid/p/1"))
         .thenReturn(
@@ -86,7 +86,7 @@ class RedCausesTest {
   }
 
   @Test
-  void handsARunToTheSessionWhenItsFailedJobsCannotBeRead() {
+  void handsRunToTheSessionWhenItsFailedJobsCannotBeRead() {
     when(pipelines.failedJobs("shop", "https://host.invalid/p/1"))
         .thenReturn(Answer.failed(TokenUsage.NONE, "glab not logged in to host.invalid"));
 
@@ -130,7 +130,7 @@ class RedCausesTest {
   }
 
   @Test
-  void handsARunToTheSessionWhenTheReadGaveNoPipelineAddress() {
+  void handsRunToTheSessionWhenTheReadGaveNoPipelineAddress() {
     ReviewFacts unaddressed =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),
@@ -175,7 +175,7 @@ class RedCausesTest {
   }
 
   @Test
-  void keepsTheRetriesOfADeployWhenTheReviewRequestOfATaskPastItsReviewReadsGreen() {
+  void keepsTheRetriesOfDeployWhenTheReviewRequestOfTaskPastItsReviewReadsGreen() {
     when(retries.applies("ABC-42")).thenReturn(false);
 
     causes.judge("ABC-42", "shop", red, Pipeline.GREEN);
@@ -184,7 +184,7 @@ class RedCausesTest {
   }
 
   @Test
-  void waitsOutADeployPipelineWhoseEveryFailedJobDiedOnInfrastructure() {
+  void waitsOutDeployPipelineWhoseEveryFailedJobDiedOnInfrastructure() {
     when(pipelines.failedJobs("shop", "https://host.invalid/p/9"))
         .thenReturn(
             new Answer<>(
@@ -211,7 +211,7 @@ class RedCausesTest {
   }
 
   @Test
-  void handsADeployPipelineToTheSessionWhenAFailedJobFailedItsScript() {
+  void handsDeployPipelineToTheSessionWhenFailedJobFailedItsScript() {
     when(pipelines.failedJobs("shop", "https://host.invalid/p/9"))
         .thenReturn(
             new Answer<>(

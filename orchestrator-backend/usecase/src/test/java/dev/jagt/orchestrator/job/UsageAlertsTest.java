@@ -21,7 +21,7 @@ class UsageAlertsTest {
   private static final Optional<Instant> RESET = Optional.of(Instant.parse("2026-10-10T16:00:00Z"));
 
   @Test
-  void tellsOnlyTheHighestThresholdAWindowJumpedPast(@TempDir Path dir) {
+  void tellsOnlyTheHighestThresholdWindowJumpedPast(@TempDir Path dir) {
     var alerts = new UsageAlerts(List.of(80, 95), List.of(), dir.resolve("usage-alerts"));
 
     var told =
@@ -31,7 +31,7 @@ class UsageAlertsTest {
   }
 
   @Test
-  void tellsAThresholdOncePerWindowPeriodAcrossARestart(@TempDir Path dir) {
+  void tellsThresholdOncePerWindowPeriodAcrossRestart(@TempDir Path dir) {
     new UsageAlerts(List.of(80), List.of(), dir.resolve("usage-alerts"))
         .after(new Snapshot(List.of(new Window("week", 81, RESET)), Optional.empty()), NOW);
 
@@ -43,7 +43,7 @@ class UsageAlertsTest {
   }
 
   @Test
-  void tellsAThresholdOncePerWindowPeriod(@TempDir Path dir) {
+  void tellsThresholdOncePerWindowPeriod(@TempDir Path dir) {
     var alerts = new UsageAlerts(List.of(80), List.of(), dir.resolve("usage-alerts"));
     alerts.after(new Snapshot(List.of(new Window("week", 81, RESET)), Optional.empty()), NOW);
 
@@ -54,7 +54,7 @@ class UsageAlertsTest {
   }
 
   @Test
-  void tellsAThresholdOnceWhenTheSameResetIsReportedWithDifferentFractions(@TempDir Path dir) {
+  void tellsThresholdOnceWhenTheSameResetIsReportedWithDifferentFractions(@TempDir Path dir) {
     var alerts = new UsageAlerts(List.of(80), List.of(), dir.resolve("usage-alerts"));
     alerts.after(
         new Snapshot(
@@ -91,7 +91,7 @@ class UsageAlertsTest {
   }
 
   @Test
-  void tellsPaidUsageStartedWhenAWindowRunsOutWithPaidUsageEnabled(@TempDir Path dir) {
+  void tellsPaidUsageStartedWhenWindowRunsOutWithPaidUsageEnabled(@TempDir Path dir) {
     var alerts = new UsageAlerts(List.of(), List.of(), dir.resolve("usage-alerts"));
     var paid =
         new Paid(
@@ -167,7 +167,7 @@ class UsageAlertsTest {
   }
 
   @Test
-  void tellsPaidUsageCrossingAThresholdOfItsMonthlyLimit(@TempDir Path dir) {
+  void tellsPaidUsageCrossingThresholdOfItsMonthlyLimit(@TempDir Path dir) {
     var alerts = new UsageAlerts(List.of(), List.of(80), dir.resolve("usage-alerts"));
 
     var told =
@@ -188,7 +188,7 @@ class UsageAlertsTest {
   }
 
   @Test
-  void tellsAThresholdTheWindowReadsExactly(@TempDir Path dir) {
+  void tellsThresholdTheWindowReadsExactly(@TempDir Path dir) {
     var alerts = new UsageAlerts(List.of(80), List.of(), dir.resolve("usage-alerts"));
 
     var told =
@@ -198,7 +198,7 @@ class UsageAlertsTest {
   }
 
   @Test
-  void tellsWhenAWindowResetsAndHowToReadItsBody(@TempDir Path dir) {
+  void tellsWhenWindowResetsAndHowToReadItsBody(@TempDir Path dir) {
     var alerts = new UsageAlerts(List.of(80), List.of(), dir.resolve("usage-alerts"));
 
     var told =

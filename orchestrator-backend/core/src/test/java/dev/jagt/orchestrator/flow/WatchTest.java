@@ -21,7 +21,7 @@ class WatchTest {
 
   @ParameterizedTest
   @CsvSource({"NEW,true", "IN_PROGRESS,false", "DONE,false"})
-  void admitsATaskOnlyInANamedStatus(TaskStatus status, boolean admitted) {
+  void admitsTaskOnlyInNamedStatus(TaskStatus status, boolean admitted) {
     TaskState task = TaskState.builder("proj", "/wt", status).build();
 
     assertThat(Watch.defaults().withStatuses(TaskStatus.NEW).admits(task)).isEqualTo(admitted);
@@ -29,7 +29,7 @@ class WatchTest {
 
   @ParameterizedTest
   @CsvSource({"UNDELIVERED,true", "CHECKS,false"})
-  void admitsAStoppedTaskOnlyWhereItsStopEndsAsNamed(TaskStop.Trigger trigger, boolean admitted) {
+  void admitsStoppedTaskOnlyWhereItsStopEndsAsNamed(TaskStop.Trigger trigger, boolean admitted) {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .stop(new TaskStop(trigger, 1, "evidence"))
@@ -39,7 +39,7 @@ class WatchTest {
   }
 
   @Test
-  void refusesAStoppedTaskWhereNoStopIsNamed() {
+  void refusesStoppedTaskWhereNoStopIsNamed() {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .stop(new TaskStop(TaskStop.Trigger.PACE, 1, "evidence"))
@@ -50,7 +50,7 @@ class WatchTest {
 
   @ParameterizedTest
   @CsvSource({"PAUSE,false", "PACE,true"})
-  void refusesAPausedTaskToAWatchOfEveryOtherStop(TaskStop.Trigger trigger, boolean admitted) {
+  void refusesPausedTaskToWatchOfEveryOtherStop(TaskStop.Trigger trigger, boolean admitted) {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .stop(new TaskStop(trigger, 1, "evidence"))
@@ -62,7 +62,7 @@ class WatchTest {
 
   @ParameterizedTest
   @CsvSource({"PLAIN,true", "QUESTION,false"})
-  void leavesOutAReportThatAsksWhenTheWatchExcludesIt(AgentReport report, boolean admitted) {
+  void leavesOutReportThatAsksWhenTheWatchExcludesIt(AgentReport report, boolean admitted) {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).report(report).build();
 
     assertThat(Watch.defaults().withReports(said -> !said.asks()).admits(task)).isEqualTo(admitted);

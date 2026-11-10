@@ -9,14 +9,14 @@ import org.junit.jupiter.api.Test;
 class StopTriageCasesTest {
 
   @Test
-  void everyWhoClassHasAShippedStop() {
+  void everyWhoClassHasShippedStop() {
     var cases = StopTriageCases.all();
 
     assertThat(cases).extracting(StopTriageCase::who).contains(StopTriage.Who.values());
   }
 
   @Test
-  void aStopKeepsItsTriggerEvidenceAndExpectedReading() {
+  void stopKeepsItsTriggerEvidenceAndExpectedReading() {
     StopTriageCase loaded =
         StopTriageCases.parse(
             """

@@ -27,7 +27,7 @@ class MasterBrakeTest {
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
-  void stopsActWhenThreeTasksTheMasterMovedEndBadlyInARow(@TempDir Path root) {
+  void stopsActWhenThreeTasksTheMasterMovedEndBadlyInRow(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -175,7 +175,7 @@ class MasterBrakeTest {
   }
 
   @Test
-  void keepsActWhereADeployCameBetweenTheBadEndings(@TempDir Path root) {
+  void keepsActWhereDeployCameBetweenTheBadEndings(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -494,7 +494,7 @@ class MasterBrakeTest {
   }
 
   @Test
-  void keepsTheCountAcrossARestart(@TempDir Path root) {
+  void keepsTheCountAcrossRestart(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()

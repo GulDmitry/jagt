@@ -21,7 +21,7 @@ import tools.jackson.databind.json.JsonMapper;
 class UsageLedgerTest {
 
   @Test
-  void sumsADaysCallsOfOneKindIntoOneLine(@TempDir Path root) throws Exception {
+  void sumsDaysCallsOfOneKindIntoOneLine(@TempDir Path root) throws Exception {
     UsageLedger ledger =
         new UsageLedger(
             new JsonMapper(),
@@ -91,7 +91,7 @@ class UsageLedgerTest {
   }
 
   @Test
-  void readsARowWrittenBeforeTheDearestCallWasKept(@TempDir Path root) throws Exception {
+  void readsRowWrittenBeforeTheDearestCallWasKept(@TempDir Path root) throws Exception {
     Files.writeString(
         root.resolve("usage-by-day.jsonl"),
         """
@@ -126,7 +126,7 @@ class UsageLedgerTest {
   }
 
   @Test
-  void keepsALineItCannotReadRatherThanDroppingIt(@TempDir Path root) throws Exception {
+  void keepsLineItCannotReadRatherThanDroppingIt(@TempDir Path root) throws Exception {
     Files.writeString(
         root.resolve("usage-by-day.jsonl"), "{\"period\":\"2026-09-01\",\"kind\":\"GONE_KIND\"}\n");
     UsageLedger ledger =
@@ -146,7 +146,7 @@ class UsageLedgerTest {
   }
 
   @Test
-  void dropsABlankLineInsteadOfKeepingItAsOneItCannotRead(@TempDir Path root) throws Exception {
+  void dropsBlankLineInsteadOfKeepingItAsOneItCannotRead(@TempDir Path root) throws Exception {
     Files.writeString(root.resolve("usage-by-day.jsonl"), "\n\n");
     UsageLedger ledger =
         new UsageLedger(
@@ -166,7 +166,7 @@ class UsageLedgerTest {
   }
 
   @Test
-  void keepsTheUnpricedCallsOfADayInItsLine(@TempDir Path root) throws Exception {
+  void keepsTheUnpricedCallsOfDayInItsLine(@TempDir Path root) throws Exception {
     UsageLedger ledger =
         new UsageLedger(
             new JsonMapper(),

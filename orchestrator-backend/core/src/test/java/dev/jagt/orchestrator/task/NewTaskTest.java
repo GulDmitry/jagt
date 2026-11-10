@@ -18,21 +18,21 @@ class NewTaskTest {
   }
 
   @Test
-  void dropsABlankOrMissingFurtherProjectInsteadOfPromotingIt() {
+  void dropsBlankOrMissingFurtherProjectInsteadOfPromotingIt() {
     NewTask task = NewTask.builder("ABC-42", "api").alsoIn(Arrays.asList("web", " ", null)).build();
 
     assertThat(task.projectKeys()).containsExactly("api", "web");
   }
 
   @Test
-  void cutsOneWorktreeForARepositoryNamedTwice() {
+  void cutsOneWorktreeForRepositoryNamedTwice() {
     NewTask task = NewTask.builder("ABC-42", "api").alsoIn(List.of("web", "api", "web")).build();
 
     assertThat(task.projectKeys()).containsExactly("api", "web");
   }
 
   @Test
-  void refusesATaskWhoseSessionProjectIsBlank() {
+  void refusesTaskWhoseSessionProjectIsBlank() {
     assertThatThrownBy(() -> NewTask.builder("ABC-42", " ").alsoIn(List.of("web")).build())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("A task needs the project its session runs in");

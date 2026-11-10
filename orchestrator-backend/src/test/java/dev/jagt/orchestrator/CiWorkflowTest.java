@@ -18,7 +18,7 @@ class CiWorkflowTest {
   private static final Path WORKFLOW = Path.of("../.github/workflows/ci.yml");
 
   @Test
-  void publishesAReleaseOnlyOnceEveryOtherJobIsGreen() {
+  void publishesReleaseOnlyOnceEveryOtherJobIsGreen() {
     Map<String, Map<String, Object>> jobs = jobs();
     Set<String> others =
         jobs.keySet().stream().filter(job -> !job.equals("release")).collect(Collectors.toSet());

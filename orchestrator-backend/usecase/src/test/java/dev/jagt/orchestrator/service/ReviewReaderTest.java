@@ -50,7 +50,7 @@ class ReviewReaderTest {
   }
 
   @Test
-  void sendsAReadThatCameBackWithNothingToReadAgainUpToTheLimit() {
+  void sendsReadThatCameBackWithNothingToReadAgainUpToTheLimit() {
     when(assistant.readReview("https://host/g/p/-/merge_requests/7"))
         .thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
 
@@ -62,7 +62,7 @@ class ReviewReaderTest {
   }
 
   @Test
-  void believesAHostSayingThereIsNoSuchRequestWithoutPayingToHearItAgain() {
+  void believesHostSayingThereIsNoSuchRequestWithoutPayingToHearItAgain() {
     when(assistant.readReview("https://host/g/p/-/merge_requests/7"))
         .thenReturn(
             new Answer<>(
@@ -107,7 +107,7 @@ class ReviewReaderTest {
   }
 
   @Test
-  void asksWhichMcpServersAreDownWhenAPaidReadDeniesTheRequest() {
+  void asksWhichMcpServersAreDownWhenPaidReadDeniesTheRequest() {
     when(assistant.readMergeRequest("https://other.example.com/g/p/-/merge_requests/7"))
         .thenReturn(
             new Answer<>(Optional.of(new MergeRequestFacts(false, "", "", "")), TokenUsage.NONE));
@@ -119,7 +119,7 @@ class ReviewReaderTest {
   }
 
   @Test
-  void doesNotProbeTheMcpServersForARequestItReadFine() {
+  void doesNotProbeTheMcpServersForRequestItReadFine() {
     when(assistant.readMergeRequest("https://other.example.com/g/p/-/merge_requests/7"))
         .thenReturn(
             new Answer<>(
@@ -133,7 +133,7 @@ class ReviewReaderTest {
   }
 
   @Test
-  void asksAgainForARoundWhoseFailureLinesBelongToARunThatDidNotFail() {
+  void asksAgainForRoundWhoseFailureLinesBelongToRunThatDidNotFail() {
     when(assistant.readReview("https://host/g/p/-/merge_requests/7"))
         .thenReturn(
             new Answer<>(

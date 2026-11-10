@@ -35,7 +35,7 @@ class MasterRecordTest {
   }
 
   @Test
-  void readsWorkItPassedThatNobodyEverDeployedAsADisagreement() {
+  void readsWorkItPassedThatNobodyEverDeployedAsDisagreement() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -57,7 +57,7 @@ class MasterRecordTest {
   }
 
   @Test
-  void readsWorkItFailedThatYouDeployedAnywayAsADisagreement() {
+  void readsWorkItFailedThatYouDeployedAnywayAsDisagreement() {
     when(finished.all())
         .thenReturn(
             List.of(
@@ -91,7 +91,7 @@ class MasterRecordTest {
   }
 
   @Test
-  void readsWorkItPassedThatYouRevertedAsADisagreement() {
+  void readsWorkItPassedThatYouRevertedAsDisagreement() {
     when(finished.all())
         .thenReturn(
             List.of(
@@ -110,7 +110,7 @@ class MasterRecordTest {
   }
 
   @Test
-  void readsAQuestionYouAnsweredAndDeployedAsNoDisagreement() {
+  void readsQuestionYouAnsweredAndDeployedAsNoDisagreement() {
     when(finished.all())
         .thenReturn(
             List.of(
@@ -145,7 +145,7 @@ class MasterRecordTest {
   }
 
   @Test
-  void readsPassedWorkInAProjectWithNoDeployBranchAsNoDisagreement() {
+  void readsPassedWorkInProjectWithNoDeployBranchAsNoDisagreement() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -227,7 +227,7 @@ class MasterRecordTest {
   }
 
   @Test
-  void readsAFailedRoundAfterTheDeployAsNoDisagreement() {
+  void readsFailedRoundAfterTheDeployAsNoDisagreement() {
     when(finished.all())
         .thenReturn(
             List.of(

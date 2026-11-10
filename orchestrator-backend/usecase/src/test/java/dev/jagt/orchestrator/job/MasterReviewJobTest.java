@@ -72,7 +72,7 @@ class MasterReviewJobTest {
   }
 
   @Test
-  void handsARoundThatCameBackAndNobodyJudgedToTheMastersPanel(@TempDir Path root) {
+  void handsRoundThatCameBackAndNobodyJudgedToTheMastersPanel(@TempDir Path root) {
     StateService state = stateIn(root);
     TaskState back =
         TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
@@ -87,7 +87,7 @@ class MasterReviewJobTest {
   }
 
   @Test
-  void handsAPlanToThePlanReadingPanelNotTheRoundReadingOne(@TempDir Path root) {
+  void handsPlanToThePlanReadingPanelNotTheRoundReadingOne(@TempDir Path root) {
     StateService state = stateIn(root);
     TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
     state.putTask("ABC-1", planned);
@@ -100,7 +100,7 @@ class MasterReviewJobTest {
   }
 
   @Test
-  void readsNothingOfATaskTheSessionStillWorksOn(@TempDir Path root) {
+  void readsNothingOfTaskTheSessionStillWorksOn(@TempDir Path root) {
     StateService state = stateIn(root);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
@@ -143,7 +143,7 @@ class MasterReviewJobTest {
   }
 
   @Test
-  void keepsTheTickGoingWhenAVerdictFindsTheTaskMovedOn(@TempDir Path root) {
+  void keepsTheTickGoingWhenVerdictFindsTheTaskMovedOn(@TempDir Path root) {
     StateService state = stateIn(root);
     TaskState back =
         TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
@@ -203,7 +203,7 @@ class MasterReviewJobTest {
   }
 
   @Test
-  void leavesARoundWhoseQuestionTheMasterAnswersToTheAnswerNotTheReview() {
+  void leavesRoundWhoseQuestionTheMasterAnswersToTheAnswerNotTheReview() {
     TaskState asking =
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
             .message("override the gate?")
@@ -216,7 +216,7 @@ class MasterReviewJobTest {
   }
 
   @Test
-  void handsAPlanNobodyReadYetToTheMaster() {
+  void handsPlanNobodyReadYetToTheMaster() {
     TaskState planned =
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING).message("plan written").build();
 
@@ -226,7 +226,7 @@ class MasterReviewJobTest {
   }
 
   @Test
-  void readsAPlanWhoseHandBackCarriesAQuestionTheMasterAnswers() {
+  void readsPlanWhoseHandBackCarriesQuestionTheMasterAnswers() {
     TaskState planned =
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
             .message("plan revised, approve?")

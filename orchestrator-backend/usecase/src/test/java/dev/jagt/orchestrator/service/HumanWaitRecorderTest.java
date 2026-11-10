@@ -14,8 +14,8 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.HumanWait.Why;
 import dev.jagt.orchestrator.task.HumanWait;
+import dev.jagt.orchestrator.task.HumanWait.Why;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
@@ -34,12 +34,11 @@ import tools.jackson.databind.json.JsonMapper;
 
 class HumanWaitRecorderTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @ResourceLock(Resources.GLOBAL)
   @Test
-  void recordsTheIntervalAQuestionHoldsTheHumanAndLogsItOnceTheSessionIsAnswered(
+  void recordsTheIntervalQuestionHoldsTheHumanAndLogsItOnceTheSessionIsAnswered(
       @TempDir Path root) {
     StateService state =
         new StateService(
@@ -48,7 +47,7 @@ class HumanWaitRecorderTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     state.putTask("ABC-77", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
@@ -57,8 +56,13 @@ class HumanWaitRecorderTest {
     ((Logger) LoggerFactory.getLogger(HumanWaitRecorder.class)).addAppender(log);
     new HumanWaitRecorder(
             state,
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-            Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))),
+            Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .follow();
 
     state.updateTask("ABC-77", task -> task.withReport(AgentReport.QUESTION));
@@ -81,7 +85,7 @@ class HumanWaitRecorderTest {
   }
 
   @Test
-  void keepsAnIntervalOpenAcrossARestartWhileTheHumanStillHoldsTheTurn(@TempDir Path root) {
+  void keepsAnIntervalOpenAcrossRestartWhileTheHumanStillHoldsTheTurn(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -89,7 +93,7 @@ class HumanWaitRecorderTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     state.putTask(
@@ -101,8 +105,13 @@ class HumanWaitRecorderTest {
 
     new HumanWaitRecorder(
             state,
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-            Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))),
+            Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .follow();
 
     assertThat(state.task("ABC-42").orElseThrow().waits())
@@ -110,7 +119,7 @@ class HumanWaitRecorderTest {
   }
 
   @Test
-  void closesAnIntervalAfterARestartOnceTheTurnHasLeftTheHuman(@TempDir Path root) {
+  void closesAnIntervalAfterRestartOnceTheTurnHasLeftTheHuman(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -118,7 +127,7 @@ class HumanWaitRecorderTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     state.putTask(
@@ -129,8 +138,13 @@ class HumanWaitRecorderTest {
 
     new HumanWaitRecorder(
             state,
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-            Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC), new Checkers(new TaskChart(Composition.builtIn())))
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))),
+            Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn())))
         .follow();
 
     assertThat(state.task("ABC-42").orElseThrow().waits())

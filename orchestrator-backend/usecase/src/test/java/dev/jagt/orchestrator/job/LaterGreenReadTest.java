@@ -14,14 +14,15 @@ import org.junit.jupiter.api.Test;
 class LaterGreenReadTest {
 
   @Test
-  void aConflictNoLaterGreenDisprovesStandsUntouched() {
+  void conflictNoLaterGreenDisprovesStandsUntouched() {
     DeployPipelines pipelines = mock(DeployPipelines.class);
     FlowReports reports = mock(FlowReports.class);
     TaskState conflicted = TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).build();
     when(pipelines.redConflictDisproved(conflicted)).thenReturn(false);
 
     boolean changed =
-        new LaterGreenRead(mock(ConfigService.class), pipelines, reports).read("ABC-42", conflicted);
+        new LaterGreenRead(mock(ConfigService.class), pipelines, reports)
+            .read("ABC-42", conflicted);
 
     assertThat(changed).isFalse();
     verifyNoInteractions(reports);

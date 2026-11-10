@@ -35,8 +35,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class RestartAskJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final AgentPresence presence = mock(AgentPresence.class);
@@ -54,7 +53,7 @@ class RestartAskJobTest {
   }
 
   @Test
-  void asksARunningSessionHoldingAnOpenTurnToRepeatItsReport(@TempDir Path root) throws Exception {
+  void asksRunningSessionHoldingAnOpenTurnToRepeatItsReport(@TempDir Path root) throws Exception {
     Files.writeString(root.resolve("alive"), "2026-11-05T07:00:00Z");
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
@@ -75,7 +74,7 @@ class RestartAskJobTest {
   }
 
   @Test
-  void asksNothingOfATaskWhoseTurnIsNotTheSessions(@TempDir Path root) {
+  void asksNothingOfTaskWhoseTurnIsNotTheSessions(@TempDir Path root) {
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
     when(presence.agentLive("ABC-42")).thenReturn(true);
@@ -87,7 +86,7 @@ class RestartAskJobTest {
   }
 
   @Test
-  void doesNotReviveASessionThatIsNotRunning(@TempDir Path root) {
+  void doesNotReviveSessionThatIsNotRunning(@TempDir Path root) {
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
@@ -101,7 +100,7 @@ class RestartAskJobTest {
   }
 
   @Test
-  void doesNotTypeOverAHumansDraft(@TempDir Path root) {
+  void doesNotTypeOverHumansDraft(@TempDir Path root) {
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
@@ -116,7 +115,7 @@ class RestartAskJobTest {
   }
 
   @Test
-  void asksNothingOfASessionIdlePastItsCacheLifetime(@TempDir Path root) {
+  void asksNothingOfSessionIdlePastItsCacheLifetime(@TempDir Path root) {
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
@@ -134,7 +133,8 @@ class RestartAskJobTest {
   void keepsAskingTheOtherTasksWhenOneCannotBeTold(@TempDir Path root) throws Exception {
     Files.writeString(root.resolve("alive"), "2026-11-05T07:00:00Z");
     StateService state = state(root);
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+    TaskTurns turns =
+        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     state.putTask("ABC-43", TaskState.builder("proj", "/wt2", TaskStatus.IN_PROGRESS).build());
     turns.opened("ABC-42", "start", "digest", TaskStatus.IN_PROGRESS);
@@ -161,7 +161,7 @@ class RestartAskJobTest {
   }
 
   @Test
-  void asksNothingOfASessionThatWroteNothingWhileJagtWasDown(@TempDir Path root) throws Exception {
+  void asksNothingOfSessionThatWroteNothingWhileJagtWasDown(@TempDir Path root) throws Exception {
     Files.writeString(root.resolve("alive"), "2026-11-05T07:00:00Z");
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
@@ -201,7 +201,7 @@ class RestartAskJobTest {
   }
 
   @Test
-  void doesNotAskASessionWhoseWindowCouldNotBeRead(@TempDir Path root) {
+  void doesNotAskSessionWhoseWindowCouldNotBeRead(@TempDir Path root) {
     StateService state = state(root);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))

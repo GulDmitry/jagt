@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class OriginContextTest {
 
   @Test
-  void attributesWhatARunDoesToTheOneWhoAskedAndForgetsThemAfter() {
+  void attributesWhatRunDoesToTheOneWhoAskedAndForgetsThemAfter() {
     ActionOrigin during = OriginContext.as(ActionOrigin.BOARD, OriginContext::current);
 
     assertThat(during).isEqualTo(ActionOrigin.BOARD);

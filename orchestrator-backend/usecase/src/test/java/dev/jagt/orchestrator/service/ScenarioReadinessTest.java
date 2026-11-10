@@ -13,7 +13,7 @@ class ScenarioReadinessTest {
   private final ScenarioReadiness readiness = new ScenarioReadiness(settings);
 
   @Test
-  void isReadyWhereTheRoleIsOnAndHoldsAWorkspace() {
+  void isReadyWhereTheRoleIsOnAndHoldsWorkspace() {
     when(settings.load())
         .thenReturn(RoleOptions.defaults().withEnabled(true).withWorkspace("/ws"));
 

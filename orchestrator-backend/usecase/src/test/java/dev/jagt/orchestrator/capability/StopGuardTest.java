@@ -18,7 +18,7 @@ class StopGuardTest {
   private final TaskStops stops = mock(TaskStops.class);
 
   @Test
-  void refusesTheMastersShipOnAStoppedTask() {
+  void refusesTheMastersShipOnStoppedTask() {
     when(stops.stopped("ABC-42")).thenReturn(true);
     StopGuard guard = new StopGuard(TaskAction.SHIP, stops);
 
@@ -30,7 +30,7 @@ class StopGuardTest {
   }
 
   @Test
-  void runsTheHumansOwnPressOnAStoppedTask() {
+  void runsTheHumansOwnPressOnStoppedTask() {
     when(stops.stopped("ABC-42")).thenReturn(true);
     StopGuard guard = new StopGuard(TaskAction.DEPLOY, stops);
 

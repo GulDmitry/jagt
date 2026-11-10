@@ -19,7 +19,7 @@ class MarkdownHtmlTest {
   }
 
   @Test
-  void aJavascriptLinkLosesItsTarget() {
+  void javascriptLinkLosesItsTarget() {
     String html = MarkdownHtml.render("[open](javascript:alert(1))");
 
     assertThat(html).doesNotContain("javascript:");
@@ -37,7 +37,7 @@ class MarkdownHtmlTest {
   }
 
   @Test
-  void aMermaidFenceKeepsItsLanguageMarkerAndEscapedBodyForThePageToDraw() {
+  void mermaidFenceKeepsItsLanguageMarkerAndEscapedBodyForThePageToDraw() {
     String html = MarkdownHtml.render("```mermaid\nsequenceDiagram\nA->>B: <go>\n```");
 
     assertThat(html)
@@ -46,14 +46,14 @@ class MarkdownHtmlTest {
   }
 
   @Test
-  void aMarkdownTableIsRenderedAsATable() {
+  void markdownTableIsRenderedAsTable() {
     String html = MarkdownHtml.render("| a | b |\n|---|---|\n| 1 | 2 |");
 
     assertThat(html).contains("<table>").contains("<td>1</td>");
   }
 
   @Test
-  void aChangedParagraphIsMarkedAndAnUnchangedOneIsNot() {
+  void changedParagraphIsMarkedAndAnUnchangedOneIsNot() {
     String html =
         MarkdownHtml.render(
             "# Plan\n\nkeep this\n\nnew words\n",
@@ -63,7 +63,7 @@ class MarkdownHtmlTest {
   }
 
   @Test
-  void aRemovedLineIsShownStruckBeforeTheLineItStoodBefore() {
+  void removedLineIsShownStruckBeforeTheLineItStoodBefore() {
     String html =
         MarkdownHtml.render(
             "# Plan\n\nship\n", new LineChange(Set.of(), Map.of(2, List.of("retry once", ""))));
@@ -72,7 +72,7 @@ class MarkdownHtmlTest {
   }
 
   @Test
-  void aChangedListItemAndATableRowAreMarked() {
+  void changedListItemAndTableRowAreMarked() {
     String html =
         MarkdownHtml.render(
             "- a\n- b2\n\n| x | y |\n|---|---|\n| 1 | 9 |\n",
@@ -85,7 +85,7 @@ class MarkdownHtmlTest {
   }
 
   @Test
-  void aRemovedLineIsShownEscapedLikeAnyText() {
+  void removedLineIsShownEscapedLikeAnyText() {
     String html =
         MarkdownHtml.render(
             "ship\n", new LineChange(Set.of(), Map.of(0, List.of("<script>x</script>"))));
@@ -94,28 +94,28 @@ class MarkdownHtmlTest {
   }
 
   @Test
-  void aChangedHeadingIsMarked() {
+  void changedHeadingIsMarked() {
     String html = MarkdownHtml.render("# Plan v2\n", new LineChange(Set.of(0), Map.of()));
 
     assertThat(html).contains("<h1 class=\"changed\">Plan v2</h1>");
   }
 
   @Test
-  void aChangedFencedCodeBlockIsMarked() {
+  void changedFencedCodeBlockIsMarked() {
     String html = MarkdownHtml.render("```\nrun it\n```\n", new LineChange(Set.of(1), Map.of()));
 
     assertThat(html).contains("<pre class=\"changed\">");
   }
 
   @Test
-  void aChangedIndentedCodeBlockIsMarked() {
+  void changedIndentedCodeBlockIsMarked() {
     String html = MarkdownHtml.render("    run it\n", new LineChange(Set.of(0), Map.of()));
 
     assertThat(html).contains("<pre class=\"changed\">");
   }
 
   @Test
-  void aLineRemovedFromTheEndIsShownStruckAfterTheLastLine() {
+  void lineRemovedFromTheEndIsShownStruckAfterTheLastLine() {
     String html =
         MarkdownHtml.render("ship\n", new LineChange(Set.of(), Map.of(1, List.of("announce"))));
 

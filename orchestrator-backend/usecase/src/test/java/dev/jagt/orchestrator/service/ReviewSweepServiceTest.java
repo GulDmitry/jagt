@@ -25,7 +25,7 @@ class ReviewSweepServiceTest {
   private final ReviewSweepService sweep = new ReviewSweepService(stateService, reading, outcome);
 
   @BeforeEach
-  void aTaskWhoseIdIsItsOwn() {
+  void taskWhoseIdIsItsOwn() {
     when(stateService.canonicalTaskId(anyString())).thenAnswer(call -> call.getArgument(0));
   }
 
@@ -64,7 +64,7 @@ class ReviewSweepServiceTest {
   }
 
   @Test
-  void refusesASecondSweepOfATaskWhileTheFirstIsStillRunning() {
+  void refusesSecondSweepOfTaskWhileTheFirstIsStillRunning() {
     var reentrant = new AtomicReference<ReviewSweepService.SweepResult>();
     when(reading.read("ABC-1"))
         .thenAnswer(
@@ -116,7 +116,7 @@ class ReviewSweepServiceTest {
   }
 
   @Test
-  void refusesAConcurrentSweepFromAnotherThreadNotJustAReentrantCall() throws InterruptedException {
+  void refusesConcurrentSweepFromAnotherThreadNotJustReentrantCall() throws InterruptedException {
     CountDownLatch firstSweepIsInside = new CountDownLatch(1);
     CountDownLatch secondSweepReturned = new CountDownLatch(1);
     AtomicReference<ReviewSweepService.SweepResult> fromOtherThread = new AtomicReference<>();

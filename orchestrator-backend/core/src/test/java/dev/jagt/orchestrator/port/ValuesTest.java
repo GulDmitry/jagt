@@ -14,7 +14,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class ValuesTest {
 
   @Test
-  void reportsAFailedReadWithItsSentenceAndWhatItCost() {
+  void reportsFailedReadWithItsSentenceAndWhatItCost() {
     TokenUsage spent = TokenUsage.ofCall(10, 0, 5, 0.01);
 
     Answer<String> answer = Answer.failed(spent, "timed out");
@@ -25,7 +25,7 @@ class ValuesTest {
   }
 
   @Test
-  void costsNothingForAReadThatNeverHappened() {
+  void costsNothingForReadThatNeverHappened() {
     Answer<String> answer = Answer.unavailable();
 
     assertThat(answer.facts()).isEmpty();
@@ -60,7 +60,7 @@ class ValuesTest {
   }
 
   @Test
-  void routesTheOtherNotificationsOnTheirOwnTopicsAndNamesATaskOnlyForTheWatchdog() {
+  void routesTheOtherNotificationsOnTheirOwnTopicsAndNamesTaskOnlyForTheWatchdog() {
     assertThat(Notification.watchdog("ABC-1", "quiet", "no report").topic())
         .isEqualTo(Notification.Topic.WATCHDOG);
     assertThat(Notification.watchdog("ABC-1", "quiet", "no report").taskId()).isEqualTo("ABC-1");
@@ -72,7 +72,7 @@ class ValuesTest {
   }
 
   @Test
-  void raisesAnOpenedRequestAndALandedDeployAsTheirOwnEventsOfATask() {
+  void raisesAnOpenedRequestAndLandedDeployAsTheirOwnEventsOfTask() {
     assertThat(Notification.requestOpened("ABC-1", "!7"))
         .isEqualTo(
             new Notification(
@@ -94,14 +94,14 @@ class ValuesTest {
   }
 
   @Test
-  void namesAnEventByTheIdAConfigurationListsIt() {
+  void namesAnEventByTheIdConfigurationListsIt() {
     assertThat(Notification.Event.REQUEST_OPENED.id()).isEqualTo("request-opened");
     assertThat(Notification.Event.ofId(Notification.Event.DEPLOYED.id()))
         .contains(Notification.Event.DEPLOYED);
   }
 
   @Test
-  void wantsEveryNotificationUnlessAChannelSaysOtherwise() {
+  void wantsEveryNotificationUnlessChannelSaysOtherwise() {
     Notifier everything =
         new Notifier() {
           @Override
@@ -117,7 +117,7 @@ class ValuesTest {
   }
 
   @Test
-  void offersASandboxOnlyWhereAWritableSetWasGiven() {
+  void offersSandboxOnlyWhereWritableSetWasGiven() {
     Sandbox on = Sandbox.on(List.of(Path.of("/tmp/wt")), List.of("git"));
 
     assertThat(on.enabled()).isTrue();
@@ -127,7 +127,7 @@ class ValuesTest {
   }
 
   @Test
-  void provisionsAWorktreeWithNoHintsUntilItIsGivenSome() {
+  void provisionsWorktreeWithNoHintsUntilItIsGivenSome() {
     AgentWorktree bare = AgentWorktree.of(Path.of("/wt"), Path.of("/root"));
 
     AgentWorktree hinted =
@@ -170,13 +170,13 @@ class ValuesTest {
 
   @ParameterizedTest
   @CsvSource({"blocking,true", "wrong,true", "unproven,true", "unguarded,false", "noise,false"})
-  void stopsARoundOnlyForTheFirstThreeSeverities(String severity, boolean stops) {
+  void stopsRoundOnlyForTheFirstThreeSeverities(String severity, boolean stops) {
     assertThat(new RoundReviewer.Finding("A.java", "issue", "pattern", severity, "", "").stops())
         .isEqualTo(stops);
   }
 
   @Test
-  void readsAFailedJudgementAsNothingButItsFailure() {
+  void readsFailedJudgementAsNothingButItsFailure() {
     RoundReviewer.Judgement failed = RoundReviewer.Judgement.failed("no answer");
 
     assertThat(failed.failure()).isEqualTo("no answer");
@@ -194,7 +194,7 @@ class ValuesTest {
   }
 
   @Test
-  void readsATicketWithNoCorrectionsUnlessTheCallerHadSome() {
+  void readsTicketWithNoCorrectionsUnlessTheCallerHadSome() {
     List<List<String>> asked = new java.util.ArrayList<>();
     TrackerAssistant tracker =
         new TrackerAssistant() {

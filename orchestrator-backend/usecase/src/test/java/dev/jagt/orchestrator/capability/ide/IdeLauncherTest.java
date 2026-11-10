@@ -21,7 +21,7 @@ class IdeLauncherTest {
   private final IdeDiff diff = mock(IdeDiff.class);
 
   @Test
-  void opensATaskAsProjectsThatRunWhenAskedForTheProject() {
+  void opensTaskAsProjectsThatRunWhenAskedForTheProject() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build();
     when(stateService.canonicalTaskId("a1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1")).thenReturn(Optional.of(task));
@@ -35,7 +35,7 @@ class IdeLauncherTest {
   }
 
   @Test
-  void opensATaskAsAStaticDiffWhenAskedForTheDiff() {
+  void opensTaskAsStaticDiffWhenAskedForTheDiff() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build();
     when(stateService.canonicalTaskId("a1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1")).thenReturn(Optional.of(task));
@@ -48,7 +48,7 @@ class IdeLauncherTest {
   }
 
   @Test
-  void refusesATaskItDoesNotKnow() {
+  void refusesTaskItDoesNotKnow() {
     when(stateService.canonicalTaskId("nope")).thenReturn("nope");
     when(stateService.task("nope")).thenReturn(Optional.empty());
 

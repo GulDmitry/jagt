@@ -15,7 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 class ReplayCodeHostAssistantTest {
 
   @Test
-  void aReplayReadsTheMergeRequestAsTheRunsModelAnsweredIt(@TempDir Path root) throws Exception {
+  void replayReadsTheMergeRequestAsTheRunsModelAnsweredIt(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(
         file,
@@ -31,7 +31,7 @@ class ReplayCodeHostAssistantTest {
   }
 
   @Test
-  void aReplayReadsTheReviewAsTheRunsModelAnsweredIt(@TempDir Path root) throws Exception {
+  void replayReadsTheReviewAsTheRunsModelAnsweredIt(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(
         file,
@@ -47,7 +47,7 @@ class ReplayCodeHostAssistantTest {
   }
 
   @Test
-  void aReplayHasNoReviewWhereTheRunNeverSweptAndDiverges(@TempDir Path root) throws Exception {
+  void replayHasNoReviewWhereTheRunNeverSweptAndDiverges(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(file, "\n");
     Recording recording = new Recording(file.toString());
@@ -60,7 +60,7 @@ class ReplayCodeHostAssistantTest {
   }
 
   @Test
-  void aReplayHasNoReviewWhereTheRecordedReadFailedAndKeepsItsCause(@TempDir Path root)
+  void replayHasNoReviewWhereTheRecordedReadFailedAndKeepsItsCause(@TempDir Path root)
       throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(

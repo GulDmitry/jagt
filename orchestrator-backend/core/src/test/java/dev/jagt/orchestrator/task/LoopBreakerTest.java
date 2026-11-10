@@ -34,7 +34,7 @@ class LoopBreakerTest {
   }
 
   @Test
-  void keepsRelayingWhereEveryRoundBroughtANewNote() {
+  void keepsRelayingWhereEveryRoundBroughtNewNote() {
     RoundTrail watch =
         new RoundTrail(
             List.of(
@@ -50,7 +50,7 @@ class LoopBreakerTest {
   }
 
   @Test
-  void countsAgainFromANewNoteWhereTheRoundsBeforeBroughtNone() {
+  void countsAgainFromNewNoteWhereTheRoundsBeforeBroughtNone() {
     RoundTrail watch =
         new RoundTrail(
             List.of(
@@ -79,7 +79,7 @@ class LoopBreakerTest {
   }
 
   @Test
-  void stopsTheFifthShipWithinTheWindowWhereNoRoundBroughtANewNote() {
+  void stopsTheFifthShipWithinTheWindowWhereNoRoundBroughtNewNote() {
     RoundTrail watch =
         new RoundTrail(
             List.of(
@@ -123,7 +123,7 @@ class LoopBreakerTest {
   }
 
   @Test
-  void countsNoShipTowardTheCeilingWhereTheAnsweringRoundHasABlankNoteFingerprint() {
+  void countsNoShipTowardTheCeilingWhereTheAnsweringRoundHasBlankNoteFingerprint() {
     RoundTrail watch =
         new RoundTrail(
             List.of(
@@ -144,7 +144,7 @@ class LoopBreakerTest {
   }
 
   @Test
-  void letsATaskShipAgainWhileEveryRoundBroughtANewNote() {
+  void letsTaskShipAgainWhileEveryRoundBroughtNewNote() {
     RoundTrail watch =
         new RoundTrail(
             List.of(
@@ -247,7 +247,7 @@ class LoopBreakerTest {
   }
 
   @Test
-  void sendsARoundAgainOnceTheHumanLiftedTheStopItsRunTripped() {
+  void sendsRoundAgainOnceTheHumanLiftedTheStopItsRunTripped() {
     Turn turn =
         Turn.none()
             .relayed("verify", "a", "", 1)
@@ -285,7 +285,7 @@ class LoopBreakerTest {
   }
 
   @Test
-  void countsAShipAsAnsweringTheRoundReadAtTheSameMoment() {
+  void countsShipAsAnsweringTheRoundReadAtTheSameMoment() {
     RoundTrail watch =
         new RoundTrail(
             List.of(
@@ -346,7 +346,7 @@ class LoopBreakerTest {
   }
 
   @Test
-  void sendsARoundAgainWhereEachOfTheRoundsRunningAnsweredAnotherReport() {
+  void sendsRoundAgainWhereEachOfTheRoundsRunningAnsweredAnotherReport() {
     Turn turn =
         Turn.none()
             .relayed("round-not-ready", "a", "plan 1", 1)
@@ -406,7 +406,7 @@ class LoopBreakerTest {
 
   @ParameterizedTest
   @EnumSource(names = {"BOARD", "PALETTE", "MCP"})
-  void countsNoMoveASessionOrTheHumanMade(ActionOrigin origin) {
+  void countsNoMoveSessionOrTheHumanMade(ActionOrigin origin) {
     List<StatusChange> history =
         java.util.stream.IntStream.range(0, 20)
             .mapToObj(i -> new StatusChange(TaskStatus.CI_POLLING, 3_000_000 + i, origin))
@@ -461,7 +461,7 @@ class LoopBreakerTest {
   }
 
   @Test
-  void countsNoShipPressedOnATreeOtherThanTheShipBefore() {
+  void countsNoShipPressedOnTreeOtherThanTheShipBefore() {
     RoundTrail watch =
         new RoundTrail(List.of(new RoundTrail.Round(500, 5, "", "a", "t1 note_1")), 0);
     List<StatusChange> history =

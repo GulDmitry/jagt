@@ -11,8 +11,8 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.port.ToolGateEnvelope.Kind;
 import dev.jagt.orchestrator.port.ToolGateEnvelope;
+import dev.jagt.orchestrator.port.ToolGateEnvelope.Kind;
 import dev.jagt.orchestrator.protocol.ToolCall;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -61,7 +61,7 @@ class AgentToolGateControllerTest {
   }
 
   @Test
-  void refusesAPushToAnotherBranchInTheShapeTheModelReads() {
+  void refusesPushToAnotherBranchInTheShapeTheModelReads() {
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
         .thenReturn(
             Optional.of(
@@ -82,7 +82,7 @@ class AgentToolGateControllerTest {
   }
 
   @Test
-  void countsARefusedLineOnItsTask() {
+  void countsRefusedLineOnItsTask() {
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
         .thenReturn(
             Optional.of(
@@ -110,7 +110,7 @@ class AgentToolGateControllerTest {
   }
 
   @Test
-  void answersAPushOfTheTasksOwnBranchWithNothing() {
+  void answersPushOfTheTasksOwnBranchWithNothing() {
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
         .thenReturn(
             Optional.of(
@@ -130,7 +130,7 @@ class AgentToolGateControllerTest {
   }
 
   @Test
-  void refusesNothingFromADirectoryNoTaskOwns() {
+  void refusesNothingFromDirectoryNoTaskOwns() {
     when(stateService.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
     var answered =
@@ -145,7 +145,7 @@ class AgentToolGateControllerTest {
   }
 
   @Test
-  void answersNothingForAToolThatCannotPush() {
+  void answersNothingForToolThatCannotPush() {
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
         .thenReturn(
             Optional.of(
@@ -165,7 +165,7 @@ class AgentToolGateControllerTest {
   }
 
   @Test
-  void answersACallWithNoPayloadWithNothing() {
+  void answersCallWithNoPayloadWithNothing() {
     var answered =
         new AgentToolGateController(
             stateService, clock, configService, envelope, new ToolGate(List.of()))
@@ -175,7 +175,7 @@ class AgentToolGateControllerTest {
   }
 
   @Test
-  void refusesASourceFileWriteWhileThePlanIsNotApprovedAndCountsIt() {
+  void refusesSourceFileWriteWhileThePlanIsNotApprovedAndCountsIt() {
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
         .thenReturn(
             Optional.of(
@@ -237,7 +237,7 @@ class AgentToolGateControllerTest {
   }
 
   @Test
-  void refusesANotebookEditWhileThePlanIsNotApproved() {
+  void refusesNotebookEditWhileThePlanIsNotApproved() {
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
         .thenReturn(
             Optional.of(
@@ -279,7 +279,7 @@ class AgentToolGateControllerTest {
   }
 
   @Test
-  void refusesNoWriteFromADirectoryNoTaskOwns() {
+  void refusesNoWriteFromDirectoryNoTaskOwns() {
     when(stateService.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
     var answered =
@@ -294,7 +294,7 @@ class AgentToolGateControllerTest {
   }
 
   @Test
-  void signsTheSessionUsedAToolWhateverTheToolAnswers() {
+  void signsTheSessionUsedToolWhateverTheToolAnswers() {
     TaskState held =
         TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS)
             .lastActiveTimestamp(1_000)
@@ -336,7 +336,7 @@ class AgentToolGateControllerTest {
   }
 
   @Test
-  void namesTheProjectsOwnRemoteInTheHintOfARefusedPush() {
+  void namesTheProjectsOwnRemoteInTheHintOfRefusedPush() {
     when(configService.project("proj"))
         .thenReturn(
             new ProjectConfig(

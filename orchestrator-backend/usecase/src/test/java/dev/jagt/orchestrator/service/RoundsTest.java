@@ -15,14 +15,18 @@ import org.junit.jupiter.api.Test;
 
 class RoundsTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ConfigService configService = mock(ConfigService.class);
-  private final Rounds rounds = new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn())));
+  private final Rounds rounds =
+      new Rounds(
+          configService,
+          ignored -> false,
+          () -> false,
+          new Checkers(new TaskChart(Composition.builtIn())));
 
   @Test
-  void theMasterReadsAHandBackItHasNotReadYetWhileItRuns() {
+  void theMasterReadsHandBackItHasNotReadYetWhileItRuns() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
     var round =
@@ -36,7 +40,7 @@ class RoundsTest {
   }
 
   @Test
-  void nobodyReadsAHandBackBeforeTheHumanWhileTheMasterIsOff() {
+  void nobodyReadsHandBackBeforeTheHumanWhileTheMasterIsOff() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
     var round =
@@ -50,7 +54,7 @@ class RoundsTest {
   }
 
   @Test
-  void theMasterNoLongerReadsAHandBackItHasAlreadyJudged() {
+  void theMasterNoLongerReadsHandBackItHasAlreadyJudged() {
     TaskState task =
         reducer.masterSealed(
             TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build(), "fingerprint", 0);
@@ -102,14 +106,18 @@ class RoundsTest {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
     var round =
-        new Rounds(configService, standing -> standing == task, () -> false, new Checkers(new TaskChart(Composition.builtIn())))
+        new Rounds(
+                configService,
+                standing -> standing == task,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn())))
             .of(task, ConfigService.ConfigFile.defaults());
 
     assertThat(round.requestless()).isTrue();
   }
 
   @Test
-  void theMasterActsOnATaskItStandsInForAndOnNoneItLeft() {
+  void theMasterActsOnTaskItStandsInForAndOnNoneItLeft() {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()

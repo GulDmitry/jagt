@@ -112,7 +112,7 @@ class TurnsTest {
     "REVIEW_PENDING, PLAIN, judge, HUMAN",
     "DONE, PLAIN, act, NOBODY"
   })
-  void aTaskJagtStoppedIsTheHumansWhereverTheMasterStands(
+  void taskJagtStoppedIsTheHumansWhereverTheMasterStands(
       TaskStatus status, AgentReport report, String profile, Holder.Fixed expected) {
     Holder holder = Turns.next(status, report, true, Map.of(), PROFILES.get(profile));
 
@@ -126,7 +126,7 @@ class TurnsTest {
     "REVIEW_PENDING, PLAIN, act",
     "REVIEW_PENDING, NO_CHANGES, judge"
   })
-  void aRoundTheMasterReadsIsItsTurnAndTheBoardSaysMasterReview(
+  void roundTheMasterReadsIsItsTurnAndTheBoardSaysMasterReview(
       TaskStatus status, AgentReport report, String profile) {
     Holder holder = Turns.next(status, report, false, Map.of(), PROFILES.get(profile));
 
@@ -163,7 +163,7 @@ class TurnsTest {
 
   @ParameterizedTest
   @CsvSource({"off", "judge", "act"})
-  void aSessionWaitingOnADependencyKeepsItsTurnWhateverTheMasterDoes(String profile) {
+  void sessionWaitingOnDependencyKeepsItsTurnWhateverTheMasterDoes(String profile) {
     Holder holder =
         Turns.next(
             TaskStatus.IN_PROGRESS, AgentReport.WAIT, false, Map.of(), PROFILES.get(profile));
@@ -198,7 +198,7 @@ class TurnsTest {
   }
 
   @Test
-  void nobodyHoldsADeployedTaskWhoseCheckIsNotReading() {
+  void nobodyHoldsDeployedTaskWhoseCheckIsNotReading() {
     Holder holder =
         Turns.next(TaskStatus.DEPLOYED, AgentReport.PLAIN, false, Map.of(), PROFILES.get("act"));
 
@@ -206,7 +206,7 @@ class TurnsTest {
   }
 
   @Test
-  void aStoppedTaskIsTheHumansEvenWhereAcceptanceReads() {
+  void stoppedTaskIsTheHumansEvenWhereAcceptanceReads() {
     Holder holder =
         Turns.next(
             TaskStatus.DEPLOYED,
@@ -219,7 +219,7 @@ class TurnsTest {
   }
 
   @Test
-  void theMasterHoldsARoundWhoseSealWasClearedForItsVerdictFileWasGone() {
+  void theMasterHoldsRoundWhoseSealWasClearedForItsVerdictFileWasGone() {
     TaskState sealed =
         reducer.masterVerdictGone(
             TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)

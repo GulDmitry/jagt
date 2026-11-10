@@ -15,9 +15,9 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.CommandService;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
@@ -153,7 +153,7 @@ class TicketCloseJobTest {
   }
 
   @Test
-  void buysNoSecondReadAboutATaskThatHasNotMovedSinceItWasAsked(@TempDir Path root) {
+  void buysNoSecondReadAboutTaskThatHasNotMovedSinceItWasAsked(@TempDir Path root) {
     when(close.watches("ABC-42")).thenReturn(true);
     StateService stateService =
         new StateService(
@@ -201,7 +201,7 @@ class TicketCloseJobTest {
             .alias("a1")
             .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1_000L, null)))
             .build();
-    TaskState moved =
+    final TaskState moved =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .alias("a1")
             .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 2_000L, null)))
@@ -283,7 +283,7 @@ class TicketCloseJobTest {
   }
 
   @Test
-  void asksAMissedTaskAgainAfterTheIntervalThenAfterTwiceAsLongThenAfterFourTimes(
+  void asksMissedTaskAgainAfterTheIntervalThenAfterTwiceAsLongThenAfterFourTimes(
       @TempDir Path root) {
     when(close.watches("ABC-42")).thenReturn(true);
     StateService stateService =

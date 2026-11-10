@@ -34,7 +34,7 @@ class IdeProjectTest {
       throws Exception {
     Path api = Files.createDirectories(root.resolve("one/api"));
     Path web = Files.createDirectories(root.resolve("two/web"));
-    TaskState task =
+    final TaskState task =
         TaskState.builder(
                 List.of(
                     TaskRepo.of("api", root.resolve("one/ABC-1-api").toString()),
@@ -68,7 +68,7 @@ class IdeProjectTest {
   }
 
   @Test
-  void saysItIsTheDeployWorktreeItOpenedForAConflict(@TempDir Path root) throws Exception {
+  void saysItIsTheDeployWorktreeItOpenedForConflict(@TempDir Path root) throws Exception {
     Path repo = Files.createDirectories(root.resolve("repo"));
     TaskState task =
         TaskState.builder("proj", root.resolve("ABC-1-demo").toString(), TaskStatus.DEPLOY_CONFLICT)
@@ -96,7 +96,7 @@ class IdeProjectTest {
   }
 
   @Test
-  void opensTheTaskWorktreeWhenAConflictedProjectHasLeftTheConfiguration(@TempDir Path root)
+  void opensTheTaskWorktreeWhenConflictedProjectHasLeftTheConfiguration(@TempDir Path root)
       throws Exception {
     Path taskWorktree = Files.createDirectories(root.resolve("ABC-1-demo"));
     TaskState task =
@@ -110,7 +110,7 @@ class IdeProjectTest {
   }
 
   @Test
-  void showsTheHumanTheTasksOwnWorktreeAsAProject() {
+  void showsTheHumanTheTasksOwnWorktreeAsProject() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
     new IdeProject(new DeployTargets(config), deploys, editor).open("ABC-1", task);
@@ -119,7 +119,7 @@ class IdeProjectTest {
   }
 
   @Test
-  void opensAWorktreePerRepositoryWhenTheTaskSpansTwoProjects() {
+  void opensWorktreePerRepositoryWhenTheTaskSpansTwoProjects() {
     TaskState task =
         TaskState.builder(
                 List.of(TaskRepo.of("api", "/api-wt"), TaskRepo.of("web", "/web-wt")),
@@ -133,7 +133,7 @@ class IdeProjectTest {
   }
 
   @Test
-  void opensTheRevertWorktreeWhereTheConflictIsARevertsAndSaysToRevertAgain(@TempDir Path root)
+  void opensTheRevertWorktreeWhereTheConflictIsRevertsAndSaysToRevertAgain(@TempDir Path root)
       throws Exception {
     Path repo = Files.createDirectories(root.resolve("repo"));
     TaskState task =

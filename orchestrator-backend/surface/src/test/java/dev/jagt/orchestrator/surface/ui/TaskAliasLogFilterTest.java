@@ -12,7 +12,7 @@ import org.slf4j.event.KeyValuePair;
 class TaskAliasLogFilterTest {
 
   @Test
-  void aLineNamingOnlyItsTaskCarriesTheTasksAlias() {
+  void lineNamingOnlyItsTaskCarriesTheTasksAlias() {
     TaskAliasLogFilter.remember("ABC-42", "p3");
     var event =
         new LoggingEvent(
@@ -38,7 +38,7 @@ class TaskAliasLogFilterTest {
   }
 
   @Test
-  void aLineAnotherAppenderAlreadyGaveItsAliasKeepsOneAlias() {
+  void lineAnotherAppenderAlreadyGaveItsAliasKeepsOneAlias() {
     TaskAliasLogFilter.remember("ABC-43", "p4");
     var event =
         new LoggingEvent(

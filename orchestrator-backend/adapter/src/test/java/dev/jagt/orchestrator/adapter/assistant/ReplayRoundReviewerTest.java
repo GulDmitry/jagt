@@ -16,7 +16,7 @@ import org.junit.jupiter.api.io.TempDir;
 class ReplayRoundReviewerTest {
 
   @Test
-  void aReplayedReadAnswersWithTheVerdictTheRecordingHeldAtNoCost(@TempDir Path root)
+  void replayedReadAnswersWithTheVerdictTheRecordingHeldAtNoCost(@TempDir Path root)
       throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(
@@ -35,7 +35,7 @@ class ReplayRoundReviewerTest {
   }
 
   @Test
-  void aReadPastTheRecordingIsAFailedJudgementNamingWhy(@TempDir Path root) throws Exception {
+  void readPastTheRecordingIsFailedJudgementNamingWhy(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(file, "\n");
     ReplayRoundReviewer reviewer =
@@ -49,7 +49,7 @@ class ReplayRoundReviewerTest {
   }
 
   @Test
-  void aReplayedReadLoadsTheMcpServerSoATicketTheRoundDoesNotQuoteStaysReadable(@TempDir Path root)
+  void replayedReadLoadsTheMcpServerSoTicketTheRoundDoesNotQuoteStaysReadable(@TempDir Path root)
       throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(file, "\n");

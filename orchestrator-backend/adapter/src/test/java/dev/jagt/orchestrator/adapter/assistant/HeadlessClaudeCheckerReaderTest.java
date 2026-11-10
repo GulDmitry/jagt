@@ -54,7 +54,7 @@ class HeadlessClaudeCheckerReaderTest {
   @TempDir Path worktree;
 
   @Test
-  void holdsNoWriteToolAndCurlOnlyAsAQuietGetSoNothingItReadsCanChangeTheEnvironmentOrTheTree() {
+  void holdsNoWriteToolAndCurlOnlyAsQuietGetSoNothingItReadsCanChangeTheEnvironmentOrTheTree() {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
             new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
@@ -88,7 +88,7 @@ class HeadlessClaudeCheckerReaderTest {
   }
 
   @Test
-  void letsAWebFetchReachOnlyTheEnvironmentsTheRunNames() {
+  void letsWebFetchReachOnlyTheEnvironmentsTheRunNames() {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
             new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
@@ -187,7 +187,7 @@ class HeadlessClaudeCheckerReaderTest {
   }
 
   @Test
-  void readsTheDisputeAcceptanceFilledAgainstASessionsDecline() {
+  void readsTheDisputeAcceptanceFilledAgainstSessionsDecline() {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
             new Processes.Result(
@@ -245,7 +245,7 @@ class HeadlessClaudeCheckerReaderTest {
   }
 
   @Test
-  void givesABrowserServerTheRoleNamesItsReadsNavigationAndLooksAndNoClick() {
+  void givesBrowserServerTheRoleNamesItsReadsNavigationAndLooksAndNoClick() {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
             new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
@@ -298,7 +298,7 @@ class HeadlessClaudeCheckerReaderTest {
   }
 
   @Test
-  void passesNeitherASharedPromptNorAModelWhereTheRunNamesNone() {
+  void passesNeitherSharedPromptNorModelWhereTheRunNamesNone() {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
             new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
@@ -323,7 +323,7 @@ class HeadlessClaudeCheckerReaderTest {
   }
 
   @Test
-  void refusesARunOfARoleNoInstalledDefinitionNames() {
+  void refusesRunOfRoleNoInstalledDefinitionNames() {
     var run =
         new CheckerReader.Run(
             "",
@@ -427,7 +427,7 @@ class HeadlessClaudeCheckerReaderTest {
   }
 
   @Test
-  void withAWorkspaceTheRunWritesOnlyThereUnderDontAsk(@TempDir Path workspace) {
+  void withWorkspaceTheRunWritesOnlyThereUnderDontAsk(@TempDir Path workspace) {
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
             new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));

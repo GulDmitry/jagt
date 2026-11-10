@@ -28,7 +28,7 @@ class StaticStateTest {
           "java.lang.StringBuilder");
 
   @Test
-  void aStaticFieldIsFinalAndOfAnImmutableType() {
+  void staticFieldIsFinalAndOfAnImmutableType() {
     FreezingArchRule.freeze(
             fields()
                 .that()

@@ -19,7 +19,7 @@ import tools.jackson.databind.json.JsonMapper;
 class ClaudeTrustTest {
 
   @Test
-  void acceptsTheTrustDialogForAWorktreeClaudeHasNeverRunIn() {
+  void acceptsTheTrustDialogForWorktreeClaudeHasNeverRunIn() {
     String updated = ClaudeTrust.accepted("{}", "/wt/ABC-42");
 
     boolean trusted =
@@ -34,7 +34,7 @@ class ClaudeTrustTest {
   }
 
   @Test
-  void aSuiteRunTrustsItsWorktreesInsideTheBuildNeverInTheHumansConfig() {
+  void suiteRunTrustsItsWorktreesInsideTheBuildNeverInTheHumansConfig() {
     Path configFile = ClaudeTrust.configFile();
 
     assertThat(configFile).startsWithRaw(Path.of("").toAbsolutePath());
@@ -107,7 +107,7 @@ class ClaudeTrustTest {
   }
 
   @Test
-  void keepsEveryOtherProjectWhenTrustingAWorktree() {
+  void keepsEveryOtherProjectWhenTrustingWorktree() {
     String updated =
         ClaudeTrust.accepted(
             "{\"numStartups\": 7, \"projects\": {\"/other\": {\"lastCost\": 3}}}", "/wt/ABC-42");
@@ -134,7 +134,7 @@ class ClaudeTrustTest {
   }
 
   @Test
-  void leavesAConfigItCannotUnderstandUntouched(@TempDir Path home) throws Exception {
+  void leavesConfigItCannotUnderstandUntouched(@TempDir Path home) throws Exception {
     Path config = home.resolve(".claude.json");
     Files.writeString(config, "[]");
 
@@ -144,7 +144,7 @@ class ClaudeTrustTest {
   }
 
   @Test
-  void dropsTheEntryOfARetiredWorktree() {
+  void dropsTheEntryOfRetiredWorktree() {
     String updated =
         ClaudeTrust.forgotten(
             "{\"projects\": {\"/wt/ABC-42\": {\"hasTrustDialogAccepted\": true}, \"/other\": {}}}",
@@ -164,7 +164,7 @@ class ClaudeTrustTest {
   }
 
   @Test
-  void keysTheEntryByTheRealPathOfAWorktreeReachedThroughALink(@TempDir Path home)
+  void keysTheEntryByTheRealPathOfWorktreeReachedThroughLink(@TempDir Path home)
       throws Exception {
     Path real = Files.createDirectory(home.resolve("real"));
     Path link = Files.createSymbolicLink(home.resolve("link"), real);
@@ -178,7 +178,7 @@ class ClaudeTrustTest {
   }
 
   @Test
-  void keysTheEntryOfADeletedWorktreeByItsParentsRealPath(@TempDir Path home) throws Exception {
+  void keysTheEntryOfDeletedWorktreeByItsParentsRealPath(@TempDir Path home) throws Exception {
     Path real = Files.createDirectory(home.resolve("real"));
     Path link = Files.createSymbolicLink(home.resolve("link"), real);
     Path config = home.resolve(".claude.json");
@@ -191,7 +191,7 @@ class ClaudeTrustTest {
   }
 
   @Test
-  void keysTheEntryOfADeletedRelativeWorktreeByItsOwnPath(@TempDir Path home) throws Exception {
+  void keysTheEntryOfDeletedRelativeWorktreeByItsOwnPath(@TempDir Path home) throws Exception {
     Path config = home.resolve(".claude.json");
 
     ClaudeTrust.accept(config, Path.of("no-such-worktree-anywhere"));
@@ -201,7 +201,7 @@ class ClaudeTrustTest {
   }
 
   @Test
-  void forgetsTheEntryOfAWorktreeThatStillExists(@TempDir Path home) throws Exception {
+  void forgetsTheEntryOfWorktreeThatStillExists(@TempDir Path home) throws Exception {
     Path worktree = Files.createDirectory(home.resolve("wt"));
     Path config = home.resolve(".claude.json");
     ClaudeTrust.accept(config, worktree);

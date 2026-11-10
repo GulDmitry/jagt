@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class AcceptanceRunnerTest {
 
   @Test
-  void aFlowIsUnprovableUntilARunProvesIt() {
+  void flowIsUnprovableUntilRunProvesIt() {
     FlowResult result = FlowResult.defaults();
 
     assertThat(result.verdict()).isEqualTo(Verdict.UNPROVABLE);

@@ -10,14 +10,14 @@ import org.junit.jupiter.params.provider.CsvSource;
 class ToolMessageTest {
 
   @Test
-  void refusesAVerbWithNoTaskToActOn() {
+  void refusesVerbWithNoTaskToActOn() {
     assertThat(new TaskRef(null).violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("taskId");
   }
 
   @Test
-  void refusesASessionModeThisMachineDoesNotHave() {
+  void refusesSessionModeThisMachineDoesNotHave() {
     assertThat(new SessionStart("ABC-42", "turbo").violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("mode");
@@ -36,21 +36,21 @@ class ToolMessageTest {
   }
 
   @Test
-  void refusesARelayThatWouldEraseTheStandingInstructionWithNothing() {
+  void refusesRelayThatWouldEraseTheStandingInstructionWithNothing() {
     assertThat(new TaskInstructions("ABC-42", "  ").violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("instructions");
   }
 
   @Test
-  void refusesABannerWithNoLineInIt() {
+  void refusesBannerWithNoLineInIt() {
     assertThat(new UserNotice("jagt", null).violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("message");
   }
 
   @Test
-  void asksNothingOfAToolThatAsksForNothing() {
+  void asksNothingOfToolThatAsksForNothing() {
     assertThat(new NoArguments().violations(MessageContext.NONE)).isEmpty();
   }
 
@@ -65,7 +65,7 @@ class ToolMessageTest {
         "NULL,false",
         "'  ',false"
       })
-  void opensASnapshotDiffOnlyWhenTheModeSaysDiff(String mode, boolean diff) {
+  void opensSnapshotDiffOnlyWhenTheModeSaysDiff(String mode, boolean diff) {
     assertThat(new IdeOpen("ABC-42", mode).diff()).isEqualTo(diff);
   }
 
@@ -75,31 +75,31 @@ class ToolMessageTest {
   }
 
   @Test
-  void readsABlankModeAsLeftOut() {
+  void readsBlankModeAsLeftOut() {
     assertThat(new IdeOpen("ABC-42", "  ").violations(MessageContext.NONE)).isEmpty();
   }
 
   @Test
-  void refusesARelayNamingNoTask() {
+  void refusesRelayNamingNoTask() {
     assertThat(new TaskInstructions(" ", "do it").violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("taskId");
   }
 
   @Test
-  void acceptsARelayNamingATaskAndSayingWhatToDo() {
+  void acceptsRelayNamingTaskAndSayingWhatToDo() {
     assertThat(new TaskInstructions("ABC-42", "do it").violations(MessageContext.NONE)).isEmpty();
   }
 
   @Test
-  void refusesABannerWhoseLineIsBlank() {
+  void refusesBannerWhoseLineIsBlank() {
     assertThat(new UserNotice("jagt", "  ").violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("message");
   }
 
   @Test
-  void acceptsABannerWithALineAndReadsABlankTitleAsLeftOut() {
+  void acceptsBannerWithLineAndReadsBlankTitleAsLeftOut() {
     UserNotice notice = new UserNotice("  ", "review round addressed");
 
     assertThat(notice.violations(MessageContext.NONE)).isEmpty();
@@ -107,7 +107,7 @@ class ToolMessageTest {
   }
 
   @Test
-  void readsABlankTaskAsNoTask() {
+  void readsBlankTaskAsNoTask() {
     assertThat(new TaskRef("  ").taskId()).isNull();
     assertThat(new TaskRef("ABC-42").violations(MessageContext.NONE)).isEmpty();
   }

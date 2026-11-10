@@ -36,7 +36,7 @@ class TaskStateTest {
   }
 
   @Test
-  void recordsNothingForAKeepAliveBecauseTheStatusDidNotChange() {
+  void recordsNothingForKeepAliveBecauseTheStatusDidNotChange() {
     TaskState working =
         TaskState.builder("proj", "/wt", TaskStatus.NEW)
             .lastActiveTimestamp(1_000)
@@ -81,7 +81,7 @@ class TaskStateTest {
   }
 
   @Test
-  void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
+  void reportsTheActivityStampForTaskWrittenBeforeHistoryExisted() {
     TaskState legacy =
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
             .lastActiveTimestamp(5_000)
@@ -94,7 +94,7 @@ class TaskStateTest {
   }
 
   @Test
-  void opensANewPollingWindowForEveryRoundShippedOntoTheSameRequest() {
+  void opensNewPollingWindowForEveryRoundShippedOntoTheSameRequest() {
     TaskState polling =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .mrUrl("https://host/mr/9")
@@ -122,7 +122,7 @@ class TaskStateTest {
   }
 
   @Test
-  void stampsNoTreeOnAStepThatIsNotAShip() {
+  void stampsNoTreeOnStepThatIsNotShip() {
     TaskState working =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1_000, null)))
@@ -148,7 +148,7 @@ class TaskStateTest {
   }
 
   @Test
-  void dropsARepeatedStatusATaskOnlyKeepsSayingAboutItself() {
+  void dropsRepeatedStatusTaskOnlyKeepsSayingAboutItself() {
     TaskState polling =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .history(List.of(new StatusChange(TaskStatus.CI_POLLING, 1_000, null)))
@@ -160,7 +160,7 @@ class TaskStateTest {
   }
 
   @Test
-  void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
+  void keepsTheStatusStampOfLegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
     TaskState legacy =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .lastActiveTimestamp(1_700_000_000_000L)
@@ -188,7 +188,7 @@ class TaskStateTest {
   }
 
   @Test
-  void readsAStateFileWrittenBeforeATaskCouldSpanRepositories() {
+  void readsStateFileWrittenBeforeTaskCouldSpanRepositories() {
     String legacy =
         """
         {
@@ -220,7 +220,7 @@ class TaskStateTest {
   }
 
   @Test
-  void writesRepositoriesAsAListAndReadsThemBack() {
+  void writesRepositoriesAsListAndReadsThemBack() {
     TaskState task =
         TaskState.builder(
                 List.of(TaskRepo.of("php", "/wt/ABC-1-php"), TaskRepo.of("java", "/wt/ABC-1-java")),
@@ -241,7 +241,7 @@ class TaskStateTest {
   }
 
   @Test
-  void keepsAReviewRequestOnTheRepositoryItBelongsTo() {
+  void keepsReviewRequestOnTheRepositoryItBelongsTo() {
     TaskState task =
         TaskState.builder(
                 List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
@@ -258,7 +258,7 @@ class TaskStateTest {
   }
 
   @Test
-  void keepsAKnownRequestAgeWhenAReadCannotSayWhenItWasOpened() {
+  void keepsKnownRequestAgeWhenReadCannotSayWhenItWasOpened() {
     TaskState stamped =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .mrUrl("http://mr/1")
@@ -269,7 +269,7 @@ class TaskStateTest {
   }
 
   @Test
-  void datesARequestItJustOpenedByTheClockInsteadOfLeavingTheAgeBlank() {
+  void datesRequestItJustOpenedByTheClockInsteadOfLeavingTheAgeBlank() {
     TaskState stamped =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .mrUrl("http://mr/1")
@@ -384,7 +384,7 @@ class TaskStateTest {
   }
 
   @Test
-  void stampsNobodyOnATaskThatHasNoStepYet() {
+  void stampsNobodyOnTaskThatHasNoStepYet() {
     TaskState task =
         new JsonMapper()
             .readValue(
@@ -398,7 +398,7 @@ class TaskStateTest {
   }
 
   @Test
-  void keepsAStopWrittenInsideTheLoopBeforeTheStopStoodOnTheTask() {
+  void keepsStopWrittenInsideTheLoopBeforeTheStopStoodOnTheTask() {
     TaskState task =
         new JsonMapper()
             .readValue(
@@ -450,7 +450,7 @@ class TaskStateTest {
   }
 
   @Test
-  void findsTheReviewRequestOfOneProjectAndNoneForAProjectWithoutOne() {
+  void findsTheReviewRequestOfOneProjectAndNoneForProjectWithoutOne() {
     TaskState task =
         TaskState.builder(
                 List.of(
@@ -466,7 +466,7 @@ class TaskStateTest {
   }
 
   @Test
-  void recordsOneRoundForAShipAcrossRepositoriesCarryingTheSessionRepositoryLink() {
+  void recordsOneRoundForShipAcrossRepositoriesCarryingTheSessionRepositoryLink() {
     TaskState task =
         TaskState.builder(
                 List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
@@ -499,7 +499,7 @@ class TaskStateTest {
   }
 
   @Test
-  void leavesTheTaskAloneWhenAShipLandedInNoRepository() {
+  void leavesTheTaskAloneWhenShipLandedInNoRepository() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
     assertThat(task.withReviewRound(Map.of(), 2_000)).isSameAs(task);
@@ -533,7 +533,7 @@ class TaskStateTest {
   }
 
   @Test
-  void listsOnlyTheRepositoriesThatCarryAProjectName() {
+  void listsOnlyTheRepositoriesThatCarryProjectName() {
     TaskState task =
         TaskState.builder(
                 List.of(
@@ -547,7 +547,7 @@ class TaskStateTest {
   }
 
   @Test
-  void seedsALegacyTaskWithoutAnActivityStampAtTheMomentItWasFirstMoved() {
+  void seedsLegacyTaskWithoutAnActivityStampAtTheMomentItWasFirstMoved() {
     TaskState legacy =
         new JsonMapper()
             .readValue(
@@ -582,7 +582,7 @@ class TaskStateTest {
   }
 
   @Test
-  void recordsWhatJagtFoundAboutATaskWithoutCountingItAsTheAgentMoving() {
+  void recordsWhatJagtFoundAboutTaskWithoutCountingItAsTheAgentMoving() {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).lastActiveTimestamp(1_000).build();
     AgentSpend spend = AgentSpend.NONE.plus(TokenUsage.ofCall(10, 0, 5, 0), "log", 7);
@@ -605,7 +605,7 @@ class TaskStateTest {
   }
 
   @Test
-  void readsAFileWrittenBeforeThePlanGateExistedAsNothingToWaitFor() {
+  void readsFileWrittenBeforeThePlanGateExistedAsNothingToWaitFor() {
     TaskState legacy =
         new JsonMapper()
             .readValue(
@@ -619,7 +619,7 @@ class TaskStateTest {
   }
 
   @Test
-  void keepsTheChecksFlaggedUnreadInAFileWrittenBeforeTheReadsWereKept() {
+  void keepsTheChecksFlaggedUnreadInFileWrittenBeforeTheReadsWereKept() {
     TaskState legacy =
         new JsonMapper()
             .readValue(
@@ -662,7 +662,7 @@ class TaskStateTest {
   }
 
   @Test
-  void addsTheRepositoryASessionAskedForAfterItsOwnAndEndsTheRequest() {
+  void addsTheRepositorySessionAskedForAfterItsOwnAndEndsTheRequest() {
     TaskState asked =
         TaskState.builder("api", "/wt-api", TaskStatus.IN_PROGRESS).repoRequest("registry").build();
 
@@ -691,7 +691,7 @@ class TaskStateTest {
   }
 
   @Test
-  void reportsTheChecksUnreadOnlyWhileAReadRunningCouldNotListThem() {
+  void reportsTheChecksUnreadOnlyWhileReadRunningCouldNotListThem() {
     TaskState clear = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
     TaskState unread =
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
@@ -712,7 +712,7 @@ class TaskStateTest {
   }
 
   @Test
-  void keepsTheStopAndTheTrailItWasGivenAndClearsTheStopOnALift() {
+  void keepsTheStopAndTheTrailItWasGivenAndClearsTheStopOnLift() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
     TaskStop stop = new TaskStop(TaskStop.Trigger.ROUNDS, 2, "verify sent 3 rounds running");
     RoundTrail trail = RoundTrail.none().withRound(new RoundTrail.Round(1, 4, "", "a", ""));
@@ -753,7 +753,7 @@ class TaskStateTest {
   }
 
   @Test
-  void recordsARequestWithoutCountingItAsAgentActivity() {
+  void recordsRequestWithoutCountingItAsAgentActivity() {
     TaskState working =
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).lastActiveTimestamp(7_000).build();
 
@@ -781,7 +781,7 @@ class TaskStateTest {
   }
 
   @Test
-  void keepsAStopWhereAHumansDeployLands() {
+  void keepsStopWhereHumansDeployLands() {
     TaskState stopped =
         TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .stop(new TaskStop(TaskStop.Trigger.MISS, 5, "no case"))
@@ -821,7 +821,7 @@ class TaskStateTest {
   }
 
   @Test
-  void readsChecksAsUnknownWhenAStoredReadNamesNoCommitOnceAHeadIsKnown() {
+  void readsChecksAsUnknownWhenStoredReadNamesNoCommitOnceHeadIsKnown() {
     TaskState legacy =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).pipelineStatus("failed").build();
 
@@ -850,7 +850,7 @@ class TaskStateTest {
   }
 
   @Test
-  void readsATaskInADeployConflictThatNothingRecordedAsOneNotYetHanded() {
+  void readsTaskInDeployConflictThatNothingRecordedAsOneNotYetHanded() {
     TaskState legacy =
         new JsonMapper()
             .readValue(
@@ -865,7 +865,7 @@ class TaskStateTest {
   }
 
   @Test
-  void readsTheMergeAndFixesOfARepositoryIntoTheTargetOfItsProject() {
+  void readsTheMergeAndFixesOfRepositoryIntoTheTargetOfItsProject() {
     TaskState old =
         new JsonMapper()
             .readValue(
@@ -925,7 +925,7 @@ class TaskStateTest {
   }
 
   @Test
-  void keepsTheConflictOfADeployTargetAcrossASave() {
+  void keepsTheConflictOfDeployTargetAcrossSave() {
     TaskState conflicted =
         TaskState.builder("demo", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .build()
@@ -949,7 +949,7 @@ class TaskStateTest {
   }
 
   @Test
-  void keepsTheSessionSignsAcrossASave() {
+  void keepsTheSessionSignsAcrossSave() {
     TaskState signed =
         TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS)
             .build()
@@ -962,7 +962,8 @@ class TaskStateTest {
                     2,
                     "/logs/s.jsonl",
                     true,
-                    new Session.Start(3, new Session.Window(Session.Window.State.RUNNING, 7, 8), null)));
+                    new Session.Start(
+                        3, new Session.Window(Session.Window.State.RUNNING, 7, 8), null)));
     JsonMapper mapper = new JsonMapper();
 
     TaskState reread = mapper.readValue(mapper.writeValueAsString(signed), TaskState.class);
@@ -971,7 +972,7 @@ class TaskStateTest {
   }
 
   @Test
-  void readsATaskWrittenBeforeTheSessionWasRecordedAsOneWithNoSign() {
+  void readsTaskWrittenBeforeTheSessionWasRecordedAsOneWithNoSign() {
     TaskState old =
         new JsonMapper()
             .readValue(
@@ -985,7 +986,7 @@ class TaskStateTest {
   }
 
   @Test
-  void readsASilenceAnOlderFileStampedOnTheTaskAsTheSessionsQuiet() {
+  void readsSilenceAnOlderFileStampedOnTheTaskAsTheSessionsQuiet() {
     TaskState old =
         new JsonMapper()
             .readValue(
@@ -999,7 +1000,7 @@ class TaskStateTest {
   }
 
   @Test
-  void endsAStoppedSessionWhenTheTaskMovesOnToAStatusOfItsOwn() {
+  void endsStoppedSessionWhenTheTaskMovesOnToStatusOfItsOwn() {
     TaskState stopped =
         TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS)
             .build()
@@ -1015,7 +1016,7 @@ class TaskStateTest {
   }
 
   @Test
-  void keepsAnIdleHaltWhenTheTaskMovesOnToAStatusOfItsOwn() {
+  void keepsAnIdleHaltWhenTheTaskMovesOnToStatusOfItsOwn() {
     TaskState idle =
         TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS)
             .build()
@@ -1031,7 +1032,7 @@ class TaskStateTest {
   }
 
   @Test
-  void holdsNoRepositoryUntilAProjectIsRegistered() {
+  void holdsNoRepositoryUntilProjectIsRegistered() {
     assertThat(
             TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.NEW)
                 .build()

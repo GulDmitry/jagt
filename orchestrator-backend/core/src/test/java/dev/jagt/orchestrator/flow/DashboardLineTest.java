@@ -31,7 +31,7 @@ class DashboardLineTest {
         "NEW,SILENT",
         "REVIEW_PENDING,SILENT"
       })
-  void showsNoDetailWhileThereIsNothingForAHumanToActOn(TaskStatus status, String message) {
+  void showsNoDetailWhileThereIsNothingForHumanToActOn(TaskStatus status, String message) {
     TaskState task = TaskState.builder("p", "/wt", status).message(message).build();
 
     assertThat(DashboardLine.forTask(task, null).text()).isEmpty();
@@ -41,7 +41,7 @@ class DashboardLineTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"REVIEW_PENDING", "CI_POLLING", "REVIEWED", "APPROVED", "DEPLOYED", "REVERTED"})
-  void saysNothingAboutARequestEverySurfaceCanLinkToItself(TaskStatus status) {
+  void saysNothingAboutRequestEverySurfaceCanLinkToItself(TaskStatus status) {
     TaskState task =
         TaskState.builder("p", "/wt", status).mrUrl("https://gitlab/x/-/merge_requests/9").build();
 
@@ -49,7 +49,7 @@ class DashboardLineTest {
   }
 
   @Test
-  void saysSoWhenTheTaskHasARequestNothingCanLinkTo() {
+  void saysSoWhenTheTaskHasRequestNothingCanLinkTo() {
     TaskState task =
         TaskState.builder("p", "/wt", TaskStatus.REVIEWED).mrUrl("javascript:alert(1)").build();
 
@@ -58,7 +58,7 @@ class DashboardLineTest {
   }
 
   @Test
-  void saysNothingAboutARequestAReviewedTaskDoesNotHaveYet() {
+  void saysNothingAboutRequestReviewedTaskDoesNotHaveYet() {
     TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEWED).build();
 
     assertThat(DashboardLine.forTask(task, null).text()).isEmpty();
@@ -95,7 +95,7 @@ class DashboardLineTest {
   }
 
   @Test
-  void flagsThatADeployConflictNeedsTheHuman() {
+  void flagsThatDeployConflictNeedsTheHuman() {
     TaskState task =
         TaskState.builder("p", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .message("resolve conflict in /repos/ABC-1-deploy")
@@ -107,7 +107,7 @@ class DashboardLineTest {
   }
 
   @Test
-  void saysWhereAndSinceWhenADeployConflictStoppedMoving() {
+  void saysWhereAndSinceWhenDeployConflictStoppedMoving() {
     TaskState task =
         TaskState.builder("p", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -227,7 +227,7 @@ class DashboardLineTest {
   }
 
   @Test
-  void fallsBackToAGeneralSentenceWhereNoReasonWasRecorded() {
+  void fallsBackToGeneralSentenceWhereNoReasonWasRecorded() {
     TaskState task =
         TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS)
             .session(Session.defaults().withQuietSince(1_000))
@@ -251,7 +251,7 @@ class DashboardLineTest {
   }
 
   @Test
-  void shoutsNeedsInputRatherThanTheMrLinkWhenAReviewRoundEndedInAQuestion() {
+  void shoutsNeedsInputRatherThanTheMrLinkWhenReviewRoundEndedInQuestion() {
     TaskState task =
         TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
             .message("cache or index?")
@@ -267,7 +267,7 @@ class DashboardLineTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"CI_POLLING", "REVIEWED", "APPROVED"})
-  void shoutsNeedsInputForAQuestionAskedFromAStatusThatWaitsOnSomebodyElse(TaskStatus status) {
+  void shoutsNeedsInputForQuestionAskedFromStatusThatWaitsOnSomebodyElse(TaskStatus status) {
     TaskState task =
         TaskState.builder("p", "/wt", status)
             .message("cache or index?")
@@ -332,7 +332,7 @@ class DashboardLineTest {
   }
 
   @Test
-  void namesTheRevertWhenAStalledConflictIsARevertsOne() {
+  void namesTheRevertWhenStalledConflictIsRevertsOne() {
     TaskState task =
         TaskState.builder("p", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)

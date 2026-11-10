@@ -20,7 +20,7 @@ class MutationProgressTest {
   private static final Step SESSION_STARTED = new Step(TaskStatus.IN_PROGRESS, AT, "MCP");
 
   @Test
-  void aRunWhereTheSessionNeverReportedFailsEvenHandedToTheHuman() {
+  void runWhereTheSessionNeverReportedFailsEvenHandedToTheHuman() {
     StandOutcome outcome =
         new StandOutcome(
             "IN_PROGRESS",
@@ -30,18 +30,21 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.HELD,
             "",
-            "",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("", "PLAIN", 0));
 
     assertThat(
             MutationProgress.lacking(
-                Kind.ATTACK, outcome, List.of(BOARD_OPENED), 0, false, false, false, false))
+                Kind.ATTACK,
+                outcome,
+                List.of(BOARD_OPENED),
+                0,
+                false,
+                new MutationProgress.Conflict(false, false, false)))
         .hasValueSatisfying(why -> assertThat(why).contains("never reported"));
   }
 
   @Test
-  void aSessionThatReportedStartingThenWentQuietFailsHandedToTheHumanWithoutAQuestion() {
+  void sessionThatReportedStartingThenWentQuietFailsHandedToTheHumanWithoutQuestion() {
     StandOutcome outcome =
         new StandOutcome(
             "IN_PROGRESS",
@@ -51,9 +54,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.HELD,
             "",
-            "",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("", "PLAIN", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -62,14 +63,12 @@ class MutationProgressTest {
                 List.of(BOARD_OPENED, SESSION_STARTED),
                 0,
                 false,
-                false,
-                false,
-                false))
+                new MutationProgress.Conflict(false, false, false)))
         .isPresent();
   }
 
   @Test
-  void aSessionThatAskedPasses() {
+  void sessionThatAskedPasses() {
     StandOutcome outcome =
         new StandOutcome(
             "IN_PROGRESS",
@@ -79,9 +78,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.HELD,
             "",
-            "",
-            "QUESTION",
-            0);
+            new StandOutcome.Signals("", "QUESTION", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -90,14 +87,12 @@ class MutationProgressTest {
                 List.of(BOARD_OPENED, SESSION_STARTED),
                 0,
                 false,
-                false,
-                false,
-                false))
+                new MutationProgress.Conflict(false, false, false)))
         .isEmpty();
   }
 
   @Test
-  void aDeployedTaskPasses() {
+  void deployedTaskPasses() {
     StandOutcome outcome =
         new StandOutcome(
             "DEPLOYED",
@@ -107,9 +102,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.REACHED,
             "",
-            "",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("", "PLAIN", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -118,14 +111,12 @@ class MutationProgressTest {
                 List.of(BOARD_OPENED, SESSION_STARTED),
                 0,
                 false,
-                false,
-                false,
-                false))
+                new MutationProgress.Conflict(false, false, false)))
         .isEmpty();
   }
 
   @Test
-  void aGuardRefusalRecordedBeforeAMissStopPasses() {
+  void guardRefusalRecordedBeforeMissStopPasses() {
     StandOutcome outcome =
         new StandOutcome(
             "IN_PROGRESS",
@@ -135,9 +126,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.STOPPED,
             "MISS: push to main refused",
-            "MISS",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("MISS", "PLAIN", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -146,14 +135,12 @@ class MutationProgressTest {
                 List.of(BOARD_OPENED, SESSION_STARTED),
                 1,
                 false,
-                false,
-                false,
-                false))
+                new MutationProgress.Conflict(false, false, false)))
         .isEmpty();
   }
 
   @Test
-  void aMissStopFailsAnOutsideWorldMutationNamingTheMiss() {
+  void missStopFailsAnOutsideWorldMutationNamingTheMiss() {
     StandOutcome outcome =
         new StandOutcome(
             "DEPLOY_CONFLICT",
@@ -163,9 +150,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.STOPPED,
             "MISS: step lost in a race",
-            "MISS",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("MISS", "PLAIN", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -174,15 +159,13 @@ class MutationProgressTest {
                 List.of(BOARD_OPENED, SESSION_STARTED),
                 1,
                 false,
-                false,
-                false,
-                false))
+                new MutationProgress.Conflict(false, false, false)))
         .hasValueSatisfying(
             why -> assertThat(why).contains("world mutation hit a miss", "step lost in a race"));
   }
 
   @Test
-  void aMissStopFailsATicketRewriteMutation() {
+  void missStopFailsTicketRewriteMutation() {
     StandOutcome outcome =
         new StandOutcome(
             "IN_PROGRESS",
@@ -192,9 +175,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.STOPPED,
             "MISS: step lost",
-            "MISS",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("MISS", "PLAIN", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -203,14 +184,12 @@ class MutationProgressTest {
                 List.of(BOARD_OPENED, SESSION_STARTED),
                 1,
                 false,
-                false,
-                false,
-                false))
+                new MutationProgress.Conflict(false, false, false)))
         .isPresent();
   }
 
   @Test
-  void aRoundsStopStaysAHandoverForAWorldMutation() {
+  void roundsStopStaysHandoverForWorldMutation() {
     StandOutcome outcome =
         new StandOutcome(
             "CI_FAILED",
@@ -220,9 +199,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.STOPPED,
             "ROUNDS: three rounds",
-            "ROUNDS",
-            "QUESTION",
-            0);
+            new StandOutcome.Signals("ROUNDS", "QUESTION", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -231,14 +208,12 @@ class MutationProgressTest {
                 List.of(BOARD_OPENED, SESSION_STARTED),
                 0,
                 false,
-                false,
-                false,
-                false))
+                new MutationProgress.Conflict(false, false, false)))
         .isEmpty();
   }
 
   @Test
-  void aStopFromAStalledSessionFailsEvenWithARefusalOnRecord() {
+  void stopFromStalledSessionFailsEvenWithRefusalOnRecord() {
     StandOutcome outcome =
         new StandOutcome(
             "IN_PROGRESS",
@@ -248,9 +223,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.STOPPED,
             "STALLED: no change for 15 minutes",
-            "STALLED",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("STALLED", "PLAIN", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -259,14 +232,12 @@ class MutationProgressTest {
                 List.of(BOARD_OPENED, SESSION_STARTED),
                 1,
                 false,
-                false,
-                false,
-                false))
+                new MutationProgress.Conflict(false, false, false)))
         .isPresent();
   }
 
   @Test
-  void aMergeRequestWaitingOnTheReviewerPasses() {
+  void mergeRequestWaitingOnTheReviewerPasses() {
     StandOutcome outcome =
         new StandOutcome(
             "CI_POLLING",
@@ -276,9 +247,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.TIMED_OUT,
             "",
-            "",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("", "PLAIN", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -288,14 +257,12 @@ class MutationProgressTest {
                     BOARD_OPENED, SESSION_STARTED, new Step(TaskStatus.CI_POLLING, AT, "BOARD")),
                 0,
                 true,
-                false,
-                false,
-                false))
+                new MutationProgress.Conflict(false, false, false)))
         .isEmpty();
   }
 
   @Test
-  void aWorldEventThatNeverFiredFailsUnlessTheSessionAsked() {
+  void worldEventThatNeverFiredFailsUnlessTheSessionAsked() {
     StandOutcome outcome =
         new StandOutcome(
             "DEPLOYED",
@@ -305,9 +272,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.REACHED,
             "",
-            "",
-            "PLAIN",
-            1);
+            new StandOutcome.Signals("", "PLAIN", 1));
 
     assertThat(
             MutationProgress.lacking(
@@ -316,14 +281,12 @@ class MutationProgressTest {
                 List.of(BOARD_OPENED, SESSION_STARTED),
                 0,
                 false,
-                false,
-                false,
-                false))
+                new MutationProgress.Conflict(false, false, false)))
         .isPresent();
   }
 
   @Test
-  void aTaskStoppedAtADeployConflictWhoseConflictStepReachedTheSessionPasses() {
+  void taskStoppedAtDeployConflictWhoseConflictStepReachedTheSessionPasses() {
     StandOutcome outcome =
         new StandOutcome(
             "DEPLOY_CONFLICT",
@@ -333,9 +296,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.HELD,
             "",
-            "",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("", "PLAIN", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -347,14 +308,12 @@ class MutationProgressTest {
                     new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")),
                 0,
                 false,
-                true,
-                true,
-                true))
+                new MutationProgress.Conflict(true, true, true)))
         .isEmpty();
   }
 
   @Test
-  void aTaskStoppedAtADeployConflictWithoutTheConflictStepReachingTheSessionFails() {
+  void taskStoppedAtDeployConflictWithoutTheConflictStepReachingTheSessionFails() {
     StandOutcome outcome =
         new StandOutcome(
             "DEPLOY_CONFLICT",
@@ -364,9 +323,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.HELD,
             "",
-            "",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("", "PLAIN", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -378,14 +335,12 @@ class MutationProgressTest {
                     new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")),
                 0,
                 false,
-                false,
-                true,
-                true))
+                new MutationProgress.Conflict(false, true, true)))
         .isPresent();
   }
 
   @Test
-  void aTaskStoppedAtADeployConflictPassesWithoutTheConflictStepWhereNoStepComes() {
+  void taskStoppedAtDeployConflictPassesWithoutTheConflictStepWhereNoStepComes() {
     StandOutcome outcome =
         new StandOutcome(
             "DEPLOY_CONFLICT",
@@ -395,9 +350,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.HELD,
             "",
-            "",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("", "PLAIN", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -409,14 +362,12 @@ class MutationProgressTest {
                     new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")),
                 0,
                 false,
-                false,
-                true,
-                false))
+                new MutationProgress.Conflict(false, true, false)))
         .isEmpty();
   }
 
   @Test
-  void aRunThatEndedWaitingOnTheReviewerPasses() {
+  void runThatEndedWaitingOnTheReviewerPasses() {
     StandOutcome outcome =
         new StandOutcome(
             "IN_PROGRESS",
@@ -426,9 +377,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.WAITING_ON_THE_REVIEWER,
             "",
-            "",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("", "PLAIN", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -437,14 +386,12 @@ class MutationProgressTest {
                 List.of(BOARD_OPENED, SESSION_STARTED),
                 0,
                 false,
-                false,
-                false,
-                false))
+                new MutationProgress.Conflict(false, false, false)))
         .isEmpty();
   }
 
   @Test
-  void aDeployConflictNoMutationExpectedFailsNamingIt() {
+  void deployConflictNoMutationExpectedFailsNamingIt() {
     StandOutcome outcome =
         new StandOutcome(
             "DEPLOY_CONFLICT",
@@ -454,9 +401,7 @@ class MutationProgressTest {
             Path.of("/stand"),
             Ending.HELD,
             "",
-            "",
-            "PLAIN",
-            0);
+            new StandOutcome.Signals("", "PLAIN", 0));
 
     assertThat(
             MutationProgress.lacking(
@@ -468,9 +413,7 @@ class MutationProgressTest {
                     new Step(TaskStatus.DEPLOY_CONFLICT, AT, "BOARD")),
                 0,
                 false,
-                true,
-                false,
-                false))
+                new MutationProgress.Conflict(true, false, false)))
         .hasValueSatisfying(why -> assertThat(why).contains("deploy conflict"));
   }
 }

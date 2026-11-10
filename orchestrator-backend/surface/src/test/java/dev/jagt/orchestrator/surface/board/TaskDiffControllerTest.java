@@ -6,8 +6,8 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.service.TaskDiff;
 import dev.jagt.orchestrator.service.TrustedGitState;
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class TaskDiffControllerTest {
@@ -28,7 +28,8 @@ class TaskDiffControllerTest {
   @Test
   void addsWhatGitObeysAndWasNotTrustedAfterTheRepositories() {
     var repo = new TaskDiff.RepoDiff("alpha", "origin/main", "+new\n", false);
-    var changed = new TaskDiff.RepoDiff("git config and hooks", "trusted", "@@ k added\n+v\n", false);
+    var changed =
+        new TaskDiff.RepoDiff("git config and hooks", "trusted", "@@ k added\n+v\n", false);
     when(diff.read("ABC-42")).thenReturn(List.of(repo));
     when(trusted.changes("ABC-42")).thenReturn(Optional.of(changed));
 

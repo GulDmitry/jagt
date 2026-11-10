@@ -63,7 +63,7 @@ class NotesDueTest {
   }
 
   @Test
-  void asksForNothingOfATaskThatIsNotInProgress(@TempDir Path worktree) throws Exception {
+  void asksForNothingOfTaskThatIsNotInProgress(@TempDir Path worktree) throws Exception {
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("task_notes.md"), "old"), FileTime.fromMillis(0));
     TaskState task =

@@ -135,7 +135,7 @@ class UsageTrackerTest {
   }
 
   @Test
-  void keepsTheSessionTotalForACallThatBelongsToNoTask(@TempDir Path root) {
+  void keepsTheSessionTotalForCallThatBelongsToNoTask(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),

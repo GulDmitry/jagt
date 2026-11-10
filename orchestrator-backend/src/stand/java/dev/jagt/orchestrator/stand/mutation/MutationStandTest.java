@@ -28,7 +28,7 @@ class MutationStandTest {
   @ParameterizedTest(allowZeroInvocations = true)
   @MethodSource("runs")
   @Execution(ExecutionMode.CONCURRENT)
-  void aMutatedRunKeepsTheFrame(String name, long seed, StandMode mode, int run) throws Exception {
+  void mutatedRunKeepsTheFrame(String name, long seed, StandMode mode, int run) throws Exception {
     Mutation mutation = MutationBook.shipped().named(name).getFirst();
     try (StandRun stand = StandRun.start("mutation-" + name, mode)) {
       Files.writeString(
@@ -59,9 +59,10 @@ class MutationStandTest {
                         record.history("ABC-5"),
                         record.misses().size(),
                         stand.store().awaitsTheReviewer(),
-                        conflictRelayed(record),
-                        applied.expectsDeployConflict(),
-                        mutation.relaysIn(mode)))
+                        new MutationProgress.Conflict(
+                            conflictRelayed(record),
+                            applied.expectsDeployConflict(),
+                            mutation.relaysIn(mode))))
                 .as(mutation.holds() + "\n" + outcome.describe())
                 .isEmpty();
             soft.assertThat(stand.violations())

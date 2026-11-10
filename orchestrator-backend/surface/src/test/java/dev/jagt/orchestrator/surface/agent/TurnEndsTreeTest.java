@@ -30,7 +30,7 @@ class TurnEndsTreeTest {
           .build();
 
   @Test
-  void aTurnThatChangedTheTreeAtDeployedAndReportedNothingIsRefusedOnce() {
+  void turnThatChangedTheTreeAtDeployedAndReportedNothingIsRefusedOnce() {
     AgentRuntime runtime = mock(AgentRuntime.class);
     when(turnTree.changedSinceLastEnd("ABC-1", task)).thenReturn(true);
     when(runtime.refusedTurnEnd(contains("the tree changed")))
@@ -43,7 +43,7 @@ class TurnEndsTreeTest {
   }
 
   @Test
-  void aReportedTurnEndRecordsTheTreeTheNextTurnIsMeasuredFrom() {
+  void reportedTurnEndRecordsTheTreeTheNextTurnIsMeasuredFrom() {
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     TaskState reported =
@@ -59,7 +59,7 @@ class TurnEndsTreeTest {
   }
 
   @Test
-  void aTurnEndTheRefusalSentOnRecordsTheTreeTheNextTurnIsMeasuredFrom() {
+  void turnEndTheRefusalSentOnRecordsTheTreeTheNextTurnIsMeasuredFrom() {
     new TurnEnds(mock(AgentRuntime.class), null, notes, turnTree)
         .answer("ABC-1", task, true, false);
 
@@ -67,7 +67,7 @@ class TurnEndsTreeTest {
   }
 
   @Test
-  void aDeployCheckThatChangedNothingEndsItsTurn() {
+  void deployCheckThatChangedNothingEndsItsTurn() {
     AgentRuntime runtime = mock(AgentRuntime.class);
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());

@@ -88,7 +88,7 @@ class TmuxSessionHostE2eTest {
   }
 
   @Test
-  void keepsAFeedWindowThatIsAlreadyThereInThreeCommands(@TempDir Path root) {
+  void keepsFeedWindowThatIsAlreadyThereInThreeCommands(@TempDir Path root) {
     SessionHost host = hostIn(root);
     host.keepFeedWindow(SESSION, "master", root.resolve("feed.log"));
     clearInvocations(processes);
@@ -99,7 +99,7 @@ class TmuxSessionHostE2eTest {
   }
 
   @Test
-  void readsARunningAgentInTwoCommands(@TempDir Path root) {
+  void readsRunningAgentInTwoCommands(@TempDir Path root) {
     SessionHost host = hostIn(root);
     host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
     clearInvocations(processes);
@@ -111,7 +111,7 @@ class TmuxSessionHostE2eTest {
   }
 
   @Test
-  void readsAWindowsLastActivityInOneCommand(@TempDir Path root) {
+  void readsWindowsLastActivityInOneCommand(@TempDir Path root) {
     SessionHost host = hostIn(root);
     host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
     clearInvocations(processes);
@@ -123,7 +123,7 @@ class TmuxSessionHostE2eTest {
   }
 
   @Test
-  void reportsAWindowThatWasNeverOpenedAsMissing(@TempDir Path root) {
+  void reportsWindowThatWasNeverOpenedAsMissing(@TempDir Path root) {
     SessionHost host = hostIn(root);
     host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
 
@@ -131,7 +131,7 @@ class TmuxSessionHostE2eTest {
   }
 
   @Test
-  void showsALongTaskNameCutToTenCharactersWhileTheWindowKeepsItWhole(@TempDir Path root) {
+  void showsLongTaskNameCutToTenCharactersWhileTheWindowKeepsItWhole(@TempDir Path root) {
     SessionHost host = hostIn(root);
     host.openTaskWindow(SESSION, "jagt", "abcservice-1234567890-xyz", "a1", root, false, "");
 

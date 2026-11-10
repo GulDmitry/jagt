@@ -22,8 +22,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 class GitStatesTest {
 
   @Test
-  void namesAProgramASessionSetInTheSharedConfigFromItsWorktree(@TempDir Path dir)
-      throws Exception {
+  void namesProgramSessionSetInTheSharedConfigFromItsWorktree(@TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path repo = dir.resolve("repo");
@@ -50,7 +49,10 @@ class GitStatesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}));
     Map<String, String> trusted = git.gitState(List.of(worktree));
     runner.run(worktree, timeout, List.of("git", "config", "core.fsmonitor", "/tmp/watch"));
 
@@ -67,8 +69,8 @@ class GitStatesTest {
     "remote.origin.url,https://user:pw@host/r.git,https://***@host/r.git",
     "credential.helper,store,(hidden)"
   })
-  void readsAConfigValueAsTextWithSecretsHidden(String key, String value, String shown, @TempDir Path dir)
-      throws Exception {
+  void readsConfigValueAsTextWithSecretsHidden(
+      String key, String value, String shown, @TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path repo = dir.resolve("repo");
@@ -95,7 +97,10 @@ class GitStatesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}));
     runner.run(worktree, timeout, List.of("git", "config", key, value));
 
     Map<String, String> contents = git.gitContents(List.of(worktree));
@@ -105,7 +110,7 @@ class GitStatesTest {
   }
 
   @Test
-  void readsAHooksTextWhereItHasOne(@TempDir Path dir) throws Exception {
+  void readsHooksTextWhereItHasOne(@TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path repo = dir.resolve("repo");
@@ -132,7 +137,10 @@ class GitStatesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}));
     Files.writeString(repo.resolve(".git/hooks/pre-push"), "#!/bin/sh\ncurl evil\n");
 
     Map<String, String> contents = git.gitContents(List.of(worktree));
@@ -143,7 +151,7 @@ class GitStatesTest {
   }
 
   @Test
-  void passesTheTrackingGitWritesAsABranchIsPushed(@TempDir Path dir) throws Exception {
+  void passesTheTrackingGitWritesAsBranchIsPushed(@TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path repo = dir.resolve("repo");
@@ -170,7 +178,10 @@ class GitStatesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}));
     Map<String, String> trusted = git.gitState(List.of(worktree));
     runner.run(worktree, timeout, List.of("git", "config", "branch.ABC-42.remote", "origin"));
     runner.run(
@@ -182,7 +193,7 @@ class GitStatesTest {
   }
 
   @Test
-  void namesAConfigSetForTheWorktreeAlone(@TempDir Path dir) throws Exception {
+  void namesConfigSetForTheWorktreeAlone(@TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path repo = dir.resolve("repo");
@@ -210,7 +221,10 @@ class GitStatesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}));
     Map<String, String> trusted = git.gitState(List.of(worktree));
     runner.run(
         worktree, timeout, List.of("git", "config", "--worktree", "gpg.program", "/tmp/sign"));
@@ -225,7 +239,7 @@ class GitStatesTest {
   }
 
   @Test
-  void namesAHookMadeRunnable(@TempDir Path dir) throws Exception {
+  void namesHookMadeRunnable(@TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path repo = dir.resolve("repo");
@@ -254,7 +268,10 @@ class GitStatesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}));
     Map<String, String> trusted = git.gitState(List.of(worktree));
     Files.setPosixFilePermissions(hook, PosixFilePermissions.fromString("rwxr-xr-x"));
 
@@ -265,7 +282,7 @@ class GitStatesTest {
   }
 
   @Test
-  void namesAProgramWhoseValueChangedInTheSharedConfig(@TempDir Path dir) throws Exception {
+  void namesProgramWhoseValueChangedInTheSharedConfig(@TempDir Path dir) throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
     Path repo = dir.resolve("repo");
@@ -292,7 +309,10 @@ class GitStatesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}));
     runner.run(worktree, timeout, List.of("git", "config", "core.fsmonitor", "/tmp/watch"));
     Map<String, String> trusted = git.gitState(List.of(worktree));
     runner.run(worktree, timeout, List.of("git", "config", "core.fsmonitor", "/tmp/other"));
@@ -305,7 +325,7 @@ class GitStatesTest {
   }
 
   @Test
-  void readsTheHooksInTheDirectoryARelativeHooksPathNamesFromTheCheckout(@TempDir Path dir)
+  void readsTheHooksInTheDirectoryRelativeHooksPathNamesFromTheCheckout(@TempDir Path dir)
       throws Exception {
     Processes runner = new ProcessRunner();
     Duration timeout = Duration.ofSeconds(30);
@@ -330,10 +350,13 @@ class GitStatesTest {
         repo,
         timeout,
         List.of("git", "worktree", "add", "-q", "-b", "ABC-42", worktree.toString()));
-    GitWorktrees git =
+    final GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}));
     runner.run(worktree, timeout, List.of("git", "config", "core.hooksPath", "custom-hooks"));
     Files.createDirectories(repo.resolve("custom-hooks"));
     Files.writeString(repo.resolve("custom-hooks/pre-push"), "#!/bin/sh\n");
@@ -371,7 +394,10 @@ class GitStatesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}));
     Path hook = repo.resolve(".git/hooks/pre-push");
     Files.writeString(hook, "#!/bin/sh\n");
     Files.setPosixFilePermissions(hook, PosixFilePermissions.fromString("rwxr-xr-x"));
@@ -411,7 +437,10 @@ class GitStatesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}));
     Files.writeString(repo.resolve(".git/hooks/pre-commit.sample"), "#!/bin/sh\n");
     Files.createDirectories(repo.resolve(".git/hooks/vendored"));
 
@@ -450,7 +479,10 @@ class GitStatesTest {
     GitWorktrees git =
         new GitWorktrees(
             new GitCommands(
-                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
+                runner,
+                new LsofWorktreeProcesses(runner),
+                path -> java.util.Optional.empty(),
+                stopped -> {}));
     Files.writeString(
         repo.resolve(".git/config"),
         "[core]\n\trepositoryformatversion = 0\n[x]\n"

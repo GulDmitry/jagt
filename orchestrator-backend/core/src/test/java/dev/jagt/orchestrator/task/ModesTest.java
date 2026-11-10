@@ -19,7 +19,7 @@ class ModesTest {
 
   @ParameterizedTest
   @CsvSource({"take,TAKE", "' Both ',BOTH", "CLOSE,CLOSE"})
-  void readsATrackerModeByItsWord(String word, TrackerMode mode) {
+  void readsTrackerModeByItsWord(String word, TrackerMode mode) {
     assertThat(TrackerMode.of(word)).contains(mode);
   }
 
@@ -30,14 +30,14 @@ class ModesTest {
   }
 
   @Test
-  void refusesATrackerModeNoneOfTheWordsMean() {
+  void refusesTrackerModeNoneOfTheWordsMean() {
     assertThat(TrackerMode.of("sometimes")).isEmpty();
     assertThat(TrackerMode.ids()).containsExactly("off", "take", "close", "both");
   }
 
   @ParameterizedTest
   @CsvSource({"act,ACT", "' Judge ',JUDGE", "OFF,OFF"})
-  void readsAMasterModeByItsWord(String word, MasterMode mode) {
+  void readsMasterModeByItsWord(String word, MasterMode mode) {
     assertThat(MasterMode.of(word)).contains(mode);
   }
 
@@ -48,19 +48,19 @@ class ModesTest {
   }
 
   @Test
-  void refusesAMasterModeNoneOfTheWordsMean() {
+  void refusesMasterModeNoneOfTheWordsMean() {
     assertThat(MasterMode.of("sometimes")).isEmpty();
     assertThat(MasterMode.ids()).containsExactly("off", "judge", "act");
   }
 
   @ParameterizedTest
   @CsvSource({"deploy,DEPLOY", "' Reply ',REPLY", "PLAN,PLAN", "repo,REPO"})
-  void readsAMasterRightByItsWord(String word, MasterRight right) {
+  void readsMasterRightByItsWord(String word, MasterRight right) {
     assertThat(MasterRight.of(word)).contains(right);
   }
 
   @Test
-  void refusesAMasterRightNoneOfTheWordsMean() {
+  void refusesMasterRightNoneOfTheWordsMean() {
     assertThat(MasterRight.of("sometimes")).isEmpty();
     assertThat(MasterRight.of(null)).isEmpty();
     assertThat(MasterRight.ids())
@@ -69,7 +69,7 @@ class ModesTest {
 
   @ParameterizedTest
   @CsvSource({"recreate,RECREATE", "' Resume ',RESUME", "FRESH,FRESH"})
-  void readsABranchStrategyByItsWord(String word, BranchStrategy strategy) {
+  void readsBranchStrategyByItsWord(String word, BranchStrategy strategy) {
     assertThat(BranchStrategy.of(word)).isEqualTo(strategy);
   }
 
@@ -80,7 +80,7 @@ class ModesTest {
   }
 
   @Test
-  void refusesABranchStrategyNoneOfTheWordsMeanAndListsTheAllowedOnes() {
+  void refusesBranchStrategyNoneOfTheWordsMeanAndListsTheAllowedOnes() {
     assertThatThrownBy(() -> BranchStrategy.of("sometimes"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Unknown branchStrategy 'sometimes'. Allowed: fresh, recreate, resume");

@@ -12,7 +12,7 @@ class AnsiTest {
   }
 
   @Test
-  void removesAWindowTitleSetByAnOperatingSystemCommand() {
+  void removesWindowTitleSetByAnOperatingSystemCommand() {
     assertThat(Ansi.strip("\u001b]0;title\u0007text")).isEqualTo("text");
   }
 }

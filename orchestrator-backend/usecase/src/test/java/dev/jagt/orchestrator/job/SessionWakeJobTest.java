@@ -37,7 +37,7 @@ class SessionWakeJobTest {
   }
 
   @Test
-  void holdsBackASessionWhoseWindowHoldsAnUnsentDraft() {
+  void holdsBackSessionWhoseWindowHoldsAnUnsentDraft() {
     when(sessions.composing("ABC-42")).thenReturn(true);
     when(wakes.takeDue(any()))
         .thenAnswer(
@@ -68,7 +68,7 @@ class SessionWakeJobTest {
   }
 
   @Test
-  void tellsASessionWhoseWaitIsOverToProbeWhatItNamed() {
+  void tellsSessionWhoseWaitIsOverToProbeWhatItNamed() {
     when(wakes.takeDue(any()))
         .thenReturn(List.of(new SessionWakes.Due("ABC-42", Step.WAIT_OVER, Standing.ABSENT)));
 

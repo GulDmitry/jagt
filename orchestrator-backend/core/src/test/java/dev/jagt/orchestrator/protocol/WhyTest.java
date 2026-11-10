@@ -7,17 +7,17 @@ import org.junit.jupiter.api.Test;
 class WhyTest {
 
   @Test
-  void acceptsAReasonOfExactlyTheLongestAllowedLength() {
+  void acceptsReasonOfExactlyTheLongestAllowedLength() {
     assertThat(Why.violation("x".repeat(120))).isEmpty();
   }
 
   @Test
-  void refusesAReasonOneCharacterPastTheLimit() {
+  void refusesReasonOneCharacterPastTheLimit() {
     assertThat(Why.violation("x".repeat(121))).isPresent();
   }
 
   @Test
-  void refusesAMissingReason() {
+  void refusesMissingReason() {
     assertThat(Why.violation(null)).isPresent();
   }
 }

@@ -25,7 +25,7 @@ class ActivityReportTest {
   private final ActivityReport report = new ActivityReport(state, finished);
 
   @Test
-  void listsATasksStatusChangeWithItsTimeInUtcItsStatusesAndItsOrigin() {
+  void listsTasksStatusChangeWithItsTimeInUtcItsStatusesAndItsOrigin() {
     when(finished.all()).thenReturn(List.of());
     when(state.tasks())
         .thenReturn(
@@ -36,9 +36,7 @@ class ActivityReportTest {
                         List.of(
                             new StatusChange(TaskStatus.IN_PROGRESS, 1_786_000_000_000L, null),
                             new StatusChange(
-                                TaskStatus.REVIEW_PENDING,
-                                1_786_000_060_000L,
-                                ActionOrigin.MCP)))
+                                TaskStatus.REVIEW_PENDING, 1_786_000_060_000L, ActionOrigin.MCP)))
                     .build()));
 
     String said = report.render("");
@@ -68,7 +66,7 @@ class ActivityReportTest {
   }
 
   @Test
-  void endsAFinishedTasksLinesWithItsRetirementAsDoneWithNoOrigin() {
+  void endsFinishedTasksLinesWithItsRetirementAsDoneWithNoOrigin() {
     TaskState retired =
         TaskState.builder("alpha", "/wt", TaskStatus.REVIEW_PENDING)
             .history(List.of(new StatusChange(TaskStatus.REVIEW_PENDING, 1_000L, null)))
@@ -151,7 +149,7 @@ class ActivityReportTest {
   }
 
   @Test
-  void combinesAKindAndAProjectInEitherOrder() {
+  void combinesKindAndProjectInEitherOrder() {
     when(finished.all()).thenReturn(List.of());
     when(state.tasks())
         .thenReturn(
@@ -180,10 +178,11 @@ class ActivityReportTest {
   }
 
   @Test
-  void refusesASecondKindWithTheUsage() {
+  void refusesSecondKindWithTheUsage() {
     String said = report.render("shipped done");
 
-    assertThat(said).isEqualTo("usage: activity [created|shipped|deployed|stopped|done] [<project>]\n");
+    assertThat(said)
+        .isEqualTo("usage: activity [created|shipped|deployed|stopped|done] [<project>]\n");
   }
 
   @Test

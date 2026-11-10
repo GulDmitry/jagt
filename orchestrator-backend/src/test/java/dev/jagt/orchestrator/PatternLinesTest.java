@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 class PatternLinesTest {
 
   @Test
-  void aPatternTheMasterStopsOnUsesNoScaleOrTasteWord() throws Exception {
+  void patternTheMasterStopsOnUsesNoScaleOrTasteWord() throws Exception {
     String brief = Files.readString(Path.of("../roles/master/brief.md.dist"));
     Matcher section =
         Pattern.compile("(?s)## Patterns that stop a round\\n(.*?)\\n## ").matcher(brief);

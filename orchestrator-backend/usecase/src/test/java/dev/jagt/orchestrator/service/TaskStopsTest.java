@@ -59,7 +59,7 @@ class TaskStopsTest {
   private final Clock clock = Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC);
 
   @Test
-  void stopsATaskWhoseRoundsResolveNothingAndTellsTheHumanOnce(@TempDir Path root) {
+  void stopsTaskWhoseRoundsResolveNothingAndTellsTheHumanOnce(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -99,7 +99,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void keepsAStopsEvidenceUpToTheCapAndFlagsTheCut(@TempDir Path root) {
+  void keepsStopsEvidenceUpToTheCapAndFlagsTheCut(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -224,7 +224,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void countsAShipsStopOnTheRequestOpenAndAVerificationStopOnNone(@TempDir Path root) {
+  void countsShipsStopOnTheRequestOpenAndVerificationStopOnNone(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -259,7 +259,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void letsAFreshTaskShip(@TempDir Path root) {
+  void letsFreshTaskShip(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -281,7 +281,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void reportsATaskStoppedOnlyOnceAStopStandsOnIt(@TempDir Path root) {
+  void reportsTaskStoppedOnlyOnceStopStandsOnIt(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -309,7 +309,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void answersATripWithTheStopItWroteAndLaterWithTheOneStanding(@TempDir Path root) {
+  void answersTripWithTheStopItWroteAndLaterWithTheOneStanding(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -336,7 +336,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void answersARoundTheLastRelayedOneRepeatsAsUnchanged(@TempDir Path root) {
+  void answersRoundTheLastRelayedOneRepeatsAsUnchanged(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -367,7 +367,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void recordsTheFirstLineOfTheFailureOnlyForARedRound(@TempDir Path root) {
+  void recordsTheFirstLineOfTheFailureOnlyForRedRound(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -407,7 +407,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void answersAReadOfTheSameThreadsAndNewestNotesAsUnchangedWhateverTheCopiedText(
+  void answersReadOfTheSameThreadsAndNewestNotesAsUnchangedWhateverTheCopiedText(
       @TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -449,7 +449,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void relaysARoundWhereANewNoteCameOnTheSameThread(@TempDir Path root) {
+  void relaysRoundWhereNewNoteCameOnTheSameThread(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -522,7 +522,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void relaysTheSameFailingJobOnceANewCommitWasPushed(@TempDir Path root) {
+  void relaysTheSameFailingJobOnceNewCommitWasPushed(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -551,7 +551,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void journalsAStopOnceWhenItTrips(@TempDir Path root) throws IOException {
+  void journalsStopOnceWhenItTrips(@TempDir Path root) throws IOException {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -579,7 +579,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void journalsNothingWhenALiftClearsTheStop(@TempDir Path root) throws IOException {
+  void journalsNothingWhenLiftClearsTheStop(@TempDir Path root) throws IOException {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -604,7 +604,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void relaysAThreadWithANewNoteWhileTheAgentsQuestionAboutTheChecksStands(@TempDir Path root) {
+  void relaysThreadWithNewNoteWhileTheAgentsQuestionAboutTheChecksStands(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -639,7 +639,7 @@ class TaskStopsTest {
 
   @ParameterizedTest
   @CsvSource({"INFRA,GREEN", "INFRA,RUNNING", "INFRA,NONE", "CHECKS,GREEN", "CHECKS,RUNNING"})
-  void endsAStopAnOutsideConditionSetOnAReadThatListsTheChecksNotRed(
+  void endsStopAnOutsideConditionSetOnReadThatListsTheChecksNotRed(
       TaskStop.Trigger trigger, Pipeline read, @TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -674,7 +674,7 @@ class TaskStopsTest {
     "UNCHANGED_FAILURE,GREEN",
     "WAIT,RUNNING"
   })
-  void keepsAStopWhereTheReadIsRedOrUnreadOrTheStopIsForJudgement(
+  void keepsStopWhereTheReadIsRedOrUnreadOrTheStopIsForJudgement(
       TaskStop.Trigger trigger, Pipeline read, @TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -708,7 +708,7 @@ class TaskStopsTest {
     "INFRA,NO_MR,false",
     "PACE,GONE,true"
   })
-  void endsAStopOnARefusedReadOnlyWhereTheRequestIsGone(
+  void endsStopOnRefusedReadOnlyWhereTheRequestIsGone(
       TaskStop.Trigger trigger,
       ReviewSweepService.SweepResult.Kind refusal,
       boolean stands,
@@ -736,7 +736,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void endsAStopWhereTheRequestItWasCountedOnIsGone(@TempDir Path root) {
+  void endsStopWhereTheRequestItWasCountedOnIsGone(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -765,7 +765,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void keepsAStopCountedOnOneRequestWhereAnotherRequestOfTheTaskIsGone(@TempDir Path root) {
+  void keepsStopCountedOnOneRequestWhereAnotherRequestOfTheTaskIsGone(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -794,7 +794,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void stopsATaskWhoseUnattendedMovesFillTheHourBeforeARoundIsDue(@TempDir Path root) {
+  void stopsTaskWhoseUnattendedMovesFillTheHourBeforeRoundIsDue(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -877,7 +877,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void answersWhetherAStopOfTheTriggerStandsOnTheTask(@TempDir Path root) {
+  void answersWhetherStopOfTheTriggerStandsOnTheTask(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -934,7 +934,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void relaysARoundWithOpenThreadsAndNoNoteWhateverTheBriefsWording(@TempDir Path root) {
+  void relaysRoundWithOpenThreadsAndNoNoteWhateverTheBriefsWording(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -963,7 +963,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void relaysARoundWithNoThreadsAndGreenChecksWhateverTheBriefsWording(@TempDir Path root) {
+  void relaysRoundWithNoThreadsAndGreenChecksWhateverTheBriefsWording(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -992,7 +992,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void tellsARelayedRoundsNotesFromTheLastRoundRelayed(@TempDir Path root) {
+  void tellsRelayedRoundsNotesFromTheLastRoundRelayed(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -1030,7 +1030,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void pausesAStartedTaskOnTheHumansWordWithTheirReason(@TempDir Path root) {
+  void pausesStartedTaskOnTheHumansWordWithTheirReason(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -1055,7 +1055,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void refusesAPauseOnTheHumansWordWherePauseIsNotOffered(@TempDir Path root) {
+  void refusesPauseOnTheHumansWordWherePauseIsNotOffered(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -1108,7 +1108,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void aHumansEscalationClearsTheStopRaisesTheTierAndRestoresTheMastersLifts(@TempDir Path root) {
+  void humansEscalationClearsTheStopRaisesTheTierAndRestoresTheMastersLifts(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -1142,7 +1142,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void tellsTheHumanNothingOfAStopTheMasterHoldsInAct(@TempDir Path root) {
+  void tellsTheHumanNothingOfStopTheMasterHoldsInAct(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -1165,7 +1165,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void tellsTheHumanOfAStopTheyKeepToLiftWhereTheMasterActs(@TempDir Path root) {
+  void tellsTheHumanOfStopTheyKeepToLiftWhereTheMasterActs(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -1188,7 +1188,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void aTriageIsWrittenOnlyWhileTheStopItWasReadForStillStands(@TempDir Path root) {
+  void triageIsWrittenOnlyWhileTheStopItWasReadForStillStands(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -1215,7 +1215,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void spendsTheMastersLiftWhereTheMasterEscalatesAStop(@TempDir Path root) {
+  void spendsTheMastersLiftWhereTheMasterEscalatesStop(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -1243,7 +1243,7 @@ class TaskStopsTest {
   }
 
   @Test
-  void keepsAVerbFromTheMasterWhereTheProfileNamesItsId(@TempDir Path root) {
+  void keepsVerbFromTheMasterWhereTheProfileNamesItsId(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()

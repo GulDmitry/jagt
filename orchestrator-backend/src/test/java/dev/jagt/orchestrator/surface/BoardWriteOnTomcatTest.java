@@ -62,7 +62,7 @@ class BoardWriteOnTomcatTest {
         "/api;x/tasks/actions/deploy?task=ABC-42",
         "/%61pi/tasks/actions/deploy?task=ABC-42"
       })
-  void refusesABoardWriteWithoutAnOriginHoweverItsPathIsSpelled(String path) throws Exception {
+  void refusesBoardWriteWithoutAnOriginHoweverItsPathIsSpelled(String path) throws Exception {
     HttpRequest request =
         HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
             .POST(HttpRequest.BodyPublishers.noBody())

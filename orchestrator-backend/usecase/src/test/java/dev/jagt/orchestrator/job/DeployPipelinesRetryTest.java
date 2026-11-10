@@ -39,8 +39,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class DeployPipelinesRetryTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final String REMOTE = "https://git.example.invalid/shop/web.git";
   private static final String SHA = "0123456789abcdef";
@@ -60,7 +59,7 @@ class DeployPipelinesRetryTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)), TaskStatus.DEPLOYED)
@@ -79,13 +78,22 @@ class DeployPipelinesRetryTest {
   }
 
   @Test
-  void aRedPipelineIsReRunOnceBeforeItIsHandedBack(@TempDir Path root) {
+  void redPipelineIsReRunOnceBeforeItIsHandedBack(@TempDir Path root) {
     StateService state = stateWith(root, Deployment.Target.of("shop", "dev").withMerge(SHA));
     redOnTheCode();
     when(pipelines.retryFailed("shop", URL))
         .thenReturn(new Answer<>(Optional.of("re-run"), TokenUsage.NONE));
     DeployPipelines deploys =
-        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
+        new DeployPipelines(
+            pipelines,
+            causes,
+            fixes,
+            CLOCK,
+            new FlowReports(
+                state,
+                CLOCK,
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     DeployPipelines.Reading reading = deploys.read("ABC-42", state.task("ABC-42").orElseThrow());
 
@@ -96,13 +104,22 @@ class DeployPipelinesRetryTest {
   }
 
   @Test
-  void aRedPipelineThatFailedAgainAfterItsOneReRunIsHandedBackWithThePipelineToFix(
+  void redPipelineThatFailedAgainAfterItsOneReRunIsHandedBackWithThePipelineToFix(
       @TempDir Path root) {
     StateService state =
         stateWith(root, Deployment.Target.of("shop", "dev").withMerge(SHA).withRetried(SHA));
     redOnTheCode();
     DeployPipelines deploys =
-        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
+        new DeployPipelines(
+            pipelines,
+            causes,
+            fixes,
+            CLOCK,
+            new FlowReports(
+                state,
+                CLOCK,
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     DeployPipelines.Reading reading = deploys.read("ABC-42", state.task("ABC-42").orElseThrow());
 
@@ -118,8 +135,7 @@ class DeployPipelinesRetryTest {
   }
 
   @Test
-  void aDeployRedOnItsCommitAfterItsReRunStandsOnALaterGreenPipelineContainingIt(
-      @TempDir Path root) {
+  void deployRedOnItsCommitAfterItsReRunStandsOnLaterGreenPipelineContainingIt(@TempDir Path root) {
     StateService state =
         stateWith(root, Deployment.Target.of("shop", "dev").withMerge(SHA).withRetried(SHA));
     when(pipelines.onCommit("shop", REMOTE, SHA))
@@ -134,7 +150,16 @@ class DeployPipelinesRetryTest {
                         "success", "https://git.example.invalid/shop/web/-/pipelines/9")),
                 TokenUsage.NONE));
     DeployPipelines deploys =
-        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
+        new DeployPipelines(
+            pipelines,
+            causes,
+            fixes,
+            CLOCK,
+            new FlowReports(
+                state,
+                CLOCK,
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     DeployPipelines.Reading reading = deploys.read("ABC-42", state.task("ABC-42").orElseThrow());
 
@@ -143,7 +168,7 @@ class DeployPipelinesRetryTest {
   }
 
   @Test
-  void aRedDeployCommitStandsOnALaterGreenPipelineWithoutReRunningTheRedOne(@TempDir Path root) {
+  void redDeployCommitStandsOnLaterGreenPipelineWithoutReRunningTheRedOne(@TempDir Path root) {
     StateService state = stateWith(root, Deployment.Target.of("shop", "dev").withMerge(SHA));
     when(pipelines.onCommit("shop", REMOTE, SHA))
         .thenReturn(new Answer<>(Optional.of(new CommitPipeline("failed", URL)), TokenUsage.NONE));
@@ -157,7 +182,16 @@ class DeployPipelinesRetryTest {
                         "success", "https://git.example.invalid/shop/web/-/pipelines/9")),
                 TokenUsage.NONE));
     DeployPipelines deploys =
-        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
+        new DeployPipelines(
+            pipelines,
+            causes,
+            fixes,
+            CLOCK,
+            new FlowReports(
+                state,
+                CLOCK,
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     DeployPipelines.Reading reading = deploys.read("ABC-42", state.task("ABC-42").orElseThrow());
 
@@ -166,13 +200,22 @@ class DeployPipelinesRetryTest {
   }
 
   @Test
-  void aRedPipelineIsHandedBackAsItStandsWhereTheHostRefusesTheReRun(@TempDir Path root) {
+  void redPipelineIsHandedBackAsItStandsWhereTheHostRefusesTheReRun(@TempDir Path root) {
     StateService state = stateWith(root, Deployment.Target.of("shop", "dev").withMerge(SHA));
     redOnTheCode();
     when(pipelines.retryFailed("shop", URL))
         .thenReturn(Answer.failed(TokenUsage.NONE, "glab exited 1: 403"));
     DeployPipelines deploys =
-        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
+        new DeployPipelines(
+            pipelines,
+            causes,
+            fixes,
+            CLOCK,
+            new FlowReports(
+                state,
+                CLOCK,
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     DeployPipelines.Reading reading = deploys.read("ABC-42", state.task("ABC-42").orElseThrow());
 
@@ -180,7 +223,7 @@ class DeployPipelinesRetryTest {
   }
 
   @Test
-  void aRedPipelineStaysOpenWhenTheWorktreeOfItsFixCannotBeOpened(@TempDir Path root) {
+  void redPipelineStaysOpenWhenTheWorktreeOfItsFixCannotBeOpened(@TempDir Path root) {
     StateService state =
         stateWith(root, Deployment.Target.of("shop", "dev").withMerge(SHA).withRetried(SHA));
     redOnTheCode();
@@ -189,7 +232,16 @@ class DeployPipelinesRetryTest {
         .when(fixes)
         .open(task, "ABC-42", "shop");
     DeployPipelines deploys =
-        new DeployPipelines(pipelines, causes, fixes, CLOCK, new FlowReports(state, CLOCK, new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))));
+        new DeployPipelines(
+            pipelines,
+            causes,
+            fixes,
+            CLOCK,
+            new FlowReports(
+                state,
+                CLOCK,
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     DeployPipelines.Reading reading = deploys.read("ABC-42", task);
 

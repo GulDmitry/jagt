@@ -47,7 +47,7 @@ class TurnScriptTest {
   }
 
   @Test
-  void divergesNamingTheStepOfATurnOpenedPastTheRecording() {
+  void divergesNamingTheStepOfTurnOpenedPastTheRecording() {
     TurnScript script =
         TurnScript.of(
             "ABC-1",
@@ -65,7 +65,7 @@ class TurnScriptTest {
   }
 
   @Test
-  void isNotDrainedWhileARecordedTurnIsStillToOpen() {
+  void isNotDrainedWhileRecordedTurnIsStillToOpen() {
     TurnScript script =
         TurnScript.of("ABC-1", List.of(new RecordingLine.Opened("ABC-1", 1, "ship")));
 

@@ -18,14 +18,14 @@ class TrackerCheckTest {
   private final TrackerCheck check = new TrackerCheck(configService, workflow);
 
   @Test
-  void saysNothingAboutATrackerDrivingNeitherEnd() {
+  void saysNothingAboutTrackerDrivingNeitherEnd() {
     when(configService.load()).thenReturn(ConfigFile.defaults());
 
     assertThat(check.problems()).isEmpty();
   }
 
   @Test
-  void refusesAModeThatIsNotOneOfTheOnesJagtHas() {
+  void refusesModeThatIsNotOneOfTheOnesJagtHas() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -83,7 +83,7 @@ class TrackerCheckTest {
   }
 
   @Test
-  void asksAFileTrackerForItsFileAndForNoAssignee() {
+  void asksFileTrackerForItsFileAndForNoAssignee() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -100,7 +100,7 @@ class TrackerCheckTest {
   }
 
   @Test
-  void acceptsAFileTrackerNamingItsFile() {
+  void acceptsFileTrackerNamingItsFile() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -116,7 +116,7 @@ class TrackerCheckTest {
   }
 
   @Test
-  void refusesADrivenTrackerJagtCarriesNoWorkflowFor() {
+  void refusesDrivenTrackerJagtCarriesNoWorkflowFor() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()

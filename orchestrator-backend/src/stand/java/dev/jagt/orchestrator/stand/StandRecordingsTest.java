@@ -38,7 +38,7 @@ class StandRecordingsTest {
   }
 
   @Test
-  void leavesAFileThatIsNoRecordingOfARun(@TempDir Path dir) throws Exception {
+  void leavesFileThatIsNoRecordingOfRun(@TempDir Path dir) throws Exception {
     Files.writeString(dir.resolve("notes.txt"), "kept\n");
     IntStream.rangeClosed(1, StandRecordings.KEPT + 1)
         .forEach(pid -> StandRecordingsTest.write(dir, pid));

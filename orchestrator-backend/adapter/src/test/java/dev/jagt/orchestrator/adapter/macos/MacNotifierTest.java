@@ -37,7 +37,7 @@ class MacNotifierTest {
   }
 
   @Test
-  void sendsATitleAndBodyEvenWhenTheCallerHadNeither() {
+  void sendsTitleAndBodyEvenWhenTheCallerHadNeither() {
     assertThat(MacNotifier.command("terminal-notifier", null, null, null))
         .containsSequence("-title", "jagt")
         .containsSequence("-message", "");

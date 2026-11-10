@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class HostSleepTest {
 
   @Test
-  void aPollAfterTheLaptopSleptNineHundredSecondsReadsAsSuspended() {
+  void pollAfterTheLaptopSleptNineHundredSecondsReadsAsSuspended() {
     assertThat(
             HostSleep.between(
                 Instant.parse("2026-10-25T08:33:00Z"), Instant.parse("2026-10-25T08:48:40Z")))
@@ -16,7 +16,7 @@ class HostSleepTest {
   }
 
   @Test
-  void aSlowPollOfTenSecondsIsNotASleep() {
+  void slowPollOfTenSecondsIsNotSleep() {
     assertThat(
             HostSleep.between(
                 Instant.parse("2026-10-25T08:33:00Z"), Instant.parse("2026-10-25T08:33:10Z")))

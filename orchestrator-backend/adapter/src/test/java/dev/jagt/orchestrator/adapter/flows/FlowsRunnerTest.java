@@ -33,7 +33,8 @@ class FlowsRunnerTest {
   void everyFlowIsUnprovableAndNothingRunsWhereTheFolderNamesNoDriver(@TempDir Path root)
       throws Exception {
     Files.writeString(
-        root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
         Path.of("../../roles/acceptance/role.yml.dist"),
@@ -49,7 +50,11 @@ class FlowsRunnerTest {
         new FlowsRunner(
                 new RoleSettings(
                     RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                    new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+                    new ConfigService(
+                        paths,
+                        mock(AgentRuntime.class),
+                        mock(ActStops.class),
+                        new Checkers(new TaskChart(Composition.builtIn()))),
                     paths),
                 new PlaywrightRunner(processes))
             .run(root, List.of("AC-1", "AC-2"), "https://alpha.test");

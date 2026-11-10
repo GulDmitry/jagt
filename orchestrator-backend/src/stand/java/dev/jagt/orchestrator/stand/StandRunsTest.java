@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class StandRunsTest {
 
   @Test
-  void repeatsAScenarioInEveryModeAsOftenAsAsked() {
+  void repeatsScenarioInEveryModeAsOftenAsAsked() {
     List<StandRuns.Run> runs = StandRuns.selected("plan", "", "", 2);
 
     assertThat(runs)
@@ -20,7 +20,7 @@ class StandRunsTest {
   }
 
   @Test
-  void runsNothingOfAScenarioTheSelectionLeavesOut() {
+  void runsNothingOfScenarioTheSelectionLeavesOut() {
     List<StandRuns.Run> runs = StandRuns.selected("plan", "deploy-conflict,wrong-thread", "", 1);
 
     assertThat(runs).isEmpty();

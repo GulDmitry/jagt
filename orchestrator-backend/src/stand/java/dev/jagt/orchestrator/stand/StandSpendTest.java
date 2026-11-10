@@ -10,7 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 class StandSpendTest {
 
   @Test
-  void sumsEveryDayOfAKindIntoOneFigure(@TempDir Path dir) throws Exception {
+  void sumsEveryDayOfKindIntoOneFigure(@TempDir Path dir) throws Exception {
     Path usage = dir.resolve("usage-by-day.jsonl");
     Files.writeString(
         usage,

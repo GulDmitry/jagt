@@ -27,7 +27,7 @@ class LibNotifyNotifierTest {
   }
 
   @Test
-  void passesTicketTextAfterTheOptionTerminatorSoALeadingDashIsNotReadAsAnOption() {
+  void passesTicketTextAfterTheOptionTerminatorSoLeadingDashIsNotReadAsAnOption() {
     List<String> command = LibNotifyNotifier.command("notify-send", "-jagt · ABC-1", "--your move");
 
     assertThat(command)
@@ -65,7 +65,7 @@ class LibNotifyNotifierTest {
   }
 
   @Test
-  void runsTheConfiguredBinarySoADistroPathCanBeOverridden() {
+  void runsTheConfiguredBinarySoDistroPathCanBeOverridden() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(), any(Duration.class), any())).thenReturn(new Processes.Result(0, "", ""));
 

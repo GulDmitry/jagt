@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -11,6 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
@@ -36,8 +36,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class MasterStopJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ConfigService config = mock(ConfigService.class);
   private final MasterStopPanel panel = mock(MasterStopPanel.class);
@@ -51,7 +50,7 @@ class MasterStopJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).stop(stop).master(master).build());
@@ -67,7 +66,7 @@ class MasterStopJobTest {
   }
 
   @Test
-  void ABC42StoppedOnROUNDSInActTheMasterLiftsIt(@TempDir Path root) {
+  void abc42StoppedOnRoundsInActTheMasterLiftsIt(@TempDir Path root) {
     StateService state =
         stateWith(
             root,
@@ -84,15 +83,20 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(moves).lift("ABC-42");
   }
 
   @Test
-  void aStopTheHumanSetIsNeverAskedOfTheMaster(@TempDir Path root) {
+  void stopTheHumanSetIsNeverAskedOfTheMaster(@TempDir Path root) {
     StateService state =
         stateWith(
             root,
@@ -104,8 +108,13 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(panel, never()).ask(anyString(), any(), any());
@@ -126,8 +135,13 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))));
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))));
 
     job.runOn(state.tasks());
     job.runOn(state.tasks());
@@ -137,7 +151,7 @@ class MasterStopJobTest {
   }
 
   @Test
-  void aSecondStopIsTheHumansOnceTheMasterLiftedOneSinceTheHumansLastLift(@TempDir Path root) {
+  void secondStopIsTheHumansOnceTheMasterLiftedOneSinceTheHumansLastLift(@TempDir Path root) {
     StateService state =
         stateWith(
             root,
@@ -149,8 +163,13 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(panel, never()).ask(anyString(), any(), any());
@@ -158,7 +177,7 @@ class MasterStopJobTest {
 
   @Test
   void theSessionIsToldTheInstructionWhereTheMasterReturnsTheTask(@TempDir Path root) {
-    StateService state =
+    final StateService state =
         stateWith(
             root,
             new TaskStop(TaskStop.Trigger.UNCHANGED_FAILURE, 5, "unit-tests again"),
@@ -175,8 +194,13 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(moves).returned("ABC-42", "fix the fixture, not the test");
@@ -195,15 +219,20 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(panel, never()).ask(anyString(), any(), any());
   }
 
   @Test
-  void aTaskTheMasterLeftToTheHumanIsNeverAskedAboutItsStop(@TempDir Path root) {
+  void taskTheMasterLeftToTheHumanIsNeverAskedAboutItsStop(@TempDir Path root) {
     StateService state =
         stateWith(
             root,
@@ -215,8 +244,13 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(panel, never()).ask(anyString(), any(), any());
@@ -237,8 +271,13 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))));
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))));
 
     assertThatThrownBy(() -> job.runOn(state.tasks())).isInstanceOf(IllegalStateException.class);
     job.runOn(state.tasks());
@@ -248,7 +287,7 @@ class MasterStopJobTest {
   }
 
   @Test
-  void theStopStaysTheHumansWhereTheMasterReturnsATaskWaitingOnAPlan(@TempDir Path root) {
+  void theStopStaysTheHumansWhereTheMasterReturnsTaskWaitingOnPlan(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -256,7 +295,7 @@ class MasterStopJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
@@ -274,8 +313,13 @@ class MasterStopJobTest {
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(moves, never()).lift(anyString());
@@ -284,20 +328,25 @@ class MasterStopJobTest {
   @Test
   void theSessionStartsAgainOneTierUpWhereTheMasterAnswersEscalate(@TempDir Path root) {
     StateService state =
-        stateWith(
-            root, new TaskStop(TaskStop.Trigger.ROUNDS, 5, "3 rounds"), Master.defaults());
+        stateWith(root, new TaskStop(TaskStop.Trigger.ROUNDS, 5, "3 rounds"), Master.defaults());
     mode("act");
     when(panel.ask(anyString(), any(), any()))
         .thenReturn(
             Optional.of(
-                new MasterStopAnswer(MasterStopAnswer.Kind.ESCALATE, "sonnet looped on a fixture")));
+                new MasterStopAnswer(
+                    MasterStopAnswer.Kind.ESCALATE, "sonnet looped on a fixture")));
 
     new MasterStopJob(
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(moves).escalate("ABC-42");
@@ -305,11 +354,9 @@ class MasterStopJobTest {
   }
 
   @Test
-  void theStopStaysTheHumansWhereTheMasterAnswersEscalateAndMineKeepsEscalate(
-      @TempDir Path root) {
+  void theStopStaysTheHumansWhereTheMasterAnswersEscalateAndMineKeepsEscalate(@TempDir Path root) {
     StateService state =
-        stateWith(
-            root, new TaskStop(TaskStop.Trigger.ROUNDS, 5, "3 rounds"), Master.defaults());
+        stateWith(root, new TaskStop(TaskStop.Trigger.ROUNDS, 5, "3 rounds"), Master.defaults());
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -319,14 +366,20 @@ class MasterStopJobTest {
     when(panel.ask(anyString(), any(), any()))
         .thenReturn(
             Optional.of(
-                new MasterStopAnswer(MasterStopAnswer.Kind.ESCALATE, "sonnet looped on a fixture")));
+                new MasterStopAnswer(
+                    MasterStopAnswer.Kind.ESCALATE, "sonnet looped on a fixture")));
 
     new MasterStopJob(
             config,
             panel,
             moves,
-            new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
-            new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))))
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))),
+            new Rounds(
+                config,
+                ignored -> false,
+                () -> false,
+                new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(moves, never()).escalate(anyString());

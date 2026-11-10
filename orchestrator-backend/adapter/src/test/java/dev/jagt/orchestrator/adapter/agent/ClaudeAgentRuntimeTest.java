@@ -68,8 +68,8 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void continuesTheWorktreesNewestConversationWhenJagtReEntersASessionItDidNotEnd(
-      @TempDir Path root) throws Exception {
+  void continuesTheWorktreesNewestConversationWhenJagtReEntersSessionItDidNotEnd(@TempDir Path root)
+      throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/brief.md"),
@@ -97,7 +97,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void startsAfreshWhenJagtRevivesAWorktreeHoldingNoConversation(@TempDir Path root)
+  void startsAfreshWhenJagtRevivesWorktreeHoldingNoConversation(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
@@ -118,7 +118,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void keepsAPromptWithAnApostropheOneShellArgumentInsteadOfBreakingTheLaunch(@TempDir Path root)
+  void keepsPromptWithAnApostropheOneShellArgumentInsteadOfBreakingTheLaunch(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\nit's fine\n");
@@ -137,8 +137,8 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void trustsAProvisionedWorktreeSoNoDialogStopsTheSessionAndForgetsItOnceRetired(
-      @TempDir Path root) throws Exception {
+  void trustsProvisionedWorktreeSoNoDialogStopsTheSessionAndForgetsItOnceRetired(@TempDir Path root)
+      throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-7-proj"));
     var runtime =
         new ClaudeAgentRuntime(
@@ -253,7 +253,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void letsARunningSessionReachADirectoryThatAppearedSinceItStarted(@TempDir Path root)
+  void letsRunningSessionReachDirectoryThatAppearedSinceItStarted(@TempDir Path root)
       throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
     Path deploy = Files.createDirectories(root.resolve("ABC-1-deploy"));
@@ -284,7 +284,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void letsASandboxedSessionWriteInADirectoryItWasAdmittedTo(@TempDir Path root) throws Exception {
+  void letsSandboxedSessionWriteInDirectoryItWasAdmittedTo(@TempDir Path root) throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
     Path deploy = Files.createDirectories(root.resolve("ABC-1-deploy"));
     var runtime =
@@ -313,7 +313,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void grantsADirectoryNotThereYetAsAPathRuleAlone(@TempDir Path root) throws Exception {
+  void grantsDirectoryNotThereYetAsPathRuleAlone(@TempDir Path root) throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
     var runtime =
         new ClaudeAgentRuntime(
@@ -521,7 +521,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void compactsATaskSessionLongBeforeItsContextWindowIsFull() {
+  void compactsTaskSessionLongBeforeItsContextWindowIsFull() {
     String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
 
     String window =
@@ -535,7 +535,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void keepsATaskSessionFromWritingTheRepositorysAutoMemory() {
+  void keepsTaskSessionFromWritingTheRepositorysAutoMemory() {
     String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
 
     boolean enabled = new JsonMapper().readTree(json).path("autoMemoryEnabled").asBoolean(true);
@@ -544,7 +544,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void keepsAnIdleTaskSessionUncompactedSoAColdPromptStillFindsItCold() {
+  void keepsAnIdleTaskSessionUncompactedSoColdPromptStillFindsItCold() {
     String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
 
     boolean idleCompaction = new JsonMapper().readTree(json).path("idleCompaction").asBoolean(true);
@@ -647,7 +647,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void writesADeclaredEventAsAHookThatReportsTheStateItMeans(@TempDir Path root) throws Exception {
+  void writesDeclaredEventAsHookThatReportsTheStateItMeans(@TempDir Path root) throws Exception {
     Path worktree = root.resolve("ABC-1-proj");
     worktree.toFile().mkdirs();
 
@@ -742,7 +742,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void reportsATurnEndedOnAnApiErrorThroughItsOwnUnmatchedEvent(@TempDir Path root)
+  void reportsTurnEndedOnAnApiErrorThroughItsOwnUnmatchedEvent(@TempDir Path root)
       throws Exception {
     Path worktree = root.resolve("ABC-1-proj");
     worktree.toFile().mkdirs();
@@ -769,7 +769,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void reportsAPermissionPromptThroughItsOwnEventToTheEndpointAnsweringNothing(@TempDir Path root)
+  void reportsPermissionPromptThroughItsOwnEventToTheEndpointAnsweringNothing(@TempDir Path root)
       throws Exception {
     Path worktree = root.resolve("ABC-1-proj");
     worktree.toFile().mkdirs();
@@ -796,7 +796,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void refusesATurnEndInTheShapeClaudeReadsAsKeepGoing() {
+  void refusesTurnEndInTheShapeClaudeReadsAsKeepGoing() {
     String refusal =
         new ClaudeAgentRuntime(
                 new SessionBrief(
@@ -814,7 +814,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void showsTheHumanALineInTheFieldClaudeKeepsFromTheModel() {
+  void showsTheHumanLineInTheFieldClaudeKeepsFromTheModel() {
     String line =
         new ClaudeAgentRuntime(
                 new SessionBrief(
@@ -831,7 +831,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void writesTheGateAsAHookOnTheShellAndTheFileWritingTools(@TempDir Path root) throws Exception {
+  void writesTheGateAsHookOnTheShellAndTheFileWritingTools(@TempDir Path root) throws Exception {
     Path worktree = root.resolve("ABC-1-proj");
     worktree.toFile().mkdirs();
 
@@ -861,11 +861,11 @@ class ClaudeAgentRuntimeTest {
   @CsvSource(
       delimiter = '|',
       value = {
-        "\u276f\u00a0where is the merge re|true",
-        "\u276f\u00a0\u001b[2mclose the task\u001b[0m|false",
-        "\u276f an earlier message\\n\u276f\u00a0|false"
+        "❯\u00a0where is the merge re|true",
+        "❯\u00a0\033[2mclose the task\033[0m|false",
+        "❯ an earlier message\\n❯\u00a0|false"
       })
-  void tellsADraftTheHumanIsComposingFromTheSuggestionAndFromWhatTheyAlreadySent(
+  void tellsDraftTheHumanIsComposingFromTheSuggestionAndFromWhatTheyAlreadySent(
       String screen, boolean draft) {
     var runtime =
         new ClaudeAgentRuntime(
@@ -881,7 +881,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void readsThePromptSuggestionOfAnIdleSessionAsNoDraftAndATypedLineOverItAsOne() throws Exception {
+  void readsThePromptSuggestionOfAnIdleSessionAsNoDraftAndTypedLineOverItAsOne() throws Exception {
     var runtime =
         new ClaudeAgentRuntime(
             new SessionBrief(
@@ -910,7 +910,7 @@ class ClaudeAgentRuntimeTest {
     "queued-2.1.311.txt,true,false",
     "draft-2.1.311.txt,false,true"
   })
-  void readsTheScreensOfTheInstalledCliAsWorkingAndAsHoldingADraft(
+  void readsTheScreensOfTheInstalledCliAsWorkingAndAsHoldingDraft(
       String fixture, boolean working, boolean draft) throws Exception {
     var runtime =
         new ClaudeAgentRuntime(
@@ -931,7 +931,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void readsTheFirstRowOfAWrappedInputAsTheDraft() {
+  void readsTheFirstRowOfWrappedInputAsTheDraft() {
     var runtime =
         new ClaudeAgentRuntime(
             new SessionBrief(
@@ -944,14 +944,14 @@ class ClaudeAgentRuntimeTest {
 
     var draft =
         runtime.draft(
-            "────\n❯ task_context.md changed — re-read it now and follow the \n"
+            "────\n❯\u00a0task_context.md changed — re-read it now and follow the \n"
                 + "  new instructions.\n────\n  ? for shortcuts");
 
     assertThat(draft).contains("task_context.md changed — re-read it now and follow the");
   }
 
   @Test
-  void tellsASessionWaitingOnTheTrustDialogFromItsScreen() {
+  void tellsSessionWaitingOnTheTrustDialogFromItsScreen() {
     var runtime =
         new ClaudeAgentRuntime(
             new SessionBrief(
@@ -976,7 +976,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void tellsASessionWaitingOnAPermissionDialogFromItsScreen() {
+  void tellsSessionWaitingOnPermissionDialogFromItsScreen() {
     var runtime =
         new ClaudeAgentRuntime(
             new SessionBrief(
@@ -991,7 +991,7 @@ class ClaudeAgentRuntimeTest {
         Bash command
           git status
         Do you want to proceed?
-        \u276f 1. Yes
+        ❯ 1. Yes
           2. No, and tell Claude what to do differently (esc)
          Esc to cancel
         """;
@@ -1036,8 +1036,8 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void allowsAWorkspaceSessionToWriteItsWorkspaceAndRunItsCommandsAfterThePrompt(
-      @TempDir Path root) throws Exception {
+  void allowsWorkspaceSessionToWriteItsWorkspaceAndRunItsCommandsAfterThePrompt(@TempDir Path root)
+      throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
     var runtime =
@@ -1144,13 +1144,13 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void keepsAConfiguredCommand() {
+  void keepsConfiguredCommand() {
     assertThat(new ClaudeProperties("/opt/bin/claude", "", "", List.of()).command())
         .isEqualTo("/opt/bin/claude");
   }
 
   @Test
-  void readsTheNudgeAndAnIdleSessionFromTheScreenOfASessionFinishedWithItsTurn() throws Exception {
+  void readsTheNudgeAndAnIdleSessionFromTheScreenOfSessionFinishedWithItsTurn() throws Exception {
     var runtime =
         new ClaudeAgentRuntime(
             new SessionBrief(
@@ -1166,12 +1166,12 @@ class ClaudeAgentRuntimeTest {
             java.nio.charset.StandardCharsets.UTF_8);
 
     assertThat(runtime.draft(screen))
-        .contains("task_context.md changed \u2014 re-read it now and follow the new instructions.");
+        .contains("task_context.md changed — re-read it now and follow the new instructions.");
     assertThat(runtime.working(screen)).isFalse();
   }
 
   @Test
-  void readsATurnRunningFromItsInterruptHint() {
+  void readsTurnRunningFromItsInterruptHint() {
     var runtime =
         new ClaudeAgentRuntime(
             new SessionBrief(
@@ -1184,14 +1184,14 @@ class ClaudeAgentRuntimeTest {
 
     assertThat(
             runtime.working(
-                "\u001b[38;5;174m\u2736 Thinking\u2026\u001b[0m (12s \u00b7 esc to interrupt)\n"
-                    + "\u276f "))
+                "\u001b[38;5;174m✶ Thinking…\u001b[0m (12s · esc to interrupt)\n"
+                    + "❯ "))
         .isTrue();
-    assertThat(runtime.working("\u2736 Clauded\u2026 (3s \u00b7 thinking)\n\u276f ")).isTrue();
+    assertThat(runtime.working("✶ Clauded… (3s · thinking)\n❯ ")).isTrue();
   }
 
   @Test
-  void readsATurnRunningFromItsSpinnerLine() {
+  void readsTurnRunningFromItsSpinnerLine() {
     var runtime =
         new ClaudeAgentRuntime(
             new SessionBrief(
@@ -1205,22 +1205,22 @@ class ClaudeAgentRuntimeTest {
     assertThat(
             runtime.working(
                 "\n"
-                    + "\u001b[38;5;174m\u2736\u001b[39m"
-                    + " \u001b[38;5;174mSprouti\u001b[38;5;216mng\u2026\u001b[38;5;174m"
+                    + "\u001b[38;5;174m✶\u001b[39m"
+                    + " \u001b[38;5;174mSprouti\u001b[38;5;216mng…\u001b[38;5;174m"
                     + " \u001b[39m\n"
-                    + "\u276f "))
+                    + "❯ "))
         .isTrue();
     assertThat(
             runtime.working(
-                "\u001b[38;5;174m\u2733\u001b[39m \u001b[38;5;174mSymbioting\u2026"
-                    + " \u001b[38;5;246m(5s \u00b7"
+                "\u001b[38;5;174m✳\u001b[39m \u001b[38;5;174mSymbioting…"
+                    + " \u001b[38;5;246m(5s ·"
                     + " \u001b[38;5;249mthinking\u001b[38;5;246m)\u001b[39m\n"
-                    + "\u276f "))
+                    + "❯ "))
         .isTrue();
   }
 
   @Test
-  void readsATurnIdleWhenOnlyItsFinishedLineOrADraftRemains() {
+  void readsTurnIdleWhenOnlyItsFinishedLineOrDraftRemains() {
     var runtime =
         new ClaudeAgentRuntime(
             new SessionBrief(
@@ -1231,15 +1231,15 @@ class ClaudeAgentRuntimeTest {
                 "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
             Clock.systemUTC());
 
-    assertThat(runtime.working("\u273b Brewed for 12s\n\u276f ")).isFalse();
-    assertThat(runtime.working("\u23fa Checking\u2026\n\u276f ")).isFalse();
-    assertThat(runtime.working("\u276f Sprouting\u2026")).isFalse();
-    assertThat(runtime.working("\u276f re-read the file and continue\u2026")).isFalse();
-    assertThat(runtime.working("Sprouting\u2026 is a word\n\u276f ")).isFalse();
+    assertThat(runtime.working("✻ Brewed for 12s\n❯ ")).isFalse();
+    assertThat(runtime.working("⏺ Checking…\n❯ ")).isFalse();
+    assertThat(runtime.working("❯ Sprouting…")).isFalse();
+    assertThat(runtime.working("❯ re-read the file and continue…")).isFalse();
+    assertThat(runtime.working("Sprouting… is a word\n❯ ")).isFalse();
   }
 
   @Test
-  void asksJagtBeforeATypedPromptReachesTheModelAndWaitsLongerForTheAnswer(@TempDir Path root)
+  void asksJagtBeforeTypedPromptReachesTheModelAndWaitsLongerForTheAnswer(@TempDir Path root)
       throws Exception {
     Path worktree = root.resolve("ABC-1-proj");
     worktree.toFile().mkdirs();
@@ -1267,7 +1267,7 @@ class ClaudeAgentRuntimeTest {
 
   @ParameterizedTest
   @CsvSource({"3660000, 3600000, true", "3540000, 3600000, false", "999999999, 0, false"})
-  void judgesAConversationColdOnlyPastANonZeroCacheLifetime(
+  void judgesConversationColdOnlyPastNonZeroCacheLifetime(
       long idleMillis, long lifetimeMillis, boolean cold) {
     var runtime =
         new ClaudeAgentRuntime(
@@ -1287,7 +1287,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void blocksAPromptInTheShapeClaudeReadsAsBlocked() {
+  void blocksPromptInTheShapeClaudeReadsAsBlocked() {
     String blocked =
         new ClaudeAgentRuntime(
                 new SessionBrief(
@@ -1341,7 +1341,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void declaresWhatTheCliSaysAtACompactionAUsageLimitAndAnEndThatIsFollowedByAStart() {
+  void declaresWhatTheCliSaysAtCompactionUsageLimitAndAnEndThatIsFollowedByStart() {
     var runtime =
         new ClaudeAgentRuntime(
             new SessionBrief(
@@ -1402,7 +1402,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void readsTheConversationSessionLogAndActivityOfAWorktreeFromWhereTheCliKeepsThem(
+  void readsTheConversationSessionLogAndActivityOfWorktreeFromWhereTheCliKeepsThem(
       @TempDir Path worktree) throws Exception {
     Path logs =
         Files.createDirectories(
@@ -1424,7 +1424,8 @@ class ClaudeAgentRuntimeTest {
                 "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
             Clock.systemUTC());
 
-    assertThat(runtime.conversationTail(worktree, 16_000, Set.of())).contains("human: fix the login");
+    assertThat(runtime.conversationTail(worktree, 16_000, Set.of()))
+        .contains("human: fix the login");
     assertThat(runtime.sessionLogOf(worktree)).contains(log);
     assertThat(runtime.lastSessionActivity(worktree))
         .isEqualTo(OptionalLong.of(1_700_000_000_000L));
@@ -1432,7 +1433,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void readsTheHumansQuestionAsTheNewestPromptOfAWorktree(@TempDir Path worktree) throws Exception {
+  void readsTheHumansQuestionAsTheNewestPromptOfWorktree(@TempDir Path worktree) throws Exception {
     Path logs =
         Files.createDirectories(
             ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)));
@@ -1455,7 +1456,7 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
-  void readsALineJagtTypedAsNoHumanPromptOfAWorktree(@TempDir Path worktree) throws Exception {
+  void readsLineJagtTypedAsNoHumanPromptOfWorktree(@TempDir Path worktree) throws Exception {
     Path logs =
         Files.createDirectories(
             ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)));

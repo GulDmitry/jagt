@@ -33,7 +33,7 @@ class ProjectsControllerTest {
   }
 
   @Test
-  void readsAPathWithoutCountingTheProjectBeingEditedAsAnotherOnePointingThere() {
+  void readsPathWithoutCountingTheProjectBeingEditedAsAnotherOnePointingThere() {
     ProjectSetup.Reading reading =
         new ProjectSetup.Reading(
             List.of(new ProjectSetup.Line(true, "no project points here yet")),

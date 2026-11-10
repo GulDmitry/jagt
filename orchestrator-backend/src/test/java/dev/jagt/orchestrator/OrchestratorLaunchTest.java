@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 class OrchestratorLaunchTest {
 
   @Test
-  void passesANamedConfigFileOnceSoSpringDoesNotJoinItWithItself() {
+  void passesNamedConfigFileOnceSoSpringDoesNotJoinItWithItself() {
     String[] launched =
         OrchestratorApplication.withConfigFile(
             new String[] {"--orchestrator.config-file=/opt/jagt.yml"});

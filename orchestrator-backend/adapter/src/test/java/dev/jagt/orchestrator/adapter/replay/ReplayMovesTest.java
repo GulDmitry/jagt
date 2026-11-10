@@ -33,7 +33,7 @@ import tools.jackson.databind.json.JsonMapper;
 class ReplayMovesTest {
 
   @Test
-  void aReplayWritesTheFilesTheSessionLeftInItsTreeCreatingTheirFolders(@TempDir Path worktree)
+  void replayWritesTheFilesTheSessionLeftInItsTreeCreatingTheirFolders(@TempDir Path worktree)
       throws Exception {
     ReplayMoves moves =
         new ReplayMoves(new McpEndpoint("http://127.0.0.1:1/mcp"), mock(Processes.class));
@@ -44,7 +44,7 @@ class ReplayMovesTest {
   }
 
   @Test
-  void aReplayMakesTheSessionsMcpCallAsTheWorktreeItWasRecordedIn(@TempDir Path worktree)
+  void replayMakesTheSessionsMcpCallAsTheWorktreeItWasRecordedIn(@TempDir Path worktree)
       throws Exception {
     AtomicReference<String> body = new AtomicReference<>();
     AtomicReference<String> caller = new AtomicReference<>();
@@ -99,7 +99,7 @@ class ReplayMovesTest {
   }
 
   @Test
-  void aReplayInterruptedMidCallStaysInterruptedAndStopsTheReplay(@TempDir Path worktree) {
+  void replayInterruptedMidCallStaysInterruptedAndStopsTheReplay(@TempDir Path worktree) {
     ReplayMoves moves =
         new ReplayMoves(new McpEndpoint("http://127.0.0.1:1/mcp"), mock(Processes.class));
     Thread.currentThread().interrupt();
@@ -119,7 +119,7 @@ class ReplayMovesTest {
   }
 
   @Test
-  void aReplayCommitsTheRecordedPathsThenPushesTheTaskBranch(@TempDir Path worktree) {
+  void replayCommitsTheRecordedPathsThenPushesTheTaskBranch(@TempDir Path worktree) {
     Processes processes = mock(Processes.class);
     when(processes.run(any(Path.class), any(Duration.class), anyMap(), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));

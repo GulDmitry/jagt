@@ -32,15 +32,14 @@ import tools.jackson.databind.json.JsonMapper;
 
 class MasterDeployJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final StateService state = mock(StateService.class);
   private final ConfigService config = mock(ConfigService.class);
   private final MasterPress press = mock(MasterPress.class);
 
   @Test
-  void deploysAReviewedTaskWhereDeployIsNotKeptByTheHuman() {
+  void deploysReviewedTaskWhereDeployIsNotKeptByTheHuman() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -50,14 +49,18 @@ class MasterDeployJobTest {
     when(state.tasks())
         .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+    new MasterDeployJob(
+            config,
+            press,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
   }
 
   @Test
-  void deploysATaskApprovedOnTheHostBeforeTheJobLookedAtIt() {
+  void deploysTaskApprovedOnTheHostBeforeTheJobLookedAtIt() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -66,7 +69,11 @@ class MasterDeployJobTest {
     when(state.tasks())
         .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.APPROVED).build()));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+    new MasterDeployJob(
+            config,
+            press,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
@@ -83,7 +90,11 @@ class MasterDeployJobTest {
     when(state.tasks())
         .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+    new MasterDeployJob(
+            config,
+            press,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press, never()).press(anyString(), any(), any());
@@ -100,7 +111,11 @@ class MasterDeployJobTest {
         .thenReturn(
             Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.CI_POLLING).build()));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+    new MasterDeployJob(
+            config,
+            press,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press, never()).press(anyString(), any(), any());
@@ -121,11 +136,19 @@ class MasterDeployJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     StateService before = new StateService(new JsonMapper(), paths, reducer);
-    new MasterDeployJob(config, press, new TaskTurns(before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+    new MasterDeployJob(
+            config,
+            press,
+            new TaskTurns(
+                before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(before.tasks());
     StateService restarted = new StateService(new JsonMapper(), paths, reducer);
 
-    new MasterDeployJob(config, press, new TaskTurns(restarted, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+    new MasterDeployJob(
+            config,
+            press,
+            new TaskTurns(
+                restarted, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(restarted.tasks());
 
     verify(press, times(1)).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
@@ -141,14 +164,18 @@ class MasterDeployJobTest {
     when(state.tasks())
         .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+    new MasterDeployJob(
+            config,
+            press,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press, never()).press(anyString(), any(), any());
   }
 
   @Test
-  void revertsNothingOnItsOwnOfADeployedTaskWhereTheHumanKeptTheRevert() {
+  void revertsNothingOnItsOwnOfDeployedTaskWhereTheHumanKeptTheRevert() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -158,14 +185,18 @@ class MasterDeployJobTest {
     when(state.tasks())
         .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DEPLOYED).build()));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+    new MasterDeployJob(
+            config,
+            press,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press, never()).press(anyString(), any(), any());
   }
 
   @Test
-  void deploysATaskWhereTheMasterLeftAnEarlierStepToTheHuman() {
+  void deploysTaskWhereTheMasterLeftAnEarlierStepToTheHuman() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -179,7 +210,11 @@ class MasterDeployJobTest {
                     .build()
                     .withMaster(Master.defaults().withLeft("ship src/Login.java"))));
 
-    new MasterDeployJob(config, press, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+    new MasterDeployJob(
+            config,
+            press,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(press).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));

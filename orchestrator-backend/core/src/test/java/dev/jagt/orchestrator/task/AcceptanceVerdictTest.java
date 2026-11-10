@@ -26,7 +26,7 @@ class AcceptanceVerdictTest {
   }
 
   @Test
-  void sendsARowNotMetBackBeforeAskingAboutOneUnprovable() {
+  void sendsRowNotMetBackBeforeAskingAboutOneUnprovable() {
     AcceptanceVerdict verdict =
         new AcceptanceVerdict(
             "abc",
@@ -44,7 +44,7 @@ class AcceptanceVerdictTest {
   }
 
   @Test
-  void asksTheHumanWhereARowIsUnprovable() {
+  void asksTheHumanWhereRowIsUnprovable() {
     AcceptanceVerdict verdict =
         new AcceptanceVerdict(
             "abc",
@@ -97,7 +97,7 @@ class AcceptanceVerdictTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"accept", "decline", "again"})
-  void takesEachBriefStepAsAStep(String step) {
+  void takesEachBriefStepAsStep(String step) {
     assertThat(AcceptanceVerdict.isStep(step)).isTrue();
   }
 
@@ -107,13 +107,13 @@ class AcceptanceVerdictTest {
   }
 
   @Test
-  void readsAStatusWrittenWithSpacesAndCapitals() {
+  void readsStatusWrittenWithSpacesAndCapitals() {
     assertThat(AcceptanceVerdict.Status.of(" Not Met ")).contains(AcceptanceVerdict.Status.NOT_MET);
     assertThat(AcceptanceVerdict.Status.of("maybe")).isEmpty();
   }
 
   @Test
-  void writesARowAsOneLineNamingItsStatusInWords() {
+  void writesRowAsOneLineNamingItsStatusInWords() {
     AcceptanceVerdict.Row row =
         new AcceptanceVerdict.Row("login works", AcceptanceVerdict.Status.NOT_MET, "GET /me 404");
 

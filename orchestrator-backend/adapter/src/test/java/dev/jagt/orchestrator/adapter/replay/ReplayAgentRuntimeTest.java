@@ -11,14 +11,14 @@ import org.junit.jupiter.api.Test;
 class ReplayAgentRuntimeTest {
 
   @Test
-  void aReplayedSessionIsNamedReplay() {
+  void replayedSessionIsNamedReplay() {
     ReplayAgentRuntime runtime = new ReplayAgentRuntime(mock(ReplaySessions.class));
 
     assertThat(runtime.displayName()).isEqualTo("Replay");
   }
 
   @Test
-  void aReplayedSessionsWindowIdlesAndTellsTheReplayItLaunched() {
+  void replayedSessionsWindowIdlesAndTellsTheReplayItLaunched() {
     ReplaySessions sessions = mock(ReplaySessions.class);
     ReplayAgentRuntime runtime = new ReplayAgentRuntime(sessions);
     Path worktree = Path.of("/work/ABC-1");
@@ -30,7 +30,7 @@ class ReplayAgentRuntimeTest {
   }
 
   @Test
-  void aReplayedSessionHasNothingTheHumanTypedYetReadsWhatTheyType() {
+  void replayedSessionHasNothingTheHumanTypedYetReadsWhatTheyType() {
     ReplayAgentRuntime runtime = new ReplayAgentRuntime(mock(ReplaySessions.class));
 
     assertThat(runtime.humanSaid(Path.of("/work/ABC-1"), Set.of())).contains(java.util.List.of());

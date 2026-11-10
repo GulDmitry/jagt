@@ -43,7 +43,7 @@ class MasterTokenTest {
   }
 
   @Test
-  void drawsANewTokenAtEachStart(@TempDir Path root) throws Exception {
+  void drawsNewTokenAtEachStart(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     new MasterToken(paths);

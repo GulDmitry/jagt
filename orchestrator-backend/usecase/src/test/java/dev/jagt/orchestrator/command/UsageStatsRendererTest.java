@@ -45,7 +45,7 @@ class UsageStatsRendererTest {
   private static final long NOW = 1_000_000_000L;
 
   @Test
-  void statsEndsWithTheLastSevenDaysCostPerAcceptedTaskAsALowerBoundWhereASpendIsUnknown(
+  void statsEndsWithTheLastSevenDaysCostPerAcceptedTaskAsLowerBoundWhereSpendIsUnknown(
       @TempDir Path root) {
     StateService state =
         new StateService(
@@ -103,7 +103,7 @@ class UsageStatsRendererTest {
   }
 
   @Test
-  void doesNotMarkALowerBoundWhereEverySpendIsKnown() {
+  void doesNotMarkLowerBoundWhereEverySpendIsKnown() {
     assertThat(UsageStatsRenderer.costPerAccepted(new CostPerAcceptedTask(2, 3, 9.0, false)))
         .isEqualTo("cost per accepted task, last 7 days: 4.50 USD (2 shipped of 3 finished)\n");
   }
@@ -166,7 +166,7 @@ class UsageStatsRendererTest {
   }
 
   @Test
-  void keepsARetiredTasksSpendInTheSessionTotal(@TempDir Path root) {
+  void keepsRetiredTasksSpendInTheSessionTotal(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -269,7 +269,7 @@ class UsageStatsRendererTest {
   }
 
   @Test
-  void showsColdStartsPerKindAndAQuestionMarkWhereNoCacheFieldWasRead(@TempDir Path root) {
+  void showsColdStartsPerKindAndQuestionMarkWhereNoCacheFieldWasRead(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -443,7 +443,7 @@ class UsageStatsRendererTest {
   }
 
   @Test
-  void saysUnknownWhenNoDeployedTaskHasAKnownSpend() {
+  void saysUnknownWhenNoDeployedTaskHasKnownSpend() {
     List<FinishedTask> finished =
         List.of(
             new FinishedTask(
@@ -465,7 +465,7 @@ class UsageStatsRendererTest {
   }
 
   @Test
-  void marksTheMedianCostAsALowerBoundWhenADeployedTaskHadAnUnpricedCall() {
+  void marksTheMedianCostAsLowerBoundWhenDeployedTaskHadAnUnpricedCall() {
     List<FinishedTask> finished =
         List.of(
             new FinishedTask(
@@ -491,7 +491,7 @@ class UsageStatsRendererTest {
   }
 
   @Test
-  void marksATasksUsdAsALowerBoundWhenItHadAnUnpricedCall(@TempDir Path root) {
+  void marksTasksUsdAsLowerBoundWhenItHadAnUnpricedCall(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),

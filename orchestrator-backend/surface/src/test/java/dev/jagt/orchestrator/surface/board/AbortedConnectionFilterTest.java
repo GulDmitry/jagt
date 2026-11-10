@@ -22,7 +22,7 @@ class AbortedConnectionFilterTest {
   private final AbortedConnectionFilter filter = new AbortedConnectionFilter();
 
   @Test
-  void dropsTomcatsErrorForAConnectionTheClientAbortedBeforeItCouldBeConfigured() {
+  void dropsTomcatsErrorForConnectionTheClientAbortedBeforeItCouldBeConfigured() {
     SocketException aborted = new SocketException("Invalid argument");
     aborted.setStackTrace(
         new StackTraceElement[] {

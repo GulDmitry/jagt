@@ -17,7 +17,7 @@ import org.junit.jupiter.api.io.TempDir;
 class AcceptancePromptsTest {
 
   @Test
-  void aRunMayFetchEachEnvironmentUrlAndItsLandedProbeAndNothingElse(@TempDir Path root) {
+  void runMayFetchEachEnvironmentUrlAndItsLandedProbeAndNothingElse(@TempDir Path root) {
     RoleOptions acceptance =
         RoleOptions.defaults()
             .withEnvironments(
@@ -67,7 +67,7 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void aRunMayReadTheFlowsRepositoryItIsToldToName(@TempDir Path root) {
+  void runMayReadTheFlowsRepositoryItIsToldToName(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
@@ -81,7 +81,9 @@ class AcceptancePromptsTest {
                 "abc123",
                 RoleOptions.defaults()
                     .withFlows(
-                        RoleOptions.Flows.defaults().withDriver("playwright").withPath("/flows/repo")),
+                        RoleOptions.Flows.defaults()
+                            .withDriver("playwright")
+                            .withPath("/flows/repo")),
                 AcceptanceVerdict.ACCEPT);
 
     assertThat(run.reach().paths()).containsExactly(Path.of("/flows/repo"));
@@ -97,20 +99,10 @@ class AcceptancePromptsTest {
             new RoleFiles(paths, "acceptance"));
 
     CheckerReader.Run accepted =
-        prompts.accept(
-            "ABC-42",
-            "/wt",
-            "abc123",
-            RoleOptions.defaults(),
-            AcceptanceVerdict.ACCEPT);
+        prompts.accept("ABC-42", "/wt", "abc123", RoleOptions.defaults(), AcceptanceVerdict.ACCEPT);
     CheckerReader.Run declined =
         prompts.decline(
-            "ABC-42",
-            "/wt",
-            "abc123",
-            RoleOptions.defaults(),
-            "- C1 — not met: x",
-            "why");
+            "ABC-42", "/wt", "abc123", RoleOptions.defaults(), "- C1 — not met: x", "why");
 
     assertThat(accepted.prompt())
         .contains("ABC-42's deploy was pushed at abc123")
@@ -121,7 +113,7 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void theRunIsToldWhereTheFlowsLiveWhenADriverIsSet(@TempDir Path root) {
+  void theRunIsToldWhereTheFlowsLiveWhenDriverIsSet(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     RoleOptions acceptance =
@@ -141,7 +133,7 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void aRunWithNoWorkspaceIsToldJagtRunsTheFlowsItNames(@TempDir Path root) {
+  void runWithNoWorkspaceIsToldJagtRunsTheFlowsItNames(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     RoleOptions acceptance =
@@ -176,7 +168,7 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void aWorkspaceIsCreatedAndHoldsTheFlowsCommandOncePerEnvironment(@TempDir Path root) {
+  void workspaceIsCreatedAndHoldsTheFlowsCommandOncePerEnvironment(@TempDir Path root) {
     Path workspace = root.resolve("ws");
     RoleOptions acceptance =
         RoleOptions.defaults()
@@ -207,7 +199,7 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void aWorkspaceIsNamedWithTheFlowsCommandAsTheReadMustRunIt(@TempDir Path root) {
+  void workspaceIsNamedWithTheFlowsCommandAsTheReadMustRunIt(@TempDir Path root) {
     RoleOptions acceptance =
         RoleOptions.defaults()
             .withEnvironments(List.of(new RoleOptions.Environment("https://dev.example.test", "")))
@@ -242,7 +234,9 @@ class AcceptancePromptsTest {
             .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt())
-        .contains("read git there with `git -C /wt show --no-ext-diff --no-textconv abc123`, never in the workspace");
+        .contains(
+            "read git there with `git -C /wt show --no-ext-diff --no-textconv abc123`, never in the"
+                + " workspace");
   }
 
   @Test

@@ -74,7 +74,7 @@ class CliEditorDriverTest {
   }
 
   @Test
-  void startsWithoutADiffCommand() {
+  void startsWithoutDiffCommand() {
     CliEditorDriver driver =
         new CliEditorDriver(
             mock(ProcessRunner.class),
@@ -84,7 +84,7 @@ class CliEditorDriverTest {
   }
 
   @Test
-  void refusesADiffNamingTheKeyAndAnExampleWhenNoDiffCommandIsSet() {
+  void refusesDiffNamingTheKeyAndAnExampleWhenNoDiffCommandIsSet() {
     ProcessRunner processRunner = mock(ProcessRunner.class);
     CliEditorDriver driver =
         new CliEditorDriver(

@@ -43,8 +43,13 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(true);
@@ -63,8 +68,13 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(false);
@@ -86,8 +96,13 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views)
@@ -109,8 +124,13 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views)
@@ -120,7 +140,7 @@ class TaskViewsTest {
   }
 
   @Test
-  void showsARoundTheMasterHasYetToReadAsItsReview(@TempDir Path worktree) {
+  void showsRoundTheMasterHasYetToReadAsItsReview(@TempDir Path worktree) {
     when(stateService.tasks())
         .thenReturn(
             Map.of(
@@ -136,8 +156,13 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views).singleElement().extracting("statusLabel").isEqualTo("master review");
@@ -156,8 +181,13 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn())))
             .snapshot();
 
     assertThat(snapshot.tasks()).hasSize(1);
@@ -166,7 +196,7 @@ class TaskViewsTest {
   }
 
   @Test
-  void survivesATaskWhoseWorktreeIsAlreadyGone() {
+  void survivesTaskWhoseWorktreeIsAlreadyGone() {
     when(stateService.tasks())
         .thenReturn(
             Map.of(
@@ -178,8 +208,13 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(false);
@@ -203,8 +238,13 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn())))
             .listing();
 
     assertThat(listing)
@@ -224,8 +264,13 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> true, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> true,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn())))
             .listing();
 
     assertThat(listing).contains("pause,done,scenarios,focus");
@@ -240,8 +285,13 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn())))
             .listing();
 
     assertThat(listing).isEqualTo("no tasks");
@@ -264,8 +314,13 @@ class TaskViewsTest {
         new TaskViews(
                 stateService,
                 configService,
-                new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))),
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn())))
             .all();
 
     assertThat(views)

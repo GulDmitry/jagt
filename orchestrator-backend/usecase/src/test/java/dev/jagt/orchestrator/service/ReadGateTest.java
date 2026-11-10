@@ -41,7 +41,7 @@ class ReadGateTest {
         "WebFetch",
         "Write"
       })
-  void refusesAToolTheReadWasNotGivenWhateverTheHumanAllowsElsewhere(String tool) {
+  void refusesToolTheReadWasNotGivenWhateverTheHumanAllowsElsewhere(String tool) {
     ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*", "mcp__whole"), false);
 
     assertThat(ReadGate.refusal(scope, tool, Map.of(), "/tmp"))
@@ -52,7 +52,7 @@ class ReadGateTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"mcp__acme__getaxb", "mcp__acme__get", "mcp__acme__get.x"})
-  void readsAQuestionMarkAndADotInAGivenNameAsThemselves(String tool) {
+  void readsQuestionMarkAndDotInGivenNameAsThemselves(String tool) {
     ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get.x?"), false);
 
     assertThat(ReadGate.refusal(scope, tool, Map.of(), "/tmp"))
@@ -62,7 +62,7 @@ class ReadGateTest {
   }
 
   @Test
-  void letsThroughAGivenNameCarryingAQuestionMarkAndADot() {
+  void letsThroughGivenNameCarryingQuestionMarkAndDot() {
     ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get.x?"), false);
 
     assertThat(ReadGate.refusal(scope, "mcp__acme__get.x?", Map.of(), "/tmp")).isEmpty();
@@ -76,7 +76,7 @@ class ReadGateTest {
         "http://127.0.0.1:5000/?a=1",
         "http://127.0.0.1:5000/version"
       })
-  void letsAWebFetchReachAnEnvironmentTheRoundNamed(String url) {
+  void letsWebFetchReachAnEnvironmentTheRoundNamed(String url) {
     ReadScope scope =
         new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000"));
 
@@ -84,7 +84,7 @@ class ReadGateTest {
   }
 
   @Test
-  void letsAWebFetchReachEveryPathBelowAnEnvironmentTheRoundNamedWithATrailingSlash() {
+  void letsWebFetchReachEveryPathBelowAnEnvironmentTheRoundNamedWithTrailingSlash() {
     ReadScope scope =
         new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000/api/"));
 
@@ -95,7 +95,7 @@ class ReadGateTest {
   }
 
   @Test
-  void refusesAWebFetchOutsideAnEnvironmentTheRoundNamedWithATrailingSlash() {
+  void refusesWebFetchOutsideAnEnvironmentTheRoundNamedWithTrailingSlash() {
     ReadScope scope =
         new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000/api/"));
 
@@ -106,7 +106,7 @@ class ReadGateTest {
   }
 
   @Test
-  void letsANavigationToAListedEnvironmentGo() {
+  void letsNavigationToListedEnvironmentGo() {
     ReadScope scope =
         new ReadScope(
             List.of(),
@@ -128,7 +128,7 @@ class ReadGateTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"https://prod.alpha.test/quotes", ""})
-  void refusesANavigationToAnyOtherHostOrToNoUrl(String url) {
+  void refusesNavigationToAnyOtherHostOrToNoUrl(String url) {
     ReadScope scope =
         new ReadScope(
             List.of(),
@@ -146,7 +146,7 @@ class ReadGateTest {
   }
 
   @Test
-  void refusesALookThatWouldWriteAFile() {
+  void refusesLookThatWouldWriteFile() {
     ReadScope scope =
         new ReadScope(
             List.of(),
@@ -163,7 +163,7 @@ class ReadGateTest {
   }
 
   @Test
-  void letsALookWithNoFileArgumentGo() {
+  void letsLookWithNoFileArgumentGo() {
     ReadScope scope =
         new ReadScope(
             List.of(),
@@ -186,7 +186,7 @@ class ReadGateTest {
         "https://example.org/",
         "http://127.0.0.1:5000@evil.test/"
       })
-  void refusesAWebFetchOfAnyUrlNoEnvironmentNamesWithItsReason(String url) {
+  void refusesWebFetchOfAnyUrlNoEnvironmentNamesWithItsReason(String url) {
     ReadScope scope =
         new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000"));
 
@@ -205,7 +205,7 @@ class ReadGateTest {
         "curl -i -sS http://127.0.0.1:5000/version",
         "curl -sS http://127.0.0.1:5000/version -i"
       })
-  void letsACurlGetReachAnEnvironmentTheRoundNamed(String command) {
+  void letsCurlGetReachAnEnvironmentTheRoundNamed(String command) {
     ReadScope scope =
         new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000"));
 
@@ -225,7 +225,7 @@ class ReadGateTest {
         "curl -sS -K /tmp/config http://127.0.0.1:5000/",
         "curl -sS http://127.0.0.1:5000/a http://127.0.0.1:5000/b"
       })
-  void refusesACurlThatIsMoreThanAPlainGetOfANamedEnvironment(String command) {
+  void refusesCurlThatIsMoreThanPlainGetOfNamedEnvironment(String command) {
     ReadScope scope =
         new ReadScope(List.of(), List.of(), true, List.of(), List.of("http://127.0.0.1:5000"));
 
@@ -236,7 +236,7 @@ class ReadGateTest {
   }
 
   @Test
-  void refusesAWriteVerbMidNameThatOnlyAGlobAllowed() {
+  void refusesWriteVerbMidNameThatOnlyGlobAllowed() {
     ReadScope scope =
         new ReadScope(
             List.of(), List.of("mcp__acme__get*"), false, List.of("mcp__*__*_delete_*"), List.of());
@@ -248,7 +248,7 @@ class ReadGateTest {
   }
 
   @Test
-  void letsThroughAWriteVerbMidNameTheHumanNamedExactly() {
+  void letsThroughWriteVerbMidNameTheHumanNamedExactly() {
     ReadScope scope =
         new ReadScope(
             List.of(),
@@ -275,7 +275,7 @@ class ReadGateTest {
         "git blame --no-ext-diff --no-textconv -L10,20 a.txt",
         "git log --no-ext-diff --no-textconv -- docs/café.md"
       })
-  void runsAReadOnlyGitCommandInsideTheWorktrees(String command) {
+  void runsReadOnlyGitCommandInsideTheWorktrees(String command) {
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
     assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", command), worktree.toString()))
@@ -303,7 +303,7 @@ class ReadGateTest {
         "GIT_DIR=/tmp git log",
         "git -c core.pager=id log"
       })
-  void refusesEveryShellLineButAReadOnlyGitCommandInsideTheWorktrees(String command) {
+  void refusesEveryShellLineButReadOnlyGitCommandInsideTheWorktrees(String command) {
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
     assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", command), worktree.toString()))
@@ -321,7 +321,7 @@ class ReadGateTest {
         "git diff HEAD",
         "git show --no-ext-diff HEAD"
       })
-  void refusesAGitOptionOrPathItDoesNotKnowToStayInsideTheWorktrees(String command) {
+  void refusesGitOptionOrPathItDoesNotKnowToStayInsideTheWorktrees(String command) {
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
     assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", command), worktree.toString()))
@@ -341,7 +341,7 @@ class ReadGateTest {
         "git log --no-ext-diff --no-textconv --format=%GS",
         "git log  --no-ext-diff --no-textconv"
       })
-  void refusesALineTheShellWouldNotPassOnLiterally(String command) {
+  void refusesLineTheShellWouldNotPassOnLiterally(String command) {
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
     assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", command), worktree.toString()))
@@ -356,7 +356,7 @@ class ReadGateTest {
         "git log --no-ext-diff --no-textconv --since=/etc/passwd",
         "git show --no-ext-diff --no-textconv HEAD:../../x"
       })
-  void namesTheEscapingPathOfAGitCommandThatOtherwiseQualifies(String command) {
+  void namesTheEscapingPathOfGitCommandThatOtherwiseQualifies(String command) {
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
     assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", command), worktree.toString()))
@@ -366,7 +366,7 @@ class ReadGateTest {
   }
 
   @Test
-  void judgesAPathAfterGitCInsideTheWorktreeItNamed() throws Exception {
+  void judgesPathAfterGitChangeDirOptionInsideTheWorktreeItNamed() throws Exception {
     Path repository = Files.createDirectories(worktree.resolve("sub/a"));
     ReadScope scope = new ReadScope(List.of(repository), List.of(), true);
 
@@ -380,7 +380,7 @@ class ReadGateTest {
   }
 
   @Test
-  void readsAGitPathThatIsALinkOutOfTheWorktreeAsTheLinkItselfNotWhereItLeads() throws Exception {
+  void readsGitPathThatIsLinkOutOfTheWorktreeAsTheLinkItselfNotWhereItLeads() throws Exception {
     Files.createSymbolicLink(worktree.resolve("shared"), Files.createTempDirectory("outside"));
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
@@ -394,7 +394,7 @@ class ReadGateTest {
   }
 
   @Test
-  void namesWhatToWriteInsteadOfARevisionSuffix() {
+  void namesWhatToWriteInsteadOfRevisionSuffix() {
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
     assertThat(
@@ -409,7 +409,7 @@ class ReadGateTest {
   }
 
   @Test
-  void refusesGitInADirectoryInsideAWorktreeThatIsNotTheWorktree() throws Exception {
+  void refusesGitInDirectoryInsideWorktreeThatIsNotTheWorktree() throws Exception {
     Files.createDirectories(worktree.resolve("vendor/x"));
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
@@ -422,7 +422,7 @@ class ReadGateTest {
   }
 
   @Test
-  void refusesGitToAReadThatWasGivenNoShell() {
+  void refusesGitToReadThatWasGivenNoShell() {
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), false);
 
     assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", "git log"), worktree.toString()))
@@ -431,7 +431,7 @@ class ReadGateTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"src/a.txt", "./README.md"})
-  void readsAFileInsideTheWorktrees(String path) {
+  void readsFileInsideTheWorktrees(String path) {
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), false);
 
     assertThat(ReadGate.refusal(scope, "Read", Map.of("file_path", path), worktree.toString()))
@@ -440,7 +440,7 @@ class ReadGateTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"/etc/passwd", "~/.ssh/id_rsa", "../.jagt/master-token"})
-  void refusesAFileOutsideTheWorktrees(String path) {
+  void refusesFileOutsideTheWorktrees(String path) {
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), false);
 
     assertThat(ReadGate.refusal(scope, "Read", Map.of("file_path", path), worktree.toString()))
@@ -450,7 +450,7 @@ class ReadGateTest {
   }
 
   @Test
-  void refusesALinkInsideTheWorktreesThatLeadsOutOfThem() throws Exception {
+  void refusesLinkInsideTheWorktreesThatLeadsOutOfThem() throws Exception {
     Files.createSymbolicLink(worktree.resolve("keys"), Path.of("/etc"));
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), false);
 
@@ -461,7 +461,7 @@ class ReadGateTest {
   }
 
   @Test
-  void refusesASearchNamingNoPathFromOutsideTheWorktrees() {
+  void refusesSearchNamingNoPathFromOutsideTheWorktrees() {
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), false);
 
     assertThat(ReadGate.refusal(scope, "Grep", Map.of("pattern", "token"), "/etc")).isPresent();
@@ -486,7 +486,7 @@ class ReadGateTest {
         ".{.,}/secret.txt",
         "src/{a,b}.txt"
       })
-  void refusesAGlobPatternThatCouldReachOutOfTheWorktrees(String pattern) {
+  void refusesGlobPatternThatCouldReachOutOfTheWorktrees(String pattern) {
     ReadScope scope = new ReadScope(List.of(worktree), List.of(), false);
 
     assertThat(ReadGate.refusal(scope, "Glob", Map.of("pattern", pattern), worktree.toString()))
@@ -500,21 +500,26 @@ class ReadGateTest {
         new ReadScope(List.of(worktree), List.of(), false)
             .withWorkspace(Optional.of(new CheckerReader.Workspace(workspace, List.of())));
 
-    assertThat(ReadGate.refusal(scope, "Write", Map.of("file_path", workspace + "/flows/a.ts"), "/tmp"))
+    assertThat(
+            ReadGate.refusal(
+                scope, "Write", Map.of("file_path", workspace + "/flows/a.ts"), "/tmp"))
         .isEmpty();
-    assertThat(ReadGate.refusal(scope, "Edit", Map.of("file_path", workspace + "/index.md"), "/tmp"))
+    assertThat(
+            ReadGate.refusal(scope, "Edit", Map.of("file_path", workspace + "/index.md"), "/tmp"))
         .isEmpty();
     assertThat(ReadGate.refusal(scope, "Write", Map.of("file_path", elsewhere + "/a.ts"), "/tmp"))
         .get()
         .asString()
         .contains("only its workspace");
-    assertThat(ReadGate.refusal(scope, "Write", Map.of("file_path", workspace + "/../role.yml"), "/tmp"))
+    assertThat(
+            ReadGate.refusal(
+                scope, "Write", Map.of("file_path", workspace + "/../role.yml"), "/tmp"))
         .isPresent();
     assertThat(ReadGate.refusal(scope, "NotebookEdit", Map.of(), "/tmp")).isPresent();
   }
 
   @Test
-  void aFlowAimedPastTheEnvironmentsIsRefused() {
+  void flowAimedPastTheEnvironmentsIsRefused() {
     Path workspace = worktree.resolve("ws");
     ReadScope scope =
         new ReadScope(List.of(worktree), List.of(), false)

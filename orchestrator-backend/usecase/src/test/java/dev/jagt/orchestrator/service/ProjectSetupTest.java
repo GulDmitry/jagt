@@ -64,7 +64,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -104,7 +108,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void refusesAPathThatIsNotAGitRepositoryAndWritesNothing() throws Exception {
+  void refusesPathThatIsNotGitRepositoryAndWritesNothing() throws Exception {
     Path folder = Files.createDirectories(root.resolve("notes"));
     Path configFile =
         Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
@@ -118,7 +122,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(128, "", "not a git repository"));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -134,7 +142,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void refusesAKeyAnotherProjectAlreadyHolds() throws Exception {
+  void refusesKeyAnotherProjectAlreadyHolds() throws Exception {
     Path repo = Files.createDirectories(root.resolve("payments"));
     Path configFile =
         Files.writeString(
@@ -153,7 +161,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -200,7 +212,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -245,7 +261,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -261,7 +281,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void refusesAFolderInsideARepositoryAndNamesTheRepositoryToAddInstead() throws Exception {
+  void refusesFolderInsideRepositoryAndNamesTheRepositoryToAddInstead() throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Path docs = Files.createDirectories(repo.resolve("docs"));
     Path configFile =
@@ -275,7 +295,11 @@ class ProjectSetupTest {
     when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -289,7 +313,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void refusesADeployBranchEqualToTheBaseBranchAndLeavesTheFileUnchanged() throws Exception {
+  void refusesDeployBranchEqualToTheBaseBranchAndLeavesTheFileUnchanged() throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Files.createDirectories(repo.resolve(".git"));
     Path configFile =
@@ -305,7 +329,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -337,7 +365,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -350,7 +382,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void saysGitCouldNotReadARepositoryItRefusesForItsOwnership() throws Exception {
+  void saysGitCouldNotReadRepositoryItRefusesForItsOwnership() throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Path configFile =
         Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
@@ -366,7 +398,11 @@ class ProjectSetupTest {
                 128, "", "fatal: detected dubious ownership in repository at '/x'\nmore"));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -397,7 +433,12 @@ class ProjectSetupTest {
     when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ConfigService config =
-        spy(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))));
+        spy(
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))));
     doThrow(new IllegalStateException("bad yaml")).when(config).project("billing");
     ProjectSetup setup = new ProjectSetup(config, paths, git, checkout -> List.of());
 
@@ -427,7 +468,12 @@ class ProjectSetupTest {
     when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ConfigService config =
-        spy(new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))));
+        spy(
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))));
     doAnswer(
             call -> {
               Files.delete(configFile);
@@ -449,7 +495,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void keepsAConfigFileThatIsASymlinkAndWritesTheEntryIntoItsTarget() throws Exception {
+  void keepsConfigFileThatIsSymlinkAndWritesTheEntryIntoItsTarget() throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Files.createDirectories(repo.resolve(".git"));
     Path target = Files.writeString(root.resolve("real.yml"), "orchestrator:\n  projects: {}\n");
@@ -465,7 +511,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -488,7 +538,11 @@ class ProjectSetupTest {
                 .withConfigFile(root.resolve("jagt.yml").toString()));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             mock(Processes.class),
             checkout -> List.of());
@@ -503,7 +557,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void readsAFolderThatIsNoRepositoryAsSuch() throws Exception {
+  void readsFolderThatIsNoRepositoryAsSuch() throws Exception {
     Path folder = Files.createDirectories(root.resolve("notes"));
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -515,7 +569,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(128, "", "fatal: not a git repository"));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -529,7 +587,7 @@ class ProjectSetupTest {
 
   @ParameterizedTest
   @CsvSource(value = {"0,'',''", "2,'','error: No such remote origin'"})
-  void readsARepositoryWithoutAnOriginAsNotReady(int exit, String stdout, String stderr)
+  void readsRepositoryWithoutAnOriginAsNotReady(int exit, String stdout, String stderr)
       throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Path configFile =
@@ -549,7 +607,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("get-url")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -562,7 +624,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void readsARepositoryWithNoRemoteFromItsLocalBranches() throws Exception {
+  void readsRepositoryWithNoRemoteFromItsLocalBranches() throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Path configFile =
         Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
@@ -587,7 +649,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -600,7 +666,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void cutsTasksFromLocalMasterWhereARepositoryWithNoRemoteHasNoMain() throws Exception {
+  void cutsTasksFromLocalMasterWhereRepositoryWithNoRemoteHasNoMain() throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Path configFile =
         Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
@@ -622,7 +688,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("master")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -633,7 +703,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void addsARepositoryWithNoRemoteAndWritesRemoteNone() throws Exception {
+  void addsRepositoryWithNoRemoteAndWritesRemoteNone() throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Files.createDirectories(repo.resolve(".git"));
     Path configFile =
@@ -656,7 +726,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("main")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -697,7 +771,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("get-url")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -736,7 +814,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of("./gradlew", "test"));
@@ -778,7 +860,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -790,7 +876,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void prefillsNoDeployBranchWhereNoRemoteBranchIsAConventionalOne() throws Exception {
+  void prefillsNoDeployBranchWhereNoRemoteBranchIsConventionalOne() throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Path configFile =
         Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
@@ -812,7 +898,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -846,7 +936,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("origin/main")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -880,7 +974,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("origin/master")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -892,7 +990,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void readsARepositoryWithNoBranchToCutTasksFromAsNotReady() throws Exception {
+  void readsRepositoryWithNoBranchToCutTasksFromAsNotReady() throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Path configFile =
         Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
@@ -911,7 +1009,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("get-url")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -926,7 +1028,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void readsARepositoryAnotherProjectAlreadyPointsAtAsNotReady() throws Exception {
+  void readsRepositoryAnotherProjectAlreadyPointsAtAsNotReady() throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Path configFile =
         Files.writeString(
@@ -946,7 +1048,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -977,7 +1083,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1017,7 +1127,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1038,7 +1152,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void refusesARepositoryByTheFirstThingThatIsWrongWithItNotByWhatIsFine() throws Exception {
+  void refusesRepositoryByTheFirstThingThatIsWrongWithItNotByWhatIsFine() throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Path configFile =
         Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
@@ -1057,7 +1171,11 @@ class ProjectSetupTest {
         .run(any(), any(), argThat(command -> command.contains("get-url")));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1107,7 +1225,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1168,7 +1290,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1189,7 +1315,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void editRefusesAPathAnotherProjectAlreadyHoldsAndLeavesTheFileUnchanged() throws Exception {
+  void editRefusesPathAnotherProjectAlreadyHoldsAndLeavesTheFileUnchanged() throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Files.createDirectories(repo.resolve(".git"));
     String before =
@@ -1214,7 +1340,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1230,7 +1360,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void editRefusesAProjectTheFileDoesNotHold() throws Exception {
+  void editRefusesProjectTheFileDoesNotHold() throws Exception {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Files.createDirectories(repo.resolve(".git"));
     Path configFile =
@@ -1252,7 +1382,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1284,7 +1418,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1331,7 +1469,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1381,7 +1523,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1421,7 +1567,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1455,7 +1605,11 @@ class ProjectSetupTest {
         .thenReturn(new Processes.Result(0, repo + "\n", ""));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             git,
             checkout -> List.of());
@@ -1472,7 +1626,7 @@ class ProjectSetupTest {
   }
 
   @Test
-  void entryServesOneProjectsManagedKeysAndRefusesAKeyJagtYmlDoesNotHold() throws Exception {
+  void entryServesOneProjectsManagedKeysAndRefusesKeyJagtYmlDoesNotHold() throws Exception {
     Path configFile =
         Files.writeString(
             root.resolve("jagt.yml"),
@@ -1494,7 +1648,11 @@ class ProjectSetupTest {
                 .withConfigFile(configFile.toString()));
     ProjectSetup setup =
         new ProjectSetup(
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths,
             mock(Processes.class),
             checkout -> List.of());

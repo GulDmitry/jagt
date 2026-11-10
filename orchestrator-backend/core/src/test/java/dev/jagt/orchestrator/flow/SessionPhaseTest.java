@@ -36,7 +36,7 @@ class SessionPhaseTest {
   }
 
   @Test
-  void isNotSilentWhileTheSessionWaitsOnADependencyItNamed() {
+  void isNotSilentWhileTheSessionWaitsOnDependencyItNamed() {
     TaskState task =
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
             .report(AgentReport.WAIT)
@@ -47,7 +47,7 @@ class SessionPhaseTest {
   }
 
   @Test
-  void hasNoWordsForAQuietSessionThatNeverSaidAnything() {
+  void hasNoWordsForQuietSessionThatNeverSaidAnything() {
     TaskState task =
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
             .session(Session.defaults().withQuietSince(3_000))
@@ -99,7 +99,7 @@ class SessionPhaseTest {
   }
 
   @Test
-  void namesAFailedTurnWithItsCauseWhereOneWasGiven() {
+  void namesFailedTurnWithItsCauseWhereOneWasGiven() {
     TaskState failed =
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
             .session(
@@ -140,7 +140,7 @@ class SessionPhaseTest {
   }
 
   @Test
-  void namesTheRunningProcessOfASessionQuietWithoutAnySign() {
+  void namesTheRunningProcessOfSessionQuietWithoutAnySign() {
     TaskState task =
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
             .session(

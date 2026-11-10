@@ -10,8 +10,8 @@ import dev.jagt.orchestrator.eval.StopTriageCase;
 import dev.jagt.orchestrator.eval.StopTriageCases;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.service.triage.StopTriagePanel;
 import dev.jagt.orchestrator.service.triage.StopTriageFailed;
+import dev.jagt.orchestrator.service.triage.StopTriagePanel;
 import dev.jagt.orchestrator.task.StopTriage;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -57,7 +57,7 @@ class TriageEvalTest {
   private static Path root;
 
   @DynamicPropertySource
-  static void orchestratorLivesInAThrowawayRoot(DynamicPropertyRegistry registry)
+  static void orchestratorLivesInThrowawayRoot(DynamicPropertyRegistry registry)
       throws Exception {
     registry.add("server.port", () -> GATE_PORT);
     registry.add("orchestrator.mcp-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/mcp");
@@ -106,7 +106,7 @@ class TriageEvalTest {
 
   @ParameterizedTest
   @MethodSource("cases")
-  void readsTheStopAsAHumanWould(StopTriageCase stopped) {
+  void readsTheStopAsHumanWould(StopTriageCase stopped) {
     EvalQuorum.configured().hold(stopped.name(), this::spend, () -> oneRun(stopped));
   }
 

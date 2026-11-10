@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class LogbackLoggersTest {
 
   @Test
-  void everyLoggerTheLogConfigRoutesNamesAClassThatExists() throws IOException {
+  void everyLoggerTheLogConfigRoutesNamesClassThatExists() throws IOException {
     String config = Files.readString(Path.of("src/main/resources/logback-spring.xml"));
 
     var named =
@@ -32,7 +32,7 @@ class LogbackLoggersTest {
   }
 
   @Test
-  void everyClassLoggingAMasterStepIsRoutedToTheMasterWindow() throws IOException {
+  void everyClassLoggingMasterStepIsRoutedToTheMasterWindow() throws IOException {
     String config = Files.readString(Path.of("src/main/resources/logback-spring.xml"));
     List<String> logging;
     try (Stream<Path> sources =
@@ -63,7 +63,7 @@ class LogbackLoggersTest {
   }
 
   @Test
-  void theMasterWindowsTimestampIsWrittenInTheTerminalsOwnColourSoADarkThemeShowsIt()
+  void theMasterWindowsTimestampIsWrittenInTheTerminalsOwnColourSoDarkThemeShowsIt()
       throws IOException {
     String config = Files.readString(Path.of("src/main/resources/logback-spring.xml"));
 
@@ -71,7 +71,7 @@ class LogbackLoggersTest {
   }
 
   @Test
-  void everyAppenderGivesATaskLineItsAlias() throws IOException {
+  void everyAppenderGivesTaskLineItsAlias() throws IOException {
     String config = Files.readString(Path.of("src/main/resources/logback-spring.xml"));
 
     var appenders =

@@ -49,7 +49,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aReportThatAnswersForOneTaskGetsNoButtonInTheBarOfReports() {
+  void reportThatAnswersForOneTaskGetsNoButtonInTheBarOfReports() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -103,7 +103,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aLineSaidAtAnOpenRoundReachesTheSessionOfTheTaskItIsAbout() throws IOException {
+  void lineSaidAtAnOpenRoundReachesTheSessionOfTheTaskItIsAbout() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("ABC-5-alpha"));
     Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
     state.putTask(
@@ -131,7 +131,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aReportThatIsNotAboutOneTaskOffersNoLineEvenWhenAnArgumentNamesOne() {
+  void reportThatIsNotAboutOneTaskOffersNoLineEvenWhenAnArgumentNamesOne() {
     state.putTask(
         "ABC-12",
         TaskState.builder(
@@ -154,7 +154,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aLineTypedAtOneRoundIsNotCarriedIntoTheNextOneOpened() throws IOException {
+  void lineTypedAtOneRoundIsNotCarriedIntoTheNextOneOpened() throws IOException {
     Path first = Files.createDirectories(root.resolve("ABC-13-alpha"));
     Files.writeString(first.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
     Path second = Files.createDirectories(root.resolve("ABC-14-alpha"));
@@ -245,7 +245,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aReportAnsweringForEveryTaskHasNoSessionToSayAnythingTo() {
+  void reportAnsweringForEveryTaskHasNoSessionToSayAnythingTo() {
     state.putTask(
         "ABC-8",
         TaskState.builder(
@@ -301,7 +301,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aRoundRewrittenWhileItsReportWasStillBeingReadShowsWhatTheFileSaysNow() throws IOException {
+  void roundRewrittenWhileItsReportWasStillBeingReadShowsWhatTheFileSaysNow() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("ABC-10-alpha"));
     Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
     state.putTask(
@@ -336,7 +336,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aReportsOwnLinksAreFollowableAndNothingElseBecomesOne() throws IOException {
+  void reportsOwnLinksAreFollowableAndNothingElseBecomesOne() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("ABC-6-alpha"));
     Files.writeString(
         worktree.resolve("review_replies.md"),
@@ -367,7 +367,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aReportThatCouldNotBeReadSaysTheSentenceOfTheRefusalRatherThanItsWireShape()
+  void reportThatCouldNotBeReadSaysTheSentenceOfTheRefusalRatherThanItsWireShape()
       throws IOException {
     Path worktree = Files.createDirectories(root.resolve("ABC-16-alpha"));
     Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
@@ -395,7 +395,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aReportAboutATaskThatIsGoneSaysTheBoardIsUpToDateNow() throws IOException {
+  void reportAboutTaskThatIsGoneSaysTheBoardIsUpToDateNow() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("ABC-18-alpha"));
     Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
     state.putTask(
@@ -418,7 +418,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aRoundReadAgainTwiceShowsTheLaterReadWhenTheEarlierOneAnswersLast() throws IOException {
+  void roundReadAgainTwiceShowsTheLaterReadWhenTheEarlierOneAnswersLast() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("ABC-19-alpha"));
     Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
     state.putTask(
@@ -480,7 +480,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aReportAboutOneTaskIsTitledByBothTheNamesItAnswersTo() throws IOException {
+  void reportAboutOneTaskIsTitledByBothTheNamesItAnswersTo() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("ABC-7-alpha"));
     Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
     state.putTask(
@@ -500,11 +500,11 @@ class BoardReportsTest extends BoardPageContext {
     page.locator("#ask").fill("replies a7");
     page.locator("#ask").press("Enter");
 
-    assertThat(page.locator("#report-title")).hasText("replies a7 \u00b7 ABC-7");
+    assertThat(page.locator("#report-title")).hasText("replies a7 · ABC-7");
   }
 
   @Test
-  void aReportTypedBeforeTheBoardArrivedIsStillTitledByBothNamesOfItsTask() throws IOException {
+  void reportTypedBeforeTheBoardArrivedIsStillTitledByBothNamesOfItsTask() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("ABC-21-alpha"));
     Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
     state.putTask(
@@ -526,11 +526,11 @@ class BoardReportsTest extends BoardPageContext {
     page.locator("#ask").press("Enter");
     board.forEach(Route::resume);
 
-    assertThat(page.locator("#report-title")).hasText("replies a21 \u00b7 ABC-21");
+    assertThat(page.locator("#report-title")).hasText("replies a21 · ABC-21");
   }
 
   @Test
-  void aReportIsNamedToAScreenReaderByItsTitle() throws IOException {
+  void reportIsNamedToScreenReaderByItsTitle() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("ABC-7-alpha"));
     Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
     state.putTask(
@@ -552,12 +552,12 @@ class BoardReportsTest extends BoardPageContext {
 
     assertThat(
             page.getByRole(
-                AriaRole.DIALOG, new Page.GetByRoleOptions().setName("replies a7 \u00b7 ABC-7")))
+                AriaRole.DIALOG, new Page.GetByRoleOptions().setName("replies a7 · ABC-7")))
         .isVisible();
   }
 
   @Test
-  void aReportOpenedEarlierThatFailsAfterALaterOneOpenedRaisesNoError() throws IOException {
+  void reportOpenedEarlierThatFailsAfterLaterOneOpenedRaisesNoError() throws IOException {
     Path first = Files.createDirectories(root.resolve("ABC-7-alpha"));
     Files.writeString(
         first.resolve("review_replies.md"), "## thread 1\nFIXED - The first round.\n");
@@ -598,7 +598,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aReportOpenedLastStaysOnScreenWhenAnEarlierOneAnswersAfterIt() throws IOException {
+  void reportOpenedLastStaysOnScreenWhenAnEarlierOneAnswersAfterIt() throws IOException {
     Path first = Files.createDirectories(root.resolve("ABC-7-alpha"));
     Files.writeString(
         first.resolve("review_replies.md"), "## thread 1\nFIXED - The first round.\n");
@@ -637,7 +637,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aTypedReportNarrowsToTheTaskItNamesInsteadOfAnsweringForAllOfThem() throws IOException {
+  void typedReportNarrowsToTheTaskItNamesInsteadOfAnsweringForAllOfThem() throws IOException {
     Path drafting = Files.createDirectories(root.resolve("ABC-2-alpha"));
     Files.writeString(drafting.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
     state.putTask(
@@ -667,7 +667,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aTaskNamedInTheActivityLogOpensFromItsLine() {
+  void taskNamedInTheActivityLogOpensFromItsLine() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -698,7 +698,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aReportClosesWhenTheDimmedAreaAroundItIsClicked() {
+  void reportClosesWhenTheDimmedAreaAroundItIsClicked() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -712,7 +712,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void theShortcutsLeaveTheBoardAloneWhileAReportIsOpen() {
+  void theShortcutsLeaveTheBoardAloneWhileReportIsOpen() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -726,7 +726,7 @@ class BoardReportsTest extends BoardPageContext {
   }
 
   @Test
-  void aReportSurvivesASelectionThatStartedInsideItAndEndedOutside() {
+  void reportSurvivesSelectionThatStartedInsideItAndEndedOutside() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));

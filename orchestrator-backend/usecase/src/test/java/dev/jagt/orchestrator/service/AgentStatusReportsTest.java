@@ -53,8 +53,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class AgentStatusReportsTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final LinkRefusals refusals = mock(LinkRefusals.class);
   private final WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
@@ -69,7 +68,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     when(configService.load())
@@ -91,9 +90,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
@@ -102,7 +111,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void recordsOnTheSessionThatTheTurnReportedWhenAReportLands(@TempDir Path root) {
+  void recordsOnTheSessionThatTheTurnReportedWhenReportLands(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -110,7 +119,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -118,9 +127,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.IN_PROGRESS, "going on", "ABC-1");
@@ -129,7 +148,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void handsAGreenVerificationToReviewRatherThanVerifyingItAgain(@TempDir Path root) {
+  void handsGreenVerificationToReviewRatherThanVerifyingItAgain(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -137,7 +156,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).alias("a1").build());
     when(configService.load())
@@ -159,9 +178,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.verified(true, "verified", "ABC-1");
@@ -171,7 +200,7 @@ class AgentStatusReportsTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void reportsAnErrorWhenAVerdictJagtMeasuredDoesNotLand(@TempDir Path root) {
+  void reportsAnErrorWhenVerdictJagtMeasuredDoesNotLand(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -179,7 +208,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -187,9 +216,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
@@ -204,7 +243,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void answersAReportOnAVanishedTaskAsAFactNotAFieldToFix(@TempDir Path root) {
+  void answersReportOnVanishedTaskAsFactNotFieldToFix(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -212,15 +251,25 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
     AgentStatusReports reports =
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThatThrownBy(() -> reports.report(TaskStatus.IN_PROGRESS, "working", "ABC-9"))
@@ -238,7 +287,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1").build());
     StateService staleView = spy(state);
@@ -252,9 +301,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             staleView,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
@@ -273,7 +332,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -281,9 +340,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
     when(configService.load())
         .thenReturn(
@@ -308,7 +377,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -316,9 +385,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: https://gitlab/x/-/merge_requests/9", "ABC-1");
@@ -328,7 +407,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void leavesADeployedTaskAloneWhenAPolledRoundKeepsCallingItReviewed(@TempDir Path root) {
+  void leavesDeployedTaskAloneWhenPolledRoundKeepsCallingItReviewed(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -336,7 +415,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -348,9 +427,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
@@ -368,7 +457,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -376,9 +465,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -399,7 +498,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -414,9 +513,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -443,7 +552,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void refusesARequestReportedUnderAProjectTheTaskDoesNotHold(@TempDir Path root) {
+  void refusesRequestReportedUnderProjectTheTaskDoesNotHold(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -451,7 +560,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -459,9 +568,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThatThrownBy(
@@ -480,7 +599,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void armsAFreshRoundWhenASecondRepositoryFinallyOpensItsRequest(@TempDir Path root) {
+  void armsFreshRoundWhenSecondRepositoryFinallyOpensItsRequest(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -488,7 +607,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -505,9 +624,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -534,7 +663,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -546,9 +675,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -563,7 +702,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void putsAForeignLinkOnTheBoardsHeadWhenThePathIntoReportsIsNotASessions(@TempDir Path root) {
+  void putsForeignLinkOnTheBoardsHeadWhenThePathIntoReportsIsNotSessions(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -571,7 +710,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -589,9 +728,19 @@ class AgentStatusReportsTest {
                   throw new AssertionError("no session to tell");
                 },
                 state),
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -605,7 +754,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void refusesAShipWhoseOnlyLinkIsForeignFromATaskThatCannotHoldItsStatus(@TempDir Path root) {
+  void refusesShipWhoseOnlyLinkIsForeignFromTaskThatCannotHoldItsStatus(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -613,7 +762,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.NEW)
@@ -625,9 +774,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThatThrownBy(
@@ -645,7 +804,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void dropsOnlyTheForeignLinkOfAShipAndRecordsTheGoodOne(@TempDir Path root) {
+  void dropsOnlyTheForeignLinkOfShipAndRecordsTheGoodOne(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -653,7 +812,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -668,9 +827,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -703,7 +872,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -711,9 +880,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -725,7 +904,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void recordsARoundWithADiffWhenTheWorktreeContradictsANoChangesClaim(@TempDir Path root) {
+  void recordsRoundWithDiffWhenTheWorktreeContradictsNoChangesClaim(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -733,7 +912,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -746,9 +925,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -760,7 +949,7 @@ class AgentStatusReportsTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"no_changes", "no-changes", "no changes"})
-  void keepsANoChangesRoundThatTheWorktreeBearsOut(String outcome, @TempDir Path root) {
+  void keepsNoChangesRoundThatTheWorktreeBearsOut(String outcome, @TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -768,7 +957,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -780,9 +969,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -795,7 +994,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void marksAQuestionStoppedOnADeniedCallAsAPermissionOnlyTheHumanGrants(@TempDir Path root) {
+  void marksQuestionStoppedOnDeniedCallAsPermissionOnlyTheHumanGrants(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -803,7 +1002,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -811,9 +1010,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -828,7 +1037,7 @@ class AgentStatusReportsTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"branch pushed", "pushed, see the http docs for the request"})
-  void refusesToSayATaskIsWaitingOnChecksWithoutNamingTheRequest(
+  void refusesToSayTaskIsWaitingOnChecksWithoutNamingTheRequest(
       String message, @TempDir Path root) {
     StateService state =
         new StateService(
@@ -837,7 +1046,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -845,9 +1054,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThatThrownBy(() -> reports.report(TaskStatus.CI_POLLING, message, "ABC-1"))
@@ -856,7 +1075,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void letsATaskSayItIsWaitingOnTheChecksOnceItNamesTheRequest(@TempDir Path root) {
+  void letsTaskSayItIsWaitingOnTheChecksOnceItNamesTheRequest(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -864,7 +1083,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -872,9 +1091,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -884,7 +1113,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void refusesTheStatusEvenForATaskThatAlreadyCarriesARequestLink(@TempDir Path root) {
+  void refusesTheStatusEvenForTaskThatAlreadyCarriesRequestLink(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -892,7 +1121,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -904,9 +1133,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThatThrownBy(
@@ -924,7 +1163,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -932,9 +1171,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.IN_PROGRESS, "root cause\nanalysis ".repeat(20), "ABC-1");
@@ -952,7 +1201,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     String link = "https://gitlab.example/group/subgroup/team/project/-/merge_requests/1234567";
@@ -961,9 +1210,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "pipeline queued after the push — MR: " + link, "ABC-1");
@@ -972,7 +1231,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void advancesARoundTheReviewApprovedToApproved(@TempDir Path root) {
+  void advancesRoundTheReviewApprovedToApproved(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -980,7 +1239,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -992,9 +1251,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.markRead("ABC-1", TaskStatus.APPROVED, Optional.empty());
@@ -1003,7 +1272,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void advancesACleanUnapprovedRoundToReviewed(@TempDir Path root) {
+  void advancesCleanUnapprovedRoundToReviewed(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1011,7 +1280,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -1023,9 +1292,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
@@ -1034,7 +1313,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void writesNothingWhenAPollReadsTheOutcomeTheTaskAlreadyHolds(@TempDir Path root) {
+  void writesNothingWhenPollReadsTheOutcomeTheTaskAlreadyHolds(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1042,7 +1321,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
@@ -1058,9 +1337,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.markRead("ABC-1", TaskStatus.REVIEWED, Optional.empty());
@@ -1072,7 +1361,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void stampsThePollingWindowWhenARequestIsFirstLinked(@TempDir Path root) {
+  void stampsThePollingWindowWhenRequestIsFirstLinked(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1080,7 +1369,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -1088,9 +1377,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -1099,7 +1398,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void startsAFreshPollingWindowForEachRoundHandedBackOnTheSameRequest(@TempDir Path root) {
+  void startsFreshPollingWindowForEachRoundHandedBackOnTheSameRequest(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1107,7 +1406,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     long lastRound = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
     state.putTask(
         "ABC-1",
@@ -1122,9 +1421,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -1133,8 +1442,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void startsAFreshWindowWhenTheAgentNamesAnotherRequestWithoutLeavingCiPolling(
-      @TempDir Path root) {
+  void startsFreshWindowWhenTheAgentNamesAnotherRequestWithoutLeavingCiPolling(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1142,7 +1450,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     long lastRound = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
     state.putTask(
         "ABC-1",
@@ -1156,9 +1464,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/2", "ABC-1");
@@ -1167,7 +1485,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void liftsAStopCountedOnTheRequestTheSessionReportsAnotherOneInPlaceOf(@TempDir Path root) {
+  void liftsStopCountedOnTheRequestTheSessionReportsAnotherOneInPlaceOf(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1175,7 +1493,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -1188,9 +1506,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/2", "ABC-1");
@@ -1199,7 +1527,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void dropsThePreviousRoundsChecksVerdictWhenARoundGoesBackOutForReview(@TempDir Path root) {
+  void dropsThePreviousRoundsChecksVerdictWhenRoundGoesBackOutForReview(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1207,7 +1535,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
@@ -1221,9 +1549,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -1241,7 +1579,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -1258,9 +1596,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -1279,7 +1627,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -1296,9 +1644,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -1308,7 +1666,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void refusesAPlanWithoutAcceptanceCriteria(@TempDir Path root) throws IOException {
+  void refusesPlanWithoutAcceptanceCriteria(@TempDir Path root) throws IOException {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1316,7 +1674,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     Files.writeString(root.resolve("plan.md"), "# Plan\n1. change the guide\n");
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
@@ -1325,9 +1683,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThatThrownBy(() -> reports.report(TaskStatus.PLAN_PENDING, "plan ready", "ABC-1"))
@@ -1345,7 +1713,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -1358,9 +1726,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
@@ -1369,7 +1747,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void refusesToPullATaskTheReviewHasPassedBackIntoWaitingOnChecks(@TempDir Path root) {
+  void refusesToPullTaskTheReviewHasPassedBackIntoWaitingOnChecks(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1377,7 +1755,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.APPROVED)
@@ -1389,9 +1767,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThatThrownBy(
@@ -1406,7 +1794,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void putsARedRoundOnTheBoard(@TempDir Path root) {
+  void putsRedRoundOnTheBoard(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1414,7 +1802,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -1426,9 +1814,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.markRead("ABC-1", TaskStatus.CI_FAILED, Optional.empty());
@@ -1437,7 +1835,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void saysARedRoundWasRelayedToTheSessionWhenItWas(@TempDir Path root) {
+  void saysRedRoundWasRelayedToTheSessionWhenItWas(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1445,7 +1843,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -1457,9 +1855,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.markRead("ABC-1", TaskStatus.CI_FAILED, Optional.empty());
@@ -1469,7 +1877,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void saysARedRoundStoppedTheTaskInsteadOfRelayingItWhenJagtStoppedIt(@TempDir Path root) {
+  void saysRedRoundStoppedTheTaskInsteadOfRelayingItWhenJagtStoppedIt(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1477,7 +1885,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -1489,9 +1897,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
     TaskStop stop =
         new TaskStop(TaskStop.Trigger.INFRA, 3_000, "unit-tests: runner_system_failure, 3 retries");
@@ -1512,7 +1930,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -1520,9 +1938,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
     when(configService.load())
         .thenReturn(
@@ -1551,7 +1979,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void recordsTheProbesAPlanDeclaresAsItIsPutUp(@TempDir Path root) throws IOException {
+  void recordsTheProbesPlanDeclaresAsItIsPutUp(@TempDir Path root) throws IOException {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1559,7 +1987,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     Files.writeString(
         root.resolve("plan.md"),
         "# Plan\n"
@@ -1575,9 +2003,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.PLAN_PENDING, "plan ready", "ABC-1");
@@ -1587,7 +2025,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void refusesAPlanWhoseProbesBlockHoldsALineNoProbeReads(@TempDir Path root) throws IOException {
+  void refusesPlanWhoseProbesBlockHoldsLineNoProbeReads(@TempDir Path root) throws IOException {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1595,7 +2033,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     Files.writeString(
         root.resolve("plan.md"),
         "## Acceptance criteria\n"
@@ -1610,9 +2048,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThatThrownBy(() -> reports.report(TaskStatus.PLAN_PENDING, "plan ready", "ABC-1"))
@@ -1630,7 +2078,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -1647,9 +2095,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -1675,7 +2133,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.NEW).planGate(PlanGate.CLOSED).build());
@@ -1684,9 +2142,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -1698,7 +2166,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void keepsThePlanGateWhenASessionOpenedInPlanModeReportsThatTheTaskNeedsNoPlan(
+  void keepsThePlanGateWhenSessionOpenedInPlanModeReportsThatTheTaskNeedsNoPlan(
       @TempDir Path root) {
     StateService state =
         new StateService(
@@ -1707,7 +2175,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.NEW).planGate(PlanGate.REQUIRED).build());
@@ -1716,9 +2184,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThatThrownBy(
@@ -1732,7 +2210,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void recordsTheProjectAQuestionNeedsOnTheTask(@TempDir Path root) {
+  void recordsTheProjectQuestionNeedsOnTheTask(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1740,7 +2218,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     when(configService.load())
@@ -1758,9 +2236,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(
@@ -1779,7 +2267,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void refusesAProjectNoConfigurationHasAndRecordsNothing(@TempDir Path root) {
+  void refusesProjectNoConfigurationHasAndRecordsNothing(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1787,7 +2275,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     when(configService.load())
@@ -1802,9 +2290,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThatThrownBy(
@@ -1827,7 +2325,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void answersASessionsReportWithTheStatusItLandedOnAndItsOwnWords(@TempDir Path root) {
+  void answersSessionsReportWithTheStatusItLandedOnAndItsOwnWords(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1835,7 +2333,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -1843,9 +2341,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     String answer =
@@ -1856,7 +2364,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void answersAVerificationVerdictWithTheStatusItLanded(@TempDir Path root) {
+  void answersVerificationVerdictWithTheStatusItLanded(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1864,7 +2372,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -1872,9 +2380,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     String answer = reports.verified(true, "checks green", "ABC-1");
@@ -1883,7 +2401,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void closesTheTurnASessionsReportAnswersAndLeavesOpenTheOneJagtsOwnReportDoesNot(
+  void closesTheTurnSessionsReportAnswersAndLeavesOpenTheOneJagtsOwnReportDoesNot(
       @TempDir Path root) {
     StateService state =
         new StateService(
@@ -1892,7 +2410,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState working =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .alias("a1")
@@ -1905,9 +2423,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of()), "ABC-1");
@@ -1919,7 +2447,7 @@ class AgentStatusReportsTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void logsTheMoveAReportMadeWhereTheStatusChanged(@TempDir Path root) {
+  void logsTheMoveReportMadeWhereTheStatusChanged(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1927,16 +2455,26 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
     AgentStatusReports reports =
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
@@ -1954,7 +2492,7 @@ class AgentStatusReportsTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void logsAQuestionOnceWhenTheStatusStaysAndNothingWhenItIsRepeatedOrPlain(@TempDir Path root) {
+  void logsQuestionOnceWhenTheStatusStaysAndNothingWhenItIsRepeatedOrPlain(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1962,7 +2500,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -1970,9 +2508,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
@@ -1991,7 +2539,7 @@ class AgentStatusReportsTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void logsALineHeldOffTheCardButNotAQuestionAskedAgainWhileHeld(@TempDir Path root) {
+  void logsLineHeldOffTheCardButNotQuestionAskedAgainWhileHeld(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -1999,7 +2547,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1").build());
     state.putTask(
@@ -2013,9 +2561,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
@@ -2043,7 +2601,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -2055,9 +2613,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(TaskStatus.IN_PROGRESS, "back to work", "ABC-1");
@@ -2066,7 +2634,7 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  void owesAJudgementOnEverySwitchThatIsOnToASessionStillInNew(@TempDir Path root) {
+  void owesJudgementOnEverySwitchThatIsOnToSessionStillInNew(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -2074,7 +2642,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
     when(configService.load())
         .thenReturn(
@@ -2086,9 +2654,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     MessageContext context = reports.sessionContextFor("ABC-1");
@@ -2105,16 +2683,26 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
     AgentStatusReports reports =
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThat(reports.sessionContextFor("ABC-1").switchesOn()).isEmpty();
@@ -2129,7 +2717,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     when(configService.load())
         .thenReturn(
@@ -2141,9 +2729,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThat(reports.sessionContextFor("ABC-1").firstReport()).isFalse();
@@ -2158,7 +2756,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -2166,9 +2764,19 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThat(reports.sessionContextFor("ABC-1").visualMissing()).isTrue();
@@ -2184,7 +2792,7 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -2192,16 +2800,26 @@ class AgentStatusReportsTest {
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThat(reports.sessionContextFor("ABC-1").visualMissing()).isFalse();
   }
 
   @Test
-  void missesNoPictureOfATaskWithoutAWorktree(@TempDir Path root) {
+  void missesNoPictureOfTaskWithoutWorktree(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -2209,23 +2827,33 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "", TaskStatus.IN_PROGRESS).build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
     AgentStatusReports reports =
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     assertThat(reports.sessionContextFor("ABC-1").visualMissing()).isFalse();
   }
 
   @Test
-  void recordsTheJudgementsAReportCarriesOnTheTask(@TempDir Path root) {
+  void recordsTheJudgementsReportCarriesOnTheTask(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -2233,16 +2861,26 @@ class AgentStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
     AgentStatusReports reports =
         new AgentStatusReports(
             state,
             refusals,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             new HandBack(
-                worktreeChanges, new Rounds(configService, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), configService),
+                worktreeChanges,
+                new Rounds(
+                    configService,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                configService),
             configService);
 
     reports.report(

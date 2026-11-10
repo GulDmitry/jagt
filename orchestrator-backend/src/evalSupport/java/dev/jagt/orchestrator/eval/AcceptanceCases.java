@@ -37,21 +37,23 @@ public final class AcceptanceCases {
         .forEach((id, status) -> rows.put(id, Status.of(text(status)).orElseThrow()));
     return new AcceptanceCase(
         text(root.get("case")),
-        text(ticket.get("key")),
-        text(ticket.get("title")),
-        criteria,
-        new AcceptanceCase.Deploy(
-            text(deploy.get("sha")),
-            text(deploy.get("landed")),
-            ((List<Object>) deploy.get("diff")).stream().map(AcceptanceCases::text).toList(),
-            deploy.get("landed_sha_served") == null ? "" : text(deploy.get("landed_sha_served"))),
-        (Map<String, Object>) root.getOrDefault("environment", Map.of()),
+        new AcceptanceCase.Ticket(text(ticket.get("key")), text(ticket.get("title")), criteria),
+        new AcceptanceCase.Landing(
+            new AcceptanceCase.Deploy(
+                text(deploy.get("sha")),
+                text(deploy.get("landed")),
+                ((List<Object>) deploy.get("diff")).stream().map(AcceptanceCases::text).toList(),
+                deploy.get("landed_sha_served") == null
+                    ? ""
+                    : text(deploy.get("landed_sha_served"))),
+            (Map<String, Object>) root.getOrDefault("environment", Map.of())),
         decline(root),
-        rows,
-        text(expect.get("report")),
-        expect.get("probe") == null ? "" : text(expect.get("probe")),
-        text(expect.get("ending")),
-        ((List<Object>) root.get("names")).stream().map(AcceptanceCases::text).toList(),
+        new AcceptanceCase.Expect(
+            rows,
+            text(expect.get("report")),
+            expect.get("probe") == null ? "" : text(expect.get("probe")),
+            text(expect.get("ending")),
+            ((List<Object>) root.get("names")).stream().map(AcceptanceCases::text).toList()),
         flows(root),
         workspace(root));
   }
@@ -70,7 +72,7 @@ public final class AcceptanceCases {
   private static AcceptanceCase.Flows flows(Map<String, Object> root) {
     Map<String, Object> files = (Map<String, Object>) root.getOrDefault("flows", Map.of());
     Map<String, Object> expect = (Map<String, Object>) root.get("expect");
-    Map<String, Object> flows = (Map<String, Object>) expect.getOrDefault("flows", Map.of());
+    final Map<String, Object> flows = (Map<String, Object>) expect.getOrDefault("flows", Map.of());
     Map<String, String> content = new LinkedHashMap<>();
     files.forEach((name, text) -> content.put(name, text(text)));
     content.remove("path");

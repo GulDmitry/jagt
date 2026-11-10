@@ -43,7 +43,7 @@ class IntakeCandidatesTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void warnsRatherThanErrsWhenAPollNeverReachedTheTracker() {
+  void warnsRatherThanErrsWhenPollNeverReachedTheTracker() {
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger intakeLog = (Logger) LoggerFactory.getLogger(IntakeCandidates.class);
@@ -100,7 +100,7 @@ class IntakeCandidatesTest {
   }
 
   @Test
-  void offersTheItemTheWorkflowSaysAMachineMayStart() {
+  void offersTheItemTheWorkflowSaysMachineMayStart() {
     when(workflow.isItemKey("ABC-42")).thenReturn(true);
     TicketFacts item =
         TicketFacts.defaults()

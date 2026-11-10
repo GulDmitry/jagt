@@ -30,8 +30,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class AcceptanceOutcomesTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void marksTheChangePassedWhileItsShaIsTheDeployTip(@TempDir Path root) {
@@ -42,7 +41,7 @@ class AcceptanceOutcomesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -68,7 +67,11 @@ class AcceptanceOutcomesTest {
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .apply("ABC-42", task, verdict);
@@ -78,7 +81,7 @@ class AcceptanceOutcomesTest {
   }
 
   @Test
-  void dropsAVerdictOnAShaThatIsNoLongerTheDeployTip(@TempDir Path root) {
+  void dropsVerdictOnShaThatIsNoLongerTheDeployTip(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -86,7 +89,7 @@ class AcceptanceOutcomesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -112,7 +115,11 @@ class AcceptanceOutcomesTest {
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .apply("ABC-42", task, verdict);
@@ -122,7 +129,7 @@ class AcceptanceOutcomesTest {
   }
 
   @Test
-  void showsNoPassedLabelOnceALaterDeployMovedTheTip(@TempDir Path root) {
+  void showsNoPassedLabelOnceLaterDeployMovedTheTip(@TempDir Path root) {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -156,7 +163,7 @@ class AcceptanceOutcomesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -182,7 +189,11 @@ class AcceptanceOutcomesTest {
         new CheckerOutcomes(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 mock(StepRelay.class),
-                new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 mock(TaskStops.class),
                 state)
             .apply("ABC-42", task, verdict);
@@ -200,7 +211,7 @@ class AcceptanceOutcomesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -225,7 +236,11 @@ class AcceptanceOutcomesTest {
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             mock(StepRelay.class),
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             mock(TaskStops.class),
             state)
         .apply("ABC-42", task, verdict);
@@ -242,7 +257,7 @@ class AcceptanceOutcomesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -268,7 +283,11 @@ class AcceptanceOutcomesTest {
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             mock(StepRelay.class),
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             mock(TaskStops.class),
             state)
         .apply("ABC-42", task, verdict);
@@ -286,7 +305,7 @@ class AcceptanceOutcomesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -304,7 +323,11 @@ class AcceptanceOutcomesTest {
     new CheckerOutcomes(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
             mock(StepRelay.class),
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             mock(TaskStops.class),
             state)
         .apply("ABC-42", task, verdict);

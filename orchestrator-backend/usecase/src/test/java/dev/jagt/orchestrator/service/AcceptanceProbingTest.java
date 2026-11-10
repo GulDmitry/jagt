@@ -25,7 +25,7 @@ class AcceptanceProbingTest {
   private final Processes processes = mock(Processes.class);
 
   @Test
-  void passesACommandEndingWithTheExitItsPlanExpects(@TempDir Path worktree) {
+  void passesCommandEndingWithTheExitItsPlanExpects(@TempDir Path worktree) {
     when(processes.run(eq(worktree), any(), anyMap(), eq(List.of("./scripts/finds-nothing"))))
         .thenReturn(new Processes.Result(1, "", ""));
 
@@ -42,7 +42,7 @@ class AcceptanceProbingTest {
   }
 
   @Test
-  void failsACommandEndingWithAnotherExitCarryingTheTailOfItsOutput(@TempDir Path worktree) {
+  void failsCommandEndingWithAnotherExitCarryingTheTailOfItsOutput(@TempDir Path worktree) {
     when(processes.run(eq(worktree), any(), anyMap(), eq(List.of("./gradlew", "test"))))
         .thenReturn(
             new Processes.Result(1, "line 1\n" + "noise\n".repeat(30) + "BUILD FAILED", ""));
@@ -68,7 +68,7 @@ class AcceptanceProbingTest {
   }
 
   @Test
-  void neverRunsACommandTheSessionsOwnGuardRefuses(@TempDir Path worktree) {
+  void neverRunsCommandTheSessionsOwnGuardRefuses(@TempDir Path worktree) {
     List<Probe> probed =
         new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
@@ -90,7 +90,7 @@ class AcceptanceProbingTest {
   }
 
   @Test
-  void runsACommandUnderTheWorktreesOwnGitHooks(@TempDir Path worktree) throws IOException {
+  void runsCommandUnderTheWorktreesOwnGitHooks(@TempDir Path worktree) throws IOException {
     Files.createDirectories(worktree.resolve(".jagt/hooks"));
     when(processes.run(any(), any(), anyMap(), any())).thenReturn(new Processes.Result(0, "", ""));
 
@@ -117,7 +117,7 @@ class AcceptanceProbingTest {
   }
 
   @Test
-  void failsACommandThatRanPastItsTimeLimit(@TempDir Path worktree) {
+  void failsCommandThatRanPastItsTimeLimit(@TempDir Path worktree) {
     when(processes.run(any(), any(), anyMap(), any()))
         .thenThrow(new IllegalStateException("Command timed out after PT5M: ./gradlew test"));
 
@@ -139,7 +139,7 @@ class AcceptanceProbingTest {
   }
 
   @Test
-  void asksGitWhetherARefExists(@TempDir Path worktree) {
+  void asksGitWhetherRefExists(@TempDir Path worktree) {
     when(processes.run(
             eq(worktree),
             any(),
@@ -159,7 +159,7 @@ class AcceptanceProbingTest {
   }
 
   @Test
-  void findsAFileInTheWorktree(@TempDir Path worktree) throws IOException {
+  void findsFileInTheWorktree(@TempDir Path worktree) throws IOException {
     Files.createDirectories(worktree.resolve("docs"));
     Files.writeString(worktree.resolve("docs/guide.md"), "x");
 
@@ -195,7 +195,7 @@ class AcceptanceProbingTest {
   }
 
   @Test
-  void addsNoOutputToTheExitOfACommandThatPrintedNothing(@TempDir Path worktree) {
+  void addsNoOutputToTheExitOfCommandThatPrintedNothing(@TempDir Path worktree) {
     when(processes.run(eq(worktree), any(), anyMap(), eq(List.of("./gradlew", "test"))))
         .thenReturn(new Processes.Result(1, "", ""));
 
@@ -211,7 +211,7 @@ class AcceptanceProbingTest {
   }
 
   @Test
-  void failsAFileTheWorktreeDoesNotHold(@TempDir Path worktree) {
+  void failsFileTheWorktreeDoesNotHold(@TempDir Path worktree) {
     List<Probe> probed =
         new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
             .probed(
@@ -224,7 +224,7 @@ class AcceptanceProbingTest {
   }
 
   @Test
-  void failsALinkLeadingOutOfTheWorktree(@TempDir Path root) throws IOException {
+  void failsLinkLeadingOutOfTheWorktree(@TempDir Path root) throws IOException {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(root.resolve("outside.md"), "x");
     Files.createSymbolicLink(worktree.resolve("inside.md"), root.resolve("outside.md"));
@@ -245,7 +245,7 @@ class AcceptanceProbingTest {
   }
 
   @Test
-  void failsAFileThatCannotBeResolvedSayingJagtCouldNotReadIt(@TempDir Path worktree)
+  void failsFileThatCannotBeResolvedSayingJagtCouldNotReadIt(@TempDir Path worktree)
       throws IOException {
     Files.createSymbolicLink(worktree.resolve("loop.md"), worktree.resolve("loop.md"));
 

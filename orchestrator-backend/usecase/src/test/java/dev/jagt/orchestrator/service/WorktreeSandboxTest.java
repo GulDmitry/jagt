@@ -53,7 +53,7 @@ class WorktreeSandboxTest {
   }
 
   @Test
-  void writesInTheUsersTempDirectoryWhereAJvmOpensItsAttachSocket() {
+  void writesInTheUsersTempDirectoryWhereJvmOpensItsAttachSocket() {
     Sandbox sandbox =
         WorktreeSandbox.of(
             SandboxConfig.defaults().withEnabled(true),
@@ -78,7 +78,7 @@ class WorktreeSandboxTest {
   }
 
   @Test
-  void allowsTheDirectoryASymlinkedPathResolvesTo(@TempDir Path root) throws Exception {
+  void allowsTheDirectorySymlinkedPathResolvesTo(@TempDir Path root) throws Exception {
     Path target = Files.createDirectory(root.resolve("target"));
     Files.createSymbolicLink(root.resolve("link"), target);
 
@@ -128,7 +128,7 @@ class WorktreeSandboxTest {
   }
 
   @Test
-  void writesInAScratchFolderWhereThereIsNoRepositoryToWriteIn() {
+  void writesInScratchFolderWhereThereIsNoRepositoryToWriteIn() {
     Sandbox sandbox =
         WorktreeSandbox.scratch(
             SandboxConfig.defaults().withEnabled(true),

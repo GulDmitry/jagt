@@ -42,7 +42,7 @@ class SessionProbeTest {
   }
 
   @Test
-  void doesNotLetTheFileTheRecordNamesOutrankAFresherOne(@TempDir Path root) throws Exception {
+  void doesNotLetTheFileTheRecordNamesOutrankFresherOne(@TempDir Path root) throws Exception {
     Path stale = Files.writeString(root.resolve("earlier.jsonl"), "{}");
     Files.setLastModifiedTime(stale, FileTime.fromMillis(9_000_000L));
     AgentRuntime runtime = mock(AgentRuntime.class);
@@ -103,7 +103,7 @@ class SessionProbeTest {
   }
 
   @Test
-  void asksNoPrintWhileAFailureStands() {
+  void asksNoPrintWhileFailureStands() {
     AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.windowState(anyString())).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     TaskState task =
@@ -148,7 +148,7 @@ class SessionProbeTest {
   }
 
   @Test
-  void readsNothingFromAWindowListThatCannotBeRead() {
+  void readsNothingFromWindowListThatCannotBeRead() {
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     AgentSessions sessions = mock(AgentSessions.class);
@@ -168,7 +168,7 @@ class SessionProbeTest {
   }
 
   @Test
-  void readsAWindowHoldingNoAgentAsDeadWithWhatTheAgentPrintedOnItsWayOut() {
+  void readsWindowHoldingNoAgentAsDeadWithWhatTheAgentPrintedOnItsWayOut() {
     AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.windowState("ABC-1")).thenReturn(SessionHost.WindowState.DEAD_SHELL);
     when(sessions.exitTail("ABC-1")).thenReturn(Optional.of("Error: bad config"));
@@ -188,7 +188,7 @@ class SessionProbeTest {
   }
 
   @Test
-  void readsAMissingWindowAsMissingWithNoWords() {
+  void readsMissingWindowAsMissingWithNoWords() {
     AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.windowState("ABC-1")).thenReturn(SessionHost.WindowState.MISSING);
     when(sessions.exitTail("ABC-1")).thenReturn(Optional.empty());

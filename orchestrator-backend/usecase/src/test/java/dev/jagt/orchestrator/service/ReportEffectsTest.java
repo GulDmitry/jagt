@@ -35,8 +35,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class ReportEffectsTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final Instant NOW = Instant.parse("2026-10-29T10:00:00Z");
   private final TaskStops stops = mock(TaskStops.class);
@@ -50,12 +49,13 @@ class ReportEffectsTest {
             OrchestratorProperties.defaults()
                 .withRoot(dir.toString())
                 .withStateFile(dir.resolve("state.json").toString())),
-                reducer);
+        reducer);
   }
 
   private ReportEffects effects(StateService state, InfraWaitProperties properties) {
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-    TaskTurns turns = new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
+    TaskTurns turns =
+        new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
     return new ReportEffects(
         new SessionWakes(state, turns, clock), turns, stops, properties, mock(LinkRefusals.class));
   }
@@ -68,7 +68,7 @@ class ReportEffectsTest {
   }
 
   @Test
-  void armsAWakeFiveMinutesOutForTheTurnTheWaitClosed(@TempDir Path dir) {
+  void armsWakeFiveMinutesOutForTheTurnTheWaitClosed(@TempDir Path dir) {
     StateService state = state(dir);
     state.putTask("ABC-42", taskAnswering("context", null));
 
@@ -80,7 +80,7 @@ class ReportEffectsTest {
   }
 
   @Test
-  void armsTheNextWaitWhenTheSessionAnswersWaitOverWithAWaitAgain(@TempDir Path dir) {
+  void armsTheNextWaitWhenTheSessionAnswersWaitOverWithWaitAgain(@TempDir Path dir) {
     StateService state = state(dir);
     state.putTask("ABC-42", taskAnswering("wait-over", "1"));
 
@@ -103,7 +103,7 @@ class ReportEffectsTest {
   }
 
   @Test
-  void armsNothingForAReportThatIsNoWait(@TempDir Path dir) {
+  void armsNothingForReportThatIsNoWait(@TempDir Path dir) {
     StateService state = state(dir);
     state.putTask("ABC-42", taskAnswering("context", null));
 
@@ -115,7 +115,7 @@ class ReportEffectsTest {
   }
 
   @Test
-  void refusesAWaitWhereNoWaitIsConfigured(@TempDir Path dir) {
+  void refusesWaitWhereNoWaitIsConfigured(@TempDir Path dir) {
     ReportEffects off = effects(state(dir), new InfraWaitProperties(List.of()));
 
     MessageContext judged = off.judged(MessageContext.NONE);
@@ -132,7 +132,8 @@ class ReportEffectsTest {
                 .withStateFile(dir.resolve("state.json").toString()));
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-    TaskTurns turns = new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
+    TaskTurns turns =
+        new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
     TaskStops realStops =
         new TaskStops(
             new StopPolicy(
@@ -141,7 +142,8 @@ class ReportEffectsTest {
                 new StopAnnouncements(
                     mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            clock, new FlowRules(new TaskChart(Composition.builtIn())));
+            clock,
+            new FlowRules(new TaskChart(Composition.builtIn())));
     ReportEffects effects =
         new ReportEffects(
             new SessionWakes(state, turns, clock),
@@ -166,7 +168,8 @@ class ReportEffectsTest {
                 .withStateFile(dir.resolve("state.json").toString()));
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-    TaskTurns turns = new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
+    TaskTurns turns =
+        new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
     TaskStops realStops =
         new TaskStops(
             new StopPolicy(
@@ -175,7 +178,8 @@ class ReportEffectsTest {
                 new StopAnnouncements(
                     mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            clock, new FlowRules(new TaskChart(Composition.builtIn())));
+            clock,
+            new FlowRules(new TaskChart(Composition.builtIn())));
     ReportEffects effects =
         new ReportEffects(
             new SessionWakes(state, turns, clock),
@@ -194,7 +198,7 @@ class ReportEffectsTest {
   }
 
   @Test
-  void endsTheWaitStopWhenTheSessionReportsProgressWithoutAWait(@TempDir Path dir) {
+  void endsTheWaitStopWhenTheSessionReportsProgressWithoutWait(@TempDir Path dir) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -202,7 +206,8 @@ class ReportEffectsTest {
                 .withStateFile(dir.resolve("state.json").toString()));
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-    TaskTurns turns = new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
+    TaskTurns turns =
+        new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
     TaskStops realStops =
         new TaskStops(
             new StopPolicy(
@@ -211,7 +216,8 @@ class ReportEffectsTest {
                 new StopAnnouncements(
                     mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
             state,
-            clock, new FlowRules(new TaskChart(Composition.builtIn())));
+            clock,
+            new FlowRules(new TaskChart(Composition.builtIn())));
     ReportEffects effects =
         new ReportEffects(
             new SessionWakes(state, turns, clock),

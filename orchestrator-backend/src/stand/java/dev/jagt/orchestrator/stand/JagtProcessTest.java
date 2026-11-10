@@ -33,7 +33,7 @@ class JagtProcessTest {
   }
 
   @Test
-  void theEvidenceOfAFailedRunHoldsBothJagtsOutput(@TempDir Path dir) throws Exception {
+  void theEvidenceOfFailedRunHoldsBothJagtsOutput(@TempDir Path dir) throws Exception {
     Path root = Files.createDirectories(dir.resolve("run"));
     Files.writeString(root.resolve("jagt.out.before-restart"), "first out");
     Files.writeString(root.resolve("jagt.out"), "second out");

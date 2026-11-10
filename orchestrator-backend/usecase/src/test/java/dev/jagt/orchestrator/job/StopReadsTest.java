@@ -25,7 +25,7 @@ class StopReadsTest {
   private final StopReads reads = new StopReads(reading, stops, record);
 
   @Test
-  void offersTheStopTheCheckVerdictOfARequestItCouldRead() {
+  void offersTheStopTheCheckVerdictOfRequestItCouldRead() {
     when(reading.read("ABC-42"))
         .thenReturn(
             new RoundReading.Round(

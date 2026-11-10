@@ -136,7 +136,7 @@ class RepoCapabilityTest {
   }
 
   @Test
-  void addsAProjectAHumanNamesToATaskThatAskedForNoneAndPutsItBackToWork(@TempDir Path root) {
+  void addsProjectHumanNamesToTaskThatAskedForNoneAndPutsItBackToWork(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -194,7 +194,7 @@ class RepoCapabilityTest {
   }
 
   @Test
-  void refusesANamedProjectTheTaskAlreadyWorksIn() {
+  void refusesNamedProjectTheTaskAlreadyWorksIn() {
     TaskState task =
         TaskState.builder(
                 List.of(TaskRepo.of("api", "/wt"), TaskRepo.of("registry", "/wt2")),
@@ -207,7 +207,7 @@ class RepoCapabilityTest {
   }
 
   @Test
-  void recordsTheProjectAHumanNamesAsTheTasksRequestBeforeItAttaches() {
+  void recordsTheProjectHumanNamesAsTheTasksRequestBeforeItAttaches() {
     when(attachment.attach("ABC-7"))
         .thenReturn("add-repo ABC-7: registry is at /wt2; the session was told");
 

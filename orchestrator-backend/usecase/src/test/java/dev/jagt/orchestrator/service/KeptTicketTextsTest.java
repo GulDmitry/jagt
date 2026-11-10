@@ -13,7 +13,7 @@ class KeptTicketTextsTest {
   @TempDir Path root;
 
   @Test
-  void forgetsTheReadOfATaskSoItsTicketIsReadAgain() {
+  void forgetsTheReadOfTaskSoItsTicketIsReadAgain() {
     KeptTicketTexts kept = new KeptTicketTexts(paths());
     kept.markRead("ABC-42", 1_000L);
 
@@ -23,7 +23,7 @@ class KeptTicketTextsTest {
   }
 
   @Test
-  void forgetsAKeptTextFromDisk() {
+  void forgetsKeptTextFromDisk() {
     KeptTicketTexts kept = new KeptTicketTexts(paths());
     kept.keep("ABC-42", "Widget layout is off");
 

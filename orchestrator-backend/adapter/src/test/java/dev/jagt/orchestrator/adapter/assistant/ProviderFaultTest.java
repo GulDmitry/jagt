@@ -98,14 +98,14 @@ class ProviderFaultTest {
   }
 
   @Test
-  void aServerErrorFails() {
+  void serverErrorFails() {
     var reading = ProviderFault.of(new Processes.Result(1, SERVER_ERROR_500, ""));
 
     assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.FAILED);
   }
 
   @Test
-  void aRefusedConnectionFailsWithTheCliOwnWords() {
+  void refusedConnectionFailsWithTheCliOwnWords() {
     var reading = ProviderFault.of(new Processes.Result(1, CONNECTION_REFUSED, ""));
 
     assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.FAILED);
@@ -113,7 +113,7 @@ class ProviderFaultTest {
   }
 
   @Test
-  void aRateLimitMeansTheProviderAnsweredAndNeverCounts() {
+  void rateLimitMeansTheProviderAnsweredAndNeverCounts() {
     var reading = ProviderFault.of(new Processes.Result(1, RATE_LIMITED_429, ""));
 
     assertThat(reading.verdict()).isEqualTo(ProviderFault.Verdict.REACHED);
@@ -135,12 +135,13 @@ class ProviderFaultTest {
   }
 
   @Test
-  void aClientErrorOfTheProviderSaysNothingAboutItsHealth() {
+  void clientErrorOfTheProviderSaysNothingAboutItsHealth() {
     var reading =
         ProviderFault.of(
             new Processes.Result(
                 1,
-                "{\"is_error\":true,\"terminal_reason\":\"api_error\",\"api_error_status\":401,\"result\":\"bad"
+                "{\"is_error\":true,\"terminal_reason\":\"api_error\",\"api_error_status\":401,\""
+                + "result\":\"bad"
                     + " key\"}",
                 ""));
 

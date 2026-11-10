@@ -38,7 +38,7 @@ class AssistantBreakerTest {
   }
 
   @Test
-  void refusesWithTheLastProviderErrorAfterThresholdFailuresInARow() {
+  void refusesWithTheLastProviderErrorAfterThresholdFailuresInRow() {
     when(clock.instant()).thenReturn(Instant.ofEpochMilli(1_000L));
     breaker.failed("502 bad gateway");
     breaker.failed("502 bad gateway");
@@ -59,7 +59,7 @@ class AssistantBreakerTest {
   }
 
   @Test
-  void aSuccessBetweenFailuresRestartsTheCount() {
+  void successBetweenFailuresRestartsTheCount() {
     breaker.failed("529 overloaded");
     breaker.failed("529 overloaded");
     breaker.succeeded();
@@ -130,7 +130,7 @@ class AssistantBreakerTest {
   }
 
   @Test
-  void refusesASecondReadWhileTheProbeIsInFlight() {
+  void refusesSecondReadWhileTheProbeIsInFlight() {
     when(clock.instant()).thenReturn(Instant.ofEpochMilli(0L));
     breaker.failed("529 overloaded");
     breaker.failed("529 overloaded");

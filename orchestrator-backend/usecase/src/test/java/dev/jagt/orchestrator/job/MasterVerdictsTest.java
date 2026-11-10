@@ -79,15 +79,14 @@ import tools.jackson.databind.json.JsonMapper;
 
 class MasterVerdictsTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final MasterShip ship = mock(MasterShip.class);
   private final MasterDecisions decisions = spy(new MasterDecisions(mock(WorktreeChanges.class)));
 
   @Test
-  void sendsARoundThatIsNotReadyBackToWhoeverWroteTheCode(@TempDir Path root) throws Exception {
+  void sendsRoundThatIsNotReadyBackToWhoeverWroteTheCode(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -118,15 +117,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -162,7 +170,7 @@ class MasterVerdictsTest {
   @EnumSource(
       value = MasterReview.Kind.class,
       names = {"NOT_READY", "QUESTION"})
-  void dropsAVerdictOfATaskTheHumanShippedWhileTheMasterRead(
+  void dropsVerdictOfTaskTheHumanShippedWhileTheMasterRead(
       MasterReview.Kind kind, @TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -199,15 +207,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -239,7 +256,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void dropsTheAnswerToAQuestionTheSessionMovedOnFromWhileTheMasterRead(@TempDir Path root)
+  void dropsTheAnswerToQuestionTheSessionMovedOnFromWhileTheMasterRead(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -271,15 +288,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -332,15 +358,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -384,7 +419,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void leavesATaskThatMovedOnWhenTheSessionCouldNotBeTold(@TempDir Path root) throws Exception {
+  void leavesTaskThatMovedOnWhenTheSessionCouldNotBeTold(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -414,15 +449,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -474,7 +518,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void countsNoRoundForAVerdictDroppedBecauseTheTaskMovedOn(@TempDir Path root) throws Exception {
+  void countsNoRoundForVerdictDroppedBecauseTheTaskMovedOn(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -509,15 +553,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -557,7 +610,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void relaysNothingOfAPlanTheHumanMovedWhileTheMasterRead(@TempDir Path root) throws Exception {
+  void relaysNothingOfPlanTheHumanMovedWhileTheMasterRead(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -591,15 +644,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -657,15 +719,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -705,7 +776,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void takesANotReadyRoundBackToWorkSoTheFixedOneIsReadAgain(@TempDir Path root) throws Exception {
+  void takesNotReadyRoundBackToWorkSoTheFixedOneIsReadAgain(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -736,15 +807,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -809,15 +889,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -850,7 +939,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void recordsAMissItsVerdictSetOffAsTheMasters(@TempDir Path root) throws Exception {
+  void recordsMissItsVerdictSetOffAsTheMasters(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -881,15 +970,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -952,15 +1050,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -983,7 +1090,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void tellsTheSessionTheInstructionOfAStopTheMasterLiftedAndLeavesItAtWork(@TempDir Path root)
+  void tellsTheSessionTheInstructionOfStopTheMasterLiftedAndLeavesItAtWork(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -1014,15 +1121,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1042,7 +1158,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void keepsTheDeployConflictHandOffStandingUnderTheAnswerToAQuestion(@TempDir Path root)
+  void keepsTheDeployConflictHandOffStandingUnderTheAnswerToQuestion(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -1073,15 +1189,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1101,7 +1226,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void keepsTheSessionOfAStageCheckAnsweredAgainOverTheSameTree(@TempDir Path root)
+  void keepsTheSessionOfStageCheckAnsweredAgainOverTheSameTree(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -1132,15 +1257,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1163,7 +1297,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void settlesWhatANotReadyRoundSentBackSoTheNextRoundDoesNotReopenIt(@TempDir Path root)
+  void settlesWhatNotReadyRoundSentBackSoTheNextRoundDoesNotReopenIt(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -1195,15 +1329,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1235,7 +1378,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void relaysAFindingAnEarlierRoundMadeMarkedAsARepeat(@TempDir Path root) throws Exception {
+  void relaysFindingAnEarlierRoundMadeMarkedAsRepeat(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -1279,15 +1422,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1329,7 +1481,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void returnsASecondRoundOfRepeatsToTheSessionInsteadOfAskingAnyone(@TempDir Path root)
+  void returnsSecondRoundOfRepeatsToTheSessionInsteadOfAskingAnyone(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -1387,15 +1539,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1434,7 +1595,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void stopsTheTaskOnAFourthRoundRunningThatOnlyRepeatsTheFirst(@TempDir Path root)
+  void stopsTheTaskOnFourthRoundRunningThatOnlyRepeatsTheFirst(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -1466,15 +1627,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1571,7 +1741,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void relaysAFourthReturnWhereEachSessionReportItAnsweredWasReworked(@TempDir Path root)
+  void relaysFourthReturnWhereEachSessionReportItAnsweredWasReworked(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -1603,15 +1773,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1728,7 +1907,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void stopsTheTaskOnAFourthReturnWhereTheSessionReportedTheSameEachTime(@TempDir Path root)
+  void stopsTheTaskOnFourthReturnWhereTheSessionReportedTheSameEachTime(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -1760,15 +1939,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1917,15 +2105,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -1966,7 +2163,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path root)
+  void shipsReadyRoundOnlyWhereHumanSaidTheReviewerStandsInForThem(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -1999,15 +2196,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2064,15 +2270,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2097,7 +2312,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void leavesAReadyRoundForTheHumanWhileTheReviewerOnlyJudges(@TempDir Path root) throws Exception {
+  void leavesReadyRoundForTheHumanWhileTheReviewerOnlyJudges(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -2128,15 +2343,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2161,7 +2385,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void startsTheSessionOnAPlanTheMasterFoundHolds(@TempDir Path root) throws Exception {
+  void startsTheSessionOnPlanTheMasterFoundHolds(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -2191,15 +2415,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2227,7 +2460,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void returnsToTheSessionAPlanNamingAProjectJagtLacksInsteadOfAskingTheHuman(@TempDir Path root)
+  void returnsToTheSessionPlanNamingProjectJagtLacksInsteadOfAskingTheHuman(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -2265,11 +2498,17 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-    ConfigService config = new ConfigService(paths, null, null, new Checkers(new TaskChart(Composition.builtIn())));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+    ConfigService config =
+        new ConfigService(paths, null, null, new Checkers(new TaskChart(Composition.builtIn())));
     PlanPlacement placement =
         new PlanPlacement(
             state,
@@ -2281,7 +2520,11 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2345,15 +2588,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2375,7 +2627,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void leavesAPlanAskedForInPlanModeForTheHumanThoughTheMasterMayApprovePlans(@TempDir Path root)
+  void leavesPlanAskedForInPlanModeForTheHumanThoughTheMasterMayApprovePlans(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -2409,15 +2661,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2477,15 +2738,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2516,7 +2786,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void leavesAPlanThatHoldsForTheHumanWhoKeptThatStep(@TempDir Path root) throws Exception {
+  void leavesPlanThatHoldsForTheHumanWhoKeptThatStep(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -2546,15 +2816,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2614,15 +2893,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2663,7 +2951,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void sendsAPlanThatMissesTheTicketBackToBeReworked(@TempDir Path root) throws Exception {
+  void sendsPlanThatMissesTheTicketBackToBeReworked(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/brief.md.dist"), "## plan-not-ready\n\nrework the plan\n");
@@ -2695,15 +2983,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2776,15 +3073,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2849,15 +3155,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2895,8 +3210,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void recordsWhatTheMasterDecidedSoALaterRoundDoesNotReopenIt(@TempDir Path root)
-      throws Exception {
+  void recordsWhatTheMasterDecidedSoLaterRoundDoesNotReopenIt(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -2926,15 +3240,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -2985,15 +3308,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3025,7 +3357,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void opensNoTaskWhenTheMastersAnswerHoldsADoLine(@TempDir Path root) throws Exception {
+  void opensNoTaskWhenTheMastersAnswerHoldsDoLine(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -3055,15 +3387,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3117,15 +3458,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3142,7 +3492,7 @@ class MasterVerdictsTest {
 
   @ParameterizedTest
   @CsvSource({"NOT_READY,REVIEW_PENDING", "QUESTION,REVIEW_PENDING", "READY,PLAN_PENDING"})
-  void movesNothingOfATaskThatIsGoneFromTheState(
+  void movesNothingOfTaskThatIsGoneFromTheState(
       MasterReview.Kind kind, TaskStatus status, @TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -3172,15 +3522,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3241,15 +3600,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3300,15 +3668,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3332,7 +3709,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void startsNothingOnAPlanTheSessionWasAlreadyToldHolds(@TempDir Path root) throws Exception {
+  void startsNothingOnPlanTheSessionWasAlreadyToldHolds(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -3362,15 +3739,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3395,7 +3781,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void stopsTheTaskInsteadOfReturningAFourthRoundOfFreshFindingsRunning(@TempDir Path root)
+  void stopsTheTaskInsteadOfReturningFourthRoundOfFreshFindingsRunning(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -3427,15 +3813,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3527,7 +3922,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void returnsAThirdRoundOfFreshFindingsRunning(@TempDir Path root) throws Exception {
+  void returnsThirdRoundOfFreshFindingsRunning(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -3558,15 +3953,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,
@@ -3639,7 +4043,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void startsNoSessionOnAPlanWhereNoMasterCaseAllowsTheApproval(@TempDir Path root)
+  void startsNoSessionOnPlanWhereNoMasterCaseAllowsTheApproval(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -3667,15 +4071,24 @@ class MasterVerdictsTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(paths), sessions, door, new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            new SessionBrief(paths),
+            sessions,
+            door,
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())), new FlowRules(new TaskChart(Composition.builtIn()))),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
             decisions,
             new PlanApproval(
                 state,

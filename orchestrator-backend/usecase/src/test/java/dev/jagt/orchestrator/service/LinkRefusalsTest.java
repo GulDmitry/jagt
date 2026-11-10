@@ -54,7 +54,7 @@ class LinkRefusalsTest {
   }
 
   @Test
-  void showsOneLineOnTheBoardsHeadForARefusedLink(@TempDir Path root) {
+  void showsOneLineOnTheBoardsHeadForRefusedLink(@TempDir Path root) {
     ReachLedger reach = new ReachLedger();
 
     new LinkRefusals(reach, mock(SessionLines.class), state(root))
@@ -76,7 +76,7 @@ class LinkRefusalsTest {
   }
 
   @Test
-  void nudgesNoSessionForALinkUnderTheRemote(@TempDir Path root) {
+  void nudgesNoSessionForLinkUnderTheRemote(@TempDir Path root) {
     SessionLines sessions = mock(SessionLines.class);
 
     new LinkRefusals(new ReachLedger(), sessions, state(root))

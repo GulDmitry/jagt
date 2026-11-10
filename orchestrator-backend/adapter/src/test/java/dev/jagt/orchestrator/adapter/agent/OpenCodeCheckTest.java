@@ -43,7 +43,7 @@ class OpenCodeCheckTest {
   }
 
   @Test
-  void refusesToStartWithoutTheCliOnPathWhereARoleReadsOnIt() {
+  void refusesToStartWithoutTheCliOnPathWhereRoleReadsOnIt() {
     var check =
         new OpenCodeCheck(
             new OpenCodeProperties(
@@ -69,7 +69,7 @@ class OpenCodeCheckTest {
   }
 
   @Test
-  void acceptsALocalEndpointWithItsModelForTheSessions() {
+  void acceptsLocalEndpointWithItsModelForTheSessions() {
     var check =
         new OpenCodeCheck(
             new OpenCodeProperties("sh", "http://127.0.0.1:8080/v1", "qwen-4b", null),
@@ -80,7 +80,7 @@ class OpenCodeCheckTest {
   }
 
   @Test
-  void refusesAReadKeyThatIsNeitherMasterNorAnInstalledRole() {
+  void refusesReadKeyThatIsNeitherMasterNorAnInstalledRole() {
     var check =
         new OpenCodeCheck(
             new OpenCodeProperties("sh", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of("qaa", "")),
@@ -104,7 +104,7 @@ class OpenCodeCheckTest {
   }
 
   @Test
-  void refusesARoleWhoseReadResolvesToNoModel() {
+  void refusesRoleWhoseReadResolvesToNoModel() {
     var check =
         new OpenCodeCheck(
             new OpenCodeProperties("sh", "http://127.0.0.1:8080/v1", "", Map.of("master", "")),
@@ -132,7 +132,7 @@ class OpenCodeCheckTest {
   }
 
   @Test
-  void answersTheModelARoleReadsOnAndNoneForARoleNotNamed() {
+  void answersTheModelRoleReadsOnAndNoneForRoleNotNamed() {
     var opencode =
         new OpenCodeProperties(
             "sh",

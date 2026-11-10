@@ -32,8 +32,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class TaskRetirementTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ConfigService config = mock(ConfigService.class);
   private final TaskViewer viewer = mock(TaskViewer.class);
@@ -48,7 +47,7 @@ class TaskRetirementTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     TaskRetirement retirement =
@@ -81,7 +80,7 @@ class TaskRetirementTest {
   }
 
   @Test
-  void namesNoBranchForATaskThatNeverHadARepository(@TempDir Path root) {
+  void namesNoBranchForTaskThatNeverHadRepository(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -89,7 +88,7 @@ class TaskRetirementTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.PLAN_PENDING)
@@ -130,7 +129,7 @@ class TaskRetirementTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-1", TaskState.builder("gone", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     when(worktrees.remove(anyString(), any(), any())).thenReturn(true);
@@ -169,7 +168,7 @@ class TaskRetirementTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     when(viewer.closeIfNoTasksLeft()).thenReturn(true);
@@ -199,7 +198,7 @@ class TaskRetirementTest {
   }
 
   @Test
-  void refusesATaskThatIsNotThereNamingItAndKillsNothing(@TempDir Path root) {
+  void refusesTaskThatIsNotThereNamingItAndKillsNothing(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -207,7 +206,7 @@ class TaskRetirementTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     TaskRetirement retirement =
         new TaskRetirement(
             state,
@@ -237,7 +236,7 @@ class TaskRetirementTest {
   }
 
   @Test
-  void leavesNeitherTicketTextNorPlanBaselineForALaterTaskOnTheSameId(@TempDir Path root)
+  void leavesNeitherTicketTextNorPlanBaselineForLaterTaskOnTheSameId(@TempDir Path root)
       throws java.io.IOException {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -247,12 +246,11 @@ class TaskRetirementTest {
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    KeptTaskFiles kept =
-        new KeptTaskFiles(
-            new KeptTicketTexts(paths),
-            new PlanBaseline(paths, null, null));
+    final KeptTaskFiles kept =
+        new KeptTaskFiles(new KeptTicketTexts(paths), new PlanBaseline(paths, null, null));
     java.nio.file.Files.createDirectories(paths.ticketTexts());
-    java.nio.file.Files.writeString(paths.ticketTexts().resolve("ABC-1.md"), "Widget layout is off");
+    java.nio.file.Files.writeString(
+        paths.ticketTexts().resolve("ABC-1.md"), "Widget layout is off");
     java.nio.file.Files.createDirectories(paths.planBaselines());
     java.nio.file.Files.writeString(paths.planBaselines().resolve("ABC-1.md"), "old plan");
 

@@ -43,12 +43,13 @@ class TicketPrefetchJobTest {
   private final TicketTexts tickets =
       new TicketTexts(
           assistant,
-          new UsageTracker(state, new UsageLedger(new JsonMapper(), paths, Clock.systemDefaultZone())),
+          new UsageTracker(
+              state, new UsageLedger(new JsonMapper(), paths, Clock.systemDefaultZone())),
           new KeptTicketTexts(paths));
   private final TicketPrefetchJob job = new TicketPrefetchJob(config, tickets);
 
   @Test
-  void holdsAWorkingTasksTicketForItsNextReview() {
+  void holdsWorkingTasksTicketForItsNextReview() {
     when(state.tasks())
         .thenReturn(
             Map.of(
@@ -113,7 +114,7 @@ class TicketPrefetchJobTest {
   }
 
   @Test
-  void readsNoTicketAgainAfterARestartOrASecondEntry() {
+  void readsNoTicketAgainAfterRestartOrSecondEntry() {
     TaskState working =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .ticketUrl("https://tracker.example/ABC-45")

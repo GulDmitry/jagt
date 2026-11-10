@@ -47,10 +47,9 @@ allprojects {
     checkstyle {
         toolVersion = '14.4.0'
         configDirectory = rootProject.layout.projectDirectory.dir('gradle/checkstyle')
-        sourceSets = [sourceSets.main]
         maxWarnings = 0
     }
-    tasks.named('test') { dependsOn 'checkstyleMain' }
+    tasks.named('test') { dependsOn tasks.withType(Checkstyle) }
 
     ext.tmuxDirOf = { Task task ->
         new File(System.getProperty('java.io.tmpdir'),

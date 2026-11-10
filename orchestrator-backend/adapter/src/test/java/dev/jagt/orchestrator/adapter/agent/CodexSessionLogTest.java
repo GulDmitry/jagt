@@ -13,9 +13,11 @@ import org.junit.jupiter.api.io.TempDir;
 class CodexSessionLogTest {
 
   private static final String TURN_ONE =
-      "{\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"last_token_usage\":{\"input_tokens\":1000,\"cached_input_tokens\":800,\"output_tokens\":50}}}}\n";
+      "{\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"last_token_usag"
+      + "e\":{\"input_tokens\":1000,\"cached_input_tokens\":800,\"output_tokens\":50}}}}\n";
   private static final String TURN_TWO =
-      "{\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"last_token_usage\":{\"input_tokens\":2000,\"cached_input_tokens\":1500,\"output_tokens\":70}}}}\n";
+      "{\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":{\"last_token_usag"
+      + "e\":{\"input_tokens\":2000,\"cached_input_tokens\":1500,\"output_tokens\":70}}}}\n";
 
   @Test
   void booksEachTurnUnpricedWithItsCachedTokensApartFromItsInput(@TempDir Path dir)
@@ -33,7 +35,7 @@ class CodexSessionLogTest {
   }
 
   @Test
-  void countsNothingForATokenCountWithoutInfo(@TempDir Path dir) throws IOException {
+  void countsNothingForTokenCountWithoutInfo(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("rollout.jsonl");
     Files.writeString(
         log, "{\"type\":\"event_msg\",\"payload\":{\"type\":\"token_count\",\"info\":null}}\n");
@@ -45,7 +47,7 @@ class CodexSessionLogTest {
   }
 
   @Test
-  void leavesAHalfWrittenLastLineForTheNextRead(@TempDir Path dir) throws IOException {
+  void leavesHalfWrittenLastLineForTheNextRead(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("rollout.jsonl");
     Files.writeString(log, TURN_ONE + TURN_TWO.substring(0, 60));
 
@@ -56,7 +58,7 @@ class CodexSessionLogTest {
   }
 
   @Test
-  void readsNothingAndKeepsItsMarkFromALogItCannotRead(@TempDir Path dir) {
+  void readsNothingAndKeepsItsMarkFromLogItCannotRead(@TempDir Path dir) {
     SessionLog.Spent spent = new CodexSessionLog().spent(dir.resolve("gone.jsonl"), 7, 100);
 
     assertThat(spent).isEqualTo(SessionLog.Spent.nothing(7));

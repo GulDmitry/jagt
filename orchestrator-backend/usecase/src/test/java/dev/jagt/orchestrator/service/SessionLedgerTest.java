@@ -71,7 +71,7 @@ class SessionLedgerTest {
   }
 
   @Test
-  void raisesAPermissionOnTheTaskWhenAPromptBlocksTheSession(@TempDir Path root) {
+  void raisesPermissionOnTheTaskWhenPromptBlocksTheSession(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -91,7 +91,7 @@ class SessionLedgerTest {
   }
 
   @Test
-  void tellsTheHumanOnceWithTheCauseWhenAPromptBlocksTheSessionAndNotAgainOnTheNextRead(
+  void tellsTheHumanOnceWithTheCauseWhenPromptBlocksTheSessionAndNotAgainOnTheNextRead(
       @TempDir Path root) {
     StateService state =
         new StateService(

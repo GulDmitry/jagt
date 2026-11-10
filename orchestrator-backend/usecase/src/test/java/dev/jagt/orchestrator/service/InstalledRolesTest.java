@@ -12,7 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 class InstalledRolesTest {
 
   @Test
-  void aFolderWithABriefAndNoRoleFileIsAReaderAndNeverAChecker(@TempDir Path root)
+  void folderWithBriefAndNoRoleFileIsReaderAndNeverChecker(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/shipped"));
     Files.writeString(root.resolve("roles/shipped/brief.md.dist"), "a brief\n");
@@ -32,7 +32,7 @@ class InstalledRolesTest {
   }
 
   @Test
-  void composesAChartEvenWhereNoRoleFileStands(@TempDir Path root) throws Exception {
+  void composesChartEvenWhereNoRoleFileStands(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/bare"));
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));

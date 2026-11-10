@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 class RecorderTest {
 
   @Test
-  void recordsEachMoveUnderTheTurnItAnsweredAndARestampedVerdictOnce() throws Exception {
+  void recordsEachMoveUnderTheTurnItAnsweredAndRestampedVerdictOnce() throws Exception {
     Path root = Path.of(RecorderTest.class.getResource("/runs/recorded").toURI());
 
     List<RecordingLine> recorded = Recorder.record(root, Duration.ofSeconds(5));
@@ -42,7 +42,7 @@ class RecorderTest {
   }
 
   @Test
-  void recordsEachDecisionTheMasterGaveAQuestionOnceAndNoTreeOfItsOwn() throws Exception {
+  void recordsEachDecisionTheMasterGaveQuestionOnceAndNoTreeOfItsOwn() throws Exception {
     Path root = Path.of(RecorderTest.class.getResource("/runs/answered").toURI());
 
     List<RecordingLine> recorded = Recorder.record(root, Duration.ofSeconds(5));

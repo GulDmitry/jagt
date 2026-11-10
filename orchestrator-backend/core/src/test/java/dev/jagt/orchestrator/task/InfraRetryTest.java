@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class InfraRetryTest {
 
   @Test
-  void aRecordArmedBeforeItNamedItsProjectReadsAsBlank() {
+  void recordArmedBeforeItNamedItsProjectReadsAsBlank() {
     InfraRetry old =
         new InfraRetry(
             1_000,
@@ -65,7 +65,7 @@ class InfraRetryTest {
   }
 
   @Test
-  void leavesTheTaskWaitingWhileARetryIsLeft() {
+  void leavesTheTaskWaitingWhileRetryIsLeft() {
     List<InfraRetry> retries =
         List.of(
             new InfraRetry(

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.io.TempDir;
 class RoleFilesTest {
 
   @Test
-  void aHumansAcceptanceBriefInItsRoleFolderOverridesTheShippedOne(@TempDir Path root)
+  void humansAcceptanceBriefInItsRoleFolderOverridesTheShippedOne(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.writeString(

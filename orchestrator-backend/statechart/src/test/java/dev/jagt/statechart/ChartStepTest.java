@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 class ChartStepTest {
 
   @Test
-  void aRegionMovesOnItsEventAndEmitsTheEffect() {
+  void regionMovesOnItsEventAndEmitsTheEffect() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -35,7 +35,7 @@ class ChartStepTest {
   }
 
   @Test
-  void aGuardReadsAnotherRegion() {
+  void guardReadsAnotherRegion() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -55,7 +55,7 @@ class ChartStepTest {
   }
 
   @Test
-  void aGuardThatDoesNotHoldKeepsTheRegionWhereItIs() {
+  void guardThatDoesNotHoldKeepsTheRegionWhereItIs() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -73,7 +73,7 @@ class ChartStepTest {
   }
 
   @Test
-  void aGuardCannotReadTheRegionItsEdgeLeaves() {
+  void guardCannotReadTheRegionItsEdgeLeaves() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -124,7 +124,7 @@ class ChartStepTest {
   }
 
   @Test
-  void aStayEdgeEmitsItsEffectAndNoExitEffect() {
+  void stayEdgeEmitsItsEffectAndNoExitEffect() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -205,7 +205,7 @@ class ChartStepTest {
   }
 
   @Test
-  void aCycleOfRaisedEventsStopsAtTheCeilingNamingTheCycle() {
+  void cycleOfRaisedEventsStopsAtTheCeilingNamingTheCycle() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF)
@@ -226,7 +226,7 @@ class ChartStepTest {
   }
 
   @Test
-  void aCycleRaisingExactlyTheCeilingIsAllowed() {
+  void cycleRaisingExactlyTheCeilingIsAllowed() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -259,7 +259,7 @@ class ChartStepTest {
   }
 
   @Test
-  void aDerivedRegionIsReadFromTheFactsWhateverTheEventAndNeverStored() {
+  void derivedRegionIsReadFromTheFactsWhateverTheEventAndNeverStored() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -278,7 +278,7 @@ class ChartStepTest {
   }
 
   @Test
-  void aGuardReadsTheDerivedRegionItNamesAmongSeveral() {
+  void guardReadsTheDerivedRegionItNamesAmongSeveral() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -295,7 +295,7 @@ class ChartStepTest {
   }
 
   @Test
-  void aGuardCannotReadARegionTheChartDoesNotHave() {
+  void guardCannotReadRegionTheChartDoesNotHave() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -310,7 +310,7 @@ class ChartStepTest {
   }
 
   @Test
-  void aDerivedRegionNoGuardReadsIsNeverComputed() {
+  void derivedRegionNoGuardReadsIsNeverComputed() {
     AtomicInteger computed = new AtomicInteger();
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
@@ -332,7 +332,7 @@ class ChartStepTest {
   }
 
   @Test
-  void aDerivedRegionTwoGuardsReadIsComputedOnceForTheStep() {
+  void derivedRegionTwoGuardsReadIsComputedOnceForTheStep() {
     AtomicInteger computed = new AtomicInteger();
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
@@ -358,7 +358,7 @@ class ChartStepTest {
   }
 
   @Test
-  void aGroupThatStaysIsTakenWhereItsGuardHoldsAndMovesNothing() {
+  void groupThatStaysIsTakenWhereItsGuardHoldsAndMovesNothing() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -380,7 +380,7 @@ class ChartStepTest {
   }
 
   @Test
-  void takesCannotBeAskedOfARegionTheChartDoesNotStore() {
+  void takesCannotBeAskedOfRegionTheChartDoesNotStore() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))

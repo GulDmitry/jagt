@@ -73,7 +73,7 @@ class CheckerFlowsTest {
   }
 
   @Test
-  void aFailedFlowIsANotMetRowInTheVerdictAndTheReport(@TempDir Path worktree) throws IOException {
+  void failedFlowIsNotMetRowInTheVerdictAndTheReport(@TempDir Path worktree) throws IOException {
     stageListed();
     when(runner.run(worktree, List.of("AC-1"), STAGE))
         .thenReturn(
@@ -94,7 +94,11 @@ class CheckerFlowsTest {
             AcceptanceVerdict.Flows.none());
 
     AcceptanceVerdict result =
-        flows.run(read, worktree, new AcceptanceVerdict.Flows(List.of(new AcceptanceVerdict.Flows.Flow("AC-1", "")), STAGE));
+        flows.run(
+            read,
+            worktree,
+            new AcceptanceVerdict.Flows(
+                List.of(new AcceptanceVerdict.Flows.Flow("AC-1", "")), STAGE));
 
     assertThat(result.rows())
         .containsExactly(
@@ -108,7 +112,7 @@ class CheckerFlowsTest {
   }
 
   @Test
-  void aPassedFlowIsAMetRow(@TempDir Path worktree) throws IOException {
+  void passedFlowIsMetRow(@TempDir Path worktree) throws IOException {
     stageListed();
     when(runner.run(worktree, List.of("AC-1"), STAGE))
         .thenReturn(List.of(FlowResult.defaults().withFlow("AC-1").withVerdict(Verdict.PASSED)));
@@ -117,14 +121,15 @@ class CheckerFlowsTest {
         flows.run(
             new AcceptanceVerdict("abc", "", List.of(), "", "", AcceptanceVerdict.Flows.none()),
             worktree,
-            new AcceptanceVerdict.Flows(List.of(new AcceptanceVerdict.Flows.Flow("AC-1", "")), STAGE));
+            new AcceptanceVerdict.Flows(
+                List.of(new AcceptanceVerdict.Flows.Flow("AC-1", "")), STAGE));
 
     assertThat(result.rows())
         .containsExactly(new AcceptanceVerdict.Row("AC-1", AcceptanceVerdict.Status.MET, ""));
   }
 
   @Test
-  void aPassedFlowMakesItsCriterionsUnprovableRowMetAndDropsTheQuestion(@TempDir Path worktree)
+  void passedFlowMakesItsCriterionsUnprovableRowMetAndDropsTheQuestion(@TempDir Path worktree)
       throws IOException {
     stageListed();
     when(runner.run(worktree, List.of("open-page"), STAGE))
@@ -150,14 +155,13 @@ class CheckerFlowsTest {
 
     assertThat(result.rows())
         .containsExactly(
-            new AcceptanceVerdict.Row(
-                "C1", AcceptanceVerdict.Status.MET, "flow open-page passed"));
+            new AcceptanceVerdict.Row("C1", AcceptanceVerdict.Status.MET, "flow open-page passed"));
     assertThat(result.question()).isEmpty();
     assertThat(result.ending()).isEqualTo(AcceptanceEnding.PASSED);
   }
 
   @Test
-  void aFailedFlowMakesItsCriterionsRowNotMet(@TempDir Path worktree) throws IOException {
+  void failedFlowMakesItsCriterionsRowNotMet(@TempDir Path worktree) throws IOException {
     stageListed();
     when(runner.run(worktree, List.of("open-page"), STAGE))
         .thenReturn(
@@ -261,7 +265,7 @@ class CheckerFlowsTest {
   }
 
   @Test
-  void aFlowNamingACriterionNoRowHasKeepsItsOwnRow(@TempDir Path worktree) throws IOException {
+  void flowNamingCriterionNoRowHasKeepsItsOwnRow(@TempDir Path worktree) throws IOException {
     stageListed();
     when(runner.run(worktree, List.of("open-page"), STAGE))
         .thenReturn(
@@ -294,7 +298,8 @@ class CheckerFlowsTest {
         flows.run(
             new AcceptanceVerdict("abc", "", List.of(), "", "", AcceptanceVerdict.Flows.none()),
             worktree,
-            new AcceptanceVerdict.Flows(List.of(new AcceptanceVerdict.Flows.Flow("AC-1", "")), "https://prod.example.com"));
+            new AcceptanceVerdict.Flows(
+                List.of(new AcceptanceVerdict.Flows.Flow("AC-1", "")), "https://prod.example.com"));
 
     assertThat(result.rows())
         .extracting(AcceptanceVerdict.Row::status)

@@ -27,7 +27,11 @@ class EnglishAndUtcTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"java.lang.System, currentTimeMillis", "java.time.Clock, systemUTC", "java.time.Clock, system"})
+  @CsvSource({
+    "java.lang.System, currentTimeMillis",
+    "java.time.Clock, systemUTC",
+    "java.time.Clock, system"
+  })
   void noCodeReadsTheTimeButThroughTheClockBean(String owner, String method) {
     noClasses()
         .that()

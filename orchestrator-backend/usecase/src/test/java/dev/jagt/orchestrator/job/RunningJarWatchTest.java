@@ -48,7 +48,7 @@ class RunningJarWatchTest {
   }
 
   @Test
-  void namesTheRestartVerbWhenASupervisorStands(@TempDir Path dir) throws Exception {
+  void namesTheRestartVerbWhenSupervisorStands(@TempDir Path dir) throws Exception {
     Path jar = Files.writeString(dir.resolve("jagt.jar"), "first build");
     when(host.jar()).thenReturn(Optional.of(jar));
     when(supervisor.supervised()).thenReturn(true);
@@ -74,7 +74,7 @@ class RunningJarWatchTest {
   }
 
   @Test
-  void treatsAVanishedJarAsARewrite(@TempDir Path dir) throws Exception {
+  void treatsVanishedJarAsRewrite(@TempDir Path dir) throws Exception {
     Path jar = Files.writeString(dir.resolve("jagt.jar"), "build");
     when(host.jar()).thenReturn(Optional.of(jar));
     RunningJarWatch watch = new RunningJarWatch(notifications, host, supervisor);
@@ -91,7 +91,7 @@ class RunningJarWatchTest {
   }
 
   @Test
-  void watchesNothingWhenTheProcessDidNotStartFromAJar() {
+  void watchesNothingWhenTheProcessDidNotStartFromJar() {
     RunningJarWatch watch = new RunningJarWatch(notifications, host, supervisor);
 
     watch.run();
@@ -101,7 +101,7 @@ class RunningJarWatchTest {
 
   @ParameterizedTest
   @CsvSource({"1000,42,false", "2000,42,true", "1000,43,true"})
-  void readsAChangeInEitherTheStampOrTheSizeAsARewrite(
+  void readsChangeInEitherTheStampOrTheSizeAsRewrite(
       long modifiedAt, long size, boolean rewritten) {
     var before = new RunningJarWatch.Stamp(1_000, 42);
 
@@ -110,7 +110,7 @@ class RunningJarWatchTest {
   }
 
   @Test
-  void readsAJarThatCanNoLongerBeStampedAtAllAsARewrite() {
+  void readsJarThatCanNoLongerBeStampedAtAllAsRewrite() {
     assertThat(RunningJarWatch.rewritten(new RunningJarWatch.Stamp(1_000, 42), null)).isTrue();
   }
 
@@ -120,15 +120,17 @@ class RunningJarWatchTest {
 
     when(host.jar()).thenReturn(Optional.of(built));
 
-    assertThat(new RunningJarWatch(notifications, host, supervisor).runningTheBuildsOwnJar()).isTrue();
+    assertThat(new RunningJarWatch(notifications, host, supervisor).runningTheBuildsOwnJar())
+        .isTrue();
   }
 
   @Test
-  void saysNothingAboutAStagedCopyTheBuildNeverTouches(@TempDir Path dir) throws IOException {
+  void saysNothingAboutStagedCopyTheBuildNeverTouches(@TempDir Path dir) throws IOException {
     Path staged = Files.writeString(dir.resolve("jagt-run-20260819-120000.jar"), "x");
 
     when(host.jar()).thenReturn(Optional.of(staged));
 
-    assertThat(new RunningJarWatch(notifications, host, supervisor).runningTheBuildsOwnJar()).isFalse();
+    assertThat(new RunningJarWatch(notifications, host, supervisor).runningTheBuildsOwnJar())
+        .isFalse();
   }
 }

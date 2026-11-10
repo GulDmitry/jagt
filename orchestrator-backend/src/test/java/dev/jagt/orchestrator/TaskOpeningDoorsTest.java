@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 class TaskOpeningDoorsTest {
 
   @Test
-  void aTaskOpensOnlyThroughTheHumansCommandsAndTrackerIntake() {
+  void taskOpensOnlyThroughTheHumansCommandsAndTrackerIntake() {
     noClasses()
         .that()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.service.TaskLauncher")

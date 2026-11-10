@@ -12,14 +12,14 @@ class MasterBriefShippedTest {
   private static final Path SHIPPED = Path.of("../roles/master/brief.md.dist");
 
   @Test
-  void shipsTheBriefUnderTheNameTheRefusalTellsAHumanToCopy() {
+  void shipsTheBriefUnderTheNameTheRefusalTellsHumanToCopy() {
     assertThat(Files.isRegularFile(SHIPPED)).describedAs("%s", SHIPPED).isTrue();
     assertThat(Path.of("..").relativize(SHIPPED).toString())
         .isEqualTo(MasterConfig.defaults().briefOrDefault() + ".dist");
   }
 
   @Test
-  void keepsAHumansOwnBriefOutOfTheRepository() throws Exception {
+  void keepsHumansOwnBriefOutOfTheRepository() throws Exception {
     assertThat(Files.readString(Path.of("../.gitignore")))
         .contains("\nroles/*/*\n", "\n!roles/*/*.dist\n");
   }

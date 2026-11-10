@@ -44,7 +44,7 @@ class TmuxSessionHostTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"jagt:agents", "jagt.agents"})
-  void refusesASessionNameTmuxWouldReadAsAWindowOrAPane(String name) {
+  void refusesSessionNameTmuxWouldReadAsWindowOrPane(String name) {
     assertThat(TmuxSessionHost.reserved(name)).contains("contains ':' or '.', which tmux reserves");
   }
 
@@ -75,7 +75,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void listsWindowsOnceAndReadsTheProcessTableOnceForEveryTaskOfATick() {
+  void listsWindowsOnceAndReadsTheProcessTableOnceForEveryTaskOfTick() {
     Processes processes = mock(Processes.class);
     when(processes.run(
             isNull(),
@@ -133,7 +133,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void listsWindowsAgainWhenATaskWindowIsPressedWithinTheTick() {
+  void listsWindowsAgainWhenTaskWindowIsPressedWithinTheTick() {
     Processes processes = mock(Processes.class);
     when(processes.run(
             isNull(),
@@ -169,7 +169,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void listsWindowsAgainWhenATaskWindowIsOpenedWithinTheTick() {
+  void listsWindowsAgainWhenTaskWindowIsOpenedWithinTheTick() {
     Processes processes = mock(Processes.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));
@@ -204,7 +204,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void listsWindowsAgainWhenATaskWindowIsKilledWithinTheTick() {
+  void listsWindowsAgainWhenTaskWindowIsKilledWithinTheTick() {
     Processes processes = mock(Processes.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));
@@ -239,7 +239,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void readsOnlyTheWindowsOfTheSessionAskedAboutWithinATick() {
+  void readsOnlyTheWindowsOfTheSessionAskedAboutWithinTick() {
     Processes processes = mock(Processes.class);
     when(processes.run(
             isNull(),
@@ -262,7 +262,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void listsWindowsAgainForAReadAfterTheTickEnded() {
+  void listsWindowsAgainForReadAfterTheTickEnded() {
     Processes processes = mock(Processes.class);
     when(processes.run(
             isNull(),
@@ -289,7 +289,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void acceptsASessionNameCarryingNeitherReservedCharacter() {
+  void acceptsSessionNameCarryingNeitherReservedCharacter() {
     assertThat(TmuxSessionHost.reserved("agents")).isEmpty();
   }
 
@@ -310,7 +310,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void refusesThroughTheHostASessionNameTmuxReserves() {
+  void refusesThroughTheHostSessionNameTmuxReserves() {
     ToolchainProperties properties = ToolchainProperties.defaults();
     TmuxSessionHost host =
         new TmuxSessionHost(
@@ -326,7 +326,7 @@ class TmuxSessionHostTest {
 
   @ParameterizedTest
   @CsvSource({"0, 4242, AGENT_RUNNING", "0, '', DEAD_SHELL", "1, '', DEAD_SHELL"})
-  void tellsAWindowWhoseAgentRunsFromOneLeftWithItsShell(
+  void tellsWindowWhoseAgentRunsFromOneLeftWithItsShell(
       int pgrepExit, String children, WindowState expected) {
     Processes processes = mock(Processes.class);
     when(processes.run(
@@ -352,7 +352,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void reportsAMissingWindowWhereTheSessionListsNone() {
+  void reportsMissingWindowWhereTheSessionListsNone() {
     Processes processes = mock(Processes.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
@@ -451,7 +451,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void refusesToFocusAWindowTheTaskDoesNotHave() {
+  void refusesToFocusWindowTheTaskDoesNotHave() {
     Processes processes = mock(Processes.class);
     TerminalDriver terminal = mock(TerminalDriver.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
@@ -505,7 +505,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void everyTmuxCommandNamesTheServerWhereASocketIsConfigured() {
+  void everyTmuxCommandNamesTheServerWhereSocketIsConfigured() {
     Processes processes = mock(Processes.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));
@@ -600,7 +600,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void opensNoSecondViewerWhereAClientIsAlreadyAttached() {
+  void opensNoSecondViewerWhereClientIsAlreadyAttached() {
     Processes processes = mock(Processes.class);
     TerminalDriver terminal = mock(TerminalDriver.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
@@ -806,7 +806,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void reportsNoScreenForATaskWithoutAWindow() {
+  void reportsNoScreenForTaskWithoutWindow() {
     Processes processes = mock(Processes.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
@@ -823,7 +823,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void launchesTheAgentWithoutAModelFlagWhereNoModelIsAsked() {
+  void launchesTheAgentWithoutModelFlagWhereNoModelIsAsked() {
     Processes processes = mock(Processes.class);
     AgentRuntime agent = mock(AgentRuntime.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
@@ -902,7 +902,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void carriesTheAliasInAWindowOptionAndLeavesTheWindowNameTheTask() {
+  void carriesTheAliasInWindowOptionAndLeavesTheWindowNameTheTask() {
     Processes processes = mock(Processes.class);
     AgentRuntime agent = mock(AgentRuntime.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
@@ -930,7 +930,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void setsNoAliasOptionOnAWindowWhoseTaskHasNone() {
+  void setsNoAliasOptionOnWindowWhoseTaskHasNone() {
     Processes processes = mock(Processes.class);
     AgentRuntime agent = mock(AgentRuntime.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
@@ -1031,7 +1031,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void opensTheViewerWhereATaskWindowIsOpenedAndNoClientIsAttached() {
+  void opensTheViewerWhereTaskWindowIsOpenedAndNoClientIsAttached() {
     Processes processes = mock(Processes.class);
     TerminalDriver terminal = mock(TerminalDriver.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
@@ -1058,7 +1058,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void revivesTheTaskInAWindowRunningTheRuntimesReviveCommand() {
+  void revivesTheTaskInWindowRunningTheRuntimesReviveCommand() {
     Processes processes = mock(Processes.class);
     AgentRuntime agent = mock(AgentRuntime.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
@@ -1114,7 +1114,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void tailsTheFeedInAWindowOfItsOwnWhereNoneIsOpen() {
+  void tailsTheFeedInWindowOfItsOwnWhereNoneIsOpen() {
     Processes processes = mock(Processes.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "@9", ""));
@@ -1138,7 +1138,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void runsACommandAsTheProcessOfAWindowOfItsOwnQuotedWordByWord() {
+  void runsCommandAsTheProcessOfWindowOfItsOwnQuotedWordByWord() {
     Processes processes = mock(Processes.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "@9", ""));
@@ -1164,7 +1164,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void runsAShellLineInTheFolderGivenAsTheProcessOfAWindowOfItsOwn() {
+  void runsShellLineInTheFolderGivenAsTheProcessOfWindowOfItsOwn() {
     Processes processes = mock(Processes.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "@9", ""));
@@ -1191,7 +1191,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void createsTheSessionAndShowsItToTheHumanForACommandWindow() {
+  void createsTheSessionAndShowsItToTheHumanForCommandWindow() {
     Processes processes = mock(Processes.class);
     TerminalDriver terminal = mock(TerminalDriver.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
@@ -1289,7 +1289,7 @@ class TmuxSessionHostTest {
             argThat((List<String> command) -> command.contains("capture-pane"))))
         .thenReturn(
             new Processes.Result(
-                0, "[jagt] agent exited \u2014 window closes in 15s (Ctrl+C to close now)\n", ""));
+                0, "[jagt] agent exited — window closes in 15s (Ctrl+C to close now)\n", ""));
     ToolchainProperties properties = ToolchainProperties.defaults();
     TmuxSessionHost host =
         new TmuxSessionHost(
@@ -1495,7 +1495,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void stopsGitClimbingOutOfAScratchFolderWhereTheSessionRuns() {
+  void stopsGitClimbingOutOfScratchFolderWhereTheSessionRuns() {
     Processes processes = mock(Processes.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "@9", ""));
@@ -1522,7 +1522,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void leavesGitsCeilingAloneForAWorktreeOfARepository() {
+  void leavesGitsCeilingAloneForWorktreeOfRepository() {
     Processes processes = mock(Processes.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "@9", ""));
@@ -1565,7 +1565,7 @@ class TmuxSessionHostTest {
     "DIGIT_8,8",
     "DIGIT_9,9"
   })
-  void pressesAKeyByItsNameInTheTasksWindowNeverAsLiteralText(
+  void pressesKeyByItsNameInTheTasksWindowNeverAsLiteralText(
       SessionHost.Key key, String tmuxName) {
     Processes processes = mock(Processes.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
@@ -1595,7 +1595,7 @@ class TmuxSessionHostTest {
   }
 
   @Test
-  void listsWindowsAgainWhenAKeyIsPressedWithinTheTick() {
+  void listsWindowsAgainWhenKeyIsPressedWithinTheTick() {
     Processes processes = mock(Processes.class);
     when(processes.run(
             isNull(),

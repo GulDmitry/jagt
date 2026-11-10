@@ -17,7 +17,7 @@ import tools.jackson.databind.json.JsonMapper;
 class MasterVerdictReportTest {
 
   @Test
-  void aFailingCaseShowsEachRolesFindingsAndReasoningBesideWhatWasExpected() {
+  void failingCaseShowsEachRolesFindingsAndReasoningBesideWhatWasExpected() {
     Review review =
         new Review(
             7,
@@ -85,7 +85,7 @@ class MasterVerdictReportTest {
   }
 
   @Test
-  void aMissingStoredVerdictIsNamedAsMissing(@TempDir Path worktree) {
+  void missingStoredVerdictIsNamedAsMissing(@TempDir Path worktree) {
     String report = MasterVerdictReport.of("READY", worktree);
 
     assertThat(report).isEqualTo("READY\nno master-review.json under " + worktree);

@@ -31,7 +31,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   @Autowired PlanBaseline planBaseline;
 
   @Test
-  void theReportsMenuOpensAReportAndClosesOnEscape() {
+  void theReportsMenuOpensReportAndClosesOnEscape() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -48,7 +48,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void theKeyTOpensTheNewTaskFormAtItsTicket() {
+  void theEnterKeyOpensTheNewTaskFormAtItsTicket() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -60,9 +60,9 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void addingAProjectReadsThePathAndRefusesOneThatIsNotARepository() throws Exception {
-    Path folder = Files.createDirectories(root.resolve("notes"));
-    String before = Files.readString(root.resolve("jagt.yml"));
+  void addingProjectReadsThePathAndRefusesOneThatIsNotRepository() throws Exception {
+    final Path folder = Files.createDirectories(root.resolve("notes"));
+    final String before = Files.readString(root.resolve("jagt.yml"));
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     page.locator("#new-task").click();
@@ -81,7 +81,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void commaSeparatedLabelsAndHumanPathsTypedInTheProjectFormAreSentAsLists() throws Exception {
-    Path folder = Files.createDirectories(root.resolve("notes"));
+    final Path folder = Files.createDirectories(root.resolve("notes"));
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     page.locator("#new-task").click();
@@ -103,7 +103,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void typingAFolderPrefixInTheProjectPathOffersTheFoldersUnderIt() throws Exception {
+  void typingFolderPrefixInTheProjectPathOffersTheFoldersUnderIt() throws Exception {
     Files.createDirectories(root.resolve("billing/.git"));
     Files.createDirectories(root.resolve("billboard"));
     Files.createDirectories(root.resolve("notes"));
@@ -120,7 +120,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void theProjectVerbTypedAloneOpensTheAddAProjectForm() {
+  void theProjectVerbTypedAloneOpensTheAddProjectForm() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -134,7 +134,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void theProjectVerbWithEditAndAKeyOpensTheFormFilledWithThatProject() {
+  void theProjectVerbWithEditAndKeyOpensTheFormFilledWithThatProject() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -153,7 +153,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
-  void aFailedJobOpensFromTheHeaderAsATableWhoseRowRunsItNow() {
+  void failedJobOpensFromTheHeaderAsTableWhoseRowRunsItNow() {
     breakable.breakIt();
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
@@ -178,7 +178,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void theSessionTabShowsTheScreenAndSendsALineToThatSession() {
+  void theSessionTabShowsTheScreenAndSendsLineToThatSession() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -292,7 +292,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void theArtifactsTabMarksAPlanLineChangedSinceItsApprovalAndStrikesOneRemoved() throws Exception {
+  void theArtifactsTabMarksPlanLineChangedSinceItsApprovalAndStrikesOneRemoved() throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-7-alpha"));
     state.putTask(
         "ABC-7",
@@ -319,7 +319,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void aMermaidFenceInAnOpenDocumentIsDrawnAsADiagram() throws Exception {
+  void mermaidFenceInAnOpenDocumentIsDrawnAsDiagram() throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-5-alpha"));
     Files.writeString(
         worktree.resolve("task_visual.md"), "```mermaid\nsequenceDiagram\nA->>B: go\n```\n");
@@ -378,11 +378,12 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     assertThat(page.locator("#pane .diff h2")).hasText("alpha · origin/main");
     assertThat(page.locator("#pane .diff .changed")).hasText("+new\n");
     assertThat(page.locator("#pane .diff .removed")).hasText("-old\n");
-    assertThat(page.locator("#pane .diff p.muted")).hasText("The diff is cut here; the rest is not shown.");
+    assertThat(page.locator("#pane .diff p.muted"))
+        .hasText("The diff is cut here; the rest is not shown.");
   }
 
   @Test
-  void aVerbsKeyRunsItOnTheOpenTask() {
+  void verbsKeyRunsItOnTheOpenTask() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -455,7 +456,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void aVerbsKeyDoesNothingWhileANarrowWindowShowsOnlyTheList() {
+  void verbsKeyDoesNothingWhileNarrowWindowShowsOnlyTheList() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -497,7 +498,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void aJobThatHasNotRunYetIsNotCalledFine() {
+  void jobThatHasNotRunYetIsNotCalledFine() {
     Page page = session.newPage();
 
     page.navigate("http://localhost:" + port + "/styleguide.html");
@@ -506,7 +507,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void aTaskWaitingOnTheHumanThatBrokeWearsARedBadgeAndItsHistoryReadsInWords() {
+  void taskWaitingOnTheHumanThatBrokeWearsRedBadgeAndItsHistoryReadsInWords() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
@@ -543,7 +544,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void aStepsReasonReadsInItsHoverAndNowhereOnThePage() {
+  void stepsReasonReadsInItsHoverAndNowhereOnThePage() {
     long now = System.currentTimeMillis();
     state.putTask(
         "ABC-1",
@@ -581,7 +582,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void anEmptyBoardOffersANewTaskAndAProject() {
+  void anEmptyBoardOffersNewTaskAndProject() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -592,7 +593,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void theSessionTabKeepsItsScreenWhileAPushMakesItReadAgain() throws Exception {
+  void theSessionTabKeepsItsScreenWhilePushMakesItReadAgain() throws Exception {
     CountDownLatch release = new CountDownLatch(1);
     state.putTask(
         "ABC-1",
@@ -646,7 +647,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
-  void aSessionNoWindowHoldsSaysSoAndABlankLiveScreenDoesNot() {
+  void sessionNoWindowHoldsSaysSoAndBlankLiveScreenDoesNot() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -664,7 +665,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
-  void theJobsTableTurnsAFailedJobRedWithoutReopeningTheReport() {
+  void theJobsTableTurnsFailedJobRedWithoutReopeningTheReport() {
     breakable.breakIt();
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");

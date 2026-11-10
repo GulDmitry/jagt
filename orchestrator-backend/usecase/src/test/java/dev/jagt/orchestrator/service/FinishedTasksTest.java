@@ -27,7 +27,7 @@ class FinishedTasksTest {
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
-  void keepsARetiredTaskAfterTheStateEntryIsGone(@TempDir Path root) {
+  void keepsRetiredTaskAfterTheStateEntryIsGone(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -55,7 +55,7 @@ class FinishedTasksTest {
   }
 
   @Test
-  void skipsALineItCannotParseInsteadOfLosingTheWholeLog(@TempDir Path root) throws Exception {
+  void skipsLineItCannotParseInsteadOfLosingTheWholeLog(@TempDir Path root) throws Exception {
     JsonMapper mapper = new JsonMapper();
     OrchestratorPaths paths =
         new OrchestratorPaths(

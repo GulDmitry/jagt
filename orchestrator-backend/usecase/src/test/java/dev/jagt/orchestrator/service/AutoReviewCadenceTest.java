@@ -28,7 +28,7 @@ class AutoReviewCadenceTest {
   }
 
   @Test
-  void watchesATaskOutForReviewAndSaysWhenItWillLookAgain() {
+  void watchesTaskOutForReviewAndSaysWhenItWillLookAgain() {
     long shipped = 1_000_000_000_000L;
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -47,7 +47,7 @@ class AutoReviewCadenceTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"REVIEWED", "APPROVED", "DEPLOYED"})
-  void pollsAtTheLongestIntervalARequestOnlyAReviewerCanMoveOn(TaskStatus status) {
+  void pollsAtTheLongestIntervalRequestOnlyReviewerCanMoveOn(TaskStatus status) {
     long shipped = 1_000_000_000_000L;
     TaskState task =
         TaskState.builder("proj", "/wt", status)
@@ -74,7 +74,7 @@ class AutoReviewCadenceTest {
   }
 
   @Test
-  void stopsWatchingATaskJagtStoppedAndCarriesWhyIntoTheHover() {
+  void stopsWatchingTaskJagtStoppedAndCarriesWhyIntoTheHover() {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .mrUrl("https://host/x/-/merge_requests/1")
@@ -89,7 +89,7 @@ class AutoReviewCadenceTest {
   }
 
   @Test
-  void carriesWhyJagtStoppedATaskWithNoRequestIntoTheHover() {
+  void carriesWhyJagtStoppedTaskWithNoRequestIntoTheHover() {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .stop(
@@ -108,7 +108,7 @@ class AutoReviewCadenceTest {
   }
 
   @Test
-  void namesATaskThatOptedOutWhileTheRestAreWatched() {
+  void namesTaskThatOptedOutWhileTheRestAreWatched() {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .mrUrl("https://host/x/-/merge_requests/1")
@@ -120,7 +120,7 @@ class AutoReviewCadenceTest {
   }
 
   @Test
-  void saysSoAboutARequestWhoseRoundWasNeverStamped() {
+  void saysSoAboutRequestWhoseRoundWasNeverStamped() {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .mrUrl("https://host/x/-/merge_requests/1")
@@ -130,7 +130,7 @@ class AutoReviewCadenceTest {
   }
 
   @Test
-  void watchesAMultiRepoTaskWhoseRequestIsOpenOnASiblingRatherThanTheSessionRepository() {
+  void watchesMultiRepoTaskWhoseRequestIsOpenOnSiblingRatherThanTheSessionRepository() {
     long shipped = 1_000_000_000_000L;
     TaskState task =
         TaskState.builder(
@@ -161,7 +161,7 @@ class AutoReviewCadenceTest {
 
   @ParameterizedTest
   @CsvSource({"24,60", "36,150", "48,240", "100,240"})
-  void aReviewedTaskIsPolledAgainOnAGrowingIntervalPastItsWindow(
+  void reviewedTaskIsPolledAgainOnGrowingIntervalPastItsWindow(
       int hoursOut, int expectedMinutes) {
     long shipped = 1_000_000_000_000L;
     long now = shipped + Duration.ofHours(hoursOut).toMillis();
@@ -179,7 +179,7 @@ class AutoReviewCadenceTest {
   }
 
   @Test
-  void watchesNothingAboutATaskWithNoRequestToRead() {
+  void watchesNothingAboutTaskWithNoRequestToRead() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
 
     assertThat(cadence.watch(task, 2L).state()).isEqualTo(AutoReviewWatch.State.NONE);
@@ -201,7 +201,7 @@ class AutoReviewCadenceTest {
   }
 
   @Test
-  void stopsPollingATaskThatIsClosed() {
+  void stopsPollingTaskThatIsClosed() {
     long opened = 1_000_000_000_000L;
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DONE)
@@ -240,7 +240,7 @@ class AutoReviewCadenceTest {
   }
 
   @Test
-  void stopsPollingATaskWhoseEveryRequestIsMerged() {
+  void stopsPollingTaskWhoseEveryRequestIsMerged() {
     long shipped = 1_000_000_000_000L;
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)

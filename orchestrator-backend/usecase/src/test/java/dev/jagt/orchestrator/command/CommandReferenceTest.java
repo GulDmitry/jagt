@@ -26,7 +26,7 @@ class CommandReferenceTest {
           15);
 
   @Test
-  void advertisesOnlyTheCurrentSpellingOfARenamedVerb() {
+  void advertisesOnlyTheCurrentSpellingOfRenamedVerb() {
     assertThat(CommandReference.text(List.of()))
         .contains("sweep <ticket>")
         .doesNotContain("review <ticket>");
@@ -50,7 +50,7 @@ class CommandReferenceTest {
   }
 
   @Test
-  void putsACommandDeclaredOnceIntoTheReferenceAndThePaletteBoth() {
+  void putsCommandDeclaredOnceIntoTheReferenceAndThePaletteBoth() {
     assertThat(CommandReference.text(List.of(SPEND)))
         .contains("spend [since]", "what the calls cost");
     assertThat(CommandReference.verbs(List.of(SPEND)))
@@ -64,7 +64,7 @@ class CommandReferenceTest {
   }
 
   @Test
-  void sortsACommandAmongTheTaskVerbsByTheRankItDeclares() {
+  void sortsCommandAmongTheTaskVerbsByTheRankItDeclares() {
     assertThat(CommandReference.verbs(List.of(SPEND)))
         .extracting(CommandReference.Verb::id)
         .startsWith("sweep", "spend", "ship");
@@ -82,7 +82,7 @@ class CommandReferenceTest {
   }
 
   @Test
-  void handsNoPartToACommandThatBelongsToNone() {
+  void handsNoPartToCommandThatBelongsToNone() {
     assertThat(CommandReference.verbs(List.of(SPEND)))
         .filteredOn(verb -> verb.id().equals("spend"))
         .singleElement()
@@ -91,7 +91,7 @@ class CommandReferenceTest {
   }
 
   @Test
-  void printsAModifierUnderTheVerbItBelongsTo() {
+  void printsModifierUnderTheVerbItBelongsTo() {
     List<String> lines = List.of(CommandReference.text(List.of(SPEND)).split("\n"));
 
     int verb =
@@ -101,7 +101,7 @@ class CommandReferenceTest {
   }
 
   @Test
-  void marksAReportAboutOneTaskSoNoSurfaceOffersItWithoutOne() {
+  void marksReportAboutOneTaskSoNoSurfaceOffersItWithoutOne() {
     GlobalCommand drafts =
         new Declared("drafts", "what one task drafted", List.of("drafts <task>"), true, true, 200);
 
@@ -120,7 +120,7 @@ class CommandReferenceTest {
   }
 
   @Test
-  void separatesAUsageAsWideAsTheColumnFromItsHintByOneSpace() {
+  void separatesUsageAsWideAsTheColumnFromItsHintByOneSpace() {
     GlobalCommand wide =
         new Declared(
             "wide", "the hint", List.of("abcdefghij abcdefghij abcdefg"), true, false, 200);

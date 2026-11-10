@@ -13,7 +13,7 @@ import org.junit.jupiter.api.io.TempDir;
 class ClaudeTranscriptsTest {
 
   @Test
-  void answersWhenTheNewestOfASessionsLogsWasLastAppendedTo(@TempDir Path root) throws Exception {
+  void answersWhenTheNewestOfSessionsLogsWasLastAppendedTo(@TempDir Path root) throws Exception {
     Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
     Files.setLastModifiedTime(
         Files.writeString(logs.resolve("earlier.jsonl"), "{\"entrypoint\":\"cli\"}"),
@@ -28,7 +28,7 @@ class ClaudeTranscriptsTest {
   }
 
   @Test
-  void readsNoSignOfTheSessionFromAHeadlessRunInItsDirectory(@TempDir Path root) throws Exception {
+  void readsNoSignOfTheSessionFromHeadlessRunInItsDirectory(@TempDir Path root) throws Exception {
     Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
     Files.setLastModifiedTime(
         Files.writeString(
@@ -59,7 +59,7 @@ class ClaudeTranscriptsTest {
   }
 
   @Test
-  void findsTheLogsOfASessionDirectoryReachedThroughASymlink(@TempDir Path root) throws Exception {
+  void findsTheLogsOfSessionDirectoryReachedThroughSymlink(@TempDir Path root) throws Exception {
     Path real = Files.createDirectories(root.resolve("real").resolve("ABC-1-proj"));
     Files.createSymbolicLink(root.resolve("link"), root.resolve("real"));
 
@@ -85,7 +85,7 @@ class ClaudeTranscriptsTest {
   }
 
   @Test
-  void leavesOutWhatAHeadlessRunWasPromptedWith(@TempDir Path root) throws Exception {
+  void leavesOutWhatHeadlessRunWasPromptedWith(@TempDir Path root) throws Exception {
     Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
     Files.writeString(
         logs.resolve("s.jsonl"),
@@ -106,7 +106,7 @@ class ClaudeTranscriptsTest {
   }
 
   @Test
-  void readsNoSignOfTheSessionFromAFileThatIsNotALog(@TempDir Path root) throws Exception {
+  void readsNoSignOfTheSessionFromFileThatIsNotLog(@TempDir Path root) throws Exception {
     Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
     Files.setLastModifiedTime(
         Files.writeString(logs.resolve("session.jsonl"), "{\"entrypoint\":\"cli\"}"),
@@ -121,7 +121,7 @@ class ClaudeTranscriptsTest {
   }
 
   @Test
-  void leavesOutWhatWasTypedInAFileThatIsNotALog(@TempDir Path root) throws Exception {
+  void leavesOutWhatWasTypedInFileThatIsNotLog(@TempDir Path root) throws Exception {
     Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
     Files.writeString(
         logs.resolve("notes.txt"),
@@ -164,7 +164,7 @@ class ClaudeTranscriptsTest {
   }
 
   @Test
-  void readsNoSignOfTheSessionFromALogItCannotRead(@TempDir Path root) throws Exception {
+  void readsNoSignOfTheSessionFromLogItCannotRead(@TempDir Path root) throws Exception {
     Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
     Files.setLastModifiedTime(
         Files.createDirectories(logs.resolve("unreadable.jsonl")),
@@ -176,7 +176,7 @@ class ClaudeTranscriptsTest {
   }
 
   @Test
-  void aSuiteRunReadsSessionLogsFromInsideTheBuildNeverFromTheHumansHome() {
+  void suiteRunReadsSessionLogsFromInsideTheBuildNeverFromTheHumansHome() {
     assertThat(ClaudeTranscripts.projectsDir()).startsWithRaw(Path.of("").toAbsolutePath());
   }
 
@@ -193,7 +193,8 @@ class ClaudeTranscriptsTest {
         {"type":"assistant","message":{"content":[{"type":"text","text":"Fixed."}]}}
         """);
 
-    String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000, Set.of()).orElseThrow();
+    String tail =
+        ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000, Set.of()).orElseThrow();
 
     assertThat(tail)
         .isEqualTo("human: fix the login\nassistant: Looking at it.\nassistant: Fixed.");
@@ -209,7 +210,8 @@ class ClaudeTranscriptsTest {
         {"type":"assistant","message":{"content":[{"type":"text","text":"newest words"}]}}
         """);
 
-    String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 30, Set.of()).orElseThrow();
+    String tail =
+        ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 30, Set.of()).orElseThrow();
 
     assertThat(tail).isEqualTo(" words\nassistant: newest words");
   }
@@ -230,7 +232,8 @@ class ClaudeTranscriptsTest {
         {"type":"assistant","message":{"content":[{"type":"text","text":"bb"}]}}
         """);
 
-    String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 14, Set.of()).orElseThrow();
+    String tail =
+        ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 14, Set.of()).orElseThrow();
 
     assertThat(tail).isEqualTo("assistant: bb");
   }
@@ -245,7 +248,8 @@ class ClaudeTranscriptsTest {
         {"type":"assistant","message":{"content":[{"type":"text","text":"Fixed."}]}}
         """);
 
-    String tail = ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000, Set.of()).orElseThrow();
+    String tail =
+        ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000, Set.of()).orElseThrow();
 
     assertThat(tail).isEqualTo("assistant: Fixed.");
   }
@@ -262,8 +266,7 @@ class ClaudeTranscriptsTest {
         """);
 
     String tail =
-        ClaudeTranscripts.tail(
-                root, Path.of("/wt/ABC-1-proj"), 16_000, Set.of("Re-read the file."))
+        ClaudeTranscripts.tail(root, Path.of("/wt/ABC-1-proj"), 16_000, Set.of("Re-read the file."))
             .orElseThrow();
 
     assertThat(tail).isEqualTo("human: fix the login\nhuman: why red?");
@@ -302,7 +305,7 @@ class ClaudeTranscriptsTest {
   }
 
   @Test
-  void readsNoOpenExchangeWhenASystemTurnDurationFollowsTheHumansPrompt(@TempDir Path root)
+  void readsNoOpenExchangeWhenSystemTurnDurationFollowsTheHumansPrompt(@TempDir Path root)
       throws Exception {
     Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
     Files.writeString(
@@ -332,7 +335,7 @@ class ClaudeTranscriptsTest {
   }
 
   @Test
-  void readsAnOpenExchangeWhenAToolCallOnlyMentionsEndTurn(@TempDir Path root) throws Exception {
+  void readsAnOpenExchangeWhenToolCallOnlyMentionsEndTurn(@TempDir Path root) throws Exception {
     Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
     Files.writeString(
         logs.resolve("s.jsonl"),
@@ -369,7 +372,7 @@ class ClaudeTranscriptsTest {
   }
 
   @Test
-  void readsNoHumanPromptFromARecordItCannotRead(@TempDir Path root) throws Exception {
+  void readsNoHumanPromptFromRecordItCannotRead(@TempDir Path root) throws Exception {
     Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
     Files.createDirectory(logs.resolve("s.jsonl"));
 

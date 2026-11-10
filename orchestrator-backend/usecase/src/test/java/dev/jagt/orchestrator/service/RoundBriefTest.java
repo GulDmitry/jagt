@@ -15,7 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 class RoundBriefTest {
 
   @Test
-  void asksForRepliesInAShapeAHumanCanReadInOnePass(@TempDir Path root) throws Exception {
+  void asksForRepliesInShapeHumanCanReadInOnePass(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -37,7 +37,7 @@ class RoundBriefTest {
   }
 
   @Test
-  void relaysAReviewRoundAsAJudgementCallAndNotAsAListOfOrders(@TempDir Path root)
+  void relaysReviewRoundAsJudgementCallAndNotAsListOfOrders(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
@@ -63,7 +63,7 @@ class RoundBriefTest {
   }
 
   @Test
-  void relaysAReviewRoundThatLeavesARightCommentBeyondTheTicketToATaskOfItsOwn(@TempDir Path root)
+  void relaysReviewRoundThatLeavesRightCommentBeyondTheTicketToTaskOfItsOwn(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
@@ -88,7 +88,7 @@ class RoundBriefTest {
   }
 
   @Test
-  void addsNoBlankLineForARoundSectionTheBriefLeavesEmpty(@TempDir Path root) throws Exception {
+  void addsNoBlankLineForRoundSectionTheBriefLeavesEmpty(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/brief.md"),
@@ -118,7 +118,7 @@ class RoundBriefTest {
   }
 
   @Test
-  void relaysAThreadWholeSoTheAgentAnswersTheReviewersLastWord(@TempDir Path root)
+  void relaysThreadWholeSoTheAgentAnswersTheReviewersLastWord(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
@@ -176,7 +176,7 @@ class RoundBriefTest {
   }
 
   @Test
-  void tellsTheAgentAThreadMayReachItCutAndWhereToReadItWhole(@TempDir Path root) throws Exception {
+  void tellsTheAgentThreadMayReachItCutAndWhereToReadItWhole(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -204,7 +204,7 @@ class RoundBriefTest {
   }
 
   @Test
-  void tellsTheAgentToLeaveAThreadWaitingOnTheReviewerAlone(@TempDir Path root) throws Exception {
+  void tellsTheAgentToLeaveThreadWaitingOnTheReviewerAlone(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -257,7 +257,7 @@ class RoundBriefTest {
   }
 
   @Test
-  void tellsAnAgentFixingOnlyAFailedBuildWhenTheRoundIsOver(@TempDir Path root) throws Exception {
+  void tellsAnAgentFixingOnlyFailedBuildWhenTheRoundIsOver(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -307,7 +307,7 @@ class RoundBriefTest {
   }
 
   @Test
-  void briefsARedRoundToReproduceTheFailureAndAskWhereItIsNotTheCode(@TempDir Path root)
+  void briefsRedRoundToReproduceTheFailureAndAskWhereItIsNotTheCode(@TempDir Path root)
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
@@ -333,7 +333,7 @@ class RoundBriefTest {
   }
 
   @Test
-  void keepsAReviewCommentFromClosingTheFenceItArrivesIn(@TempDir Path root) throws Exception {
+  void keepsReviewCommentFromClosingTheFenceItArrivesIn(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## round-threads-done\nDone.\n");
 
@@ -360,7 +360,7 @@ class RoundBriefTest {
   }
 
   @Test
-  void fencesAFailingJobsLogAsOutsideText(@TempDir Path root) throws Exception {
+  void fencesFailingJobsLogAsOutsideText(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## round-checks-done\nDone.\n");
 

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class ReadAnswerTest {
 
   @Test
-  void refusesARequestThatExistsWithoutTheBranchThatWouldBecomeTheTask() {
+  void refusesRequestThatExistsWithoutTheBranchThatWouldBecomeTheTask() {
     var facts = new MergeRequestFacts(true, "", "main", "Widget layout");
 
     assertThat(MergeRequestRead.violations(facts))
@@ -19,12 +19,12 @@ class ReadAnswerTest {
   }
 
   @Test
-  void acceptsAHostSayingThereIsNoSuchRequest() {
+  void acceptsHostSayingThereIsNoSuchRequest() {
     assertThat(MergeRequestRead.violations(new MergeRequestFacts(false, "", "", ""))).isEmpty();
   }
 
   @Test
-  void refusesAFailingJobsLinesQuotedUnderAVerdictThatIsNotRed() {
+  void refusesFailingJobsLinesQuotedUnderVerdictThatIsNotRed() {
     var facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 0),

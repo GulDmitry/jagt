@@ -37,7 +37,7 @@ class GitHubCliTest {
               null, null, List.of(), List.of(), List.of(), List.of(), List.of()));
 
   @Test
-  void aRunReRunsOnlyItsFailedJobsOnTheHostItLivesOn() {
+  void runReRunsOnlyItsFailedJobsOnTheHostItLivesOn() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", "Requested rerun of run 5"));
 
@@ -50,7 +50,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void aCommitIsListedOnTheEnterpriseHostItsRemoteNames() {
+  void commitIsListedOnTheEnterpriseHostItsRemoteNames() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "[]", ""));
 
@@ -114,7 +114,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void aRunOnTheBranchThatIsNotAheadOfTheDeployCommitReadsAsNone() {
+  void runOnTheBranchThatIsNotAheadOfTheDeployCommitReadsAsNone() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(
@@ -131,7 +131,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void aLocalPathRemoteHasNoHostToAskForABranch() {
+  void localPathRemoteHasNoHostToAskForBranch() {
     Answer<CommitPipeline> answer =
         github.onBranchSince(host, "/srv/git/web.git", "dev", "0123abc");
 
@@ -140,7 +140,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void aBranchWithNoRunReadsAsNone() {
+  void branchWithNoRunReadsAsNone() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "[]", ""));
 
@@ -151,7 +151,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void aRunThatNeverStartedIsToldAsInfrastructure() {
+  void runThatNeverStartedIsToldAsInfrastructure() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(0, "{\"conclusion\":\"startup_failure\",\"jobs\":[]}", ""));
@@ -164,12 +164,13 @@ class GitHubCliTest {
   }
 
   @Test
-  void aJobThatFailedItsStepsIsToldAsTheCodes() {
+  void jobThatFailedItsStepsIsToldAsTheCodes() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(
                 0,
-                "{\"conclusion\":\"failure\",\"jobs\":[{\"databaseId\":3,\"name\":\"build\",\"conclusion\":\"failure\"},"
+                "{\"conclusion\":\"failure\",\"jobs\":[{\"databaseId\":3,\"name\":\"build\",\"con"
+                + "clusion\":\"failure\"},"
                     + "{\"databaseId\":4,\"name\":\"lint\",\"conclusion\":\"success\"}]}",
                 ""));
 
@@ -190,7 +191,7 @@ class GitHubCliTest {
     "queued,'',running",
     "completed,'',unknown"
   })
-  void aRunIsToldInJagtsOwnWords(String status, String conclusion, String verdict) {
+  void runIsToldInJagtsOwnWords(String status, String conclusion, String verdict) {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(
@@ -211,7 +212,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void aCommitReadsAsItsWorstRun() {
+  void commitReadsAsItsWorstRun() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(
@@ -230,7 +231,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void aCommitWithTwoRunsEquallyBadReadsAsTheFirst() {
+  void commitWithTwoRunsEquallyBadReadsAsTheFirst() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(
@@ -249,7 +250,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void aSignedOutGhNamesItsWebLoginOnTheHostAsTheFix() {
+  void signedOutGhNamesItsWebLoginOnTheHostAsTheFix() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "HTTP 401"));
 
@@ -261,7 +262,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void aCliExitingNonZeroIsReportedWithItsExitCodeAndWhatItSaid() {
+  void cliExitingNonZeroIsReportedWithItsExitCodeAndWhatItSaid() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(2, "", "boom"));
 
@@ -272,7 +273,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void aRequestIsClosedByItsAddressOnTheHostItLivesOn() {
+  void requestIsClosedByItsAddressOnTheHostItLivesOn() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", "Closed pull request #7"));
 
@@ -295,7 +296,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void aRefusalOfTheHostOnCloseCarriesItsOwnWords() {
+  void refusalOfTheHostOnCloseCarriesItsOwnWords() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "GraphQL: Resource not accessible"));
 
@@ -331,7 +332,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void aRequestsFingerprintIsWhatTheHostShowsOfItsStateHeadChecksAndReviews() {
+  void requestsFingerprintIsWhatTheHostShowsOfItsStateHeadChecksAndReviews() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(
             new Processes.Result(

@@ -30,7 +30,7 @@ class AcceptanceWorkspaceFilesTest {
       """;
 
   @Test
-  void passesAWorkspaceThatGotANewFlowAndRanTheFlowsCommandOnTheEnvironment(@TempDir Path dir)
+  void passesWorkspaceThatGotNewFlowAndRanTheFlowsCommandOnTheEnvironment(@TempDir Path dir)
       throws Exception {
     AcceptanceCase expected = AcceptanceCases.parse(CASE.formatted("new"));
     AcceptanceWorkspaceFiles.seed(dir, expected);
@@ -46,7 +46,7 @@ class AcceptanceWorkspaceFilesTest {
   }
 
   @Test
-  void namesTheFileAWorkspaceGotWhereNothingNewWasExpected(@TempDir Path dir) throws Exception {
+  void namesTheFileWorkspaceGotWhereNothingNewWasExpected(@TempDir Path dir) throws Exception {
     AcceptanceCase expected = AcceptanceCases.parse(CASE.formatted("none"));
     AcceptanceWorkspaceFiles.seed(dir, expected);
     Set<String> before = AcceptanceWorkspaceFiles.snapshot(dir);
@@ -59,7 +59,7 @@ class AcceptanceWorkspaceFilesTest {
   }
 
   @Test
-  void namesAWorkspaceWhoseFlowsCommandNeverRanOnTheEnvironment(@TempDir Path dir) {
+  void namesWorkspaceWhoseFlowsCommandNeverRanOnTheEnvironment(@TempDir Path dir) {
     AcceptanceCase expected = AcceptanceCases.parse(CASE.formatted("none"));
     AcceptanceWorkspaceFiles.seed(dir, expected);
     Set<String> before = AcceptanceWorkspaceFiles.snapshot(dir);

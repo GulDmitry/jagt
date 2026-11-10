@@ -18,8 +18,8 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
@@ -98,7 +98,7 @@ class StopTriageJobTest {
   }
 
   @Test
-  void aStopIsReadOnceAndItsHoverGainsTheTriageLine(@TempDir Path root) {
+  void stopIsReadOnceAndItsHoverGainsTheTriageLine(@TempDir Path root) {
     OrchestratorPaths paths = pathsIn(root);
     StateService state =
         stateWith(paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());
@@ -128,7 +128,7 @@ class StopTriageJobTest {
   }
 
   @Test
-  void aLiftEndsTheReadAndTheNextStopIsReadAfresh(@TempDir Path root) {
+  void liftEndsTheReadAndTheNextStopIsReadAfresh(@TempDir Path root) {
     OrchestratorPaths paths = pathsIn(root);
     StateService state =
         stateWith(paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());
@@ -148,7 +148,7 @@ class StopTriageJobTest {
   }
 
   @Test
-  void aPausedTaskIsNotRead(@TempDir Path root) {
+  void pausedTaskIsNotRead(@TempDir Path root) {
     OrchestratorPaths paths = pathsIn(root);
     StateService state =
         stateWith(
@@ -161,7 +161,7 @@ class StopTriageJobTest {
   }
 
   @Test
-  void aStopTheMasterHoldsIsNotReadUntilTheMasterLeavesIt(@TempDir Path root) {
+  void stopTheMasterHoldsIsNotReadUntilTheMasterLeavesIt(@TempDir Path root) {
     OrchestratorPaths paths = pathsIn(root);
     TaskStop stop = new TaskStop(TaskStop.Trigger.ROUNDS, 5, "4 rounds");
     StateService state = stateWith(paths, stop, Master.defaults());
@@ -180,7 +180,7 @@ class StopTriageJobTest {
   }
 
   @Test
-  void aFailedReadSaysSoOnTheHoverAndTheStopIsNotAskedAgain(@TempDir Path root) {
+  void failedReadSaysSoOnTheHoverAndTheStopIsNotAskedAgain(@TempDir Path root) {
     OrchestratorPaths paths = pathsIn(root);
     StateService state =
         stateWith(paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());
@@ -198,7 +198,7 @@ class StopTriageJobTest {
   }
 
   @Test
-  void aLiftThatLooksSafeStillLeavesTheStopStandingAndTellsNobody(@TempDir Path root) {
+  void liftThatLooksSafeStillLeavesTheStopStandingAndTellsNobody(@TempDir Path root) {
     OrchestratorPaths paths = pathsIn(root);
     StateService state =
         stateWith(paths, new TaskStop(TaskStop.Trigger.SHIPS, 5, "4 ships"), Master.defaults());

@@ -67,7 +67,7 @@ abstract class MasterVerdictEvalTest {
 
   private static final Duration VERDICT_WAIT = Duration.ofMinutes(20);
 
-  private static final String DECIDED = " \u2014 decided: ";
+  private static final String DECIDED = " — decided: ";
 
   private static final AtomicInteger ROUND = new AtomicInteger();
 
@@ -157,7 +157,7 @@ abstract class MasterVerdictEvalTest {
 
   @ParameterizedTest
   @MethodSource("rounds")
-  void handsBackTheVerdictAHumanWouldHave(MasterCase round) {
+  void handsBackTheVerdictHumanWouldHave(MasterCase round) {
     EvalQuorum.configured()
         .hold(round.instructions(), this::masterReviewSpend, () -> oneRun(round));
   }
@@ -182,14 +182,14 @@ abstract class MasterVerdictEvalTest {
             .title(round.instructions())
             .build();
     if (round.answers()) {
-      decidesAsAHumanWould(
+      decidesAsHumanWould(
           round,
           taskId,
           task.withReport(AgentReport.QUESTION)
               .withStatus(round.status(), round.answer().question(), 0),
           worktree);
     } else {
-      handsBackAVerdict(round, taskId, task, worktree);
+      handsBackVerdict(round, taskId, task, worktree);
     }
     List<ReadGateController.ToolCall> heard =
         Mockito.mockingDetails(readGate).getInvocations().stream()
@@ -204,7 +204,7 @@ abstract class MasterVerdictEvalTest {
                     && Path.of(call.cwd()).normalize().startsWith(worktree.normalize()));
   }
 
-  private void handsBackAVerdict(MasterCase round, String taskId, TaskState task, Path worktree) {
+  private void handsBackVerdict(MasterCase round, String taskId, TaskState task, Path worktree) {
     stateService.putTask(taskId, task);
     Optional<MasterReview.Verdict> verdict;
     try {
@@ -216,8 +216,12 @@ abstract class MasterVerdictEvalTest {
     if (verdict.isEmpty()) {
       throw EvalStalled.because("no verdict inside " + VERDICT_WAIT);
     }
-    String report = MasterVerdictReport.of(round.verdict() + ", naming " + round.names(), worktree);
-    assertThat(verdict.orElseThrow().kind()).describedAs("%s", report).isEqualTo(round.verdict());
+    String report =
+        MasterVerdictReport.of(
+            round.expect().verdict() + ", naming " + round.expect().names(), worktree);
+    assertThat(verdict.orElseThrow().kind())
+        .describedAs("%s", report)
+        .isEqualTo(round.expect().verdict());
     MasterReview.Verdict judged = verdict.orElseThrow();
     String named =
         String.join(
@@ -227,12 +231,12 @@ abstract class MasterVerdictEvalTest {
                         .map(MasterReview.Said::line),
                     judged.questions().stream())
                 .toList());
-    assertThat(round.names())
+    assertThat(round.expect().names())
         .describedAs("%s", report)
         .allSatisfy(name -> assertThat(named).containsAnyOf(name.split("\\|")));
   }
 
-  private void decidesAsAHumanWould(MasterCase round, String taskId, TaskState task, Path worktree)
+  private void decidesAsHumanWould(MasterCase round, String taskId, TaskState task, Path worktree)
       throws Exception {
     MasterEvalTranscripts.typedIn(worktree, round.answer().said());
     AtomicReference<String> firstLine = new AtomicReference<>();
@@ -263,12 +267,12 @@ abstract class MasterVerdictEvalTest {
     String report =
         MasterVerdictReport.of(
             "a decision whose first line names "
-                + round.names()
+                + round.expect().names()
                 + ", never "
                 + round.answer().refused(),
             worktree);
     String text = decided.orElseThrow().toLowerCase(Locale.ROOT);
-    assertThat(round.names())
+    assertThat(round.expect().names())
         .describedAs("%s", report)
         .allSatisfy(name -> assertThat(text).containsAnyOf(alternatives(name)));
     assertThat(round.answer().refused())

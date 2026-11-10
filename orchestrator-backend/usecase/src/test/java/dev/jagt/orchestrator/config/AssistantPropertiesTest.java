@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class AssistantPropertiesTest {
 
   @Test
-  void givesAKindItsOwnServersWhereItDeclaresThem() {
+  void givesKindItsOwnServersWhereItDeclaresThem() {
     AssistantProperties assistant =
         AssistantProperties.empty()
             .withMcpConfig("{\"mcpServers\":{\"everything\":{}}}")
@@ -22,7 +22,7 @@ class AssistantPropertiesTest {
   }
 
   @Test
-  void fallsBackToThePinnedListForAKindThatDeclaresNone() {
+  void fallsBackToThePinnedListForKindThatDeclaresNone() {
     AssistantProperties assistant =
         AssistantProperties.empty()
             .withMcpConfig("{\"mcpServers\":{\"everything\":{}}}")
@@ -39,7 +39,7 @@ class AssistantPropertiesTest {
   }
 
   @Test
-  void ceilsASpendAt1Dollar75WhereNoneIsSet() {
+  void ceilsSpendAt1Dollar75WhereNoneIsSet() {
     assertThat(AssistantProperties.empty().maxCostUsd()).isEqualTo(2.55);
   }
 

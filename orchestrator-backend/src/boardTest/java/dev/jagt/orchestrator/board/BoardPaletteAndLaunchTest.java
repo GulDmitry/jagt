@@ -43,7 +43,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void thePaletteConfirmsALineItCanRunAsTyped() {
+  void thePaletteConfirmsLineItCanRunAsTyped() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -63,7 +63,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void thePaletteExecutesACommandItUnderstandsWithoutPayingForTheModel() {
+  void thePaletteExecutesCommandItUnderstandsWithoutPayingForTheModel() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -108,7 +108,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void thePaletteJudgesALineTypedBeforeTheCommandsArrivedOnceTheyDo() {
+  void thePaletteJudgesLineTypedBeforeTheCommandsArrivedOnceTheyDo() {
     List<Route> verbs = new ArrayList<>();
     Page page = session.newPage();
     page.route("**/api/commands", verbs::add);
@@ -123,7 +123,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void aCommandSentBeforeTheCommandsArrivedRunsOnceTheyDoWithoutPayingTheModel() {
+  void commandSentBeforeTheCommandsArrivedRunsOnceTheyDoWithoutPayingTheModel() {
     when(launcher.launchLine(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
     List<Route> verbs = new ArrayList<>();
     Page page = session.newPage();
@@ -141,7 +141,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void thePaletteRunsARetiredVerbItselfInsteadOfPayingTheModelForIt() {
+  void thePaletteRunsRetiredVerbItselfInsteadOfPayingTheModelForIt() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
@@ -186,7 +186,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void startingATaskWithNoProjectIsAllowedWhenPlanFirstIsTicked() {
+  void startingTaskWithNoProjectIsAllowedWhenPlanFirstIsTicked() {
     when(launcher.launchUnplaced(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
     Page page = session.newPage();
@@ -205,7 +205,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void startingATaskWithNoProjectAndNoPlanFirstSaysSoAndSendsNothing() {
+  void startingTaskWithNoProjectAndNoPlanFirstSaysSoAndSendsNothing() {
     Page page = session.newPage();
 
     page.navigate("http://localhost:" + port + "/");
@@ -220,7 +220,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void startingAFreshFormSaysItNeedsATicketOrNotesAndSendsNothing() {
+  void startingFreshFormSaysItNeedsTicketOrNotesAndSendsNothing() {
     Page page = session.newPage();
 
     page.navigate("http://localhost:" + port + "/");
@@ -234,7 +234,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void startingWithWordsInTheTicketFieldSaysATicketIsAKeyOrAUrlAndSendsNothing() {
+  void startingWithWordsInTheTicketFieldSaysTicketIsKeyOrUrlAndSendsNothing() {
     Page page = session.newPage();
 
     page.navigate("http://localhost:" + port + "/");
@@ -313,7 +313,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void aTypedLaunchCarriesEveryModifierAndNotOnlyTheTicket() {
+  void typedLaunchCarriesEveryModifierAndNotOnlyTheTicket() {
     when(launcher.launchLine(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
     Page page = session.newPage();
@@ -330,7 +330,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void aVerbTypedAloneHandsOverToThePartOfTheBoardItNames() {
+  void verbTypedAloneHandsOverToThePartOfTheBoardItNames() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -343,7 +343,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void aReviewRequestIsResumedFromAskWhichIsItsOnlyControl() {
+  void reviewRequestIsResumedFromAskWhichIsItsOnlyControl() {
     when(launcher.resume("https://host.example/mr/42"))
         .thenReturn(Launched.created("ABC-9", "Resumed ABC-9 on its existing branch"));
 
@@ -382,7 +382,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void offersEveryProjectAsABoxWithNoneTicked() {
+  void offersEveryProjectAsBoxWithNoneTicked() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -394,7 +394,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void hoveringAProjectShowsItsConfigurationAndTheAddressOfItsRepository() throws Exception {
+  void hoveringProjectShowsItsConfigurationAndTheAddressOfItsRepository() throws Exception {
     Files.createDirectories(root.resolve("alpha"));
     new ProcessBuilder("git", "-C", root.resolve("alpha").toString(), "init", "-q")
         .start()
@@ -435,7 +435,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void startingATaskInBothProjectsSendsThemInTheOrderJagtYmlListsThem() {
+  void startingTaskInBothProjectsSendsThemInTheOrderJagtYmlListsThem() {
     when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9 in beta."));
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
@@ -453,7 +453,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void answersATasklessVerbItselfInsteadOfSendingItToTheModel() {
+  void answersTasklessVerbItselfInsteadOfSendingItToTheModel() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -466,7 +466,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void startingATaskWithAPickedProjectSendsThatProject() {
+  void startingTaskWithPickedProjectSendsThatProject() {
     when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9 in beta."));
 
     Page page = session.newPage();
@@ -484,7 +484,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void startingATaskWithAChosenBranchStrategySendsIt() {
+  void startingTaskWithChosenBranchStrategySendsIt() {
     when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
     Page page = session.newPage();
@@ -507,7 +507,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   @CsvSource(
       delimiter = '|',
       value = {"/api/tasks/say|{\"line\": \"hello\"}|'task'", "/api/tasks|{not json|not readable"})
-  void aMalformedRequestIsRefusedInTheShapeEveryRefusalHas(String path, String body, String named) {
+  void malformedRequestIsRefusedInTheShapeEveryRefusalHas(String path, String body, String named) {
     APIResponse refused =
         session
             .request()
@@ -560,7 +560,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   }
 
   @Test
-  void aSecondCommandEnterDuringASlowLaunchStartsNoSecondTask() {
+  void secondCommandEnterDuringSlowLaunchStartsNoSecondTask() {
     CountDownLatch release = new CountDownLatch(1);
     when(launcher.launch(any()))
         .thenAnswer(

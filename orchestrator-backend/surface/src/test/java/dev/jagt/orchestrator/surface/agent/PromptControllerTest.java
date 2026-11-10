@@ -57,7 +57,7 @@ class PromptControllerTest {
   }
 
   @Test
-  void letsAPromptThroughFromARootSessionNoTaskOwns() {
+  void letsPromptThroughFromRootSessionNoTaskOwns() {
     when(state.findByWorktree("/root")).thenReturn(Optional.empty());
 
     String answered = new PromptController(state, gate, sessions).prompt("/root", typed);

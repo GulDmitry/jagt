@@ -24,7 +24,7 @@ class MasterCaseCheckTest {
 
   @Test
   void passesTheShippedCasesAgainstTheMastersMoves(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
+    final OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
@@ -49,9 +49,9 @@ class MasterCaseCheckTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"explode", "answered"})
-  void refusesAMasterCaseNamingAnythingButAVerbTheMasterPresses(String move, @TempDir Path root)
+  void refusesMasterCaseNamingAnythingButVerbTheMasterPresses(String move, @TempDir Path root)
       throws Exception {
-    OrchestratorPaths paths =
+    final OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
@@ -85,8 +85,8 @@ class MasterCaseCheckTest {
   }
 
   @Test
-  void refusesAVerbNoMasterCaseNames(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
+  void refusesVerbNoMasterCaseNames(@TempDir Path root) throws Exception {
+    final OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
@@ -116,9 +116,9 @@ class MasterCaseCheckTest {
   }
 
   @Test
-  void refusesAStepTheMasterRelaysNoSessionCaseSetsOffByTheMaster(@TempDir Path root)
+  void refusesStepTheMasterRelaysNoSessionCaseSetsOffByTheMaster(@TempDir Path root)
       throws Exception {
-    OrchestratorPaths paths =
+    final OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
@@ -150,8 +150,8 @@ class MasterCaseCheckTest {
   }
 
   @Test
-  void refusesAMasterCaseSetOffByAnyoneButTheMaster(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
+  void refusesMasterCaseSetOffByAnyoneButTheMaster(@TempDir Path root) throws Exception {
+    final OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
@@ -201,7 +201,7 @@ class MasterCaseCheckTest {
 
   @Test
   void refusesToStartWhenTheHumansMasterCasesCannotBeRead(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
+    final OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())

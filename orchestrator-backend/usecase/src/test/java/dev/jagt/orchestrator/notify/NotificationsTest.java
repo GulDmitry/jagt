@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 class NotificationsTest {
 
   @Test
-  void handsANotificationOnlyToTheChannelsThatWantIt() {
+  void handsNotificationOnlyToTheChannelsThatWantIt() {
     Notifier uninterested = mock(Notifier.class);
     Notifier interested = mock(Notifier.class);
     when(uninterested.takes(any())).thenReturn(false);
@@ -48,7 +48,7 @@ class NotificationsTest {
   }
 
   @Test
-  void handsChannelsTheTasksAliasWhenTheNotificationIsAboutATask() {
+  void handsChannelsTheTasksAliasWhenTheNotificationIsAboutTask() {
     Notifier channel = mock(Notifier.class);
     TaskStore tasks = mock(TaskStore.class);
     when(channel.takes(any())).thenReturn(true);

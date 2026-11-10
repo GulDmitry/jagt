@@ -13,7 +13,7 @@ import org.junit.jupiter.api.io.TempDir;
 class ProjectProblemsTest {
 
   @Test
-  void refusesARepositoryWhoseParentJagtCannotCutWorktreesIn(@TempDir Path root) throws Exception {
+  void refusesRepositoryWhoseParentJagtCannotCutWorktreesIn(@TempDir Path root) throws Exception {
     Path parent = Files.createDirectory(root.resolve("parent"));
     Path repo = Files.createDirectories(parent.resolve("repo").resolve(".git")).getParent();
     assertThat(parent.toFile().setWritable(false)).isTrue();

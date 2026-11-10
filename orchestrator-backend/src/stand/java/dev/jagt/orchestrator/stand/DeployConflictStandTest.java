@@ -18,7 +18,7 @@ class DeployConflictStandTest {
   @ParameterizedTest(allowZeroInvocations = true)
   @MethodSource("runs")
   @Execution(ExecutionMode.CONCURRENT)
-  void aDeployMeetingAnotherCommitStopsAtTheConflictAndIsResolvedOrHandedOver(
+  void deployMeetingAnotherCommitStopsAtTheConflictAndIsResolvedOrHandedOver(
       StandMode mode, int run) throws Exception {
     try (StandRun stand = StandRun.start("deploy-conflict", mode)) {
       stand

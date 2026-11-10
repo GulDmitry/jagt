@@ -28,7 +28,7 @@ class StopHoldTest {
   @EnumSource(
       value = TaskStop.Trigger.class,
       names = {"STALLED", "SHIPS", "ROUNDS", "PACE", "UNCHANGED_FAILURE"})
-  void aStopForASuspectedLoopIsTheMastersTurnInAct(TaskStop.Trigger trigger) {
+  void stopForSuspectedLoopIsTheMastersTurnInAct(TaskStop.Trigger trigger) {
     TaskState task = stopped(trigger);
 
     Holder holder = Turns.next(task.status(), task.report(), StopHold.of(task, ACT), Map.of(), ACT);
@@ -49,28 +49,28 @@ class StopHoldTest {
         "WAIT",
         "DEPLOY_UNREAD"
       })
-  void aStopTheHumanSetOrAReadEndsIsNeverTheMastersTurn(TaskStop.Trigger trigger) {
+  void stopTheHumanSetOrReadEndsIsNeverTheMastersTurn(TaskStop.Trigger trigger) {
     TaskState task = stopped(trigger);
 
     assertThat(StopHold.of(task, ACT)).isEqualTo(StopHold.HUMAN);
   }
 
   @Test
-  void aStopTheHumanKeptTheLiftOfIsTheirsInAct() {
+  void stopTheHumanKeptTheLiftOfIsTheirsInAct() {
     Arbiter.Profile kept = new Arbiter.Profile(MasterMode.ACT, Set.of("lift"));
 
     assertThat(StopHold.of(stopped(TaskStop.Trigger.ROUNDS), kept)).isEqualTo(StopHold.HUMAN);
   }
 
   @Test
-  void aStopIsTheHumansInJudge() {
+  void stopIsTheHumansInJudge() {
     Arbiter.Profile judge = new Arbiter.Profile(MasterMode.JUDGE, Set.of());
 
     assertThat(StopHold.of(stopped(TaskStop.Trigger.ROUNDS), judge)).isEqualTo(StopHold.HUMAN);
   }
 
   @Test
-  void aStopTheMasterWasAskedAboutIsTheHumansOnceAsked() {
+  void stopTheMasterWasAskedAboutIsTheHumansOnceAsked() {
     TaskState task = stopped(TaskStop.Trigger.ROUNDS);
     TaskState asked = task.withMaster(Master.defaults().withAskedStop(task.stop().key()));
 
@@ -78,7 +78,7 @@ class StopHoldTest {
   }
 
   @Test
-  void aStopIsTheHumansOnceTheMasterLiftedOneSinceTheirLastLift() {
+  void stopIsTheHumansOnceTheMasterLiftedOneSinceTheirLastLift() {
     TaskState spent =
         stopped(TaskStop.Trigger.ROUNDS).withMaster(Master.defaults().withLiftedStops(1));
 

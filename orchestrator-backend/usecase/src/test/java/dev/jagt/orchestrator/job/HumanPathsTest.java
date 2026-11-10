@@ -85,7 +85,7 @@ class HumanPathsTest {
   }
 
   @Test
-  void keepsTheStepWithTheHumanWhereTheTaskNamesAProjectNobodyConfigured() {
+  void keepsTheStepWithTheHumanWhereTheTaskNamesProjectNobodyConfigured() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     when(configService.project("demo")).thenThrow(new IllegalArgumentException("no project demo"));
 

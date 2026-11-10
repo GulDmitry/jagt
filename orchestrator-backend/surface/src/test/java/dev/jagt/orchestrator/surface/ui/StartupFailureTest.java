@@ -21,7 +21,7 @@ class StartupFailureTest {
   }
 
   @Test
-  void handsBackTheWholeListWhenTheInstallationIsIncompleteRatherThanPointingAtALog() {
+  void handsBackTheWholeListWhenTheInstallationIsIncompleteRatherThanPointingAtLog() {
     IllegalStateException wrapped =
         new IllegalStateException(
             "startup failed",

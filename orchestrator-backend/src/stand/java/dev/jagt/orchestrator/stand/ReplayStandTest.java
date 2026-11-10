@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class ReplayStandTest {
 
   @Test
-  void aRecordedTicketReplaysOntoTheDeployBranchWithinTheFrame() throws Exception {
+  void recordedTicketReplaysOntoTheDeployBranchWithinTheFrame() throws Exception {
     Path recording =
         Path.of(ReplayStandTest.class.getResource("/recordings/happy-path.jsonl").toURI());
     try (StandRun stand = StandRun.replay("replay-happy-path", StandMode.ACT, recording)) {
@@ -29,7 +29,7 @@ class ReplayStandTest {
   }
 
   @Test
-  void aDeployedTaskPassesAcceptanceWhenTheRecordedFlowRunsAgainstTheStandsApp() throws Exception {
+  void deployedTaskPassesAcceptanceWhenTheRecordedFlowRunsAgainstTheStandsApp() throws Exception {
     Path recording =
         Path.of(
             ReplayStandTest.class.getResource("/recordings/happy-path-acceptance.jsonl").toURI());
@@ -47,7 +47,7 @@ class ReplayStandTest {
   }
 
   @Test
-  void endsAsADivergenceNamingTheStepARecordingNeverAnswered() throws Exception {
+  void endsAsDivergenceNamingTheStepRecordingNeverAnswered() throws Exception {
     Path recording =
         Path.of(
             ReplayStandTest.class.getResource("/recordings/happy-path-skips-ship.jsonl").toURI());

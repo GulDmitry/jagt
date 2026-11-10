@@ -19,10 +19,11 @@ class MockCeilingTest {
   private static final Pattern A_TEST = Pattern.compile("@(Parameterized)?Test\\b");
   private static final Pattern A_MOCK =
       Pattern.compile(
-          "mock\\(\\s*([A-Z]\\w*)\\.class|@Mock(?:itoBean)?\\b[^;]*?\\b([A-Z]\\w*)(?:<[^>]*>)?\\s+\\w+\\s*[;=]");
+          "mock\\(\\s*([A-Z]\\w*)\\.class|@Mock(?:itoBean)?\\b[^;]*?\\b([A-Z]\\w*)(?:<[^>]*>)?"
+          + "\\s+\\w+\\s*[;=]");
 
   @Test
-  void aTestWiresThreeMocksAtMost() {
+  void testWiresThreeMocksAtMost() {
     assertThat(unitTests().flatMap(MockCeilingTest::testsOverTheCeiling)).isEmpty();
   }
 

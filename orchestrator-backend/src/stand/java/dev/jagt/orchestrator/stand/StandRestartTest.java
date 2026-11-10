@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class StandRestartTest {
 
   @Test
-  void aRestartedJagtBindsTheFirstJagtsPortAndTheMarkerKeepsIt() throws Exception {
+  void restartedJagtBindsTheFirstJagtsPortAndTheMarkerKeepsIt() throws Exception {
     Path recording =
         Path.of(StandRestartTest.class.getResource("/recordings/happy-path.jsonl").toURI());
     try (StandRun stand = StandRun.replay("restart-keeps-port", StandMode.ACT, recording)) {

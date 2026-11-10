@@ -18,7 +18,7 @@ class PlanStandTest {
   @ParameterizedTest(allowZeroInvocations = true)
   @MethodSource("runs")
   @Execution(ExecutionMode.CONCURRENT)
-  void aTicketOpenedPlanFirstIsPlannedApprovedAndDeployed(StandMode mode, int run)
+  void ticketOpenedPlanFirstIsPlannedApprovedAndDeployed(StandMode mode, int run)
       throws Exception {
     try (StandRun stand = StandRun.start("plan", mode)) {
       stand

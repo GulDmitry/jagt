@@ -28,8 +28,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class ReviewRepliesReportTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ConfigService config = mock(ConfigService.class);
 
@@ -56,7 +55,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -66,7 +65,15 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -95,7 +102,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -106,7 +113,15 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -128,7 +143,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -138,7 +153,15 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -147,7 +170,7 @@ class ReviewRepliesReportTest {
   }
 
   @Test
-  void marksABlockWhoseVerdictTheAgentLeftOutRatherThanDroppingIt(@TempDir Path root)
+  void marksBlockWhoseVerdictTheAgentLeftOutRatherThanDroppingIt(@TempDir Path root)
       throws IOException {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(
@@ -161,7 +184,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -171,7 +194,15 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -191,7 +222,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -202,7 +233,15 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -223,7 +262,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("wt").toString(), TaskStatus.REVIEW_PENDING)
@@ -233,7 +272,15 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a1");
@@ -243,7 +290,7 @@ class ReviewRepliesReportTest {
   }
 
   @Test
-  void refusesATaskItDoesNotKnow(@TempDir Path root) {
+  void refusesTaskItDoesNotKnow(@TempDir Path root) {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     StateService state =
         new StateService(
@@ -252,12 +299,20 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
 
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("zz");
@@ -277,7 +332,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", drafting.toString(), TaskStatus.REVIEW_PENDING)
@@ -292,7 +347,15 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("");
@@ -310,7 +373,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("wt").toString(), TaskStatus.REVIEW_PENDING)
@@ -320,7 +383,15 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render(null);
@@ -356,7 +427,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", first.toString(), TaskStatus.REVIEW_PENDING)
@@ -371,7 +442,15 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("a2");
@@ -394,7 +473,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -404,7 +483,15 @@ class ReviewRepliesReportTest {
     String out =
         new ReviewRepliesReport(
                 new TaskViews(
-                    state, config, new Rounds(config, ignored -> false, () -> false, new Checkers(new TaskChart(Composition.builtIn()))), Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
+                    state,
+                    config,
+                    new Rounds(
+                        config,
+                        ignored -> false,
+                        () -> false,
+                        new Checkers(new TaskChart(Composition.builtIn()))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn()))),
                 state,
                 new ReviewDrafts(config))
             .render("");

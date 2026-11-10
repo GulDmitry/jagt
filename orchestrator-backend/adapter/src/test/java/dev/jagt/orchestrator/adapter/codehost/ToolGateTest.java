@@ -50,7 +50,7 @@ class ToolGateTest {
         "git push origin ABC-42 \\#x main",
         "git push origin ABC-42 x\\> main",
       })
-  void refusesAPushWhoseDestinationIsNotTheTasksBranch(String command) {
+  void refusesPushWhoseDestinationIsNotTheTasksBranch(String command) {
     assertThat(gate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
         .isPresent()
         .get(org.assertj.core.api.InstanceOfAssertFactories.STRING)
@@ -101,7 +101,7 @@ class ToolGateTest {
         "git -c remote.origin.push=refs/heads/ABC-42:refs/heads/main push origin ABC-42",
         "git '-c' remote.origin.push=refs/heads/ABC-42:refs/heads/main push origin ABC-42",
       })
-  void refusesAPushThatCouldSkipThePrePushCheck(String command) {
+  void refusesPushThatCouldSkipThePrePushCheck(String command) {
     assertThat(gate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
         .get()
         .asString()
@@ -144,7 +144,7 @@ class ToolGateTest {
         "curl -X POST http://[::ffff:127.0.0.1]:8290/api/tasks/say",
         "cat .jagt/MASTER-TOKEN"
       })
-  void refusesALineReachingTheBoardOrTheMastersToken(String command) {
+  void refusesLineReachingTheBoardOrTheMastersToken(String command) {
     assertThat(gate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
         .get()
         .asString()
@@ -201,7 +201,7 @@ class ToolGateTest {
   }
 
   @Test
-  void namesEveryReadAHostCliMayRunInItsRefusal() {
+  void namesEveryReadHostCliMayRunInItsRefusal() {
     assertThat(gate.refusal("gh pr merge 1", "ABC-42", 8290, Remote.ORIGIN))
         .get()
         .asString()
@@ -262,7 +262,7 @@ class ToolGateTest {
         "su -c 'gh pr merge 1'",
         "flock f -c 'gh pr merge 1'"
       })
-  void refusesAHostCliWriteHoweverItIsWrapped(String command) {
+  void refusesHostCliWriteHoweverItIsWrapped(String command) {
     assertThat(gate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
         .get()
         .asString()
@@ -304,17 +304,17 @@ class ToolGateTest {
         "env | grep gh",
         "which bash gh"
       })
-  void letsAHostCliBeNamedAnywhereButInCommandPosition(String command) {
+  void letsHostCliBeNamedAnywhereButInCommandPosition(String command) {
     assertThat(gate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).isEmpty();
   }
 
   @Test
-  void letsATaskWhoseBranchOpensWithAHashPushItQuoted() {
+  void letsTaskWhoseBranchOpensWithHashPushItQuoted() {
     assertThat(gate.refusal("git push origin '#123'", "#123", 8290, Remote.ORIGIN)).isEmpty();
   }
 
   @Test
-  void refusesAPushThatNamesNoBranchBecauseTheConfigWouldDecide() {
+  void refusesPushThatNamesNoBranchBecauseTheConfigWouldDecide() {
     assertThat(gate.refusal("git push", "ABC-42", 8290, Remote.ORIGIN))
         .get()
         .asString()
@@ -350,7 +350,7 @@ class ToolGateTest {
         "time gh $'pr' merge 1",
         "$'gh' pr merge 1"
       })
-  void refusesAGitLineInAQuotingItDoesNotRead(String command) {
+  void refusesGitLineInQuotingItDoesNotRead(String command) {
     assertThat(gate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
         .get()
         .asString()
@@ -358,7 +358,7 @@ class ToolGateTest {
   }
 
   @Test
-  void refusesALineReachingTheBoardOnTheAddressItIsServedOn() {
+  void refusesLineReachingTheBoardOnTheAddressItIsServedOn() {
     assertThat(
             gate.refusal(
                 "curl -X POST http://192.168.1.5:8290/api/tasks/say",
@@ -378,7 +378,7 @@ class ToolGateTest {
         "git -c core.x=y worktree add /wt/other",
         "cd /repos/other && git worktree add /wt/other -b ABC-42 origin/release",
       })
-  void refusesASessionCuttingItsOwnWorktree(String command) {
+  void refusesSessionCuttingItsOwnWorktree(String command) {
     assertThat(gate.refusal(command, "ABC-42", 8290, Remote.ORIGIN))
         .isPresent()
         .get(org.assertj.core.api.InstanceOfAssertFactories.STRING)
@@ -387,12 +387,12 @@ class ToolGateTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"git worktree list", "git -C /wt/ABC-42 worktree prune"})
-  void letsASessionReadAndTidyItsWorktrees(String command) {
+  void letsSessionReadAndTidyItsWorktrees(String command) {
     assertThat(gate.refusal(command, "ABC-42", 8290, Remote.ORIGIN)).isEmpty();
   }
 
   @Test
-  void namesTheProjectsOwnRemoteWhereItRefusesAPushThatCouldSkipItsCheck() {
+  void namesTheProjectsOwnRemoteWhereItRefusesPushThatCouldSkipItsCheck() {
     assertThat(
             gate.refusal(
                 "git push --no-verify upstream ABC-42", "ABC-42", 8290, new Remote("upstream")))

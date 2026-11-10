@@ -29,7 +29,7 @@ class LogTailTest {
   }
 
   @Test
-  void keepsALineThatIsNotAnEntryAsItIs(@TempDir Path dir) throws IOException {
+  void keepsLineThatIsNotAnEntryAsItIs(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("jagt.log");
     Files.writeString(log, "Exception in thread main\n");
 
@@ -46,11 +46,14 @@ class LogTailTest {
 
     String shown = new LogTail(new JsonMapper(), log.toString()).render();
 
-    assertThat(shown).contains("the last 200 lines").doesNotContain("line 0\n").contains("line 1\n");
+    assertThat(shown)
+        .contains("the last 200 lines")
+        .doesNotContain("line 0\n")
+        .contains("line 1\n");
   }
 
   @Test
-  void cutsALineLongerThanTheCapAndFlagsIt(@TempDir Path dir) throws IOException {
+  void cutsLineLongerThanTheCapAndFlagsIt(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("jagt.log");
     Files.writeString(log, "x".repeat(501));
 
@@ -60,7 +63,7 @@ class LogTailTest {
   }
 
   @Test
-  void keepsALineOfExactlyTheCapWhole(@TempDir Path dir) throws IOException {
+  void keepsLineOfExactlyTheCapWhole(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("jagt.log");
     Files.writeString(log, "x".repeat(500));
 

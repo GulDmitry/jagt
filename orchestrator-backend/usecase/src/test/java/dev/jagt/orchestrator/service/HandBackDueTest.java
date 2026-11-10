@@ -31,7 +31,7 @@ class HandBackDueTest {
   }
 
   @Test
-  void owesAChangeToTheSpecsThatDoesNotHold(@TempDir Path root) throws Exception {
+  void owesChangeToTheSpecsThatDoesNotHold(@TempDir Path root) throws Exception {
     Files.writeString(root.resolve("task_notes.md"), "notes");
     TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build();
     WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
@@ -45,7 +45,7 @@ class HandBackDueTest {
   }
 
   @Test
-  void owesACountOfTheAgentFileLinesWhenGitCannotGiveIt(@TempDir Path root) throws Exception {
+  void owesCountOfTheAgentFileLinesWhenGitCannotGiveIt(@TempDir Path root) throws Exception {
     Files.writeString(root.resolve("task_notes.md"), "notes");
     TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build();
     HandBackDue due =
@@ -56,7 +56,7 @@ class HandBackDueTest {
   }
 
   @Test
-  void findsInvalidANextModelTheRuntimeDoesNotOffer(@TempDir Path root) throws Exception {
+  void findsInvalidNextModelTheRuntimeDoesNotOffer(@TempDir Path root) throws Exception {
     Files.writeString(root.resolve("task_notes.md"), "next-model: gpt\n");
     TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build();
     OfferedModels models = mock(OfferedModels.class);
@@ -82,7 +82,7 @@ class HandBackDueTest {
   }
 
   @Test
-  void owesANoteForEachAgentFileLineTheTaskAddedThatTheNotesDoNotName(@TempDir Path root)
+  void owesNoteForEachAgentFileLineTheTaskAddedThatTheNotesDoNotName(@TempDir Path root)
       throws Exception {
     Files.writeString(root.resolve("task_notes.md"), "notes");
     TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build();
@@ -98,7 +98,7 @@ class HandBackDueTest {
   }
 
   @Test
-  void owesABlockForTheThreadsOfARoundRelayedWhileTheChecksWereRedWhenNoRepliesWereWritten(
+  void owesBlockForTheThreadsOfRoundRelayedWhileTheChecksWereRedWhenNoRepliesWereWritten(
       @TempDir Path root) throws Exception {
     Files.writeString(root.resolve("task_notes.md"), "notes");
     TaskState task =
@@ -118,7 +118,7 @@ class HandBackDueTest {
   }
 
   @Test
-  void owesNoBlockOnceAShipPostedTheRepliesAndRemovedTheFile(@TempDir Path root) throws Exception {
+  void owesNoBlockOnceShipPostedTheRepliesAndRemovedTheFile(@TempDir Path root) throws Exception {
     Files.writeString(root.resolve("task_notes.md"), "notes");
     TaskState task =
         TaskState.builder("proj", root.toString(), TaskStatus.CI_POLLING)

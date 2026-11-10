@@ -35,7 +35,7 @@ class SessionReportsTest {
   }
 
   @Test
-  void signsAnAskWithoutAToolWhenThePermissionPromptNamesNone() {
+  void signsAnAskWithoutToolWhenThePermissionPromptNamesNone() {
     new SessionReports(signs, runtime, turnEnds)
         .permissionAsked("ABC-1", SessionReports.Report.defaults());
 
@@ -44,7 +44,7 @@ class SessionReportsTest {
   }
 
   @Test
-  void signsNoAskForANotificationWhoseWordingSaysItNeedsPermission() {
+  void signsNoAskForNotificationWhoseWordingSaysItNeedsPermission() {
     new SessionReports(signs, runtime, turnEnds)
         .record(
             "ABC-1",
@@ -56,7 +56,7 @@ class SessionReportsTest {
   }
 
   @Test
-  void recordsASessionClearedOrResumedAsIdleBecauseANewStartFollows() {
+  void recordsSessionClearedOrResumedAsIdleBecauseNewStartFollows() {
     when(runtime.continuingEnds()).thenReturn(Set.of("clear", "resume"));
 
     new SessionReports(signs, runtime, turnEnds)
@@ -69,7 +69,7 @@ class SessionReportsTest {
   }
 
   @Test
-  void recordsASessionThatEndedForGoodAsGone() {
+  void recordsSessionThatEndedForGoodAsGone() {
     when(runtime.continuingEnds()).thenReturn(Set.of("clear", "resume"));
 
     new SessionReports(signs, runtime, turnEnds)
@@ -82,7 +82,7 @@ class SessionReportsTest {
   }
 
   @Test
-  void recordsAUsageLimitFailureAsFailedAndSaysItIsOne() {
+  void recordsUsageLimitFailureAsFailedAndSaysItIsOne() {
     when(runtime.rateLimitError()).thenReturn("rate_limit");
 
     boolean limit =
@@ -106,7 +106,7 @@ class SessionReportsTest {
   }
 
   @Test
-  void recordsATurnEndAsTheSessionGoingIdleAndAnswersWithTheTurnsVerdict() {
+  void recordsTurnEndAsTheSessionGoingIdleAndAnswersWithTheTurnsVerdict() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build();
     when(turnEnds.answer("ABC-1", task, false, false)).thenReturn("{\"decision\": \"block\"}");
 
@@ -119,7 +119,7 @@ class SessionReportsTest {
   }
 
   @Test
-  void reportsASessionWaitingOnItsOwnBackgroundWorkAsWorkingSoItIsNeverCold() {
+  void reportsSessionWaitingOnItsOwnBackgroundWorkAsWorkingSoItIsNeverCold() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
 
     new SessionReports(signs, runtime, turnEnds)
@@ -129,7 +129,7 @@ class SessionReportsTest {
   }
 
   @Test
-  void handsACompactedSessionItsBriefBack() {
+  void handsCompactedSessionItsBriefBack() {
     when(runtime.compactedStart()).thenReturn("compact");
 
     String answered =
@@ -143,7 +143,7 @@ class SessionReportsTest {
   }
 
   @Test
-  void restatesTheTaskAndItsOpenQuestionToACompactedSession() {
+  void restatesTheTaskAndItsOpenQuestionToCompactedSession() {
     when(runtime.compactedStart()).thenReturn("compact");
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -170,7 +170,7 @@ class SessionReportsTest {
   }
 
   @Test
-  void restatesTheLastReportAndTheBranchToACompactedSession() {
+  void restatesTheLastReportAndTheBranchToCompactedSession() {
     when(runtime.compactedStart()).thenReturn("compact");
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -190,7 +190,7 @@ class SessionReportsTest {
   }
 
   @Test
-  void restatesNoReportToACompactedSessionTheTaskNeverHeardFrom() {
+  void restatesNoReportToCompactedSessionTheTaskNeverHeardFrom() {
     when(runtime.compactedStart()).thenReturn("compact");
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build();
 
@@ -219,7 +219,7 @@ class SessionReportsTest {
   }
 
   @Test
-  void briefsNothingWhenTheCliSaysNothingAboutWhyASessionStarted() {
+  void briefsNothingWhenTheCliSaysNothingAboutWhySessionStarted() {
     when(runtime.compactedStart()).thenReturn("");
 
     String answered =

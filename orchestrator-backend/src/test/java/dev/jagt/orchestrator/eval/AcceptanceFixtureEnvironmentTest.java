@@ -21,7 +21,7 @@ class AcceptanceFixtureEnvironmentTest {
   }
 
   @Test
-  void aRecordedCallAnswersWithItsRecordedStatusAndBody() throws Exception {
+  void recordedCallAnswersWithItsRecordedStatusAndBody() throws Exception {
     try (AcceptanceFixtureEnvironment environment =
         AcceptanceFixtureEnvironment.serve(
             Map.of(
@@ -36,14 +36,14 @@ class AcceptanceFixtureEnvironmentTest {
   }
 
   @Test
-  void aCallNoRecordingHoldsFailsAsAMissingPage() throws Exception {
+  void callNoRecordingHoldsFailsAsMissingPage() throws Exception {
     try (AcceptanceFixtureEnvironment environment = AcceptanceFixtureEnvironment.serve(Map.of())) {
       assertThat(call("GET", environment.url() + "/anything").statusCode()).isEqualTo(404);
     }
   }
 
   @Test
-  void aRoleWithNoSavedCredentialIsRefusedItsSignIn() throws Exception {
+  void roleWithNoSavedCredentialIsRefusedItsSignIn() throws Exception {
     try (AcceptanceFixtureEnvironment environment =
         AcceptanceFixtureEnvironment.serve(
             Map.of("login", Map.of("insurer-role", "empty form, no saved credential")))) {
@@ -55,7 +55,7 @@ class AcceptanceFixtureEnvironmentTest {
   }
 
   @Test
-  void aLiveEnvironmentIsHandedOnAsItIsWithNoServerStarted() {
+  void liveEnvironmentIsHandedOnAsItIsWithNoServerStarted() {
     try (AcceptanceFixtureEnvironment environment =
         AcceptanceFixtureEnvironment.serve(Map.of("live", "https://app.example.test"))) {
       assertThat(environment.url()).isEqualTo("https://app.example.test");
@@ -63,7 +63,7 @@ class AcceptanceFixtureEnvironmentTest {
   }
 
   @Test
-  void aRecordedPageAnswersItsFieldsAsJson() throws Exception {
+  void recordedPageAnswersItsFieldsAsJson() throws Exception {
     try (AcceptanceFixtureEnvironment environment =
         AcceptanceFixtureEnvironment.serve(
             Map.of("ui", Map.of("/contracts/sample-1", Map.of("renewalDate", "01.07.2027"))))) {

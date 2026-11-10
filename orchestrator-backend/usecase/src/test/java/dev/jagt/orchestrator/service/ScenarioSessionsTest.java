@@ -48,7 +48,11 @@ class ScenarioSessionsTest {
     sessions.open("alpha", "");
 
     verify(windows)
-        .open("alpha", "", "the brief\n\nProject: alpha", new CheckerReader.Workspace(root, List.of()));
+        .open(
+            "alpha",
+            "",
+            "the brief\n\nProject: alpha",
+            new CheckerReader.Workspace(root, List.of()));
   }
 
   @Test

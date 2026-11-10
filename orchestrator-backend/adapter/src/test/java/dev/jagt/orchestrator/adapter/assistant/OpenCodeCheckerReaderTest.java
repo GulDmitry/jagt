@@ -24,8 +24,8 @@ import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -66,7 +66,7 @@ class OpenCodeCheckerReaderTest {
           List.of(ACCEPTANCE));
 
   @Test
-  void mapsAFencedAnswerToTheAcceptanceVerdictItsRowsCarry(@TempDir Path worktree) {
+  void mapsFencedAnswerToTheAcceptanceVerdictItsRowsCarry(@TempDir Path worktree) {
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
         .thenReturn(
             new Processes.Result(

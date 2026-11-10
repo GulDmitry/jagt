@@ -44,7 +44,7 @@ class HumanWaitsTest {
   }
 
   @Test
-  void splitsTheIntervalWhereAStopTakesOverTheReasonForWaiting() {
+  void splitsTheIntervalWhereStopTakesOverTheReasonForWaiting() {
     TaskState stopped =
         TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
             .stop(new TaskStop(TaskStop.Trigger.MISS, 300, "no case"))
@@ -58,7 +58,7 @@ class HumanWaitsTest {
   }
 
   @Test
-  void namesAPermissionPromptApartFromAQuestion() {
+  void namesPermissionPromptApartFromQuestion() {
     TaskState prompt =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .report(AgentReport.PERMISSION)
@@ -107,7 +107,7 @@ class HumanWaitsTest {
   }
 
   @Test
-  void namesAVerdictTheMasterLeftToTheHumanApartFromAStatusThatIsTheHumans() {
+  void namesVerdictTheMasterLeftToTheHumanApartFromStatusThatIsTheHumans() {
     TaskState round = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
     TaskState judged = HumanWaits.noted(round, Holder.HUMAN, true, 5);

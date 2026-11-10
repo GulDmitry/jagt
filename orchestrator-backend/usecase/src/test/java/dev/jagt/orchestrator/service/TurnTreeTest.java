@@ -29,7 +29,7 @@ class TurnTreeTest {
   }
 
   @Test
-  void aTreeEditedSinceTheLastEndIsChanged() {
+  void treeEditedSinceTheLastEndIsChanged() {
     when(changes.state(task)).thenReturn(Optional.of("h:2"));
     when(turns.of("ABC-1")).thenReturn(Turn.none().withMark("turn-end:tree", "h:1"));
 
@@ -48,7 +48,7 @@ class TurnTreeTest {
   }
 
   @Test
-  void theFirstEndOnACleanTreeIsNotChanged() {
+  void theFirstEndOnCleanTreeIsNotChanged() {
     when(changes.state(task)).thenReturn(Optional.of("h:1"));
     when(turns.of("ABC-1")).thenReturn(Turn.none());
 
@@ -56,7 +56,7 @@ class TurnTreeTest {
   }
 
   @Test
-  void aTreeGitCannotReadIsNotChangedAndNotMarked() {
+  void treeGitCannotReadIsNotChangedAndNotMarked() {
     when(changes.state(task)).thenReturn(Optional.empty());
 
     assertThat(new TurnTree(changes, turns).changedSinceLastEnd("ABC-1", task)).isFalse();

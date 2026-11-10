@@ -59,7 +59,7 @@ class OrchestratorApplicationTest {
   }
 
   @Test
-  void theApplicationStartsWithEveryBeanWiredSoAStartupBreakFailsHereAndNotOnLaunch() {
+  void theApplicationStartsWithEveryBeanWiredSoStartupBreakFailsHereAndNotOnLaunch() {
     assertThat(context.getBean(McpController.class)).isNotNull();
     assertThat(context.getBean(GlobalCommands.class)).isNotNull();
     assertThat(context.getBean(TicketReader.class)).isNotNull();
@@ -72,7 +72,7 @@ class OrchestratorApplicationTest {
   }
 
   @Test
-  void keepsTheDevelopersOwnStateFileOutOfABootedContext() {
+  void keepsTheDevelopersOwnStateFileOutOfBootedContext() {
     assertThat(context.getBean(OrchestratorPaths.class).stateFile().toString())
         .startsWith(root.toString());
   }

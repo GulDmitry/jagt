@@ -87,7 +87,7 @@ class VerifyJobTest {
   }
 
   @Test
-  void sendsAFailingRunBackToTheAgentWithItsOutputInsteadOfToTheHuman(@TempDir Path root) {
+  void sendsFailingRunBackToTheAgentWithItsOutputInsteadOfToTheHuman(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -121,7 +121,7 @@ class VerifyJobTest {
   }
 
   @Test
-  void runsNoProbeForAQuestionAtVerifying(@TempDir Path root) {
+  void runsNoProbeForQuestionAtVerifying(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -156,7 +156,7 @@ class VerifyJobTest {
   }
 
   @Test
-  void stopsTheTaskInsteadOfVerifyingOrRelayingATreeAgainAfterItsVerificationFailed(
+  void stopsTheTaskInsteadOfVerifyingOrRelayingTreeAgainAfterItsVerificationFailed(
       @TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -212,7 +212,7 @@ class VerifyJobTest {
   }
 
   @Test
-  void verifiesAChangedTreeAgainAfterAFailedVerification(@TempDir Path root) {
+  void verifiesChangedTreeAgainAfterFailedVerification(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -263,7 +263,7 @@ class VerifyJobTest {
   }
 
   @Test
-  void storesNoMoreOfAFailedRunsOutputThanTheStopCanShowPlusOneCharToFlagTheCut(
+  void storesNoMoreOfFailedRunsOutputThanTheStopCanShowPlusOneCharToFlagTheCut(
       @TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -299,7 +299,7 @@ class VerifyJobTest {
   }
 
   @Test
-  void leavesATaskNobodyIsVerifyingAlone(@TempDir Path root) {
+  void leavesTaskNobodyIsVerifyingAlone(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -370,7 +370,7 @@ class VerifyJobTest {
   }
 
   @Test
-  void keepsATaskStoppedAtItsRoundCeilingInVerifyingInsteadOfReportingTheRunFailed(
+  void keepsTaskStoppedAtItsRoundCeilingInVerifyingInsteadOfReportingTheRunFailed(
       @TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -456,7 +456,7 @@ class VerifyJobTest {
   }
 
   @Test
-  void dropsAFailedVerifyCommandWhenTheHumanShippedTheTaskMeanwhile(@TempDir Path root) {
+  void dropsFailedVerifyCommandWhenTheHumanShippedTheTaskMeanwhile(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()

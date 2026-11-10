@@ -22,7 +22,8 @@ class StandHostTest {
       HttpResponse<String> response =
           post(
               host,
-              "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2024-11-05\"}}");
+              "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVe"
+              + "rsion\":\"2024-11-05\"}}");
 
       JsonNode result = JsonMapper.builder().build().readTree(response.body()).path("result");
       assertThat(result.path("serverInfo").path("name").asString()).isEqualTo("stand-host");
@@ -32,7 +33,7 @@ class StandHostTest {
   }
 
   @Test
-  void acceptsTheInitializedNotificationWithoutABody() throws Exception {
+  void acceptsTheInitializedNotificationWithoutBody() throws Exception {
     try (StandHost host = new StandHost(directory).start()) {
       HttpResponse<String> response =
           post(host, "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}");
@@ -57,8 +58,10 @@ class StandHostTest {
   void keepsOneRequestWhenTheSameBranchIsCreatedTwice() throws Exception {
     try (StandHost host = new StandHost(directory).start()) {
       String create =
-          "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\",\"params\":{\"name\":\"create_merge_request\","
-              + "\"arguments\":{\"source_branch\":\"feature/abc-42\",\"target_branch\":\"main\",\"title\":\"ABC-42\","
+          "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\",\"params\":{\"name\":\"create_"
+          + "merge_request\","
+              + "\"arguments\":{\"source_branch\":\"feature/abc-42\",\"target_branch\":\"main\",\"t"
+              + "itle\":\"ABC-42\","
               + "\"description\":\"d\"}}}";
       post(host, create);
       post(host, create);
@@ -67,7 +70,8 @@ class StandHostTest {
           post(
                   host,
                   "{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"tools/call\",\"params\":{\"name\":"
-                      + "\"list_merge_requests\",\"arguments\":{\"source_branch\":\"feature/abc-42\"}}}")
+                      + "\"list_merge_requests\",\"arguments\":{\"source_branch\":\"feature/abc-42"
+                      + "\"}}}")
               .body();
       String text =
           JsonMapper.builder()
@@ -83,7 +87,7 @@ class StandHostTest {
   }
 
   @Test
-  void resolvesAThreadTheScenarioAddedAndReadsItBack() throws Exception {
+  void resolvesThreadTheScenarioAddedAndReadsItBack() throws Exception {
     try (StandHost host = new StandHost(directory).start()) {
       host.store().createRequest("feature/abc-42", "main", "ABC-42", "d");
       host.store().addThread(1, "src/A.java", 7, "rename this");
@@ -97,7 +101,8 @@ class StandHostTest {
                   + "/requests/1\"}}}");
       post(
           host,
-          "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/call\",\"params\":{\"name\":\"resolve_thread\","
+          "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/call\",\"params\":{\"name\":\"resolve"
+          + "_thread\","
               + "\"arguments\":{\"id\":1,\"thread_id\":1}}}");
 
       assertThat(before.body()).contains("rename this").contains("reviewer");
@@ -107,7 +112,7 @@ class StandHostTest {
   }
 
   @Test
-  void listsThePipelineOfARequestWithItsStatusAndBranch() throws Exception {
+  void listsThePipelineOfRequestWithItsStatusAndBranch() throws Exception {
     try (StandHost host = new StandHost(directory).start()) {
       host.store().createRequest("feature/abc-42", "main", "ABC-42", "d");
       host.store().setPipeline(1, "success");
@@ -137,7 +142,7 @@ class StandHostTest {
   }
 
   @Test
-  void failsAnUnknownToolAsAToolError() throws Exception {
+  void failsAnUnknownToolAsToolError() throws Exception {
     try (StandHost host = new StandHost(directory).start()) {
       HttpResponse<String> response =
           post(

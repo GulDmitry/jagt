@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -88,7 +87,7 @@ class AcceptanceWaitJobTest {
   }
 
   @Test
-  void keepsAFinishedChecksRecordWhateverTheEnvironmentAnswers(@TempDir Path root)
+  void keepsFinishedChecksRecordWhateverTheEnvironmentAnswers(@TempDir Path root)
       throws IOException {
     ConfigService config = mock(ConfigService.class);
     EnvironmentProbe probe = mock(EnvironmentProbe.class);

@@ -15,7 +15,6 @@ import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.TrustedGitState;
 import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
 import java.nio.file.Path;
 import java.util.List;
@@ -43,7 +42,7 @@ class ChargedReviewsTest {
   }
 
   @Test
-  void failsAReadThatAnsweredNothing() {
+  void failsReadThatAnsweredNothing() {
     RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
     when(reviewer.review(round)).thenReturn(Answer.unavailable());
 

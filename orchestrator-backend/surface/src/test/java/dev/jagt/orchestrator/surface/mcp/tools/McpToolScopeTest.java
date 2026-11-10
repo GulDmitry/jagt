@@ -68,7 +68,7 @@ class McpToolScopeTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"deploy_task", "revert_task"})
-  void refusesASubAgentReachingForTheToolsThatWriteASharedBranch(String tool) {
+  void refusesSubAgentReachingForTheToolsThatWriteSharedBranch(String tool) {
     CommandService commands = mock(CommandService.class);
     Registered registered = new Registered();
     new DeployTools(commands).declare(registered);
@@ -82,7 +82,7 @@ class McpToolScopeTest {
   }
 
   @Test
-  void offersNoToolThatClosesATask() {
+  void offersNoToolThatClosesTask() {
     Registered registered = new Registered();
     new TaskLifecycleTools(
             mock(TaskProvisioning.class), mock(TaskViews.class), mock(ConfigService.class))
@@ -106,7 +106,7 @@ class McpToolScopeTest {
   }
 
   @Test
-  void letsTheMasterRevertADeployBecauseItRunsInNoWorktree() {
+  void letsTheMasterRevertDeployBecauseItRunsInNoWorktree() {
     CommandService commands = mock(CommandService.class);
     Registered registered = new Registered();
     new DeployTools(commands).declare(registered);
@@ -119,7 +119,7 @@ class McpToolScopeTest {
   }
 
   @Test
-  void refusesAStatusUpdateAimedAtASiblingTask() {
+  void refusesStatusUpdateAimedAtSiblingTask() {
     StateService stateService = mock(StateService.class);
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
     when(stateService.canonicalTaskId("OTHER-1")).thenReturn("OTHER-1");
@@ -208,7 +208,7 @@ class McpToolScopeTest {
   }
 
   @Test
-  void refusesASubAgentCreatingATask() {
+  void refusesSubAgentCreatingTask() {
     TaskProvisioning provisioning = mock(TaskProvisioning.class);
     Registered registered = new Registered();
     new TaskLifecycleTools(provisioning, mock(TaskViews.class), mock(ConfigService.class))
@@ -252,7 +252,7 @@ class McpToolScopeTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"write_task_context", "open_task_tab", "close_task_tab", "focus_task"})
-  void refusesASubAgentDrivingEvenItsOwnSession(String tool) {
+  void refusesSubAgentDrivingEvenItsOwnSession(String tool) {
     AgentSessions sessions = mock(AgentSessions.class);
     Registered registered = new Registered();
     new SessionTools(sessions, mock(CommandService.class)).declare(registered);
@@ -298,7 +298,7 @@ class McpToolScopeTest {
   }
 
   @Test
-  void focusesATaskThroughTheCommandGate() {
+  void focusesTaskThroughTheCommandGate() {
     AgentSessions sessions = mock(AgentSessions.class);
     CommandService commands = mock(CommandService.class);
     Registered registered = new Registered();
@@ -313,7 +313,7 @@ class McpToolScopeTest {
   }
 
   @Test
-  void opensATaskTabInTheModeTheMasterNamed() {
+  void opensTaskTabInTheModeTheMasterNamed() {
     AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.openTaskTab("ABC-1", "plan")).thenReturn("tab open for ABC-1");
     Registered registered = new Registered();
@@ -327,7 +327,7 @@ class McpToolScopeTest {
   }
 
   @Test
-  void closesATaskTabForTheMaster() {
+  void closesTaskTabForTheMaster() {
     AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.closeTaskTab("ABC-1")).thenReturn("tab closed for ABC-1");
     Registered registered = new Registered();
@@ -372,7 +372,7 @@ class McpToolScopeTest {
   }
 
   @Test
-  void initializesATaskForTheMasterAndAnswersWhatProvisioningSaid() {
+  void initializesTaskForTheMasterAndAnswersWhatProvisioningSaid() {
     TaskProvisioning provisioning = mock(TaskProvisioning.class);
     when(provisioning.initializeTask(any())).thenReturn("ABC-2 initialized");
     Registered registered = new Registered();
@@ -392,7 +392,7 @@ class McpToolScopeTest {
   }
 
   @Test
-  void refusesASubAgentListingEveryTask() {
+  void refusesSubAgentListingEveryTask() {
     TaskViews taskViews = mock(TaskViews.class);
     Registered registered = new Registered();
     new TaskLifecycleTools(mock(TaskProvisioning.class), taskViews, mock(ConfigService.class))
@@ -407,7 +407,7 @@ class McpToolScopeTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"press_task", "run_command"})
-  void refusesASubAgentPressingAVerbOrACommand(String tool) {
+  void refusesSubAgentPressingVerbOrCommand(String tool) {
     MasterPresses presses = mock(MasterPresses.class);
     Registered registered = new Registered();
     new PressTools(presses).declare(registered);
@@ -424,7 +424,7 @@ class McpToolScopeTest {
   }
 
   @Test
-  void letsTheMasterPressAVerbOnATaskWithTheProjectItNames() {
+  void letsTheMasterPressVerbOnTaskWithTheProjectItNames() {
     MasterPresses presses = mock(MasterPresses.class);
     when(presses.press("ABC-1", "remove-repo", "api")).thenReturn("removed api from ABC-1");
     Registered registered = new Registered();
@@ -441,7 +441,7 @@ class McpToolScopeTest {
   }
 
   @Test
-  void refusesAVerbNoTaskActionNames() {
+  void refusesVerbNoTaskActionNames() {
     MasterPresses presses = mock(MasterPresses.class);
     Registered registered = new Registered();
     new PressTools(presses).declare(registered);
@@ -457,7 +457,7 @@ class McpToolScopeTest {
   }
 
   @Test
-  void letsTheMasterRunACommandNoTaskOwns() {
+  void letsTheMasterRunCommandNoTaskOwns() {
     MasterPresses presses = mock(MasterPresses.class);
     when(presses.run("stats", "today")).thenReturn("spent 3");
     Registered registered = new Registered();

@@ -27,7 +27,7 @@ class MasterCommandTest {
   private final MasterBriefs briefs = new MasterBriefs(paths, new SessionBrief(paths));
 
   @Test
-  void offersALessonForTheTaskYouRevertedAfterItPassed() {
+  void offersLessonForTheTaskYouRevertedAfterItPassed() {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -74,7 +74,7 @@ class MasterCommandTest {
   }
 
   @Test
-  void saysAJudgingMasterReadsAndPressesNothing() {
+  void saysJudgingMasterReadsAndPressesNothing() {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -226,7 +226,7 @@ class MasterCommandTest {
   }
 
   @Test
-  void showsWhatTheReviewCostAsALowerBoundWhenAnUnpricedModelAnswered() {
+  void showsWhatTheReviewCostAsLowerBoundWhenAnUnpricedModelAnswered() {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()

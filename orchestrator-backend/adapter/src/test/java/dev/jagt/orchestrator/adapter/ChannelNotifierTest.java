@@ -33,7 +33,7 @@ class ChannelNotifierTest {
   }
 
   @Test
-  void takesAListedEvent() {
+  void takesListedEvent() {
     ChannelNotifier channel =
         new ChannelNotifier(
             configWith(new ChannelConfig(List.of("cat"), List.of("deployed"))),
@@ -61,7 +61,7 @@ class ChannelNotifierTest {
   }
 
   @Test
-  void takesARequestOpeningAndADeployByDefault() {
+  void takesRequestOpeningAndDeployByDefault() {
     ChannelNotifier channel =
         new ChannelNotifier(
             configWith(new ChannelConfig(List.of("cat"), null)), new ProcessRunner());
@@ -83,7 +83,8 @@ class ChannelNotifierTest {
 
     assertThat(Files.readString(out))
         .isEqualTo(
-            "{\"event\":\"deployed\",\"task\":\"ABC-42\",\"title\":\"deployed\",\"body\":\"landed\"}");
+            "{\"event\":\"deployed\",\"task\":\"ABC-42\",\"title\":\"deployed\",\"body\":\"land"
+            + "ed\"}");
   }
 
   @Test

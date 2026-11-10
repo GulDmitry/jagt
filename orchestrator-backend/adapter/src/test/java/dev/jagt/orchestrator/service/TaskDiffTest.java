@@ -50,7 +50,8 @@ class TaskDiffTest {
 
   private TaskDiff diffOf(Path repo, Path worktree) {
     when(state.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
-    when(config.project("proj")).thenReturn(new ProjectConfig(repo.toString(), "origin/main", "dev", null));
+    when(config.project("proj"))
+        .thenReturn(new ProjectConfig(repo.toString(), "origin/main", "dev", null));
     TaskState task =
         TaskState.builder(
                 List.of(TaskRepo.of("proj", worktree.toString())), TaskStatus.REVIEW_PENDING)
@@ -70,7 +71,8 @@ class TaskDiffTest {
     GitCommands commands =
         new GitCommands(
             runner, new LsofWorktreeProcesses(runner), path -> Optional.empty(), stopped -> {});
-    new GitWorktrees(commands).createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
+    new GitWorktrees(commands)
+        .createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
     Files.writeString(repo.resolve("other.txt"), "landed on the base meanwhile\n");
     commitAndPush(repo, "base moves on");
     Files.writeString(wt.resolve("a.txt"), "task change\n");
@@ -88,13 +90,14 @@ class TaskDiffTest {
   }
 
   @Test
-  void cutsADiffPastTheCapAndSaysSo(@TempDir Path dir) throws Exception {
+  void cutsDiffPastTheCapAndSaysSo(@TempDir Path dir) throws Exception {
     Path repo = repoWithOneCommit(dir);
     Path wt = dir.resolve("wt");
     GitCommands commands =
         new GitCommands(
             runner, new LsofWorktreeProcesses(runner), path -> Optional.empty(), stopped -> {});
-    new GitWorktrees(commands).createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
+    new GitWorktrees(commands)
+        .createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
     Files.writeString(wt.resolve("big.txt"), "line\n".repeat(30_000));
 
     TaskDiff.RepoDiff diff = diffOf(repo, wt).read("ABC-1").getFirst();
@@ -104,7 +107,7 @@ class TaskDiffTest {
   }
 
   @Test
-  void readsNothingForATaskWithoutARepositoryYet(@TempDir Path dir) {
+  void readsNothingForTaskWithoutRepositoryYet(@TempDir Path dir) {
     when(state.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(state.task("ABC-1"))
         .thenReturn(

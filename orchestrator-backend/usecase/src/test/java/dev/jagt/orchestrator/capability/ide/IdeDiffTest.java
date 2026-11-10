@@ -26,7 +26,7 @@ class IdeDiffTest {
   private final DiffCheckouts diffs = mock(DiffCheckouts.class);
 
   @Test
-  void showsTheChangeAgainstTheBaseBranchWhenTheHumanAsksForADiff() {
+  void showsTheChangeAgainstTheBaseBranchWhenTheHumanAsksForDiff() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
     when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
@@ -44,7 +44,7 @@ class IdeDiffTest {
 
   @Test
   void diffsAgainstWhatTheRequestTargetsRatherThanWhereDeployLands() {
-    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
+    final TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(config.project("proj"))
         .thenReturn(new ProjectConfig("/repo", "origin/release/stage", "dev", null));
     when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
@@ -79,7 +79,7 @@ class IdeDiffTest {
   }
 
   @Test
-  void opensNoDiffForATaskThatHasNoRepositoryYet() {
+  void opensNoDiffForTaskThatHasNoRepositoryYet() {
     TaskState task =
         TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.PLAN_PENDING)
             .build();

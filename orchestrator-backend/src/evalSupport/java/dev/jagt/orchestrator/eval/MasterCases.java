@@ -29,10 +29,11 @@ public final class MasterCases {
         (Map<String, String>) root.get("baseline"),
         (Map<String, String>) root.getOrDefault("change", Map.of()),
         (String) root.getOrDefault("plan", ""),
-        expect.get("verdict") == null
-            ? null
-            : MasterReview.Kind.valueOf(constant(expect.get("verdict"))),
-        (List<String>) expect.get("names"),
+        new MasterCase.Expect(
+            expect.get("verdict") == null
+                ? null
+                : MasterReview.Kind.valueOf(constant(expect.get("verdict"))),
+            (List<String>) expect.get("names")),
         question == null
             ? MasterCase.Answer.NONE
             : new MasterCase.Answer(

@@ -25,7 +25,7 @@ class RoundFactsTest {
   private final TicketTexts tickets = mock(TicketTexts.class);
 
   @Test
-  void quotesWhatATaskNobodyFiledWasOpenedWith(@TempDir Path worktree) throws Exception {
+  void quotesWhatTaskNobodyFiledWasOpenedWith(@TempDir Path worktree) throws Exception {
     Files.writeString(worktree.resolve("task_request.md"), "make the page size configurable");
     when(tickets.of("ABC-1")).thenReturn(Optional.empty());
     TaskState task =

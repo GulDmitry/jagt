@@ -52,6 +52,28 @@ public final class Timeline {
         .forEach(task -> record(task.getKey(), task.getValue(), owners));
   }
 
+  private void record(String id, JsonNode task, Map<String, String> owners) {
+    JsonNode found = task.path("stop");
+    if (found.isObject()) {
+      stopped(id, found);
+    }
+    lastStatus = task.path("status").asString();
+    lastReport = task.path("report").asString("");
+    lastOwner = owners.getOrDefault(id, "?");
+    relays.changed(id, task).ifPresent(steps -> relayed(id, steps));
+    String entry =
+        id
+            + " "
+            + lastStatus
+            + " owner="
+            + lastOwner
+            + " "
+            + task.path("message").asString("").replaceAll("\\s+", " ").strip();
+    if (!entry.equals(lastSeen.put(id, entry))) {
+      append(Instant.now().truncatedTo(ChronoUnit.SECONDS) + " " + entry);
+    }
+  }
+
   public void masterReads(int total) {
     if (total > masterReadsSeen) {
       note("master read");
@@ -90,6 +112,16 @@ public final class Timeline {
     return stepsRelayed.contains(step);
   }
 
+  private void relayed(String id, List<String> steps) {
+    if (steps.isEmpty()) {
+      note("context of " + id + " changed, no brief step recognised");
+      return;
+    }
+    relaysSeen++;
+    stepsRelayed.addAll(steps);
+    note(TimelineFile.relayLine(id, steps));
+  }
+
   public int relaysSeen() {
     return relaysSeen;
   }
@@ -108,38 +140,6 @@ public final class Timeline {
       stop = seen;
       note("task " + id + " stopped, human needed: " + seen.trigger() + ": " + seen.evidence());
     }
-  }
-
-  private void record(String id, JsonNode task, Map<String, String> owners) {
-    JsonNode found = task.path("stop");
-    if (found.isObject()) {
-      stopped(id, found);
-    }
-    lastStatus = task.path("status").asString();
-    lastReport = task.path("report").asString("");
-    lastOwner = owners.getOrDefault(id, "?");
-    relays.changed(id, task).ifPresent(steps -> relayed(id, steps));
-    String entry =
-        id
-            + " "
-            + lastStatus
-            + " owner="
-            + lastOwner
-            + " "
-            + task.path("message").asString("").replaceAll("\\s+", " ").strip();
-    if (!entry.equals(lastSeen.put(id, entry))) {
-      append(Instant.now().truncatedTo(ChronoUnit.SECONDS) + " " + entry);
-    }
-  }
-
-  private void relayed(String id, List<String> steps) {
-    if (steps.isEmpty()) {
-      note("context of " + id + " changed, no brief step recognised");
-      return;
-    }
-    relaysSeen++;
-    stepsRelayed.addAll(steps);
-    note(TimelineFile.relayLine(id, steps));
   }
 
   private void append(String line) {

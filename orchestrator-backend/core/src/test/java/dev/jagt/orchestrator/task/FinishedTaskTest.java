@@ -11,7 +11,7 @@ import tools.jackson.databind.json.JsonMapper;
 class FinishedTaskTest {
 
   @Test
-  void learnsFromWhereAHumanChoseToDoTheWork() {
+  void learnsFromWhereHumanChoseToDoTheWork() {
     var task =
         FinishedTask.of(
             "ABC-1",
@@ -24,7 +24,7 @@ class FinishedTaskTest {
   }
 
   @Test
-  void learnsFromARoutingOfItsOwnOnlyOnceTheWorkReachedTheSharedBranch() {
+  void learnsFromRoutingOfItsOwnOnlyOnceTheWorkReachedTheSharedBranch() {
     var task =
         FinishedTask.of(
             "ABC-1",
@@ -40,7 +40,7 @@ class FinishedTaskTest {
   }
 
   @Test
-  void learnsNothingFromARoutingOfItsOwnThatNothingEverConfirmed() {
+  void learnsNothingFromRoutingOfItsOwnThatNothingEverConfirmed() {
     var task =
         FinishedTask.of(
             "ABC-1",
@@ -53,7 +53,7 @@ class FinishedTaskTest {
   }
 
   @Test
-  void learnsNothingFromATaskThatWasDoneInSeveralRepositoriesAtOnce() {
+  void learnsNothingFromTaskThatWasDoneInSeveralRepositoriesAtOnce() {
     var task =
         FinishedTask.of(
             "ABC-1",
@@ -106,7 +106,7 @@ class FinishedTaskTest {
   }
 
   @Test
-  void countsAJudgementBeforeDeployWhenTheLastReviewCameBackBeforeTheFirstDeploy() {
+  void countsJudgementBeforeDeployWhenTheLastReviewCameBackBeforeTheFirstDeploy() {
     var task =
         FinishedTask.of(
             "ABC-1",
@@ -123,7 +123,7 @@ class FinishedTaskTest {
   }
 
   @Test
-  void countsNoJudgementBeforeDeployWhenAReviewCameBackAfterIt() {
+  void countsNoJudgementBeforeDeployWhenReviewCameBackAfterIt() {
     var task =
         FinishedTask.of(
             "ABC-1",
@@ -192,7 +192,7 @@ class FinishedTaskTest {
   }
 
   @Test
-  void countsADeployAsNeverJudgedWhenNoReviewEverCameBack() {
+  void countsDeployAsNeverJudgedWhenNoReviewEverCameBack() {
     var task =
         FinishedTask.of(
             "ABC-1",
@@ -205,7 +205,7 @@ class FinishedTaskTest {
   }
 
   @Test
-  void countsNoJudgementBeforeAStatusTheTaskNeverReached() {
+  void countsNoJudgementBeforeStatusTheTaskNeverReached() {
     var task =
         FinishedTask.of(
             "ABC-1",
@@ -289,7 +289,7 @@ class FinishedTaskTest {
   }
 
   @Test
-  void carriesNoUsageForACountThatNeverReadAnything() {
+  void carriesNoUsageForCountThatNeverReadAnything() {
     var task =
         FinishedTask.of("ABC-1", TaskState.builder("sc", "/wt", TaskStatus.DONE).build(), 2L);
 
@@ -299,7 +299,7 @@ class FinishedTaskTest {
   }
 
   @Test
-  void readsTheCostAsALowerBoundWhenTheOwnReadsHadAnUnpricedCall() {
+  void readsTheCostAsLowerBoundWhenTheOwnReadsHadAnUnpricedCall() {
     var task =
         new FinishedTask(
             new FinishedTask.Identity("ABC-1", null, null, List.of(), null),
@@ -313,7 +313,7 @@ class FinishedTaskTest {
   }
 
   @Test
-  void readsTheCostAsALowerBoundWhenTheAgentSessionHadAnUnpricedCall() {
+  void readsTheCostAsLowerBoundWhenTheAgentSessionHadAnUnpricedCall() {
     var task =
         new FinishedTask(
             new FinishedTask.Identity("ABC-1", null, null, List.of(), null),
@@ -354,7 +354,7 @@ class FinishedTaskTest {
   }
 
   @Test
-  void readsAndWritesAFinishedTaskAsOneFlatObject() {
+  void readsAndWritesFinishedTaskAsOneFlatObject() {
     String usage =
         "{\"calls\":1,\"inputTokens\":10,\"cachedInputTokens\":0,\"outputTokens\":10,"
             + "\"costUsd\":0.5,\"coldStarts\":0,\"warmStarts\":0}";
@@ -367,7 +367,8 @@ class FinishedTaskTest {
             + usage
             + ",\"history\":[{\"status\":\"NEW\",\"at\":1,\"origin\":\"BOARD\"}],\"rounds\":2,"
             + "\"checks\":\"green\",\"refusals\":{\"SESSION_LINE\":3},"
-            + "\"waits\":[{\"since\":100,\"until\":700,\"why\":\"STATUS\"}],\"masterVerdict\":\"ready\","
+            + "\"waits\":[{\"since\":100,\"until\":700,\"why\":\"STATUS\"}],\"masterVerdict\":\"rea"
+            + "dy\","
             + "\"transcripts\":[\"/logs/a.jsonl\"]}";
     JsonMapper mapper = new JsonMapper();
 

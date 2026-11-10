@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class RoundTrailTest {
 
   @Test
-  void appendsARoundAndKeepsTheLiftItCountsFrom() {
+  void appendsRoundAndKeepsTheLiftItCountsFrom() {
     RoundTrail grown =
         RoundTrail.liftedAt(500)
             .withRound(new RoundTrail.Round(600, 3, "", "a", ""))

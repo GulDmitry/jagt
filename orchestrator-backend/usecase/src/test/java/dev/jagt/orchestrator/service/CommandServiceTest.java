@@ -39,8 +39,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class CommandServiceTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final FlowEngine flow = mock(FlowEngine.class);
   private final CaseDoor door = mock(CaseDoor.class);
@@ -56,7 +55,7 @@ class CommandServiceTest {
   }
 
   @Test
-  void handsTheProjectAHumanTypedToTheFlowAlongWithTheAction() {
+  void handsTheProjectHumanTypedToTheFlowAlongWithTheAction() {
     when(door.presses("ABC-1", TaskAction.ADD_REPO)).thenReturn(true);
 
     commands.execute("ABC-1", TaskAction.ADD_REPO, "beta");
@@ -74,7 +73,7 @@ class CommandServiceTest {
   }
 
   @Test
-  void letsARefusalReachTheCallerWithTheCodeItMustActOn() {
+  void letsRefusalReachTheCallerWithTheCodeItMustActOn() {
     when(door.presses("ABC-1", TaskAction.DEPLOY)).thenReturn(true);
     when(flow.run("ABC-1", TaskAction.DEPLOY, null))
         .thenThrow(
@@ -89,7 +88,7 @@ class CommandServiceTest {
   }
 
   @Test
-  void refusesTheMasterAVerbItsHumanKeepsInMine(@TempDir Path root) {
+  void refusesTheMasterVerbItsHumanKeepsInMine(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -113,7 +112,8 @@ class CommandServiceTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))));
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))));
 
     assertThatThrownBy(
             () ->
@@ -124,7 +124,7 @@ class CommandServiceTest {
   }
 
   @Test
-  void refusesRecordsAndStopsAMasterPressNoMasterCaseAllows(@TempDir Path root) throws Exception {
+  void refusesRecordsAndStopsMasterPressNoMasterCaseAllows(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -159,21 +159,23 @@ class CommandServiceTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))));
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))));
 
     OriginContext.as(ActionOrigin.MASTER, () -> guarded.execute("ABC-1", TaskAction.DEPLOY));
 
     verify(flow, never()).run("ABC-1", TaskAction.DEPLOY);
     assertThat(Files.readString(root.resolve("misses.jsonl")))
         .isEqualTo(
-            "{\"at\":1000,\"task\":\"ABC-1\",\"step\":\"deploy\",\"status\":\"REVIEWED\",\"by\":\"master\"}\n");
+            "{\"at\":1000,\"task\":\"ABC-1\",\"step\":\"deploy\",\"status\":\"REVIEWED\",\"by\""
+            + ":\"master\"}\n");
     assertThat(state.task("ABC-1").orElseThrow().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
         .containsExactly(TaskStop.Trigger.MISS, "no master case allows deploy at REVIEWED");
   }
 
   @Test
-  void saysWhyAPressTheMasterCaseDoesNotAllowWasNotRun() {
+  void saysWhyPressTheMasterCaseDoesNotAllowWasNotRun() {
     when(door.presses("ABC-1", TaskAction.SHIP)).thenReturn(false);
 
     String said = commands.execute("ABC-1", TaskAction.SHIP);

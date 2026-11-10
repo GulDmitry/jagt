@@ -39,8 +39,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void countsAMessageOnceThoughEachOfItsBlocksRepeatsItsUsage(@TempDir Path dir)
-      throws IOException {
+  void countsMessageOnceThoughEachOfItsBlocksRepeatsItsUsage(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(
         log,
@@ -56,13 +55,15 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void leavesAMessageStillBeingWrittenForTheNextReadSoItsLaterBlocksAreNotCountedAgain(
+  void leavesMessageStillBeingWrittenForTheNextReadSoItsLaterBlocksAreNotCountedAgain(
       @TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     String first =
-        "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":1,\"output_tokens\":9}}}\n";
+        "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":1,\"o"
+        + "utput_tokens\":9}}}\n";
     String open =
-        "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_2\",\"usage\":{\"input_tokens\":2,\"output_tokens\":40}}}\n";
+        "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_2\",\"usage\":{\"input_tokens\":2,\"o"
+        + "utput_tokens\":40}}}\n";
     Files.writeString(log, first + open);
     SessionLog.Spent before = new ClaudeSessionLog().spent(log, 0, Files.size(log));
     Files.writeString(
@@ -74,7 +75,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void pricesATurnAtTheListPriceOfTheModelItNames(@TempDir Path dir) throws IOException {
+  void pricesTurnAtTheListPriceOfTheModelItNames(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(
         log,
@@ -90,7 +91,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void pricesACacheWriteWithoutItsTtlAsTheFiveMinuteKind(@TempDir Path dir) throws IOException {
+  void pricesCacheWriteWithoutItsTtlAsTheFiveMinuteKind(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(
         log,
@@ -105,7 +106,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void pricesNothingForAModelNoRowNames(@TempDir Path dir) throws IOException {
+  void pricesNothingForModelNoRowNames(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(
         log,
@@ -121,7 +122,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void keepsCountingPastALineItCannotRead(@TempDir Path dir) throws IOException {
+  void keepsCountingPastLineItCannotRead(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(
         log,
@@ -138,7 +139,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void leavesAHalfWrittenLastLineForTheNextRead(@TempDir Path dir) throws IOException {
+  void leavesHalfWrittenLastLineForTheNextRead(@TempDir Path dir) throws IOException {
     String complete =
         """
         {"type":"assistant","message":{"usage":{"input_tokens":5,"output_tokens":10}}}
@@ -160,12 +161,11 @@ class ClaudeSessionLogTest {
         {"type":"assistant","message":{"usage":{"input_tokens":5,"output_tokens":10}}}
         """;
     Path log = dir.resolve("session.jsonl");
-    Files.writeString(
-        log,
-        first
-            + """
-            {"type":"assistant","message":{"usage":{"input_tokens":7,"output_tokens":20}}}
-            """);
+    String next =
+        """
+        {"type":"assistant","message":{"usage":{"input_tokens":7,"output_tokens":20}}}
+        """;
+    Files.writeString(log, first + next);
 
     SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, first.getBytes().length);
 
@@ -174,7 +174,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void answersNothingForALogThatIsNotThere(@TempDir Path dir) {
+  void answersNothingForLogThatIsNotThere(@TempDir Path dir) {
     SessionLog.Spent spent = new ClaudeSessionLog().spent(dir.resolve("gone.jsonl"), 40, 100);
 
     assertThat(spent.usage()).isEqualTo(TokenUsage.NONE);
@@ -182,7 +182,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void stepsOverARecordTooLongForTheWindow(@TempDir Path dir) throws IOException {
+  void stepsOverRecordTooLongForTheWindow(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(
         log,
@@ -198,7 +198,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void countsOnlyTheFirstTurnOfALogAsAStart(@TempDir Path dir) throws IOException {
+  void countsOnlyTheFirstTurnOfLogAsStart(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(
         log,
@@ -229,7 +229,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void countsNoStartForTurnsReadFromAMark(@TempDir Path dir) throws IOException {
+  void countsNoStartForTurnsReadFromMark(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(
         log,
@@ -255,12 +255,11 @@ class ClaudeSessionLogTest {
         {"type":"assistant","message":{"usage":{"input_tokens":5,"output_tokens":10}}}
         """;
     Path log = dir.resolve("session.jsonl");
-    Files.writeString(
-        log,
-        before
-            + """
-            {"type":"assistant","message":{"usage":{"input_tokens":7,"output_tokens":20}}}
-            """);
+    String next =
+        """
+        {"type":"assistant","message":{"usage":{"input_tokens":7,"output_tokens":20}}}
+        """;
+    Files.writeString(log, before + next);
     long mark = before.getBytes().length;
 
     SessionLog.Spent spent = new ClaudeSessionLog().spent(log, mark, Files.size(log) - mark);
@@ -270,7 +269,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void movesTheMarkPastALeadingBlankLine(@TempDir Path dir) throws IOException {
+  void movesTheMarkPastLeadingBlankLine(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(log, "\n{\"type\":\"assistant\",\"message\":{\"usage\":{\"input_tok");
 
@@ -283,9 +282,11 @@ class ClaudeSessionLogTest {
   void marksTheEndOfTheLastClosedMessageAndLeavesTheOpenOneAfterIt(@TempDir Path dir)
       throws IOException {
     String closed =
-        "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":1,\"output_tokens\":9}}}\n";
+        "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":1,\"o"
+        + "utput_tokens\":9}}}\n";
     String open =
-        "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_2\",\"usage\":{\"input_tokens\":2,\"output_tokens\":40}}}\n";
+        "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_2\",\"usage\":{\"input_tokens\":2,\"o"
+        + "utput_tokens\":40}}}\n";
     Path log = dir.resolve("session.jsonl");
     Files.writeString(log, closed + open);
 
@@ -296,9 +297,10 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void countsAMessageWhoseBlocksAreAllThatTheWindowHolds(@TempDir Path dir) throws IOException {
+  void countsMessageWhoseBlocksAreAllThatTheWindowHolds(@TempDir Path dir) throws IOException {
     String block =
-        "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":3,\"output_tokens\":100}}}\n";
+        "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":3,\"o"
+        + "utput_tokens\":100}}}\n";
     Path log = dir.resolve("session.jsonl");
     Files.writeString(log, block + block);
 
@@ -311,7 +313,8 @@ class ClaudeSessionLogTest {
   @Test
   void countsEveryLineWhereTheLastOneCarriesNoUsage(@TempDir Path dir) throws IOException {
     String closed =
-        "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":1,\"output_tokens\":9}}}\n";
+        "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":1,\"o"
+        + "utput_tokens\":9}}}\n";
     String user = "{\"type\":\"user\",\"message\":{\"content\":\"ok\"}}\n";
     Path log = dir.resolve("session.jsonl");
     Files.writeString(log, closed + user);
@@ -323,7 +326,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void countsALastLineThatCarriesUsageButCannotBeRead(@TempDir Path dir) throws IOException {
+  void countsLastLineThatCarriesUsageButCannotBeRead(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(
         log,
@@ -339,8 +342,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void countsATurnOfAModelWithNoKnownPriceAsUnpricedNotAsFree(@TempDir Path dir)
-      throws IOException {
+  void countsTurnOfModelWithNoKnownPriceAsUnpricedNotAsFree(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(
         log,
@@ -406,7 +408,7 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  void countsTheCacheWritesOfAPricedTurnAsInput(@TempDir Path dir) throws IOException {
+  void countsTheCacheWritesOfPricedTurnAsInput(@TempDir Path dir) throws IOException {
     Path log = dir.resolve("session.jsonl");
     Files.writeString(
         log,

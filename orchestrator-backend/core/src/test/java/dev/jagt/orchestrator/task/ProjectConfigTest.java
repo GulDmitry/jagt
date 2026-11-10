@@ -13,7 +13,7 @@ import tools.jackson.databind.json.JsonMapper;
 class ProjectConfigTest {
 
   @Test
-  void tellsARouterWhatTheRepositoryIsInTheWordsTheInstallWrote() {
+  void tellsRouterWhatTheRepositoryIsInTheWordsTheInstallWrote() {
     var project =
         new ProjectConfig(
             new ProjectConfig.Repository(
@@ -60,7 +60,7 @@ class ProjectConfigTest {
   }
 
   @Test
-  void writesTheBaseBranchAsALocalName() {
+  void writesTheBaseBranchAsLocalName() {
     var project = new ProjectConfig("/repos/parser", "origin/main", "dev", List.of());
 
     assertThat(project.baseBranchName()).isEqualTo("main");
@@ -107,7 +107,7 @@ class ProjectConfigTest {
 
   @ParameterizedTest
   @CsvSource({"0", "-3"})
-  void limitsAVerifyCommandToTwentyMinutesWhereTheWrittenMinutesAreNotPositive(int written) {
+  void limitsVerifyCommandToTwentyMinutesWhereTheWrittenMinutesAreNotPositive(int written) {
     var project =
         new ProjectConfig(
             new ProjectConfig.Repository("/repos/parser", List.of(), null, null),
@@ -119,7 +119,7 @@ class ProjectConfigTest {
   }
 
   @Test
-  void readsAndWritesTheFlatKeysOfAProjectEntry() {
+  void readsAndWritesTheFlatKeysOfProjectEntry() {
     String written =
         """
         {"path":"/repos/parser","baseBranch":"upstream/main","deployBranch":"dev","labels":["pdf"],

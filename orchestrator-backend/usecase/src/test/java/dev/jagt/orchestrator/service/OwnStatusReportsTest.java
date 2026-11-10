@@ -44,15 +44,15 @@ import tools.jackson.databind.json.JsonMapper;
 
 class OwnStatusReportsTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static ReportEffects effects(StateService state) {
     return effects(state, (task, line) -> "");
   }
 
   private static ReportEffects effects(StateService state, SessionLines sessions) {
-    TaskTurns turns = new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+    TaskTurns turns =
+        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
     TaskStops stops =
         new TaskStops(
             new StopPolicy(
@@ -64,7 +64,8 @@ class OwnStatusReportsTest {
                         new JsonMapper(),
                         new OrchestratorPaths(OrchestratorProperties.defaults())))),
             state,
-            Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())));
+            Clock.systemUTC(),
+            new FlowRules(new TaskChart(Composition.builtIn())));
     return new ReportEffects(
         new SessionWakes(state, turns, Clock.systemUTC()),
         turns,
@@ -74,7 +75,7 @@ class OwnStatusReportsTest {
   }
 
   @Test
-  void refusesASessionsHandBackWhatTheWorktreeSaysIsOwed(@TempDir Path root) {
+  void refusesSessionsHandBackWhatTheWorktreeSaysIsOwed(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -82,7 +83,7 @@ class OwnStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
@@ -103,7 +104,7 @@ class OwnStatusReportsTest {
   }
 
   @Test
-  void asksTheSessionToFixAHandBackWhoseNotesAreInvalidRatherThanRefusingItForGood(
+  void asksTheSessionToFixHandBackWhoseNotesAreInvalidRatherThanRefusingItForGood(
       @TempDir Path root) {
     StateService state =
         new StateService(
@@ -112,7 +113,7 @@ class OwnStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
@@ -139,7 +140,7 @@ class OwnStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
@@ -172,7 +173,7 @@ class OwnStatusReportsTest {
   }
 
   @Test
-  void asksNoNotesOfAReportTheMasterDoesNotRead(@TempDir Path root) {
+  void asksNoNotesOfReportTheMasterDoesNotRead(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -180,7 +181,7 @@ class OwnStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
@@ -200,7 +201,7 @@ class OwnStatusReportsTest {
   }
 
   @Test
-  void passesAPlanThroughWithoutAskingForNotes(@TempDir Path root) {
+  void passesPlanThroughWithoutAskingForNotes(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -208,7 +209,7 @@ class OwnStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
@@ -227,7 +228,7 @@ class OwnStatusReportsTest {
   }
 
   @Test
-  void appliesAReplyACaseOfTheOpenTurnsStepTakes(@TempDir Path root) throws Exception {
+  void appliesReplyCaseOfTheOpenTurnsStepTakes(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -241,7 +242,8 @@ class OwnStatusReportsTest {
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
-    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
+        .opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
     when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
     AgentStatusMessage broke =
@@ -267,7 +269,8 @@ class OwnStatusReportsTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             effects(state));
 
     reports.report(broke, "ABC-42");
@@ -276,7 +279,7 @@ class OwnStatusReportsTest {
   }
 
   @Test
-  void refusesAReplyNoCaseOfTheOpenTurnsStepTakesAndAppliesNothing(@TempDir Path root)
+  void refusesReplyNoCaseOfTheOpenTurnsStepTakesAndAppliesNothing(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -291,7 +294,8 @@ class OwnStatusReportsTest {
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
-    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
+        .opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
     when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
     AgentStatusMessage handBack =
@@ -317,7 +321,8 @@ class OwnStatusReportsTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             effects(state));
 
     assertThatThrownBy(() -> reports.report(handBack, "ABC-42"))
@@ -327,7 +332,7 @@ class OwnStatusReportsTest {
   }
 
   @Test
-  void recordsARefusedReplyWithTheStepWhatCameAndWhatTheCasesTake(@TempDir Path root)
+  void recordsRefusedReplyWithTheStepWhatCameAndWhatTheCasesTake(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -342,7 +347,8 @@ class OwnStatusReportsTest {
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
-    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
+        .opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
     when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
     AgentStatusMessage handBack =
@@ -368,19 +374,21 @@ class OwnStatusReportsTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             effects(state));
 
     assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
 
     assertThat(Files.readString(root.resolve("misses.jsonl")))
         .isEqualTo(
-            "{\"at\":1000,\"task\":\"ABC-42\",\"step\":\"deploy\",\"status\":\"DEPLOYED\",\"by\":\"session\",\"got\":\"REVIEW_PENDING;"
+            "{\"at\":1000,\"task\":\"ABC-42\",\"step\":\"deploy\",\"status\":\"DEPLOYED\",\"by\":"
+            + "\"session\",\"got\":\"REVIEW_PENDING;"
                 + " plain\",\"expected\":\"IN_PROGRESS; plain, question\"}\n");
   }
 
   @Test
-  void stopsTheTaskForTheHumanOnAReplyNoCaseTakes(@TempDir Path root) throws Exception {
+  void stopsTheTaskForTheHumanOnReplyNoCaseTakes(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -394,7 +402,8 @@ class OwnStatusReportsTest {
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
-    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
+    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
+        .opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
     when(statusReports.contextFor("ABC-42")).thenReturn(MessageContext.NONE);
     AgentStatusMessage handBack =
@@ -420,7 +429,8 @@ class OwnStatusReportsTest {
                             new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn())))),
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
             effects(state));
 
     assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);

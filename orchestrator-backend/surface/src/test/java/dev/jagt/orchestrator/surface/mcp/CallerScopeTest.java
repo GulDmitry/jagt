@@ -27,7 +27,7 @@ class CallerScopeTest {
   }
 
   @Test
-  void refusesASubAgentThatNamesASiblingRatherThanCorrectingIt() {
+  void refusesSubAgentThatNamesSiblingRatherThanCorrectingIt() {
     when(stateService.canonicalTaskId("OTHER-1")).thenReturn("OTHER-1");
 
     assertThatThrownBy(() -> scope.resolve("OTHER-1", "MINE-1"))
@@ -36,7 +36,7 @@ class CallerScopeTest {
   }
 
   @Test
-  void refusesACallFromOutsideAnyWorktreeThatNamesNoTask() {
+  void refusesCallFromOutsideAnyWorktreeThatNamesNoTask() {
     assertThatThrownBy(() -> scope.resolve(null, null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("caller is not inside a registered worktree");

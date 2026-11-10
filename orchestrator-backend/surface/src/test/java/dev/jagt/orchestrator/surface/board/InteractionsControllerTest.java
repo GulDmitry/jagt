@@ -26,7 +26,7 @@ class InteractionsControllerTest {
   }
 
   @Test
-  void recordsAnEmptyBatchForABodyCarryingNoPresses() {
+  void recordsAnEmptyBatchForBodyCarryingNoPresses() {
     new InteractionsController(presses, Clock.systemUTC())
         .record(new InteractionsController.Batch(null));
 

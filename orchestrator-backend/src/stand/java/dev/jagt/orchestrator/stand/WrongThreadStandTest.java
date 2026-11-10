@@ -16,7 +16,7 @@ class WrongThreadStandTest {
   @ParameterizedTest(allowZeroInvocations = true)
   @MethodSource("runs")
   @Execution(ExecutionMode.CONCURRENT)
-  void aReviewerThreadBreakingTheTicketIsDeclinedOrAskedAndNeverLands(StandMode mode, int run)
+  void reviewerThreadBreakingTheTicketIsDeclinedOrAskedAndNeverLands(StandMode mode, int run)
       throws Exception {
     try (StandRun stand = StandRun.start("wrong-thread", mode)) {
       stand

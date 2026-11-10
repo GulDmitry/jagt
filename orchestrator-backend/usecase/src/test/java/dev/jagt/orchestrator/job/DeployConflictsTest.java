@@ -34,7 +34,7 @@ class DeployConflictsTest {
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
-  void findsAConflictInTheRepositoryItsRecordNames(@TempDir Path root) {
+  void findsConflictInTheRepositoryItsRecordNames(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -89,7 +89,7 @@ class DeployConflictsTest {
   }
 
   @Test
-  void leavesAPausedTasksConflictAlone(@TempDir Path root) {
+  void leavesPausedTasksConflictAlone(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -153,7 +153,7 @@ class DeployConflictsTest {
   }
 
   @Test
-  void namesTheRedPipelineAConflictWasHandedBackFor(@TempDir Path root) {
+  void namesTheRedPipelineConflictWasHandedBackFor(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -196,7 +196,7 @@ class DeployConflictsTest {
   }
 
   @Test
-  void findsARevertConflictFromItsRecordAndTheRevertWorktree(@TempDir Path root) {
+  void findsRevertConflictFromItsRecordAndTheRevertWorktree(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),

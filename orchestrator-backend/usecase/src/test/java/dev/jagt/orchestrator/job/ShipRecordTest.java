@@ -20,7 +20,7 @@ class ShipRecordTest {
   private final ReviewDrafts drafts = mock(ReviewDrafts.class);
 
   @Test
-  void aPressRecordsTheTreeItShipped() {
+  void pressRecordsTheTreeItShipped() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(changes.state(task)).thenReturn(Optional.of("tree-1;"));
 
@@ -31,7 +31,7 @@ class ShipRecordTest {
   }
 
   @Test
-  void aTreeGitCouldNotReadLeavesNoMark() {
+  void treeGitCouldNotReadLeavesNoMark() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(changes.state(task)).thenReturn(Optional.empty());
 
@@ -41,7 +41,7 @@ class ShipRecordTest {
   }
 
   @Test
-  void aPressWithDraftsRecordsThemBesideTheTreeButShipsTheTreeAlone() {
+  void pressWithDraftsRecordsThemBesideTheTreeButShipsTheTreeAlone() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(changes.state(task)).thenReturn(Optional.of("tree-1;"));
     when(drafts.unspentDigest(task)).thenReturn(Optional.of("d1"));

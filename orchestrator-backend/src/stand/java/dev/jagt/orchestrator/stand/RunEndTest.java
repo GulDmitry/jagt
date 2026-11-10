@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class RunEndTest {
 
   @Test
-  void aJudgeRunIsHeldOnceTheTimelineWasQuietForAMinuteWithNothingToPress() {
+  void judgeRunIsHeldOnceTheTimelineWasQuietForMinuteWithNothingToPress() {
     Timeline timeline = mock(Timeline.class);
     when(timeline.lastOwner()).thenReturn("YOU");
     when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
@@ -22,7 +22,7 @@ class RunEndTest {
   }
 
   @Test
-  void aJudgeRunIsNotHeldWhileTheTimelineStillMoves() {
+  void judgeRunIsNotHeldWhileTheTimelineStillMoves() {
     Timeline timeline = mock(Timeline.class);
     when(timeline.lastOwner()).thenReturn("YOU");
     when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
@@ -46,7 +46,7 @@ class RunEndTest {
   }
 
   @Test
-  void anActRunIsHeldAfterTenMinutesWithoutAChange() {
+  void anActRunIsHeldAfterTenMinutesWithoutChange() {
     Timeline timeline = mock(Timeline.class);
     when(timeline.lastOwner()).thenReturn("YOU");
     when(timeline.lastStatus()).thenReturn("IN_PROGRESS");
@@ -58,7 +58,7 @@ class RunEndTest {
   }
 
   @Test
-  void aDeployConflictRunIsHeldAsSoonAsTheConflictStepReachedTheSession() {
+  void deployConflictRunIsHeldAsSoonAsTheConflictStepReachedTheSession() {
     Timeline timeline = mock(Timeline.class);
     when(timeline.lastOwner()).thenReturn("YOU");
     when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
@@ -70,7 +70,7 @@ class RunEndTest {
   }
 
   @Test
-  void aDeployConflictRunIsHeldAfterAMinuteWithoutTheConflictStep() {
+  void deployConflictRunIsHeldAfterMinuteWithoutTheConflictStep() {
     Timeline timeline = mock(Timeline.class);
     when(timeline.lastOwner()).thenReturn("YOU");
     when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
@@ -82,7 +82,7 @@ class RunEndTest {
   }
 
   @Test
-  void aDeployConflictRunIsHeldAtOnceWhereNoConflictStepComes() {
+  void deployConflictRunIsHeldAtOnceWhereNoConflictStepComes() {
     Timeline timeline = mock(Timeline.class);
     when(timeline.lastOwner()).thenReturn("YOU");
     when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
@@ -93,7 +93,7 @@ class RunEndTest {
   }
 
   @Test
-  void aDeployConflictRunWaitsWhileTheConflictStepIsStillComing() {
+  void deployConflictRunWaitsWhileTheConflictStepIsStillComing() {
     Timeline timeline = mock(Timeline.class);
     when(timeline.lastOwner()).thenReturn("YOU");
     when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");
@@ -104,7 +104,7 @@ class RunEndTest {
   }
 
   @Test
-  void aReachedRunWaitsForAnEventNotFiredYet() {
+  void reachedRunWaitsForAnEventNotFiredYet() {
     Timeline timeline = mock(Timeline.class);
 
     boolean reached = new RunEnd(StandMode.ACT, false, false).reached(true, true, timeline);
@@ -113,7 +113,7 @@ class RunEndTest {
   }
 
   @Test
-  void aReachedRunStopsWaitingForAnEventAfterAQuietMinute() {
+  void reachedRunStopsWaitingForAnEventAfterQuietMinute() {
     Timeline timeline = mock(Timeline.class);
     when(timeline.stalledFor(Duration.ofSeconds(60))).thenReturn(true);
 
@@ -123,7 +123,7 @@ class RunEndTest {
   }
 
   @Test
-  void aReachedRunWithNoEventPendingEndsAtOnce() {
+  void reachedRunWithNoEventPendingEndsAtOnce() {
     Timeline timeline = mock(Timeline.class);
 
     boolean reached = new RunEnd(StandMode.ACT, false, false).reached(true, false, timeline);
@@ -132,7 +132,7 @@ class RunEndTest {
   }
 
   @Test
-  void aRunEndsOnTheReviewerOnceTheSweepsWaitedAndNothingElseMovedForThreeSeconds() {
+  void runEndsOnTheReviewerOnceTheSweepsWaitedAndNothingElseMovedForThreeSeconds() {
     Timeline timeline = mock(Timeline.class);
     when(timeline.stalledFor(Duration.ofSeconds(3))).thenReturn(true);
 
@@ -142,7 +142,7 @@ class RunEndTest {
   }
 
   @Test
-  void aRunKeepsGoingWhileSomethingElseStillMovesBesideTheWaitingSweeps() {
+  void runKeepsGoingWhileSomethingElseStillMovesBesideTheWaitingSweeps() {
     Timeline timeline = mock(Timeline.class);
 
     boolean waiting = new RunEnd(StandMode.ACT, false, false).waitingOnTheReviewer(true, timeline);
@@ -151,7 +151,7 @@ class RunEndTest {
   }
 
   @Test
-  void aDeployConflictNoMutationExpectedIsNotHeldAtTheConflictRelay() {
+  void deployConflictNoMutationExpectedIsNotHeldAtTheConflictRelay() {
     Timeline timeline = mock(Timeline.class);
     when(timeline.lastOwner()).thenReturn("YOU");
     when(timeline.lastStatus()).thenReturn("DEPLOY_CONFLICT");

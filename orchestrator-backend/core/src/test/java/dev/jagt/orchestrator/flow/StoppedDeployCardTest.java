@@ -14,7 +14,7 @@ class StoppedDeployCardTest {
   private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 
   @Test
-  void asksForTheLiftOfAStopThatOutlivedTheHumansDeploy() {
+  void asksForTheLiftOfStopThatOutlivedTheHumansDeploy() {
     TaskState deployed =
         TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .stop(new TaskStop(TaskStop.Trigger.MISS, 5, "no case"))
@@ -22,7 +22,13 @@ class StoppedDeployCardTest {
             .withStatus(TaskStatus.DEPLOYED, "deployed", true, 2_000);
 
     TaskView view =
-        TaskView.of(rules, "ABC-42", deployed, RoundState.of(deployed.report(), false), AutoReviewWatch.none(), Map.of("api", "dev"));
+        TaskView.of(
+            rules,
+            "ABC-42",
+            deployed,
+            RoundState.of(deployed.report(), false),
+            AutoReviewWatch.none(),
+            Map.of("api", "dev"));
 
     assertThat(view.ask()).isEqualTo("lift the stop — no case for this step");
   }

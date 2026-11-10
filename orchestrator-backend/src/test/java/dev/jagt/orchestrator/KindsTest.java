@@ -15,7 +15,7 @@ class KindsTest {
   private static final Set<String> FACES = Set.of("Jobs", "Notifications");
 
   @Test
-  void aServiceClassOneKindAloneReadsLivesInThatKind() {
+  void serviceClassOneKindAloneReadsLivesInThatKind() {
     assertThat(
             topLevel()
                 .filter(type -> kind(type).equals("service"))
@@ -31,7 +31,7 @@ class KindsTest {
   }
 
   @Test
-  void anotherUseCaseReadsAKindOnlyThroughItsRegistry() {
+  void anotherUseCaseReadsKindOnlyThroughItsRegistry() {
     assertThat(
             topLevel()
                 .filter(type -> USE_CASES.contains(kind(type)) && !kind(type).equals("service"))

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 class RecordedVerdictsTest {
 
   @Test
-  void answersARoleReadWithTheVerdictThatRoleGaveInTheRound(@TempDir Path root) throws Exception {
+  void answersRoleReadWithTheVerdictThatRoleGaveInTheRound(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(
         file,
@@ -29,7 +29,7 @@ class RecordedVerdictsTest {
   }
 
   @Test
-  void answersAQuestionWithTheRecordedDecisionAsItsFinding(@TempDir Path root) throws Exception {
+  void answersQuestionWithTheRecordedDecisionAsItsFinding(@TempDir Path root) throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(
         file,
@@ -75,7 +75,7 @@ class RecordedVerdictsTest {
   }
 
   @Test
-  void answersFromTheEarliestRoundLeftEvenWhereALaterRoundHoldsTheRoleNamed(@TempDir Path root)
+  void answersFromTheEarliestRoundLeftEvenWhereLaterRoundHoldsTheRoleNamed(@TempDir Path root)
       throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(

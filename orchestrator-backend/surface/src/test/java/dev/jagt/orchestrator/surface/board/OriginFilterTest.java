@@ -27,7 +27,7 @@ class OriginFilterTest {
   }
 
   @Test
-  void leavesACallOutsideTheBoardAndTheAgentsEndpointUnattributed() throws Exception {
+  void leavesCallOutsideTheBoardAndTheAgentsEndpointUnattributed() throws Exception {
     MockHttpServletRequest request = new MockHttpServletRequest("GET", "/state");
     request.setServletPath("/state");
     MockFilterChain passed = new MockFilterChain();
@@ -38,7 +38,7 @@ class OriginFilterTest {
   }
 
   @Test
-  void booksAWriteToTheBoardHoweverItsPathIsSpelled() throws Exception {
+  void booksWriteToTheBoardHoweverItsPathIsSpelled() throws Exception {
     MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api;x/tasks/say");
     request.setServletPath("/api/tasks/say");
 

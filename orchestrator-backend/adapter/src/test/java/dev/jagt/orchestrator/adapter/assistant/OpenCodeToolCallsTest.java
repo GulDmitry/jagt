@@ -14,7 +14,7 @@ class OpenCodeToolCallsTest {
   private final JsonMapper json = new JsonMapper();
 
   @Test
-  void namesTheFileAReadOpenedThatTheRoleRefuses(@TempDir Path worktree) {
+  void namesTheFileReadOpenedThatTheRoleRefuses(@TempDir Path worktree) {
     OpenCodeScope scope =
         OpenCodeScope.of(
             List.of(),
@@ -36,7 +36,7 @@ class OpenCodeToolCallsTest {
   }
 
   @Test
-  void keepsAnAnswerThatReadAFileTheRoleDoesNotRefuseBesideOneItDoes(@TempDir Path worktree) {
+  void keepsAnAnswerThatReadFileTheRoleDoesNotRefuseBesideOneItDoes(@TempDir Path worktree) {
     OpenCodeScope scope =
         OpenCodeScope.of(
             List.of(),

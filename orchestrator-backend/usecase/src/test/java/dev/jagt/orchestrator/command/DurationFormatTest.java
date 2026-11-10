@@ -9,12 +9,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 class DurationFormatTest {
 
   @Test
-  void countsASubMinuteWaitInSecondsBecauseZeroMinutesWouldReadAsNow() {
+  void countsSubMinuteWaitInSecondsBecauseZeroMinutesWouldReadAsNow() {
     assertThat(DurationFormat.countdown(45_000)).isEqualTo("45s");
   }
 
   @Test
-  void roundsAWaitUpSoItNeverReadsShorterThanItIs() {
+  void roundsWaitUpSoItNeverReadsShorterThanItIs() {
     assertThat(DurationFormat.countdown(599_999)).isEqualTo("10m");
     assertThat(DurationFormat.countdown(61 * 60_000L)).isEqualTo("2h");
   }
@@ -26,7 +26,7 @@ class DurationFormatTest {
 
   @ParameterizedTest
   @CsvSource({"59999,59s", "60000,1m", "3540000,59m", "3600000,1h"})
-  void switchesACountdownToTheNextUnitAtTheExactBoundary(long millis, String expected) {
+  void switchesCountdownToTheNextUnitAtTheExactBoundary(long millis, String expected) {
     assertThat(DurationFormat.countdown(millis)).isEqualTo(expected);
   }
 

@@ -17,7 +17,7 @@ class StandProjectTest {
   @TempDir Path root;
 
   @Test
-  void aCommitTheStandWroteOnTheDeployBranchIsNotCountedAsAnotherWriter() throws Exception {
+  void commitTheStandWroteOnTheDeployBranchIsNotCountedAsAnotherWriter() throws Exception {
     StandProject project = StandProject.create(root);
     String sha =
         project.commitOnDeployBranch(root.resolve("outsider"), "greet.sh", "echo hi\n", "Greet");
@@ -31,7 +31,7 @@ class StandProjectTest {
   }
 
   @Test
-  void aCommitNoDeployLandedOnTheDeployBranchIsNamedByItsReflogLine() {
+  void commitNoDeployLandedOnTheDeployBranchIsNamedByItsReflogLine() {
     StandProject project = StandProject.create(root);
     String sha =
         project.commitOnDeployBranch(root.resolve("outsider"), "greet.sh", "echo hi\n", "Greet");

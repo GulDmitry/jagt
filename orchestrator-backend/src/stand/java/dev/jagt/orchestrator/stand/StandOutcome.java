@@ -12,9 +12,9 @@ public record StandOutcome(
     Path root,
     Ending ending,
     String detail,
-    String stopTrigger,
-    String report,
-    int unfired) {
+    Signals signals) {
+
+  public record Signals(String stopTrigger, String report, int unfired) {}
 
   public enum Ending {
     REACHED("reached"),
@@ -70,7 +70,7 @@ public record StandOutcome(
   }
 
   public boolean asked() {
-    return report.equals("QUESTION") || report.equals("PERMISSION");
+    return signals.report().equals("QUESTION") || signals.report().equals("PERMISSION");
   }
 
   public boolean stopped() {

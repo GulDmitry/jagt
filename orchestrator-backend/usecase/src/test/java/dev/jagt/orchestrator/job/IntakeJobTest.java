@@ -36,7 +36,7 @@ class IntakeJobTest {
   }
 
   @Test
-  void takesNothingOffTheTrackerWhileAStageNameIsStillBlank() {
+  void takesNothingOffTheTrackerWhileStageNameIsStillBlank() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -73,7 +73,7 @@ class IntakeJobTest {
   }
 
   @Test
-  void opensATaskAsTheTrackers() {
+  void opensTaskAsTheTrackers() {
     IntakeCandidates.Ready ready =
         new IntakeCandidates.Ready(TicketFacts.defaults().withKey("ABC-42"), TokenUsage.NONE);
     when(configService.load())

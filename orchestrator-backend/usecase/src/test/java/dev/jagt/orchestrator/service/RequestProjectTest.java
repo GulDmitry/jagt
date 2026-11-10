@@ -37,7 +37,7 @@ class RequestProjectTest {
   }
 
   @Test
-  void doesNotGiveARequestToTheProjectWhosePathIsOnlyAPrefixOfItsRepository() {
+  void doesNotGiveRequestToTheProjectWhosePathIsOnlyPrefixOfItsRepository() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -55,7 +55,7 @@ class RequestProjectTest {
   }
 
   @Test
-  void skipsAProjectWithNoRemoteWhenNamingTheOwnerOfARequest() {
+  void skipsProjectWithNoRemoteWhenNamingTheOwnerOfRequest() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -73,7 +73,7 @@ class RequestProjectTest {
   }
 
   @Test
-  void refusesARequestUrlNoConfiguredProjectOwns() {
+  void refusesRequestUrlNoConfiguredProjectOwns() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -101,7 +101,7 @@ class RequestProjectTest {
   }
 
   @Test
-  void breaksATieBetweenProjectsOfOnePathByTheHostTheRequestIsOn() {
+  void breaksTieBetweenProjectsOfOnePathByTheHostTheRequestIsOn() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()

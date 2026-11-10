@@ -134,7 +134,7 @@ class JobsTest {
   }
 
   @Test
-  void reportsTheLastIntervalAJobNamedWhenItCanNoLongerSayIt() {
+  void reportsTheLastIntervalJobNamedWhenItCanNoLongerSayIt() {
     Job job = mock(Job.class);
     when(job.id()).thenReturn("poll-reviews");
     when(job.every())
@@ -159,7 +159,7 @@ class JobsTest {
   }
 
   @Test
-  void runsAJobWithNoIntervalOnceAndThenReportsNoNextRun() {
+  void runsJobWithNoIntervalOnceAndThenReportsNoNextRun() {
     Job job = mock(Job.class);
     when(job.id()).thenReturn("scan-orphans");
     when(job.every()).thenReturn(null);
@@ -186,7 +186,7 @@ class JobsTest {
   }
 
   @Test
-  void booksAFailedRunAgainstItsOwnJobAndStillRunsTheRest() {
+  void booksFailedRunAgainstItsOwnJobAndStillRunsTheRest() {
     Job failing = mock(Job.class);
     when(failing.id()).thenReturn("archive-logs");
     doThrow(new IllegalStateException("disk full")).when(failing).run();
@@ -211,7 +211,7 @@ class JobsTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void logsNoErrorForARunWhoseCommandStoppedWithJagt() {
+  void logsNoErrorForRunWhoseCommandStoppedWithJagt() {
     Job stopping = mock(Job.class);
     when(stopping.id()).thenReturn("master-review");
     doThrow(new dev.jagt.orchestrator.port.Processes.Stopped(List.of("claude")))
@@ -235,7 +235,7 @@ class JobsTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void logsAJobFailingTheSameWayOnEveryRunAsAnErrorOnce() {
+  void logsJobFailingTheSameWayOnEveryRunAsAnErrorOnce() {
     Job failing = mock(Job.class);
     when(failing.id()).thenReturn("feed-every-tick");
     doThrow(new IllegalStateException("no tmux server")).when(failing).run();
@@ -259,7 +259,7 @@ class JobsTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void reportsAFailingJobRecoveredOnItsFirstRunThatDoesNotThrow() {
+  void reportsFailingJobRecoveredOnItsFirstRunThatDoesNotThrow() {
     Job flaky = mock(Job.class);
     when(flaky.id()).thenReturn("feed-recovering");
     doThrow(new IllegalStateException("no tmux server")).doNothing().when(flaky).run();
@@ -289,7 +289,7 @@ class JobsTest {
     "TRACKER,the tracker",
     "HOUSEKEEPING,housekeeping"
   })
-  void reportsWhomAJobWorksForByTheLabelOfWhatItDeclares(Job.Serves serves, String label) {
+  void reportsWhomJobWorksForByTheLabelOfWhatItDeclares(Job.Serves serves, String label) {
     Job job = mock(Job.class);
     when(job.id()).thenReturn("poll-reviews");
     when(job.serves()).thenReturn(serves);
@@ -322,7 +322,7 @@ class JobsTest {
   }
 
   @Test
-  void refusesToStartWithAJobThatNamesItselfNothing() {
+  void refusesToStartWithJobThatNamesItselfNothing() {
     Job nameless = mock(Job.class);
     when(nameless.id()).thenReturn(" ");
 
@@ -338,7 +338,7 @@ class JobsTest {
   }
 
   @Test
-  void reportsAJobThatHasNeverRunAsSuch() {
+  void reportsJobThatHasNeverRunAsSuch() {
     Job job = mock(Job.class);
     when(job.id()).thenReturn("poll-reviews");
     when(job.describe()).thenReturn("reads open review requests");
@@ -389,7 +389,7 @@ class JobsTest {
   }
 
   @Test
-  void summaryCountsAJobWhoseLastRunThrew() {
+  void summaryCountsJobWhoseLastRunThrew() {
     Job job = mock(Job.class);
     when(job.id()).thenReturn("poll-reviews");
     doThrow(new IllegalStateException("host unreachable")).when(job).run();
@@ -405,7 +405,7 @@ class JobsTest {
   }
 
   @Test
-  void retriesAJobThatCouldNotSayHowOftenItWantsToRunOneSecondAfterItsStart() {
+  void retriesJobThatCouldNotSayHowOftenItWantsToRunOneSecondAfterItsStart() {
     Job job = mock(Job.class);
     when(job.id()).thenReturn("poll-reviews");
     when(job.every()).thenThrow(new IllegalStateException("config unreadable"));
@@ -432,7 +432,7 @@ class JobsTest {
   }
 
   @Test
-  void reportsAJobThatCannotSayHowOftenItWantsToRunAlongsideTheRest() {
+  void reportsJobThatCannotSayHowOftenItWantsToRunAlongsideTheRest() {
     Job mute = mock(Job.class);
     when(mute.id()).thenReturn("poll-reviews");
     when(mute.every()).thenThrow(new IllegalStateException("config unreadable"));
@@ -452,7 +452,7 @@ class JobsTest {
   }
 
   @Test
-  void runsAJobAskedForNowAtOnceInsteadOfAtItsInterval(@TempDir Path root) {
+  void runsJobAskedForNowAtOnceInsteadOfAtItsInterval(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -485,7 +485,7 @@ class JobsTest {
   }
 
   @Test
-  void refusesToRunNowAJobNobodyDeclared() {
+  void refusesToRunNowJobNobodyDeclared() {
     Job job = mock(Job.class);
     when(job.id()).thenReturn("poll-reviews");
     Jobs jobs =
@@ -499,7 +499,7 @@ class JobsTest {
   }
 
   @Test
-  void refusesToRunNowAJobThatIsAlreadyRunningAndLeavesItsScheduleAlone() {
+  void refusesToRunNowJobThatIsAlreadyRunningAndLeavesItsScheduleAlone() {
     Job job = mock(Job.class);
     when(job.id()).thenReturn("poll-reviews");
     TaskScheduler scheduler = mock(TaskScheduler.class);
@@ -524,7 +524,7 @@ class JobsTest {
   }
 
   @Test
-  void neverStartsAJobWhileItsPreviousRunIsStillGoing() {
+  void neverStartsJobWhileItsPreviousRunIsStillGoing() {
     Job job = mock(Job.class);
     when(job.id()).thenReturn("poll-reviews");
     TaskScheduler scheduler = mock(TaskScheduler.class);
@@ -547,7 +547,7 @@ class JobsTest {
 
   @ParameterizedTest
   @MethodSource("taskJobs")
-  void neverHandsATaskJobATaskInAStatusItsWatchLeavesOut(Class<? extends TaskJob> type) {
+  void neverHandsTaskJobTaskInStatusItsWatchLeavesOut(Class<? extends TaskJob> type) {
     TaskJob job = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
     Map<String, TaskState> tasks = new LinkedHashMap<>();
     for (TaskStatus status : TaskStatus.values()) {
@@ -561,7 +561,7 @@ class JobsTest {
 
   @ParameterizedTest
   @MethodSource("taskJobsByStop")
-  void handsAStoppedTaskOnlyToATaskJobWhoseWatchNamesItsStopKind(
+  void handsStoppedTaskOnlyToTaskJobWhoseWatchNamesItsStopKind(
       Class<? extends TaskJob> type, TaskStop.Trigger trigger) {
     TaskJob job = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
     Map<String, TaskState> tasks =
@@ -578,7 +578,7 @@ class JobsTest {
 
   @ParameterizedTest
   @MethodSource("taskJobs")
-  void neverAdmitsAPausedTaskToATaskJob(Class<? extends TaskJob> type) {
+  void neverAdmitsPausedTaskToTaskJob(Class<? extends TaskJob> type) {
     TaskJob job = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
     TaskState paused =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)

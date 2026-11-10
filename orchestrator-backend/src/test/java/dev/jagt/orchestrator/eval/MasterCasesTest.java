@@ -9,16 +9,17 @@ import org.junit.jupiter.api.Test;
 class MasterCasesTest {
 
   @Test
-  void everyShippedRoundExpectsEitherAVerdictOrAnAnswer() {
+  void everyShippedRoundExpectsEitherVerdictOrAnAnswer() {
     var cases = MasterCases.all();
 
     assertThat(cases)
         .hasSize(26)
-        .allSatisfy(loaded -> assertThat(loaded.verdict() == null).isEqualTo(loaded.answers()));
+        .allSatisfy(
+            loaded -> assertThat(loaded.expect().verdict() == null).isEqualTo(loaded.answers()));
   }
 
   @Test
-  void aPlanRoundKeepsItsPlanAndVerdict() {
+  void planRoundKeepsItsPlanAndVerdict() {
     MasterCase loaded =
         MasterCases.parse(
             """
@@ -39,12 +40,12 @@ class MasterCasesTest {
     assertThat(loaded.status()).isEqualTo(TaskStatus.PLAN_PENDING);
     assertThat(loaded.plan()).isEqualTo("1. Change A.\n");
     assertThat(loaded.change()).isEmpty();
-    assertThat(loaded.verdict()).isEqualTo(MasterReview.Kind.NOT_READY);
+    assertThat(loaded.expect().verdict()).isEqualTo(MasterReview.Kind.NOT_READY);
     assertThat(loaded.answers()).isFalse();
   }
 
   @Test
-  void aQuestionRoundKeepsWhatTheHumanSaidAndWhatTheAnswerMustRefuse() {
+  void questionRoundKeepsWhatTheHumanSaidAndWhatTheAnswerMustRefuse() {
     MasterCase loaded =
         MasterCases.parse(
             """
@@ -64,6 +65,6 @@ class MasterCasesTest {
     assertThat(loaded.answer().question()).isEqualTo("Skip the test?");
     assertThat(loaded.answer().said()).containsExactly("ship it");
     assertThat(loaded.answer().refused()).containsExactly("later");
-    assertThat(loaded.verdict()).isNull();
+    assertThat(loaded.expect().verdict()).isNull();
   }
 }

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 class PressMessagesTest {
 
   @Test
-  void acceptsAVerbOnATask() {
+  void acceptsVerbOnTask() {
     assertThat(new TaskPress("ABC-42", "done", null).violations(MessageContext.NONE)).isEmpty();
   }
 
@@ -19,7 +19,7 @@ class PressMessagesTest {
   }
 
   @Test
-  void refusesAVerbNoTaskActionNames() {
+  void refusesVerbNoTaskActionNames() {
     assertThat(new TaskPress("ABC-42", "explode", null).violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("verb");
@@ -42,7 +42,7 @@ class PressMessagesTest {
   }
 
   @Test
-  void acceptsACommandWithOrWithoutWhatFollowsIt() {
+  void acceptsCommandWithOrWithoutWhatFollowsIt() {
     assertThat(new CommandPress("stats", null).violations(MessageContext.NONE)).isEmpty();
     assertThat(new CommandPress("stats", null).tail()).isEmpty();
     assertThat(new CommandPress("stats", " today ").tail()).isEqualTo("today");
@@ -56,7 +56,7 @@ class PressMessagesTest {
   }
 
   @Test
-  void describesTheVerbsAndTheCommandAToolTakes() {
+  void describesTheVerbsAndTheCommandToolTakes() {
     assertThat(TaskPress.schema("press").json()).contains("\"verb\"", "remove-repo", "taskId");
     assertThat(CommandPress.schema("run").json()).contains("\"verb\"", "\"tail\"");
   }

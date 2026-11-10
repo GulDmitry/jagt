@@ -21,7 +21,8 @@ class ScenariosCapabilityTest {
   private final ScenarioSessions sessions = mock(ScenarioSessions.class);
   private final TicketTexts tickets = mock(TicketTexts.class);
   private final StateService state = mock(StateService.class);
-  private final ScenariosCapability capability = new ScenariosCapability(sessions, tickets, state, () -> true);
+  private final ScenariosCapability capability =
+      new ScenariosCapability(sessions, tickets, state, () -> true);
 
   @Test
   void opensTheProjectsSessionWithTheTicketLoaded() {
@@ -31,8 +32,7 @@ class ScenariosCapabilityTest {
 
     capability.run("ABC-42");
 
-    verify(sessions)
-        .open("alpha", "Task ABC-42.\n<ticket>\nRefund retries twice\n</ticket>");
+    verify(sessions).open("alpha", "Task ABC-42.\n<ticket>\nRefund retries twice\n</ticket>");
   }
 
   @Test
@@ -47,7 +47,7 @@ class ScenariosCapabilityTest {
   }
 
   @Test
-  void refusesATaskWithNoProject() {
+  void refusesTaskWithNoProject() {
     when(state.task("ABC-42"))
         .thenReturn(Optional.of(TaskState.builder(null, "/wt", TaskStatus.NEW).build()));
 
@@ -62,8 +62,7 @@ class ScenariosCapabilityTest {
 
   @Test
   void isNotOfferedWhereAcceptanceIsOffOrHoldsNoWorkspace() {
-    ScenariosCapability notReady =
-        new ScenariosCapability(sessions, tickets, state, () -> false);
+    ScenariosCapability notReady = new ScenariosCapability(sessions, tickets, state, () -> false);
 
     assertThat(notReady.offered()).isFalse();
   }

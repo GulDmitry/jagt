@@ -27,7 +27,7 @@ class RoleOptionsTest {
   }
 
   @Test
-  void aTimeoutThatIsNoDurationLeavesTheDefaultAndIsNamedUnread(@TempDir Path folder)
+  void timeoutThatIsNoDurationLeavesTheDefaultAndIsNamedUnread(@TempDir Path folder)
       throws Exception {
     Files.writeString(folder.resolve("role.yml"), "flows: {timeout: soon}\n");
 
@@ -49,7 +49,7 @@ class RoleOptionsTest {
   }
 
   @Test
-  void aCopyThatDoesNotParseLeavesTheShippedEnvironmentsStanding(@TempDir Path folder)
+  void copyThatDoesNotParseLeavesTheShippedEnvironmentsStanding(@TempDir Path folder)
       throws Exception {
     Files.writeString(folder.resolve("role.yml.dist"), "environments: [{url: https://a.test}]\n");
     Files.writeString(folder.resolve("role.yml"), "environments: [{url: \n");
@@ -61,14 +61,14 @@ class RoleOptionsTest {
   }
 
   @Test
-  void aRelativeWorkspaceIsTheRoleFoldersAndNoneOrAbsentIsNoWorkspace(
+  void relativeWorkspaceIsTheRoleFoldersAndNoneOrAbsentIsNoWorkspace(
       @TempDir Path folder, @TempDir Path other) throws Exception {
     Files.writeString(folder.resolve("role.yml"), "workspace: ws\n");
-    Path relative = RoleOptions.read(folder).workspacePath().orElseThrow();
+    final Path relative = RoleOptions.read(folder).workspacePath().orElseThrow();
     Files.writeString(folder.resolve("role.yml"), "workspace: none\n");
-    Optional<Path> none = RoleOptions.read(folder).workspacePath();
+    final Optional<Path> none = RoleOptions.read(folder).workspacePath();
     Files.writeString(folder.resolve("role.yml"), "model: sonnet\n");
-    Optional<Path> absent = RoleOptions.read(folder).workspacePath();
+    final Optional<Path> absent = RoleOptions.read(folder).workspacePath();
     Files.writeString(folder.resolve("role.yml"), "workspace: " + other + "\n");
     Path absolute = RoleOptions.read(folder).workspacePath().orElseThrow();
 

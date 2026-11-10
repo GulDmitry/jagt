@@ -11,7 +11,7 @@ class LogCommandTest {
   private final LogTail tail = mock(LogTail.class);
 
   @Test
-  void opensTheLogsTailAsAReport() {
+  void opensTheLogsTailAsReport() {
     when(tail.render()).thenReturn("the last 2 lines");
     LogCommand command = new LogCommand(tail);
 

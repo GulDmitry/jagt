@@ -28,7 +28,7 @@ class NoCodeHostTest {
   }
 
   @Test
-  void noPipelineIsReadOnABranch() {
+  void noPipelineIsReadOnBranch() {
     Answer<CommitPipeline> answer =
         none.onBranchSince(host, "git@git.example.invalid:shop/web.git", "dev", "0123abc");
 

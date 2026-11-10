@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.stand;
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,12 +22,11 @@ public final class StandRunLog {
       String scenario,
       String mode,
       String source,
-      boolean passed,
-      String ending,
-      String detail,
-      List<String> violations,
+      @JsonUnwrapped Verdict verdict,
       long wallSeconds,
       StandSpend spend) {}
+
+  public record Verdict(boolean passed, String ending, String detail, List<String> violations) {}
 
   private StandRunLog() {}
 

@@ -65,7 +65,7 @@ class ChosenCodeHostTest {
   }
 
   @Test
-  void aBranchIsReadThroughTheDriverTheKeyChooses() {
+  void branchIsReadThroughTheDriverTheKeyChooses() {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("gitlab", null))));
     when(processes.run(any(), any(Duration.class), anyList()))
@@ -78,7 +78,7 @@ class ChosenCodeHostTest {
   }
 
   @Test
-  void aHostWithoutGitlabInItsNameIsReadThroughGlabWhereTheKeyChoosesIt() {
+  void hostWithoutGitlabInItsNameIsReadThroughGlabWhereTheKeyChoosesIt() {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("gitlab", null))));
     when(processes.run(any(), any(Duration.class), anyList()))
@@ -90,7 +90,7 @@ class ChosenCodeHostTest {
   }
 
   @Test
-  void aHostNamedAfterGithubIsReadThroughGlabWhereTheKeyChoosesIt() {
+  void hostNamedAfterGithubIsReadThroughGlabWhereTheKeyChoosesIt() {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("gitlab", null))));
     when(processes.run(any(), any(Duration.class), anyList()))
@@ -102,7 +102,7 @@ class ChosenCodeHostTest {
   }
 
   @Test
-  void theOrchestratorsKeyAppliesToAProjectThatNamesNone() {
+  void theOrchestratorsKeyAppliesToProjectThatNamesNone() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -132,7 +132,7 @@ class ChosenCodeHostTest {
   }
 
   @Test
-  void aProjectChoosingCommandReadsTheStateItsCommandPrints() {
+  void projectChoosingCommandReadsTheStateItsCommandPrints() {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -147,7 +147,7 @@ class ChosenCodeHostTest {
   }
 
   @Test
-  void aProjectChoosingNoneSettlesWithoutReadingAnything() {
+  void projectChoosingNoneSettlesWithoutReadingAnything() {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("none", null))));
 
@@ -158,7 +158,7 @@ class ChosenCodeHostTest {
   }
 
   @Test
-  void aKindNoDriverAnswersForIsUnreadNamingTheKey() {
+  void kindNoDriverAnswersForIsUnreadNamingTheKey() {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("bitbucket", null))));
 
@@ -168,7 +168,7 @@ class ChosenCodeHostTest {
   }
 
   @Test
-  void settlesADeployWithNoPipelineForAProjectWithNoRemoteAndNoCodeHostKey() {
+  void settlesDeployWithNoPipelineForProjectWithNoRemoteAndNoCodeHostKey() {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -187,7 +187,7 @@ class ChosenCodeHostTest {
   }
 
   @Test
-  void aRequestIsClosedThroughTheDriverTheKeyChooses() {
+  void requestIsClosedThroughTheDriverTheKeyChooses() {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("gitlab", null))));
     when(processes.run(any(), any(Duration.class), anyList()))
@@ -202,7 +202,7 @@ class ChosenCodeHostTest {
   }
 
   @Test
-  void noRequestIsClosedWhereTheRemoteIsALocalPath() {
+  void noRequestIsClosedWhereTheRemoteIsLocalPath() {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("github", null))));
 
@@ -215,7 +215,7 @@ class ChosenCodeHostTest {
   }
 
   @Test
-  void noRequestIsClosedOnAHostOtherThanTheRemotesWhateverItsPath() {
+  void noRequestIsClosedOnHostOtherThanTheRemotesWhateverItsPath() {
     when(configService.load())
         .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("github", null))));
 

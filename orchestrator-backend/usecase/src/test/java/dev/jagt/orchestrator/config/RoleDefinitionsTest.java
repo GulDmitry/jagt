@@ -33,7 +33,7 @@ class RoleDefinitionsTest {
   }
 
   @Test
-  void aFlatRoleDocumentCompilesItsTriggerAndItsRepliesIntoOneValueEach() {
+  void flatRoleDocumentCompilesItsTriggerAndItsRepliesIntoOneValueEach() {
     RoleDefinition compiled =
         RoleDefinitions.compile(
             "id: x\n"
@@ -64,7 +64,7 @@ class RoleDefinitionsTest {
   }
 
   @Test
-  void aRoleDeclaringNeitherKeyRunsNoJobsAndOpensNoRead() {
+  void roleDeclaringNeitherKeyRunsNoJobsAndOpensNoRead() {
     RoleDefinition compiled =
         RoleDefinitions.compile(
             "id: x\nname: X\nmodel: m\ntrigger: [deployed]\n"
@@ -86,7 +86,7 @@ class RoleDefinitionsTest {
   }
 
   @Test
-  void aCopyLackingBothKeysKeepsTheShippedOnes(@TempDir Path folder) throws Exception {
+  void copyLackingBothKeysKeepsTheShippedOnes(@TempDir Path folder) throws Exception {
     Path copy = Files.writeString(folder.resolve("role.yml"), "model: opus\n");
 
     RoleDefinition compiled =
@@ -98,7 +98,7 @@ class RoleDefinitionsTest {
   }
 
   @Test
-  void refusesATriggerWordTheVocabularyDoesNotHold() {
+  void refusesTriggerWordTheVocabularyDoesNotHold() {
     assertThatThrownBy(
             () ->
                 RoleDefinitions.compile(
@@ -109,7 +109,7 @@ class RoleDefinitionsTest {
   }
 
   @Test
-  void aCheckerTriggerWithoutDeployedIsRefused() {
+  void checkerTriggerWithoutDeployedIsRefused() {
     assertThatThrownBy(
             () ->
                 RoleDefinitions.compile(
@@ -121,7 +121,7 @@ class RoleDefinitionsTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"cli: [Read]", "allow: [Read]", "refuse: [Write]"})
-  void refusesAToolsKeyThatMovedNamingTheNewOnes(String oldKey) {
+  void refusesToolsKeyThatMovedNamingTheNewOnes(String oldKey) {
     assertThatThrownBy(
             () ->
                 RoleDefinitions.compile(
@@ -137,7 +137,7 @@ class RoleDefinitionsTest {
   }
 
   @Test
-  void refusesARoleWhoseReadHasNoOutcome() {
+  void refusesRoleWhoseReadHasNoOutcome() {
     assertThatThrownBy(
             () ->
                 RoleDefinitions.compile(

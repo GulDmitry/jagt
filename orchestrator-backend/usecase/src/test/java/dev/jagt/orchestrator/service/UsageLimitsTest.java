@@ -31,7 +31,7 @@ class UsageLimitsTest {
   }
 
   @Test
-  void joinsWhatWasUsedAndTheBalanceWithAComma() {
+  void joinsWhatWasUsedAndTheBalanceWithComma() {
     var paid =
         new SubscriptionUsage.Paid(
             Optional.of(new BigDecimal("3")),

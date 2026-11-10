@@ -22,7 +22,7 @@ class TaskNameTest {
         "wip/ä-ünicode",
         "x"
       })
-  void acceptsEveryNameGitAcceptsAsABranch(String name) {
+  void acceptsEveryNameGitAcceptsAsBranch(String name) {
     assertThat(TaskName.unusableReason(name)).isNull();
   }
 
@@ -48,12 +48,12 @@ class TaskNameTest {
   }
 
   @Test
-  void escapesAControlCharacterInsteadOfSplicingItIntoTheAnswer() {
-    assertThat(TaskName.unusableReason("wip\tfix")).isEqualTo("'\\u0009' is not allowed");
+  void escapesControlCharacterInsteadOfSplicingItIntoTheAnswer() {
+    assertThat(TaskName.unusableReason("wip\tfix")).isEqualTo("'\\u" + "0009' is not allowed");
   }
 
   @Test
-  void refusesANameTooLongForOneDirectoryComponent() {
+  void refusesNameTooLongForOneDirectoryComponent() {
     assertThat(TaskName.unusableReason("x".repeat(181)))
         .isEqualTo("it is longer than 180 characters");
   }
@@ -65,29 +65,29 @@ class TaskNameTest {
     "release/2.1, release-2-1",
     "wip/o'brien, wip-o-brien"
   })
-  void flattensATaskIntoOneFilesystemName(String name, String slug) {
+  void flattensTaskIntoOneFilesystemName(String name, String slug) {
     assertThat(TaskName.slug(name)).isEqualTo(slug);
   }
 
   @Test
-  void namesABranchAfterTheWordsAHumanOpenedTheTaskWith() {
+  void namesBranchAfterTheWordsHumanOpenedTheTaskWith() {
     assertThat(TaskName.from("Split the invoice mailer in two"))
         .isEqualTo("split-the-invoice-mailer-in-two");
   }
 
   @Test
-  void cutsALongOpeningLineAtAWholeWord() {
+  void cutsLongOpeningLineAtWholeWord() {
     assertThat(TaskName.from("rewrite the invoice mailer so that it stops retrying forever"))
         .isEqualTo("rewrite-the-invoice-mailer-so-that-it");
   }
 
   @Test
-  void namesNothingForATaskWhoseOpeningLineWasNeverGiven() {
+  void namesNothingForTaskWhoseOpeningLineWasNeverGiven() {
     assertThat(TaskName.from(null)).isNull();
   }
 
   @Test
-  void namesNothingWhenTheLineCarriesNoWordABranchCanUse() {
+  void namesNothingWhenTheLineCarriesNoWordBranchCanUse() {
     assertThat(TaskName.from("!!! ???")).isNull();
   }
 
@@ -98,12 +98,12 @@ class TaskNameTest {
   }
 
   @Test
-  void cutsALongOpeningWordWhereItHasNoWholeWordToCutAt() {
+  void cutsLongOpeningWordWhereItHasNoWholeWordToCutAt() {
     assertThat(TaskName.from("x".repeat(50))).isEqualTo("x".repeat(40));
   }
 
   @Test
-  void refusesToRequireANameGitWouldRefuse() {
+  void refusesToRequireNameGitWouldRefuse() {
     assertThatThrownBy(() -> TaskName.require("a b", "task"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Argument 'task'")
@@ -112,7 +112,7 @@ class TaskNameTest {
   }
 
   @Test
-  void acceptsARequiredNameGitAccepts() {
+  void acceptsRequiredNameGitAccepts() {
     assertThatCode(() -> TaskName.require("ABC-42", "task")).doesNotThrowAnyException();
   }
 

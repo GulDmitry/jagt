@@ -44,7 +44,7 @@ class HumanStubTest {
   }
 
   @Test
-  void approvesAPlanWaitingOnAnotherOwnerInAct() {
+  void approvesPlanWaitingOnAnotherOwnerInAct() {
     StandBoard verbs = mock(StandBoard.class);
     when(verbs.press("ABC-42", "approve-plan"))
         .thenReturn(JsonMapper.builder().build().createObjectNode());
@@ -63,7 +63,7 @@ class HumanStubTest {
   }
 
   @Test
-  void deploysAGreenRequestOwnedByCiInJudge() {
+  void deploysGreenRequestOwnedByCiInJudge() {
     StandBoard verbs = mock(StandBoard.class);
     when(verbs.press("ABC-42", "deploy"))
         .thenReturn(JsonMapper.builder().build().createObjectNode());
@@ -82,7 +82,7 @@ class HumanStubTest {
   }
 
   @Test
-  void doesNotDeployARequestWhosePipelineIsStillRunning() {
+  void doesNotDeployRequestWhosePipelineIsStillRunning() {
     StandBoard verbs = mock(StandBoard.class);
     JsonNode board =
         JsonMapper.builder()
@@ -116,7 +116,7 @@ class HumanStubTest {
   }
 
   @Test
-  void hasNothingToPressOnADeployConflictOwnedByYou() {
+  void hasNothingToPressOnDeployConflictOwnedByYou() {
     JsonNode board =
         JsonMapper.builder()
             .build()
@@ -132,7 +132,7 @@ class HumanStubTest {
   }
 
   @Test
-  void stillHasAShipToPressWhenYouOwnsAnUnpressedOne() {
+  void stillHasShipToPressWhenYouOwnsAnUnpressedOne() {
     JsonNode board = JsonMapper.builder().build().readTree(SHIP_IS_YOURS);
 
     boolean nothing = new HumanStub(StandMode.JUDGE).nothingToPress(board);

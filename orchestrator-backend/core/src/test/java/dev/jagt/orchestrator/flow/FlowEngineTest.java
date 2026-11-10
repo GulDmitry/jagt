@@ -27,8 +27,7 @@ class FlowEngineTest {
 
   private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 
-  private final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ReducingStore stateService = mock(ReducingStore.class);
   private final AgentPresence sessions = mock(AgentPresence.class);
@@ -50,6 +49,11 @@ class FlowEngineTest {
     }
 
     @Override
+    public Outcome run(String taskId, String project) {
+      return Outcome.relayed("added " + project, outcome.stamp());
+    }
+
+    @Override
     public void vet(String project) {
       if (!known.equals(project)) {
         throw Refusal.byState("Unknown project '" + project + "'");
@@ -59,11 +63,6 @@ class FlowEngineTest {
     @Override
     public Facts naming(Facts facts) {
       return facts.withWorkspace(facts.workspace().withRepoRequested(true));
-    }
-
-    @Override
-    public Outcome run(String taskId, String project) {
-      return Outcome.relayed("added " + project, outcome.stamp());
     }
   }
 
@@ -226,7 +225,7 @@ class FlowEngineTest {
   }
 
   @Test
-  void stampsWhatALandingLeftBehindBeforeItRefusesTheHalfDoneRevert() {
+  void stampsWhatLandingLeftBehindBeforeItRefusesTheHalfDoneRevert() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
         .thenReturn(
@@ -266,7 +265,7 @@ class FlowEngineTest {
   }
 
   @Test
-  void revertsWhatADeployThatBrokeOffLeftLiveWhileTheStatusStayedPut() {
+  void revertsWhatDeployThatBrokeOffLeftLiveWhileTheStatusStayedPut() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
         .thenReturn(
@@ -405,7 +404,7 @@ class FlowEngineTest {
   }
 
   @Test
-  void shipsAStuckTaskAgainOnlyWhenItsAgentIsGoneAsTheProbeAnswersAtTheMomentOfTheRun() {
+  void shipsStuckTaskAgainOnlyWhenItsAgentIsGoneAsTheProbeAnswersAtTheMomentOfTheRun() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build()));
@@ -425,7 +424,7 @@ class FlowEngineTest {
   }
 
   @Test
-  void shipsAStuckTaskAgainWhenTheProbeSaysItsAgentIsGone() {
+  void shipsStuckTaskAgainWhenTheProbeSaysItsAgentIsGone() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build()));
@@ -444,7 +443,7 @@ class FlowEngineTest {
   }
 
   @Test
-  void refusesToShipAStuckTaskWhoseSessionWindowCouldNotBeRead() {
+  void refusesToShipStuckTaskWhoseSessionWindowCouldNotBeRead() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build()));
@@ -463,7 +462,7 @@ class FlowEngineTest {
   }
 
   @Test
-  void handsTheProjectAHumanNamesToTheCapabilityAndLandsWhereTheRulesLeadIt() {
+  void handsTheProjectHumanNamesToTheCapabilityAndLandsWhereTheRulesLeadIt() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
         .thenReturn(
@@ -488,7 +487,8 @@ class FlowEngineTest {
     assertThat(
             writes
                 .getValue()
-                .apply(reducer, TaskState.builder("alpha", "/wt", TaskStatus.REVIEW_PENDING).build())
+                .apply(
+                    reducer, TaskState.builder("alpha", "/wt", TaskStatus.REVIEW_PENDING).build())
                 .status())
         .isEqualTo(TaskStatus.IN_PROGRESS);
   }
@@ -497,7 +497,7 @@ class FlowEngineTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"PLAN_PENDING", "DEPLOYED", "DEPLOY_CONFLICT", "REVERTED", "DONE"})
-  void refusesANamedRepositoryAtAStatusThatCannotTakeOneAndWritesNothing(TaskStatus status) {
+  void refusesNamedRepositoryAtStatusThatCannotTakeOneAndWritesNothing(TaskStatus status) {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("alpha", "/wt", status).build()));
@@ -521,7 +521,7 @@ class FlowEngineTest {
   }
 
   @Test
-  void refusesANamedRepositoryTheCapabilityDoesNotKnowAndWritesNothing() {
+  void refusesNamedRepositoryTheCapabilityDoesNotKnowAndWritesNothing() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("alpha", "/wt", TaskStatus.IN_PROGRESS).build()));
@@ -544,7 +544,7 @@ class FlowEngineTest {
   }
 
   @Test
-  void refusesAProjectNamedForAVerbThatTakesNone() {
+  void refusesProjectNamedForVerbThatTakesNone() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("alpha", "/wt", TaskStatus.IN_PROGRESS).build()));

@@ -25,7 +25,7 @@ class FlowCheckTest {
       value = TaskStatus.class,
       mode = EnumSource.Mode.EXCLUDE,
       names = {"NEW", "DONE"})
-  void everyStatusCanBeReachedByAnActionAReportOrARoundRead(TaskStatus status) {
+  void everyStatusCanBeReachedByAnActionReportOrRoundRead(TaskStatus status) {
     assertThat(
             rules.targets().contains(status)
                 || FlowRules.reportable(status)

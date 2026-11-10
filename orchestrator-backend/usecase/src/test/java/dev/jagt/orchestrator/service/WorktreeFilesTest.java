@@ -30,7 +30,7 @@ class WorktreeFilesTest {
   }
 
   @Test
-  void keepsTheFileTheWorktreeAlreadyHoldsRatherThanOverwriteATrackedOne(@TempDir Path root)
+  void keepsTheFileTheWorktreeAlreadyHoldsRatherThanOverwriteTrackedOne(@TempDir Path root)
       throws Exception {
     Path project = root.resolve("repo");
     Files.createDirectories(project.resolve(".editor"));
@@ -86,7 +86,7 @@ class WorktreeFilesTest {
   }
 
   @Test
-  void leavesAFileTheCheckoutAlreadyProvidedAsGitWroteIt(@TempDir Path root) throws Exception {
+  void leavesFileTheCheckoutAlreadyProvidedAsGitWroteIt(@TempDir Path root) throws Exception {
     Path base = root.resolve("base");
     Files.createDirectories(base);
     Files.writeString(base.resolve(".env"), "LOCALLY EDITED");
@@ -100,7 +100,7 @@ class WorktreeFilesTest {
   }
 
   @Test
-  void copiesTheEnvFileASingleModuleRepositoryKeepsAtItsRoot(@TempDir Path root) throws Exception {
+  void copiesTheEnvFileSingleModuleRepositoryKeepsAtItsRoot(@TempDir Path root) throws Exception {
     Path base = root.resolve("base");
     Files.createDirectories(base);
     Files.writeString(base.resolve(".env"), "SECRET=1");
@@ -113,7 +113,7 @@ class WorktreeFilesTest {
   }
 
   @Test
-  void copiesNothingWithoutFailingWhenAGlobsDirectoryIsAbsent(@TempDir Path root) throws Exception {
+  void copiesNothingWithoutFailingWhenGlobsDirectoryIsAbsent(@TempDir Path root) throws Exception {
     Path base = root.resolve("base");
     Files.createDirectories(base.resolve("src"));
     Files.writeString(base.resolve("src/Main.java"), "class Main {}");
@@ -151,7 +151,7 @@ class WorktreeFilesTest {
   }
 
   @Test
-  void keepsTheIdeFilesCopiedIntoAWorktreeOutOfEveryWorktreesGitStatus(@TempDir Path gitCommonDir)
+  void keepsTheIdeFilesCopiedIntoWorktreeOutOfEveryWorktreesGitStatus(@TempDir Path gitCommonDir)
       throws Exception {
     WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
 
@@ -178,7 +178,7 @@ class WorktreeFilesTest {
   }
 
   @Test
-  void startsTheFirstAdditionOnALineOfItsOwnWhereTheExcludeFileEndsWithoutANewline(
+  void startsTheFirstAdditionOnLineOfItsOwnWhereTheExcludeFileEndsWithoutNewline(
       @TempDir Path gitCommonDir) throws Exception {
     Files.createDirectories(gitCommonDir.resolve("info"));
     Files.writeString(gitCommonDir.resolve("info").resolve("exclude"), "*.local");
@@ -217,7 +217,7 @@ class WorktreeFilesTest {
   }
 
   @Test
-  void readsNoMatcherFromABlankOrAbsentGlob() {
+  void readsNoMatcherFromBlankOrAbsentGlob() {
     assertThat(WorktreeFiles.localFileMatchers(java.util.Arrays.asList("**/.env", null, " ")))
         .hasSize(2);
   }

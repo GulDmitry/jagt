@@ -87,7 +87,7 @@ class CaseDoorTest {
     "DONE, done",
     "REMOVE_REPO, remove-repo"
   })
-  void letsTheMasterPressAVerbOnceReservedForAHumanWhereACaseAllowsIt(
+  void letsTheMasterPressVerbOnceReservedForHumanWhereCaseAllowsIt(
       TaskAction action, String move, @TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -116,7 +116,7 @@ class CaseDoorTest {
     "APPROVE_PLAN, plan",
     "ADD_REPO, repo"
   })
-  void refusesTheMasterAVerbItsHumanKeepsInMine(
+  void refusesTheMasterVerbItsHumanKeepsInMine(
       TaskAction action, String mine, @TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -139,7 +139,7 @@ class CaseDoorTest {
   }
 
   @Test
-  void letsTheMasterPressAVerbACaseAllowsAtTheTasksStatus(@TempDir Path root) throws Exception {
+  void letsTheMasterPressVerbCaseAllowsAtTheTasksStatus(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -183,7 +183,7 @@ class CaseDoorTest {
   }
 
   @Test
-  void refusesTheMasterAMoveNoCaseAllowsAtTheTasksStatus(@TempDir Path root) throws Exception {
+  void refusesTheMasterMoveNoCaseAllowsAtTheTasksStatus(@TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -201,7 +201,7 @@ class CaseDoorTest {
   }
 
   @Test
-  void takesNoChangesFromAShipTheMasterPressedOnACleanPushedTree(@TempDir Path root)
+  void takesNoChangesFromShipTheMasterPressedOnCleanPushedTree(@TempDir Path root)
       throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -236,7 +236,7 @@ class CaseDoorTest {
 
   @ParameterizedTest
   @CsvSource({"LIFT, lift", "ESCALATE, escalate"})
-  void refusesTheMasterALiftOnceItsOneLiftSinceTheHumansLastIsSpent(
+  void refusesTheMasterLiftOnceItsOneLiftSinceTheHumansLastIsSpent(
       TaskAction action, String move, @TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 class ReviewFactsTest {
 
   @Test
-  void movesAThreadWhoseNewestNoteIsTheAgentsOwnToTheOnesAwaitingTheReviewer() {
+  void movesThreadWhoseNewestNoteIsTheAgentsOwnToTheOnesAwaitingTheReviewer() {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
@@ -75,7 +75,7 @@ class ReviewFactsTest {
   }
 
   @Test
-  void movesNothingForABlankAccount() {
+  void movesNothingForBlankAccount() {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
@@ -86,7 +86,7 @@ class ReviewFactsTest {
   }
 
   @Test
-  void movesNothingForANewestNoteWithNoAuthor() {
+  void movesNothingForNewestNoteWithNoAuthor() {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
@@ -108,7 +108,7 @@ class ReviewFactsTest {
   }
 
   @Test
-  void readsAMissingPipelineFailureAndAwaitingListAsEmpty() {
+  void readsMissingPipelineFailureAndAwaitingListAsEmpty() {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, true, false, false, 0),
@@ -120,7 +120,7 @@ class ReviewFactsTest {
   }
 
   @Test
-  void keepsTheHostsNoteIdsWhenAThreadMovesToTheReviewer() {
+  void keepsTheHostsNoteIdsWhenThreadMovesToTheReviewer() {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
@@ -159,7 +159,7 @@ class ReviewFactsTest {
   }
 
   @Test
-  void fingerprintsADifferentNoteIdDifferently() {
+  void fingerprintsDifferentNoteIdDifferently() {
     ReviewFacts before =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
@@ -186,7 +186,7 @@ class ReviewFactsTest {
   }
 
   @Test
-  void twoReadsWithABlankNoteIdAreNeverTheSameRound() {
+  void twoReadsWithBlankNoteIdAreNeverTheSameRound() {
     ReviewFacts first =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),

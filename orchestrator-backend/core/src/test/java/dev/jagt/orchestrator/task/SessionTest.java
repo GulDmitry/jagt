@@ -8,7 +8,7 @@ import tools.jackson.databind.json.JsonMapper;
 class SessionTest {
 
   @Test
-  void countsAStartedOverSessionAsTheNextGeneration() {
+  void countsStartedOverSessionAsTheNextGeneration() {
     Session next = Session.startedOver(Session.defaults().withGeneration(2));
 
     assertThat(next.generation()).isEqualTo(3);
@@ -27,7 +27,7 @@ class SessionTest {
   }
 
   @Test
-  void readsTheFlatShapeAStateFileHolds() {
+  void readsTheFlatShapeStateFileHolds() {
     String flat =
         """
         {"movedAt":5,"workStartedAt":4,"reportedAt":3,"halt":{"kind":"FAILED","at":6,"cause":"overloaded"},
@@ -47,11 +47,12 @@ class SessionTest {
                 2,
                 "/logs/s.jsonl",
                 true,
-                new Session.Start(3, new Session.Window(Session.Window.State.RUNNING, 7, 8), null)));
+                new Session.Start(
+                    3, new Session.Window(Session.Window.State.RUNNING, 7, 8), null)));
   }
 
   @Test
-  void writesTheFlatShapeAStateFileHolds() {
+  void writesTheFlatShapeStateFileHolds() {
     Session session =
         Session.defaults()
             .withGeneration(3)

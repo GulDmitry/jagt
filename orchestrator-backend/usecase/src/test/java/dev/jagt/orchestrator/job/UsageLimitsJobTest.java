@@ -28,7 +28,7 @@ class UsageLimitsJobTest {
       Clock.fixed(Instant.parse("2026-10-10T12:00:00Z"), ZoneOffset.UTC);
 
   @Test
-  void tellsTheHumanWhenAWindowCrossesAThreshold(@TempDir Path root) {
+  void tellsTheHumanWhenWindowCrossesThreshold(@TempDir Path root) {
     SubscriptionUsage usage =
         () ->
             new SubscriptionUsage.Read(

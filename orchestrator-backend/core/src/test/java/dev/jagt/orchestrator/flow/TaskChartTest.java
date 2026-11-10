@@ -31,7 +31,7 @@ class TaskChartTest {
   private final TaskChart taskChart = new TaskChart(Composition.builtIn());
 
   @Test
-  void startsAtNewOnAChartTheEngineValidatedAsReachableAndLeavable() {
+  void startsAtNewOnChartTheEngineValidatedAsReachableAndLeavable() {
     assertThat(taskChart.chart().initial().toPlain())
         .containsExactly(
             entry("lifecycle", "NEW"),
@@ -398,7 +398,7 @@ class TaskChartTest {
 
   @ParameterizedTest
   @MethodSource("landings")
-  void landsATaskOnlyWhereTheChartDrawsTheMoveFromItsStatus(
+  void landsTaskOnlyWhereTheChartDrawsTheMoveFromItsStatus(
       TaskStatus from, TaskMove move, TaskStatus to) {
     assertThat(taskChart.land(from, move)).contains(to);
   }
@@ -655,7 +655,7 @@ class TaskChartTest {
 
   @ParameterizedTest
   @MethodSource("regionEdges")
-  void movesARegionOnlyAlongTheMovesItsPhaseTakes(
+  void movesRegionOnlyAlongTheMovesItsPhaseTakes(
       String region,
       String from,
       String lifecycle,

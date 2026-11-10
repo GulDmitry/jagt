@@ -16,7 +16,7 @@ class ModelTierTest {
   }
 
   @Test
-  void takesTheFirstTierForAStartNoTierNames() {
+  void takesTheFirstTierForStartNoTierNames() {
     ModelTier tier = ModelTier.above("", List.of("sonnet", "opus"));
 
     assertThat(tier.models()).containsExactly("", "opus");

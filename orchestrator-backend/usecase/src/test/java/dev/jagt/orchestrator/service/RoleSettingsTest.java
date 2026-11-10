@@ -47,7 +47,11 @@ class RoleSettingsTest {
     String loaded =
         new RoleSettings(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+                new ConfigService(
+                    paths,
+                    mock(AgentRuntime.class),
+                    mock(ActStops.class),
+                    new Checkers(new TaskChart(Composition.builtIn()))),
                 paths)
             .load()
             .model();
@@ -59,7 +63,8 @@ class RoleSettingsTest {
   void anEnvironmentWrittenIntoTheFolderHoldsAtTheNextLoadWithNoRestart(@TempDir Path root)
       throws Exception {
     Files.writeString(
-        root.resolve("jagt.yml"), "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
+        root.resolve("jagt.yml"),
+        "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
         Path.of("../../roles/acceptance/role.yml.dist"),
@@ -72,7 +77,11 @@ class RoleSettingsTest {
     RoleSettings settings =
         new RoleSettings(
             RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-            new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
+            new ConfigService(
+                paths,
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
             paths);
     settings.load();
     Files.writeString(

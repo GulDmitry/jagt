@@ -35,7 +35,7 @@ class RoundQuotesTest {
   private final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
 
   @Test
-  void keepsAReadyVerdictWhenOnlyTheBaseMovedUnderTheTasksOwnDiff(@TempDir Path worktree) {
+  void keepsReadyVerdictWhenOnlyTheBaseMovedUnderTheTasksOwnDiff(@TempDir Path worktree) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -45,7 +45,7 @@ class RoundQuotesTest {
                     .withStateFile(worktree.resolve("state.json").toString())),
                     reducer);
     MasterReview reviews = new MasterReview(state);
-    RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+    final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -85,7 +85,7 @@ class RoundQuotesTest {
                     .withStateFile(worktree.resolve("state.json").toString())),
                     reducer);
     MasterReview reviews = new MasterReview(state);
-    RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+    final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -114,7 +114,7 @@ class RoundQuotesTest {
   }
 
   @Test
-  void keepsANotReadyVerdictWhenTheSessionHandedBackTheSameOwnDiffAndKind(@TempDir Path worktree) {
+  void keepsNotReadyVerdictWhenTheSessionHandedBackTheSameOwnDiffAndKind(@TempDir Path worktree) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -124,7 +124,7 @@ class RoundQuotesTest {
                     .withStateFile(worktree.resolve("state.json").toString())),
                     reducer);
     MasterReview reviews = new MasterReview(state);
-    RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+    final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -172,7 +172,7 @@ class RoundQuotesTest {
                     .withStateFile(worktree.resolve("state.json").toString())),
                     reducer);
     MasterReview reviews = new MasterReview(state);
-    RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+    final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -211,7 +211,7 @@ class RoundQuotesTest {
                     .withStateFile(worktree.resolve("state.json").toString())),
                     reducer);
     MasterReview reviews = new MasterReview(state);
-    RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+    final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -325,7 +325,7 @@ class RoundQuotesTest {
   }
 
   @Test
-  void keepsAVerdictWhenARestartForgotTheTicketOverTheSameRound(@TempDir Path worktree) {
+  void keepsVerdictWhenRestartForgotTheTicketOverTheSameRound(@TempDir Path worktree) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -457,7 +457,7 @@ class RoundQuotesTest {
   }
 
   @Test
-  void callsTheFirstReadOfARoundFirst(@TempDir Path worktree) {
+  void callsTheFirstReadOfRoundFirst(@TempDir Path worktree) {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -470,7 +470,7 @@ class RoundQuotesTest {
   }
 
   @Test
-  void callsARereadOfTheSameInputsARetryAndAChangedDiffAChange(@TempDir Path worktree) {
+  void callsRereadOfTheSameInputsRetryAndChangedDiffChange(@TempDir Path worktree) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -480,7 +480,7 @@ class RoundQuotesTest {
                     .withStateFile(worktree.resolve("state.json").toString())),
                     reducer);
     MasterReview reviews = new MasterReview(state);
-    RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+    final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -501,7 +501,7 @@ class RoundQuotesTest {
   }
 
   @Test
-  void fingerprintsARoundByItsOwnDiffAndInputs(@TempDir Path worktree) {
+  void fingerprintsRoundByItsOwnDiffAndInputs(@TempDir Path worktree) {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
@@ -515,7 +515,7 @@ class RoundQuotesTest {
   }
 
   @Test
-  void fingerprintsAPlanByItsFileAndInputs(@TempDir Path worktree) {
+  void fingerprintsPlanByItsFileAndInputs(@TempDir Path worktree) {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
     when(facts.plan(any())).thenReturn("step 1");
@@ -552,7 +552,7 @@ class RoundQuotesTest {
   }
 
   @Test
-  void quotesAPlanRoundWithNoDiff(@TempDir Path worktree) {
+  void quotesPlanRoundWithNoDiff(@TempDir Path worktree) {
     MasterDecisions decisions = mock(MasterDecisions.class);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
@@ -575,7 +575,7 @@ class RoundQuotesTest {
   }
 
   @Test
-  void quotesAQuestionRoundWithOnlyTheDecisionsAndWhatTheHumanSaid(@TempDir Path worktree) {
+  void quotesQuestionRoundWithOnlyTheDecisionsAndWhatTheHumanSaid(@TempDir Path worktree) {
     MasterDecisions decisions = mock(MasterDecisions.class);
     TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.IN_PROGRESS).build();
     when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2")));

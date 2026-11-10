@@ -20,10 +20,10 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.RoundReviewer.Premise;
-import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Probe;
@@ -82,14 +82,14 @@ class MasterPanelTest {
   }
 
   @Test
-  void tellsEachReviewerHowToReadAWorktreePastTheFirst() {
+  void tellsEachReviewerHowToReadWorktreePastTheFirst() {
     String shared = MasterPanel.shared("judge hard", "never commit unasked", false, true);
 
     assertThat(shared).contains("`git -C <worktree>`");
   }
 
   @Test
-  void letsAReviewerStandingInForTheHumanDecideWhatItWouldHaveAsked() {
+  void letsReviewerStandingInForTheHumanDecideWhatItWouldHaveAsked() {
     String shared = MasterPanel.shared("judge hard", "never commit unasked", true, true);
 
     assertThat(shared).contains("never answer question");
@@ -168,7 +168,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void tellsAPlanReaderLoadingNoServerThatTheTicketWasNeverRead() {
+  void tellsPlanReaderLoadingNoServerThatTheTicketWasNeverRead() {
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =
@@ -185,7 +185,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void sendsAPlanReaderLoadingAServerToItsMcpToolsWhicheverServerThatIs() {
+  void sendsPlanReaderLoadingServerToItsMcpToolsWhicheverServerThatIs() {
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =
@@ -204,7 +204,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void tellsAPlanReaderHowToWriteItsGitReads() {
+  void tellsPlanReaderHowToWriteItsGitReads() {
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =
@@ -221,7 +221,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void tellsTheMasterAnsweringAQuestionHowToWriteItsGitReads() {
+  void tellsTheMasterAnsweringQuestionHowToWriteItsGitReads() {
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 
     String prompt =
@@ -236,7 +236,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void tellsTheMasterAnsweringAQuestionWithNoServerThatTheTicketWasNeverRead() {
+  void tellsTheMasterAnsweringQuestionWithNoServerThatTheTicketWasNeverRead() {
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 
     String prompt =
@@ -251,7 +251,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void tellsAReviewerLoadingNoServerThatATicketTheRoundDoesNotQuoteWasNeverRead(
+  void tellsReviewerLoadingNoServerThatTicketTheRoundDoesNotQuoteWasNeverRead(
       @TempDir Path worktree) {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
@@ -278,7 +278,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void sendsAReviewerWhoseReadLoadsAServerToItsMcpToolsForTheTicket(@TempDir Path worktree) {
+  void sendsReviewerWhoseReadLoadsServerToItsMcpToolsForTheTicket(@TempDir Path worktree) {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
@@ -399,7 +399,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void asksTheMasterForTheChangeThatTurnsARedCheckGreenRatherThanAnOverride() {
+  void asksTheMasterForTheChangeThatTurnsRedCheckGreenRatherThanAnOverride() {
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
     String prompt =
@@ -498,7 +498,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void tagsTheRoleAndForbidsAPreambleInEveryMasterPrompt() {
+  void tagsTheRoleAndForbidsPreambleInEveryMasterPrompt() {
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
     MasterPanel.RoundRead read = new MasterPanel.RoundRead("", "", "", List.of(), "");
 
@@ -548,7 +548,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void quotesTheSessionsNotesSoAReviewerCanCheckWhatItDisputed() {
+  void quotesTheSessionsNotesSoReviewerCanCheckWhatItDisputed() {
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
     String prompt =
@@ -564,7 +564,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void asksTheSessionForEvidenceWhereARoleCouldNotProveItsFinding() {
+  void asksTheSessionForEvidenceWhereRoleCouldNotProveItsFinding() {
     String file =
         MasterPanel.verdictFile(
             "ABC-42",
@@ -610,7 +610,7 @@ class MasterPanelTest {
 
   @Test
   void asksNoReviewerWhereWhatTheHumanTypedCouldNotBeRead(@TempDir Path worktree) throws Exception {
-    ChargedReviews reviews = mock(ChargedReviews.class);
+    final ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
     TaskState task =
@@ -632,7 +632,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void writesNoVerdictOnARoundWhoseReadStoppedWithJagt(@TempDir Path worktree) {
+  void writesNoVerdictOnRoundWhoseReadStoppedWithJagt(@TempDir Path worktree) {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
@@ -690,7 +690,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void readsARoleWithTheModelItsRowNames() {
+  void readsRoleWithTheModelItsRowNames() {
     String brief =
         """
         | role | the question it asks | model |
@@ -723,7 +723,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void skipsTheReadOfARoleWhoseGlobsMatchNoChangedPathAndSaysSoInTheReviewFile(
+  void skipsTheReadOfRoleWhoseGlobsMatchNoChangedPathAndSaysSoInTheReviewFile(
       @TempDir Path worktree) {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
@@ -763,7 +763,7 @@ class MasterPanelTest {
   @CsvSource(
       delimiter = ';',
       value = {"docs/rules.md;config/app.yml;false", "README.md;src/Main.java;true"})
-  void skipsARoleWhereEveryChangedPathIsOneItNeverReads(String first, String second, boolean read) {
+  void skipsRoleWhereEveryChangedPathIsOneItNeverReads(String first, String second, boolean read) {
     MasterPanel.Role qa =
         new MasterPanel.Role(
             "QA", "is it tested", "", List.of("**/*.java", "!**/*.md", "!**/*.yml"));
@@ -772,7 +772,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void readsARoundByARoleWithGlobsWhereTheChangedPathsCouldNotBeRead(@TempDir Path worktree) {
+  void readsRoundByRoleWithGlobsWhereTheChangedPathsCouldNotBeRead(@TempDir Path worktree) {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
@@ -801,7 +801,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void readsARoundByEveryRoleWhereNoRolesGlobsMatchIt(@TempDir Path worktree) {
+  void readsRoundByEveryRoleWhereNoRolesGlobsMatchIt(@TempDir Path worktree) {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
@@ -828,7 +828,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void passesARoundOnlyWhereEveryRoleFoundNothing() {
+  void passesRoundOnlyWhereEveryRoleFoundNothing() {
     String file =
         MasterPanel.verdictFile(
             "ABC-42",
@@ -849,7 +849,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void sendsBackARoundOneRoleFoundFaultWithWhateverTheOthersSaid() {
+  void sendsBackRoundOneRoleFoundFaultWithWhateverTheOthersSaid() {
     String file =
         MasterPanel.verdictFile(
             "ABC-42",
@@ -879,7 +879,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void passesARoundWhoseOnlyDoubtIsAClaimTheReviewerDidNotProve() {
+  void passesRoundWhoseOnlyDoubtIsClaimTheReviewerDidNotProve() {
     String file =
         MasterPanel.verdictFile(
             "ABC-42",
@@ -902,7 +902,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void passesARoundWhoseOnlyFindingsAreAdvice() {
+  void passesRoundWhoseOnlyFindingsAreAdvice() {
     String file =
         MasterPanel.verdictFile(
             "ABC-42",
@@ -947,7 +947,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void asksTheHumanWhenARoleCouldNotReadTheRound() {
+  void asksTheHumanWhenRoleCouldNotReadTheRound() {
     String file =
         MasterPanel.verdictFile(
             "ABC-42",
@@ -1029,7 +1029,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void writesNothingForAPlanWhereTheBriefCouldNotBeRead(@TempDir Path worktree) {
+  void writesNothingForPlanWhereTheBriefCouldNotBeRead(@TempDir Path worktree) {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
@@ -1049,7 +1049,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void writesAReadyVerdictForAPlanThePlannerFoundNothingWrongWith(@TempDir Path worktree)
+  void writesReadyVerdictForPlanThePlannerFoundNothingWrongWith(@TempDir Path worktree)
       throws Exception {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
@@ -1099,7 +1099,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void answersAQuestionWithTheFindingsTheReviewerReturned(@TempDir Path worktree) {
+  void answersQuestionWithTheFindingsTheReviewerReturned(@TempDir Path worktree) {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
@@ -1247,7 +1247,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void letsAPlanReaderStandingInForTheHumanDecideWhatTheTicketLeavesOpen() {
+  void letsPlanReaderStandingInForTheHumanDecideWhatTheTicketLeavesOpen() {
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =
@@ -1264,7 +1264,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void namesTheTaskItsWorktreesAndItsTicketToTheMasterAnsweringAQuestion() {
+  void namesTheTaskItsWorktreesAndItsTicketToTheMasterAnsweringQuestion() {
     TaskState task =
         TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS)
             .ticketUrl("https://tracker.example/ABC-1")
@@ -1299,7 +1299,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void doesNotReadAgainARoundWhoseReadyVerdictStillStands(@TempDir Path worktree) {
+  void doesNotReadAgainRoundWhoseReadyVerdictStillStands(@TempDir Path worktree) {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
@@ -1321,8 +1321,8 @@ class MasterPanelTest {
   }
 
   @Test
-  void namesWhyAndOverWhatARoundWasReadInTheLog(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
+  void namesWhyAndOverWhatRoundWasReadInTheLog(@TempDir Path worktree) {
+    final ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
     TaskState task =
@@ -1353,8 +1353,8 @@ class MasterPanelTest {
   }
 
   @Test
-  void namesAPlanReadAsSuchInTheLog(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
+  void namesPlanReadAsSuchInTheLog(@TempDir Path worktree) {
+    final ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
     TaskState task =
@@ -1383,7 +1383,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void asksTheHumanWhereAReviewerThrewInsteadOfAnswering(@TempDir Path worktree) throws Exception {
+  void asksTheHumanWhereReviewerThrewInsteadOfAnswering(@TempDir Path worktree) throws Exception {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
@@ -1443,7 +1443,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void storesNoOwnDiffWhereAReviewerCouldNotReadTheRound(@TempDir Path worktree) {
+  void storesNoOwnDiffWhereReviewerCouldNotReadTheRound(@TempDir Path worktree) {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
@@ -1504,7 +1504,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void saysNothingWasWrittenForAPlanWhereTheWorktreeCannotTakeTheFile(@TempDir Path worktree) {
+  void saysNothingWasWrittenForPlanWhereTheWorktreeCannotTakeTheFile(@TempDir Path worktree) {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
@@ -1555,7 +1555,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void readsNoModelFromARowShorterThanTheHeader() {
+  void readsNoModelFromRowShorterThanTheHeader() {
     String brief =
         """
         | role | the question it asks | model |
@@ -1569,7 +1569,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void namesEveryWorktreeOfTheTaskToTheMasterAnsweringAQuestion() {
+  void namesEveryWorktreeOfTheTaskToTheMasterAnsweringQuestion() {
     ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
     RoundQuotes quotes = mock(RoundQuotes.class);
@@ -1622,7 +1622,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void listsNoUnprovenPremiseOfARoleWhoseReadFailed() {
+  void listsNoUnprovenPremiseOfRoleWhoseReadFailed() {
     String file =
         MasterPanel.verdictFile(
             "ABC-42",

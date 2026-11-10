@@ -66,14 +66,14 @@ class RemoveRepoCapabilityTest {
   }
 
   @Test
-  void refusesARemovalThatNamesNoProject() {
+  void refusesRemovalThatNamesNoProject() {
     assertThatThrownBy(() -> new RemoveRepoCapability(removal).run("ABC-7"))
         .isInstanceOf(Refusal.class)
         .hasMessageContaining("remove-repo <ticket> <project>");
   }
 
   @Test
-  void leavesTheStatusWhereItIsWhenARepositoryOfAnOpenRoundIsRemoved(@TempDir Path root) {
+  void leavesTheStatusWhereItIsWhenRepositoryOfAnOpenRoundIsRemoved(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -105,7 +105,7 @@ class RemoveRepoCapabilityTest {
   }
 
   @Test
-  void refusesTheRemovalOnATaskHoldingOneRepositoryAndRunsNothing(@TempDir Path root) {
+  void refusesTheRemovalOnTaskHoldingOneRepositoryAndRunsNothing(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),

@@ -16,8 +16,8 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.task.AcceptanceDecline;
 import dev.jagt.orchestrator.task.AcceptanceEnding;
@@ -70,7 +70,7 @@ class AcceptanceDeclineJobTest {
       throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
-    CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
+    final CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
     when(config.load()).thenReturn(ON);
     AcceptanceDecline accepted = new AcceptanceDecline("proj@0123456789abcdef", "", "");
     when(reader.decline(any(), any(), any(), any()))
@@ -103,7 +103,7 @@ class AcceptanceDeclineJobTest {
   @Test
   void readsNothingBeforeTheSessionRepliedToTheRound(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
-    CheckerReads reader = mock(CheckerReads.class);
+    final CheckerReads reader = mock(CheckerReads.class);
     when(config.load()).thenReturn(ON);
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
@@ -133,7 +133,7 @@ class AcceptanceDeclineJobTest {
   @Test
   void readsNothingOnceTheDisputeWentToTheHuman(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
-    CheckerReads reader = mock(CheckerReads.class);
+    final CheckerReads reader = mock(CheckerReads.class);
     when(config.load()).thenReturn(ON);
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
@@ -165,7 +165,7 @@ class AcceptanceDeclineJobTest {
       throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
-    CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
+    final CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
     when(config.load()).thenReturn(ON);
     AcceptanceDecline disputed =
         new AcceptanceDecline("proj@0123456789abcdef", "", "still unsorted");
@@ -197,10 +197,10 @@ class AcceptanceDeclineJobTest {
   }
 
   @Test
-  void readsTheDeclineAgainAfterARestartDuringItsRead(@TempDir Path root) throws IOException {
+  void readsTheDeclineAgainAfterRestartDuringItsRead(@TempDir Path root) throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
-    CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
+    final CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
     when(config.load()).thenReturn(ON);
     AcceptanceDecline accepted = new AcceptanceDecline("proj@0123456789abcdef", "", "");
     when(reader.decline(any(), any(), any(), any()))
@@ -234,11 +234,11 @@ class AcceptanceDeclineJobTest {
   }
 
   @Test
-  void readsTheDeclineAgainAfterARestartOnAStateFileWithTheReadOpenAsATurn(@TempDir Path root)
+  void readsTheDeclineAgainAfterRestartOnStateFileWithTheReadOpenAsTurn(@TempDir Path root)
       throws IOException {
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
-    CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
+    final CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
     when(config.load()).thenReturn(ON);
     AcceptanceDecline accepted = new AcceptanceDecline("proj@0123456789abcdef", "", "");
     when(reader.decline(any(), any(), any(), any()))

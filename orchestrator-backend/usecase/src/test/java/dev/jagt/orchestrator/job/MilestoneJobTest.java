@@ -38,7 +38,7 @@ class MilestoneJobTest {
   }
 
   @Test
-  void tellsYouWhenATasksRequestOpensAndNamesIt(@TempDir Path root) {
+  void tellsYouWhenTasksRequestOpensAndNamesIt(@TempDir Path root) {
     StateService state = state(root);
     MilestoneJob job = new MilestoneJob(state, notifications);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
@@ -56,7 +56,7 @@ class MilestoneJobTest {
   }
 
   @Test
-  void tellsYouWhenADeployLands(@TempDir Path root) {
+  void tellsYouWhenDeployLands(@TempDir Path root) {
     StateService state = state(root);
     MilestoneJob job = new MilestoneJob(state, notifications);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).build());
@@ -69,7 +69,7 @@ class MilestoneJobTest {
   }
 
   @Test
-  void tellsNobodyOfATaskAlreadyOutForReviewWhenJagtStarts(@TempDir Path root) {
+  void tellsNobodyOfTaskAlreadyOutForReviewWhenJagtStarts(@TempDir Path root) {
     StateService state = state(root);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
@@ -94,7 +94,7 @@ class MilestoneJobTest {
   }
 
   @Test
-  void tellsNothingOfAStatusThatIsNeitherARequestNorADeploy(@TempDir Path root) {
+  void tellsNothingOfStatusThatIsNeitherRequestNorDeploy(@TempDir Path root) {
     StateService state = state(root);
     MilestoneJob job = new MilestoneJob(state, notifications);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
@@ -107,7 +107,7 @@ class MilestoneJobTest {
   }
 
   @Test
-  void tellsAgainWhenATaskReturnsToItsRequestAfterLeavingIt(@TempDir Path root) {
+  void tellsAgainWhenTaskReturnsToItsRequestAfterLeavingIt(@TempDir Path root) {
     StateService state = state(root);
     MilestoneJob job = new MilestoneJob(state, notifications);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
@@ -124,7 +124,7 @@ class MilestoneJobTest {
   }
 
   @Test
-  void staysSilentForATaskThatReappearsAtItsRequestAfterItWasRemoved(@TempDir Path root) {
+  void staysSilentForTaskThatReappearsAtItsRequestAfterItWasRemoved(@TempDir Path root) {
     StateService state = state(root);
     MilestoneJob job = new MilestoneJob(state, notifications);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());

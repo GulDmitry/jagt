@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class JobsCommandTest {
 
   @Test
-  void showsHowOftenAJobRunsAndHowLongUntilItsNextRun() {
+  void showsHowOftenJobRunsAndHowLongUntilItsNextRun() {
     long now = 1_700_000_000_000L;
     Jobs.Status status =
         new Jobs.Status(
@@ -31,7 +31,7 @@ class JobsCommandTest {
   }
 
   @Test
-  void saysAStartupOnlyJobHasNoNextRun() {
+  void saysStartupOnlyJobHasNoNextRun() {
     long now = 1_700_000_000_000L;
     Jobs.Status status =
         new Jobs.Status(
@@ -50,7 +50,7 @@ class JobsCommandTest {
   }
 
   @Test
-  void saysAJobIsRunningNowInsteadOfHowLongAgoItRan() {
+  void saysJobIsRunningNowInsteadOfHowLongAgoItRan() {
     long now = 1_700_000_000_000L;
     Jobs.Status status =
         new Jobs.Status(
@@ -69,7 +69,7 @@ class JobsCommandTest {
   }
 
   @Test
-  void putsTheErrorOfAFailedRunOnItsOwnLineUnderTheRow() {
+  void putsTheErrorOfFailedRunOnItsOwnLineUnderTheRow() {
     long now = 1_700_000_000_000L;
     Jobs.Status status =
         new Jobs.Status(

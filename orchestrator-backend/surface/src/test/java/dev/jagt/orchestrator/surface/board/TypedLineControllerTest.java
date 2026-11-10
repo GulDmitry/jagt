@@ -20,7 +20,7 @@ class TypedLineControllerTest {
   private final TypedLineController api = new TypedLineController(naturalLanguage, sessions);
 
   @Test
-  void saysALineToTheSessionOfTheTaskTheReportIsAbout() {
+  void saysLineToTheSessionOfTheTaskTheReportIsAbout() {
     when(sessions.say("a1", "no, answer 2 differently")).thenReturn("Said to the agent.");
 
     assertThat(
@@ -30,7 +30,7 @@ class TypedLineControllerTest {
   }
 
   @Test
-  void refusesAnEmptyLineRatherThanInterruptingASessionWithNothing() {
+  void refusesAnEmptyLineRatherThanInterruptingSessionWithNothing() {
     assertThatThrownBy(() -> api.say("a1", new TypedLineController.LineRequest("   ")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("nothing to say");
@@ -47,21 +47,21 @@ class TypedLineControllerTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"ctrl-c", "Escape", "C-c; rm", ""})
-  void refusesAKeyOutsideTheFixedSet(String name) {
+  void refusesKeyOutsideTheFixedSet(String name) {
     assertThatThrownBy(() -> api.key("a1", new TypedLineController.KeyRequest(name)))
         .isInstanceOf(IllegalArgumentException.class);
     verifyNoInteractions(sessions);
   }
 
   @Test
-  void aLiveWindowWithABlankScreenIsHeldNotMissing() {
+  void liveWindowWithBlankScreenIsHeldNotMissing() {
     when(sessions.screen("a1")).thenReturn(Optional.of(""));
 
     assertThat(api.screen("a1")).isEqualTo(new TypedLineController.Screen(true, ""));
   }
 
   @Test
-  void aSessionNoWindowHoldsIsNotHeld() {
+  void sessionNoWindowHoldsIsNotHeld() {
     when(sessions.screen("a1")).thenReturn(Optional.empty());
 
     assertThat(api.screen("a1")).isEqualTo(new TypedLineController.Screen(false, ""));

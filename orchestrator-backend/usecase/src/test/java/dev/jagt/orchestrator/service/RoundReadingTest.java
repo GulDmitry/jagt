@@ -44,7 +44,7 @@ class RoundReadingTest {
   }
 
   @Test
-  void doesNotCallARoundCleanWhileOneRepositoryHasNoRequestAtAll() {
+  void doesNotCallRoundCleanWhileOneRepositoryHasNoRequestAtAll() {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
@@ -71,7 +71,7 @@ class RoundReadingTest {
   }
 
   @Test
-  void waitsOnNoRequestFromARepositoryWithNoCodeHostWhateverRoundCameAfterItsPush() {
+  void waitsOnNoRequestFromRepositoryWithNoCodeHostWhateverRoundCameAfterItsPush() {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
@@ -181,7 +181,7 @@ class RoundReadingTest {
   }
 
   @Test
-  void keepsAThreadWaitingOnTheReviewerInOneOfSeveralRepositories() {
+  void keepsThreadWaitingOnTheReviewerInOneOfSeveralRepositories() {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
@@ -223,7 +223,7 @@ class RoundReadingTest {
   }
 
   @Test
-  void holdsATaskBackWhileOneOfItsRepositoriesIsStillBuilding() {
+  void holdsTaskBackWhileOneOfItsRepositoriesIsStillBuilding() {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
@@ -429,7 +429,7 @@ class RoundReadingTest {
   }
 
   @Test
-  void reportsTheOldestRequestOfAMultiRepoTaskAsHowLongTheReviewHasBeenWaiting() {
+  void reportsTheOldestRequestOfMultiRepoTaskAsHowLongTheReviewHasBeenWaiting() {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
@@ -468,7 +468,7 @@ class RoundReadingTest {
   }
 
   @Test
-  void ignoresARequestWhoseAgeIsUnknownWhenReportingHowLongTheReviewHasWaited() {
+  void ignoresRequestWhoseAgeIsUnknownWhenReportingHowLongTheReviewHasWaited() {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
@@ -507,7 +507,7 @@ class RoundReadingTest {
   }
 
   @Test
-  void readsTheOneRequestOfASingleRepositoryTaskAsItsRound() {
+  void readsTheOneRequestOfSingleRepositoryTaskAsItsRound() {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
@@ -535,7 +535,7 @@ class RoundReadingTest {
   }
 
   @Test
-  void refusesARoundWhoseRequestTheHostSaysDoesNotExist() {
+  void refusesRoundWhoseRequestTheHostSaysDoesNotExist() {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
@@ -567,7 +567,7 @@ class RoundReadingTest {
   }
 
   @Test
-  void callsARequestClosedOnTheHostGoneAndNamesIt() {
+  void callsRequestClosedOnTheHostGoneAndNamesIt() {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
@@ -642,7 +642,7 @@ class RoundReadingTest {
   }
 
   @Test
-  void callsARequestTheHostSaysDoesNotExistGoneWhateverElseTheTaskHolds() {
+  void callsRequestTheHostSaysDoesNotExistGoneWhateverElseTheTaskHolds() {
     when(stateService.task("ABC-42"))
         .thenReturn(
             Optional.of(
@@ -676,7 +676,7 @@ class RoundReadingTest {
 
   @Test
   void
-      refusesARoundWithNoRequestLeftWhereTheClosedOnesWereTheOnlyRequestsAndAnotherRepositoryHasNone() {
+      refusesRoundWithNoRequestLeftWhereTheClosedOnesWereTheOnlyRequestsAndAnotherRepoHasNone() {
     TaskRepo api = new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api");
     when(stateService.task("ABC-42"))
         .thenReturn(

@@ -26,7 +26,7 @@ import org.mockito.ArgumentCaptor;
 class KittyTerminalDriverTest {
 
   @Test
-  void notesNothingAboutAClosedViewerWhereItsKillToolIsOnPath() {
+  void notesNothingAboutClosedViewerWhereItsKillToolIsOnPath() {
     var driver =
         new KittyTerminalDriver(
             mock(ProcessRunner.class),
@@ -54,7 +54,7 @@ class KittyTerminalDriverTest {
   }
 
   @Test
-  void keepsTheLatinDefaultsInsteadOfRemappingCmdVWhichWouldDropKittysAsciiFallback() {
+  void keepsTheLatinDefaultsInsteadOfRemappingPasteWhichWouldDropKittysAsciiFallback() {
     var driver =
         new KittyTerminalDriver(
             mock(ProcessRunner.class),
@@ -169,7 +169,7 @@ class KittyTerminalDriverTest {
   }
 
   @Test
-  void opensATabInTheViewerInstanceThatAnswers() {
+  void opensTabInTheViewerInstanceThatAnswers() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));
@@ -213,7 +213,7 @@ class KittyTerminalDriverTest {
   }
 
   @Test
-  void opensAViewerForAnotherSessionAtOnce() {
+  void opensViewerForAnotherSessionAtOnce() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));
@@ -252,7 +252,7 @@ class KittyTerminalDriverTest {
   }
 
   @Test
-  void focusesTheViewerWindowAndRaisesTheAppWhereAViewerAnswers() {
+  void focusesTheViewerWindowAndRaisesTheAppWhereViewerAnswers() {
     ProcessRunner runner = mock(ProcessRunner.class);
     OsaScript osaScript = mock(OsaScript.class);
     when(runner.run(isNull(), any(Duration.class), anyList()))

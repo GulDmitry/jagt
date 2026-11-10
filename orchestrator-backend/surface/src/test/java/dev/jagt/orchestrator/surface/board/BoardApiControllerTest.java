@@ -67,7 +67,7 @@ class BoardApiControllerTest {
   }
 
   @Test
-  void saysWhichVerbsAreNothingWithoutATaskToApplyThemTo() {
+  void saysWhichVerbsAreNothingWithoutTaskToApplyThemTo() {
     assertThat(
             api.commands().stream()
                 .filter(CommandReference.Verb::takesTask)
@@ -86,7 +86,7 @@ class BoardApiControllerTest {
   }
 
   @Test
-  void servesAReportUnderTheIdOfTheCommandThatProducesIt() {
+  void servesReportUnderTheIdOfTheCommandThatProducesIt() {
     assertThat(api.report("stats", null)).isEqualTo("stats report");
   }
 
@@ -96,19 +96,19 @@ class BoardApiControllerTest {
   }
 
   @Test
-  void refusesToRunACommandThatIsNotAReport() {
+  void refusesToRunCommandThatIsNotReport() {
     assertThatThrownBy(() -> api.report("do", null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("No report 'do'");
   }
 
   @Test
-  void runsACommandThatIsNotAReportWithWhatWasTypedAfterIt() {
+  void runsCommandThatIsNotReportWithWhatWasTypedAfterIt() {
     assertThat(api.execute("do", "a1").message()).isEqualTo("do report about a1");
   }
 
   @Test
-  void refusesToRunAReportAsACommand() {
+  void refusesToRunReportAsCommand() {
     assertThatThrownBy(() -> api.execute("stats", null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("No command 'stats' to run");
@@ -283,7 +283,7 @@ class BoardApiControllerTest {
   }
 
   @Test
-  void offersOnACardTheReportThatDeclaresItselfForThatTask() {
+  void offersOnCardTheReportThatDeclaresItselfForThatTask() {
     GlobalCommand drafts =
         new GlobalCommand() {
           public String id() {

@@ -38,7 +38,7 @@ class CodexSubscriptionUsageTest {
     "403, http 403, 'http 403, running codex refreshes the token'",
     "500, http 500, http 500",
   })
-  void asksForANewLoginOnlyWhenTheTokenWasRefused(int status, String cause, String expected) {
+  void asksForNewLoginOnlyWhenTheTokenWasRefused(int status, String cause, String expected) {
     CodexCredentials credentials = mock(CodexCredentials.class);
     UsageEndpoint endpoint = mock(UsageEndpoint.class);
     when(credentials.read(any())).thenReturn(new OauthCredential.Token("tok-abc", "acct-42"));

@@ -52,7 +52,7 @@ class HostlessShipsTest {
   }
 
   @Test
-  void doesNotStandWhereOneRepositoryHasACodeHost() {
+  void doesNotStandWhereOneRepositoryHasCodeHost() {
     TaskState task =
         TaskState.builder(
                 List.of(TaskRepo.of("api", "/wt-api"), TaskRepo.of("web", "/wt-web")),
@@ -78,7 +78,7 @@ class HostlessShipsTest {
   }
 
   @Test
-  void doesNotStandWhereTheConfigurationNowGivesTheRepositoryACodeHost() {
+  void doesNotStandWhereTheConfigurationNowGivesTheRepositoryCodeHost() {
     TaskState task = TaskState.builder("api", "/wt-api", TaskStatus.REVIEW_PENDING).build();
     when(configService.load())
         .thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", hosted)));

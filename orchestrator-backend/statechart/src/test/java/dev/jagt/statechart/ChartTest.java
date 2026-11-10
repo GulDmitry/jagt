@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 class ChartTest {
 
   @Test
-  void aStateNothingReachesIsReported() {
+  void stateNothingReachesIsReported() {
     ChartBuilder<Event, Facts, String> builder =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.MID, Stage.HIGH))
@@ -34,7 +34,7 @@ class ChartTest {
   }
 
   @Test
-  void aNonFinalStateWithNoEdgeOutIsReported() {
+  void nonFinalStateWithNoEdgeOutIsReported() {
     ChartBuilder<Event, Facts, String> builder =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF)
@@ -49,7 +49,7 @@ class ChartTest {
   }
 
   @Test
-  void aRegionDeclaredTwiceIsReported() {
+  void regionDeclaredTwiceIsReported() {
     ChartBuilder<Event, Facts, String> builder =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -65,7 +65,7 @@ class ChartTest {
   }
 
   @Test
-  void aEdgeOnADerivedRegionIsReported() {
+  void edgeOnDerivedRegionIsReported() {
     ChartBuilder<Event, Facts, String> builder =
         Chart.<Event, Facts, String>builder()
             .derived(Lamp.LEVEL, Facts::level)
@@ -81,7 +81,7 @@ class ChartTest {
   }
 
   @Test
-  void aDerivedRegionDeclaredTwiceIsReported() {
+  void derivedRegionDeclaredTwiceIsReported() {
     ChartBuilder<Event, Facts, String> builder =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -99,7 +99,7 @@ class ChartTest {
   }
 
   @Test
-  void aRegionIsJudgedByItsOwnEdgesAlone() {
+  void regionIsJudgedByItsOwnEdgesAlone() {
     ChartBuilder<Event, Facts, String> builder =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
@@ -117,7 +117,7 @@ class ChartTest {
   }
 
   @Test
-  void aStateOnlyAnUnreachableStateLeadsToIsUnreachable() {
+  void stateOnlyAnUnreachableStateLeadsToIsUnreachable() {
     ChartBuilder<Event, Facts, String> builder =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.LOW, Stage.HIGH))
@@ -153,7 +153,7 @@ class ChartTest {
   }
 
   @Test
-  void aConfigurationRoundTripsThroughItsPlainData() {
+  void configurationRoundTripsThroughItsPlainData() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -173,7 +173,7 @@ class ChartTest {
   }
 
   @Test
-  void aConfigurationNamingAnUnknownStateIsRejected() {
+  void configurationNamingAnUnknownStateIsRejected() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -191,7 +191,7 @@ class ChartTest {
   }
 
   @Test
-  void aConfigurationNamingAnUnknownRegionIsRejected() {
+  void configurationNamingAnUnknownRegionIsRejected() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -207,7 +207,7 @@ class ChartTest {
   }
 
   @Test
-  void aConfigurationCannotBeAskedForARegionTheChartDoesNotStore() {
+  void configurationCannotBeAskedForRegionTheChartDoesNotStore() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -220,7 +220,7 @@ class ChartTest {
   }
 
   @Test
-  void theRenderingIsAStableMermaidDiagramOfEveryRegion() {
+  void theRenderingIsStableMermaidDiagramOfEveryRegion() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
@@ -259,7 +259,7 @@ class ChartTest {
   }
 
   @Test
-  void anEdgeDeclaredFromASetIsDrawnAsOneLabelledEdgeFromTheSet() {
+  void anEdgeDeclaredFromSetIsDrawnAsOneLabelledEdgeFromTheSet() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.STAGE, Stage.LOW)
@@ -289,7 +289,7 @@ class ChartTest {
   }
 
   @Test
-  void anEdgeDeclaredFromAFewOfManyStatesNamesThoseStates() {
+  void anEdgeDeclaredFromFewOfManyStatesNamesThoseStates() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.GEAR, Gear.P, Set.of(Gear.D))
@@ -352,7 +352,7 @@ class ChartTest {
   }
 
   @Test
-  void anEdgeDeclaredFromASetStaysInTheSourceThatIsItsTarget() {
+  void anEdgeDeclaredFromSetStaysInTheSourceThatIsItsTarget() {
     Chart<Event, Facts, String> chart =
         Chart.<Event, Facts, String>builder()
             .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.HIGH))

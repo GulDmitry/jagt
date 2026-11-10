@@ -169,7 +169,8 @@ class HeadlessOpenCodeTest {
         .thenReturn(
             new Processes.Result(
                 1,
-                "{\"type\":\"step_finish\",\"part\":{\"cost\":0,\"tokens\":{\"input\":9,\"output\":1,\"cache\":{\"read\":0,\"write\":0}}}}",
+                "{\"type\":\"step_finish\",\"part\":{\"cost\":0,\"tokens\":{\"input\":9,\"output"
+                + "\":1,\"cache\":{\"read\":0,\"write\":0}}}}",
                 "model not found"));
 
     HeadlessReply reply =
@@ -196,8 +197,7 @@ class HeadlessOpenCodeTest {
   }
 
   @Test
-  void holdsAFenceOfTheReadsScopeWhileTheRunLastsAndForgetsItWhenTheRunEnds(
-      @TempDir Path worktree) {
+  void holdsFenceOfTheReadsScopeWhileTheRunLastsAndForgetsItWhenTheRunEnds(@TempDir Path worktree) {
     AtomicReference<String> fence = new AtomicReference<>();
     AtomicBoolean held = new AtomicBoolean();
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
@@ -231,7 +231,7 @@ class HeadlessOpenCodeTest {
   }
 
   @Test
-  void discardsTheAnswerWhereACallCompletedAndNoneReachedTheReadGateSoThePluginNeverLoaded(
+  void discardsTheAnswerWhereCallCompletedAndNoneReachedTheReadGateSoThePluginNeverLoaded(
       @TempDir Path worktree) throws IOException {
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
         .thenReturn(
@@ -297,7 +297,8 @@ class HeadlessOpenCodeTest {
         .thenReturn(
             new Processes.Result(
                 0,
-                "{\"type\":\"tool_use\",\"part\":{\"tool\":\"shell\",\"state\":{\"status\":\"error\",\"input\":{\"command\":\"touch"
+                "{\"type\":\"tool_use\",\"part\":{\"tool\":\"shell\",\"state\":{\"status\":\"erro"
+                + "r\",\"input\":{\"command\":\"touch"
                     + " c.txt\"}}}}\n"
                     + "{\"type\":\"text\",\"part\":{\"text\":\"```json\\n"
                     + "{\\\"commits\\\":3}\\n"
@@ -326,7 +327,7 @@ class HeadlessOpenCodeTest {
   }
 
   @Test
-  void discardsTheAnswerWhereACompletedReadOpenedAFileTheRoleRefuses(@TempDir Path worktree) {
+  void discardsTheAnswerWhereCompletedReadOpenedFileTheRoleRefuses(@TempDir Path worktree) {
     String ran =
         "{\"type\":\"tool_use\",\"part\":{\"tool\":\"read\",\"state\":{\"status\":\"completed\","
             + "\"input\":{\"filePath\":\""
@@ -391,7 +392,7 @@ class HeadlessOpenCodeTest {
   }
 
   @Test
-  void letsAStopOfJagtThroughUnjudged(@TempDir Path worktree) {
+  void letsStopOfJagtThroughUnjudged(@TempDir Path worktree) {
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
         .thenThrow(new Processes.Stopped(List.of("opencode")));
 

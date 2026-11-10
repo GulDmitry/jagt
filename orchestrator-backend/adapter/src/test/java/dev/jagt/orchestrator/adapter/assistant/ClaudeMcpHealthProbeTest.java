@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 class ClaudeMcpHealthProbeTest {
 
   @Test
-  void namesEveryServerAReadCannotUseAndNoneItCan() {
+  void namesEveryServerReadCannotUseAndNoneItCan() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
@@ -52,7 +52,7 @@ class ClaudeMcpHealthProbeTest {
   }
 
   @Test
-  void reportsAProbeThatFailedAsUnknownRatherThanAsNothingBeingDown() {
+  void reportsProbeThatFailedAsUnknownRatherThanAsNothingBeingDown() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(1, "", "claude: command not found"));
@@ -81,7 +81,7 @@ class ClaudeMcpHealthProbeTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void namesTheLoginADeclaredServerNeedsWhereItCannotJudgeOne() {
+  void namesTheLoginDeclaredServerNeedsWhereItCannotJudgeOne() {
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger probeLog = (Logger) LoggerFactory.getLogger(ClaudeMcpHealthProbe.class);
@@ -141,7 +141,7 @@ class ClaudeMcpHealthProbeTest {
   }
 
   @Test
-  void readsTheVerdictOfAServerWhoseFailureDetailItselfHoldsADash() {
+  void readsTheVerdictOfServerWhoseFailureDetailItselfHoldsDash() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(
@@ -181,7 +181,7 @@ class ClaudeMcpHealthProbeTest {
   }
 
   @Test
-  void listsAllEightBrokenServersWithoutAMoreLine() {
+  void listsAllEightBrokenServersWithoutMoreLine() {
     ProcessRunner runner = mock(ProcessRunner.class);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(

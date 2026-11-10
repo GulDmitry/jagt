@@ -145,7 +145,7 @@ class TaskProvisioningTest {
   }
 
   @Test
-  void aliasesATicketStartingWithIWithTheDottedIWhateverTheMachineLocale() {
+  void aliasesTicketStartingWithEyeWithTheDottedEyeWhateverTheMachineLocale() {
     when(worktrees.cut(any(), any(), any()))
         .thenReturn(
             List.of(
@@ -240,7 +240,7 @@ class TaskProvisioningTest {
   }
 
   @Test
-  void cutsASecondTaskOnlyOnceTheFirstIsRegistered() throws Exception {
+  void cutsSecondTaskOnlyOnceTheFirstIsRegistered() throws Exception {
     CountDownLatch firstCutting = new CountDownLatch(1);
     CountDownLatch secondCutting = new CountDownLatch(1);
     AtomicBoolean firstRegisteredWhenSecondCut = new AtomicBoolean();
@@ -276,7 +276,7 @@ class TaskProvisioningTest {
   }
 
   @Test
-  void refusesToBuildATaskWithNoProjectForItsSession() {
+  void refusesToBuildTaskWithNoProjectForItsSession() {
     assertThatThrownBy(() -> NewTask.builder("ABC-1", " ").alsoIn(List.of("web")).build())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("needs the project its session runs in");
@@ -303,7 +303,7 @@ class TaskProvisioningTest {
   }
 
   @Test
-  void tellsTheCallerTheTaskWasResumedAndNotCutFromABase() {
+  void tellsTheCallerTheTaskWasResumedAndNotCutFromBase() {
     when(worktrees.cut(any(), any(), any()))
         .thenReturn(
             List.of(
@@ -325,7 +325,7 @@ class TaskProvisioningTest {
   }
 
   @Test
-  void tellsTheCallerToApproveThePlanOnTheBoardOfATaskStartedInPlanMode() {
+  void tellsTheCallerToApproveThePlanOnTheBoardOfTaskStartedInPlanMode() {
     when(worktrees.cut(any(), any(), any()))
         .thenReturn(
             List.of(
@@ -346,7 +346,7 @@ class TaskProvisioningTest {
   }
 
   @Test
-  void requiresThePlanOfATaskStartedInPlanModeWhateverAutoplanSays() {
+  void requiresThePlanOfTaskStartedInPlanModeWhateverAutoplanSays() {
     when(worktrees.cut(any(), any(), any()))
         .thenReturn(
             List.of(
@@ -462,7 +462,7 @@ class TaskProvisioningTest {
   }
 
   @Test
-  void namesTheRemoteAProjectSharesItsBranchesThrough() {
+  void namesTheRemoteProjectSharesItsBranchesThrough() {
     when(config.project("proj"))
         .thenReturn(
             new ProjectConfig(
@@ -475,7 +475,7 @@ class TaskProvisioningTest {
   }
 
   @Test
-  void runsAPlanOnlyTaskInItsScratchFolderWithNoProject() {
+  void runsPlanOnlyTaskInItsScratchFolderWithNoProject() {
     Path folder = root.resolve("scratch/ABC-8");
     when(worktrees.scratch(any(), any())).thenReturn(folder);
 

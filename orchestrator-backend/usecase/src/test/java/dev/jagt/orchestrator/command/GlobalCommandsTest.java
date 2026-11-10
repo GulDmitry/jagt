@@ -14,7 +14,7 @@ class GlobalCommandsTest {
   private final GlobalCommand master = mock(GlobalCommand.class);
 
   @Test
-  void findsACommandByItsVerbWhateverTheCaseAndPadding() {
+  void findsCommandByItsVerbWhateverTheCaseAndPadding() {
     when(spend.id()).thenReturn("Spend");
     GlobalCommands commands = new GlobalCommands(List.of(spend));
 
@@ -30,7 +30,7 @@ class GlobalCommandsTest {
   }
 
   @Test
-  void findsNoCommandForAMissingVerb() {
+  void findsNoCommandForMissingVerb() {
     when(spend.id()).thenReturn("spend");
     GlobalCommands commands = new GlobalCommands(List.of(spend));
 

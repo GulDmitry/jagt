@@ -30,13 +30,12 @@ import tools.jackson.databind.json.JsonMapper;
 
 class WorktreeOrphansTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
-  void findsALeftoverWorktreeAndCountsTheSecretsStillSittingInIt(@TempDir Path root)
+  void findsLeftoverWorktreeAndCountsTheSecretsStillSittingInIt(@TempDir Path root)
       throws IOException {
-    Path repo = Files.createDirectories(root.resolve("demo-repo"));
+    final Path repo = Files.createDirectories(root.resolve("demo-repo"));
     Path orphan = Files.createDirectories(root.resolve("ABC-40-demo"));
     Files.createDirectories(orphan.resolve("app"));
     Files.writeString(orphan.resolve("app").resolve(".env"), "TOKEN=secret");
@@ -58,7 +57,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     GitCommands git = mock(GitCommands.class);
     WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
@@ -75,7 +75,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void leavesEveryRepositoryOfALiveTaskAloneNotJustItsFirst(@TempDir Path root) throws IOException {
+  void leavesEveryRepositoryOfLiveTaskAloneNotJustItsFirst(@TempDir Path root) throws IOException {
     Path repo = Files.createDirectories(root.resolve("demo-repo"));
     Path agentRuns = Files.createDirectories(root.resolve("ABC-1-alpha"));
     Path alsoEdited = Files.createDirectories(root.resolve("ABC-1-demo"));
@@ -96,7 +96,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -112,7 +113,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void countsASecretLeftAtTheRootOfAnOrphanTheSameWayItWasCopiedThere(@TempDir Path root)
+  void countsSecretLeftAtTheRootOfAnOrphanTheSameWayItWasCopiedThere(@TempDir Path root)
       throws IOException {
     Path repo = Files.createDirectories(root.resolve("demo-repo"));
     Path orphan = Files.createDirectories(root.resolve("ABC-42-demo"));
@@ -134,7 +135,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     GitCommands git = mock(GitCommands.class);
     WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
@@ -144,7 +146,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void leavesTheWorktreeOfALiveTaskAlone(@TempDir Path root) throws IOException {
+  void leavesTheWorktreeOfLiveTaskAlone(@TempDir Path root) throws IOException {
     Path repo = Files.createDirectories(root.resolve("demo-repo"));
     Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
     ConfigService config = mock(ConfigService.class);
@@ -164,7 +166,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     state.putTask(
         "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
     GitCommands git = mock(GitCommands.class);
@@ -174,7 +177,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void ignoresACheckoutSomebodyCutByHandOutsideJagt(@TempDir Path root) throws IOException {
+  void ignoresCheckoutSomebodyCutByHandOutsideJagt(@TempDir Path root) throws IOException {
     Path repo = Files.createDirectories(root.resolve("demo-repo"));
     Path byHand = Files.createDirectories(root.resolve("ABC-46-demo"));
     Files.createDirectories(repo.resolve(".git/worktrees/ABC-46-demo"));
@@ -198,7 +201,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     GitCommands git = mock(GitCommands.class);
     WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
@@ -206,7 +210,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void reportsACheckoutJagtCutItselfAndNobodyRetired(@TempDir Path root) throws IOException {
+  void reportsCheckoutJagtCutItselfAndNobodyRetired(@TempDir Path root) throws IOException {
     Path repo = Files.createDirectories(root.resolve("demo-repo"));
     Path cutByJagt = Files.createDirectories(root.resolve("ABC-47-demo"));
     Files.createDirectories(repo.resolve(".git/worktrees/ABC-47-demo"));
@@ -230,7 +234,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     GitCommands git = mock(GitCommands.class);
     WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
@@ -240,7 +245,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void deletesTheOrphanItIsNamedForEvenWhereItHoldsACopiedSecret(@TempDir Path root)
+  void deletesTheOrphanItIsNamedForEvenWhereItHoldsCopiedSecret(@TempDir Path root)
       throws IOException {
     Path repo = Files.createDirectories(root.resolve("demo-repo"));
     Path orphan = Files.createDirectories(root.resolve("ABC-48-demo"));
@@ -262,7 +267,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     GitCommands git = mock(GitCommands.class);
     WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
@@ -276,7 +282,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void refusesToDeleteADirectoryThatIsNoOrphan(@TempDir Path root) throws IOException {
+  void refusesToDeleteDirectoryThatIsNoOrphan(@TempDir Path root) throws IOException {
     Path repo = Files.createDirectories(root.resolve("demo-repo"));
     Path orphan = Files.createDirectories(root.resolve("ABC-48-demo"));
     Files.writeString(orphan.resolve(".env"), "TOKEN=secret");
@@ -297,7 +303,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     GitCommands git = mock(GitCommands.class);
     WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
@@ -329,13 +336,15 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     GitCommands git = mock(GitCommands.class);
-    WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
+    final WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
     Files.createDirectories(orphan.resolve("sub"));
     Files.writeString(orphan.resolve("sub").resolve("a.txt"), "work");
-    Files.setPosixFilePermissions(orphan.resolve("sub"), PosixFilePermissions.fromString("r-xr-xr-x"));
+    Files.setPosixFilePermissions(
+        orphan.resolve("sub"), PosixFilePermissions.fromString("r-xr-xr-x"));
 
     when(git.run(repo, List.of("git", "worktree", "list", "--porcelain")))
         .thenReturn(new Processes.Result(0, "worktree " + repo + "\n", ""));
@@ -347,7 +356,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void removesARegisteredOrphanThroughGitInItsRepositoryAndNothingElse(@TempDir Path root)
+  void removesRegisteredOrphanThroughGitInItsRepositoryAndNothingElse(@TempDir Path root)
       throws IOException {
     Path repo = Files.createDirectories(root.resolve("demo-repo"));
     Path orphan = Files.createDirectories(root.resolve("ABC-48-demo"));
@@ -366,7 +375,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     GitCommands git = mock(GitCommands.class);
     when(git.run(repo, List.of("git", "worktree", "list", "--porcelain")))
         .thenReturn(
@@ -383,7 +393,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void keepsARegisteredOrphanAndSaysWhyWhereGitCannotRemoveIt(@TempDir Path root)
+  void keepsRegisteredOrphanAndSaysWhyWhereGitCannotRemoveIt(@TempDir Path root)
       throws IOException {
     Path repo = Files.createDirectories(root.resolve("demo-repo"));
     Path orphan = Files.createDirectories(root.resolve("ABC-48-demo"));
@@ -402,7 +412,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     GitCommands git = mock(GitCommands.class);
     when(git.run(repo, List.of("git", "worktree", "list", "--porcelain")))
         .thenReturn(
@@ -418,7 +429,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void recognisesBothATaskWorktreeAndAnAbandonedDeployWorktree() {
+  void recognisesBothTaskWorktreeAndAnAbandonedDeployWorktree() {
     List<String> onDisk =
         List.of(
             "ABC-40-demo",
@@ -436,7 +447,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void treatsADeployLeftoverOfARetiredTaskAsAnOrphan() {
+  void treatsDeployLeftoverOfRetiredTaskAsAnOrphan() {
     Set<String> orphans =
         WorktreeOrphans.orphanNames(
             List.of("ABC-40-deploy", "demo-repo"), "demo", Set.of(), name -> true);
@@ -445,7 +456,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void treatsARevertLeftoverAsAnOrphanJustLikeADeployOne() {
+  void treatsRevertLeftoverAsAnOrphanJustLikeDeployOne() {
     Set<String> orphans =
         WorktreeOrphans.orphanNames(
             List.of("ABC-40-revert", "demo-repo"), "demo", Set.of(), name -> true);
@@ -454,7 +465,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void reportsADeployDirectoryHoldingNoCheckoutWhileItsTaskIsStillAlive(@TempDir Path root)
+  void reportsDeployDirectoryHoldingNoCheckoutWhileItsTaskIsStillAlive(@TempDir Path root)
       throws IOException {
     Path repo = Files.createDirectories(root.resolve("demo-repo"));
     Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
@@ -477,7 +488,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     state.putTask(
         "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
     GitCommands git = mock(GitCommands.class);
@@ -489,10 +501,10 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void reportsADeployDirectoryWhoseCheckoutWasUnregisteredButNeverDeleted(@TempDir Path root)
+  void reportsDeployDirectoryWhoseCheckoutWasUnregisteredButNeverDeleted(@TempDir Path root)
       throws IOException {
     Path repo = Files.createDirectories(root.resolve("demo-repo"));
-    Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
+    final Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
     Path unregistered = Files.createDirectories(root.resolve("ABC-41-deploy"));
     Files.writeString(
         unregistered.resolve(".git"),
@@ -515,7 +527,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     state.putTask(
         "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
     GitCommands git = mock(GitCommands.class);
@@ -527,7 +540,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void leavesTheDeployDirectoryOfALiveTaskWhileItHoldsARealCheckout(@TempDir Path root)
+  void leavesTheDeployDirectoryOfLiveTaskWhileItHoldsRealCheckout(@TempDir Path root)
       throws IOException {
     Path repo = Files.createDirectories(root.resolve("demo-repo"));
     Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
@@ -549,7 +562,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     state.putTask(
         "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
     GitCommands git = mock(GitCommands.class);
@@ -559,7 +573,7 @@ class WorktreeOrphansTest {
   }
 
   @Test
-  void stillFindsALeftoverWhenALiveTaskHasNotCutAWorktreeInOneOfItsRepositories(@TempDir Path root)
+  void stillFindsLeftoverWhenLiveTaskHasNotCutWorktreeInOneOfItsRepositories(@TempDir Path root)
       throws IOException {
     Path repo = Files.createDirectories(root.resolve("demo-repo"));
     Path orphan = Files.createDirectories(root.resolve("ABC-40-demo"));
@@ -580,7 +594,8 @@ class WorktreeOrphansTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())), reducer);
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
     state.putTask(
         "ABC-41",
         TaskState.builder(List.of(TaskRepo.of("demo", null)), TaskStatus.IN_PROGRESS).build());

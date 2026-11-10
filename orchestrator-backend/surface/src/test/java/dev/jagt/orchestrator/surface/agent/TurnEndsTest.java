@@ -36,7 +36,7 @@ class TurnEndsTest {
       new NotesDue(Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC));
 
   @Test
-  void sendsOnATurnThatEndsWithOnlyAReadCallSinceItBegan() {
+  void sendsOnTurnThatEndsWithOnlyReadCallSinceItBegan() {
     when(runtime.refusedTurnEnd(contains("update_agent_status")))
         .thenReturn("{\"decision\": \"block\"}");
     TaskState task =
@@ -53,7 +53,7 @@ class TurnEndsTest {
   }
 
   @Test
-  void letsATurnEndWhoseStartIsUnknown() {
+  void letsTurnEndWhoseStartIsUnknown() {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build();
 
@@ -64,7 +64,7 @@ class TurnEndsTest {
   }
 
   @Test
-  void sendsOnATurnThatEndsOnAQuestionTheHumanAnsweredToStartIt() {
+  void sendsOnTurnThatEndsOnQuestionTheHumanAnsweredToStartIt() {
     when(runtime.refusedTurnEnd(contains("update_agent_status")))
         .thenReturn("{\"decision\": \"block\"}");
     TaskState task =
@@ -83,7 +83,7 @@ class TurnEndsTest {
 
   @ParameterizedTest
   @ValueSource(longs = {2_000L, 3_000L})
-  void letsATurnEndThatReportedSinceItBegan(long reportedAt) {
+  void letsTurnEndThatReportedSinceItBegan(long reportedAt) {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -98,7 +98,7 @@ class TurnEndsTest {
   }
 
   @Test
-  void tellsTheHumanARoundHandedBackIsWithTheMaster() {
+  void tellsTheHumanRoundHandedBackIsWithTheMaster() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -119,7 +119,7 @@ class TurnEndsTest {
   }
 
   @Test
-  void tellsTheHumanARoundHandedBackIsWithTheMasterEvenWhenTheTurnWasAlreadySentOn() {
+  void tellsTheHumanRoundHandedBackIsWithTheMasterEvenWhenTheTurnWasAlreadySentOn() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -140,7 +140,7 @@ class TurnEndsTest {
   }
 
   @Test
-  void saysNothingAtAHandedBackRoundNoMasterReads() {
+  void saysNothingAtHandedBackRoundNoMasterReads() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -160,7 +160,7 @@ class TurnEndsTest {
 
   @ParameterizedTest
   @CsvSource({"true, false", "false, true"})
-  void letsATurnEndThatWasAlreadySentOnOrWaitsOnBackgroundWork(boolean sentOn, boolean paused) {
+  void letsTurnEndThatWasAlreadySentOnOrWaitsOnBackgroundWork(boolean sentOn, boolean paused) {
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .alias("a1")
@@ -174,7 +174,7 @@ class TurnEndsTest {
   }
 
   @Test
-  void tellsTheHumanARoundBeingVerifiedIsVerifiedBeforeTheMasterReadsIt() {
+  void tellsTheHumanRoundBeingVerifiedIsVerifiedBeforeTheMasterReadsIt() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -196,7 +196,7 @@ class TurnEndsTest {
   }
 
   @Test
-  void sendsOnATurnEndOnceWhenTheNotesHaveFallenBehindTheWork(@TempDir Path worktree)
+  void sendsOnTurnEndOnceWhenTheNotesHaveFallenBehindTheWork(@TempDir Path worktree)
       throws Exception {
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("task_notes.md"), "old"),
@@ -217,7 +217,7 @@ class TurnEndsTest {
   }
 
   @Test
-  void neverAsksForTheNotesAgainOnATurnEndTheFirstRefusalSentOn(@TempDir Path worktree)
+  void neverAsksForTheNotesAgainOnTurnEndTheFirstRefusalSentOn(@TempDir Path worktree)
       throws Exception {
     Files.setLastModifiedTime(
         Files.writeString(worktree.resolve("task_notes.md"), "old"),

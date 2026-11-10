@@ -29,7 +29,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   @Autowired Reach reach;
 
   @Test
-  void aPollRunningAsItShouldIsNotNewsWhileItsNextLookStaysOnTheRequest() {
+  void pollRunningAsItShouldIsNotNewsWhileItsNextLookStaysOnTheRequest() {
     long shipped = System.currentTimeMillis();
     state.putTask(
         "ABC-1",
@@ -53,7 +53,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  void theDarkThemeChosenOnTheGearSurvivesAReload() {
+  void theDarkThemeChosenOnTheGearSurvivesReload() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
 
@@ -65,7 +65,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  void polishChosenOnTheGearReadsInPolishAndSurvivesAReload() {
+  void polishChosenOnTheGearReadsInPolishAndSurvivesReload() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
 
@@ -79,7 +79,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  void aKeyMissingFromTheChosenCatalogShowsEnglish() throws IOException {
+  void keyMissingFromTheChosenCatalogShowsEnglish() throws IOException {
     Files.createDirectories(root.resolve("i18n"));
     Files.writeString(
         root.resolve("i18n/xx.json"),
@@ -120,7 +120,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  void saysNothingAboutAPollForATaskThatIsNotOutForReview() {
+  void saysNothingAboutPollForTaskThatIsNotOutForReview() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -139,7 +139,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  void countsEveryPhaseWhetherOrNotItHoldsATask() {
+  void countsEveryPhaseWhetherOrNotItHoldsTask() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -173,7 +173,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  void ordersTasksAsTheyWereRegisteredSoAReusedAliasCannotMoveACardAlreadyOnTheBoard() {
+  void ordersTasksAsTheyWereRegisteredSoReusedAliasCannotMoveCardAlreadyOnTheBoard() {
     state.putTask(
         "ABC-10",
         TaskState.builder("alpha", root.resolve("ABC-10-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -223,7 +223,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  void theOpenTaskShowsATitleTooLongForItsRowWhole() {
+  void theOpenTaskShowsTitleTooLongForItsRowWhole() {
     String whole = "A ticket whose first paragraph was pasted into its title".repeat(4);
     state.putTask(
         "ABC-1",
@@ -244,7 +244,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  void aRowTitleTooLongForItsRowShowsWholeOnHover() {
+  void rowTitleTooLongForItsRowShowsWholeOnHover() {
     String whole = "A ticket whose first paragraph was pasted into its title".repeat(4);
     state.putTask(
         "ABC-1",
@@ -262,7 +262,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  void aRowTitleThatFitsItsRowShowsNoHover() {
+  void rowTitleThatFitsItsRowShowsNoHover() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -352,7 +352,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  void refusesToFilterByAPhaseThatHoldsNothing() {
+  void refusesToFilterByPhaseThatHoldsNothing() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -370,7 +370,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  void saysThatFiltersAreHidingEverythingRatherThanShowingABlankBoard() {
+  void saysThatFiltersAreHidingEverythingRatherThanShowingBlankBoard() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -446,7 +446,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  void findsATaskByItsTicketNumberAsWellAsItsTitle() {
+  void findsTaskByItsTicketNumberAsWellAsItsTitle() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -471,7 +471,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   }
 
   @Test
-  void anEmptyBoardSaysWhereATaskComesFrom() {
+  void anEmptyBoardSaysWhereTaskComesFrom() {
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
@@ -529,7 +529,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
-  void anOpenTipOnTheJobsChipFollowsItsCountdownThroughARepaint() {
+  void anOpenTipOnTheJobsChipFollowsItsCountdownThroughRepaint() {
     breakable.breakIt();
     long now = System.currentTimeMillis();
     Page page = session.newPage();

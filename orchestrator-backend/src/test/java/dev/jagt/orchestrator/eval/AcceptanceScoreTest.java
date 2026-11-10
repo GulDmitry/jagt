@@ -28,7 +28,7 @@ class AcceptanceScoreTest {
       """;
 
   @Test
-  void aVerdictMatchingEveryExpectationPasses() {
+  void verdictMatchingEveryExpectationPasses() {
     AcceptanceCase expected = AcceptanceCases.parse(TWO_ROWS);
     AcceptanceVerdict verdict =
         new AcceptanceVerdict(
@@ -45,11 +45,11 @@ class AcceptanceScoreTest {
         AcceptanceScore.of(expected, AcceptanceJudgement.ofVerdict(expected, verdict), "");
 
     assertThat(score.passed()).isTrue();
-    assertThat(score.correct()).isEqualTo(2);
+    assertThat(score.rows().correct()).isEqualTo(2);
   }
 
   @Test
-  void aMetWhereNotMetWasExpectedIsAFalseMetAndFailsTheCase() {
+  void metWhereNotMetWasExpectedIsFalseMetAndFailsTheCase() {
     AcceptanceCase expected = AcceptanceCases.parse(TWO_ROWS);
     AcceptanceVerdict verdict =
         new AcceptanceVerdict(
@@ -65,12 +65,12 @@ class AcceptanceScoreTest {
     AcceptanceScore score =
         AcceptanceScore.of(expected, AcceptanceJudgement.ofVerdict(expected, verdict), "");
 
-    assertThat(score.falseMet()).isEqualTo(1);
+    assertThat(score.rows().falseMet()).isEqualTo(1);
     assertThat(score.passed()).isFalse();
   }
 
   @Test
-  void aNotMetWhereMetWasExpectedIsAFalseNotMet() {
+  void notMetWhereMetWasExpectedIsFalseNotMet() {
     AcceptanceCase expected = AcceptanceCases.parse(TWO_ROWS);
     AcceptanceVerdict verdict =
         new AcceptanceVerdict(
@@ -86,12 +86,12 @@ class AcceptanceScoreTest {
     AcceptanceScore score =
         AcceptanceScore.of(expected, AcceptanceJudgement.ofVerdict(expected, verdict), "");
 
-    assertThat(score.falseNotMet()).isEqualTo(1);
-    assertThat(score.expectedMet()).isEqualTo(1);
+    assertThat(score.rows().falseNotMet()).isEqualTo(1);
+    assertThat(score.rows().expectedMet()).isEqualTo(1);
   }
 
   @Test
-  void aRowTheVerdictNeverWroteCountsAsWrongNotAsFalseMet() {
+  void rowTheVerdictNeverWroteCountsAsWrongNotAsFalseMet() {
     AcceptanceCase expected = AcceptanceCases.parse(TWO_ROWS);
     AcceptanceVerdict verdict =
         new AcceptanceVerdict(
@@ -105,13 +105,13 @@ class AcceptanceScoreTest {
     AcceptanceScore score =
         AcceptanceScore.of(expected, AcceptanceJudgement.ofVerdict(expected, verdict), "");
 
-    assertThat(score.rows()).isEqualTo(2);
-    assertThat(score.correct()).isEqualTo(1);
-    assertThat(score.falseMet()).isZero();
+    assertThat(score.rows().total()).isEqualTo(2);
+    assertThat(score.rows().correct()).isEqualTo(1);
+    assertThat(score.rows().falseMet()).isZero();
   }
 
   @Test
-  void aNameNoEvidenceCitesFailsAnOtherwiseRightVerdict() {
+  void nameNoEvidenceCitesFailsAnOtherwiseRightVerdict() {
     AcceptanceCase expected = AcceptanceCases.parse(TWO_ROWS);
     AcceptanceVerdict verdict =
         new AcceptanceVerdict(
@@ -132,7 +132,7 @@ class AcceptanceScoreTest {
   }
 
   @Test
-  void aVerdictNamingEveryExpectedFlowOnTheFixtureUrlPassesAndOneMissingFails() {
+  void verdictNamingEveryExpectedFlowOnTheFixtureUrlPassesAndOneMissingFails() {
     AcceptanceCase expected =
         AcceptanceCases.parse(
             TWO_ROWS.replace(
@@ -178,7 +178,7 @@ class AcceptanceScoreTest {
   }
 
   @Test
-  void aWaitingVerdictIsReportedAsWaitWithTheProbeItNamed() {
+  void waitingVerdictIsReportedAsWaitWithTheProbeItNamed() {
     AcceptanceCase expected = AcceptanceCases.parse(TWO_ROWS);
     AcceptanceVerdict verdict =
         new AcceptanceVerdict(
@@ -191,7 +191,7 @@ class AcceptanceScoreTest {
   }
 
   @Test
-  void aDeclineWithoutADisputeAcceptsTheReasonAsMet() {
+  void declineWithoutDisputeAcceptsTheReasonAsMet() {
     AcceptanceCase expected = AcceptanceCases.parse(TWO_ROWS);
 
     AcceptanceJudgement judged =

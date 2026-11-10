@@ -61,7 +61,7 @@ class StopTriagePanelTest {
   }
 
   @Test
-  void aReadyVerdictIsALiftSafeAndTheFindingNamesWhoClassAndFamily(@TempDir Path root)
+  void readyVerdictIsLiftSafeAndTheFindingNamesWhoClassAndFamily(@TempDir Path root)
       throws Exception {
     when(reviews.review(eq("ABC-42"), any()))
         .thenReturn(answer("ready", "jagt: ships counted past a merge", "H"));
@@ -80,7 +80,7 @@ class StopTriagePanelTest {
   }
 
   @Test
-  void aNotReadyVerdictIsALiftUnsafe(@TempDir Path root) throws Exception {
+  void notReadyVerdictIsLiftUnsafe(@TempDir Path root) throws Exception {
     when(reviews.review(eq("ABC-42"), any()))
         .thenReturn(answer("not ready", "session: same tree handed back", "F"));
 
@@ -91,7 +91,7 @@ class StopTriagePanelTest {
   }
 
   @Test
-  void aFamilyOutsideAToMIsUnknown(@TempDir Path root) throws Exception {
+  void familyOutsideTheDefectRangeIsUnknown(@TempDir Path root) throws Exception {
     when(reviews.review(eq("ABC-42"), any()))
         .thenReturn(answer("ready", "none: the work moved", "Z"));
 
@@ -110,7 +110,8 @@ class StopTriagePanelTest {
     ArgumentCaptor<RoundReviewer.Round> round = ArgumentCaptor.forClass(RoundReviewer.Round.class);
     verify(reviews).review(eq("ABC-42"), round.capture());
     assertThat(round.getValue().prompt())
-        .contains("the triage brief", "round sent 4 times", "10:00 round relayed", "abc1234 Change");
+        .contains(
+            "the triage brief", "round sent 4 times", "10:00 round relayed", "abc1234 Change");
     assertThat(round.getValue().model()).isEqualTo("haiku");
     assertThat(round.getValue().worktrees()).containsExactly(Path.of("/wt/alpha"));
   }
@@ -135,7 +136,7 @@ class StopTriagePanelTest {
   }
 
   @Test
-  void aFailedReadFailsNamingItsCause(@TempDir Path root) throws Exception {
+  void failedReadFailsNamingItsCause(@TempDir Path root) throws Exception {
     when(reviews.review(eq("ABC-42"), any())).thenReturn(Judgement.failed("git state changed"));
 
     StopTriagePanel panel = panel(root, "brief");
@@ -146,7 +147,7 @@ class StopTriagePanelTest {
   }
 
   @Test
-  void aFindingNamingNoWhoFails(@TempDir Path root) throws Exception {
+  void findingNamingNoWhoFails(@TempDir Path root) throws Exception {
     when(reviews.review(eq("ABC-42"), any()))
         .thenReturn(answer("ready", "a loop of some kind", "F"));
 
@@ -157,7 +158,7 @@ class StopTriagePanelTest {
   }
 
   @Test
-  void aMissingBriefFailsBeforeAnythingIsAsked(@TempDir Path root) throws Exception {
+  void missingBriefFailsBeforeAnythingIsAsked(@TempDir Path root) throws Exception {
     StopTriagePanel panel = panel(root, null);
 
     assertThatThrownBy(() -> panel.read("ABC-42", stopped, trail, "haiku"))
@@ -174,9 +175,7 @@ class StopTriagePanelTest {
                         new StatusChange(
                             TaskStatus.IN_PROGRESS, 1_000_000L * index, ActionOrigin.BOARD))
                 .toList());
-    steps.set(
-        12,
-        new StatusChange(TaskStatus.VERIFYING, 90_000_000L, null).because("probes red"));
+    steps.set(12, new StatusChange(TaskStatus.VERIFYING, 90_000_000L, null).because("probes red"));
     TaskState task =
         TaskState.builder("proj", "/wt/alpha", TaskStatus.IN_PROGRESS)
             .history(steps)

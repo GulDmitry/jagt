@@ -51,11 +51,10 @@ import tools.jackson.databind.json.JsonMapper;
 
 class McpProtocolServiceTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
-  void recordsACallPresentingOnlyTheMasterTokenAsTheRootsOwn(@TempDir Path root) {
+  void recordsCallPresentingOnlyTheMasterTokenAsTheRootsOwn(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     StateService state =
         new StateService(
@@ -64,7 +63,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     AtomicReference<ActionOrigin> seen = new AtomicReference<>();
     McpTools moving =
         tools ->
@@ -93,7 +92,7 @@ class McpProtocolServiceTest {
   }
 
   @Test
-  void offersASessionOnlyTheStatusesItMayReport(@TempDir Path root) {
+  void offersSessionOnlyTheStatusesItMayReport(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     StateService state =
         new StateService(
@@ -102,7 +101,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpProtocolService protocol =
         new McpProtocolService(
             mapper,
@@ -148,7 +147,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpProtocolService protocol =
         new McpProtocolService(
             mapper,
@@ -161,7 +160,8 @@ class McpProtocolServiceTest {
             .handle(
                 mapper.readTree(
                     "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\","
-                        + "\"params\":{\"name\":\"write_task_context\",\"arguments\":{\"taskId\":\"X\"}}}"),
+                        + "\"params\":{\"name\":\"write_task_context\",\"arguments\":{\"taskId\":"
+                        + "\"X\"}}}"),
                 null,
                 true)
             .orElseThrow();
@@ -183,7 +183,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
@@ -214,7 +214,7 @@ class McpProtocolServiceTest {
   }
 
   @Test
-  void namesTheFailureKindWhenAToolThrowsWithoutAMessage(@TempDir Path root) {
+  void namesTheFailureKindWhenToolThrowsWithoutMessage(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     StateService state =
         new StateService(
@@ -223,7 +223,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpTools failing =
         tools ->
             tools.tool(
@@ -255,7 +255,7 @@ class McpProtocolServiceTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void logsASessionsCallWithItsArgumentsAndTheTurnItAnswers(@TempDir Path root) {
+  void logsSessionsCallWithItsArgumentsAndTheTurnItAnswers(@TempDir Path root) {
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger protocolLog = (Logger) LoggerFactory.getLogger(McpProtocolService.class);
@@ -269,7 +269,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS)
@@ -314,7 +314,7 @@ class McpProtocolServiceTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void logsARefusedMessageAsInfoBecauseTheCallerAlreadyHasTheAnswer(@TempDir Path root) {
+  void logsRefusedMessageAsInfoBecauseTheCallerAlreadyHasTheAnswer(@TempDir Path root) {
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger protocolLog = (Logger) LoggerFactory.getLogger(McpProtocolService.class);
@@ -327,7 +327,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpTools refusing =
         tools ->
             tools.tool(
@@ -358,7 +358,7 @@ class McpProtocolServiceTest {
   }
 
   @Test
-  void tellsTheAgentAFailedCallIsNotWorthRepeating(@TempDir Path root) {
+  void tellsTheAgentFailedCallIsNotWorthRepeating(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     StateService state =
         new StateService(
@@ -367,7 +367,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpTools failing =
         tools ->
             tools.tool(
@@ -402,7 +402,7 @@ class McpProtocolServiceTest {
   }
 
   @Test
-  void tellsTheAgentATransientFailureIsWorthRepeating(@TempDir Path root) {
+  void tellsTheAgentTransientFailureIsWorthRepeating(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     StateService state =
         new StateService(
@@ -411,7 +411,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpTools failing =
         tools ->
             tools.tool(
@@ -444,7 +444,7 @@ class McpProtocolServiceTest {
   }
 
   @Test
-  void answersWhatAToolReturnedAsTheTextOfItsResult(@TempDir Path root) {
+  void answersWhatToolReturnedAsTheTextOfItsResult(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     StateService state =
         new StateService(
@@ -453,7 +453,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpTools echoing =
         tools ->
             tools.tool(
@@ -491,7 +491,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
@@ -511,7 +511,7 @@ class McpProtocolServiceTest {
   }
 
   @Test
-  void answersAMethodItDoesNotKnowWithMethodNotFound(@TempDir Path root) {
+  void answersMethodItDoesNotKnowWithMethodNotFound(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     StateService state =
         new StateService(
@@ -520,7 +520,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
@@ -547,7 +547,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
@@ -565,7 +565,7 @@ class McpProtocolServiceTest {
   }
 
   @Test
-  void listsASubAgentNoToolThatWritesOutsideItsWorktree(@TempDir Path root) {
+  void listsSubAgentNoToolThatWritesOutsideItsWorktree(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     StateService state =
         new StateService(
@@ -574,7 +574,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -596,7 +596,7 @@ class McpProtocolServiceTest {
   }
 
   @Test
-  void keepsATaskToItsOwnToolsThoughItPresentsTheMastersToken(@TempDir Path root) {
+  void keepsTaskToItsOwnToolsThoughItPresentsTheMastersToken(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     StateService state =
         new StateService(
@@ -605,7 +605,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -627,7 +627,7 @@ class McpProtocolServiceTest {
   }
 
   @Test
-  void listsTheMasterTheToolsThatWriteASharedBranch(@TempDir Path root) {
+  void listsTheMasterTheToolsThatWriteSharedBranch(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     StateService state =
         new StateService(
@@ -636,7 +636,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpProtocolService protocol =
         new McpProtocolService(
             mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
@@ -657,7 +657,7 @@ class McpProtocolServiceTest {
   }
 
   @Test
-  void marksEveryToolATaskSeesReadOnlySoAReadOnlyClientLetsItReport(@TempDir Path root) {
+  void marksEveryToolTaskSeesReadOnlySoReadOnlyClientLetsItReport(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     StateService state =
         new StateService(
@@ -666,7 +666,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -704,7 +704,7 @@ class McpProtocolServiceTest {
   }
 
   @Test
-  void marksATaskThatWritesASharedBranchAsChangingSomething(@TempDir Path root) {
+  void marksTaskThatWritesSharedBranchAsChangingSomething(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     StateService state =
         new StateService(
@@ -713,7 +713,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpProtocolService protocol =
         new McpProtocolService(
             mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
@@ -744,7 +744,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
@@ -772,7 +772,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
@@ -804,7 +804,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
@@ -836,7 +836,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     long freshTimestamp = System.currentTimeMillis();
     state.putTask(
         "ABC-1",
@@ -865,7 +865,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
@@ -897,7 +897,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
@@ -940,7 +940,7 @@ class McpProtocolServiceTest {
   @ParameterizedTest
   @NullSource
   @ValueSource(strings = "/no/task/here")
-  void refusesACallerThatIsNeitherATaskNorTheMaster(String cwd, @TempDir Path root) {
+  void refusesCallerThatIsNeitherTaskNorTheMaster(String cwd, @TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
     StateService state =
         new StateService(
@@ -949,7 +949,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     McpProtocolService protocol =
         new McpProtocolService(
             mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
@@ -959,7 +959,8 @@ class McpProtocolServiceTest {
             .handle(
                 mapper.readTree(
                     "{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"tools/call\","
-                        + "\"params\":{\"name\":\"deploy_task\",\"arguments\":{\"taskId\":\"ABC-1\"}}}"),
+                        + "\"params\":{\"name\":\"deploy_task\",\"arguments\":{\"taskId\":\"ABC-1"
+                        + "\"}}}"),
                 cwd,
                 false)
             .orElseThrow();
