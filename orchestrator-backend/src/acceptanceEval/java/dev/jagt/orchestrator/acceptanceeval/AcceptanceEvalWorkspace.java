@@ -4,6 +4,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import dev.jagt.orchestrator.config.RoleOptions;
 import dev.jagt.orchestrator.eval.AcceptanceCase;
+import dev.jagt.orchestrator.eval.AcceptanceRoleYml;
 import dev.jagt.orchestrator.eval.EvalShards;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -164,19 +165,7 @@ final class AcceptanceEvalWorkspace {
     Path folder = root().resolve("roles/acceptance");
     Files.createDirectories(folder);
     Files.writeString(
-        folder.resolve("role.yml"),
-        """
-        environments: [{url: "%s", landed: "%s"}]
-        flows: {driver: "%s", path: "%s", command: [%s]}
-        """
-            .formatted(
-                environment,
-                landed,
-                flows.driver(),
-                flows.path(),
-                flows.command().stream()
-                    .map(word -> "\"" + word + "\"")
-                    .collect(Collectors.joining(", "))));
+        folder.resolve("role.yml"), AcceptanceRoleYml.of(environment, landed, flows));
   }
 
   static void writeConfig(Path configFile, Path projectPath) throws IOException {

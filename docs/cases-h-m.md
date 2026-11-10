@@ -77,6 +77,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | L15 | a board test breaks the shared job → its context is discarded after it, so a later test in the class never opens on a failed job row | seen 2026-10-28: the jobs table test found a failed row before it broke anything whenever the table rendered ahead of its first count; red with a 1.5 s wait before that count | `BoardPopupsAndTabsTest` |
 | L16 | an eval shard class starts while an earlier shard's lock is free → it claims its own number, so no case runs twice and none never; Master and acceptance results land in their own `roleEval-<role>` directory and a failure prints in full | seen 2026-10-31: a late shard re-claimed shard 0 and re-ran its cases, acceptance's words were cut from the console | `EvalShardsTest` |
 | L17 | a stand run ends while a pane's process ignores the hangup and still writes into the root → the pane's tree is stopped before the root is deleted, so the delete never meets a non-empty directory | seen 2026-11-08: `DirectoryNotEmptyException` in standTest plan and judge after the run passed | `StandShellTest` |
+| L18 | an acceptance eval installs its role file with the environment and the flows driver → every placeholder is filled, the whole file is formatted, never only its last line | seen 2026-11-10: a precedence slip left the url's `%s` literal in `role.yml` | `AcceptanceRoleYmlTest` |
 ## M — anything else
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
