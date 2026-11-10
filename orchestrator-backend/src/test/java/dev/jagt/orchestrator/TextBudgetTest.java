@@ -112,9 +112,9 @@ class TextBudgetTest {
   }
 
   @Test
-  void commentsAreAtMostFifteenPercentOfTheMainSources() {
+  void commentsAreAtMostFifteenPercentOfTheCode() {
     List<String> code =
-        mainSources()
+        SourceRoots.javaFiles()
             .flatMap(source -> lines(source).stream())
             .map(String::strip)
             .filter(line -> !line.isEmpty())
@@ -136,7 +136,7 @@ class TextBudgetTest {
     assertThat(markdownIn(Path.of("../docs/decisions"))).hasSizeGreaterThan(1);
     assertThat(SESSION_BRIEF).isRegularFile();
     assertThat(specs()).hasSizeGreaterThan(5);
-    assertThat(mainSources().count()).isGreaterThan(100);
+    assertThat(SourceRoots.javaFiles().count()).isGreaterThan(100);
   }
 
   private static String prompt(Path document) {
@@ -203,20 +203,6 @@ class TextBudgetTest {
           .map(capability -> capability.resolve("spec.md"))
           .filter(Files::isRegularFile)
           .toList();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  private static Stream<Path> mainSources() {
-    return Stream.of("statechart", "core", "usecase", "adapter", "surface", ".")
-        .map(module -> Path.of(module, "src/main/java"))
-        .flatMap(TextBudgetTest::javaFilesUnder);
-  }
-
-  private static Stream<Path> javaFilesUnder(Path root) {
-    try (Stream<Path> files = Files.walk(root)) {
-      return files.filter(path -> path.toString().endsWith(".java")).toList().stream();
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

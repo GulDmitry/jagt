@@ -12,6 +12,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Files;
@@ -22,8 +23,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class BoardActionsTest extends BoardPageContext {
+
+  @Autowired
+  BoardActionsTest(BreakableJob breakable, StateService state) {
+    super(breakable, state);
+  }
 
   @Test
   void revertingAsksFirstAndSaysOnlyTheLastDeployComesOut() throws Exception {

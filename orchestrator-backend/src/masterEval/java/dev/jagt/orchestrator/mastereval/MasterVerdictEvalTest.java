@@ -69,7 +69,7 @@ abstract class MasterVerdictEvalTest {
 
   private static final String DECIDED = " — decided: ";
 
-  private static final AtomicInteger ROUND = new AtomicInteger();
+  private final AtomicInteger runs = new AtomicInteger();
 
   static final class ClaimsItsShard
       implements org.junit.jupiter.api.extension.TestInstancePostProcessor {
@@ -106,10 +106,23 @@ abstract class MasterVerdictEvalTest {
     registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
   }
 
-  @Autowired private StateService stateService;
-  @Autowired private MasterReview reviews;
-  @Autowired private UsageTracker usage;
-  @Autowired private MasterDecisions decisions;
+  private final StateService stateService;
+  private final MasterReview reviews;
+  private final UsageTracker usage;
+  private final MasterDecisions decisions;
+
+  @Autowired
+  MasterVerdictEvalTest(
+      StateService stateService,
+      MasterReview reviews,
+      UsageTracker usage,
+      MasterDecisions decisions) {
+    this.stateService = stateService;
+    this.reviews = reviews;
+    this.usage = usage;
+    this.decisions = decisions;
+  }
+
   @MockitoSpyBean private ReadGateController readGate;
   @MockitoSpyBean private MasterPanel panel;
 
@@ -175,13 +188,13 @@ abstract class MasterVerdictEvalTest {
 
   private void oneRun(MasterCase round) throws Exception {
     Mockito.clearInvocations(readGate);
-    String taskId = "ABC-" + ROUND.incrementAndGet();
+    String taskId = "ABC-" + runs.incrementAndGet();
     Path worktree =
         MasterEvalWorkspace.worktreeFor(
             MasterEvalWorkspace.root().resolve("repos/" + taskId + "/repo"), round, taskId);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), round.status())
-            .alias("m" + ROUND.get())
+            .alias("m" + runs.get())
             .title(round.instructions())
             .build();
     if (round.answers()) {

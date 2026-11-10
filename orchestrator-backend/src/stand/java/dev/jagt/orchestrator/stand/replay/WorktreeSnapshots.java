@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -66,7 +67,7 @@ public final class WorktreeSnapshots {
       }
       ObjectNode line =
           JSON.createObjectNode()
-              .put("at", Instant.now().toString())
+              .put("at", Instant.now(Clock.systemUTC()).toString())
               .put("task", task)
               .put("file", name);
       JsonNode content =

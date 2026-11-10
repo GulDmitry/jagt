@@ -66,9 +66,8 @@ class VendorNamesTest {
   }
 
   private static Stream<Naming> namings() {
-    return Stream.of("core", "usecase", "surface")
-        .map(module -> Path.of(module, "src/main/java"))
-        .flatMap(VendorNamesTest::javaFilesUnder)
+    return SourceRoots.mainJavaFiles()
+        .filter(file -> !file.startsWith("adapter"))
         .flatMap(
             file -> {
               List<String> lines = lines(file);
@@ -86,14 +85,6 @@ class VendorNamesTest {
         .matcher(line.replaceAll("//.*$", ""))
         .results()
         .map(match -> match.group().toLowerCase(Locale.ROOT));
-  }
-
-  private static Stream<Path> javaFilesUnder(Path root) {
-    try (Stream<Path> files = Files.walk(root)) {
-      return files.filter(path -> path.toString().endsWith(".java")).toList().stream();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 
   private static List<String> lines(Path path) {

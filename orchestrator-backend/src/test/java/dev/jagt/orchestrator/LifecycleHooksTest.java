@@ -17,7 +17,7 @@ class LifecycleHooksTest {
                 .doNotHaveSimpleName("AbortedConnectionFilter")
                 .should()
                 .beAnnotatedWith("jakarta.annotation.PostConstruct"))
-        .check(MainClasses.CODE);
+        .check(SourceRoots.ALL);
   }
 
   @Test
@@ -26,6 +26,6 @@ class LifecycleHooksTest {
             fields()
                 .should()
                 .notBeAnnotatedWith("org.springframework.beans.factory.annotation.Autowired"))
-        .check(MainClasses.CODE);
+        .check(SourceRoots.ALL);
   }
 }

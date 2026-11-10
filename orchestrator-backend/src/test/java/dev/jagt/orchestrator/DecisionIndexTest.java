@@ -2,10 +2,12 @@ package dev.jagt.orchestrator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -28,37 +30,43 @@ class DecisionIndexTest {
 
   @Test
   void anAmendedOrSupersededRecordNamesItsAmenderInItsStatus() throws Exception {
-    Pattern status = Pattern.compile("(?s)## Status\\s*(.*?)\\n## ");
-    Pattern opening = Pattern.compile("(?s)^(.*?)\\n## Context");
-    Pattern forward = Pattern.compile("(?i)\\b(?:amends|supersedes)\\b[^.:;·]*");
-    List<String> unnamed = new ArrayList<>();
+    List<Path> records;
     try (Stream<Path> files = Files.list(Path.of("../docs/decisions"))) {
-      for (Path record :
-          files.filter(file -> file.getFileName().toString().matches("\\d{4}-.*\\.md")).toList()) {
-        String number = record.getFileName().toString().substring(0, 4);
-        Matcher text = opening.matcher(Files.readString(record));
-        String own = text.find() ? text.group(1).replaceAll("\\[(\\d{4})]\\([^)]*\\)", "$1") : "";
-        Matcher claim = forward.matcher(own);
-        while (claim.find()) {
-          Matcher target = Pattern.compile("\\b0\\d{3}\\b").matcher(claim.group());
-          while (target.find()) {
-            Path other;
-            try (Stream<Path> stream = Files.list(Path.of("../docs/decisions"))) {
-              other =
-                  stream
-                      .filter(
-                          file -> file.getFileName().toString().startsWith(target.group() + "-"))
-                      .findFirst()
-                      .orElseThrow();
-            }
-            Matcher back = status.matcher(Files.readString(other));
-            if (!back.find() || !back.group(1).contains(number)) {
-              unnamed.add(target.group() + " does not name " + number);
-            }
-          }
-        }
-      }
+      records =
+          files.filter(file -> file.getFileName().toString().matches("\\d{4}-.*\\.md")).toList();
     }
-    assertThat(unnamed).isEmpty();
+
+    assertThat(records.stream().flatMap(record -> unnamedAmenders(record, records))).isEmpty();
+  }
+
+  private static Stream<String> unnamedAmenders(Path record, List<Path> records) {
+    String number = record.getFileName().toString().substring(0, 4);
+    Matcher text = Pattern.compile("(?s)^(.*?)\\n## Context").matcher(read(record));
+    String own = text.find() ? text.group(1).replaceAll("\\[(\\d{4})]\\([^)]*\\)", "$1") : "";
+    return Pattern.compile("(?i)\\b(?:amends|supersedes)\\b[^.:;·]*")
+        .matcher(own)
+        .results()
+        .flatMap(claim -> Pattern.compile("\\b0\\d{3}\\b").matcher(claim.group()).results())
+        .map(MatchResult::group)
+        .filter(target -> !namesAmender(records, target, number))
+        .map(target -> target + " does not name " + number);
+  }
+
+  private static boolean namesAmender(List<Path> records, String target, String number) {
+    Path other =
+        records.stream()
+            .filter(file -> file.getFileName().toString().startsWith(target + "-"))
+            .findFirst()
+            .orElseThrow();
+    Matcher back = Pattern.compile("(?s)## Status\\s*(.*?)\\n## ").matcher(read(other));
+    return back.find() && back.group(1).contains(number);
+  }
+
+  private static String read(Path file) {
+    try {
+      return Files.readString(file);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 }

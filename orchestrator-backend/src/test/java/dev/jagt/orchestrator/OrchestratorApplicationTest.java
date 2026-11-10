@@ -39,7 +39,12 @@ class OrchestratorApplicationTest {
 
   @MockitoBean private EditorDriver editorDriver;
 
-  @Autowired private ApplicationContext context;
+  private final ApplicationContext context;
+
+  @Autowired
+  OrchestratorApplicationTest(ApplicationContext context) {
+    this.context = context;
+  }
 
   @DynamicPropertySource
   static void keepConfigAndStateOutOfTheDevelopersOwnFilesEvenWhereTheyExportedThemOverTheRoot(

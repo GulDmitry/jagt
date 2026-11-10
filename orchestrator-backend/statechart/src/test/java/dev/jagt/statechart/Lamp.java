@@ -25,7 +25,7 @@ final class Lamp {
     D
   }
 
-  record Facts(Mode level) {}
+  record Readings(Mode level) {}
 
   interface Event {}
 

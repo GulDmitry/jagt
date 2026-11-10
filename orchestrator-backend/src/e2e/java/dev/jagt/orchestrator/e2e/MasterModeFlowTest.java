@@ -102,11 +102,26 @@ class MasterModeFlowTest {
   @MockitoBean private McpHealth mcp;
   @MockitoBean private RoundReviewer reviewer;
   @MockitoSpyBean private Clock clock;
-  @Autowired private TaskProvisioning provisioning;
-  @Autowired private StateService stateService;
-  @Autowired private OrchestratorPaths paths;
-  @Autowired private ToolchainProperties properties;
-  @Autowired private Jobs jobs;
+  private final TaskProvisioning provisioning;
+  private final StateService stateService;
+  private final OrchestratorPaths paths;
+  private final ToolchainProperties properties;
+  private final Jobs jobs;
+
+  @Autowired
+  MasterModeFlowTest(
+      TaskProvisioning provisioning,
+      StateService stateService,
+      OrchestratorPaths paths,
+      ToolchainProperties properties,
+      Jobs jobs) {
+    this.provisioning = provisioning;
+    this.stateService = stateService;
+    this.paths = paths;
+    this.properties = properties;
+    this.jobs = jobs;
+  }
+
   @LocalServerPort private int port;
 
   @BeforeAll
@@ -375,7 +390,7 @@ class MasterModeFlowTest {
             "",
             List.of(),
             ""));
-    Instant twoMinutesOn = Instant.now().plus(Duration.ofMinutes(2));
+    Instant twoMinutesOn = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
     doReturn(twoMinutesOn).when(clock).instant();
     doReturn(twoMinutesOn.toEpochMilli()).when(clock).millis();
 
@@ -403,7 +418,7 @@ class MasterModeFlowTest {
     awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
     awaitTold("did not deploy");
-    Instant twoMinutesOn = Instant.now().plus(Duration.ofMinutes(2));
+    Instant twoMinutesOn = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
     doReturn(twoMinutesOn).when(clock).instant();
     doReturn(twoMinutesOn.toEpochMilli()).when(clock).millis();
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
@@ -431,12 +446,12 @@ class MasterModeFlowTest {
     awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
     awaitTold("did not deploy");
-    Instant twoMinutesOn = Instant.now().plus(Duration.ofMinutes(2));
+    Instant twoMinutesOn = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
     doReturn(twoMinutesOn).when(clock).instant();
     doReturn(twoMinutesOn.toEpochMilli()).when(clock).millis();
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
     awaitTask(task -> task.currentConflict().filter(Conflict::askedTheMaster).isPresent());
-    Instant fourMinutesOn = Instant.now().plus(Duration.ofMinutes(4));
+    Instant fourMinutesOn = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(4));
     doReturn(fourMinutesOn).when(clock).instant();
     doReturn(fourMinutesOn.toEpochMilli()).when(clock).millis();
 

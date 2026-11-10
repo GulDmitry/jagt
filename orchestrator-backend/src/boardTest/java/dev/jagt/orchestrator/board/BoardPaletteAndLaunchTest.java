@@ -13,6 +13,7 @@ import com.microsoft.playwright.Route;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.RequestOptions;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.TaskState;
@@ -25,8 +26,14 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class BoardPaletteAndLaunchTest extends BoardPageContext {
+
+  @Autowired
+  BoardPaletteAndLaunchTest(BreakableJob breakable, StateService state) {
+    super(breakable, state);
+  }
 
   @ParameterizedTest
   @CsvSource({"Macintosh; Intel Mac OS X 10_15_7, ⌘K", "X11; Linux x86_64, Ctrl+K"})

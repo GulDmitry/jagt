@@ -6,23 +6,23 @@ import dev.jagt.orchestrator.stand.replay.Recorder;
 import dev.jagt.orchestrator.stand.replay.ReplayLog;
 import dev.jagt.orchestrator.stand.replay.WorktreeSnapshots;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.jspecify.annotations.Nullable;
 import org.opentest4j.TestAbortedException;
 import tools.jackson.databind.JsonNode;
 
 public final class StandRun implements AutoCloseable {
 
-  private static final AtomicInteger RUNS = new AtomicInteger();
   private static final Duration POLL = Duration.ofSeconds(1);
   private static final Duration PIPELINE = Duration.ofSeconds(1);
   private static final List<String> KICKED =
@@ -44,11 +44,11 @@ public final class StandRun implements AutoCloseable {
   private final StandHost host;
   private final @Nullable Path replayed;
   private final WorktreeSnapshots snapshots;
-  private final Instant began = Instant.now();
+  private final Instant began = Instant.now(Clock.systemUTC());
   private final Optional<Process> awake;
   private JagtProcess jagt;
   private StandMarker marker;
-  private Instant polled = Instant.now();
+  private Instant polled = Instant.now(Clock.systemUTC());
   private @Nullable Duration slept;
   private @Nullable StandOutcome last;
   private boolean resting;
@@ -197,7 +197,7 @@ public final class StandRun implements AutoCloseable {
     end = new RunEnd(mode, script.expectsDeployConflict(), script.conflictStepComes());
     StandWorld world = new World(timeline, script.ref());
     List<WorldEvent> pending = new ArrayList<>(script.events());
-    Instant start = Instant.now();
+    Instant start = Instant.now(Clock.systemUTC());
     timeline.note(
         "open "
             + script.ref()
@@ -207,7 +207,7 @@ public final class StandRun implements AutoCloseable {
                 .toString()
                 .replaceAll("\\s+", " "));
     Instant deadline = start.plus(script.timeout());
-    polled = Instant.now();
+    polled = Instant.now(Clock.systemUTC());
     while (going(script, timeline, deadline, !pending.isEmpty())) {
       JsonNode board = tick(timeline);
       pipelines.passDue(timeline);
@@ -215,11 +215,11 @@ public final class StandRun implements AutoCloseable {
       human.take(board, jagt.board(), timeline);
       resting = human.nothingToPress(board);
     }
-    Instant settled = Instant.now().plus(script.settle());
+    Instant settled = Instant.now(Clock.systemUTC()).plus(script.settle());
     while (replayed == null
         && slept == null
         && timeline.lastStatus().equals(script.until())
-        && Instant.now().isBefore(settled)) {
+        && Instant.now(Clock.systemUTC()).isBefore(settled)) {
       tick(timeline);
     }
     StandOutcome outcome = outcomeOf(script, timeline, start, pending.size());
@@ -253,7 +253,7 @@ public final class StandRun implements AutoCloseable {
     return new StandOutcome(
         timeline.lastStatus(),
         timeline.lastOwner(),
-        Duration.between(start, Instant.now()),
+        Duration.between(start, Instant.now(Clock.systemUTC())),
         timeline.tail(20),
         root,
         ending,
@@ -276,11 +276,13 @@ public final class StandRun implements AutoCloseable {
           replay.drained()
               && timeline.lastStatus().equals(script.until())
               && (!acceptanceRecorded() || statusLabel(script.ref()).equals("accepted"));
-      return replay.divergences().isEmpty() && !done && Instant.now().isBefore(deadline);
+      return replay.divergences().isEmpty()
+          && !done
+          && Instant.now(Clock.systemUTC()).isBefore(deadline);
     }
     return !Objects.requireNonNull(end)
             .reached(timeline.lastStatus().equals(script.until()), eventsPending, timeline)
-        && Instant.now().isBefore(deadline)
+        && Instant.now(Clock.systemUTC()).isBefore(deadline)
         && !timeline.stalledFor(STALL)
         && !held(timeline)
         && !end.waitingOnTheReviewer(sweepsWaiting, timeline);
@@ -296,7 +298,7 @@ public final class StandRun implements AutoCloseable {
 
   private JsonNode tick(Timeline timeline) {
     JagtProcess.pause(POLL);
-    Instant now = Instant.now();
+    Instant now = Instant.now(Clock.systemUTC());
     if (HostSleep.between(polled, now)) {
       slept = Duration.between(polled, now);
     }
@@ -374,7 +376,7 @@ public final class StandRun implements AutoCloseable {
     StandRunLog.keep(
         StandRunLog.DIR,
         new StandRunLog.Entry(
-            Instant.now(),
+            Instant.now(Clock.systemUTC()),
             named[0],
             named.length > 1 ? named[1] : "",
             replayed == null ? "live" : "replay",
@@ -383,7 +385,7 @@ public final class StandRun implements AutoCloseable {
                 last == null ? "not driven" : last.ending().words(),
                 last == null ? "" : last.detail(),
                 found),
-            Duration.between(began, Instant.now()).toSeconds(),
+            Duration.between(began, Instant.now(Clock.systemUTC())).toSeconds(),
             StandSpend.read(root)),
         root.getFileName().toString());
   }
@@ -417,11 +419,21 @@ public final class StandRun implements AutoCloseable {
   private static Path newRoot() throws IOException {
     Path base = Path.of(System.getProperty("stand.base", System.getProperty("java.io.tmpdir")));
     String prefix = StandRoots.PREFIX + ProcessHandle.current().pid() + "-";
-    Path root = base.resolve(prefix + RUNS.incrementAndGet());
-    while (Files.exists(root)) {
-      root = base.resolve(prefix + RUNS.incrementAndGet());
+    Files.createDirectories(base);
+    int run = 1;
+    while (!created(base.resolve(prefix + run))) {
+      run++;
     }
-    return Files.createDirectories(root).toRealPath();
+    return base.resolve(prefix + run).toRealPath();
+  }
+
+  private static boolean created(Path root) throws IOException {
+    try {
+      Files.createDirectory(root);
+      return true;
+    } catch (FileAlreadyExistsException taken) {
+      return false;
+    }
   }
 
   private final class World implements StandWorld {

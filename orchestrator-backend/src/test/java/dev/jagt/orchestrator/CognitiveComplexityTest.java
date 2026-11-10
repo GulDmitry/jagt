@@ -2,8 +2,6 @@ package dev.jagt.orchestrator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.nio.file.Path;
-import java.util.stream.Stream;
 import net.sourceforge.pmd.PMDConfiguration;
 import net.sourceforge.pmd.PmdAnalysis;
 import net.sourceforge.pmd.lang.LanguageRegistry;
@@ -30,9 +28,7 @@ class CognitiveComplexityTest {
     configuration.setDefaultLanguageVersion(
         LanguageRegistry.PMD.getLanguageVersionById("java", "25"));
     configuration.setIgnoreIncrementalAnalysis(true);
-    Stream.of("statechart", "core", "usecase", "adapter", "surface", ".")
-        .map(module -> Path.of(module, "src/main/java"))
-        .forEach(configuration::addInputPath);
+    SourceRoots.ROOTS.forEach(configuration::addInputPath);
 
     try (PmdAnalysis pmd = PmdAnalysis.create(configuration)) {
       pmd.addRuleSet(pmd.newRuleSetLoader().loadFromString("cognitive.xml", RULESET));

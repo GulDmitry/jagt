@@ -6,6 +6,7 @@ import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -92,9 +93,9 @@ public final class JagtProcess implements AutoCloseable {
   }
 
   private JagtProcess awaitReady(Path root) {
-    Instant deadline = Instant.now().plus(STARTUP);
+    Instant deadline = Instant.now(Clock.systemUTC()).plus(STARTUP);
     while (!board.ready()) {
-      if (!process.isAlive() || Instant.now().isAfter(deadline)) {
+      if (!process.isAlive() || Instant.now(Clock.systemUTC()).isAfter(deadline)) {
         close();
         throw new StandFailure(
             "jagt did not come up on port " + port + "; read " + root.resolve("jagt.out"));

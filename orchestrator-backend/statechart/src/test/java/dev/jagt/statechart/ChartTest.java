@@ -4,12 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.jagt.statechart.Lamp.Event;
-import dev.jagt.statechart.Lamp.Facts;
 import dev.jagt.statechart.Lamp.Gear;
 import dev.jagt.statechart.Lamp.Hit;
 import dev.jagt.statechart.Lamp.Mode;
 import dev.jagt.statechart.Lamp.Power;
 import dev.jagt.statechart.Lamp.Press;
+import dev.jagt.statechart.Lamp.Readings;
 import dev.jagt.statechart.Lamp.Stage;
 import dev.jagt.statechart.Lamp.Tick;
 import java.util.Map;
@@ -20,8 +20,8 @@ class ChartTest {
 
   @Test
   void stateNothingReachesIsReported() {
-    ChartBuilder<Event, Facts, String> builder =
-        Chart.<Event, Facts, String>builder()
+    ChartBuilder<Event, Readings, String> builder =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.MID, Stage.HIGH))
             .on(Lamp.STAGE, Stage.LOW, Press.class)
             .to(Stage.MID);
@@ -35,8 +35,8 @@ class ChartTest {
 
   @Test
   void nonFinalStateWithNoEdgeOutIsReported() {
-    ChartBuilder<Event, Facts, String> builder =
-        Chart.<Event, Facts, String>builder()
+    ChartBuilder<Event, Readings, String> builder =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF)
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON);
@@ -50,8 +50,8 @@ class ChartTest {
 
   @Test
   void regionDeclaredTwiceIsReported() {
-    ChartBuilder<Event, Facts, String> builder =
-        Chart.<Event, Facts, String>builder()
+    ChartBuilder<Event, Readings, String> builder =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
@@ -66,9 +66,9 @@ class ChartTest {
 
   @Test
   void edgeOnDerivedRegionIsReported() {
-    ChartBuilder<Event, Facts, String> builder =
-        Chart.<Event, Facts, String>builder()
-            .derived(Lamp.LEVEL, Facts::level)
+    ChartBuilder<Event, Readings, String> builder =
+        Chart.<Event, Readings, String>builder()
+            .derived(Lamp.LEVEL, Readings::level)
             .on(Lamp.LEVEL, Mode.DIM, Press.class)
             .to(Mode.BRIGHT);
 
@@ -82,11 +82,11 @@ class ChartTest {
 
   @Test
   void derivedRegionDeclaredTwiceIsReported() {
-    ChartBuilder<Event, Facts, String> builder =
-        Chart.<Event, Facts, String>builder()
+    ChartBuilder<Event, Readings, String> builder =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .derived(Lamp.LEVEL, Facts::level)
-            .derived(Lamp.LEVEL, Facts::level)
+            .derived(Lamp.LEVEL, Readings::level)
+            .derived(Lamp.LEVEL, Readings::level)
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON);
 
@@ -100,8 +100,8 @@ class ChartTest {
 
   @Test
   void regionIsJudgedByItsOwnEdgesAlone() {
-    ChartBuilder<Event, Facts, String> builder =
-        Chart.<Event, Facts, String>builder()
+    ChartBuilder<Event, Readings, String> builder =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
             .region(Lamp.GLOW, Mode.DIM, Set.of(Mode.BRIGHT))
             .on(Lamp.MODE, Mode.DIM, Tick.class)
@@ -118,8 +118,8 @@ class ChartTest {
 
   @Test
   void stateOnlyAnUnreachableStateLeadsToIsUnreachable() {
-    ChartBuilder<Event, Facts, String> builder =
-        Chart.<Event, Facts, String>builder()
+    ChartBuilder<Event, Readings, String> builder =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.LOW, Stage.HIGH))
             .on(Lamp.STAGE, Stage.MID, Press.class)
             .to(Stage.HIGH);
@@ -135,8 +135,8 @@ class ChartTest {
 
   @Test
   void everyProblemIsReportedAtOnce() {
-    ChartBuilder<Event, Facts, String> builder =
-        Chart.<Event, Facts, String>builder()
+    ChartBuilder<Event, Readings, String> builder =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.STAGE, Stage.LOW, Set.of())
             .on(Lamp.STAGE, Stage.LOW, Press.class)
             .to(Stage.MID);
@@ -154,8 +154,8 @@ class ChartTest {
 
   @Test
   void configurationRoundTripsThroughItsPlainData() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
             .on(Lamp.POWER, Power.OFF, Press.class)
@@ -164,7 +164,7 @@ class ChartTest {
             .to(Mode.BRIGHT)
             .build();
     Configuration moved =
-        chart.step(chart.initial(), new Facts(Mode.DIM), new Tick()).configuration();
+        chart.step(chart.initial(), new Readings(Mode.DIM), new Tick()).configuration();
 
     Configuration restored = chart.configuration(moved.toPlain());
 
@@ -174,8 +174,8 @@ class ChartTest {
 
   @Test
   void configurationNamingAnUnknownStateIsRejected() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON)
@@ -192,8 +192,8 @@ class ChartTest {
 
   @Test
   void configurationNamingAnUnknownRegionIsRejected() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON)
@@ -208,8 +208,8 @@ class ChartTest {
 
   @Test
   void configurationCannotBeAskedForRegionTheChartDoesNotStore() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON)
@@ -221,11 +221,11 @@ class ChartTest {
 
   @Test
   void theRenderingIsStableMermaidDiagramOfEveryRegion() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
-            .derived(Lamp.LEVEL, Facts::level)
+            .derived(Lamp.LEVEL, Readings::level)
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON)
             .on(Lamp.POWER, Power.ON, Press.class)
@@ -260,8 +260,8 @@ class ChartTest {
 
   @Test
   void anEdgeDeclaredFromSetIsDrawnAsOneLabelledEdgeFromTheSet() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.STAGE, Stage.LOW)
             .on(Lamp.STAGE, Stage.LOW, Press.class)
             .to(Stage.MID)
@@ -290,8 +290,8 @@ class ChartTest {
 
   @Test
   void anEdgeDeclaredFromFewOfManyStatesNamesThoseStates() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.GEAR, Gear.P, Set.of(Gear.D))
             .on(Lamp.GEAR, Gear.P, Press.class)
             .to(Gear.R)
@@ -322,8 +322,8 @@ class ChartTest {
 
   @Test
   void anEdgeDeclaredFromEveryStateIsDrawnOnce() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.STAGE, Stage.LOW)
             .on(Lamp.STAGE, Stage.LOW, Press.class)
             .to(Stage.MID)
@@ -353,8 +353,8 @@ class ChartTest {
 
   @Test
   void anEdgeDeclaredFromSetStaysInTheSourceThatIsItsTarget() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.HIGH))
             .onMatching(Lamp.STAGE, Set.of(Stage.LOW, Stage.MID), "tick", Tick.class::isInstance)
             .emit("moved")
@@ -364,7 +364,7 @@ class ChartTest {
             .build();
 
     ChartStep<String> step =
-        chart.step(chart.configuration(Map.of("stage", "MID")), new Facts(Mode.DIM), new Tick());
+        chart.step(chart.configuration(Map.of("stage", "MID")), new Readings(Mode.DIM), new Tick());
 
     assertThat(step.effects()).containsExactly("moved");
   }

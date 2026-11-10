@@ -10,6 +10,7 @@ import com.microsoft.playwright.Route;
 import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.surface.board.TaskEventStream;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
@@ -27,6 +28,11 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.test.annotation.DirtiesContext;
 
 class BoardConnectionTest extends BoardPageContext {
+
+  @Autowired
+  BoardConnectionTest(BreakableJob breakable, StateService state) {
+    super(breakable, state);
+  }
 
   @Test
   void pageThatOutlivedRestartLoadsTheNewBoardWhenItReconnects() {

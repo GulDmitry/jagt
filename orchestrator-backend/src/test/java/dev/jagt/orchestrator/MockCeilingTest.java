@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 class MockCeilingTest {
 
+  private static final Pattern A_WHOLE_APP_SUITE = Pattern.compile("@Tag\\(\"e2e\"\\)");
   private static final Pattern A_TEST = Pattern.compile("@(Parameterized)?Test\\b");
   private static final Pattern A_MOCK =
       Pattern.compile(
@@ -55,18 +56,11 @@ class MockCeilingTest {
   }
 
   private static Stream<Path> unitTests() {
-    return Stream.of("core", "usecase", "adapter", "surface", ".")
-        .map(module -> Path.of(module, "src/test/java"))
-        .flatMap(MockCeilingTest::javaFilesUnder)
-        .filter(path -> path.getFileName().toString().endsWith("Test.java"));
-  }
-
-  private static Stream<Path> javaFilesUnder(Path root) {
-    try (Stream<Path> files = Files.walk(root)) {
-      return files.filter(path -> path.toString().endsWith(".java")).toList().stream();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+    return SourceRoots.ROOTS.stream()
+        .filter(SourceRoots::isTest)
+        .flatMap(SourceRoots::javaFilesUnder)
+        .filter(path -> path.getFileName().toString().endsWith("Test.java"))
+        .filter(path -> !A_WHOLE_APP_SUITE.matcher(read(path)).find());
   }
 
   private static String read(Path path) {

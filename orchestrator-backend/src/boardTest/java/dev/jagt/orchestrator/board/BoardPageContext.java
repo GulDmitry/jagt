@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.board;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
-import com.microsoft.playwright.Playwright;
 import dev.jagt.orchestrator.command.ReviewRepliesReport;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.EditorDriver;
@@ -17,10 +16,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,6 +41,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
     })
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Import(BoardPageContext.BreakableJob.class)
+@ExtendWith(BoardBrowser.class)
 abstract class BoardPageContext {
 
   @MockitoBean UserNotifier userNotifier;
@@ -76,16 +76,19 @@ abstract class BoardPageContext {
     }
   }
 
-  @Autowired BreakableJob breakable;
+  final BreakableJob breakable;
 
   @TempDir static Path root;
 
-  private static Playwright playwright;
-  private static Browser browser;
-
   @LocalServerPort int port;
 
-  @Autowired StateService state;
+  final StateService state;
+
+  @Autowired
+  BoardPageContext(BreakableJob breakable, StateService state) {
+    this.breakable = breakable;
+    this.state = state;
+  }
 
   @MockitoBean CommandService commands;
   @MockitoBean TaskLauncher launcher;
@@ -106,7 +109,7 @@ abstract class BoardPageContext {
   }
 
   @BeforeAll
-  static void startTheBrowserAndNameTheProjectsTheBoardOffers() throws IOException {
+  static void nameTheProjectsTheBoardOffers() throws IOException {
     try (var shipped = Files.newDirectoryStream(Path.of(".."), "*.dist")) {
       for (Path file : shipped) {
         Files.copy(
@@ -132,18 +135,10 @@ abstract class BoardPageContext {
           autoReview: {enabled: true}
         """
             .formatted(root.resolve("beta"), root.resolve("alpha")));
-    playwright = Playwright.create();
-    browser = playwright.chromium().launch();
-  }
-
-  @AfterAll
-  static void stopTheBrowser() {
-    browser.close();
-    playwright.close();
   }
 
   @BeforeEach
-  void emptyTheBoard() throws IOException {
+  void emptyTheBoard(Browser browser) throws IOException {
     Files.deleteIfExists(root.resolve("state.json"));
     Files.deleteIfExists(root.resolve("state.json.bak"));
     session = browser.newContext();

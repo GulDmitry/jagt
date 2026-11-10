@@ -22,7 +22,6 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
 import java.nio.file.Path;
 import java.time.Clock;
-import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -46,7 +45,7 @@ class TicketPrefetchJobTest {
           assistant,
           new UsageTracker(
               state,
-              new UsageLedger(new JsonMapper(), paths, Clock.system(ZoneId.systemDefault()))),
+              new UsageLedger(new JsonMapper(), paths, Clock.systemUTC())),
           new KeptTicketTexts(paths));
   private final TicketPrefetchJob job = new TicketPrefetchJob(config, tickets);
 
@@ -137,7 +136,7 @@ class TicketPrefetchJobTest {
             afterRestart,
             new UsageTracker(
                 state,
-                new UsageLedger(new JsonMapper(), paths, Clock.system(ZoneId.systemDefault()))),
+                new UsageLedger(new JsonMapper(), paths, Clock.systemUTC())),
             new KeptTicketTexts(paths));
 
     new TicketPrefetchJob(config, restartedTickets).runOn(tasks);

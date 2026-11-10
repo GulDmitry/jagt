@@ -10,6 +10,7 @@ import com.microsoft.playwright.Page;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.Reach;
 import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -24,9 +25,16 @@ import org.springframework.test.annotation.DirtiesContext;
 
 class BoardHeaderAndFiltersTest extends BoardPageContext {
 
-  @Autowired Jobs jobs;
+  final Jobs jobs;
 
-  @Autowired Reach reach;
+  final Reach reach;
+
+  @Autowired
+  BoardHeaderAndFiltersTest(BreakableJob breakable, StateService state, Jobs jobs, Reach reach) {
+    super(breakable, state);
+    this.jobs = jobs;
+    this.reach = reach;
+  }
 
   @Test
   void pollRunningAsItShouldIsNotNewsWhileItsNextLookStaysOnTheRequest() {

@@ -17,6 +17,6 @@ class CollaboratorCeilingTest {
         .should()
         .haveRawParameterTypes(
             DescribedPredicate.describe("five at most", types -> types.size() <= 5))
-        .check(MainClasses.CODE);
+        .check(SourceRoots.ALL);
   }
 }

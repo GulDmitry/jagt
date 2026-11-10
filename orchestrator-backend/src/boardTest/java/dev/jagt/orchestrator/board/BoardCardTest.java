@@ -6,6 +6,7 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.options.AriaRole;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -15,8 +16,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class BoardCardTest extends BoardPageContext {
+
+  @Autowired
+  BoardCardTest(BreakableJob breakable, StateService state) {
+    super(breakable, state);
+  }
 
   @Test
   void cardShowsTheTaskAsTheProjectionDescribesIt() {

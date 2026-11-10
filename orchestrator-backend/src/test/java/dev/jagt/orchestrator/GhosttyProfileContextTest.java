@@ -35,7 +35,12 @@ class GhosttyProfileContextTest {
 
   @MockitoBean private UserNotifier userNotifier;
 
-  @Autowired private TerminalDriver terminalDriver;
+  private final TerminalDriver terminalDriver;
+
+  @Autowired
+  GhosttyProfileContextTest(TerminalDriver terminalDriver) {
+    this.terminalDriver = terminalDriver;
+  }
 
   @DynamicPropertySource
   static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry)

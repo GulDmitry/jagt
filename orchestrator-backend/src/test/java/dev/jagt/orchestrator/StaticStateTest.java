@@ -42,7 +42,7 @@ class StaticStateTest {
                 .areDeclaredInClassesThat()
                 .doNotHaveSimpleName("AbortedConnectionFilter")
                 .should(beFinalAndImmutable()))
-        .check(MainClasses.CODE);
+        .check(SourceRoots.ALL);
   }
 
   private static ArchCondition<JavaField> beFinalAndImmutable() {
@@ -52,7 +52,8 @@ class StaticStateTest {
         String type = field.getRawType().getName();
         boolean mutable =
             type.startsWith("[") || MUTABLE_PREFIXES.stream().anyMatch(type::startsWith);
-        if (!field.getModifiers().contains(JavaModifier.FINAL) || mutable) {
+        boolean injectedByJunit = field.isAnnotatedWith("org.junit.jupiter.api.io.TempDir");
+        if (!injectedByJunit && (!field.getModifiers().contains(JavaModifier.FINAL) || mutable)) {
           events.add(SimpleConditionEvent.violated(field, field.getDescription()));
         }
       }

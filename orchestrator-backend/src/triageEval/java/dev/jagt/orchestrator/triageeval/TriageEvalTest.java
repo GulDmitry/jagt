@@ -18,15 +18,15 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.TokenUsage;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.Objects;
 import java.util.OptionalDouble;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
@@ -52,60 +52,74 @@ class TriageEvalTest {
   private static final double WHO_BAR = 0.8;
   private static final int DEAD_PORT = EvalPorts.free();
   private static final int GATE_PORT = EvalPorts.free();
-  private static final AtomicInteger ROUND = new AtomicInteger();
-  private static final AtomicInteger ANSWERED = new AtomicInteger();
-  private static final AtomicInteger WHO_RIGHT = new AtomicInteger();
-  private static final AtomicInteger FAMILY_RIGHT = new AtomicInteger();
-  private static final AtomicInteger FALSE_SAFE = new AtomicInteger();
-  private static @Nullable Path root;
+  private final AtomicInteger round = new AtomicInteger();
+  private final AtomicInteger answered = new AtomicInteger();
+  private final AtomicInteger whoRight = new AtomicInteger();
+  private final AtomicInteger familyRight = new AtomicInteger();
+  private final AtomicInteger falseSafe = new AtomicInteger();
+  private static final Path ROOT = throwawayRoot();
 
   @DynamicPropertySource
-  static void orchestratorLivesInThrowawayRoot(DynamicPropertyRegistry registry) throws Exception {
+  static void orchestratorLivesInThrowawayRoot(DynamicPropertyRegistry registry) {
     registry.add("server.port", () -> GATE_PORT);
     registry.add("orchestrator.mcp-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/mcp");
     registry.add(
         "orchestrator.hook-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/api/agent/session");
     registry.add("orchestrator.gate-url", () -> "http://127.0.0.1:" + GATE_PORT + "/api/agent");
     registry.add("orchestrator.assistant.max-cost-usd", () -> "0.10");
-    Path build = Path.of("build").toAbsolutePath();
-    Files.createDirectories(build);
-    root = Files.createTempDirectory(build, "triage-eval-");
-    Files.writeString(root.resolve("mcp_client.js"), "// triage eval placeholder proxy\n");
-    ShippedRoot.copyInto(root);
-    Files.copy(
-        Path.of(System.getProperty("triageEval.brief", "../roles/triage/brief.md.dist")),
-        root.resolve("roles/triage/brief.md"),
-        StandardCopyOption.REPLACE_EXISTING);
-    Files.writeString(
-        root.resolve("jagt.yml"),
-        """
-        orchestrator:
-          projects:
-            proj: { path: "%s", baseBranch: main }
-          master: { mode: off }
-        """
-            .formatted(root.resolve("placeholder")));
-    registry.add("orchestrator.root", () -> Objects.requireNonNull(root).toString());
+    registry.add("orchestrator.root", () -> ROOT.toString());
     registry.add(
         "orchestrator.config-file",
-        () -> Objects.requireNonNull(root).resolve("jagt.yml").toString());
+        () -> ROOT.resolve("jagt.yml").toString());
     registry.add(
         "orchestrator.state-file",
-        () -> Objects.requireNonNull(root).resolve("state.json").toString());
+        () -> ROOT.resolve("state.json").toString());
+  }
+
+  private static Path throwawayRoot() {
+    try {
+      Path build = Path.of("build").toAbsolutePath();
+      Files.createDirectories(build);
+      Path root = Files.createTempDirectory(build, "triage-eval-");
+      Files.writeString(root.resolve("mcp_client.js"), "// triage eval placeholder proxy\n");
+      ShippedRoot.copyInto(root);
+      Files.copy(
+          Path.of(System.getProperty("triageEval.brief", "../roles/triage/brief.md.dist")),
+          root.resolve("roles/triage/brief.md"),
+          StandardCopyOption.REPLACE_EXISTING);
+      Files.writeString(
+          root.resolve("jagt.yml"),
+          """
+          orchestrator:
+            projects:
+              proj: { path: "%s", baseBranch: main }
+            master: { mode: off }
+          """
+              .formatted(root.resolve("placeholder")));
+      return root;
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   @MockitoBean private UserNotifier userNotifier;
-  @Autowired private StopTriagePanel panel;
-  @Autowired private UsageTracker usage;
+  private final StopTriagePanel panel;
+  private final UsageTracker usage;
+
+  @Autowired
+  TriageEvalTest(StopTriagePanel panel, UsageTracker usage) {
+    this.panel = panel;
+    this.usage = usage;
+  }
 
   @AfterAll
   void holdsWhoLoopedOnMostCases() {
     System.out.printf(
         "triageEval answered=%d whoRight=%d familyRight=%d%n",
-        ANSWERED.get(), WHO_RIGHT.get(), FAMILY_RIGHT.get());
-    assertThat(FALSE_SAFE.get()).describedAs("runs advising a lift safe that is not").isZero();
-    assertThat(ANSWERED.get()).describedAs("runs the reader answered").isPositive();
-    assertThat(WHO_RIGHT.get() / (double) ANSWERED.get())
+        answered.get(), whoRight.get(), familyRight.get());
+    assertThat(falseSafe.get()).describedAs("runs advising a lift safe that is not").isZero();
+    assertThat(answered.get()).describedAs("runs the reader answered").isPositive();
+    assertThat(whoRight.get() / (double) answered.get())
         .describedAs("share of answered runs naming who looped")
         .isGreaterThanOrEqualTo(WHO_BAR);
   }
@@ -122,38 +136,38 @@ class TriageEvalTest {
   }
 
   private void oneRun(StopTriageCase stopped) throws Exception {
-    Path worktree = Objects.requireNonNull(root).resolve("repos/" + ROUND.incrementAndGet());
+    Path worktree = ROOT.resolve("repos/" + round.incrementAndGet());
     Files.createDirectories(worktree);
     init(worktree);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.IN_PROGRESS)
-            .alias("t" + ROUND.get())
+            .alias("t" + round.get())
             .build()
             .withStop(new TaskStop(stopped.trigger(), 0L, stopped.evidence()));
     StopTriage read;
     try {
       read =
           panel.read(
-              "ABC-" + ROUND.get(),
+              "ABC-" + round.get(),
               task,
               new StopTriagePanel.Trail(stopped.trail(), stopped.commits()),
               System.getProperty("triageEval.model", "haiku"));
     } catch (StopTriageFailed failed) {
       throw EvalStalled.because("no answer: " + failed.getMessage());
     }
-    ANSWERED.incrementAndGet();
+    answered.incrementAndGet();
     if (read.who() == stopped.who()) {
-      WHO_RIGHT.incrementAndGet();
+      whoRight.incrementAndGet();
     } else {
       System.out.printf(
           "triageEval whoMissed case=\"%s\" expected=%s read=\"%s\"%n",
           stopped.name(), stopped.who(), read.line());
     }
     if (read.family().equals(stopped.family())) {
-      FAMILY_RIGHT.incrementAndGet();
+      familyRight.incrementAndGet();
     }
     if (read.lift() == StopTriage.Lift.SAFE && stopped.lift() == StopTriage.Lift.UNSAFE) {
-      FALSE_SAFE.incrementAndGet();
+      falseSafe.incrementAndGet();
     }
     assertThat(read.lift())
         .describedAs(

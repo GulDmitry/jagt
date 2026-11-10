@@ -7,24 +7,18 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class FailureCausesTest {
 
   @Test
-  void noLogLineTakesItsCauseFromMessageThatMayBeNull() throws IOException {
+  void noLogLineTakesItsCauseFromMessageThatMayBeNull() {
     Pattern messageAsCause =
         Pattern.compile("addKeyValue\\(\\s*\"cause\",[^;]*?\\.getMessage\\(\\)");
 
-    try (Stream<Path> sources = Files.walk(Path.of("."))) {
-      assertThat(
-              sources
-                  .filter(path -> path.toString().contains("/src/main/java/"))
-                  .filter(path -> path.toString().endsWith(".java"))
-                  .filter(path -> messageAsCause.matcher(read(path)).find()))
-          .isEmpty();
-    }
+    assertThat(
+            SourceRoots.javaFiles().filter(path -> messageAsCause.matcher(read(path)).find()))
+        .isEmpty();
   }
 
   private static String read(Path source) {

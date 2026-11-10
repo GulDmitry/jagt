@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.stand;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
@@ -18,7 +19,7 @@ public final class Pipelines {
   }
 
   public void passDue(Timeline timeline) {
-    Instant now = Instant.now();
+    Instant now = Instant.now(Clock.systemUTC());
     for (JsonNode request : store.allRequests()) {
       if (!request.path("pipeline").asString().equals("running")) {
         continue;

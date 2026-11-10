@@ -23,7 +23,7 @@ class EnglishAndUtcTest {
     "java.time.ZonedDateTime, now"
   })
   void noCodeReadsTheMachinesZoneLocaleOrLocalTime(String owner, String method) {
-    noClasses().should().callMethod(owner, method).check(MainClasses.CODE);
+    noClasses().should().callMethod(owner, method).check(SourceRoots.ALL);
   }
 
   @ParameterizedTest
@@ -53,6 +53,6 @@ class EnglishAndUtcTest {
                         && call.getTargetOwner().getPackageName().equals("java.time")
                         && call.getTarget().getRawParameterTypes().stream()
                             .noneMatch(type -> type.isEquivalentTo(Clock.class))))
-        .check(MainClasses.CODE);
+        .check(SourceRoots.ALL);
   }
 }

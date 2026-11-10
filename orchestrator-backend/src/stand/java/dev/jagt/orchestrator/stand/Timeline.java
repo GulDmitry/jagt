@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -31,7 +32,7 @@ public final class Timeline {
   private int masterReadsSeen;
   private final Set<String> stepsRelayed = new HashSet<>();
   private String windows = "";
-  private Instant lastChange = Instant.now();
+  private Instant lastChange = Instant.now(Clock.systemUTC());
   private @Nullable Stop stop;
 
   public record Stop(String trigger, String evidence) {}
@@ -70,7 +71,7 @@ public final class Timeline {
             + " "
             + task.path("message").asString("").replaceAll("\\s+", " ").strip();
     if (!entry.equals(lastSeen.put(id, entry))) {
-      append(Instant.now().truncatedTo(ChronoUnit.SECONDS) + " " + entry);
+      append(Instant.now(Clock.systemUTC()).truncatedTo(ChronoUnit.SECONDS) + " " + entry);
     }
   }
 
@@ -89,11 +90,11 @@ public final class Timeline {
   }
 
   public boolean stalledFor(Duration quiet) {
-    return Instant.now().isAfter(lastChange.plus(quiet));
+    return Instant.now(Clock.systemUTC()).isAfter(lastChange.plus(quiet));
   }
 
   public void note(String event) {
-    append(Instant.now().truncatedTo(ChronoUnit.SECONDS) + " stand " + event);
+    append(Instant.now(Clock.systemUTC()).truncatedTo(ChronoUnit.SECONDS) + " stand " + event);
   }
 
   public String lastStatus() {
@@ -143,7 +144,7 @@ public final class Timeline {
   }
 
   private void append(String line) {
-    lastChange = Instant.now();
+    lastChange = Instant.now(Clock.systemUTC());
     lines.add(line);
     try {
       Files.writeString(file, line + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);

@@ -7,27 +7,22 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class SuitesTapNobodyTest {
 
   @Test
-  void everyBootedSuiteMocksTheDesktopNotifierButTheOnePinningItsWiring() throws IOException {
-    List<String> tapping;
-    try (Stream<Path> sources = Files.walk(Path.of("src"))) {
-      tapping =
-          sources
-              .filter(path -> path.toString().endsWith(".java"))
-              .filter(path -> read(path).matches("(?sm).*^@SpringBootTest.*"))
+  void everyBootedSuiteMocksTheDesktopNotifierButTheOnePinningItsWiring() {
+    List<String> tapping =
+        SourceRoots.javaFiles()
+            .filter(path -> read(path).matches("(?sm).*^@SpringBootTest.*"))
               .filter(
                   path ->
                       !read(path).matches("(?s).*@MockitoBean\\s+(private\\s+)?UserNotifier\\b.*"))
               .map(path -> path.getFileName().toString())
               .filter(name -> !name.equals("LinuxProfileContextTest.java"))
               .sorted()
-              .toList();
-    }
+            .toList();
 
     assertThat(tapping).isEmpty();
   }

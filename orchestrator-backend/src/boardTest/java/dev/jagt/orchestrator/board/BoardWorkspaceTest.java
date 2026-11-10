@@ -6,13 +6,20 @@ import static org.mockito.Mockito.when;
 
 import com.microsoft.playwright.Page;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class BoardWorkspaceTest extends BoardPageContext {
+
+  @Autowired
+  BoardWorkspaceTest(BreakableJob breakable, StateService state) {
+    super(breakable, state);
+  }
 
   @Test
   void taskWaitingOnTheHumanStandsFirstInItsOwnBand() {

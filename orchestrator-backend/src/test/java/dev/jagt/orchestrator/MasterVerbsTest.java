@@ -42,9 +42,15 @@ class MasterVerbsTest {
 
   @MockitoBean private CommandService commands;
 
-  @Autowired private MasterPresses presses;
+  private final MasterPresses presses;
 
-  @Autowired private GlobalCommands globals;
+  private final GlobalCommands globals;
+
+  @Autowired
+  MasterVerbsTest(MasterPresses presses, GlobalCommands globals) {
+    this.presses = presses;
+    this.globals = globals;
+  }
 
   @DynamicPropertySource
   static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry)

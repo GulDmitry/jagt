@@ -23,6 +23,18 @@ public final class MutationProgress {
       int misses,
       boolean awaitsTheReviewer,
       Conflict conflict) {
+    Optional<String> defect = defect(kind, outcome, steps, misses, conflict);
+    return defect.isPresent()
+        ? defect
+        : unreached(kind, outcome, steps, misses, awaitsTheReviewer, conflict);
+  }
+
+  private static Optional<String> defect(
+      Mutation.Kind kind,
+      StandOutcome outcome,
+      List<RunRecord.Step> steps,
+      int misses,
+      Conflict conflict) {
     boolean attack = kind == Mutation.Kind.ATTACK;
     if (!attack && (misses > 0 || outcome.signals().stopTrigger().equals("MISS"))) {
       return Optional.of(
@@ -45,6 +57,19 @@ public final class MutationProgress {
     if (outcome.signals().unfired() > 0 && !outcome.asked()) {
       return Optional.of("the mutation's event never fired and the session never asked");
     }
+    return Optional.empty();
+  }
+
+  private static Optional<String> unreached(
+      Mutation.Kind kind,
+      StandOutcome outcome,
+      List<RunRecord.Step> steps,
+      int misses,
+      boolean awaitsTheReviewer,
+      Conflict conflict) {
+    boolean attack = kind == Mutation.Kind.ATTACK;
+    boolean conflicted =
+        steps.stream().anyMatch(step -> step.status() == TaskStatus.DEPLOY_CONFLICT);
     boolean deployed = outcome.status().equals(TaskStatus.DEPLOYED.name());
     boolean reviewed =
         outcome.ending() == StandOutcome.Ending.WAITING_ON_THE_REVIEWER

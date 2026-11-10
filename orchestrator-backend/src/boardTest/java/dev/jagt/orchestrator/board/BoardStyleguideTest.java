@@ -3,11 +3,18 @@ package dev.jagt.orchestrator.board;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 import com.microsoft.playwright.Page;
+import dev.jagt.orchestrator.service.StateService;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class BoardStyleguideTest extends BoardPageContext {
+
+  @Autowired
+  BoardStyleguideTest(BreakableJob breakable, StateService state) {
+    super(breakable, state);
+  }
 
   @Test
   void theStyleguideNamesEveryStateTheDesignCodeNeeds() {

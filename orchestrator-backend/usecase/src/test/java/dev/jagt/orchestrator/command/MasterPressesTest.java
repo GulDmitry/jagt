@@ -20,9 +20,7 @@ import org.junit.jupiter.api.Test;
 
 class MasterPressesTest {
 
-  private record Spend() implements GlobalCommand {
-    static final AtomicReference<ActionOrigin> SEEN = new AtomicReference<>();
-
+  private record Spend(AtomicReference<ActionOrigin> seen) implements GlobalCommand {
     @Override
     public String id() {
       return "spend";
@@ -40,7 +38,7 @@ class MasterPressesTest {
 
     @Override
     public String run(String tail) {
-      SEEN.set(OriginContext.current());
+      seen.set(OriginContext.current());
       return "spent " + tail;
     }
   }
@@ -77,13 +75,14 @@ class MasterPressesTest {
   @Test
   void runsCommandAsTheMaster() {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    AtomicReference<ActionOrigin> seen = new AtomicReference<>();
     MasterPresses presses =
-        new MasterPresses(commands, new GlobalCommands(List.of(new Spend())), config);
+        new MasterPresses(commands, new GlobalCommands(List.of(new Spend(seen))), config);
 
     String answered = presses.run("spend", "today");
 
     assertThat(answered).isEqualTo("spent today");
-    assertThat(Spend.SEEN.get()).isEqualTo(ActionOrigin.MASTER);
+    assertThat(seen.get()).isEqualTo(ActionOrigin.MASTER);
   }
 
   @Test
@@ -104,7 +103,8 @@ class MasterPressesTest {
                     new ConfigService.ConfigFile.MasterConfig(
                         "act", null, null, List.of("spend"), null)));
     MasterPresses presses =
-        new MasterPresses(commands, new GlobalCommands(List.of(new Spend())), config);
+        new MasterPresses(
+            commands, new GlobalCommands(List.of(new Spend(new AtomicReference<>()))), config);
 
     assertThatThrownBy(() -> presses.run("spend", ""))
         .isInstanceOfSatisfying(

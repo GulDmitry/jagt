@@ -9,11 +9,18 @@ tasks.named('test') {
         include 'openspec/specs/**/*.md'
         include 'orchestrator-backend/*/src/main/resources/prompts/*.md'
         include '.claude/rules/*.md'
-        include 'orchestrator-backend/*/src/main/java/**/*.java'
-        include 'orchestrator-backend/src/main/java/**/*.java'
+        include 'orchestrator-backend/*/src/*/java/**/*.java'
+        include 'orchestrator-backend/src/*/java/**/*.java'
         include 'jagt.yml.dist'
         include 'roles/**/*.dist'
     }).withPropertyName('documents').withPathSensitivity(PathSensitivity.RELATIVE)
     // Outside the tree above: a file tree drops `.gitignore` by default.
     inputs.file(new File(projectDir.parentFile, '.gitignore')).withPropertyName('gitignore')
+}
+
+// SourceRoots imports the classes of every source set of every project, so each is compiled before `test` or `pitest` reads it.
+tasks.matching { it.name in ['test', 'pitest'] }.configureEach {
+    dependsOn {
+        allprojects.collectMany { project -> project.sourceSets.collect { project.tasks.named(it.classesTaskName) } }
+    }
 }

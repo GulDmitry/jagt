@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import dev.jagt.statechart.Lamp.Event;
-import dev.jagt.statechart.Lamp.Facts;
 import dev.jagt.statechart.Lamp.Hit;
 import dev.jagt.statechart.Lamp.Mode;
 import dev.jagt.statechart.Lamp.Power;
 import dev.jagt.statechart.Lamp.Press;
+import dev.jagt.statechart.Lamp.Readings;
 import dev.jagt.statechart.Lamp.Stage;
 import dev.jagt.statechart.Lamp.Tick;
 import java.util.Map;
@@ -20,15 +20,15 @@ class ChartStepTest {
 
   @Test
   void regionMovesOnItsEventAndEmitsTheEffect() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
             .emit("lit")
             .to(Power.ON)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
     assertThat(step.effects()).containsExactly("lit");
@@ -36,8 +36,8 @@ class ChartStepTest {
 
   @Test
   void guardReadsAnotherRegion() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
             .on(Lamp.POWER, Power.OFF, Press.class)
@@ -49,15 +49,15 @@ class ChartStepTest {
 
     Configuration start = chart.configuration(Map.of("power", "OFF", "mode", "BRIGHT"));
 
-    ChartStep<String> step = chart.step(start, new Facts(Mode.DIM), new Press());
+    ChartStep<String> step = chart.step(start, new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
   }
 
   @Test
   void guardThatDoesNotHoldKeepsTheRegionWhereItIs() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
             .on(Lamp.POWER, Power.OFF, Press.class)
@@ -67,15 +67,15 @@ class ChartStepTest {
             .to(Mode.BRIGHT)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.OFF);
   }
 
   @Test
   void guardCannotReadTheRegionItsEdgeLeaves() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
             .when((others, event) -> others.get(Lamp.POWER) == Power.OFF)
@@ -83,14 +83,14 @@ class ChartStepTest {
             .build();
     Configuration start = chart.initial();
 
-    assertThatThrownBy(() -> chart.step(start, new Facts(Mode.DIM), new Press()))
+    assertThatThrownBy(() -> chart.step(start, new Readings(Mode.DIM), new Press()))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void exitEffectsComeBeforeEdgeEffectsEachInDocumentOrder() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
             .onExit(Lamp.POWER, Power.OFF, "left off")
@@ -103,30 +103,30 @@ class ChartStepTest {
             .to(Mode.BRIGHT)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.effects()).containsExactly("left off", "left dim", "on", "bright");
   }
 
   @Test
   void anEdgeEmitsAnEffectBuiltFromTheEventThatTookIt() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
             .emitFor(event -> "took " + event)
             .to(Power.ON)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.effects()).containsExactly("took Press[]");
   }
 
   @Test
   void stayEdgeEmitsItsEffectAndNoExitEffect() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .onExit(Lamp.POWER, Power.OFF, "left off")
             .on(Lamp.POWER, Power.OFF, Press.class)
@@ -136,7 +136,7 @@ class ChartStepTest {
             .to(Power.ON)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.OFF);
     assertThat(step.effects()).containsExactly("pressed");
@@ -144,8 +144,8 @@ class ChartStepTest {
 
   @Test
   void anExternalSelfEdgeStillExitsItsState() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .onExit(Lamp.POWER, Power.OFF, "left off")
             .on(Lamp.POWER, Power.OFF, Press.class)
@@ -155,15 +155,15 @@ class ChartStepTest {
             .to(Power.ON)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.effects()).containsExactly("left off", "pressed");
   }
 
   @Test
   void parallelRegionsTakeTheSameEventAgainstTheConfigurationFromBeforeTheStep() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
             .on(Lamp.POWER, Power.OFF, Press.class)
@@ -174,15 +174,15 @@ class ChartStepTest {
             .build();
 
     Configuration after =
-        chart.step(chart.initial(), new Facts(Mode.DIM), new Press()).configuration();
+        chart.step(chart.initial(), new Readings(Mode.DIM), new Press()).configuration();
 
     assertThat(after.toPlain()).containsEntry("power", "ON").containsEntry("mode", "BRIGHT");
   }
 
   @Test
   void raisedEventsRunToCompletionInTheOrderTheyWereRaised() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.STAGE, Stage.LOW, Set.of(Stage.HIGH))
             .on(Lamp.POWER, Power.OFF, Press.class)
@@ -198,7 +198,7 @@ class ChartStepTest {
             .to(Stage.HIGH)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.STAGE)).isEqualTo(Stage.HIGH);
     assertThat(step.effects()).containsExactly("on", "tick", "hit");
@@ -206,8 +206,8 @@ class ChartStepTest {
 
   @Test
   void cycleOfRaisedEventsStopsAtTheCeilingNamingTheCycle() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF)
             .on(Lamp.POWER, Power.OFF, Press.class)
             .raise(new Press())
@@ -219,7 +219,7 @@ class ChartStepTest {
             .build();
     Configuration start = chart.initial();
 
-    assertThatThrownBy(() -> chart.step(start, new Facts(Mode.DIM), new Press()))
+    assertThatThrownBy(() -> chart.step(start, new Readings(Mode.DIM), new Press()))
         .isInstanceOf(RaiseCeilingExceeded.class)
         .hasMessageContaining("power OFF->ON")
         .hasMessageContaining("power ON->OFF");
@@ -227,8 +227,8 @@ class ChartStepTest {
 
   @Test
   void cycleRaisingExactlyTheCeilingIsAllowed() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
             .raise(new Tick())
@@ -236,15 +236,15 @@ class ChartStepTest {
             .raiseCeiling(1)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
   }
 
   @Test
   void anEventNoEdgeTakesChangesNothing() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
             .emit("lit")
@@ -252,7 +252,7 @@ class ChartStepTest {
             .build();
     Configuration start = chart.initial();
 
-    ChartStep<String> step = chart.step(start, new Facts(Mode.DIM), new Hit());
+    ChartStep<String> step = chart.step(start, new Readings(Mode.DIM), new Hit());
 
     assertThat(step.configuration()).isEqualTo(start);
     assertThat(step.effects()).isEmpty();
@@ -260,17 +260,17 @@ class ChartStepTest {
 
   @Test
   void derivedRegionIsReadFromTheFactsWhateverTheEventAndNeverStored() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .derived(Lamp.LEVEL, Facts::level)
+            .derived(Lamp.LEVEL, Readings::level)
             .on(Lamp.POWER, Power.OFF, Event.class)
             .when((others, event) -> others.get(Lamp.LEVEL) == Mode.BRIGHT)
             .to(Power.ON)
             .build();
 
-    ChartStep<String> bright = chart.step(chart.initial(), new Facts(Mode.BRIGHT), new Hit());
-    ChartStep<String> dim = chart.step(chart.initial(), new Facts(Mode.DIM), new Hit());
+    ChartStep<String> bright = chart.step(chart.initial(), new Readings(Mode.BRIGHT), new Hit());
+    ChartStep<String> dim = chart.step(chart.initial(), new Readings(Mode.DIM), new Hit());
 
     assertThat(chart.initial().toPlain()).containsOnlyKeys("power");
     assertThat(bright.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
@@ -279,25 +279,25 @@ class ChartStepTest {
 
   @Test
   void guardReadsTheDerivedRegionItNamesAmongSeveral() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .derived(Lamp.LEVEL, Facts::level)
+            .derived(Lamp.LEVEL, Readings::level)
             .derived(Lamp.GLOW, facts -> Mode.BRIGHT)
             .on(Lamp.POWER, Power.OFF, Press.class)
             .when((others, event) -> others.get(Lamp.GLOW) == Mode.BRIGHT)
             .to(Power.ON)
             .build();
 
-    ChartStep<String> step = chart.step(chart.initial(), new Facts(Mode.DIM), new Press());
+    ChartStep<String> step = chart.step(chart.initial(), new Readings(Mode.DIM), new Press());
 
     assertThat(step.configuration().get(Lamp.POWER)).isEqualTo(Power.ON);
   }
 
   @Test
   void guardCannotReadRegionTheChartDoesNotHave() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
             .when((others, event) -> others.get(Lamp.MODE) == Mode.BRIGHT)
@@ -305,15 +305,15 @@ class ChartStepTest {
             .build();
     Configuration start = chart.initial();
 
-    assertThatThrownBy(() -> chart.step(start, new Facts(Mode.DIM), new Press()))
+    assertThatThrownBy(() -> chart.step(start, new Readings(Mode.DIM), new Press()))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void derivedRegionNoGuardReadsIsNeverComputed() {
     AtomicInteger computed = new AtomicInteger();
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .derived(
                 Lamp.LEVEL,
@@ -326,7 +326,7 @@ class ChartStepTest {
             .to(Power.ON)
             .build();
 
-    chart.step(chart.initial(), new Facts(Mode.BRIGHT), new Tick());
+    chart.step(chart.initial(), new Readings(Mode.BRIGHT), new Tick());
 
     assertThat(computed).hasValue(0);
   }
@@ -334,8 +334,8 @@ class ChartStepTest {
   @Test
   void derivedRegionTwoGuardsReadIsComputedOnceForTheStep() {
     AtomicInteger computed = new AtomicInteger();
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .region(Lamp.MODE, Mode.DIM, Set.of(Mode.BRIGHT))
             .derived(
@@ -352,17 +352,17 @@ class ChartStepTest {
             .to(Mode.BRIGHT)
             .build();
 
-    chart.step(chart.initial(), new Facts(Mode.BRIGHT), new Press());
+    chart.step(chart.initial(), new Readings(Mode.BRIGHT), new Press());
 
     assertThat(computed).hasValue(1);
   }
 
   @Test
   void groupThatStaysIsTakenWhereItsGuardHoldsAndMovesNothing() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
-            .derived(Lamp.LEVEL, Facts::level)
+            .derived(Lamp.LEVEL, Readings::level)
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON)
             .onMatching(
@@ -372,24 +372,24 @@ class ChartStepTest {
             .build();
     Configuration start = chart.initial();
 
-    assertThat(chart.takes(Lamp.POWER, start, new Facts(Mode.BRIGHT), new Hit())).isTrue();
-    assertThat(chart.takes(Lamp.POWER, start, new Facts(Mode.DIM), new Hit())).isFalse();
-    assertThat(chart.step(start, new Facts(Mode.BRIGHT), new Hit()).configuration())
+    assertThat(chart.takes(Lamp.POWER, start, new Readings(Mode.BRIGHT), new Hit())).isTrue();
+    assertThat(chart.takes(Lamp.POWER, start, new Readings(Mode.DIM), new Hit())).isFalse();
+    assertThat(chart.step(start, new Readings(Mode.BRIGHT), new Hit()).configuration())
         .isEqualTo(start);
-    assertThat(chart.step(start, new Facts(Mode.BRIGHT), new Hit()).effects()).isEmpty();
+    assertThat(chart.step(start, new Readings(Mode.BRIGHT), new Hit()).effects()).isEmpty();
   }
 
   @Test
   void takesCannotBeAskedOfRegionTheChartDoesNotStore() {
-    Chart<Event, Facts, String> chart =
-        Chart.<Event, Facts, String>builder()
+    Chart<Event, Readings, String> chart =
+        Chart.<Event, Readings, String>builder()
             .region(Lamp.POWER, Power.OFF, Set.of(Power.ON))
             .on(Lamp.POWER, Power.OFF, Press.class)
             .to(Power.ON)
             .build();
     Configuration start = chart.initial();
 
-    assertThatThrownBy(() -> chart.takes(Lamp.MODE, start, new Facts(Mode.DIM), new Press()))
+    assertThatThrownBy(() -> chart.takes(Lamp.MODE, start, new Readings(Mode.DIM), new Press()))
         .isInstanceOf(IllegalArgumentException.class);
   }
 }

@@ -35,10 +35,20 @@ class LinuxProfileContextTest {
 
   @MockitoBean private EditorDriver editorDriver;
 
-  @Autowired private UserNotifier userNotifier;
-  @Autowired private TerminalDriver terminalDriver;
+  private final UserNotifier userNotifier;
+  private final TerminalDriver terminalDriver;
 
-  @Autowired private ApplicationContext context;
+  private final ApplicationContext context;
+
+  @Autowired
+  LinuxProfileContextTest(
+      UserNotifier userNotifier,
+      TerminalDriver terminalDriver,
+      ApplicationContext context) {
+    this.userNotifier = userNotifier;
+    this.terminalDriver = terminalDriver;
+    this.context = context;
+  }
 
   @DynamicPropertySource
   static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry)

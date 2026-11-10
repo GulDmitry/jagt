@@ -7,6 +7,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.job.Jobs;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Files;
@@ -17,7 +18,13 @@ import org.springframework.test.annotation.DirtiesContext;
 
 class BoardInteractionLogTest extends BoardPageContext {
 
-  @Autowired Jobs jobs;
+  final Jobs jobs;
+
+  @Autowired
+  BoardInteractionLogTest(BreakableJob breakable, StateService state, Jobs jobs) {
+    super(breakable, state);
+    this.jobs = jobs;
+  }
 
   @Test
   void pressIsLoggedByItsVerbAndItsTasksStatusAlone() throws Exception {

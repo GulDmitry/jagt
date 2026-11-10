@@ -102,12 +102,29 @@ class ReviewAndDeployFlowTest {
   @MockitoBean private TrackerAssistant tracker;
   @MockitoBean private RoutingAssistant routing;
   @MockitoBean private McpHealth mcp;
-  @Autowired private TaskProvisioning provisioning;
-  @Autowired private StateService stateService;
-  @Autowired private TaskStops stops;
-  @Autowired private TaskViews views;
-  @Autowired private OrchestratorPaths paths;
-  @Autowired private ToolchainProperties properties;
+  private final TaskProvisioning provisioning;
+  private final StateService stateService;
+  private final TaskStops stops;
+  private final TaskViews views;
+  private final OrchestratorPaths paths;
+  private final ToolchainProperties properties;
+
+  @Autowired
+  ReviewAndDeployFlowTest(
+      TaskProvisioning provisioning,
+      StateService stateService,
+      TaskStops stops,
+      TaskViews views,
+      OrchestratorPaths paths,
+      ToolchainProperties properties) {
+    this.provisioning = provisioning;
+    this.stateService = stateService;
+    this.stops = stops;
+    this.views = views;
+    this.paths = paths;
+    this.properties = properties;
+  }
+
   @LocalServerPort private int port;
 
   @BeforeAll

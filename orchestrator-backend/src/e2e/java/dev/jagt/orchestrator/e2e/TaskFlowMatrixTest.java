@@ -52,12 +52,28 @@ class TaskFlowMatrixTest {
   @MockitoBean private EditorDriver editorDriver;
   @MockitoBean private UserNotifier userNotifier;
 
-  @Autowired private Jobs jobs;
-  @Autowired private TaskProvisioning provisioning;
-  @Autowired private TaskRetirement retirement;
-  @Autowired private StateService stateService;
-  @Autowired private OrchestratorPaths paths;
-  @Autowired private ToolchainProperties properties;
+  private final Jobs jobs;
+  private final TaskProvisioning provisioning;
+  private final TaskRetirement retirement;
+  private final StateService stateService;
+  private final OrchestratorPaths paths;
+  private final ToolchainProperties properties;
+
+  @Autowired
+  TaskFlowMatrixTest(
+      Jobs jobs,
+      TaskProvisioning provisioning,
+      TaskRetirement retirement,
+      StateService stateService,
+      OrchestratorPaths paths,
+      ToolchainProperties properties) {
+    this.jobs = jobs;
+    this.provisioning = provisioning;
+    this.retirement = retirement;
+    this.stateService = stateService;
+    this.paths = paths;
+    this.properties = properties;
+  }
 
   @BeforeAll
   static void createTheThrowawayOutsideWorld() throws Exception {

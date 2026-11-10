@@ -44,9 +44,6 @@ class CommandMappingEvalTest {
 
   @TempDir static Path workspace;
 
-  private static final java.util.concurrent.atomic.AtomicBoolean SEEDED =
-      new java.util.concurrent.atomic.AtomicBoolean();
-
   @DynamicPropertySource
   static void orchestratorLivesInTheTempWorkspace(DynamicPropertyRegistry registry)
       throws Exception {
@@ -70,51 +67,56 @@ class CommandMappingEvalTest {
     registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
   }
 
-  @Autowired private StateService stateService;
-  @Autowired private PaletteContext board;
-  @Autowired private CommandAssistant assistant;
+  private final StateService stateService;
+  private final PaletteContext board;
+  private final CommandAssistant assistant;
+
+  @Autowired
+  CommandMappingEvalTest(
+      StateService stateService,
+      PaletteContext board,
+      CommandAssistant assistant) {
+    this.stateService = stateService;
+    this.board = board;
+    this.assistant = assistant;
+  }
 
   @BeforeEach
   void fourTasksBetweenThemOfferingEveryVerbTheRowsAskFor() {
-    synchronized (SEEDED) {
-      if (SEEDED.getAndSet(true)) {
-        return;
-      }
-      stateService.putTask(
-          "ABC-23",
-          TaskState.builder("shop", workspace.resolve("ABC-23").toString(), TaskStatus.PLAN_PENDING)
-              .alias("a4")
-              .title("Search ignores accented letters")
-              .build());
-      stateService.putTask(
-          "ABC-42",
-          TaskState.builder(
-                  "shop", workspace.resolve("ABC-42").toString(), TaskStatus.REVIEW_PENDING)
-              .alias("a1")
-              .title("Login form rejects a valid e-mail")
-              .mrUrl("https://example.invalid/shop/merge_requests/1")
-              .build());
-      stateService.putTask(
-          "ABC-7",
-          TaskState.builder("shop", workspace.resolve("ABC-7").toString(), TaskStatus.CI_POLLING)
-              .alias("a2")
-              .title("Cart total ignores the discount")
-              .mrUrl("https://example.invalid/shop/merge_requests/2")
-              .build());
-      stateService.putTask(
-          "ABC-15",
-          TaskState.builder("shop", workspace.resolve("ABC-15").toString(), TaskStatus.DEPLOYED)
-              .alias("a3")
-              .title("Checkout times out on a slow network")
-              .mrUrl("https://example.invalid/shop/merge_requests/3")
-              .deployment(
-                  new Deployment(
-                      1,
-                      List.of(Deployment.Target.of("shop", "dev").withMerge("c0ffee1")),
-                      1,
-                      null))
-              .build());
-    }
+    stateService.putTask(
+        "ABC-23",
+        TaskState.builder("shop", workspace.resolve("ABC-23").toString(), TaskStatus.PLAN_PENDING)
+            .alias("a4")
+            .title("Search ignores accented letters")
+            .build());
+    stateService.putTask(
+        "ABC-42",
+        TaskState.builder(
+                "shop", workspace.resolve("ABC-42").toString(), TaskStatus.REVIEW_PENDING)
+            .alias("a1")
+            .title("Login form rejects a valid e-mail")
+            .mrUrl("https://example.invalid/shop/merge_requests/1")
+            .build());
+    stateService.putTask(
+        "ABC-7",
+        TaskState.builder("shop", workspace.resolve("ABC-7").toString(), TaskStatus.CI_POLLING)
+            .alias("a2")
+            .title("Cart total ignores the discount")
+            .mrUrl("https://example.invalid/shop/merge_requests/2")
+            .build());
+    stateService.putTask(
+        "ABC-15",
+        TaskState.builder("shop", workspace.resolve("ABC-15").toString(), TaskStatus.DEPLOYED)
+            .alias("a3")
+            .title("Checkout times out on a slow network")
+            .mrUrl("https://example.invalid/shop/merge_requests/3")
+            .deployment(
+                new Deployment(
+                    1,
+                    List.of(Deployment.Target.of("shop", "dev").withMerge("c0ffee1")),
+                    1,
+                    null))
+            .build());
   }
 
   @ParameterizedTest

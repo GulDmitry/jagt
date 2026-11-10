@@ -3,10 +3,8 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import net.sourceforge.pmd.cpd.CPDConfiguration;
 import net.sourceforge.pmd.cpd.CPDReport;
@@ -24,8 +22,8 @@ class DuplicationTest {
     CPDConfiguration configuration = new CPDConfiguration();
     configuration.setOnlyRecognizeLanguage(LanguageRegistry.CPD.getLanguageById("java"));
     configuration.setMinimumTileSize(MINIMUM_TOKENS);
-    Stream.of("statechart", "core", "usecase", "adapter", "surface", ".")
-        .map(module -> Path.of(module, "src/main/java"))
+    SourceRoots.ROOTS.stream()
+        .filter(root -> !SourceRoots.isTest(root))
         .forEach(configuration::addInputPath);
     List<String> duplicates = new ArrayList<>();
 

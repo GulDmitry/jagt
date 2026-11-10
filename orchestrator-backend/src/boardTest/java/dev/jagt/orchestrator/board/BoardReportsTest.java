@@ -11,6 +11,7 @@ import com.microsoft.playwright.Route;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -21,8 +22,14 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class BoardReportsTest extends BoardPageContext {
+
+  @Autowired
+  BoardReportsTest(BreakableJob breakable, StateService state) {
+    super(breakable, state);
+  }
 
   @Test
   void theLogButtonKeepsItsNameAndCarriesTheLastMessageInItsHover() {

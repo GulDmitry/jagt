@@ -10,6 +10,7 @@ import com.microsoft.playwright.Page;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.PlanBaseline;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
@@ -27,9 +28,20 @@ import org.springframework.test.annotation.DirtiesContext;
 
 class BoardPopupsAndTabsTest extends BoardPageContext {
 
-  @Autowired Jobs jobs;
+  final Jobs jobs;
 
-  @Autowired PlanBaseline planBaseline;
+  final PlanBaseline planBaseline;
+
+  @Autowired
+  BoardPopupsAndTabsTest(
+      BreakableJob breakable,
+      StateService state,
+      Jobs jobs,
+      PlanBaseline planBaseline) {
+    super(breakable, state);
+    this.jobs = jobs;
+    this.planBaseline = planBaseline;
+  }
 
   @Test
   void theReportsMenuOpensReportAndClosesOnEscape() {

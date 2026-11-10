@@ -63,7 +63,7 @@ abstract class AcceptanceVerdictEvalTest {
 
   private static final int DEAD_PORT = EvalPorts.free();
   private static final int GATE_PORT = EvalPorts.free();
-  private static final AtomicInteger ROUND = new AtomicInteger();
+  private final AtomicInteger runs = new AtomicInteger();
   private static final AcceptanceScoreboard SCOREBOARD = AcceptanceScoreboard.empty();
 
   static final class ClaimsItsShard implements TestInstancePostProcessor {
@@ -99,11 +99,25 @@ abstract class AcceptanceVerdictEvalTest {
   }
 
   @MockitoBean private UserNotifier userNotifier;
-  @Autowired private CheckerReader reader;
-  @Autowired private CheckerPrompts prompts;
-  @Autowired private CheckerFlows checkerFlows;
-  @Autowired private RoleDefinition acceptanceDefinition;
-  @Autowired private UsageTracker usage;
+  private final CheckerReader reader;
+  private final CheckerPrompts prompts;
+  private final CheckerFlows checkerFlows;
+  private final RoleDefinition acceptanceDefinition;
+  private final UsageTracker usage;
+
+  @Autowired
+  AcceptanceVerdictEvalTest(
+      CheckerReader reader,
+      CheckerPrompts prompts,
+      CheckerFlows checkerFlows,
+      RoleDefinition acceptanceDefinition,
+      UsageTracker usage) {
+    this.reader = reader;
+    this.prompts = prompts;
+    this.checkerFlows = checkerFlows;
+    this.acceptanceDefinition = acceptanceDefinition;
+    this.usage = usage;
+  }
 
   @AfterAll
   void reportsWhatTheShardScored() throws Exception {
@@ -155,10 +169,10 @@ abstract class AcceptanceVerdictEvalTest {
   private AcceptanceJudgement judge(AcceptanceCase deployed, String url) throws Exception {
     Path worktree =
         AcceptanceEvalWorkspace.worktreeFor(
-            AcceptanceEvalWorkspace.root().resolve("repos/" + ROUND.incrementAndGet() + "/repo"),
+            AcceptanceEvalWorkspace.root().resolve("repos/" + runs.incrementAndGet() + "/repo"),
             deployed);
     String sha = AcceptanceEvalWorkspace.head(worktree);
-    Path workspace = AcceptanceEvalWorkspace.root().resolve("repos/" + ROUND.get() + "/workspace");
+    Path workspace = AcceptanceEvalWorkspace.root().resolve("repos/" + runs.get() + "/workspace");
     if (deployed.workspace().held()) {
       AcceptanceWorkspaceFiles.seed(workspace, deployed);
     }
@@ -227,7 +241,7 @@ abstract class AcceptanceVerdictEvalTest {
     return judged;
   }
 
-  private static RoleOptions.Flows flows(AcceptanceCase deployed) throws IOException {
+  private RoleOptions.Flows flows(AcceptanceCase deployed) throws IOException {
     if (deployed.workspace().held()) {
       return RoleOptions.Flows.defaults().withCommand(AcceptanceWorkspaceFiles.FLOWS_COMMAND);
     }
@@ -240,7 +254,7 @@ abstract class AcceptanceVerdictEvalTest {
           .withPath(deployed.flows().path())
           .withCommand(deployed.flows().command());
     }
-    Path directory = AcceptanceEvalWorkspace.root().resolve("repos/" + ROUND.get() + "/flows");
+    Path directory = AcceptanceEvalWorkspace.root().resolve("repos/" + runs.get() + "/flows");
     Files.createDirectories(directory);
     for (Map.Entry<String, String> file : deployed.flows().files().entrySet()) {
       Files.writeString(directory.resolve(file.getKey()), file.getValue());

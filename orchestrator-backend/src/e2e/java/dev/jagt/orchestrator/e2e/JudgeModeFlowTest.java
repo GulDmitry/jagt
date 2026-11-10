@@ -88,11 +88,26 @@ class JudgeModeFlowTest {
   @MockitoBean private RoutingAssistant routing;
   @MockitoBean private McpHealth mcp;
   @MockitoBean private RoundReviewer reviewer;
-  @Autowired private TaskProvisioning provisioning;
-  @Autowired private StateService stateService;
-  @Autowired private OrchestratorPaths paths;
-  @Autowired private ToolchainProperties properties;
-  @Autowired private Jobs jobs;
+  private final TaskProvisioning provisioning;
+  private final StateService stateService;
+  private final OrchestratorPaths paths;
+  private final ToolchainProperties properties;
+  private final Jobs jobs;
+
+  @Autowired
+  JudgeModeFlowTest(
+      TaskProvisioning provisioning,
+      StateService stateService,
+      OrchestratorPaths paths,
+      ToolchainProperties properties,
+      Jobs jobs) {
+    this.provisioning = provisioning;
+    this.stateService = stateService;
+    this.paths = paths;
+    this.properties = properties;
+    this.jobs = jobs;
+  }
+
   @LocalServerPort private int port;
 
   @BeforeAll

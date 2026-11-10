@@ -21,15 +21,16 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import java.util.function.IntFunction;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class WithersTest {
 
   private static final List<Class<?>> RECORDS =
-      MainClasses.CODE.stream()
+      SourceRoots.ALL.stream()
           .filter(JavaClass::isRecord)
-          .<Class<?>>map(JavaClass::reflect)
+          .<Class<?>>map(WithersTest::load)
           .toList();
 
   @Test
@@ -40,6 +41,14 @@ class WithersTest {
   @Test
   void readsEveryWitherItClaimsToCheck() {
     assertThat(withers().count()).isGreaterThan(80);
+  }
+
+  private static Class<?> load(JavaClass type) {
+    try {
+      return Class.forName(type.getName(), false, SourceRoots.LOADER);
+    } catch (ClassNotFoundException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   private record Wither(Class<?> type, RecordComponent component, Method method) {}
@@ -115,63 +124,37 @@ class WithersTest {
     return canonical.newInstance(values);
   }
 
+  private static final Map<Class<?>, IntFunction<Object>> SAMPLES =
+      Map.ofEntries(
+          Map.entry(String.class, variant -> "v" + variant),
+          Map.entry(boolean.class, variant -> variant == 1),
+          Map.entry(Boolean.class, variant -> variant == 1),
+          Map.entry(int.class, variant -> variant + 1),
+          Map.entry(Integer.class, variant -> variant + 1),
+          Map.entry(long.class, variant -> variant + 1L),
+          Map.entry(Long.class, variant -> variant + 1L),
+          Map.entry(double.class, variant -> variant + 1.0),
+          Map.entry(Double.class, variant -> variant + 1.0),
+          Map.entry(Instant.class, variant -> Instant.ofEpochSecond(variant + 1L)),
+          Map.entry(Duration.class, variant -> Duration.ofMinutes(variant + 1L)),
+          Map.entry(LocalDate.class, variant -> LocalDate.of(2026, 1, variant + 1)),
+          Map.entry(Path.class, variant -> Path.of("/v" + variant)),
+          Map.entry(URI.class, variant -> URI.create("https://example.com/v" + variant)),
+          Map.entry(OptionalLong.class, variant -> OptionalLong.of(variant + 1L)),
+          Map.entry(OptionalInt.class, variant -> OptionalInt.of(variant + 1)),
+          Map.entry(BooleanSupplier.class, variant -> (BooleanSupplier) () -> variant == 0),
+          Map.entry(List.class, variant -> List.of("v" + variant)),
+          Map.entry(Set.class, variant -> Set.of("v" + variant)),
+          Map.entry(Map.class, variant -> Map.of("v" + variant, "v" + variant)));
+
   private static Object sample(Type type, int variant) throws ReflectiveOperationException {
     if (type instanceof ParameterizedType parameterized) {
-      Class<?> raw = (Class<?>) parameterized.getRawType();
-      Type[] arguments = parameterized.getActualTypeArguments();
-      if (raw == List.class) {
-        return List.of(sample(arguments[0], variant));
-      }
-      if (raw == Set.class) {
-        return Set.of(sample(arguments[0], variant));
-      }
-      if (raw == Map.class) {
-        return Map.of(sample(arguments[0], variant), sample(arguments[1], variant));
-      }
-      if (raw == Optional.class) {
-        return Optional.of(sample(arguments[0], variant));
-      }
-      return sample(raw, variant);
+      return sampleOfGeneric(parameterized, variant);
     }
     Class<?> raw = (Class<?>) type;
-    if (raw == String.class) {
-      return "v" + variant;
-    }
-    if (raw == boolean.class || raw == Boolean.class) {
-      return variant == 1;
-    }
-    if (raw == int.class || raw == Integer.class) {
-      return variant + 1;
-    }
-    if (raw == long.class || raw == Long.class) {
-      return variant + 1L;
-    }
-    if (raw == double.class || raw == Double.class) {
-      return variant + 1.0;
-    }
-    if (raw == Instant.class) {
-      return Instant.ofEpochSecond(variant + 1L);
-    }
-    if (raw == Duration.class) {
-      return Duration.ofMinutes(variant + 1L);
-    }
-    if (raw == LocalDate.class) {
-      return LocalDate.of(2026, 1, variant + 1);
-    }
-    if (raw == Path.class) {
-      return Path.of("/v" + variant);
-    }
-    if (raw == URI.class) {
-      return URI.create("https://example.com/v" + variant);
-    }
-    if (raw == OptionalLong.class) {
-      return OptionalLong.of(variant + 1L);
-    }
-    if (raw == OptionalInt.class) {
-      return OptionalInt.of(variant + 1);
-    }
-    if (raw == BooleanSupplier.class) {
-      return (BooleanSupplier) () -> variant == 0;
+    IntFunction<Object> known = SAMPLES.get(raw);
+    if (known != null) {
+      return known.apply(variant);
     }
     if (raw.isEnum()) {
       Object[] constants = raw.getEnumConstants();
@@ -180,15 +163,25 @@ class WithersTest {
     if (raw.isRecord()) {
       return build(raw, variant);
     }
+    throw new IllegalArgumentException("no sample of " + raw.getName());
+  }
+
+  private static Object sampleOfGeneric(ParameterizedType parameterized, int variant)
+      throws ReflectiveOperationException {
+    Class<?> raw = (Class<?>) parameterized.getRawType();
+    Type[] arguments = parameterized.getActualTypeArguments();
     if (raw == List.class) {
-      return List.of("v" + variant);
+      return List.of(sample(arguments[0], variant));
     }
     if (raw == Set.class) {
-      return Set.of("v" + variant);
+      return Set.of(sample(arguments[0], variant));
     }
     if (raw == Map.class) {
-      return Map.of("v" + variant, "v" + variant);
+      return Map.of(sample(arguments[0], variant), sample(arguments[1], variant));
     }
-    throw new IllegalArgumentException("no sample of " + raw.getName());
+    if (raw == Optional.class) {
+      return Optional.of(sample(arguments[0], variant));
+    }
+    return sample(raw, variant);
   }
 }
