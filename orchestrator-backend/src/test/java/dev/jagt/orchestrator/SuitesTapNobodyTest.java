@@ -18,7 +18,11 @@ class SuitesTapNobodyTest {
             .filter(path -> read(path).matches("(?sm).*^@SpringBootTest.*"))
               .filter(
                   path ->
-                      !read(path).matches("(?s).*@MockitoBean\\s+(private\\s+)?UserNotifier\\b.*"))
+                      !read(path)
+                          .matches(
+                              "(?s).*(@MockitoBean\\s+(private\\s+)?UserNotifier\\b"
+                                  + "|@MockitoBean\\(types\\s*=\\s*\\{[^}]*\\bUserNotifier\\.class)"
+                                  + ".*"))
               .map(path -> path.getFileName().toString())
               .filter(name -> !name.equals("LinuxProfileContextTest.java"))
               .sorted()

@@ -78,6 +78,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | L16 | an eval shard class starts while an earlier shard's lock is free → it claims its own number, so no case runs twice and none never; Master and acceptance results land in their own `roleEval-<role>` directory and a failure prints in full | seen 2026-10-31: a late shard re-claimed shard 0 and re-ran its cases, acceptance's words were cut from the console | `EvalShardsTest` |
 | L17 | a stand run ends while a pane's process ignores the hangup and still writes into the root → the pane's tree is stopped before the root is deleted, so the delete never meets a non-empty directory | seen 2026-11-08: `DirectoryNotEmptyException` in standTest plan and judge after the run passed | `StandShellTest` |
 | L18 | an acceptance eval installs its role file with the environment and the flows driver → every placeholder is filled, the whole file is formatted, never only its last line | seen 2026-11-10: a precedence slip left the url's `%s` literal in `role.yml` | `AcceptanceRoleYmlTest` |
+| L19 | a file a rule test reads (the CI workflow, the tmux stop script) changes outside every source set → `test` runs again, never UP-TO-DATE over a breach | seen 2026-11-10: a workflow edit left `CiWorkflowTest` up to date | `CiWorkflowTest`, `SuitesTapNobodyTest` |
 ## M — anything else
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

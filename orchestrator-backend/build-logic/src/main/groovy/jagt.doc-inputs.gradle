@@ -1,6 +1,6 @@
 import org.gradle.api.tasks.PathSensitivity
 
-// TextBudgetTest and ConfigReferenceTest read files that live outside every source set: without declaring it
+// TextBudgetTest, ConfigReferenceTest, CiWorkflowTest and TestTmuxCleanupTest read files that live outside every source set: without declaring it
 // the task stays UP-TO-DATE while a document grows past its budget, and the suite is green over a breach.
 tasks.named('test') {
     inputs.files(fileTree(projectDir.parentFile) {
@@ -14,6 +14,11 @@ tasks.named('test') {
         include 'jagt.yml.dist'
         include 'roles/**/*.dist'
     }).withPropertyName('documents').withPathSensitivity(PathSensitivity.RELATIVE)
+    // CiWorkflowTest reads the workflow, TestTmuxCleanupTest the script.
+    inputs.files(fileTree(projectDir.parentFile) {
+        include '.github/workflows/*.yml'
+        include 'orchestrator-backend/gradle/*.sh'
+    }).withPropertyName('buildFiles').withPathSensitivity(PathSensitivity.RELATIVE)
     // Outside the tree above: a file tree drops `.gitignore` by default.
     inputs.file(new File(projectDir.parentFile, '.gitignore')).withPropertyName('gitignore')
 }
