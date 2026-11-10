@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
@@ -12,25 +11,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.MasterCases;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.config.SessionCases;
-import dev.jagt.orchestrator.flow.Arbiter;
-import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -38,11 +24,8 @@ import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class RoundRelayTest {
-
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final Clock clock = Clock.fixed(Instant.ofEpochMilli(1_000_000), ZoneOffset.UTC);
@@ -50,60 +33,14 @@ class RoundRelayTest {
   @Test
   void relaysNoRoundIdenticalToTheLastOneWhenAnotherInstructionOverwroteTheContextFileBetween(
       @TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, clock),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                clock,
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    RoundRelay relay =
-        new RoundRelay(
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                clock,
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                door,
-                new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
-            door,
-            new SessionBrief(paths));
+    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "cases.md.dist");
+    fixture.doors.state.putTask(
+        "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     ReviewFacts round =
-        new ReviewFacts(
-            new ReviewFacts.Request(true, false, false, false, 0),
-            new ReviewFacts.Pipeline("running", "", ""),
-            new ReviewFacts.Discussion(
-                List.of("https://host/mr/1#note_1\nbot: rename x"), List.of(), List.of()));
-    relay.relay("ABC-42", "https://host/mr/1", round, "running", "");
+        RoundRelayFixture.facts("running", "", List.of("https://host/mr/1#note_1\nbot: rename x"));
+    fixture.relay.relay("ABC-42", "https://host/mr/1", round, "running", "");
 
-    SweepResult again = relay.relay("ABC-42", "https://host/mr/1", round, "running", "");
+    SweepResult again = fixture.relay.relay("ABC-42", "https://host/mr/1", round, "running", "");
 
     assertThat(again.kind()).isEqualTo(SweepResult.Kind.UNCHANGED);
     verify(sessions, times(1)).relayFresh(eq("ABC-42"), anyString());
@@ -112,64 +49,18 @@ class RoundRelayTest {
   @Test
   void relaysNothingWhileTheAgentsQuestionStandsAndTheChecksAreRed(@TempDir Path root)
       throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    state.putTask(
+    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "cases.md.dist");
+    fixture.doors.state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .report(AgentReport.QUESTION)
             .build());
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, clock),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                clock,
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    RoundRelay relay =
-        new RoundRelay(
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                clock,
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                door,
-                new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
-            door,
-            new SessionBrief(paths));
 
     SweepResult result =
-        relay.relay(
+        fixture.relay.relay(
             "ABC-42",
             "https://host/mr/1",
-            new ReviewFacts(
-                new ReviewFacts.Request(true, false, false, false, 0),
-                new ReviewFacts.Pipeline("failed", "unit-tests\nCartTest failed", ""),
-                new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            RoundRelayFixture.facts("failed", "unit-tests\nCartTest failed", List.of()),
             "failed",
             "");
 
@@ -180,65 +71,18 @@ class RoundRelayTest {
 
   @Test
   void relaysNothingIntoTaskJagtStopped(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    state.putTask(
+    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "cases.md.dist");
+    fixture.doors.state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1L, "5 ships"))
             .build());
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, clock),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                clock,
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    RoundRelay relay =
-        new RoundRelay(
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                clock,
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                door,
-                new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
-            door,
-            new SessionBrief(paths));
 
     SweepResult result =
-        relay.relay(
+        fixture.relay.relay(
             "ABC-42",
             "https://host/mr/1",
-            new ReviewFacts(
-                new ReviewFacts.Request(true, false, false, false, 0),
-                new ReviewFacts.Pipeline("running", "", ""),
-                new ReviewFacts.Discussion(
-                    List.of("https://host/mr/1#note_9\nlee: why?"), List.of(), List.of())),
+            RoundRelayFixture.facts("running", "", List.of("https://host/mr/1#note_9\nlee: why?")),
             "running",
             "");
 
@@ -248,58 +92,18 @@ class RoundRelayTest {
 
   @Test
   void relaysTheThreadsAsDraftsAndCountsThem(@TempDir Path root) throws Exception {
-    final OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    TaskStops stops = mock(TaskStops.class);
-    when(stops.round(anyString(), any(), anyString(), anyString()))
-        .thenReturn(TaskStops.Relay.RELAY);
-    when(stops.sinceLast(anyString(), any())).thenReturn("");
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, clock),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                clock,
-                new FlowRules(new TaskChart(Composition.builtIn()))));
+    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "brief.md.dist");
 
     SweepResult result =
-        new RoundRelay(
-                stops,
-                new StepRelay(
-                    new SessionBrief(paths),
-                    sessions,
-                    door,
-                    new TaskTurns(
-                        state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
-                door,
-                new SessionBrief(paths))
+        fixture
+            .over(RoundRelayFixture.relayingStops())
             .relay(
                 "ABC-42",
                 "http://mr/api, http://mr/web",
-                new ReviewFacts(
-                    new ReviewFacts.Request(true, false, false, false, 0),
-                    new ReviewFacts.Pipeline("success", "", ""),
-                    new ReviewFacts.Discussion(
-                        List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2"),
-                        List.of(),
-                        List.of())),
+                RoundRelayFixture.facts(
+                    "success",
+                    "",
+                    List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2")),
                 "success",
                 "");
 
@@ -310,57 +114,19 @@ class RoundRelayTest {
   @Test
   void relaysTheThreadsWithoutTheChecksWhileTheAgentsQuestionAboutThemStands(@TempDir Path root)
       throws Exception {
-    final OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    TaskStops stops = mock(TaskStops.class);
-    when(stops.round(anyString(), any(), anyString(), anyString()))
-        .thenReturn(TaskStops.Relay.RELAY);
-    when(stops.sinceLast(anyString(), any())).thenReturn("");
+    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "brief.md.dist");
+    TaskStops stops = RoundRelayFixture.relayingStops();
     when(stops.asking("ABC-42")).thenReturn(true);
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
 
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, clock),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                clock,
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-
-    new RoundRelay(
-            stops,
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                door,
-                new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
-            door,
-            new SessionBrief(paths))
+    fixture
+        .over(stops)
         .relay(
             "ABC-42",
             "http://mr/api, http://mr/web",
-            new ReviewFacts(
-                new ReviewFacts.Request(true, false, false, false, 0),
-                new ReviewFacts.Pipeline("failed", "unit-tests\nCartTest failed", ""),
-                new ReviewFacts.Discussion(
-                    List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2"),
-                    List.of(),
-                    List.of())),
+            RoundRelayFixture.facts(
+                "failed",
+                "unit-tests\nCartTest failed",
+                List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2")),
             "failed",
             "");
 
@@ -373,52 +139,12 @@ class RoundRelayTest {
   @Test
   void reportsRoundUnchangedWhileTheSessionHoldsTheTurnItOpened(@TempDir Path root)
       throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-    TaskStops stops = mock(TaskStops.class);
-    when(stops.round(anyString(), any(), anyString(), anyString()))
-        .thenReturn(TaskStops.Relay.RELAY);
-    when(stops.sinceLast(anyString(), any())).thenReturn("");
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, clock),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                clock,
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    RoundRelay relay =
-        new RoundRelay(
-            stops,
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                door,
-                new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
-            door,
-            new SessionBrief(paths));
+    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "cases.md.dist");
+    fixture.doors.state.putTask(
+        "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+    RoundRelay relay = fixture.over(RoundRelayFixture.relayingStops());
     ReviewFacts round =
-        new ReviewFacts(
-            new ReviewFacts.Request(true, false, false, false, 0),
-            new ReviewFacts.Pipeline("success", "", ""),
-            new ReviewFacts.Discussion(
-                List.of("reviewer (a.java:3): drop the cache"), List.of(), List.of()));
+        RoundRelayFixture.facts("success", "", List.of("reviewer (a.java:3): drop the cache"));
     relay.relay("ABC-42", "http://mr/1", round, "success", "");
 
     SweepResult again = relay.relay("ABC-42", "http://mr/1", round, "success", "");
@@ -429,55 +155,20 @@ class RoundRelayTest {
 
   @Test
   void relaysNoRoundWhereNoCaseSendsItsStepsAtTheTasksStatus(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
-    TaskStops stops = mock(TaskStops.class);
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, clock),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                clock,
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    RoundRelay relay =
-        new RoundRelay(
-            stops,
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                door,
-                new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())))),
-            door,
-            new SessionBrief(paths));
+    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "cases.md.dist");
+    fixture.doors.state.putTask(
+        "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
 
     SweepResult result =
-        relay.relay(
-            "ABC-42",
-            "https://host/mr/1",
-            new ReviewFacts(
-                new ReviewFacts.Request(true, false, false, false, 0),
-                new ReviewFacts.Pipeline("running", "", ""),
-                new ReviewFacts.Discussion(
-                    List.of("https://host/mr/1#note_9\nlee: why?"), List.of(), List.of())),
-            "running",
-            "");
+        fixture
+            .over(mock(TaskStops.class))
+            .relay(
+                "ABC-42",
+                "https://host/mr/1",
+                RoundRelayFixture.facts(
+                    "running", "", List.of("https://host/mr/1#note_9\nlee: why?")),
+                "running",
+                "");
 
     assertThat(result.kind()).isEqualTo(SweepResult.Kind.REFUSED);
     verify(sessions, never()).relayFresh(anyString(), anyString());

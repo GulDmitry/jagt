@@ -19,6 +19,7 @@ public final class CaseDoorFixture {
 
   public final OrchestratorPaths paths;
   public final StateService state;
+  public final TaskStops stops;
   public final CaseDoor door;
 
   public CaseDoorFixture(Path root, Clock clock, Arbiter.Profile profile) {
@@ -33,21 +34,23 @@ public final class CaseDoorFixture {
             paths,
             new TaskReducer(new TaskChart(Composition.builtIn())),
             event -> {});
+    stops =
+        new TaskStops(
+            new StopPolicy(
+                ignored -> profile,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(
+                    new Notifications(List.of(), state, Runnable::run),
+                    new StopLog(new JsonMapper(), paths))),
+            state,
+            clock,
+            new FlowRules(new TaskChart(Composition.builtIn())));
     door =
         new CaseDoor(
             new SessionCases(paths),
             new MasterCases(paths),
             state,
             new MissLog(new JsonMapper(), paths, clock),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> profile,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))));
+            stops);
   }
 }
