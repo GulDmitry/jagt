@@ -8,19 +8,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.MasterCases;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
-import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowEngine;
-import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.TaskState;
@@ -31,15 +22,11 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class CommandServiceTest {
-
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final FlowEngine flow = mock(FlowEngine.class);
   private final CaseDoor door = mock(CaseDoor.class);
@@ -89,31 +76,12 @@ class CommandServiceTest {
 
   @Test
   void refusesTheMasterVerbItsHumanKeepsInMine(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    CommandService guarded =
-        new CommandService(
-            flow,
-            new CaseDoor(
-                new SessionCases(paths),
-                new MasterCases(paths),
-                state,
-                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> new Arbiter.Profile(MasterMode.ACT, Set.of("done")),
-                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(new JsonMapper(), paths))),
-                    state,
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn())))));
+    CaseDoorFixture fixture =
+        new CaseDoorFixture(
+            root, Clock.systemUTC(), new Arbiter.Profile(MasterMode.ACT, Set.of("done")));
+    fixture.state.putTask(
+        "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+    CommandService guarded = new CommandService(flow, fixture.door);
 
     assertThatThrownBy(
             () ->
@@ -125,11 +93,11 @@ class CommandServiceTest {
 
   @Test
   void refusesRecordsAndStopsMasterPressNoMasterCaseAllows(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+    CaseDoorFixture fixture =
+        new CaseDoorFixture(
+            root,
+            Clock.fixed(Instant.ofEpochMilli(1000), ZoneOffset.UTC),
+            Arbiter.Profile.OFF);
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(
         root.resolve("roles/master/cases.md"),
@@ -141,29 +109,8 @@ class CommandServiceTest {
         by: master
         Green and approved, the Master deploys it.
         """);
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
-    CommandService guarded =
-        new CommandService(
-            flow,
-            new CaseDoor(
-                new SessionCases(paths),
-                new MasterCases(paths),
-                state,
-                new MissLog(
-                    new JsonMapper(),
-                    paths,
-                    Clock.fixed(Instant.ofEpochMilli(1000), ZoneOffset.UTC)),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(new JsonMapper(), paths))),
-                    state,
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn())))));
+    fixture.state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
+    CommandService guarded = new CommandService(flow, fixture.door);
 
     OriginContext.as(ActionOrigin.MASTER, () -> guarded.execute("ABC-1", TaskAction.DEPLOY));
 
@@ -172,7 +119,7 @@ class CommandServiceTest {
         .isEqualTo(
             "{\"at\":1000,\"task\":\"ABC-1\",\"step\":\"deploy\",\"status\":\"REVIEWED\",\"by\""
                 + ":\"master\"}\n");
-    assertThat(state.task("ABC-1").orElseThrow().stop())
+    assertThat(fixture.state.task("ABC-1").orElseThrow().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
         .containsExactly(TaskStop.Trigger.MISS, "no master case allows deploy at REVIEWED");
   }

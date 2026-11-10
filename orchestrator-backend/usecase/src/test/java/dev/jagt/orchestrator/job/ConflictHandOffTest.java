@@ -10,44 +10,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.MasterCases;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.config.SessionCases;
-import dev.jagt.orchestrator.flow.Arbiter;
-import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.CaseDoor;
-import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.MissLog;
-import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.StepRelay;
-import dev.jagt.orchestrator.service.StopAnnouncements;
-import dev.jagt.orchestrator.service.StopLog;
-import dev.jagt.orchestrator.service.StopPolicy;
-import dev.jagt.orchestrator.service.TaskStops;
-import dev.jagt.orchestrator.service.TaskTurns;
-import dev.jagt.orchestrator.task.Conflict;
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class ConflictHandOffTest {
-
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final ConflictStall stall = mock(ConflictStall.class);
@@ -55,50 +25,12 @@ class ConflictHandOffTest {
 
   @Test
   void handsConflictToTheSessionAsWorktreeOfItsOwn(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    state.putTask(
-        "ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
+    ConflictHandOffs handOffs =
+        new ConflictHandOffs(root, sessions, stall, finish).seeded(TaskStatus.DEPLOY_CONFLICT);
 
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            new CaseDoor(
-                new SessionCases(paths),
-                new MasterCases(paths),
-                state,
-                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(new JsonMapper(), paths))),
-                    state,
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-
-    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
-        .handle(
-            "ABC-42",
-            new DeployConflicts.WaitingConflict(
-                Path.of("/src/ABC-42-deploy"),
-                false,
-                new Conflict.Progress(7, 0, "d"),
-                null,
-                false,
-                new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
+    handOffs.handOff.handle(
+        "ABC-42",
+        ConflictHandOffs.deployConflict(new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
 
     verify(sessions).admit("ABC-42", Path.of("/src/ABC-42-deploy"));
     verify(sessions).writeTaskContext(eq("ABC-42"), contains("/src/ABC-42-deploy"));
@@ -106,233 +38,52 @@ class ConflictHandOffTest {
 
   @Test
   void watchesTheConflictItJustHandedToTheSessionForProgress(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    state.putTask(
-        "ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
-
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            new CaseDoor(
-                new SessionCases(paths),
-                new MasterCases(paths),
-                state,
-                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(new JsonMapper(), paths))),
-                    state,
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-
+    ConflictHandOffs handOffs =
+        new ConflictHandOffs(root, sessions, stall, finish).seeded(TaskStatus.DEPLOY_CONFLICT);
     var conflict =
-        new DeployConflicts.WaitingConflict(
-            Path.of("/src/ABC-42-deploy"),
-            false,
-            new Conflict.Progress(7, 0, "d"),
-            null,
-            false,
-            new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0));
+        ConflictHandOffs.deployConflict(new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0));
 
-    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
-        .handle("ABC-42", conflict);
+    handOffs.handOff.handle("ABC-42", conflict);
 
     verify(stall).watch("ABC-42", conflict);
   }
 
   @Test
   void handsConflictOnlyOnce(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
+    ConflictHandOffs handOffs = new ConflictHandOffs(root, sessions, stall, finish);
     when(stall.handed("ABC-42")).thenReturn(true);
 
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            new CaseDoor(
-                new SessionCases(paths),
-                new MasterCases(paths),
-                state,
-                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(new JsonMapper(), paths))),
-                    state,
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-
-    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
-        .handle(
-            "ABC-42",
-            new DeployConflicts.WaitingConflict(
-                Path.of("/src/ABC-42-deploy"),
-                false,
-                new Conflict.Progress(7, 0, "d"),
-                null,
-                false,
-                Standing.ABSENT));
+    handOffs.handOff.handle("ABC-42", ConflictHandOffs.deployConflict(Standing.ABSENT));
 
     verify(sessions, never()).writeTaskContext(eq("ABC-42"), anyString());
   }
 
   @Test
   void watchesHandedConflictForProgress(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    DeployConflicts.WaitingConflict conflict =
-        new DeployConflicts.WaitingConflict(
-            Path.of("/src/ABC-42-deploy"),
-            false,
-            new Conflict.Progress(7, 0, "d"),
-            null,
-            false,
-            Standing.ABSENT);
+    ConflictHandOffs handOffs = new ConflictHandOffs(root, sessions, stall, finish);
+    var conflict = ConflictHandOffs.deployConflict(Standing.ABSENT);
     when(stall.handed("ABC-42")).thenReturn(true);
 
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            new CaseDoor(
-                new SessionCases(paths),
-                new MasterCases(paths),
-                state,
-                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(new JsonMapper(), paths))),
-                    state,
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-
-    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
-        .handle("ABC-42", conflict);
+    handOffs.handOff.handle("ABC-42", conflict);
 
     verify(stall).watch("ABC-42", conflict);
   }
 
   @Test
   void finishesNothingWhilePathsRemainUnstaged(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
+    ConflictHandOffs handOffs = new ConflictHandOffs(root, sessions, stall, finish);
     when(stall.handed("ABC-42")).thenReturn(true);
 
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            new CaseDoor(
-                new SessionCases(paths),
-                new MasterCases(paths),
-                state,
-                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(new JsonMapper(), paths))),
-                    state,
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-
-    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
-        .handle(
-            "ABC-42",
-            new DeployConflicts.WaitingConflict(
-                Path.of("/src/ABC-42-deploy"),
-                false,
-                new Conflict.Progress(7, 0, "d"),
-                null,
-                false,
-                Standing.ABSENT));
+    handOffs.handOff.handle("ABC-42", ConflictHandOffs.deployConflict(Standing.ABSENT));
 
     verifyNoInteractions(finish);
   }
 
   @Test
   void finishesTheDeployOnceTheResolutionIsStagedInFull(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            new CaseDoor(
-                new SessionCases(paths),
-                new MasterCases(paths),
-                state,
-                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(new JsonMapper(), paths))),
-                    state,
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+    ConflictHandOffs handOffs = new ConflictHandOffs(root, sessions, stall, finish);
 
-    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
-        .handle(
-            "ABC-42",
-            new DeployConflicts.WaitingConflict(
-                Path.of("/src/ABC-42-deploy"),
-                true,
-                new Conflict.Progress(0, 7, "d"),
-                null,
-                false,
-                Standing.ABSENT));
+    handOffs.handOff.handle("ABC-42", ConflictHandOffs.stagedInFull());
 
     verify(finish).press("ABC-42", Path.of("/src/ABC-42-deploy"));
   }
@@ -340,50 +91,10 @@ class ConflictHandOffTest {
   @Test
   void handsDeployWhosePipelineWentRedAsFixOfTheMergeResultInItsWorktree(@TempDir Path root)
       throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    state.putTask(
-        "ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
+    ConflictHandOffs handOffs =
+        new ConflictHandOffs(root, sessions, stall, finish).seeded(TaskStatus.DEPLOY_CONFLICT);
 
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            new CaseDoor(
-                new SessionCases(paths),
-                new MasterCases(paths),
-                state,
-                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(new JsonMapper(), paths))),
-                    state,
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-
-    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
-        .handle(
-            "ABC-42",
-            new DeployConflicts.WaitingConflict(
-                Path.of("/src/ABC-42-deploy"),
-                false,
-                new Conflict.Progress(0, 0, "d"),
-                "red pipeline on the deploy commit: proj 01234567 https://git.example.invalid/p/7",
-                false,
-                new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
+    handOffs.handOff.handle("ABC-42", ConflictHandOffs.redPipeline());
 
     verify(sessions).admit("ABC-42", Path.of("/src/ABC-42-deploy"));
     verify(sessions)
@@ -397,50 +108,10 @@ class ConflictHandOffTest {
   @Test
   void handsRevertConflictToTheSessionAsTheRevertWorktreeToResolve(@TempDir Path root)
       throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    state.putTask(
-        "ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
+    ConflictHandOffs handOffs =
+        new ConflictHandOffs(root, sessions, stall, finish).seeded(TaskStatus.DEPLOY_CONFLICT);
 
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            new CaseDoor(
-                new SessionCases(paths),
-                new MasterCases(paths),
-                state,
-                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(new JsonMapper(), paths))),
-                    state,
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-
-    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
-        .handle(
-            "ABC-42",
-            new DeployConflicts.WaitingConflict(
-                Path.of("/src/ABC-42-revert"),
-                false,
-                new Conflict.Progress(2, 0, "r"),
-                null,
-                true,
-                new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
+    handOffs.handOff.handle("ABC-42", ConflictHandOffs.revertConflict());
 
     verify(sessions).admit("ABC-42", Path.of("/src/ABC-42-revert"));
     verify(sessions).writeTaskContext(eq("ABC-42"), contains("ABC-42 did not revert"));
@@ -449,51 +120,12 @@ class ConflictHandOffTest {
   @Test
   void handsNothingAndStopsNothingWhenTheConflictEndedSinceItWasRead(@TempDir Path root)
       throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    state.putTask("ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOYED).build());
+    ConflictHandOffs handOffs =
+        new ConflictHandOffs(root, sessions, stall, finish).seeded(TaskStatus.DEPLOYED);
 
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            new CaseDoor(
-                new SessionCases(paths),
-                new MasterCases(paths),
-                state,
-                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(new JsonMapper(), paths))),
-                    state,
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+    handOffs.handOff.handle("ABC-42", ConflictHandOffs.redPipeline());
 
-    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
-        .handle(
-            "ABC-42",
-            new DeployConflicts.WaitingConflict(
-                Path.of("/src/ABC-42-deploy"),
-                false,
-                new Conflict.Progress(0, 0, "d"),
-                "red pipeline on the deploy commit: proj 01234567 https://git.example.invalid/p/7",
-                false,
-                new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0)));
-
-    assertThat(state.task("ABC-42").orElseThrow().stop()).isNull();
+    assertThat(handOffs.state.task("ABC-42").orElseThrow().stop()).isNull();
     verify(sessions, never()).writeTaskContext(eq("ABC-42"), anyString());
   }
 }
