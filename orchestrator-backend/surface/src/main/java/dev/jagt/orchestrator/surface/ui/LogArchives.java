@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -39,8 +38,8 @@ final class LogArchives {
     return sibling.getFileName().toString().matches(Pattern.quote(name + ".") + STAMP_SHAPE);
   }
 
-  static void prune(Path directory, String name) throws IOException {
-    Instant cutoff = Instant.now(Clock.system(ZoneOffset.UTC)).minus(MAX_AGE);
+  static void prune(Path directory, String name, Instant now) throws IOException {
+    Instant cutoff = now.minus(MAX_AGE);
     List<Path> oldestFirst;
     try (Stream<Path> siblings = Files.list(directory)) {
       oldestFirst =

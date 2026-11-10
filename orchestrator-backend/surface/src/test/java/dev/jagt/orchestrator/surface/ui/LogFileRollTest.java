@@ -10,8 +10,9 @@ import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.time.Duration;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -44,7 +45,7 @@ class LogFileRollTest {
       freePort = probe.getLocalPort();
     }
 
-    new LogFileRoll()
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
         .apply(
             new MockEnvironment()
                 .withProperty("logging.file.name", log.toString())
@@ -64,7 +65,7 @@ class LogFileRollTest {
     Files.writeString(previous, "the day before");
     Files.setLastModifiedTime(previous, FileTime.from(Instant.parse("2100-03-04T05:06:07Z")));
 
-    LogFileRoll.start(log);
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).start(log);
 
     assertThat(root.resolve("jagt.log.2100-03-04-050607")).content().isEqualTo("the day before");
     assertThat(previous).content().contains("yesterday");
@@ -77,12 +78,12 @@ class LogFileRollTest {
     Files.writeString(log, "yesterday\n");
     Path old = root.resolve("jagt.log.2026-01-01-000000");
     Files.writeString(old, "stale");
-    Files.setLastModifiedTime(old, FileTime.from(Instant.now().minus(Duration.ofDays(15))));
+    Files.setLastModifiedTime(old, FileTime.from(Instant.parse("2026-10-26T12:00:00Z")));
     Path recent = root.resolve("jagt.log.2026-01-02-000000");
     Files.writeString(recent, "fresh");
-    Files.setLastModifiedTime(recent, FileTime.from(Instant.now().minus(Duration.ofDays(13))));
+    Files.setLastModifiedTime(recent, FileTime.from(Instant.parse("2026-10-28T12:00:00Z")));
 
-    LogFileRoll.start(log);
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).start(log);
 
     assertThat(old).doesNotExist();
     assertThat(recent).exists();
@@ -94,13 +95,13 @@ class LogFileRollTest {
     Path log = root.resolve("jagt.log");
     Files.writeString(log, "yesterday\n");
     Path oldest =
-        sparseArchive(root.resolve("jagt.log.2026-01-01-000000"), 100, Duration.ofDays(3));
+        sparseArchive(root.resolve("jagt.log.2026-01-01-000000"), 100, Instant.parse("2026-11-07T12:00:00Z"));
     Path middle =
-        sparseArchive(root.resolve("jagt.log.2026-01-02-000000"), 100, Duration.ofDays(2));
+        sparseArchive(root.resolve("jagt.log.2026-01-02-000000"), 100, Instant.parse("2026-11-08T12:00:00Z"));
     Path newest =
-        sparseArchive(root.resolve("jagt.log.2026-01-03-000000"), 100, Duration.ofDays(1));
+        sparseArchive(root.resolve("jagt.log.2026-01-03-000000"), 100, Instant.parse("2026-11-09T12:00:00Z"));
 
-    LogFileRoll.start(log);
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).start(log);
 
     assertThat(oldest).doesNotExist();
     assertThat(middle).exists();
@@ -111,20 +112,20 @@ class LogFileRollTest {
   void keepsArchivesTotallingExactlyTwoHundredMegabytes(@TempDir Path root) throws IOException {
     Path log = root.resolve("jagt.log");
     Files.writeString(log, "yesterday\n");
-    Path older = sparseArchive(root.resolve("jagt.log.2026-01-01-000000"), 100, Duration.ofDays(2));
-    Path newer = sparseArchive(root.resolve("jagt.log.2026-01-02-000000"), 100, Duration.ofDays(1));
+    Path older = sparseArchive(root.resolve("jagt.log.2026-01-01-000000"), 100, Instant.parse("2026-11-08T12:00:00Z"));
+    Path newer = sparseArchive(root.resolve("jagt.log.2026-01-02-000000"), 100, Instant.parse("2026-11-09T12:00:00Z"));
 
-    LogFileRoll.start(log);
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).start(log);
 
     assertThat(older).exists();
     assertThat(newer).exists();
   }
 
-  private static Path sparseArchive(Path file, int megabytes, Duration age) throws IOException {
+  private static Path sparseArchive(Path file, int megabytes, Instant modified) throws IOException {
     try (RandomAccessFile sparse = new RandomAccessFile(file.toFile(), "rw")) {
       sparse.setLength(megabytes * 1024L * 1024L);
     }
-    Files.setLastModifiedTime(file, FileTime.from(Instant.now().minus(age)));
+    Files.setLastModifiedTime(file, FileTime.from(modified));
     return file;
   }
 
@@ -140,7 +141,7 @@ class LogFileRollTest {
       freePort = probe.getLocalPort();
     }
 
-    new LogFileRoll()
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
         .apply(
             new MockEnvironment()
                 .withProperty("logging.file.name", folder.toString())
@@ -161,7 +162,7 @@ class LogFileRollTest {
       freePort = probe.getLocalPort();
     }
 
-    new LogFileRoll()
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
         .apply(
             new MockEnvironment()
                 .withProperty("logging.file.name", root.resolve("jagt.log").toString())
@@ -179,7 +180,7 @@ class LogFileRollTest {
     try (ServerSocket occupied = new ServerSocket()) {
       occupied.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
       boolean rolled =
-          new LogFileRoll()
+          new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
               .apply(
                   new MockEnvironment()
                       .withProperty("logging.file.name", log.toString())
@@ -197,7 +198,7 @@ class LogFileRollTest {
     Files.writeString(log, "yesterday\n");
 
     boolean rolled =
-        new LogFileRoll()
+        new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
             .apply(
                 new MockEnvironment()
                     .withProperty("logging.file.name", log.toString())
@@ -222,7 +223,7 @@ class LogFileRollTest {
     }
 
     boolean rolled =
-        new LogFileRoll()
+        new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
             .apply(
                 new MockEnvironment()
                     .withProperty("logging.file.name", stuck.toString())
@@ -234,12 +235,12 @@ class LogFileRollTest {
 
   @Test
   void rollsNothingWhenNoLogFileIsConfigured() {
-    assertThat(new LogFileRoll().apply(new MockEnvironment())).isFalse();
+    assertThat(new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).apply(new MockEnvironment())).isFalse();
   }
 
   @Test
   void runsAfterTheConfigFilesAreReadAndBeforeLoggingIsInitialised() {
-    assertThat(new LogFileRoll().getOrder())
+    assertThat(new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).getOrder())
         .isGreaterThan(new EnvironmentPostProcessorApplicationListener().getOrder())
         .isLessThan(new LoggingApplicationListener().getOrder());
   }

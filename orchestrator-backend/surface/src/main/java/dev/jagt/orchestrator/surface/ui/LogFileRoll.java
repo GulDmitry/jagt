@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Clock;
 import java.util.List;
 import java.util.stream.Stream;
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
@@ -19,6 +20,12 @@ import org.springframework.core.env.ConfigurableEnvironment;
  */
 public class LogFileRoll
     implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
+
+  private final Clock clock;
+
+  public LogFileRoll(Clock clock) {
+    this.clock = clock;
+  }
 
   @Override
   public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
@@ -45,7 +52,7 @@ public class LogFileRoll
   }
 
   /** Best-effort: a log that cannot be rolled is not a reason to refuse to start. */
-  static void start(Path logFile) {
+  void start(Path logFile) {
     Path absolute = logFile.toAbsolutePath().normalize();
     Path directory = absolute.getParent();
     Path fileName = absolute.getFileName();
@@ -74,7 +81,7 @@ public class LogFileRoll
           Files.deleteIfExists(stray);
         }
       }
-      LogArchives.prune(directory, name);
+      LogArchives.prune(directory, name, clock.instant());
     } catch (IOException | RuntimeException e) {
       Console.problem("Could not roll " + absolute + ": " + e.getMessage());
     }

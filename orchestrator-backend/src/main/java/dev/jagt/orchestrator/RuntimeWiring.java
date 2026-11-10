@@ -27,9 +27,13 @@ public class RuntimeWiring {
 
   private static final int NOTIFICATION_BACKLOG = 64;
 
+  public static Clock utcClock() {
+    return Clock.systemUTC();
+  }
+
   @Bean
   public Clock clock() {
-    return Clock.systemUTC();
+    return utcClock();
   }
 
   @Bean
