@@ -29,15 +29,18 @@ import org.slf4j.LoggerFactory;
 class AgentSessionControllerTest {
 
   private final UsageLimitWakes wakes = mock(UsageLimitWakes.class);
+  private final StateService state = mock(StateService.class);
+  private final SessionReports reports = mock(SessionReports.class);
+  private final TaskState task =
+      TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+  private final AgentSessionController controller =
+      new AgentSessionController(state, reports, wakes);
 
   @Test
   void recordsTheReportAgainstTheTaskRunningInThatWorktree() {
-    StateService state = mock(StateService.class);
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-    SessionReports reports = mock(SessionReports.class);
 
-    new AgentSessionController(state, reports, wakes)
+    controller
         .report(
             "idle",
             "/wt/ABC-1-proj",
@@ -55,15 +58,12 @@ class AgentSessionControllerTest {
 
   @Test
   void armsTheWakeForTurnFailureThatIsUsageLimit() {
-    StateService state = mock(StateService.class);
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-    SessionReports reports = mock(SessionReports.class);
     SessionReports.Report report =
         SessionReports.Report.defaults().withFailedOn("rate_limit").withTask(task);
     when(reports.turnFailed("ABC-1", report)).thenReturn(true);
 
-    new AgentSessionController(state, reports, wakes)
+    controller
         .turnFailure(
             "/wt/ABC-1-proj",
             new SessionHookReport(
@@ -78,12 +78,9 @@ class AgentSessionControllerTest {
 
   @Test
   void armsNoWakeForTurnFailureThatIsNotUsageLimit() {
-    StateService state = mock(StateService.class);
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-    SessionReports reports = mock(SessionReports.class);
 
-    new AgentSessionController(state, reports, wakes)
+    controller
         .turnFailure(
             "/wt/ABC-1-proj",
             new SessionHookReport(
@@ -98,36 +95,27 @@ class AgentSessionControllerTest {
 
   @Test
   void cancelsTheWakeWhenTheSessionReportsWorking() {
-    StateService state = mock(StateService.class);
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-    SessionReports reports = mock(SessionReports.class);
 
-    new AgentSessionController(state, reports, wakes).report("working", "/wt/ABC-1-proj", null);
+    controller.report("working", "/wt/ABC-1-proj", null);
 
     verify(wakes).cancel("ABC-1");
   }
 
   @Test
   void keepsTheWakeWhenTheSessionReportsIdle() {
-    StateService state = mock(StateService.class);
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-    SessionReports reports = mock(SessionReports.class);
 
-    new AgentSessionController(state, reports, wakes).report("idle", "/wt/ABC-1-proj", null);
+    controller.report("idle", "/wt/ABC-1-proj", null);
 
     verify(wakes, never()).cancel("ABC-1");
   }
 
   @Test
   void namesNoLogWhenThePayloadCarriedNone() {
-    StateService state = mock(StateService.class);
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-    SessionReports reports = mock(SessionReports.class);
 
-    new AgentSessionController(state, reports, wakes).report("working", "/wt/ABC-1-proj", null);
+    controller.report("working", "/wt/ABC-1-proj", null);
 
     verify(reports)
         .record(
@@ -141,18 +129,15 @@ class AgentSessionControllerTest {
     log.start();
     Logger controllerLog = (Logger) LoggerFactory.getLogger(AgentSessionController.class);
     controllerLog.addAppender(log);
-    StateService state = mock(StateService.class);
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-    SessionReports reports = mock(SessionReports.class);
 
-    new AgentSessionController(state, reports, wakes)
+    controller
         .report(
             "working",
             "/wt/ABC-1-proj",
             new SessionHookReport("/logs/session.jsonl", "compact", null));
     final int warnedForAbsolute = log.list.size();
-    new AgentSessionController(state, reports, wakes)
+    controller
         .report(
             "working",
             "/wt/ABC-1-proj",
@@ -173,10 +158,7 @@ class AgentSessionControllerTest {
 
   @Test
   void answersTheSessionWithWhateverTheReportProduced() {
-    StateService state = mock(StateService.class);
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-    SessionReports reports = mock(SessionReports.class);
     when(reports.record(
             "ABC-1",
             SessionProbe.State.WORKING,
@@ -184,7 +166,7 @@ class AgentSessionControllerTest {
         .thenReturn("re-read task_context.md");
 
     String answered =
-        new AgentSessionController(state, reports, wakes)
+        controller
             .report("working", "/wt/ABC-1-proj", new SessionHookReport(null, "compact", null));
 
     assertThat(answered).isEqualTo("re-read task_context.md");
@@ -192,12 +174,9 @@ class AgentSessionControllerTest {
 
   @Test
   void carriesWhatTheCliToldTheHumanSoOneEventCanMeanTwoDifferentWaits() {
-    StateService state = mock(StateService.class);
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-    SessionReports reports = mock(SessionReports.class);
 
-    new AgentSessionController(state, reports, wakes)
+    controller
         .report(
             "idle",
             "/wt/ABC-1-proj",
@@ -214,13 +193,10 @@ class AgentSessionControllerTest {
 
   @Test
   void handsThePermissionPromptsToolToTheReportAndAnswersNothing() {
-    StateService state = mock(StateService.class);
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-    SessionReports reports = mock(SessionReports.class);
 
     String answered =
-        new AgentSessionController(state, reports, wakes)
+        controller
             .permission(
                 "/wt/ABC-1-proj",
                 new SessionHookReport(
@@ -238,12 +214,9 @@ class AgentSessionControllerTest {
 
   @Test
   void tellsTheTurnEndWhetherRefusalAlreadySentItOn() {
-    StateService state = mock(StateService.class);
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-    SessionReports reports = mock(SessionReports.class);
 
-    new AgentSessionController(state, reports, wakes)
+    controller
         .turnEnd(
             "/wt/ABC-1-proj",
             new SessionHookReport(
@@ -258,15 +231,12 @@ class AgentSessionControllerTest {
 
   @Test
   void answersTheTurnEndWithTheVerdictOfTheReports() {
-    StateService state = mock(StateService.class);
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
-    SessionReports reports = mock(SessionReports.class);
     when(reports.turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false))
         .thenReturn("{\"decision\": \"block\"}");
 
     String answered =
-        new AgentSessionController(state, reports, wakes).turnEnd("/wt/ABC-1-proj", null);
+        controller.turnEnd("/wt/ABC-1-proj", null);
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
   }

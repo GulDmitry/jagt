@@ -97,8 +97,9 @@ class TurnEndsTest {
     assertThat(answered).isEmpty();
   }
 
-  @Test
-  void tellsTheHumanRoundHandedBackIsWithTheMaster() {
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void tellsTheHumanRoundHandedBackIsWithTheMasterWhetherOrNotTheTurnWasSentOn(boolean sentOn) {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -113,28 +114,7 @@ class TurnEndsTest {
             .build();
 
     String answered =
-        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, false, false);
-
-    assertThat(answered).isEqualTo("{\"systemMessage\": \"with the Master\"}");
-  }
-
-  @Test
-  void tellsTheHumanRoundHandedBackIsWithTheMasterEvenWhenTheTurnWasAlreadySentOn() {
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(runtime.toldTheHuman("→ with the Master for review · its verdict arrives here"))
-        .thenReturn("{\"systemMessage\": \"with the Master\"}");
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .session(Session.defaults().withWorkStartedAt(2_000L).withReportedAt(3_000L))
-            .build();
-
-    String answered =
-        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, true, false);
+        new TurnEnds(runtime, config, notes, turnTree).answer("ABC-1", task, sentOn, false);
 
     assertThat(answered).isEqualTo("{\"systemMessage\": \"with the Master\"}");
   }

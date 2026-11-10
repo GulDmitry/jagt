@@ -45,6 +45,11 @@ class AgentToolGateControllerTest {
   private final Clock clock = Clock.fixed(Instant.ofEpochMilli(100_000), ZoneOffset.UTC);
   private final ConfigService configService = mock(ConfigService.class);
   private final ToolGateEnvelope envelope = mock(ToolGateEnvelope.class);
+  private final AgentToolGateController controller =
+      new AgentToolGateController(
+          stateService, clock, configService, envelope, new ToolGate(List.of()));
+  private final TaskState inProgress =
+      TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 
   @BeforeEach
   void theProjectSharesItsBranchesThroughOrigin() {
@@ -62,15 +67,10 @@ class AgentToolGateControllerTest {
   @Test
   void refusesPushToAnotherBranchInTheShapeTheModelReads() {
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
-        .thenReturn(
-            Optional.of(
-                Map.entry(
-                    "ABC-1",
-                    TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
+        .thenReturn(Optional.of(Map.entry("ABC-1", inProgress)));
 
     Map<String, Object> answered =
-        new AgentToolGateController(
-                stateService, clock, configService, envelope, new ToolGate(List.of()))
+        controller
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Bash", "git push origin dev", null),
@@ -91,8 +91,7 @@ class AgentToolGateControllerTest {
                         .lastActiveTimestamp(100_000)
                         .build())));
 
-    new AgentToolGateController(
-            stateService, clock, configService, envelope, new ToolGate(List.of()))
+    controller
         .gate(
             "/wt/ABC-1-proj",
             new ToolCall("Bash", "git push origin dev", null),
@@ -111,15 +110,10 @@ class AgentToolGateControllerTest {
   @Test
   void answersPushOfTheTasksOwnBranchWithNothing() {
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
-        .thenReturn(
-            Optional.of(
-                Map.entry(
-                    "ABC-1",
-                    TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
+        .thenReturn(Optional.of(Map.entry("ABC-1", inProgress)));
 
     var answered =
-        new AgentToolGateController(
-                stateService, clock, configService, envelope, new ToolGate(List.of()))
+        controller
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Bash", "git push origin ABC-1", null),
@@ -133,8 +127,7 @@ class AgentToolGateControllerTest {
     when(stateService.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
     var answered =
-        new AgentToolGateController(
-                stateService, clock, configService, envelope, new ToolGate(List.of()))
+        controller
             .gate(
                 "/elsewhere",
                 new ToolCall("Bash", "git push origin dev", null),
@@ -146,15 +139,10 @@ class AgentToolGateControllerTest {
   @Test
   void answersNothingForToolThatCannotPush() {
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
-        .thenReturn(
-            Optional.of(
-                Map.entry(
-                    "ABC-1",
-                    TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
+        .thenReturn(Optional.of(Map.entry("ABC-1", inProgress)));
 
     var answered =
-        new AgentToolGateController(
-                stateService, clock, configService, envelope, new ToolGate(List.of()))
+        controller
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Read", "git push origin dev", null),
@@ -166,8 +154,7 @@ class AgentToolGateControllerTest {
   @Test
   void answersCallWithNoPayloadWithNothing() {
     var answered =
-        new AgentToolGateController(
-                stateService, clock, configService, envelope, new ToolGate(List.of()))
+        controller
             .gate("/wt/ABC-1-proj", null, new MockHttpServletRequest());
 
     assertThat(answered.getBody()).isNull();
@@ -186,8 +173,7 @@ class AgentToolGateControllerTest {
                         .build())));
 
     var answered =
-        new AgentToolGateController(
-                stateService, clock, configService, envelope, new ToolGate(List.of()))
+        controller
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Write", null, "/wt/ABC-1-proj/src/Foo.java"),
@@ -217,15 +203,13 @@ class AgentToolGateControllerTest {
                         .build())));
 
     var plan =
-        new AgentToolGateController(
-                stateService, clock, configService, envelope, new ToolGate(List.of()))
+        controller
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall(tool, null, "/wt/ABC-1-proj/plan.md"),
                 new MockHttpServletRequest());
     var visual =
-        new AgentToolGateController(
-                stateService, clock, configService, envelope, new ToolGate(List.of()))
+        controller
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall(tool, null, "/wt/ABC-1-proj/task_visual.md"),
@@ -247,8 +231,7 @@ class AgentToolGateControllerTest {
                         .build())));
 
     var answered =
-        new AgentToolGateController(
-                stateService, clock, configService, envelope, new ToolGate(List.of()))
+        controller
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("NotebookEdit", null, "/wt/ABC-1-proj/analysis.ipynb"),
@@ -260,15 +243,10 @@ class AgentToolGateControllerTest {
   @Test
   void letsEveryWriteThroughOnceThePlanIsApproved() {
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
-        .thenReturn(
-            Optional.of(
-                Map.entry(
-                    "ABC-1",
-                    TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
+        .thenReturn(Optional.of(Map.entry("ABC-1", inProgress)));
 
     var answered =
-        new AgentToolGateController(
-                stateService, clock, configService, envelope, new ToolGate(List.of()))
+        controller
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Edit", null, "/wt/ABC-1-proj/src/Foo.java"),
@@ -282,8 +260,7 @@ class AgentToolGateControllerTest {
     when(stateService.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
     var answered =
-        new AgentToolGateController(
-                stateService, clock, configService, envelope, new ToolGate(List.of()))
+        controller
             .gate(
                 "/elsewhere",
                 new ToolCall("Write", null, "/elsewhere/Foo.java"),
@@ -301,8 +278,7 @@ class AgentToolGateControllerTest {
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
         .thenReturn(Optional.of(Map.entry("ABC-1", held)));
 
-    new AgentToolGateController(
-            stateService, clock, configService, envelope, new ToolGate(List.of()))
+    controller
         .gate(
             "/wt/ABC-1-proj",
             new ToolCall("Read", null, "/wt/ABC-1-proj/a.txt"),
@@ -324,8 +300,7 @@ class AgentToolGateControllerTest {
                         .lastActiveTimestamp(95_000)
                         .build())));
 
-    new AgentToolGateController(
-            stateService, clock, configService, envelope, new ToolGate(List.of()))
+    controller
         .gate(
             "/wt/ABC-1-proj",
             new ToolCall("Read", null, "/wt/ABC-1-proj/a.txt"),
@@ -337,23 +312,12 @@ class AgentToolGateControllerTest {
   @Test
   void namesTheProjectsOwnRemoteInTheHintOfRefusedPush() {
     when(configService.project("proj"))
-        .thenReturn(
-            new ProjectConfig(
-                new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
-                new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
-                new ProjectConfig.CodeHost(
-                    null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                new ProjectConfig.Verify(List.of(), null)));
+        .thenReturn(ProjectFixtures.sharingBranchesThrough("upstream/main", "dev", "upstream"));
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
-        .thenReturn(
-            Optional.of(
-                Map.entry(
-                    "ABC-1",
-                    TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
+        .thenReturn(Optional.of(Map.entry("ABC-1", inProgress)));
 
     Map<String, Object> answered =
-        new AgentToolGateController(
-                stateService, clock, configService, envelope, new ToolGate(List.of()))
+        controller
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Bash", "git push --no-verify upstream ABC-1", null),
@@ -368,15 +332,10 @@ class AgentToolGateControllerTest {
     when(configService.project("proj"))
         .thenThrow(new IllegalArgumentException("Unknown project 'proj'"));
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
-        .thenReturn(
-            Optional.of(
-                Map.entry(
-                    "ABC-1",
-                    TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
+        .thenReturn(Optional.of(Map.entry("ABC-1", inProgress)));
 
     Map<String, Object> answered =
-        new AgentToolGateController(
-                stateService, clock, configService, envelope, new ToolGate(List.of()))
+        controller
             .gate(
                 "/wt/ABC-1-proj",
                 new ToolCall("Bash", "git push --no-verify origin ABC-1", null),

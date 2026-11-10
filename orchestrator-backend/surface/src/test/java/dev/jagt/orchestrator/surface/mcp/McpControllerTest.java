@@ -14,14 +14,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.StateService;
 import java.nio.file.Path;
-import java.time.Clock;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -39,11 +36,7 @@ class McpControllerTest {
   @Test
   void refusesCallFormCouldSendWithoutPreflight() throws Exception {
     McpProtocolService protocol = mock(McpProtocolService.class);
-    MockMvc mvc =
-        MockMvcBuilders.standaloneSetup(
-                new McpController(
-                    protocol, mock(StateService.class), new JsonMapper(), mock(MasterToken.class)))
-            .build();
+    MockMvc mvc = McpMvc.over(protocol);
 
     mvc.perform(
             post("/mcp")
@@ -64,11 +57,7 @@ class McpControllerTest {
                 mapper.readTree(
                     "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32001,\"message\":\"Unknown"
                         + " caller\"}}")));
-    MockMvc mvc =
-        MockMvcBuilders.standaloneSetup(
-                new McpController(
-                    protocol, mock(StateService.class), mapper, mock(MasterToken.class)))
-            .build();
+    MockMvc mvc = McpMvc.over(protocol, mapper);
 
     mvc.perform(
             post("/mcp")
@@ -80,20 +69,9 @@ class McpControllerTest {
   @Test
   void refusesWrongMasterTokenUnauthorized(@TempDir Path root) throws Exception {
     JsonMapper mapper = new JsonMapper();
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+    OrchestratorPaths paths = McpMvc.pathsIn(root);
     StateService state = new StateService(mapper, paths, reducer, event -> {});
-    MockMvc mvc =
-        MockMvcBuilders.standaloneSetup(
-                new McpController(
-                    new McpProtocolService(mapper, state, Clock.systemUTC(), List.of()),
-                    state,
-                    mapper,
-                    new MasterToken(paths)))
-            .build();
+    MockMvc mvc = McpMvc.overRealProtocol(mapper, paths, state);
 
     mvc.perform(
             post("/mcp")
@@ -106,20 +84,9 @@ class McpControllerTest {
   @Test
   void refusesCallPresentingNoTokenUnauthorized(@TempDir Path root) throws Exception {
     JsonMapper mapper = new JsonMapper();
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+    OrchestratorPaths paths = McpMvc.pathsIn(root);
     StateService state = new StateService(mapper, paths, reducer, event -> {});
-    MockMvc mvc =
-        MockMvcBuilders.standaloneSetup(
-                new McpController(
-                    new McpProtocolService(mapper, state, Clock.systemUTC(), List.of()),
-                    state,
-                    mapper,
-                    new MasterToken(paths)))
-            .build();
+    MockMvc mvc = McpMvc.overRealProtocol(mapper, paths, state);
 
     mvc.perform(
             post("/mcp")
@@ -132,11 +99,7 @@ class McpControllerTest {
   void answersNotificationWithNoContent() throws Exception {
     McpProtocolService protocol = mock(McpProtocolService.class);
     when(protocol.handle(any(), any(), anyBoolean())).thenReturn(Optional.empty());
-    MockMvc mvc =
-        MockMvcBuilders.standaloneSetup(
-                new McpController(
-                    protocol, mock(StateService.class), new JsonMapper(), mock(MasterToken.class)))
-            .build();
+    MockMvc mvc = McpMvc.over(protocol);
 
     mvc.perform(
             post("/mcp")
@@ -148,20 +111,9 @@ class McpControllerTest {
   @Test
   void answersMalformedJsonWithParseErrorNotServerError(@TempDir Path root) throws Exception {
     JsonMapper mapper = new JsonMapper();
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+    OrchestratorPaths paths = McpMvc.pathsIn(root);
     StateService state = new StateService(mapper, paths, reducer, event -> {});
-    MockMvc mvc =
-        MockMvcBuilders.standaloneSetup(
-                new McpController(
-                    new McpProtocolService(mapper, state, Clock.systemUTC(), List.of()),
-                    state,
-                    mapper,
-                    new MasterToken(paths)))
-            .build();
+    MockMvc mvc = McpMvc.overRealProtocol(mapper, paths, state);
 
     mvc.perform(post("/mcp").contentType(MediaType.APPLICATION_JSON).content("{\"jsonrpc\":"))
         .andExpect(status().isOk())
