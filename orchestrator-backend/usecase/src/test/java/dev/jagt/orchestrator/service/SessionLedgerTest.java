@@ -9,7 +9,10 @@ import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.SessionSign;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -25,6 +28,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class SessionLedgerTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private final Notifications notifications = mock(Notifications.class);
 
   @Test
@@ -35,7 +41,8 @@ class SessionLedgerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     Clock clock = Clock.fixed(Instant.ofEpochMilli(7_000), ZoneOffset.UTC);
 
@@ -53,7 +60,8 @@ class SessionLedgerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
 
     new SessionLedger(state, notifications, Clock.systemUTC())
@@ -70,7 +78,8 @@ class SessionLedgerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
 
     new SessionLedger(state, notifications, Clock.systemUTC())
@@ -90,7 +99,8 @@ class SessionLedgerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     SessionLedger ledger = new SessionLedger(state, notifications, Clock.systemUTC());
     SessionSign.Asked ask =
@@ -111,7 +121,8 @@ class SessionLedgerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)

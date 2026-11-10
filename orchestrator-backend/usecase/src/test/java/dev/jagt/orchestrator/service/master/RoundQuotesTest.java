@@ -8,7 +8,10 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.MasterPhase;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.StateService;
@@ -24,6 +27,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class RoundQuotesTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private final RoundFacts facts = mock(RoundFacts.class);
   private final MasterReview reviews = new MasterReview(mock(StateService.class));
   private final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
@@ -36,7 +42,8 @@ class RoundQuotesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -75,7 +82,8 @@ class RoundQuotesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -113,7 +121,8 @@ class RoundQuotesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -160,7 +169,8 @@ class RoundQuotesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -198,7 +208,8 @@ class RoundQuotesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -235,7 +246,8 @@ class RoundQuotesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -277,7 +289,8 @@ class RoundQuotesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -319,7 +332,8 @@ class RoundQuotesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -362,7 +376,8 @@ class RoundQuotesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -405,7 +420,8 @@ class RoundQuotesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -461,7 +477,8 @@ class RoundQuotesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =

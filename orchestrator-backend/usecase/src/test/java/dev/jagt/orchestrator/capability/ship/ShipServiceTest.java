@@ -17,9 +17,12 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -52,6 +55,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class ShipServiceTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @TempDir Path root;
   private StateService stateService;
   private final ConfigService configService = mock(ConfigService.class);
@@ -66,7 +72,7 @@ class ShipServiceTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    stateService = new StateService(new JsonMapper(), paths);
+    stateService = new StateService(new JsonMapper(), paths, reducer);
     door =
         new CaseDoor(
             new SessionCases(paths),

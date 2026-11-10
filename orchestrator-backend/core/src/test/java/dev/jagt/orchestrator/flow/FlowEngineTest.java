@@ -11,14 +11,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.AgentPresence;
-import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.UnaryOperator;
+import java.util.function.BiFunction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -26,7 +25,10 @@ import org.mockito.ArgumentCaptor;
 
 class FlowEngineTest {
 
-  private final TaskStore stateService = mock(TaskStore.class);
+  private final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
+  private final ReducingStore stateService = mock(ReducingStore.class);
   private final AgentPresence sessions = mock(AgentPresence.class);
 
   private record FixedCapability(TaskAction action, Outcome outcome) implements TaskCapability {
@@ -188,16 +190,16 @@ class FlowEngineTest {
             sessions,
             Clock.systemUTC(),
             ignored -> false);
-    ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
     String said = engine.run("ABC-1", TaskAction.SHIP);
 
     assertThat(said).isEqualTo("ship ABC-1: request opened");
-    verify(stateService).updateTask(eq("ABC-1"), write.capture());
+    verify(stateService).reduce(eq("ABC-1"), write.capture());
     assertThat(
             write
                 .getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build())
+                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build())
                 .status())
         .isEqualTo(TaskStatus.CI_POLLING);
   }
@@ -218,7 +220,7 @@ class FlowEngineTest {
             ignored -> false);
 
     assertThat(engine.run("ABC-1", TaskAction.FOCUS)).isEqualTo("focused ABC-1");
-    verify(stateService, never()).updateTask(any(), any());
+    verify(stateService, never()).reduce(any(), any());
   }
 
   @Test
@@ -246,17 +248,17 @@ class FlowEngineTest {
             sessions,
             Clock.systemUTC(),
             ignored -> false);
-    ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.REVERT))
         .isInstanceOf(IllegalStateException.class)
         .hasMessage("reverted widget-api, storefront still live")
         .hasCause(cause);
-    verify(stateService).updateTask(eq("ABC-1"), write.capture());
+    verify(stateService).reduce(eq("ABC-1"), write.capture());
     assertThat(
             write
                 .getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build())
+                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build())
                 .status())
         .isEqualTo(TaskStatus.DEPLOYED);
   }
@@ -285,16 +287,16 @@ class FlowEngineTest {
             sessions,
             Clock.systemUTC(),
             ignored -> false);
-    ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
     String said = engine.run("ABC-1", TaskAction.REVERT);
 
     assertThat(said).isEqualTo("reverted ABC-1");
-    verify(stateService).updateTask(eq("ABC-1"), write.capture());
+    verify(stateService).reduce(eq("ABC-1"), write.capture());
     assertThat(
             write
                 .getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.APPROVED).build())
+                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.APPROVED).build())
                 .status())
         .isEqualTo(TaskStatus.REVERTED);
   }
@@ -320,16 +322,16 @@ class FlowEngineTest {
             sessions,
             Clock.systemUTC(),
             ignored -> false);
-    ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
     String said = engine.run("ABC-1", TaskAction.SWEEP);
 
     assertThat(said).isEqualTo("ABC-1: pipeline still running");
-    verify(stateService).updateTask(eq("ABC-1"), write.capture());
+    verify(stateService).reduce(eq("ABC-1"), write.capture());
     assertThat(
             write
                 .getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
                 .status())
         .isEqualTo(TaskStatus.CI_POLLING);
   }
@@ -390,14 +392,14 @@ class FlowEngineTest {
             sessions,
             Clock.systemUTC(),
             ignored -> false);
-    ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
 
     engine.run("ABC-1", TaskAction.SHIP);
 
-    verify(stateService).updateTask(eq("ABC-1"), write.capture());
+    verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState before =
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).message("keep me").build();
-    assertThat(write.getValue().apply(before).message()).isEqualTo("keep me");
+    assertThat(write.getValue().apply(reducer, before).message()).isEqualTo("keep me");
   }
 
   @Test
@@ -475,16 +477,16 @@ class FlowEngineTest {
             sessions,
             Clock.systemUTC(),
             ignored -> false);
-    ArgumentCaptor<UnaryOperator<TaskState>> writes = ArgumentCaptor.captor();
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> writes = ArgumentCaptor.captor();
 
     String said = engine.run("ABC-1", TaskAction.ADD_REPO, "beta");
 
     assertThat(said).isEqualTo("added beta");
-    verify(stateService).updateTask(eq("ABC-1"), writes.capture());
+    verify(stateService).reduce(eq("ABC-1"), writes.capture());
     assertThat(
             writes
                 .getValue()
-                .apply(TaskState.builder("alpha", "/wt", TaskStatus.REVIEW_PENDING).build())
+                .apply(reducer, TaskState.builder("alpha", "/wt", TaskStatus.REVIEW_PENDING).build())
                 .status())
         .isEqualTo(TaskStatus.IN_PROGRESS);
   }
@@ -513,7 +515,7 @@ class FlowEngineTest {
         .asInstanceOf(type(Refusal.class))
         .satisfies(
             refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE));
-    verify(stateService, never()).updateTask(any(), any());
+    verify(stateService, never()).reduce(any(), any());
   }
 
   @Test
@@ -536,7 +538,7 @@ class FlowEngineTest {
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.ADD_REPO, "gamma"))
         .asInstanceOf(type(Refusal.class))
         .satisfies(refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE));
-    verify(stateService, never()).updateTask(any(), any());
+    verify(stateService, never()).reduce(any(), any());
   }
 
   @Test
@@ -557,6 +559,6 @@ class FlowEngineTest {
     assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.FOCUS, "beta"))
         .asInstanceOf(type(Refusal.class))
         .satisfies(refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE));
-    verify(stateService, never()).updateTask(any(), any());
+    verify(stateService, never()).reduce(any(), any());
   }
 }

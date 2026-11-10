@@ -324,10 +324,10 @@ public class NewTaskWorktrees {
     try {
       worktreeSetup.attach(request, added, Stream.concat(held.stream(), Stream.of(added)).toList());
       GitTrust addedTrust = trust(List.of(added));
-      stateService.updateTask(
+      stateService.reduce(
           taskId,
-          registered ->
-              trusted(TaskReducer.repoAttached(registered, added.registered()), addedTrust));
+          (reducer, registered) ->
+              trusted(reducer, reducer.repoAttached(registered, added.registered()), addedTrust));
     } catch (RuntimeException e) {
       // A worktree jagt did not cut holds work jagt never saw: it stays.
       if (standing.isEmpty()) {
@@ -342,8 +342,9 @@ public class NewTaskWorktrees {
    * A task trusted at its first check stays so; else the added repository joins what was trusted as
    * it stood.
    */
-  private static TaskState trusted(TaskState task, @Nullable GitTrust added) {
-    return added == null ? task : TaskReducer.gitRepoJoined(task, added);
+  private static TaskState trusted(
+      TaskReducer reducer, TaskState task, @Nullable GitTrust added) {
+    return added == null ? task : reducer.gitRepoJoined(task, added);
   }
 
   private List<NewRepo> held(TaskState task, ConfigService.ConfigFile config) {

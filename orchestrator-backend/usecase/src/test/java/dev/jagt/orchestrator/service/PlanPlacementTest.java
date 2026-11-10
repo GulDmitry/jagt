@@ -11,7 +11,10 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
@@ -32,6 +35,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class PlanPlacementTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @TempDir Path root;
 
   private final ConfigService config = mock(ConfigService.class);
@@ -48,7 +54,8 @@ class PlanPlacementTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     placement = new PlanPlacement(state, new TaskArtifacts(state), config, worktrees, retired);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
   }

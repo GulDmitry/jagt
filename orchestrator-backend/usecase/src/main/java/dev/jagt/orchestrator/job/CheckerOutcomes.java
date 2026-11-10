@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
@@ -92,8 +91,9 @@ public class CheckerOutcomes {
         stands(taskId, verdict.sha()) ? verdict.ending() : notStanding(taskId);
     switch (ending) {
       case PASSED ->
-          state.updateTask(
-              taskId, current -> TaskReducer.checkerPassed(current, role.id(), verdict.sha()));
+          state.reduce(
+              taskId,
+              (reducer, current) -> reducer.checkerPassed(current, role.id(), verdict.sha()));
       case NOT_MET -> notMet(taskId, task, verdict);
       case UNPROVABLE -> unprovable(taskId, verdict);
       case FAILED -> failed(taskId, verdict);
@@ -133,8 +133,9 @@ public class CheckerOutcomes {
     if (sent) {
       String digest =
           Objects.requireNonNull(Objects.requireNonNull(task.deployment()).askedDigest());
-      state.updateTask(
-          taskId, current -> TaskReducer.checkerRoundSent(current, role.id(), digest, facts));
+      state.reduce(
+          taskId,
+          (reducer, current) -> reducer.checkerRoundSent(current, role.id(), digest, facts));
     }
     log.atInfo()
         .setMessage("acceptance returns the round")

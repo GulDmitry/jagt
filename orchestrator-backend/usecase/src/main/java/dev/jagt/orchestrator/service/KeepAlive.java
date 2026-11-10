@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.SessionSign;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.TaskState;
 import java.util.Map;
 
@@ -15,8 +14,8 @@ public final class KeepAlive {
   public static void beat(
       StateService stateService, Map.Entry<String, TaskState> task, SessionSign sign, long now) {
     if (now - task.getValue().lastActiveTimestamp() > THROTTLE_MS) {
-      stateService.updateTask(
-          task.getKey(), held -> TaskReducer.signed(held.touched(now), sign, now));
+      stateService.reduce(
+          task.getKey(), (reducer, held) -> reducer.signed(held.touched(now), sign, now));
     }
   }
 }

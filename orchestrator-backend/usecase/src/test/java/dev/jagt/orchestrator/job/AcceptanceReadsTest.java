@@ -10,6 +10,9 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CheckerReader;
@@ -32,6 +35,9 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class AcceptanceReadsTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final CheckerReader.Run RUN =
       new CheckerReader.Run(
@@ -65,7 +71,8 @@ class AcceptanceReadsTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString())));
+                .withStateFile(root.resolve("state.json").toString())),
+                reducer);
   }
 
   @Test

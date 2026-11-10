@@ -9,6 +9,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.protocol.Reported;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -24,6 +27,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class LinkRefusalsTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private static Reported ship(String url) {
     return new Reported(
         TaskStatus.CI_POLLING, AgentReport.PLAIN, "shipped", url, Map.of(), false, null, Map.of());
@@ -36,7 +42,8 @@ class LinkRefusalsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)

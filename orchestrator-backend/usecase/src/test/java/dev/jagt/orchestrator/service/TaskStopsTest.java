@@ -11,9 +11,11 @@ import static org.mockito.Mockito.verify;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.ActionOrigin;
@@ -49,6 +51,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class TaskStopsTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private final Notifications notifications = mock(Notifications.class);
   private final Clock clock = Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC);
 
@@ -59,7 +64,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -99,7 +104,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -135,7 +140,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -172,7 +177,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -207,7 +212,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
     TaskStops stops =
         new TaskStops(
@@ -229,7 +234,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     state.putTask(
         "ABC-2",
@@ -257,7 +262,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -284,7 +289,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -315,7 +320,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -356,7 +361,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -397,7 +402,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -436,7 +441,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -470,7 +475,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -499,7 +504,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("cart").build());
     TaskStops stops =
@@ -527,7 +532,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -552,7 +557,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -588,7 +593,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -623,7 +628,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -660,7 +665,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -684,7 +689,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -713,7 +718,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -742,7 +747,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -782,7 +787,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -825,7 +830,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -854,7 +859,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -882,7 +887,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -911,7 +916,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -940,7 +945,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops =
         new TaskStops(
@@ -978,7 +983,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(
@@ -1003,7 +1008,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING).build());
     TaskStops stops =
         new TaskStops(
@@ -1026,7 +1031,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     TaskStop stop = new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds");
     state.putTask(
         "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).stop(stop).build());
@@ -1056,11 +1061,11 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     TaskStop stop = new TaskStop(TaskStop.Trigger.ROUNDS, 5, "verify sent 3 rounds");
     state.putTask(
         "ABC-42",
-        TaskReducer.masterLiftedStops(
+        reducer.masterLiftedStops(
             TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .stop(stop)
                 .build()
@@ -1090,7 +1095,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(
@@ -1113,7 +1118,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(
@@ -1136,7 +1141,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -1163,7 +1168,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -1191,7 +1196,7 @@ class TaskStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(

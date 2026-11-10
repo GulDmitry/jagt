@@ -19,6 +19,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 class DashboardLineTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @ParameterizedTest
   @CsvSource(
       nullValues = "SILENT",
@@ -111,16 +114,16 @@ class DashboardLineTest {
             .message("resolve conflict in /src/ABC-42-deploy")
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task, new DeployStep.Opened(List.of(Deployment.Target.of("p", "dev"))), 1_000);
     TaskState conflicted =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("p", Deployment.Cause.MERGE), 1_000);
     TaskState seen =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             conflicted, new DeployStep.Seen(new Conflict.Progress(7, 0, "d")), 1_000);
     TaskState stalled =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             seen,
             new DeployStep.Told(
                 "7 paths unmerged, 0 staged in "
@@ -144,27 +147,27 @@ class DashboardLineTest {
             .lastActiveTimestamp(1_000)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task,
             new DeployStep.Opened(
                 List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
             1_000);
     TaskState merged =
-        TaskReducer.deployStepped(
-            TaskReducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_000),
+        reducer.deployStepped(
+            reducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_000),
             new DeployStep.Merged("beta", "b1"),
             1_000);
     TaskState red =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             merged, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_000);
     TaskState seen =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             red, new DeployStep.Seen(new Conflict.Progress(7, 0, "d")), 1_000);
     TaskState stalled =
-        TaskReducer.deployStepped(seen, new DeployStep.Told("pipeline red"), 1_201_000);
+        reducer.deployStepped(seen, new DeployStep.Told("pipeline red"), 1_201_000);
     assertThat(DashboardLine.forTask(stalled, null).text()).contains("stopped moving");
 
-    TaskState left = TaskReducer.repoLeft(stalled, "beta");
+    TaskState left = reducer.repoLeft(stalled, "beta");
 
     assertThat(DashboardLine.forTask(left, null).text()).doesNotContain("stopped moving");
   }
@@ -335,16 +338,16 @@ class DashboardLineTest {
             .lastActiveTimestamp(1_000)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task, new DeployStep.Opened(List.of(Deployment.Target.of("p", "dev"))), 1_000);
     TaskState conflicted =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("p", Deployment.Cause.REVERT), 1_000);
     TaskState seen =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             conflicted, new DeployStep.Seen(new Conflict.Progress(7, 0, "d")), 1_000);
     TaskState stalled =
-        TaskReducer.deployStepped(seen, new DeployStep.Told("7 paths unmerged"), 1_201_000);
+        reducer.deployStepped(seen, new DeployStep.Told("7 paths unmerged"), 1_201_000);
 
     assertThat(DashboardLine.forTask(stalled, null).text())
         .isEqualTo("NEEDS YOU: the revert conflict stopped moving: 7 paths unmerged");

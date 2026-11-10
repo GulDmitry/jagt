@@ -12,7 +12,10 @@ import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -49,6 +52,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class AcceptanceRoundFlowTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private final AgentSessions sessions = mock(AgentSessions.class);
 
   @Test
@@ -65,7 +71,7 @@ class AcceptanceRoundFlowTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.copy(
         Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     TaskState task =
         TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED)
             .alias("a1")
@@ -153,7 +159,7 @@ class AcceptanceRoundFlowTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.copy(
         Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     TaskState task =
         TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED)
             .alias("a1")
@@ -234,7 +240,7 @@ class AcceptanceRoundFlowTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     TaskState task =
         TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED)
             .alias("a1")
@@ -278,7 +284,7 @@ class AcceptanceRoundFlowTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     TaskState task =
         TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED)
             .alias("a1")

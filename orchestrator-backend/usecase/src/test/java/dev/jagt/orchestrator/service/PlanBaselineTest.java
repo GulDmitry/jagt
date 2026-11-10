@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.LineChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -18,6 +21,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class PlanBaselineTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @TempDir Path root;
 
   private PlanBaseline baselineOver(Path worktree) {
@@ -26,7 +32,7 @@ class PlanBaselineTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("web", worktree.toString(), TaskStatus.PLAN_PENDING).build());
     return new PlanBaseline(

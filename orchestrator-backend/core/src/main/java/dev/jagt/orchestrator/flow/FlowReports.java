@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.Guard;
@@ -27,7 +26,7 @@ import org.jspecify.annotations.Nullable;
 @RequiredArgsConstructor
 public class FlowReports {
 
-  private final TaskStore tasks;
+  private final ReducingStore tasks;
   private final Clock clock;
 
   /** The status a report found the task in, and the one it left it in. */
@@ -83,9 +82,9 @@ public class FlowReports {
     // must not both pass on a status neither of them ends up leaving from.
     AtomicReference<Landed> landed = new AtomicReference<>();
     AtomicReference<String> refused = new AtomicReference<>();
-    tasks.updateTask(
+    tasks.reduce(
         taskId,
-        task -> {
+        (reducer, task) -> {
           if (!standing.test(task)) {
             return task;
           }
@@ -97,13 +96,13 @@ public class FlowReports {
           TaskMove.Reported move =
               new TaskMove.Reported(status, !means.asks() && verificationOwed.test(task));
           TaskState said =
-              TaskReducer.reduce(
-                  TaskReducer.said(task, means),
+              reducer.reduce(
+                  reducer.said(task, means),
                   move,
                   lineOf(task, means, message),
                   false,
                   clock.millis());
-          said = declined(said, means, status);
+          said = declined(reducer, said, means, status);
           landed.set(new Landed(task.status(), said.status()));
           return alsoRecord.apply(task.status(), said);
         });
@@ -126,11 +125,11 @@ public class FlowReports {
    */
   public boolean ask(String taskId, AgentReport kind, String message) {
     AtomicBoolean found = new AtomicBoolean();
-    tasks.updateTask(
+    tasks.reduce(
         taskId,
-        task -> {
+        (reducer, task) -> {
           found.set(true);
-          return TaskReducer.asked(task, kind, message, clock.millis());
+          return reducer.asked(task, kind, message, clock.millis());
         });
     return found.get();
   }
@@ -193,15 +192,15 @@ public class FlowReports {
    */
   public boolean undoClaim(String taskId, TaskState read, Turn claimed) {
     AtomicBoolean undone = new AtomicBoolean();
-    tasks.updateTask(
+    tasks.reduce(
         taskId,
-        task -> {
+        (reducer, task) -> {
           if (!task.turnOrNone().sameTurnAs(claimed)) {
             return task;
           }
           undone.set(true);
           long now = clock.millis();
-          return TaskReducer.turnClosed(task.restoredFrom(read, now), now);
+          return reducer.turnClosed(task.restoredFrom(read, now), now);
         });
     return undone.get();
   }
@@ -210,12 +209,13 @@ public class FlowReports {
     return Standing.of(task).equals(Standing.of(read));
   }
 
-  private TaskState declined(TaskState said, AgentReport means, TaskStatus status) {
+  private TaskState declined(
+      TaskReducer reducer, TaskState said, AgentReport means, TaskStatus status) {
     TaskState declined = said;
     for (Map.Entry<String, CheckerPhase> checker : Checkers.of(said).entrySet()) {
       if (checker.getValue() == CheckerPhase.ROUND_OPEN) {
         declined =
-            TaskReducer.checkerDeclined(declined, checker.getKey(), means, status, clock.millis());
+            reducer.checkerDeclined(declined, checker.getKey(), means, status, clock.millis());
       }
     }
     return declined;
@@ -238,15 +238,15 @@ public class FlowReports {
    */
   public Optional<Landed> read(String taskId, TaskStatus concluded, String message) {
     AtomicReference<Landed> landed = new AtomicReference<>();
-    tasks.updateTask(
+    tasks.reduce(
         taskId,
-        task -> {
+        (reducer, task) -> {
           TaskStatus now = FlowRules.readLands(task.status(), concluded);
           landed.set(new Landed(task.status(), now));
           if (now == task.status()) {
             return task;
           }
-          return TaskReducer.reduce(
+          return reducer.reduce(
               task,
               new TaskMove.Read(concluded),
               FlowRules.standsThroughRead(task.report()) ? task.message() : message,
@@ -266,9 +266,9 @@ public class FlowReports {
   public boolean readDeploy(String taskId, @Nullable String redProject, String message) {
     boolean redOnTheCode = redProject != null;
     AtomicBoolean written = new AtomicBoolean();
-    tasks.updateTask(
+    tasks.reduce(
         taskId,
-        task -> {
+        (reducer, task) -> {
           if (!FlowRules.checkedWhereItLanded(task.status())) {
             return task;
           }
@@ -278,7 +278,7 @@ public class FlowReports {
           }
           written.set(true);
           TaskState read =
-              TaskReducer.reduce(
+              reducer.reduce(
                   task,
                   new TaskMove.DeployRead(redOnTheCode),
                   message,
@@ -286,7 +286,7 @@ public class FlowReports {
                   clock.millis());
           return redProject == null
               ? read
-              : TaskReducer.deployStepped(
+              : reducer.deployStepped(
                   read,
                   new DeployStep.Conflicted(redProject, Deployment.Cause.RED_PIPELINE),
                   clock.millis());
@@ -300,15 +300,15 @@ public class FlowReports {
    * other task is left alone.
    */
   public void endRedConflict(String taskId, String message) {
-    tasks.updateTask(
+    tasks.reduce(
         taskId,
-        task -> {
+        (reducer, task) -> {
           if (!FlowRules.deployConflicted(task.status())
               || task.deployment() == null
               || !task.deployment().heldByRedPipeline()) {
             return task;
           }
-          return TaskReducer.reduce(
+          return reducer.reduce(
               task, new TaskMove.DeployRead(false), message, true, clock.millis());
         });
   }
@@ -318,8 +318,9 @@ public class FlowReports {
    * since is cleared.
    */
   public void deployBare(String taskId, List<String> bare) {
-    tasks.updateTask(
-        taskId, task -> TaskReducer.deployStepped(task, new DeployStep.Bare(bare), clock.millis()));
+    tasks.reduce(
+        taskId,
+        (reducer, task) -> reducer.deployStepped(task, new DeployStep.Bare(bare), clock.millis()));
   }
 
   /**
@@ -327,9 +328,10 @@ public class FlowReports {
    * the reads running, at most.
    */
   public int deployReadOn(String taskId, @Nullable String unread) {
-    tasks.updateTask(
+    tasks.reduce(
         taskId,
-        task -> TaskReducer.deployStepped(task, new DeployStep.ReadOn(unread), clock.millis()));
+        (reducer, task) ->
+            reducer.deployStepped(task, new DeployStep.ReadOn(unread), clock.millis()));
     return tasks
         .task(taskId)
         .map(TaskState::deployment)
@@ -347,15 +349,16 @@ public class FlowReports {
    * sends it again.
    */
   public void deployRetried(String taskId, String project, String tip) {
-    tasks.updateTask(
+    tasks.reduce(
         taskId,
-        task ->
-            TaskReducer.deployStepped(task, new DeployStep.Retried(project, tip), clock.millis()));
+        (reducer, task) ->
+            reducer.deployStepped(task, new DeployStep.Retried(project, tip), clock.millis()));
   }
 
   public void deployAsked(String taskId, String digest) {
-    tasks.updateTask(
+    tasks.reduce(
         taskId,
-        task -> TaskReducer.deployStepped(task, new DeployStep.Asked(digest), clock.millis()));
+        (reducer, task) ->
+            reducer.deployStepped(task, new DeployStep.Asked(digest), clock.millis()));
   }
 }

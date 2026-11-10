@@ -13,9 +13,12 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
@@ -39,6 +42,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class StopTriageJobTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private static final Arbiter.Profile ACT = new Arbiter.Profile(MasterMode.ACT, Set.of());
 
   private final ConfigService config = mock(ConfigService.class);
@@ -61,7 +67,7 @@ class StopTriageJobTest {
   }
 
   private StateService stateWith(OrchestratorPaths paths, TaskStop stop, Master master) {
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).stop(stop).master(master).build());

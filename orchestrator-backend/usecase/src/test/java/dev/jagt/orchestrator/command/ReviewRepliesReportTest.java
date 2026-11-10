@@ -6,6 +6,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ReviewDrafts;
 import dev.jagt.orchestrator.service.Rounds;
@@ -22,6 +25,9 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class ReviewRepliesReportTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ConfigService config = mock(ConfigService.class);
 
@@ -47,7 +53,8 @@ class ReviewRepliesReportTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -85,7 +92,8 @@ class ReviewRepliesReportTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -117,7 +125,8 @@ class ReviewRepliesReportTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -149,7 +158,8 @@ class ReviewRepliesReportTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -178,7 +188,8 @@ class ReviewRepliesReportTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -209,7 +220,8 @@ class ReviewRepliesReportTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("wt").toString(), TaskStatus.REVIEW_PENDING)
@@ -237,7 +249,8 @@ class ReviewRepliesReportTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
 
     String out =
         new ReviewRepliesReport(
@@ -261,7 +274,8 @@ class ReviewRepliesReportTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", drafting.toString(), TaskStatus.REVIEW_PENDING)
@@ -293,7 +307,8 @@ class ReviewRepliesReportTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("wt").toString(), TaskStatus.REVIEW_PENDING)
@@ -338,7 +353,8 @@ class ReviewRepliesReportTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", first.toString(), TaskStatus.REVIEW_PENDING)
@@ -375,7 +391,8 @@ class ReviewRepliesReportTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)

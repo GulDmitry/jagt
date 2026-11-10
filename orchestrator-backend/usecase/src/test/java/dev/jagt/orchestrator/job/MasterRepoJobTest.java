@@ -10,7 +10,10 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskTurns;
@@ -26,6 +29,9 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class MasterRepoJobTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final StateService state = mock(StateService.class);
   private final ConfigService config = mock(ConfigService.class);
@@ -126,7 +132,7 @@ class MasterRepoJobTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    new StateService(new JsonMapper(), paths)
+    new StateService(new JsonMapper(), paths, reducer)
         .putTask(
             "ABC-1",
             TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS)
@@ -139,9 +145,9 @@ class MasterRepoJobTest {
             ConfigService.ConfigFile.defaults()
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    StateService before = new StateService(new JsonMapper(), paths);
+    StateService before = new StateService(new JsonMapper(), paths, reducer);
     new MasterRepoJob(before, config, press, new TaskTurns(before, Clock.systemUTC())).run();
-    StateService restarted = new StateService(new JsonMapper(), paths);
+    StateService restarted = new StateService(new JsonMapper(), paths, reducer);
 
     new MasterRepoJob(restarted, config, press, new TaskTurns(restarted, Clock.systemUTC())).run();
 
@@ -155,7 +161,7 @@ class MasterRepoJobTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService tasks = new StateService(new JsonMapper(), paths);
+    StateService tasks = new StateService(new JsonMapper(), paths, reducer);
     tasks.putTask(
         "ABC-1",
         TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS)

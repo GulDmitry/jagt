@@ -8,8 +8,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.ToolGateEnvelope;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.ToolGateEnvelope.Kind;
+import dev.jagt.orchestrator.port.ToolGateEnvelope;
 import dev.jagt.orchestrator.protocol.ToolCall;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -25,6 +28,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +38,9 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 class AgentToolGateControllerTest {
+
+  private final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final StateService stateService = mock(StateService.class);
   private final Clock clock = Clock.fixed(Instant.ofEpochMilli(100_000), ZoneOffset.UTC);
@@ -302,9 +309,9 @@ class AgentToolGateControllerTest {
             new ToolCall("Read", null, "/wt/ABC-1-proj/a.txt"),
             new MockHttpServletRequest());
 
-    ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
-    verify(stateService).updateTask(eq("ABC-1"), write.capture());
-    assertThat(write.getValue().apply(held).session().movedAt()).isEqualTo(100_000);
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
+    verify(stateService).reduce(eq("ABC-1"), write.capture());
+    assertThat(write.getValue().apply(reducer, held).session().movedAt()).isEqualTo(100_000);
   }
 
   @Test
@@ -325,7 +332,7 @@ class AgentToolGateControllerTest {
             new ToolCall("Read", null, "/wt/ABC-1-proj/a.txt"),
             new MockHttpServletRequest());
 
-    verify(stateService, never()).updateTask(any(), any());
+    verify(stateService, never()).reduce(any(), any());
   }
 
   @Test

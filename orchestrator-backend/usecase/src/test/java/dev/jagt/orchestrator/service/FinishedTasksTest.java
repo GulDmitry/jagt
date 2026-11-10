@@ -5,6 +5,9 @@ import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.TaskState;
@@ -20,6 +23,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class FinishedTasksTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @Test
   void keepsARetiredTaskAfterTheStateEntryIsGone(@TempDir Path root) {
     JsonMapper mapper = new JsonMapper();
@@ -28,7 +34,7 @@ class FinishedTasksTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(mapper, paths);
+    StateService state = new StateService(mapper, paths, reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").title("a thing").build());
@@ -56,7 +62,7 @@ class FinishedTasksTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(mapper, paths);
+    StateService state = new StateService(mapper, paths, reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
     FinishedTasks finished =
@@ -79,7 +85,7 @@ class FinishedTasksTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(mapper, paths);
+    StateService state = new StateService(mapper, paths, reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
     state.putTask(

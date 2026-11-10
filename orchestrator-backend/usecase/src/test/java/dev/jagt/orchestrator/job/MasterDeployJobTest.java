@@ -11,7 +11,10 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskTurns;
@@ -27,6 +30,9 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class MasterDeployJobTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final StateService state = mock(StateService.class);
   private final ConfigService config = mock(ConfigService.class);
@@ -106,17 +112,17 @@ class MasterDeployJobTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    new StateService(new JsonMapper(), paths)
+    new StateService(new JsonMapper(), paths, reducer)
         .putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build());
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    StateService before = new StateService(new JsonMapper(), paths);
+    StateService before = new StateService(new JsonMapper(), paths, reducer);
     new MasterDeployJob(config, press, new TaskTurns(before, Clock.systemUTC()))
         .runOn(before.tasks());
-    StateService restarted = new StateService(new JsonMapper(), paths);
+    StateService restarted = new StateService(new JsonMapper(), paths, reducer);
 
     new MasterDeployJob(config, press, new TaskTurns(restarted, Clock.systemUTC()))
         .runOn(restarted.tasks());

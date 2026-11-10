@@ -14,6 +14,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class TaskViewTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> watches() {
     return java.util.stream.Stream.of(
         org.junit.jupiter.params.provider.Arguments.of(AutoReviewWatch.watching(1L), Owner.CI),
@@ -148,7 +151,7 @@ class TaskViewTest {
   void asksYouToAnswerTheSessionWhenItsHookReportedABlockingPromptWhileItsReportIsPlain() {
     TaskState working = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
     TaskState asked =
-        TaskReducer.signed(
+        reducer.signed(
                 working,
                 new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK),
                 1_000)

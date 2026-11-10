@@ -11,6 +11,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
@@ -40,6 +43,9 @@ import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.json.JsonMapper;
 
 class YourMoveJobTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final Notifications notifications = mock(Notifications.class);
   private final WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
@@ -77,7 +83,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -114,7 +121,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -157,7 +165,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -193,7 +202,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -235,7 +245,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -266,7 +277,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -302,7 +314,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -336,7 +349,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -379,7 +393,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -421,7 +436,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -467,7 +483,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -520,7 +537,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -558,7 +576,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -613,7 +632,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -664,7 +684,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -717,7 +738,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -764,7 +786,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -818,7 +841,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -863,7 +887,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -909,7 +934,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -955,7 +981,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -1008,7 +1035,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -1062,7 +1090,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -1113,7 +1142,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -1166,7 +1196,8 @@ class YourMoveJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()

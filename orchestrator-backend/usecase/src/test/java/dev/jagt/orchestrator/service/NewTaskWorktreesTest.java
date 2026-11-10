@@ -17,7 +17,10 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.NewRepo;
@@ -42,6 +45,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class NewTaskWorktreesTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @TempDir Path root;
 
   private final ConfigService config = mock(ConfigService.class);
@@ -56,7 +62,7 @@ class NewTaskWorktreesTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+    state = new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     worktrees = new NewTaskWorktrees(config, state, git, setup);
   }
 

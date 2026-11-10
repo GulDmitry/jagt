@@ -6,14 +6,19 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /** The roles a task's chart is composed of, in the order their regions are declared. */
-record Composition(List<Role> roles) {
+public record Composition(List<Role> roles) {
 
-  Composition {
+  public Composition {
     refuseSharedReadSteps(roles);
     roles =
         roles.stream().anyMatch(role -> role.kind() == Role.Kind.ARBITER)
             ? List.copyOf(roles)
             : Stream.concat(roles.stream(), Stream.of(new MasterRegion())).toList();
+  }
+
+  /** The chart composed of {@code checkers}, in order, beside the core regions. */
+  public static Composition of(List<CheckerRole> checkers) {
+    return new Composition(checkers.stream().<Role>map(CheckerRegion::new).toList());
   }
 
   private static void refuseSharedReadSteps(List<Role> roles) {
@@ -36,7 +41,7 @@ record Composition(List<Role> roles) {
         .toList();
   }
 
-  static Composition builtIn() {
+  public static Composition builtIn() {
     return new Composition(List.of(CheckerRegion.ACCEPTANCE));
   }
 

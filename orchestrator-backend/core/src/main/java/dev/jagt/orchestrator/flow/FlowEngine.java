@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.port.RequestlessShip;
-import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.time.Clock;
@@ -18,7 +17,7 @@ import org.jspecify.annotations.Nullable;
 @RequiredArgsConstructor
 public class FlowEngine {
 
-  private final TaskStore tasks;
+  private final ReducingStore tasks;
   private final Capabilities capabilities;
   private final AgentPresence agents;
   private final Clock clock;
@@ -111,18 +110,18 @@ public class FlowEngine {
     if (next.isPresent() || outcome.stamp() != null) {
       TaskMove move = new TaskMove.Ran(action, outcome.kind());
       // Recorded even when the status is unchanged: a second round onto the same request happened.
-      tasks.updateTask(
+      tasks.reduce(
           taskId,
-          task -> {
+          (reducer, task) -> {
             String line = outcome.stamp() == null ? task.message() : outcome.stamp();
             long at = clock.millis();
             TaskState written =
                 next.isPresent()
-                    ? TaskReducer.reduce(task, move, line, true, at)
-                    : TaskReducer.stayed(task, line, true, at);
+                    ? reducer.reduce(task, move, line, true, at)
+                    : reducer.stayed(task, line, true, at);
             return outcome.stamp() == null
                 ? written
-                : TaskReducer.stamped(written, outcome.stampMeans());
+                : reducer.stamped(written, outcome.stampMeans());
           });
     }
     if (outcome.kind().refuses()) {

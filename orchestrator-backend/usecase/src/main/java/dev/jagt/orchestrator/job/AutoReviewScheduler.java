@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.AutoReviewCadence;
@@ -74,10 +73,10 @@ public class AutoReviewScheduler implements Job {
             ToldOnce told = task.toldOrNone();
             if (told.has(ToldOnce.Kind.AUTO_REVIEW_WINDOW)
                 || told.has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE)) {
-              stateService.updateTask(
+              stateService.reduce(
                   taskId,
-                  t ->
-                      TaskReducer.untold(
+                  (reducer, t) ->
+                      reducer.untold(
                           t,
                           ToldOnce.Kind.AUTO_REVIEW_WINDOW,
                           ToldOnce.Kind.AUTO_REVIEW_UNREADABLE));
@@ -90,8 +89,9 @@ public class AutoReviewScheduler implements Job {
               // CI_POLLING.
               String window = String.valueOf(task.mrCreatedAt());
               if (!task.toldOrNone().said(ToldOnce.Kind.AUTO_REVIEW_WINDOW, window)) {
-                stateService.updateTask(
-                    taskId, t -> TaskReducer.told(t, ToldOnce.Kind.AUTO_REVIEW_WINDOW, window));
+                stateService.reduce(
+                    taskId,
+                    (reducer, t) -> reducer.told(t, ToldOnce.Kind.AUTO_REVIEW_WINDOW, window));
                 notifications.send(
                     Notification.fromAgent(
                             taskId,

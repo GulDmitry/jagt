@@ -9,6 +9,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -28,6 +31,9 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class WorktreeOrphanScannerTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void findsALeftoverWorktreeAndCountsTheSecretsStillSittingInIt(@TempDir Path root)
@@ -54,7 +60,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     WorktreeOrphanScanner scanner =
         new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
@@ -92,7 +99,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -130,7 +138,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     WorktreeOrphanScanner scanner =
         new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
@@ -160,7 +169,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
     WorktreeOrphanScanner scanner =
@@ -189,7 +199,8 @@ class WorktreeOrphanScannerTest {
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
-                        .withStateFile(root.resolve("state.json").toString()))),
+                        .withStateFile(root.resolve("state.json").toString())),
+                        reducer),
             notifications)
         .run();
 
@@ -221,7 +232,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     WorktreeOrphanScanner scanner =
         new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
@@ -253,7 +265,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     WorktreeOrphanScanner scanner =
         new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
@@ -289,7 +302,8 @@ class WorktreeOrphanScannerTest {
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
-                        .withStateFile(root.resolve("state.json").toString()))),
+                        .withStateFile(root.resolve("state.json").toString())),
+                        reducer),
             notifications)
         .run();
 
@@ -321,7 +335,8 @@ class WorktreeOrphanScannerTest {
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
-                        .withStateFile(root.resolve("state.json").toString()))),
+                        .withStateFile(root.resolve("state.json").toString())),
+                        reducer),
             mock(Notifications.class))
         .run();
 
@@ -352,7 +367,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     WorktreeOrphanScanner scanner =
         new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
@@ -383,7 +399,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     WorktreeOrphanScanner scanner =
         new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
@@ -414,7 +431,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     WorktreeOrphanScanner scanner =
         new WorktreeOrphanScanner(config, state, mock(Notifications.class));
 
@@ -483,7 +501,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
     WorktreeOrphanScanner scanner =
@@ -521,7 +540,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
     WorktreeOrphanScanner scanner =
@@ -555,7 +575,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
 
     new WorktreeOrphanScanner(config, state, notifications).run();
 
@@ -591,7 +612,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
 
     new WorktreeOrphanScanner(config, state, notifications).run();
 
@@ -627,7 +649,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
     WorktreeOrphanScanner scanner =
@@ -658,7 +681,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-41",
         TaskState.builder(List.of(TaskRepo.of("demo", null)), TaskStatus.IN_PROGRESS).build());
@@ -695,7 +719,8 @@ class WorktreeOrphanScannerTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
 
     new WorktreeOrphanScanner(config, state, notifications).run();
 

@@ -7,7 +7,10 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskStops;
@@ -26,6 +29,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class AcceptanceOutcomesTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @Test
   void marksTheChangePassedWhileItsShaIsTheDeployTip(@TempDir Path root) {
     StateService state =
@@ -34,7 +40,8 @@ class AcceptanceOutcomesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -77,7 +84,8 @@ class AcceptanceOutcomesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -146,7 +154,8 @@ class AcceptanceOutcomesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -189,7 +198,8 @@ class AcceptanceOutcomesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -230,7 +240,8 @@ class AcceptanceOutcomesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -273,7 +284,8 @@ class AcceptanceOutcomesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()

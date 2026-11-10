@@ -10,8 +10,11 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.SessionPhase;
 import dev.jagt.orchestrator.flow.SessionSign;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.task.Session;
@@ -25,13 +28,17 @@ import tools.jackson.databind.json.JsonMapper;
 
 class SessionPresenceTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @Test
   void answersLiveFromTheWindowTheReadFound(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
+    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
@@ -47,7 +54,8 @@ class SessionPresenceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
+    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
@@ -68,7 +76,8 @@ class SessionPresenceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
+    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))

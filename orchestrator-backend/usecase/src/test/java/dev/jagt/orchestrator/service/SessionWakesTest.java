@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.SubscriptionUsage;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
@@ -22,6 +25,9 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class SessionWakesTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final Instant STOPPED = Instant.parse("2026-10-19T10:00:00Z");
   private static final Instant RESET = Instant.parse("2026-10-19T15:00:00Z");
@@ -47,7 +53,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(file.getParent().toString())
-                    .withStateFile(file.toString())));
+                    .withStateFile(file.toString())),
+                    reducer);
     return new SessionWakes(state, new TaskTurns(state, at(now)), at(now));
   }
 
@@ -67,7 +74,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withStateFile(file.toString())))
+                    .withStateFile(file.toString())),
+                    reducer)
         .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
 
@@ -84,7 +92,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withStateFile(file.toString())))
+                    .withStateFile(file.toString())),
+                    reducer)
         .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
     SessionWakes later = sessionWakes(file, RESET);
@@ -107,7 +116,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withStateFile(file.toString())))
+                    .withStateFile(file.toString())),
+                    reducer)
         .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
     SessionWakes later = sessionWakes(file, RESET);
@@ -133,7 +143,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withStateFile(file.toString())));
+                    .withStateFile(file.toString())),
+                    reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -158,7 +169,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withStateFile(file.toString())))
+                    .withStateFile(file.toString())),
+                    reducer)
         .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
     sessionWakes(file, RESET).takeDue(taskId -> false);
@@ -177,7 +189,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withStateFile(file.toString())))
+                    .withStateFile(file.toString())),
+                    reducer)
         .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
 
@@ -197,7 +210,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withStateFile(file.toString())))
+                    .withStateFile(file.toString())),
+                    reducer)
         .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     wakes(reading(99, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
 
@@ -214,7 +228,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withStateFile(file.toString())))
+                    .withStateFile(file.toString())),
+                    reducer)
         .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     wakes(reading(100, Optional.empty()), true, file, STOPPED).arm("ABC-42");
 
@@ -231,7 +246,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withStateFile(file.toString())))
+                    .withStateFile(file.toString())),
+                    reducer)
         .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     wakes(reading(100, Optional.of(RESET)), false, file, STOPPED).arm("ABC-42");
 
@@ -248,7 +264,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withStateFile(file.toString())))
+                    .withStateFile(file.toString())),
+                    reducer)
         .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
     SessionWakes later = sessionWakes(file, RESET);
@@ -266,7 +283,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withStateFile(file.toString())))
+                    .withStateFile(file.toString())),
+                    reducer)
         .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     SubscriptionUsage usage =
         () ->
@@ -293,7 +311,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withStateFile(file.toString())));
+                    .withStateFile(file.toString())),
+                    reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
     new TaskTurns(state, at(STOPPED)).opened("ABC-42", "context", "a1b2", TaskStatus.IN_PROGRESS);
@@ -311,7 +330,8 @@ class SessionWakesTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(dir.toString())
-                    .withStateFile(file.toString())))
+                    .withStateFile(file.toString())),
+                    reducer)
         .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     sessionWakes(file, STOPPED).arm("ABC-42", RESET, Step.WAIT_OVER);
 

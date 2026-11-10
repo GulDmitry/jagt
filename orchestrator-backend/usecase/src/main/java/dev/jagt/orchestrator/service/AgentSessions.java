@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.SessionPhase;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.task.Ansi;
@@ -107,7 +106,7 @@ public class AgentSessions implements SessionLines {
               + ", so it cannot open in plan mode: a plan is what comes before the code, not after"
               + " it");
     }
-    stateService.updateTask(taskId, was -> TaskReducer.planAsked(was, plan));
+    stateService.reduce(taskId, (reducer, was) -> reducer.planAsked(was, plan));
     String session =
         openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(), plan);
     return "New "
@@ -786,7 +785,7 @@ public class AgentSessions implements SessionLines {
     String own = modelFor(worktreePath, config);
     ModelTier tier =
         at == null ? ModelTier.above(own, config.agent().tiersFor(hosting.runtime())) : at;
-    stateService.updateTask(taskId, task -> TaskReducer.sessionStartedOver(task).withTier(tier));
+    stateService.reduce(taskId, (reducer, task) -> reducer.sessionStartedOver(task).withTier(tier));
     String session = agentSession(config, taskId);
     hosting
         .host()

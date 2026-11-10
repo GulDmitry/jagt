@@ -12,10 +12,12 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.RoleFiles;
 import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.task.AcceptanceDecline;
 import dev.jagt.orchestrator.task.AcceptanceEnding;
@@ -39,6 +41,9 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class AcceptanceDeclineJobTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final ConfigFile ON =
       ConfigFile.defaults()
@@ -209,7 +214,7 @@ class AcceptanceDeclineJobTest {
     CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.NOT_MET);
     TaskState reading =
-        TaskReducer.relayed(
+        reducer.relayed(
             declined(System.currentTimeMillis() + 1000), "decline", "digest", "", 1);
 
     new CheckerDeclineJob(

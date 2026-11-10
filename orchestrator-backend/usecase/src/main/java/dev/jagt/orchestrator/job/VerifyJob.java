@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.Watch;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.StateService;
@@ -150,9 +149,10 @@ public class VerifyJob implements TaskJob {
     if (told) {
       key.ifPresent(
           failing ->
-              stateService.updateTask(
+              stateService.reduce(
                   taskId,
-                  current -> TaskReducer.told(current, ToldOnce.Kind.VERIFY_FAILED, failing)));
+                  (reducer, current) ->
+                      reducer.told(current, ToldOnce.Kind.VERIFY_FAILED, failing)));
     } else if (stateService.task(taskId).filter(TaskState::stopped).isPresent()) {
       return;
     }

@@ -23,7 +23,10 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.StopKind;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -57,6 +60,9 @@ import org.springframework.util.ClassUtils;
 import tools.jackson.databind.json.JsonMapper;
 
 class JobsTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void schedulesNoJobBeforeTheStartHasPassedItsChecks() {
@@ -453,7 +459,8 @@ class JobsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     Job job = mock(Job.class);
     when(job.id()).thenReturn("poll-reviews");
     when(job.every()).thenReturn(Duration.ofMinutes(10));

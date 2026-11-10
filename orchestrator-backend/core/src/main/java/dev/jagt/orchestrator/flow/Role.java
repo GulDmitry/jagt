@@ -13,7 +13,7 @@ interface Role {
 
   Kind kind();
 
-  void declareRegion(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart);
+  void declareRegion(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Landing landing);
 
   void declareBeneath(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart);
 

@@ -12,8 +12,10 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateService;
@@ -33,6 +35,9 @@ import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 class ConflictFinishTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final CommandService commands = mock(CommandService.class);
   private final TaskStops stops = mock(TaskStops.class);
@@ -72,11 +77,11 @@ class ConflictFinishTest {
             .stop(new TaskStop(TaskStop.Trigger.UNCHANGED_FAILURE, 5, "same failure"))
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             stopped, new DeployStep.Opened(List.of(Deployment.Target.of("proj", "dev"))), 1);
     state.putTask(
         "ABC-42",
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("proj", Deployment.Cause.MERGE), 1));
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
@@ -102,11 +107,11 @@ class ConflictFinishTest {
             .stop(new TaskStop(TaskStop.Trigger.UNCHANGED_FAILURE, 5, "same failure"))
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             stopped, new DeployStep.Opened(List.of(Deployment.Target.of("proj", "dev"))), 1);
     state.putTask(
         "ABC-42",
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("proj", Deployment.Cause.MERGE), 1));
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
@@ -146,7 +151,8 @@ class ConflictFinishTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString())));
+                .withStateFile(root.resolve("state.json").toString())),
+                reducer);
   }
 
   @Test
@@ -156,11 +162,11 @@ class ConflictFinishTest {
     TaskState conflicted =
         TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("proj", "dev"))), 1);
     state.putTask(
         "ABC-42",
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("proj", Deployment.Cause.REVERT), 1));
     when(stops.moveDue("ABC-42")).thenReturn(true);
 

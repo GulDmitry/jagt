@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.ConflictEnding;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.MergedRequests;
@@ -61,8 +60,9 @@ class RequestClosedRead implements ConflictRead {
   }
 
   private void reportGone(String taskId, String request) {
-    stateService.updateTask(
-        taskId, task -> TaskReducer.told(task, ToldOnce.Kind.CONFLICT_REQUEST_GONE, request));
+    stateService.reduce(
+        taskId,
+        (reducer, task) -> reducer.told(task, ToldOnce.Kind.CONFLICT_REQUEST_GONE, request));
     notifications.send(
         Notification.fromAgent(
                 taskId, "conflict", "error: no such request: " + request + " (the host says so)")

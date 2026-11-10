@@ -7,6 +7,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.LineChange;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -20,6 +23,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class PlanApprovalLeavesTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private final StepRelay relay = mock(StepRelay.class);
   private final CaseDoor door = mock(CaseDoor.class);
   private final UnaffectedRepos unaffected = mock(UnaffectedRepos.class);
@@ -31,7 +37,7 @@ class PlanApprovalLeavesTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -61,7 +67,7 @@ class PlanApprovalLeavesTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(

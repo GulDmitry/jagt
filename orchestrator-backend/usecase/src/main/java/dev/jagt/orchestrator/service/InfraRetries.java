@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Pipeline;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.TaskStop;
 import java.time.Clock;
@@ -36,9 +35,9 @@ public class InfraRetries {
   public Optional<InfraRetry> arm(
       String taskId, String project, String pipelineUrl, String jobs, String reason) {
     AtomicReference<Optional<InfraRetry>> armed = new AtomicReference<>(Optional.empty());
-    stateService.updateTask(
+    stateService.reduce(
         taskId,
-        task -> {
+        (reducer, task) -> {
           Optional<InfraRetry> pending =
               InfraRetry.pending(task.infraRetries())
                   .filter(retry -> retry.pipelineUrl().equals(pipelineUrl));
@@ -61,7 +60,7 @@ public class InfraRetries {
                               sent.size() + 1,
                               properties.backoff().size()));
           armed.set(next);
-          return next.map(retry -> TaskReducer.infraArmed(task, retry)).orElse(task);
+          return next.map(retry -> reducer.infraArmed(task, retry)).orElse(task);
         });
     return armed.get();
   }
@@ -71,14 +70,14 @@ public class InfraRetries {
    * for the code owes no more.
    */
   public void clear(String taskId, boolean all) {
-    stateService.updateTask(taskId, task -> TaskReducer.infraCleared(task, all));
+    stateService.reduce(taskId, (reducer, task) -> reducer.infraCleared(task, all));
   }
 
   /** The retry sent: it joins those counted, and the task's history keeps the move. */
   public void sent(String taskId, InfraRetry retry) {
     long now = clock.millis();
-    stateService.updateTask(
-        taskId, task -> TaskReducer.infraSent(task, retry, now).withMoveRecorded(now));
+    stateService.reduce(
+        taskId, (reducer, task) -> reducer.infraSent(task, retry, now).withMoveRecorded(now));
   }
 
   /** The armed retries whose time has come, by task. */

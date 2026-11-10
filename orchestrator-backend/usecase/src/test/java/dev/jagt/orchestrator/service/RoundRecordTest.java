@@ -9,8 +9,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.flow.RedCause;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.ChecksUnread;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
@@ -21,12 +24,15 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class RoundRecordTest {
+
+  private final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final StateService stateService = mock(StateService.class);
   private final TaskStops stops = mock(TaskStops.class);
@@ -63,7 +69,7 @@ class RoundRecordTest {
 
   @Test
   void keepsTheReadsOwnWordsForWhyItCouldNotListTheChecks() {
-    ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
 
     roundRecord.record(
         "ABC-1",
@@ -74,11 +80,11 @@ class RoundRecordTest {
             new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
         "");
 
-    verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+    verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(
             stamped
                 .getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
                 .checksUnread())
         .containsExactly(new ChecksUnread(3_000, "list_pipelines: 403 Forbidden"));
   }
@@ -91,7 +97,7 @@ class RoundRecordTest {
                 TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                     .pipelineStatus("failed")
                     .build()));
-    ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
 
     roundRecord.record(
         "ABC-1",
@@ -102,11 +108,11 @@ class RoundRecordTest {
             new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
         "");
 
-    verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+    verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     TaskState after =
         stamped
             .getValue()
-            .apply(
+            .apply(reducer,
                 TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                     .pipelineStatus("failed")
                     .build());
@@ -118,7 +124,7 @@ class RoundRecordTest {
   void stampsWhetherTheRoundIsApprovedSoBothSurfacesCanShowItBesideTheRequest() {
     when(stateService.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
-    ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
 
     roundRecord.record(
         "ABC-1",
@@ -129,11 +135,11 @@ class RoundRecordTest {
             new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
         "");
 
-    verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+    verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(
             stamped
                 .getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
                 .approved())
         .isTrue();
   }
@@ -142,7 +148,7 @@ class RoundRecordTest {
   void keepsWhatTheHostSaidAboutTheChecksOnTheTask() {
     when(stateService.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
-    ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
 
     roundRecord.record(
         "ABC-1",
@@ -153,11 +159,11 @@ class RoundRecordTest {
             new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
         "");
 
-    verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+    verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(
             stamped
                 .getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
                 .pipelineStatus())
         .isEqualTo("SUCCEEDED");
   }
@@ -166,7 +172,7 @@ class RoundRecordTest {
   void keepsWhenTheHostSaysTheRequestWasOpened() {
     when(stateService.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
-    ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
 
     roundRecord.record(
         "ABC-1",
@@ -177,11 +183,11 @@ class RoundRecordTest {
             new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
         "");
 
-    verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+    verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(
             stamped
                 .getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
                 .requestOpenedAt())
         .isEqualTo(1_700_000_000_000L);
   }
@@ -206,7 +212,7 @@ class RoundRecordTest {
             new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
         "");
 
-    verify(stateService, never()).updateTask(eq("ABC-1"), any());
+    verify(stateService, never()).reduce(eq("ABC-1"), any());
   }
 
   @Test
@@ -219,7 +225,7 @@ class RoundRecordTest {
                     .approved(false)
                     .requestOpenedAt(1_700_000_000_000L)
                     .build()));
-    ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
 
     roundRecord.record(
         "ABC-1",
@@ -230,11 +236,11 @@ class RoundRecordTest {
             new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
         "");
 
-    verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+    verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(
             stamped
                 .getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
                 .requestOpenedAt())
         .isEqualTo(1_700_000_500_000L);
   }
@@ -282,7 +288,7 @@ class RoundRecordTest {
                 TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                     .pipelineStatus("failed")
                     .build()));
-    ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
 
     roundRecord.recordListed(
         "ABC-1",
@@ -292,11 +298,11 @@ class RoundRecordTest {
             new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
         "");
 
-    verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+    verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     TaskState after =
         stamped
             .getValue()
-            .apply(
+            .apply(reducer,
                 TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                     .pipelineStatus("failed")
                     .build());

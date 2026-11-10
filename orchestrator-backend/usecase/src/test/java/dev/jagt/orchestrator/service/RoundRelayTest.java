@@ -18,6 +18,9 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -37,6 +40,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class RoundRelayTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final Clock clock = Clock.fixed(Instant.ofEpochMilli(1_000_000), ZoneOffset.UTC);
 
@@ -51,7 +57,7 @@ class RoundRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     CaseDoor door =
         new CaseDoor(
@@ -107,7 +113,7 @@ class RoundRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -169,7 +175,7 @@ class RoundRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -235,7 +241,7 @@ class RoundRelayTest {
     when(stops.round(anyString(), any(), anyString(), anyString()))
         .thenReturn(TaskStops.Relay.RELAY);
     when(stops.sinceLast(anyString(), any())).thenReturn("");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
 
     CaseDoor door =
         new CaseDoor(
@@ -292,7 +298,7 @@ class RoundRelayTest {
         .thenReturn(TaskStops.Relay.RELAY);
     when(stops.sinceLast(anyString(), any())).thenReturn("");
     when(stops.asking("ABC-42")).thenReturn(true);
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
 
     CaseDoor door =
         new CaseDoor(
@@ -345,7 +351,7 @@ class RoundRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops = mock(TaskStops.class);
     when(stops.round(anyString(), any(), anyString(), anyString()))
@@ -396,7 +402,7 @@ class RoundRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
     TaskStops stops = mock(TaskStops.class);
     CaseDoor door =

@@ -16,11 +16,14 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.RoundReviewer.Premise;
+import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Probe;
@@ -44,6 +47,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class MasterPanelTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @TempDir Path stateRoot;
 
   private StateService state() {
@@ -52,7 +58,8 @@ class MasterPanelTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(stateRoot.toString())
-                .withStateFile(stateRoot.resolve("state.json").toString())));
+                .withStateFile(stateRoot.resolve("state.json").toString())),
+                reducer);
   }
 
   private static final List<MasterPanel.Role> TWO =

@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
@@ -11,6 +13,9 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 
 class RoundsTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ConfigService configService = mock(ConfigService.class);
   private final Rounds rounds = new Rounds(configService, ignored -> false, () -> false);
@@ -46,7 +51,7 @@ class RoundsTest {
   @Test
   void theMasterNoLongerReadsAHandBackItHasAlreadyJudged() {
     TaskState task =
-        TaskReducer.masterSealed(
+        reducer.masterSealed(
             TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build(), "fingerprint", 0);
 
     var round =
@@ -62,7 +67,7 @@ class RoundsTest {
   @Test
   void theMasterReadsTheHandBackAgainWhereTheVerdictFileIsGone() {
     TaskState task =
-        TaskReducer.masterVerdictGone(
+        reducer.masterVerdictGone(
             TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .master(Master.defaults().withSeal("fingerprint", 0))
                 .build());
@@ -80,7 +85,7 @@ class RoundsTest {
   @Test
   void theMasterHasJudgedNothingWhileItIsOff() {
     TaskState task =
-        TaskReducer.masterSealed(
+        reducer.masterSealed(
             TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build(), "fingerprint", 0);
     when(configService.load())
         .thenReturn(

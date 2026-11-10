@@ -24,17 +24,20 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class TaskReducerTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @Test
   void keepsTheSilenceToldWhereTheAutoReviewPingsAreForgotten() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
     TaskState told =
-        TaskReducer.told(
-            TaskReducer.told(task, ToldOnce.Kind.AUTO_REVIEW_WINDOW, "5"),
+        reducer.told(
+            reducer.told(task, ToldOnce.Kind.AUTO_REVIEW_WINDOW, "5"),
             ToldOnce.Kind.SILENCE,
             "9");
 
     TaskState forgot =
-        TaskReducer.untold(
+        reducer.untold(
             told, ToldOnce.Kind.AUTO_REVIEW_WINDOW, ToldOnce.Kind.AUTO_REVIEW_UNREADABLE);
 
     assertThat(forgot.toldOrNone().entries()).containsOnlyKeys(ToldOnce.Kind.SILENCE);
@@ -44,14 +47,14 @@ class TaskReducerTest {
   void forgetsTheDeployConflictOnceTheDeployLands() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT).build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task, new DeployStep.Opened(List.of(Deployment.Target.of("api", "dev"))), 1_000);
     TaskState conflicted =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("api", Deployment.Cause.MERGE), 1_000);
 
     TaskState deployed =
-        TaskReducer.reduce(
+        reducer.reduce(
             conflicted,
             new TaskMove.Ran(TaskAction.DEPLOY, Outcome.Kind.OK),
             "deployed",
@@ -65,13 +68,13 @@ class TaskReducerTest {
   void turnsAStalledConflictIntoTheSessionsQuestionAndRestartsItsClock() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT).build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task, new DeployStep.Opened(List.of(Deployment.Target.of("api", "dev"))), 1_000);
     TaskState conflicted =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("api", Deployment.Cause.MERGE), 1_000);
 
-    TaskState referred = TaskReducer.conflictReferred(conflicted, "stalled for 20 min", 2_000);
+    TaskState referred = reducer.conflictReferred(conflicted, "stalled for 20 min", 2_000);
 
     assertThat(referred.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
     assertThat(referred.report()).isEqualTo(AgentReport.QUESTION);
@@ -85,14 +88,14 @@ class TaskReducerTest {
   void asksTheMasterOfAStalledConflictOnlyOnce() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT).build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task, new DeployStep.Opened(List.of(Deployment.Target.of("api", "dev"))), 1_000);
     TaskState conflicted =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("api", Deployment.Cause.MERGE), 1_000);
-    TaskState referred = TaskReducer.conflictReferred(conflicted, "first", 2_000);
+    TaskState referred = reducer.conflictReferred(conflicted, "first", 2_000);
 
-    TaskState again = TaskReducer.conflictReferred(referred, "second", 3_000);
+    TaskState again = reducer.conflictReferred(referred, "second", 3_000);
 
     assertThat(again.message()).isEqualTo("first");
     assertThat(again.currentConflict().orElseThrow().movedAt()).isEqualTo(2_000);
@@ -102,7 +105,7 @@ class TaskReducerTest {
   void asksNothingWhereNoConflictStands() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOYED).build();
 
-    TaskState referred = TaskReducer.conflictReferred(task, "stalled", 2_000);
+    TaskState referred = reducer.conflictReferred(task, "stalled", 2_000);
 
     assertThat(referred.report()).isEqualTo(AgentReport.PLAIN);
   }
@@ -111,14 +114,14 @@ class TaskReducerTest {
   void recordsThatTheDeployPipelineOfALandedCommitWasReRun() {
     TaskState task = TaskState.builder("a", "/wt", TaskStatus.DEPLOYED).build();
     TaskState landed =
-        TaskReducer.deployStepped(
-            TaskReducer.deployStepped(
+        reducer.deployStepped(
+            reducer.deployStepped(
                 task, new DeployStep.Opened(List.of(Deployment.Target.of("a", "dev"))), 1_000),
             new DeployStep.Merged("a", "cafe"),
             1_100);
 
     TaskState retried =
-        TaskReducer.deployStepped(landed, new DeployStep.Retried("a", "cafe"), 1_200);
+        reducer.deployStepped(landed, new DeployStep.Retried("a", "cafe"), 1_200);
 
     assertThat(retried.deployment().targets().getFirst().retriedTip()).isTrue();
   }
@@ -127,16 +130,16 @@ class TaskReducerTest {
   void recordsWhereADeployOverTwoReposStoodWhenTheSecondConflicts() {
     TaskState task = TaskState.builder("a", "/wt", TaskStatus.REVIEWED).build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task,
             new DeployStep.Opened(
                 List.of(Deployment.Target.of("a", "dev"), Deployment.Target.of("b", "dev"))),
             1_000);
-    TaskState merged = TaskReducer.deployStepped(opened, new DeployStep.Merged("a", "cafe"), 1_100);
-    TaskState pushed = TaskReducer.deployStepped(merged, new DeployStep.Pushed("a", 1_200), 1_200);
+    TaskState merged = reducer.deployStepped(opened, new DeployStep.Merged("a", "cafe"), 1_100);
+    TaskState pushed = reducer.deployStepped(merged, new DeployStep.Pushed("a", 1_200), 1_200);
 
     TaskState conflicted =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             pushed, new DeployStep.Conflicted("b", Deployment.Cause.MERGE), 1_300);
 
     assertThat(conflicted.deployment().at()).isEqualTo(1);
@@ -148,8 +151,8 @@ class TaskReducerTest {
   void keepsWhatAnEarlierPressLeftLiveWhenTheNextPressOpens() {
     TaskState task = TaskState.builder("a", "/wt", TaskStatus.REVIEWED).build();
     TaskState first =
-        TaskReducer.deployStepped(
-            TaskReducer.deployStepped(
+        reducer.deployStepped(
+            reducer.deployStepped(
                 task,
                 new DeployStep.Opened(
                     List.of(Deployment.Target.of("a", "dev"), Deployment.Target.of("b", "dev"))),
@@ -158,7 +161,7 @@ class TaskReducerTest {
             1_100);
 
     TaskState second =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             first,
             new DeployStep.Opened(
                 List.of(Deployment.Target.of("a", "dev"), Deployment.Target.of("b", "dev"))),
@@ -173,14 +176,14 @@ class TaskReducerTest {
   void forgetsTheMergeOfARepositoryOnceItsRevertCommitIsRecorded() {
     TaskState task = TaskState.builder("a", "/wt", TaskStatus.DEPLOYED).build();
     TaskState deployed =
-        TaskReducer.deployStepped(
-            TaskReducer.deployStepped(
+        reducer.deployStepped(
+            reducer.deployStepped(
                 task, new DeployStep.Opened(List.of(Deployment.Target.of("a", "dev"))), 1_000),
             new DeployStep.Merged("a", "cafe"),
             1_100);
 
     TaskState reverted =
-        TaskReducer.deployStepped(deployed, new DeployStep.Reverted("a", "beef"), 1_200);
+        reducer.deployStepped(deployed, new DeployStep.Reverted("a", "beef"), 1_200);
 
     assertThat(reverted.deployment().live()).isFalse();
     assertThat(reverted.deployment().targets().getFirst().revertCommit()).isEqualTo("beef");
@@ -190,13 +193,13 @@ class TaskReducerTest {
   void marksTheRepositoryWhoseDeployWorktreePathAnotherHeldAsBlocked() {
     TaskState task = TaskState.builder("a", "/wt", TaskStatus.REVIEWED).build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task,
             new DeployStep.Opened(
                 List.of(Deployment.Target.of("a", "dev"), Deployment.Target.of("b", "dev"))),
             1_000);
 
-    TaskState blocked = TaskReducer.deployStepped(opened, new DeployStep.Blocked("b"), 1_100);
+    TaskState blocked = reducer.deployStepped(opened, new DeployStep.Blocked("b"), 1_100);
 
     assertThat(blocked.deployment().targets())
         .extracting(Deployment.Target::isBlocked)
@@ -210,7 +213,7 @@ class TaskReducerTest {
             .stop(new TaskStop(TaskStop.Trigger.INFRA, 1_000, "runner died"))
             .build();
 
-    TaskState ended = TaskReducer.ended(stopped, TaskStop.Trigger.Ends.HOST_READ, "", 2_000);
+    TaskState ended = reducer.ended(stopped, TaskStop.Trigger.Ends.HOST_READ, "", 2_000);
 
     assertThat(ended.stop()).isNull();
   }
@@ -224,7 +227,7 @@ class TaskReducerTest {
             .build()
             .withTier(new ModelTier(List.of("sonnet", "opus"), 0));
 
-    TaskState escalated = TaskReducer.escalated(stopped, 3_000);
+    TaskState escalated = reducer.escalated(stopped, 3_000);
 
     assertThat(escalated.stop()).isNull();
     assertThat(escalated.tier().current()).isEqualTo("opus");
@@ -240,7 +243,7 @@ class TaskReducerTest {
             .build()
             .withTier(new ModelTier(List.of("sonnet", "opus"), 1));
 
-    TaskState lifted = TaskReducer.lift(stopped, 3_000);
+    TaskState lifted = reducer.lift(stopped, 3_000);
 
     assertThat(lifted.tier().current()).isEqualTo("sonnet");
   }
@@ -254,7 +257,7 @@ class TaskReducerTest {
             .build()
             .withTier(new ModelTier(List.of("sonnet", "opus"), 1));
 
-    TaskState ended = TaskReducer.ended(stopped, TaskStop.Trigger.Ends.HOST_READ, "", 2_000);
+    TaskState ended = reducer.ended(stopped, TaskStop.Trigger.Ends.HOST_READ, "", 2_000);
 
     assertThat(ended.tier().current()).isEqualTo("opus");
   }
@@ -264,8 +267,8 @@ class TaskReducerTest {
     TaskStop pause = new TaskStop(TaskStop.Trigger.PAUSE, 1_000, "you paused it");
     TaskState paused = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).stop(pause).build();
 
-    TaskState kept = TaskReducer.ended(paused, TaskStop.Trigger.Ends.PAUSE, "", 2_000);
-    TaskState lifted = TaskReducer.lift(kept, 3_000);
+    TaskState kept = reducer.ended(paused, TaskStop.Trigger.Ends.PAUSE, "", 2_000);
+    TaskState lifted = reducer.lift(kept, 3_000);
 
     assertThat(kept.stop()).isEqualTo(pause);
     assertThat(lifted.stop()).isNull();
@@ -276,7 +279,7 @@ class TaskReducerTest {
     TaskStop stop = new TaskStop(TaskStop.Trigger.STALLED, 1_000, "rounds bring nothing new");
     TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).stop(stop).build();
 
-    TaskState kept = TaskReducer.ended(stopped, TaskStop.Trigger.Ends.HOST_READ, "", 2_000);
+    TaskState kept = reducer.ended(stopped, TaskStop.Trigger.Ends.HOST_READ, "", 2_000);
 
     assertThat(kept.stop()).isEqualTo(stop);
   }
@@ -287,7 +290,7 @@ class TaskReducerTest {
     TaskState stopped = TaskState.builder("api", "/wt", TaskStatus.DEPLOYED).stop(standing).build();
 
     TaskState kept =
-        TaskReducer.stop(stopped, new TaskStop(TaskStop.Trigger.PACE, 2_000, "too fast"), 2_000);
+        reducer.stop(stopped, new TaskStop(TaskStop.Trigger.PACE, 2_000, "too fast"), 2_000);
 
     assertThat(kept.stop()).isEqualTo(standing);
   }
@@ -295,7 +298,7 @@ class TaskReducerTest {
   @Test
   void requiresThePlanWhenATaskOpensInPlanModeBeforeTheCode() {
     TaskState planned =
-        TaskReducer.planAsked(
+        reducer.planAsked(
             TaskState.builder("api", "/wt", TaskStatus.PLAN_PENDING).build(), true);
 
     assertThat(planned.planGate()).isEqualTo(PlanGate.REQUIRED);
@@ -308,7 +311,7 @@ class TaskReducerTest {
             .planGate(PlanGate.REQUIRED)
             .build();
 
-    assertThat(TaskReducer.planApproved(required).planGate()).isEqualTo(PlanGate.OPEN);
+    assertThat(reducer.planApproved(required).planGate()).isEqualTo(PlanGate.OPEN);
   }
 
   @Test
@@ -316,7 +319,7 @@ class TaskReducerTest {
     TaskState past =
         TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).planGate(PlanGate.CLOSED).build();
 
-    assertThat(TaskReducer.planAsked(past, true).planGate()).isEqualTo(PlanGate.CLOSED);
+    assertThat(reducer.planAsked(past, true).planGate()).isEqualTo(PlanGate.CLOSED);
   }
 
   @Test
@@ -324,21 +327,21 @@ class TaskReducerTest {
     TaskState required =
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).planGate(PlanGate.REQUIRED).build();
 
-    assertThat(TaskReducer.noPlanDeclared(required).planGate()).isEqualTo(PlanGate.REQUIRED);
+    assertThat(reducer.noPlanDeclared(required).planGate()).isEqualTo(PlanGate.REQUIRED);
   }
 
   @Test
   void keepsTheDeployConflictWhereAHeldReportLeavesTheTaskInIt() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT).build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task, new DeployStep.Opened(List.of(Deployment.Target.of("api", "dev"))), 1_000);
     TaskState conflicted =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("api", Deployment.Cause.MERGE), 1_000);
 
     TaskState held =
-        TaskReducer.reduce(
+        reducer.reduce(
             conflicted,
             new TaskMove.Reported(TaskStatus.IN_PROGRESS, false),
             "working",
@@ -361,7 +364,7 @@ class TaskReducerTest {
             .withTrail(RoundTrail.none().withRound(new RoundTrail.Round(1, 4, "", "a", "")));
 
     TaskState reopened =
-        TaskReducer.relinked(shipped.withMrUrl("https://host/mr/573", 3_000), 3_000);
+        reducer.relinked(shipped.withMrUrl("https://host/mr/573", 3_000), 3_000);
 
     assertThat(reopened.stopped()).isFalse();
     assertThat(reopened.trailOrNone()).isEqualTo(RoundTrail.liftedAt(3_000));
@@ -376,7 +379,7 @@ class TaskReducerTest {
             .withStop(
                 new TaskStop(TaskStop.Trigger.SHIPS, 2, "4 ships", "https://host/mr/571", null));
 
-    TaskState again = TaskReducer.relinked(stopped.withMrUrl("https://host/mr/571", 3_000), 3_000);
+    TaskState again = reducer.relinked(stopped.withMrUrl("https://host/mr/571", 3_000), 3_000);
 
     assertThat(again.stop()).isEqualTo(stopped.stop());
   }
@@ -390,7 +393,7 @@ class TaskReducerTest {
             .withStop(new TaskStop(TaskStop.Trigger.ROUNDS, 2, "verify sent 3 rounds running"));
 
     TaskState reopened =
-        TaskReducer.relinked(stopped.withMrUrl("https://host/mr/573", 3_000), 3_000);
+        reducer.relinked(stopped.withMrUrl("https://host/mr/573", 3_000), 3_000);
 
     assertThat(reopened.stop()).isEqualTo(stopped.stop());
   }
@@ -408,7 +411,7 @@ class TaskReducerTest {
                 new TaskStop(trigger, 2, "evidence").countedOn(List.of("https://host/mr/571")));
 
     TaskState reopened =
-        TaskReducer.relinked(stopped.withMrUrl("https://host/mr/573", 3_000), 3_000);
+        reducer.relinked(stopped.withMrUrl("https://host/mr/573", 3_000), 3_000);
 
     assertThat(reopened.stopped()).isFalse();
   }
@@ -417,12 +420,12 @@ class TaskReducerTest {
   void clearsAPermissionTheSignStampedWhenWorkStartsAgain() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
     TaskState asked =
-        TaskReducer.signed(
+        reducer.signed(
             task,
             new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK),
             1_000);
 
-    TaskState started = TaskReducer.signed(asked, new SessionSign.WorkStarted(), 2_000);
+    TaskState started = reducer.signed(asked, new SessionSign.WorkStarted(), 2_000);
 
     assertThat(asked.report()).isEqualTo(AgentReport.PERMISSION);
     assertThat(started.report()).isEqualTo(AgentReport.PLAIN);
@@ -435,12 +438,12 @@ class TaskReducerTest {
             .report(AgentReport.PERMISSION)
             .build();
     TaskState asked =
-        TaskReducer.signed(
+        reducer.signed(
             task,
             new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK),
             1_000);
 
-    TaskState started = TaskReducer.signed(asked, new SessionSign.WorkStarted(), 2_000);
+    TaskState started = reducer.signed(asked, new SessionSign.WorkStarted(), 2_000);
 
     assertThat(started.report()).isEqualTo(AgentReport.PERMISSION);
   }
@@ -449,13 +452,13 @@ class TaskReducerTest {
   void keepsAPermissionTheSessionReportedAfterAPromptStampedItWhenWorkStartsAgain() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
     TaskState asked =
-        TaskReducer.signed(
+        reducer.signed(
             task,
             new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK),
             1_000);
-    TaskState reported = TaskReducer.signed(asked, new SessionSign.Reported(), 2_000);
+    TaskState reported = reducer.signed(asked, new SessionSign.Reported(), 2_000);
 
-    TaskState started = TaskReducer.signed(reported, new SessionSign.WorkStarted(), 3_000);
+    TaskState started = reducer.signed(reported, new SessionSign.WorkStarted(), 3_000);
 
     assertThat(started.report()).isEqualTo(AgentReport.PERMISSION);
   }
@@ -468,7 +471,7 @@ class TaskReducerTest {
             .build();
 
     TaskState asked =
-        TaskReducer.signed(
+        reducer.signed(
             task,
             new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.SCREEN),
             1_000);
@@ -479,9 +482,9 @@ class TaskReducerTest {
   @Test
   void keepsATurnFailureWhenAnIdleNoticeFollowsIt() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+    TaskState failed = reducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
 
-    TaskState noticed = TaskReducer.signed(failed, new SessionSign.TurnEnded(null), 2_000);
+    TaskState noticed = reducer.signed(failed, new SessionSign.TurnEnded(null), 2_000);
 
     assertThat(SessionPhase.of(noticed.session())).isEqualTo(SessionPhase.FAILED);
     assertThat(noticed.session().halt().cause()).isEqualTo("overloaded");
@@ -490,9 +493,9 @@ class TaskReducerTest {
   @Test
   void endsTurnFailureWhenTheSessionRestarts() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+    TaskState failed = reducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
 
-    TaskState restarted = TaskReducer.signed(failed, new SessionSign.Restarted("compact"), 2_000);
+    TaskState restarted = reducer.signed(failed, new SessionSign.Restarted("compact"), 2_000);
 
     assertThat(SessionPhase.of(restarted.session())).isEqualTo(SessionPhase.IDLE);
   }
@@ -500,9 +503,9 @@ class TaskReducerTest {
   @Test
   void worksAgainWhenAFailedSessionStartsWork() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+    TaskState failed = reducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
 
-    TaskState started = TaskReducer.signed(failed, new SessionSign.WorkStarted(), 2_000);
+    TaskState started = reducer.signed(failed, new SessionSign.WorkStarted(), 2_000);
 
     assertThat(SessionPhase.of(started.session())).isEqualTo(SessionPhase.WORKING);
     assertThat(started.session().workStartedAt()).isEqualTo(2_000);
@@ -512,7 +515,7 @@ class TaskReducerTest {
   void isGoneWithItsReasonWhenTheSessionEnds() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
 
-    TaskState ended = TaskReducer.signed(task, new SessionSign.Ended("prompt_input_exit"), 1_000);
+    TaskState ended = reducer.signed(task, new SessionSign.Ended("prompt_input_exit"), 1_000);
 
     assertThat(SessionPhase.of(ended.session())).isEqualTo(SessionPhase.GONE);
     assertThat(ended.session().halt().cause()).isEqualTo("prompt_input_exit");
@@ -521,9 +524,9 @@ class TaskReducerTest {
   @Test
   void keepsTheLogFileASessionNamedWithoutMovingItsPhase() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
+    TaskState idle = reducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
 
-    TaskState named = TaskReducer.signed(idle, new SessionSign.LogNamed("/logs/s.jsonl"), 2_000);
+    TaskState named = reducer.signed(idle, new SessionSign.LogNamed("/logs/s.jsonl"), 2_000);
 
     assertThat(named.session().log()).isEqualTo("/logs/s.jsonl");
     assertThat(named.session().idleSince()).isEqualTo(1_000);
@@ -533,9 +536,9 @@ class TaskReducerTest {
   @Test
   void isIdleWhenATurnEndsWhileWorking() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState working = TaskReducer.signed(task, new SessionSign.WorkStarted(), 1_000);
+    TaskState working = reducer.signed(task, new SessionSign.WorkStarted(), 1_000);
 
-    TaskState idle = TaskReducer.signed(working, new SessionSign.TurnEnded("/logs/s.jsonl"), 2_000);
+    TaskState idle = reducer.signed(working, new SessionSign.TurnEnded("/logs/s.jsonl"), 2_000);
 
     assertThat(SessionPhase.of(idle.session())).isEqualTo(SessionPhase.IDLE);
     assertThat(idle.session().log()).isEqualTo("/logs/s.jsonl");
@@ -545,9 +548,9 @@ class TaskReducerTest {
   @ValueSource(longs = {500, 1_000})
   void keepsAHaltWhenACallIsNoNewerThanIt(long calledAt) {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+    TaskState failed = reducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
 
-    TaskState called = TaskReducer.signed(failed, new SessionSign.Called(), calledAt);
+    TaskState called = reducer.signed(failed, new SessionSign.Called(), calledAt);
 
     assertThat(SessionPhase.of(called.session())).isEqualTo(SessionPhase.FAILED);
   }
@@ -555,9 +558,9 @@ class TaskReducerTest {
   @Test
   void dropsAHaltWhenACallComesAfterIt() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState ended = TaskReducer.signed(task, new SessionSign.Ended("prompt_input_exit"), 1_000);
+    TaskState ended = reducer.signed(task, new SessionSign.Ended("prompt_input_exit"), 1_000);
 
-    TaskState called = TaskReducer.signed(ended, new SessionSign.Called(), 2_000);
+    TaskState called = reducer.signed(ended, new SessionSign.Called(), 2_000);
 
     assertThat(SessionPhase.of(called.session())).isEqualTo(SessionPhase.WORKING);
   }
@@ -565,11 +568,11 @@ class TaskReducerTest {
   @Test
   void aSessionThatOnlyRunsToolsIsNotQuietPastTheLimit() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState working = TaskReducer.signed(task, new SessionSign.WorkStarted(), 1_000);
-    TaskState tooled = TaskReducer.signed(working, new SessionSign.ToolUsed(), 8_000);
+    TaskState working = reducer.signed(task, new SessionSign.WorkStarted(), 1_000);
+    TaskState tooled = reducer.signed(working, new SessionSign.ToolUsed(), 8_000);
 
     TaskState read =
-        TaskReducer.signed(
+        reducer.signed(
             tooled, new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 5_000, null), 9_000);
 
     assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.WORKING);
@@ -580,9 +583,9 @@ class TaskReducerTest {
   @ValueSource(longs = {500, 1_000})
   void keepsAHaltWhenAToolUseIsNoNewerThanIt(long usedAt) {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+    TaskState failed = reducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
 
-    TaskState used = TaskReducer.signed(failed, new SessionSign.ToolUsed(), usedAt);
+    TaskState used = reducer.signed(failed, new SessionSign.ToolUsed(), usedAt);
 
     assertThat(SessionPhase.of(used.session())).isEqualTo(SessionPhase.FAILED);
   }
@@ -590,9 +593,9 @@ class TaskReducerTest {
   @Test
   void dropsAHaltWhenAToolUseComesAfterIt() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+    TaskState failed = reducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
 
-    TaskState used = TaskReducer.signed(failed, new SessionSign.ToolUsed(), 2_000);
+    TaskState used = reducer.signed(failed, new SessionSign.ToolUsed(), 2_000);
 
     assertThat(SessionPhase.of(used.session())).isEqualTo(SessionPhase.WORKING);
   }
@@ -600,9 +603,9 @@ class TaskReducerTest {
   @Test
   void aToolUseIsNoReportOfTheTurn() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState working = TaskReducer.signed(task, new SessionSign.WorkStarted(), 1_000);
+    TaskState working = reducer.signed(task, new SessionSign.WorkStarted(), 1_000);
 
-    TaskState used = TaskReducer.signed(working, new SessionSign.ToolUsed(), 2_000);
+    TaskState used = reducer.signed(working, new SessionSign.ToolUsed(), 2_000);
 
     assertThat(used.session().reportedAt()).isZero();
     assertThat(used.session().workStartedAt()).isEqualTo(1_000);
@@ -611,9 +614,9 @@ class TaskReducerTest {
   @Test
   void dropsAHaltWhenWorkStartsInTheSameMillisecond() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+    TaskState failed = reducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
 
-    TaskState started = TaskReducer.signed(failed, new SessionSign.WorkStarted(), 1_000);
+    TaskState started = reducer.signed(failed, new SessionSign.WorkStarted(), 1_000);
 
     assertThat(SessionPhase.of(started.session())).isEqualTo(SessionPhase.WORKING);
   }
@@ -621,10 +624,10 @@ class TaskReducerTest {
   @Test
   void goesQuietSinceTheTurnEndedWhenAReadFindsNothingAfterItForLongerThanTheLimit() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
+    TaskState idle = reducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
 
     TaskState quiet =
-        TaskReducer.signed(
+        reducer.signed(
             idle, new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 5_000, null), 9_000);
 
     assertThat(SessionPhase.of(quiet.session())).isEqualTo(SessionPhase.QUIET);
@@ -634,9 +637,9 @@ class TaskReducerTest {
   @Test
   void aSessionStartedOverIsNotEndedByTheEndSignOfTheCliItReplaced() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState fresh = TaskReducer.sessionStartedOver(task);
+    TaskState fresh = reducer.sessionStartedOver(task);
 
-    TaskState late = TaskReducer.signed(fresh, new SessionSign.Ended("exited"), 9_000);
+    TaskState late = reducer.signed(fresh, new SessionSign.Ended("exited"), 9_000);
 
     assertThat(SessionPhase.of(late.session())).isNotEqualTo(SessionPhase.GONE);
   }
@@ -644,20 +647,20 @@ class TaskReducerTest {
   @Test
   void aSessionStartedOverIsNotQuietFromTheOldTranscriptBeforeItsFirstHook() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState fresh = TaskReducer.sessionStartedOver(task);
+    TaskState fresh = reducer.sessionStartedOver(task);
 
     TaskState first =
-        TaskReducer.signed(
+        reducer.signed(
             fresh,
             new SessionSign.Read(Session.Window.State.RUNNING, 0, 1_000, 0, 5_000, null),
             9_000);
     TaskState second =
-        TaskReducer.signed(
+        reducer.signed(
             first,
             new SessionSign.Read(Session.Window.State.RUNNING, 0, 1_000, 0, 5_000, null),
             12_000);
     TaskState third =
-        TaskReducer.signed(
+        reducer.signed(
             second,
             new SessionSign.Read(Session.Window.State.RUNNING, 0, 1_000, 0, 5_000, null),
             14_000);
@@ -670,10 +673,10 @@ class TaskReducerTest {
   @Test
   void staysIdleWhenAReadFindsTheTurnEndWithinTheLimit() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
+    TaskState idle = reducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
 
     TaskState read =
-        TaskReducer.signed(
+        reducer.signed(
             idle, new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 5_000, null), 4_000);
 
     assertThat(SessionPhase.of(read.session())).isEqualTo(SessionPhase.IDLE);
@@ -682,10 +685,10 @@ class TaskReducerTest {
   @Test
   void staysIdleAndGoesQuietSinceTheTurnEndedWhenTheWindowOnlyRepaintedAfterIt() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState idle = TaskReducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
+    TaskState idle = reducer.signed(task, new SessionSign.TurnEnded(null), 1_000);
 
     TaskState quiet =
-        TaskReducer.signed(
+        reducer.signed(
             idle,
             new SessionSign.Read(Session.Window.State.RUNNING, 2_000, 0, 0, 5_000, null),
             9_000);
@@ -697,10 +700,10 @@ class TaskReducerTest {
   @Test
   void endsAnEndedSessionWhenALaterReadFindsItsAgentProcessRunning() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState ended = TaskReducer.signed(task, new SessionSign.Ended("boom"), 1_000);
+    TaskState ended = reducer.signed(task, new SessionSign.Ended("boom"), 1_000);
 
     TaskState read =
-        TaskReducer.signed(
+        reducer.signed(
             ended,
             new SessionSign.Read(Session.Window.State.RUNNING, 8_000, 0, 0, 5_000, null),
             9_000);
@@ -712,11 +715,11 @@ class TaskReducerTest {
   void endsAGoneSessionAReadSetWhenALaterReadFindsItsAgentProcessRunning() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
     TaskState gone =
-        TaskReducer.signed(
+        reducer.signed(
             task, new SessionSign.Read(Session.Window.State.MISSING, 0, 0, 0, 5_000, null), 2_000);
 
     TaskState read =
-        TaskReducer.signed(
+        reducer.signed(
             gone, new SessionSign.Read(Session.Window.State.RUNNING, 0, 0, 0, 5_000, null), 3_000);
 
     assertThat(SessionPhase.of(read.session())).isNotEqualTo(SessionPhase.GONE);
@@ -725,10 +728,10 @@ class TaskReducerTest {
   @Test
   void keepsAFailedSessionFailedWhenALaterReadFindsItsAgentProcessRunning() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+    TaskState failed = reducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
 
     TaskState read =
-        TaskReducer.signed(
+        reducer.signed(
             failed,
             new SessionSign.Read(Session.Window.State.RUNNING, 0, 0, 0, 5_000, null),
             3_000);
@@ -739,10 +742,10 @@ class TaskReducerTest {
   @Test
   void endsAFailureWhenTheSessionsLogGrewAfterIt() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState failed = TaskReducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
+    TaskState failed = reducer.signed(task, new SessionSign.TurnFailed("overloaded"), 1_000);
 
     TaskState read =
-        TaskReducer.signed(
+        reducer.signed(
             failed,
             new SessionSign.Read(Session.Window.State.UNREAD, 0, 2_000, 0, 5_000, null),
             3_000);
@@ -755,7 +758,7 @@ class TaskReducerTest {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
 
     TaskState read =
-        TaskReducer.signed(
+        reducer.signed(
             task,
             new SessionSign.Read(
                 Session.Window.State.DEAD_SHELL, 0, 0, 0, 5_000, "Error: bad config"),
@@ -768,10 +771,10 @@ class TaskReducerTest {
   @Test
   void keepsTheCauseAnEndedSessionGaveWhenAReadFindsItsWindowGone() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState ended = TaskReducer.signed(task, new SessionSign.Ended("boom"), 8_000);
+    TaskState ended = reducer.signed(task, new SessionSign.Ended("boom"), 8_000);
 
     TaskState read =
-        TaskReducer.signed(
+        reducer.signed(
             ended, new SessionSign.Read(Session.Window.State.MISSING, 0, 0, 0, 5_000, null), 9_000);
 
     assertThat(read.session().halt()).isEqualTo(ended.session().halt());
@@ -783,9 +786,9 @@ class TaskReducerTest {
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
             .gitTrust(GitTrust.of(Map.of("a", "1")))
             .build();
-    TaskState first = TaskReducer.gitChanged(task, "a changed");
+    TaskState first = reducer.gitChanged(task, "a changed");
 
-    TaskState second = TaskReducer.gitChanged(first, "a changed; b added");
+    TaskState second = reducer.gitChanged(first, "a changed; b added");
 
     assertThat(second.gitTrust().changed()).isEqualTo("a changed; b added");
   }
@@ -793,9 +796,9 @@ class TaskReducerTest {
   @Test
   void aRepositoryAttachedEndsTheRequestForOne() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
-    TaskState asked = TaskReducer.repoAsked(task, "registry");
+    TaskState asked = reducer.repoAsked(task, "registry");
 
-    TaskState attached = TaskReducer.repoAttached(asked, TaskRepo.of("registry", "/wt-registry"));
+    TaskState attached = reducer.repoAttached(asked, TaskRepo.of("registry", "/wt-registry"));
 
     assertThat(attached.asksForRepository()).isFalse();
     assertThat(attached.repos()).extracting(TaskRepo::project).contains("registry");
@@ -809,7 +812,7 @@ class TaskReducerTest {
             .build();
 
     TaskState placed =
-        TaskReducer.placed(
+        reducer.placed(
             task,
             List.of(TaskRepo.of("api", "/wt-api"), TaskRepo.of("web", "/wt-web")),
             "feature/parent");
@@ -822,12 +825,12 @@ class TaskReducerTest {
   @Test
   void placesATaskThatAskedForARepositoryWithoutKeepingTheRequest() {
     TaskState task =
-        TaskReducer.repoAsked(
+        reducer.repoAsked(
             TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-9")), TaskStatus.PLAN_PENDING)
                 .build(),
             "registry");
 
-    TaskState placed = TaskReducer.placed(task, List.of(TaskRepo.of("api", "/wt-api")), null);
+    TaskState placed = reducer.placed(task, List.of(TaskRepo.of("api", "/wt-api")), null);
 
     assertThat(placed.asksForRepository()).isFalse();
     assertThat(placed.baseBranch()).isNull();
@@ -838,7 +841,7 @@ class TaskReducerTest {
     TaskState task =
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).repoRequest("registry").build();
 
-    TaskState reported = TaskReducer.repoAsked(task, null);
+    TaskState reported = reducer.repoAsked(task, null);
 
     assertThat(reported.asksForRepository()).isFalse();
   }
@@ -846,9 +849,9 @@ class TaskReducerTest {
   @Test
   void aNewHeadMakesTheChecksReadOnTheOldOneStale() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.CI_POLLING).build();
-    TaskState read = TaskReducer.checksRead(TaskReducer.headSeen(task, "t1"), "failed", "t1");
+    TaskState read = reducer.checksRead(reducer.headSeen(task, "t1"), "failed", "t1");
 
-    TaskState moved = TaskReducer.headSeen(read, "t2");
+    TaskState moved = reducer.headSeen(read, "t2");
 
     assertThat(read.checksRead()).isEqualTo("failed");
     assertThat(moved.checksRead()).isNull();
@@ -858,7 +861,7 @@ class TaskReducerTest {
   void anApprovalReadIsKeptAsTheHostSaidIt() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.REVIEWED).build();
 
-    TaskState approved = TaskReducer.approvalRead(task, true);
+    TaskState approved = reducer.approvalRead(task, true);
 
     assertThat(approved.approved()).isTrue();
   }
@@ -874,7 +877,7 @@ class TaskReducerTest {
             .infraRetries(List.of(armed))
             .build();
 
-    TaskState moved = TaskReducer.headSeen(read, "bbb");
+    TaskState moved = reducer.headSeen(read, "bbb");
 
     assertThat(read.infraRetries()).containsExactly(armed);
     assertThat(moved.infraRetries()).isEmpty();
@@ -891,7 +894,7 @@ class TaskReducerTest {
             .infraRetries(List.of(armed))
             .build();
 
-    TaskState again = TaskReducer.headSeen(read, "aaa");
+    TaskState again = reducer.headSeen(read, "aaa");
 
     assertThat(again.infraRetries()).containsExactly(armed);
   }
@@ -907,7 +910,7 @@ class TaskReducerTest {
             .build();
 
     TaskState relinked =
-        TaskReducer.requestLinked(task, Map.of(), "https://host/mr/2", false, 1_700_000_005_000L);
+        reducer.requestLinked(task, Map.of(), "https://host/mr/2", false, 1_700_000_005_000L);
 
     assertThat(relinked.approved()).isNull();
     assertThat(relinked.pipelineStatus()).isNull();
@@ -932,7 +935,7 @@ class TaskReducerTest {
             .build();
 
     TaskState round =
-        TaskReducer.requestLinked(polling, Map.of(), "https://host/mr/9", true, 2_000L);
+        reducer.requestLinked(polling, Map.of(), "https://host/mr/9", true, 2_000L);
 
     assertThat(round.infraRetries()).isEmpty();
   }
@@ -948,7 +951,7 @@ class TaskReducerTest {
             .build()
             .withMergedByHost("api");
 
-    TaskState left = TaskReducer.repoLeft(task, "web");
+    TaskState left = reducer.repoLeft(task, "web");
 
     assertThat(left.projects()).containsExactly("api");
     assertThat(left.requestsMerged()).isTrue();
@@ -962,7 +965,7 @@ class TaskReducerTest {
                 TaskStatus.CI_POLLING)
             .build();
 
-    TaskState left = TaskReducer.repoLeft(task, "api");
+    TaskState left = reducer.repoLeft(task, "api");
 
     assertThat(left.projects()).containsExactly("api");
   }
@@ -978,7 +981,7 @@ class TaskReducerTest {
                 TaskStatus.DEPLOY_CONFLICT)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task,
             new DeployStep.Opened(
                 List.of(
@@ -987,18 +990,18 @@ class TaskReducerTest {
                     Deployment.Target.of("gamma", "dev"))),
             1_000);
     TaskState merged =
-        TaskReducer.deployStepped(
-            TaskReducer.deployStepped(
-                TaskReducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100),
+        reducer.deployStepped(
+            reducer.deployStepped(
+                reducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100),
                 new DeployStep.Merged("beta", "b1"),
                 1_100),
             new DeployStep.Merged("gamma", "c1"),
             1_100);
     TaskState red =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             merged, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_200);
 
-    TaskState left = TaskReducer.repoLeft(red, "beta");
+    TaskState left = reducer.repoLeft(red, "beta");
 
     assertThat(left.status()).isEqualTo(TaskStatus.DEPLOYED);
     assertThat(left.projects()).containsExactly("alpha", "gamma");
@@ -1019,22 +1022,22 @@ class TaskReducerTest {
                 TaskStatus.DEPLOY_CONFLICT)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task,
             new DeployStep.Opened(
                 List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
             1_000);
     TaskState merged =
-        TaskReducer.deployStepped(
-            TaskReducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100),
+        reducer.deployStepped(
+            reducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100),
             new DeployStep.Merged("beta", "b1"),
             1_100);
     TaskState red =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             merged, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_200);
 
-    TaskState left = TaskReducer.repoLeft(red, "beta");
-    TaskState asked = TaskReducer.deployStepped(left, new DeployStep.Asked("dg"), 1_300);
+    TaskState left = reducer.repoLeft(red, "beta");
+    TaskState asked = reducer.deployStepped(left, new DeployStep.Asked("dg"), 1_300);
 
     assertThat(DeployPhase.of(left.deployment())).isEqualTo(DeployPhase.LANDING);
     assertThat(DeployPhase.of(asked.deployment())).isEqualTo(DeployPhase.CHECK_ASKED);
@@ -1049,13 +1052,13 @@ class TaskReducerTest {
                 TaskStatus.DEPLOY_CONFLICT)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task, new DeployStep.Opened(List.of(Deployment.Target.of("alpha", "dev"))), 1_000);
     TaskState red =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("alpha", Deployment.Cause.RED_PIPELINE), 1_100);
 
-    TaskState left = TaskReducer.repoLeft(red, "alpha");
+    TaskState left = reducer.repoLeft(red, "alpha");
 
     assertThat(left.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
     assertThat(left.deployment().conflictedTarget()).isPresent();
@@ -1071,16 +1074,16 @@ class TaskReducerTest {
                 TaskStatus.DEPLOY_CONFLICT)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task,
             new DeployStep.Opened(
                 List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
             1_000);
     TaskState conflicted =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_100);
 
-    TaskState left = TaskReducer.repoLeft(conflicted, "beta");
+    TaskState left = reducer.repoLeft(conflicted, "beta");
 
     assertThat(left.status()).isEqualTo(TaskStatus.REVIEWED);
     assertThat(left.deployment().conflictedTarget()).isEmpty();
@@ -1098,7 +1101,7 @@ class TaskReducerTest {
                 TaskStatus.DEPLOY_CONFLICT)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task,
             new DeployStep.Opened(
                 List.of(
@@ -1107,12 +1110,12 @@ class TaskReducerTest {
                     Deployment.Target.of("gamma", "dev"))),
             1_000);
     TaskState merged =
-        TaskReducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100);
+        reducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100);
     TaskState conflicted =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             merged, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_200);
 
-    TaskState left = TaskReducer.repoLeft(conflicted, "beta");
+    TaskState left = reducer.repoLeft(conflicted, "beta");
 
     assertThat(left.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
     assertThat(left.projects()).containsExactly("alpha", "gamma");
@@ -1135,18 +1138,18 @@ class TaskReducerTest {
                 TaskStatus.DEPLOY_CONFLICT)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task,
             new DeployStep.Opened(
                 List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
             1_000);
     TaskState merged =
-        TaskReducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100);
+        reducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100);
     TaskState conflicted =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             merged, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_200);
 
-    TaskState left = TaskReducer.repoLeft(conflicted, "beta");
+    TaskState left = reducer.repoLeft(conflicted, "beta");
 
     assertThat(left.status()).isEqualTo(TaskStatus.DEPLOYED);
     assertThat(left.deployment().targets())
@@ -1166,7 +1169,7 @@ class TaskReducerTest {
                 TaskStatus.DEPLOY_CONFLICT)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task,
             new DeployStep.Opened(
                 List.of(
@@ -1175,10 +1178,10 @@ class TaskReducerTest {
                     Deployment.Target.of("gamma", "dev"))),
             1_000);
     TaskState red =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_200);
 
-    TaskState left = TaskReducer.repoLeft(red, "beta");
+    TaskState left = reducer.repoLeft(red, "beta");
 
     assertThat(left.deployment().at()).isEqualTo(2);
   }
@@ -1194,7 +1197,7 @@ class TaskReducerTest {
                 TaskStatus.DEPLOY_CONFLICT)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task,
             new DeployStep.Opened(
                 List.of(
@@ -1203,10 +1206,10 @@ class TaskReducerTest {
                     Deployment.Target.of("gamma", "dev"))),
             1_000);
     TaskState red =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_200);
 
-    TaskState left = TaskReducer.repoLeft(red, "gamma");
+    TaskState left = reducer.repoLeft(red, "gamma");
 
     assertThat(left.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
     assertThat(left.deployment().conflictedTarget().orElseThrow().project()).isEqualTo("beta");

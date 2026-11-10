@@ -13,7 +13,10 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskStops;
@@ -31,6 +34,9 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class MasterPressTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final CommandService commands = mock(CommandService.class);
   private final HumanPaths humanPaths = mock(HumanPaths.class);
@@ -53,7 +59,8 @@ class MasterPressTest {
                         new OrchestratorPaths(
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
-                                .withStateFile(root.resolve("state.json").toString()))),
+                                .withStateFile(root.resolve("state.json").toString())),
+                                reducer),
                     Clock.systemUTC()))
             .press("ABC-1", task, TaskAction.DEPLOY);
 
@@ -77,7 +84,8 @@ class MasterPressTest {
                         new OrchestratorPaths(
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
-                                .withStateFile(root.resolve("state.json").toString()))),
+                                .withStateFile(root.resolve("state.json").toString())),
+                                reducer),
                     Clock.systemUTC()))
             .press("ABC-1", task, TaskAction.DEPLOY);
 
@@ -102,7 +110,8 @@ class MasterPressTest {
                         new OrchestratorPaths(
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
-                                .withStateFile(root.resolve("state.json").toString()))),
+                                .withStateFile(root.resolve("state.json").toString())),
+                                reducer),
                     Clock.systemUTC()))
             .press("ABC-1", task, TaskAction.DEPLOY);
 
@@ -123,7 +132,8 @@ class MasterPressTest {
                     new OrchestratorPaths(
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
-                            .withStateFile(root.resolve("state.json").toString()))),
+                            .withStateFile(root.resolve("state.json").toString())),
+                            reducer),
                 Clock.systemUTC()))
         .execute("ABC-1", TaskAction.ADD_REPO);
 
@@ -139,7 +149,8 @@ class MasterPressTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     state.putTask("ABC-1", task);
     when(humanPaths.touched(task)).thenReturn(Optional.of("demo/src/auth/Login.java"));
@@ -159,7 +170,8 @@ class MasterPressTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState task =
         TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
             .master(Master.defaults().withLeft("deploy demo/src/old/Old.java"))
@@ -182,7 +194,8 @@ class MasterPressTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState task =
         TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
             .master(Master.defaults().withLeft("deploy demo/src/old/Old.java"))
@@ -217,7 +230,8 @@ class MasterPressTest {
                         new OrchestratorPaths(
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
-                                .withStateFile(root.resolve("state.json").toString()))),
+                                .withStateFile(root.resolve("state.json").toString())),
+                                reducer),
                     Clock.systemUTC()))
             .press("ABC-1", task, TaskAction.DEPLOY);
 
@@ -241,7 +255,8 @@ class MasterPressTest {
                     new OrchestratorPaths(
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
-                            .withStateFile(root.resolve("state.json").toString()))),
+                            .withStateFile(root.resolve("state.json").toString())),
+                            reducer),
                 Clock.systemUTC()));
 
     assertThatThrownBy(() -> press.execute("ABC-1", TaskAction.DEPLOY))
@@ -261,7 +276,8 @@ class MasterPressTest {
                         new OrchestratorPaths(
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
-                                .withStateFile(root.resolve("state.json").toString()))),
+                                .withStateFile(root.resolve("state.json").toString())),
+                                reducer),
                     Clock.systemUTC()))
             .lift("ABC-1");
 
@@ -287,7 +303,8 @@ class MasterPressTest {
                         new OrchestratorPaths(
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
-                                .withStateFile(root.resolve("state.json").toString()))),
+                                .withStateFile(root.resolve("state.json").toString())),
+                                reducer),
                     Clock.systemUTC()))
             .lift("ABC-1");
 

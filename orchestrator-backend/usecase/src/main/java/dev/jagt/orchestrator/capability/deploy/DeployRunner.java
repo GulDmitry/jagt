@@ -6,7 +6,6 @@ import static dev.jagt.orchestrator.service.DeployTargets.names;
 import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.DeployTargets.Target;
 import dev.jagt.orchestrator.service.GitDeploy;
@@ -45,7 +44,7 @@ public class DeployRunner {
             targets.stream()
                 .map(target -> Deployment.Target.of(target.project(), target.deployBranch()))
                 .toList());
-    stateService.updateTask(taskId, t -> TaskReducer.deployStepped(t, opened, clock.millis()));
+    stateService.reduce(taskId, (reducer, t) -> reducer.deployStepped(t, opened, clock.millis()));
   }
 
   public Outcome advance(String taskId) {
@@ -97,11 +96,11 @@ public class DeployRunner {
       landing.merged.put(target.project(), commit);
       boolean fix = gitDeploy.isFix(target.path(), commit);
       long now = clock.millis();
-      stateService.updateTask(
+      stateService.reduce(
           taskId,
-          t ->
-              TaskReducer.deployStepped(
-                  TaskReducer.deployStepped(
+          (reducer, t) ->
+              reducer.deployStepped(
+                  reducer.deployStepped(
                       t,
                       fix
                           ? new DeployStep.Fixed(target.project(), commit)
@@ -114,10 +113,10 @@ public class DeployRunner {
       landing.idle = landing.idle == null ? e : landing.idle;
     } catch (GitDeploy.ForeignDeployWorktreeException e) {
       // The sibling holding the shared path is in this very list, so coming back beats refusing.
-      stateService.updateTask(
+      stateService.reduce(
           taskId,
-          t ->
-              TaskReducer.deployStepped(
+          (reducer, t) ->
+              reducer.deployStepped(
                   t, new DeployStep.Blocked(target.project()), clock.millis()));
       landing.obstacle = landing.obstacle == null ? e : landing.obstacle;
     } catch (GitDeploy.MergeConflictException e) {
@@ -165,10 +164,10 @@ public class DeployRunner {
   private Outcome handBackConflict(
       String taskId, List<Target> targets, int at, GitDeploy.MergeConflictException e) {
     Target conflicted = targets.get(at);
-    stateService.updateTask(
+    stateService.reduce(
         taskId,
-        t ->
-            TaskReducer.deployStepped(
+        (reducer, t) ->
+            reducer.deployStepped(
                 t,
                 new DeployStep.Conflicted(conflicted.project(), Deployment.Cause.MERGE),
                 clock.millis()));

@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import java.nio.file.Path;
@@ -59,7 +58,7 @@ public class MergedRequests {
                         .anyMatch(repo -> project.equals(repo.project()) && repo.wasHostMerged()))
             .orElse(true);
     if (!known) {
-      stateService.updateTask(taskId, current -> TaskReducer.mergedByHost(current, project));
+      stateService.reduce(taskId, (reducer, current) -> reducer.mergedByHost(current, project));
       log.atInfo()
           .setMessage("request merged")
           .addKeyValue("task", taskId)
@@ -79,7 +78,9 @@ public class MergedRequests {
   }
 
   private void record(String taskId, String project, boolean merged) {
-    stateService.updateTask(taskId, current -> TaskReducer.mergedByGit(current, project, merged));
+    stateService.reduce(
+        taskId,
+        (reducer, current) -> reducer.mergedByGit(current, project, merged));
     log.atInfo()
         .setMessage(merged ? "request merged" : "request no longer merged")
         .addKeyValue("task", taskId)

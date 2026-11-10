@@ -28,9 +28,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class TaskChartTest {
 
+  private final TaskChart taskChart = new TaskChart(Composition.builtIn());
+
   @Test
   void startsAtNewOnAChartTheEngineValidatedAsReachableAndLeavable() {
-    assertThat(TaskChart.chart().initial().toPlain())
+    assertThat(taskChart.chart().initial().toPlain())
         .containsExactly(
             entry("lifecycle", "NEW"),
             entry("stop", "NONE"),
@@ -51,7 +53,7 @@ class TaskChartTest {
 
   @Test
   void rendersTheDiagramTheDocsPageShows() throws IOException {
-    String[] regions = TaskChart.chart().render().split("    --\n");
+    String[] regions = taskChart.chart().render().split("    --\n");
 
     assertThat(Files.readString(Path.of("../../docs/task-chart.md")))
         .isEqualTo("# The task lifecycle chart\n\n```mermaid\n" + regions[0] + "```\n");
@@ -177,13 +179,13 @@ class TaskChartTest {
   @MethodSource("deployEdges")
   void movesTheDeployRegionOnlyAlongTheStepsItsPhaseTakes(
       String from, DeployStep step, String to, List<TaskEffect> effects) {
-    Map<String, String> plain = new HashMap<>(TaskChart.chart().initial().toPlain());
+    Map<String, String> plain = new HashMap<>(taskChart.chart().initial().toPlain());
     plain.put("deploy", from);
 
     ChartStep<TaskEffect> stepped =
-        TaskChart.chart()
+        taskChart.chart()
             .step(
-                TaskChart.chart().configuration(plain),
+                taskChart.chart().configuration(plain),
                 new ChartFacts(false, Map.of(), Facts.defaults()),
                 new TaskMove.DeployStepped(step));
 
@@ -271,13 +273,13 @@ class TaskChartTest {
   @MethodSource("infraEdges")
   void movesTheInfraRegionOnlyAlongTheMovesItsPhaseTakes(
       String from, TaskMove move, String to, List<TaskEffect> effects) {
-    Map<String, String> plain = new HashMap<>(TaskChart.chart().initial().toPlain());
+    Map<String, String> plain = new HashMap<>(taskChart.chart().initial().toPlain());
     plain.put("infra", from);
 
     ChartStep<TaskEffect> stepped =
-        TaskChart.chart()
+        taskChart.chart()
             .step(
-                TaskChart.chart().configuration(plain),
+                taskChart.chart().configuration(plain),
                 new ChartFacts(false, Map.of(), Facts.defaults()),
                 move);
 
@@ -310,13 +312,13 @@ class TaskChartTest {
   @MethodSource("sessionEdges")
   void movesTheSessionRegionOnlyAlongTheSignsItsPhaseTakes(
       String from, SessionSign sign, String to) {
-    Map<String, String> plain = new HashMap<>(TaskChart.chart().initial().toPlain());
+    Map<String, String> plain = new HashMap<>(taskChart.chart().initial().toPlain());
     plain.put("session", from);
 
     ChartStep<TaskEffect> stepped =
-        TaskChart.chart()
+        taskChart.chart()
             .step(
-                TaskChart.chart().configuration(plain),
+                taskChart.chart().configuration(plain),
                 new ChartFacts(false, Map.of(), Facts.defaults()),
                 new TaskMove.Signed(sign));
 
@@ -398,7 +400,7 @@ class TaskChartTest {
   @MethodSource("landings")
   void landsATaskOnlyWhereTheChartDrawsTheMoveFromItsStatus(
       TaskStatus from, TaskMove move, TaskStatus to) {
-    assertThat(TaskChart.land(from, move)).contains(to);
+    assertThat(taskChart.land(from, move)).contains(to);
   }
 
   static Stream<Arguments> acceptanceEdges() {
@@ -512,14 +514,14 @@ class TaskChartTest {
       CheckerPhase beneath,
       String to,
       TaskEffect effect) {
-    Map<String, String> plain = new HashMap<>(TaskChart.chart().initial().toPlain());
+    Map<String, String> plain = new HashMap<>(taskChart.chart().initial().toPlain());
     plain.put("lifecycle", lifecycle);
     plain.put("acceptance", from);
 
     ChartStep<TaskEffect> stepped =
-        TaskChart.chart()
+        taskChart.chart()
             .step(
-                TaskChart.chart().configuration(plain),
+                taskChart.chart().configuration(plain),
                 new ChartFacts(false, Map.of("acceptance", beneath), Facts.defaults()),
                 move);
 
@@ -529,15 +531,15 @@ class TaskChartTest {
 
   @Test
   void landsDeployedWhenTheSessionDeclinedTheOpenAcceptanceRoundWithNoChanges() {
-    Map<String, String> plain = new HashMap<>(TaskChart.chart().initial().toPlain());
+    Map<String, String> plain = new HashMap<>(taskChart.chart().initial().toPlain());
     plain.put("lifecycle", "IN_PROGRESS");
     plain.put("turn", "OPEN");
     plain.put("acceptance", "ROUND_OPEN");
 
     ChartStep<TaskEffect> stepped =
-        TaskChart.chart()
+        taskChart.chart()
             .step(
-                TaskChart.chart().configuration(plain),
+                taskChart.chart().configuration(plain),
                 new ChartFacts(
                     false, Map.of("acceptance", CheckerPhase.ROUND_OPEN), Facts.defaults()),
                 new TaskMove.Checked.RoundDeclined(
@@ -660,14 +662,14 @@ class TaskChartTest {
       TaskMove move,
       String to,
       List<TaskEffect> effects) {
-    Map<String, String> plain = new HashMap<>(TaskChart.chart().initial().toPlain());
+    Map<String, String> plain = new HashMap<>(taskChart.chart().initial().toPlain());
     plain.put("lifecycle", lifecycle);
     plain.put(region, from);
 
     ChartStep<TaskEffect> stepped =
-        TaskChart.chart()
+        taskChart.chart()
             .step(
-                TaskChart.chart().configuration(plain),
+                taskChart.chart().configuration(plain),
                 new ChartFacts(false, Map.of(), Facts.defaults()),
                 move);
 

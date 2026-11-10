@@ -13,7 +13,10 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StateService;
@@ -31,6 +34,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class RestartAskJobTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final AgentPresence presence = mock(AgentPresence.class);
   private final StepRelay relay = mock(StepRelay.class);
@@ -43,7 +49,7 @@ class RestartAskJobTest {
   }
 
   private StateService state(Path root) {
-    return new StateService(new JsonMapper(), paths(root));
+    return new StateService(new JsonMapper(), paths(root), reducer);
   }
 
   @Test

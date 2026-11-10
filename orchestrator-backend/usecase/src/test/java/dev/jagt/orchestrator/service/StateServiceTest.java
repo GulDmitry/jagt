@@ -6,6 +6,9 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -27,6 +30,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class StateServiceTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @Test
   void tellsListenersAboutAChangeOnlyAfterItIsOnDisk(@TempDir Path root) {
     Path stateFile = root.resolve("state.json");
@@ -36,7 +42,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
     List<String> seenByListener = new ArrayList<>();
     state.onChange(
         written ->
@@ -56,7 +63,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
     writer.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -74,7 +82,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
 
     TaskState read = reader.task("ABC-1").orElseThrow();
 
@@ -91,7 +100,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -127,7 +137,8 @@ class StateServiceTest {
                     new OrchestratorPaths(
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
-                            .withStateFile(stateFile.toString())))
+                            .withStateFile(stateFile.toString())),
+                            reducer)
                 .findByWorktree(worktree.toString()))
         .get()
         .extracting(Map.Entry::getKey)
@@ -142,7 +153,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
     AtomicInteger changes = new AtomicInteger();
     state.onChange(written -> changes.incrementAndGet());
@@ -161,7 +173,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
     AtomicInteger changes = new AtomicInteger();
     state.onChange(written -> changes.incrementAndGet());
@@ -180,7 +193,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     AtomicInteger secondListener = new AtomicInteger();
     state.onChange(
         written -> {
@@ -204,7 +218,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build());
@@ -225,7 +240,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build());
@@ -237,7 +253,8 @@ class StateServiceTest {
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
-                        .withStateFile(stateFile.toString())))
+                        .withStateFile(stateFile.toString())),
+                        reducer)
             .tasks();
 
     assertThat(tasks).containsOnlyKeys("ABC-1");
@@ -255,7 +272,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build());
@@ -266,7 +284,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())))
+                    .withStateFile(stateFile.toString())),
+                    reducer)
         .tasks();
 
     assertThat(
@@ -275,7 +294,8 @@ class StateServiceTest {
                     new OrchestratorPaths(
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
-                            .withStateFile(stateFile.toString())))
+                            .withStateFile(stateFile.toString())),
+                            reducer)
                 .tasks())
         .containsOnlyKeys("ABC-1");
   }
@@ -293,7 +313,8 @@ class StateServiceTest {
                         new OrchestratorPaths(
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
-                                .withStateFile(stateFile.toString())))
+                                .withStateFile(stateFile.toString())),
+                                reducer)
                     .tasks())
         .isInstanceOf(UncheckedIOException.class)
         .hasMessageContaining("no usable backup");
@@ -313,7 +334,8 @@ class StateServiceTest {
                         new OrchestratorPaths(
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
-                                .withStateFile(stateFile.toString())))
+                                .withStateFile(stateFile.toString())),
+                                reducer)
                     .tasks())
         .isInstanceOf(UncheckedIOException.class)
         .hasMessageContaining("no usable backup");
@@ -335,7 +357,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
 
     assertThatThrownBy(
             () -> state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build()))
@@ -356,7 +379,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
     FileTime written = Files.getLastModifiedTime(stateFile);
     Files.writeString(stateFile, "x".repeat((int) Files.size(stateFile)));
@@ -374,7 +398,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     Files.writeString(
@@ -394,7 +419,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     state.tasks().clear();
@@ -411,7 +437,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -440,7 +467,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
 
     var task = state.task("ABC-1").orElseThrow();
 
@@ -460,7 +488,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.NEW).alias("a1").build());
     String physicalCallerCwd = root.toRealPath().toString();
@@ -478,7 +507,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     OriginContext.as(
@@ -501,7 +531,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
 
@@ -526,7 +557,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
 
@@ -553,7 +585,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
 
     assertThat(state.task("ABC-1").orElseThrow().history())
         .containsExactly(new StatusChange(TaskStatus.NEW, 1000, ActionOrigin.BOARD));
@@ -567,7 +600,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     OriginContext.as(
         ActionOrigin.BOARD,
         () ->
@@ -598,7 +632,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
 
     OriginContext.as(
         ActionOrigin.MCP, () -> state.updateTask("ABC-1", task -> task.touched(2_000)));
@@ -616,7 +651,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     boolean updated =
@@ -634,7 +670,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
 
     assertThat(
             state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.DONE, "finished", 2_000)))
@@ -649,7 +686,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.NEW).alias("a1").build());
     state.putTask("ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.NEW).alias("a2").build());
 
@@ -667,7 +705,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", first.toString(), TaskStatus.NEW).build());
     state.putTask("ABC-2", TaskState.builder("proj", second.toString(), TaskStatus.NEW).build());
 
@@ -692,7 +731,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())));
+                    .withStateFile(stateFile.toString())),
+                    reducer);
     FileTime stamp = Files.getLastModifiedTime(stateFile);
     state.tasks();
     Files.writeString(stateFile, "x".repeat(written.length()));
@@ -709,7 +749,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
 
     boolean removed = state.removeTask("ABC-1");
@@ -726,7 +767,8 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
 
     boolean removed = state.removeTask("ABC-9");
@@ -743,9 +785,29 @@ class StateServiceTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt/gone", TaskStatus.DONE).build());
 
     assertThat(state.findByWorktree("/elsewhere/gone")).isEmpty();
+  }
+
+  @Test
+  void reduceHandsTheStoredTaskToTheUpdateAndSaysWhetherTheTaskWasThere(@TempDir Path root) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer);
+    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
+
+    boolean found = state.reduce("ABC-1", (taskReducer, task) -> task);
+    boolean absent = state.reduce("ABC-2", (taskReducer, task) -> task);
+
+    assertThat(found).isTrue();
+    assertThat(absent).isFalse();
   }
 }

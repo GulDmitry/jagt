@@ -9,10 +9,13 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Capabilities;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowEngine;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -26,6 +29,9 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class RemoveRepoCapabilityTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final RepoRemoval removal = mock(RepoRemoval.class);
 
@@ -70,7 +76,8 @@ class RemoveRepoCapabilityTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-7",
         TaskState.builder(
@@ -101,7 +108,8 @@ class RemoveRepoCapabilityTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-7", TaskState.builder("api", "/wt", TaskStatus.REVIEWED).alias("a1").build());
     FlowEngine engine =

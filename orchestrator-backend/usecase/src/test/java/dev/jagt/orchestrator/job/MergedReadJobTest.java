@@ -7,6 +7,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.MergedRequests;
 import dev.jagt.orchestrator.service.RepoDeparture;
@@ -24,6 +27,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class MergedReadJobTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @Test
   void taskIsShippedAndPolledAgainWhenTheBaseWasResetUnderItsMergedRequest(@TempDir Path root) {
     StateService state =
@@ -32,7 +38,8 @@ class MergedReadJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)

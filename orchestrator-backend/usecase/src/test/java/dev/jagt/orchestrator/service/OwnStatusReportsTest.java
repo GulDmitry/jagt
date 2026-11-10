@@ -15,7 +15,10 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
@@ -38,6 +41,9 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class OwnStatusReportsTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static ReportEffects effects(StateService state) {
     return effects(state, (task, line) -> "");
@@ -73,7 +79,8 @@ class OwnStatusReportsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
@@ -102,7 +109,8 @@ class OwnStatusReportsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
@@ -128,7 +136,8 @@ class OwnStatusReportsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
@@ -168,7 +177,8 @@ class OwnStatusReportsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
@@ -195,7 +205,8 @@ class OwnStatusReportsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
@@ -225,7 +236,7 @@ class OwnStatusReportsTest {
         root.resolve("roles/session/cases.md"),
         "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
             + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
     new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
@@ -275,7 +286,7 @@ class OwnStatusReportsTest {
         root.resolve("roles/session/cases.md"),
         "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
             + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
     new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
@@ -326,7 +337,7 @@ class OwnStatusReportsTest {
         root.resolve("roles/session/cases.md"),
         "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
             + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
     new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
@@ -378,7 +389,7 @@ class OwnStatusReportsTest {
         root.resolve("roles/session/cases.md"),
         "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
             + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
     new TaskTurns(state, Clock.systemUTC()).opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);

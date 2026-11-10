@@ -8,9 +8,9 @@ public final class Roles {
 
   private Roles() {}
 
-  /** Sets, once, the roles every task is stepped on; a second call must name the same ones. */
+  /** Sets the roles every task is stepped on. */
   public static void install(List<CheckerRole> checkers) {
-    TaskChart.install(new Composition(checkers.stream().<Role>map(CheckerRegion::new).toList()));
+    TaskChart.install(Composition.of(checkers));
   }
 
   /**
@@ -19,7 +19,7 @@ public final class Roles {
    */
   public static Optional<String> lint(CheckerRole checker) {
     try {
-      TaskChart.of(new Composition(List.of(new CheckerRegion(checker))));
+      new TaskChart(Composition.of(List.of(checker)));
       return Optional.empty();
     } catch (RuntimeException refused) {
       return Optional.of(String.valueOf(refused.getMessage()));

@@ -5,7 +5,6 @@ import static dev.jagt.orchestrator.service.DeployTargets.names;
 
 import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.DeployTargets.Target;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
@@ -53,7 +52,7 @@ public class RevertRunner {
         return stillLive(taskId, target, reverted, e);
       }
       DeployStep done = new DeployStep.Reverted(target.project(), lastRevertCommit);
-      stateService.updateTask(taskId, t -> TaskReducer.deployStepped(t, done, 0));
+      stateService.reduce(taskId, (reducer, t) -> reducer.deployStepped(t, done, 0));
       reverted.add(
           target.project()
               + " on "
@@ -111,8 +110,9 @@ public class RevertRunner {
 
   private void discardDeploy(String taskId, Target at) {
     gitDeploy.discardDeploy(at.path(), taskId);
-    stateService.updateTask(
-        taskId, t -> TaskReducer.deployStepped(t, new DeployStep.Discarded(at.project()), 0));
+    stateService.reduce(
+        taskId,
+        (reducer, t) -> reducer.deployStepped(t, new DeployStep.Discarded(at.project()), 0));
   }
 
   private static Deployment.Target recorded(TaskState task, Target target) {
@@ -142,10 +142,10 @@ public class RevertRunner {
    */
   private Outcome handBackConflict(
       String taskId, Target at, List<String> reverted, GitDeploy.RevertConflictException e) {
-    stateService.updateTask(
+    stateService.reduce(
         taskId,
-        t ->
-            TaskReducer.deployStepped(
+        (reducer, t) ->
+            reducer.deployStepped(
                 t,
                 new DeployStep.Conflicted(at.project(), Deployment.Cause.REVERT),
                 clock.millis()));

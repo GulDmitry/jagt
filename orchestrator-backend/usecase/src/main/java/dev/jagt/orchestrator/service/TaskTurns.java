@@ -56,18 +56,19 @@ public class TaskTurns {
    */
   public boolean restored(String taskId, Turn opened, Turn before) {
     boolean[] restored = new boolean[1];
-    stateService.updateTask(
+    stateService.reduce(
         stateService.canonicalTaskId(taskId),
-        task -> {
+        (reducer, task) -> {
           restored[0] = task.turnOrNone().sameTurnAs(opened);
-          return restored[0] ? TaskReducer.turnRestored(task, before) : task;
+          return restored[0] ? reducer.turnRestored(task, before) : task;
         });
     return restored[0];
   }
 
   /** The write that opens the session's turn, for a caller that makes it part of a larger one. */
   public UnaryOperator<TaskState> opening(String step, String digest) {
-    return task -> TaskReducer.relayed(task, step, digest, answeredBy(task), clock.millis());
+    return task ->
+        stateService.reducer().relayed(task, step, digest, answeredBy(task), clock.millis());
   }
 
   private static String answeredBy(TaskState task) {
@@ -98,14 +99,15 @@ public class TaskTurns {
    * turn opened since stays.
    */
   public void closed(String taskId, String role, String step, String digest) {
-    stateService.updateTask(
+    stateService.reduce(
         stateService.canonicalTaskId(taskId),
-        task -> TaskReducer.checkerReadEnded(task, role, step, digest, task.lastActiveTimestamp()));
+        (reducer, task) ->
+            reducer.checkerReadEnded(task, role, step, digest, task.lastActiveTimestamp()));
   }
 
   /** The turn the task's last report answered, passed to whoever holds it now. */
-  public static TaskState closed(TaskState task) {
-    return TaskReducer.turnClosed(task, task.lastActiveTimestamp());
+  public static TaskState closed(TaskReducer reducer, TaskState task) {
+    return reducer.turnClosed(task, task.lastActiveTimestamp());
   }
 
   /**
@@ -113,33 +115,35 @@ public class TaskTurns {
    * Master's profile.
    */
   public void refused(String taskId) {
-    stateService.updateTask(stateService.canonicalTaskId(taskId), task -> closed(task));
+    stateService.reduce(
+        stateService.canonicalTaskId(taskId), (reducer, task) -> closed(reducer, task));
   }
 
   public void left(String taskId, String step) {
-    stateService.updateTask(
-        stateService.canonicalTaskId(taskId), task -> TaskReducer.masterLeft(task, step));
+    stateService.reduce(
+        stateService.canonicalTaskId(taskId), (reducer, task) -> reducer.masterLeft(task, step));
   }
 
   public void took(String taskId) {
-    stateService.updateTask(stateService.canonicalTaskId(taskId), TaskReducer::masterTook);
+    stateService.reduce(stateService.canonicalTaskId(taskId), TaskReducer::masterTook);
   }
 
   public void unanswered(String taskId) {
-    stateService.updateTask(
+    stateService.reduce(
         stateService.canonicalTaskId(taskId),
-        task -> TaskReducer.masterUnanswered(task, task.askedDigest()));
+        (reducer, task) -> reducer.masterUnanswered(task, task.askedDigest()));
   }
 
   public void askedStop(String taskId, String key) {
-    stateService.updateTask(
-        stateService.canonicalTaskId(taskId), task -> TaskReducer.masterAskedStop(task, key));
+    stateService.reduce(
+        stateService.canonicalTaskId(taskId),
+        (reducer, task) -> reducer.masterAskedStop(task, key));
   }
 
   public void pressedDeploy(String taskId, String arrival) {
-    stateService.updateTask(
+    stateService.reduce(
         stateService.canonicalTaskId(taskId),
-        task -> TaskReducer.masterPressedDeploy(task, arrival));
+        (reducer, task) -> reducer.masterPressedDeploy(task, arrival));
   }
 
   public void mark(String taskId, String step, String value) {

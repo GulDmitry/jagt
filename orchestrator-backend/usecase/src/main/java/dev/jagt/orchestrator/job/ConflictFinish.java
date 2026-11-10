@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.OriginContext;
@@ -75,9 +74,10 @@ class ConflictFinish {
             .filter(conflict -> conflict.isHeldBy(stop.at()))
             .isPresent();
     if (!said) {
-      stateService.updateTask(
+      stateService.reduce(
           taskId,
-          task -> TaskReducer.deployStepped(task, new DeployStep.Held(stop.at()), clock.millis()));
+          (reducer, task) ->
+              reducer.deployStepped(task, new DeployStep.Held(stop.at()), clock.millis()));
       log.atInfo()
           .setMessage("conflict resolved held by stop")
           .addKeyValue("task", taskId)

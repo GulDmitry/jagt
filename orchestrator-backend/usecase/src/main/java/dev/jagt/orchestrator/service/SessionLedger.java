@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.SessionSign;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.task.TaskState;
@@ -34,10 +33,10 @@ public class SessionLedger {
   public void sign(String taskId, SessionSign sign) {
     long now = clock.millis();
     AtomicBoolean asked = new AtomicBoolean();
-    stateService.updateTask(
+    stateService.reduce(
         taskId,
-        task -> {
-          TaskState signed = TaskReducer.signed(task, sign, now);
+        (reducer, task) -> {
+          TaskState signed = reducer.signed(task, sign, now);
           asked.set(!task.session().stampedAsk() && signed.session().stampedAsk());
           return signed;
         });

@@ -11,8 +11,11 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.ConflictEnding;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Conflict;
@@ -32,6 +35,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class DeployConflictJobTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @Test
   void aRedPipelineConflictEndsAndTheTaskIsDeployedAgainWhenALaterPipelineOnTheDeployBranchIsGreen(
       @TempDir Path root) {
@@ -41,7 +47,8 @@ class DeployConflictJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     ConfigService config = mock(ConfigService.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     state.putTask(
@@ -85,7 +92,8 @@ class DeployConflictJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .build()
@@ -124,7 +132,8 @@ class DeployConflictJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .build()
@@ -158,7 +167,8 @@ class DeployConflictJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .build()
@@ -192,7 +202,8 @@ class DeployConflictJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .build()

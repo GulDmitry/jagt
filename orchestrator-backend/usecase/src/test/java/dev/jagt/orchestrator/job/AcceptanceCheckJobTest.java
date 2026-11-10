@@ -14,10 +14,12 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.RoleFiles;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.Deployment;
@@ -35,6 +37,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class AcceptanceCheckJobTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final ConfigFile ON =
       ConfigFile.defaults()
@@ -252,7 +257,7 @@ class AcceptanceCheckJobTest {
     Files.writeString(
         root.resolve("roles/acceptance/role.yml"),
         "environments: [{url: \"https://stage.example.com\"}]\n");
-    TaskState restarted = TaskReducer.relayed(deployed("digest"), "accept", "digest", "", 1);
+    TaskState restarted = reducer.relayed(deployed("digest"), "accept", "digest", "", 1);
 
     new CheckerCheckJob(
             new RoleSettings(

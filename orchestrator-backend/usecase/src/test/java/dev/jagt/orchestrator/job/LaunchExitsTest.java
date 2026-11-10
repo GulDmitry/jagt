@@ -7,7 +7,10 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.SessionSign;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.SessionLedger;
 import dev.jagt.orchestrator.service.StateService;
@@ -22,6 +25,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class LaunchExitsTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @Test
   void endsASessionThatExitedBeforeItsFirstReportWithWhatItPrinted(@TempDir Path root) {
     StateService state =
@@ -30,7 +36,8 @@ class LaunchExitsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
     AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.exitTail("ABC-42"))
@@ -50,7 +57,8 @@ class LaunchExitsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
     AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.exitTail("ABC-42")).thenReturn(Optional.empty());
@@ -74,7 +82,8 @@ class LaunchExitsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.NEW).report(AgentReport.PERMISSION).build());
@@ -97,7 +106,8 @@ class LaunchExitsTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     AgentSessions sessions = mock(AgentSessions.class);
 

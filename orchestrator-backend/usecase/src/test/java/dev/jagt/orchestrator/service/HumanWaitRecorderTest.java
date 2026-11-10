@@ -9,9 +9,12 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.HumanWait;
 import dev.jagt.orchestrator.task.HumanWait.Why;
+import dev.jagt.orchestrator.task.HumanWait;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
@@ -30,6 +33,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class HumanWaitRecorderTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @ResourceLock(Resources.GLOBAL)
   @Test
   void recordsTheIntervalAQuestionHoldsTheHumanAndLogsItOnceTheSessionIsAnswered(
@@ -40,7 +46,8 @@ class HumanWaitRecorderTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     state.putTask("ABC-77", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
@@ -80,7 +87,8 @@ class HumanWaitRecorderTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     state.putTask(
@@ -108,7 +116,8 @@ class HumanWaitRecorderTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     state.putTask(

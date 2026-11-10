@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.Guard;
@@ -33,7 +32,9 @@ public class TrustedGitState {
   public boolean trust(String taskId) {
     TaskState task = stateService.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskId));
     Map<String, String> now = read(task);
-    stateService.updateTask(taskId, current -> TaskReducer.gitTrusted(current, GitTrust.of(now)));
+    stateService.reduce(
+        taskId,
+        (reducer, current) -> reducer.gitTrusted(current, GitTrust.of(now)));
     return task.gitTrust() != null
         && task.gitTrust().changed() != null
         && task.report() == AgentReport.QUESTION;
@@ -71,7 +72,9 @@ public class TrustedGitState {
           "git state of " + taskId + " could not be read: " + unreadable.getMessage());
     }
     if (trusted == null) {
-      stateService.updateTask(taskId, current -> TaskReducer.gitTrusted(current, GitTrust.of(now)));
+      stateService.reduce(
+          taskId,
+          (reducer, current) -> reducer.gitTrusted(current, GitTrust.of(now)));
       return Optional.empty();
     }
     List<String> differences = trusted.differences(now);
@@ -83,8 +86,9 @@ public class TrustedGitState {
             + String.join("; ", differences.subList(0, Math.min(NAMED, differences.size())))
             + (differences.size() > NAMED ? "; " + (differences.size() - NAMED) + " more" : "")
             + " — trust adopts them";
-    stateService.updateTask(
-        taskId, current -> TaskReducer.gitChanged(current, changed).refused(Guard.GIT_STATE));
+    stateService.reduce(
+        taskId,
+        (reducer, current) -> reducer.gitChanged(current, changed).refused(Guard.GIT_STATE));
     log.atWarn()
         .setMessage("git state changed")
         .addKeyValue("task", taskId)

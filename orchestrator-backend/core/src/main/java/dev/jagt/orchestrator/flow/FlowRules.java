@@ -16,7 +16,7 @@ public final class FlowRules {
   private FlowRules() {}
 
   public static boolean allows(TaskStatus status, TaskAction action, Facts facts) {
-    return TaskChart.offers(status, action, facts);
+    return TaskChart.current().offers(status, action, facts);
   }
 
   /**
@@ -38,7 +38,7 @@ public final class FlowRules {
       TaskStatus from, TaskAction action, Outcome.Kind outcome) {
     return outcome == Outcome.Kind.GONE
         ? Optional.empty()
-        : TaskChart.land(from, new TaskMove.Ran(action, outcome));
+        : TaskChart.current().land(from, new TaskMove.Ran(action, outcome));
   }
 
   /**
@@ -51,7 +51,7 @@ public final class FlowRules {
 
   /** Every status any action can lead to. */
   public static Set<TaskStatus> targets() {
-    return TaskChart.ranTargets();
+    return TaskChart.current().ranTargets();
   }
 
   /**
@@ -59,7 +59,7 @@ public final class FlowRules {
    * the code yet.
    */
   public static boolean planMayComeFirst(TaskStatus status) {
-    return TaskChart.planMayComeFirst(status);
+    return TaskChart.current().planMayComeFirst(status);
   }
 
   /** Whether a task may be moved to {@code status} by its own agent rather than by jagt. */
@@ -82,7 +82,7 @@ public final class FlowRules {
     if (!reportable(to)) {
       return Optional.of(to + " is jagt's to set, not a task's to report");
     }
-    if (TaskChart.land(from, new TaskMove.Reported(to, false)).isPresent()) {
+    if (TaskChart.current().land(from, new TaskMove.Reported(to, false)).isPresent()) {
       return Optional.empty();
     }
     if (to == TaskStatus.PLAN_PENDING) {
@@ -131,7 +131,7 @@ public final class FlowRules {
    * VERIFYING until jagt has run the project's own command, so a human never opens a red tree.
    */
   public static TaskStatus reported(TaskStatus from, TaskStatus to, boolean verificationOwed) {
-    return TaskChart.land(from, new TaskMove.Reported(to, verificationOwed)).orElse(to);
+    return TaskChart.current().land(from, new TaskMove.Reported(to, verificationOwed)).orElse(to);
   }
 
   /**
@@ -171,7 +171,7 @@ public final class FlowRules {
       throw new IllegalArgumentException(
           read + " is not what a read of the review round concludes");
     }
-    return TaskChart.land(from, new TaskMove.Read(read)).orElse(from);
+    return TaskChart.current().land(from, new TaskMove.Read(read)).orElse(from);
   }
 
   /**
@@ -186,7 +186,9 @@ public final class FlowRules {
 
   /** A verified hand-back reaches the human; a failed one goes back to its session. */
   public static TaskStatus verified(boolean passed) {
-    return TaskChart.land(TaskStatus.VERIFYING, new TaskMove.Verified(passed)).orElseThrow();
+    return TaskChart.current()
+        .land(TaskStatus.VERIFYING, new TaskMove.Verified(passed))
+        .orElseThrow();
   }
 
   /** A session handed findings, an answer or a go is at work again. */
@@ -286,7 +288,7 @@ public final class FlowRules {
    * moves, and only on a red the code owns.
    */
   public static TaskStatus deployReadLands(TaskStatus from, boolean redOnTheCode) {
-    return TaskChart.land(from, new TaskMove.DeployRead(redOnTheCode)).orElse(from);
+    return TaskChart.current().land(from, new TaskMove.DeployRead(redOnTheCode)).orElse(from);
   }
 
   /** A plan waiting to be read, rather than a round of code. */
@@ -329,7 +331,7 @@ public final class FlowRules {
    * way in.
    */
   public static Set<TaskStatus> redirects() {
-    return TaskChart.verifiable();
+    return TaskChart.current().verifiable();
   }
 
   private static final Set<TaskStop.Trigger> LIFTED_BY_THE_MASTER =

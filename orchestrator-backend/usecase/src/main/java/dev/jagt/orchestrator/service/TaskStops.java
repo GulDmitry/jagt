@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.StopHold;
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.LoopBreaker;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.RoundTrail;
@@ -170,7 +169,7 @@ public class TaskStops {
 
   /** Writes the read onto the standing stop only while that stop is the one it was made for. */
   public void triaged(String taskId, String stopKey, StopTriage read) {
-    stateService.updateTask(taskId, task -> TaskReducer.triaged(task, stopKey, read));
+    stateService.reduce(taskId, (reducer, task) -> reducer.triaged(task, stopKey, read));
   }
 
   public boolean stopped(String taskId) {
@@ -203,28 +202,28 @@ public class TaskStops {
    */
   public void lift(String taskId) {
     boolean byTheMaster = CaseDoor.byTheMaster();
-    stateService.updateTask(
+    stateService.reduce(
         taskId,
-        task ->
-            TaskReducer.masterLiftedStops(
-                TaskReducer.lift(task, clock.millis()),
+        (reducer, task) ->
+            reducer.masterLiftedStops(
+                reducer.lift(task, clock.millis()),
                 byTheMaster ? task.masterOrNone().liftedStops() + 1 : 0));
   }
 
   /** A human's lift that leaves the task's session due on the next model tier. */
   public void escalate(String taskId) {
     boolean byTheMaster = CaseDoor.byTheMaster();
-    stateService.updateTask(
+    stateService.reduce(
         taskId,
-        task ->
-            TaskReducer.masterLiftedStops(
-                TaskReducer.escalated(task, clock.millis()),
+        (reducer, task) ->
+            reducer.masterLiftedStops(
+                reducer.escalated(task, clock.millis()),
                 byTheMaster ? task.masterOrNone().liftedStops() + 1 : 0));
   }
 
   /** A deploy by a human restores the Master's lifts, whether or not a stop stands. */
   public void restoreMasterLifts(String taskId) {
-    stateService.updateTask(taskId, task -> TaskReducer.masterLiftedStops(task, 0));
+    stateService.reduce(taskId, (reducer, task) -> reducer.masterLiftedStops(task, 0));
   }
 
   /**
@@ -277,11 +276,11 @@ public class TaskStops {
   private Optional<TaskStop> endWhen(
       String taskId, TaskStop.Trigger.Ends ends, boolean disproves, String request) {
     AtomicReference<@Nullable TaskStop> ended = new AtomicReference<>();
-    stateService.updateTask(
+    stateService.reduce(
         taskId,
-        task -> {
+        (reducer, task) -> {
           TaskState after =
-              disproves ? TaskReducer.ended(task, ends, request, clock.millis()) : task;
+              disproves ? reducer.ended(task, ends, request, clock.millis()) : task;
           if (task.stopped() && !after.stopped()) {
             ended.set(task.stop());
           }
@@ -303,9 +302,9 @@ public class TaskStops {
     AtomicReference<@Nullable TaskStop> standing = new AtomicReference<>();
     AtomicReference<@Nullable TaskStop> tripped = new AtomicReference<>();
     AtomicReference<@Nullable TaskState> stoppedTask = new AtomicReference<>();
-    stateService.updateTask(
+    stateService.reduce(
         taskId,
-        task -> {
+        (reducer, task) -> {
           if (task.stopped()) {
             standing.set(task.stop());
             return task;
@@ -313,7 +312,7 @@ public class TaskStops {
           TaskState recorded = record.apply(task);
           Optional<TaskStop> stop = check.apply(recorded);
           TaskState after =
-              stop.map(s -> TaskReducer.stop(recorded, s, clock.millis())).orElse(recorded);
+              stop.map(s -> reducer.stop(recorded, s, clock.millis())).orElse(recorded);
           stop.ifPresent(tripped::set);
           stop.ifPresent(s -> stoppedTask.set(after));
           stop.ifPresent(standing::set);

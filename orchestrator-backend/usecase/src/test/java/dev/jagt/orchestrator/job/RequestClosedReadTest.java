@@ -10,7 +10,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.DeployStep;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Answer;
@@ -27,12 +29,15 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class RequestClosedReadTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ReviewReader reader = mock(ReviewReader.class);
   private final MergedRequests merged = mock(MergedRequests.class);
@@ -44,7 +49,8 @@ class RequestClosedReadTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString())));
+                .withStateFile(root.resolve("state.json").toString())),
+                reducer);
   }
 
   @Test
@@ -58,13 +64,13 @@ class RequestClosedReadTest {
                 TaskStatus.DEPLOY_CONFLICT)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task,
             new DeployStep.Opened(
                 List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
             1_000);
     TaskState red =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_100);
     when(reader.read("ABC-42", "http://mr/beta"))
         .thenReturn(
@@ -95,13 +101,13 @@ class RequestClosedReadTest {
                 TaskStatus.DEPLOY_CONFLICT)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task,
             new DeployStep.Opened(
                 List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
             1_000);
     TaskState conflicted =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_100);
     when(reader.read("ABC-42", "http://mr/beta"))
         .thenReturn(
@@ -130,13 +136,13 @@ class RequestClosedReadTest {
                 TaskStatus.DEPLOY_CONFLICT)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             task,
             new DeployStep.Opened(
                 List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
             1_000);
     TaskState red =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("alpha", Deployment.Cause.RED_PIPELINE), 1_100);
     state.putTask("ABC-42", red);
     when(reader.read("ABC-42", "http://mr/alpha"))
@@ -163,7 +169,7 @@ class RequestClosedReadTest {
       boolean closed, boolean changed, @TempDir Path root) {
     TaskRepo beta = new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta");
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             TaskState.builder(
                     List.of(
                         new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/a"),
@@ -174,7 +180,7 @@ class RequestClosedReadTest {
                 List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
             1_000);
     TaskState conflicted =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_100);
     when(reader.read("ABC-42", "http://mr/beta"))
         .thenReturn(
@@ -197,7 +203,7 @@ class RequestClosedReadTest {
   @Test
   void saysNothingChangedWhereTheRequestCouldNotBeRead(@TempDir Path root) {
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             TaskState.builder(
                     List.of(
                         new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/a"),
@@ -208,7 +214,7 @@ class RequestClosedReadTest {
                 List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
             1_000);
     TaskState conflicted =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_100);
     when(reader.read("ABC-42", "http://mr/beta")).thenThrow(new IllegalStateException("down"));
 

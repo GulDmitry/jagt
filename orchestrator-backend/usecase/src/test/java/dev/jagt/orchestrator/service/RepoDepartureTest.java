@@ -13,6 +13,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -29,6 +32,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class RepoDepartureTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private final ConfigService config = mock(ConfigService.class);
   private final RetiredWorktrees worktrees = mock(RetiredWorktrees.class);
   private final AgentSessions sessions = mock(AgentSessions.class);
@@ -41,7 +47,8 @@ class RepoDepartureTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString())));
+                .withStateFile(root.resolve("state.json").toString())),
+                reducer);
   }
 
   @Test

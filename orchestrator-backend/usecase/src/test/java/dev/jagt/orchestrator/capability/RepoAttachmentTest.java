@@ -14,10 +14,13 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
@@ -35,6 +38,9 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class RepoAttachmentTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @TempDir Path root;
 
@@ -61,7 +67,7 @@ class RepoAttachmentTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+    state = new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     attachment = new RepoAttachment(config, state, worktrees, relay);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
   }

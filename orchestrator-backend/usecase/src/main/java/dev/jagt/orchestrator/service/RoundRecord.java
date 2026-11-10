@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Pipeline;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.ChecksUnread;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
@@ -36,12 +35,12 @@ public class RoundRecord {
   public Recorded record(String taskId, String project, ReviewFacts facts, String tip) {
     if (gotNoListing(facts.pipeline().status())) {
       long now = clock.millis();
-      stateService.updateTask(
+      stateService.reduce(
           taskId,
-          task ->
-              TaskReducer.headSeen(
-                  TaskReducer.approvalRead(
-                          TaskReducer.checksUnread(
+          (reducer, task) ->
+              reducer.headSeen(
+                  reducer.approvalRead(
+                          reducer.checksUnread(
                               task, new ChecksUnread(now, facts.pipeline().failure())),
                           facts.request().approved())
                       .withRequestOpenedAt(facts.request().openedAt()),
@@ -77,11 +76,11 @@ public class RoundRecord {
         facts.request().openedAt() > 0
             && before.map(TaskState::requestOpenedAt).orElse(0L) != facts.request().openedAt();
     if (newChecks || newTip || newApproval || newOpened) {
-      stateService.updateTask(
+      stateService.reduce(
           taskId,
-          task ->
-              TaskReducer.approvalRead(
-                      TaskReducer.checksRead(TaskReducer.headSeen(task, tip), read, tip),
+          (reducer, task) ->
+              reducer.approvalRead(
+                      reducer.checksRead(reducer.headSeen(task, tip), read, tip),
                       facts.request().approved())
                   .withRequestOpenedAt(facts.request().openedAt()));
     }

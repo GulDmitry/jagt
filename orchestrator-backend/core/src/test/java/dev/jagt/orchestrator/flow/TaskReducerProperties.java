@@ -26,6 +26,10 @@ import net.jqwik.api.Provide;
 
 class TaskReducerProperties {
 
+  private static final TaskChart chart = new TaskChart(Composition.builtIn());
+
+  private static final TaskReducer reducer = new TaskReducer(chart);
+
   @Property
   void aDeployConflictNeverTravelsWithAStatusChange(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
@@ -33,7 +37,7 @@ class TaskReducerProperties {
         .reduce(
             start,
             (task, move) -> {
-              TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
               Optional.of(next)
                   .filter(moved -> moved.status() != task.status())
                   .filter(
@@ -60,7 +64,7 @@ class TaskReducerProperties {
         .reduce(
             start,
             (task, move) -> {
-              TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
               Optional.ofNullable(task.stop())
                   .filter(
                       stop ->
@@ -80,7 +84,7 @@ class TaskReducerProperties {
         .reduce(
             start,
             (task, move) -> {
-              TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
               Optional.of(task)
                   .filter(before -> before.planGate() == PlanGate.REQUIRED)
                   .filter(before -> !(move instanceof TaskMove.PlanApproved))
@@ -97,7 +101,7 @@ class TaskReducerProperties {
         .reduce(
             start,
             (task, move) -> {
-              TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
               Optional.of(task)
                   .filter(before -> before.report().asks())
                   .filter(
@@ -122,7 +126,7 @@ class TaskReducerProperties {
         .reduce(
             start,
             (task, move) -> {
-              TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
               Optional.of(task)
                   .filter(TaskState::gitStateChanged)
                   .filter(before -> !(move instanceof TaskMove.GitTrusted))
@@ -139,7 +143,7 @@ class TaskReducerProperties {
         .reduce(
             start,
             (task, move) -> {
-              TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
               Optional.of(next)
                   .filter(moved -> RequestPhase.of(moved) == RequestPhase.MERGED)
                   .ifPresent(
@@ -160,7 +164,7 @@ class TaskReducerProperties {
         .reduce(
             start,
             (task, move) -> {
-              TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
               Optional.of(move)
                   .filter(seen -> seen instanceof TaskMove.HeadSeen head && head.moved())
                   .ifPresent(
@@ -177,8 +181,8 @@ class TaskReducerProperties {
         .reduce(
             start,
             (task, move) -> {
-              TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
-              Optional.of(TaskChart.effects(Phases.of(task), move))
+              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
+              Optional.of(chart.effects(Phases.of(task), move))
                   .filter(List::isEmpty)
                   .ifPresent(
                       none -> {
@@ -198,7 +202,7 @@ class TaskReducerProperties {
         .reduce(
             start,
             (task, move) -> {
-              TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
               long id = task.turnOrNone().id();
               Optional.of(move)
                   .filter(
@@ -233,13 +237,13 @@ class TaskReducerProperties {
         moves.stream()
             .reduce(
                 start,
-                (task, move) -> TaskReducer.reduce(task, move, "step", true, 1_000),
+                (task, move) -> reducer.reduce(task, move, "step", true, 1_000),
                 (left, right) -> right);
     TaskState second =
         moves.stream()
             .reduce(
                 start,
-                (task, move) -> TaskReducer.reduce(task, move, "step", true, 1_000),
+                (task, move) -> reducer.reduce(task, move, "step", true, 1_000),
                 (left, right) -> right);
 
     assertThat(second).isEqualTo(first);
@@ -251,7 +255,7 @@ class TaskReducerProperties {
         .reduce(
             start,
             (task, move) -> {
-              TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
               Optional.of(task)
                   .filter(before -> before.status() == TaskStatus.DONE)
                   .ifPresent(before -> assertThat(next.status()).isEqualTo(TaskStatus.DONE));
@@ -267,10 +271,10 @@ class TaskReducerProperties {
         .reduce(
             start,
             (task, raw) -> {
-              TaskMove move = TaskReducer.resolved(task, raw);
+              TaskMove move = reducer.resolved(task, raw);
               Map<String, String> declared =
-                  TaskChart.step(Phases.of(task), move).configuration().toPlain();
-              TaskState next = TaskReducer.reduce(task, move, "step", true, 1_000);
+                  chart.step(Phases.of(task), move).configuration().toPlain();
+              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
               assertThat(
                       Map.of(
                           "git",
@@ -316,7 +320,7 @@ class TaskReducerProperties {
             start,
             (task, raw) -> {
               TaskState next =
-                  TaskReducer.reduce(task, TaskReducer.resolved(task, raw), "step", true, 1_000);
+                  reducer.reduce(task, reducer.resolved(task, raw), "step", true, 1_000);
               Optional.of(next)
                   .filter(moved -> !FlowRules.closed(moved.status()) && !moved.stopped())
                   .ifPresent(
@@ -345,7 +349,7 @@ class TaskReducerProperties {
             start,
             (task, raw) -> {
               TaskState next =
-                  TaskReducer.reduce(task, TaskReducer.resolved(task, raw), "step", true, 1_000);
+                  reducer.reduce(task, reducer.resolved(task, raw), "step", true, 1_000);
               Optional.of(next)
                   .filter(
                       moved ->
@@ -354,9 +358,9 @@ class TaskReducerProperties {
                   .ifPresent(
                       moved -> {
                         TaskState read =
-                            TaskReducer.masterSealed(moved, "fingerprint", moved.turnOrNone().id());
+                            reducer.masterSealed(moved, "fingerprint", moved.turnOrNone().id());
                         assertThat(MasterPhase.of(read)).isEqualTo(MasterPhase.READ);
-                        assertThat(MasterPhase.of(TaskReducer.masterVerdictGone(read)))
+                        assertThat(MasterPhase.of(reducer.masterVerdictGone(read)))
                             .isEqualTo(MasterPhase.STANDS_IN);
                       });
               return next;

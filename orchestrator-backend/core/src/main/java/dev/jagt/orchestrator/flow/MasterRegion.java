@@ -18,7 +18,8 @@ record MasterRegion() implements Role {
   }
 
   @Override
-  public void declareRegion(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  public void declareRegion(
+      ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Landing landing) {
     chart.region(REGION, MasterPhase.STANDS_IN);
     for (MasterPhase from : MasterPhase.values()) {
       for (MasterPhase to : MasterPhase.values()) {

@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.GitTrust;
@@ -139,11 +138,12 @@ public class TaskProvisioning {
             .autoReview(config.autoReview().enabledOrDefault())
             .gitTrust(trust)
             .build();
-    stateService.putTask(
+    stateService.put(
         request.taskId(),
-        TaskReducer.planAsked(
-            autoplan(config) ? TaskReducer.autoplanned(born) : born,
-            AgentSessions.planMode(request.mode())));
+        reducer ->
+            reducer.planAsked(
+                autoplan(config) ? reducer.autoplanned(born) : born,
+                AgentSessions.planMode(request.mode())));
   }
 
   private String started(

@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.Facts;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.Turns;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
@@ -48,11 +47,11 @@ class ConflictStall {
     long now = clock.millis();
     Duration after = config.load().conflictStallOrDefault();
     AtomicReference<Conflict.@Nullable Told> told = new AtomicReference<>();
-    stateService.updateTask(
+    stateService.reduce(
         taskId,
-        task -> {
+        (reducer, task) -> {
           TaskState seen =
-              TaskReducer.deployStepped(task, new DeployStep.Seen(conflict.progress()), now);
+              reducer.deployStepped(task, new DeployStep.Seen(conflict.progress()), now);
           Optional<Conflict> due =
               seen.currentConflict().filter(standing -> standing.due(after, now));
           if (due.isEmpty()) {
@@ -60,10 +59,10 @@ class ConflictStall {
           }
           String reason = due.get().reason(conflict.worktree().toString());
           if (!due.get().askedTheMaster() && masterAnswers(seen)) {
-            return TaskReducer.conflictReferred(
+            return reducer.conflictReferred(
                 seen, "The " + kindOf(seen) + " conflict stalled: " + reason, now);
           }
-          TaskState stalled = TaskReducer.deployStepped(seen, new DeployStep.Told(reason), now);
+          TaskState stalled = reducer.deployStepped(seen, new DeployStep.Told(reason), now);
           stalled.currentConflict().map(Conflict::told).ifPresent(told::set);
           return stalled;
         });

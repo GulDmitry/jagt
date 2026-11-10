@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.OriginContext;
@@ -91,9 +90,10 @@ class AutoReviewPolls {
                       !t.toldOrNone()
                           .said(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE, String.valueOf(round)))
               .isPresent()) {
-        stateService.updateTask(
+        stateService.reduce(
             taskId,
-            t -> TaskReducer.told(t, ToldOnce.Kind.AUTO_REVIEW_UNREADABLE, String.valueOf(round)));
+            (reducer, t) ->
+                reducer.told(t, ToldOnce.Kind.AUTO_REVIEW_UNREADABLE, String.valueOf(round)));
         notifications.send(
             Notification.fromAgent(taskId, "auto-review", result.message())
                 .withEvent(Notification.Event.AUTO_REVIEW));

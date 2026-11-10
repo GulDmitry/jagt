@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.RoleInvalid;
 import dev.jagt.orchestrator.flow.CheckerRole;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Roles;
 import dev.jagt.orchestrator.port.Problem;
 import jakarta.annotation.PostConstruct;
@@ -48,7 +49,16 @@ public final class InstalledRoles {
 
   @PostConstruct
   void install() {
-    Roles.install(definitions.stream().map(InstalledRoles::checker).toList());
+    Roles.install(checkers());
+  }
+
+  /** The chart composition of the standing roles. */
+  public Composition composition() {
+    return Composition.of(checkers());
+  }
+
+  private List<CheckerRole> checkers() {
+    return definitions.stream().map(InstalledRoles::checker).toList();
   }
 
   private static Optional<RoleDefinition> standingIn(Path folder, List<String> refused) {

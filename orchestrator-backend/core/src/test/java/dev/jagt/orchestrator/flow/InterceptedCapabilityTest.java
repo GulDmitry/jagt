@@ -10,7 +10,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.AgentPresence;
-import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.time.Clock;
@@ -63,7 +62,7 @@ class InterceptedCapabilityTest {
   }
 
   private final List<String> log = new ArrayList<>();
-  private final TaskStore tasks = mock(TaskStore.class);
+  private final ReducingStore tasks = mock(ReducingStore.class);
   private final AgentPresence agents = mock(AgentPresence.class);
 
   @Test
@@ -102,7 +101,7 @@ class InterceptedCapabilityTest {
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("our own check says no");
     assertThat(log).isEmpty();
-    verify(tasks, never()).updateTask(eq("ABC-1"), any());
+    verify(tasks, never()).reduce(eq("ABC-1"), any());
   }
 
   @Test

@@ -8,11 +8,14 @@ import dev.jagt.orchestrator.flow.Capabilities;
 import dev.jagt.orchestrator.flow.CapabilityInterceptor;
 import dev.jagt.orchestrator.flow.FlowEngine;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.ReducingStore;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskCapability;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.port.RequestlessShip;
-import dev.jagt.orchestrator.port.TaskStore;
+import dev.jagt.orchestrator.service.InstalledRoles;
 import dev.jagt.orchestrator.service.MergedRequests;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TrustedGitState;
@@ -25,6 +28,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @Slf4j
 public class FlowWiring {
+
+  @Bean
+  public TaskChart taskChart(InstalledRoles roles) {
+    return new TaskChart(roles.composition());
+  }
+
+  @Bean
+  public TaskReducer taskReducer(TaskChart chart) {
+    return new TaskReducer(chart);
+  }
 
   @Bean
   public Capabilities capabilities(
@@ -78,7 +91,7 @@ public class FlowWiring {
 
   @Bean
   public FlowEngine flowEngine(
-      TaskStore tasks,
+      ReducingStore tasks,
       Capabilities capabilities,
       AgentPresence agents,
       Clock clock,
@@ -87,7 +100,7 @@ public class FlowWiring {
   }
 
   @Bean
-  public FlowReports flowReports(TaskStore tasks, Clock clock) {
+  public FlowReports flowReports(ReducingStore tasks, Clock clock) {
     return new FlowReports(tasks, clock);
   }
 }

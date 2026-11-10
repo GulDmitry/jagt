@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.protocol.PlanRepositories;
 import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.GitTrust;
@@ -70,11 +69,11 @@ public class PlanPlacement {
             : repos.getFirst().baseBranch();
     List<TaskRepo> placed = repos.stream().map(NewRepo::registered).toList();
     GitTrust trust = worktrees.trust(repos);
-    stateService.updateTask(
+    stateService.reduce(
         taskId,
-        current -> {
-          TaskState moved = TaskReducer.placed(current, placed, override);
-          return trust == null ? moved : TaskReducer.gitTrusted(moved, trust);
+        (reducer, current) -> {
+          TaskState moved = reducer.placed(current, placed, override);
+          return trust == null ? moved : reducer.gitTrusted(moved, trust);
         });
   }
 }

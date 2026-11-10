@@ -15,6 +15,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.StateService;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -29,6 +32,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tools.jackson.databind.json.JsonMapper;
 
 class McpControllerTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void refusesACallAFormCouldSendWithoutAPreflight() throws Exception {
@@ -79,7 +85,7 @@ class McpControllerTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(mapper, paths);
+    StateService state = new StateService(mapper, paths, reducer);
     MockMvc mvc =
         MockMvcBuilders.standaloneSetup(
                 new McpController(
@@ -105,7 +111,7 @@ class McpControllerTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(mapper, paths);
+    StateService state = new StateService(mapper, paths, reducer);
     MockMvc mvc =
         MockMvcBuilders.standaloneSetup(
                 new McpController(
@@ -147,7 +153,7 @@ class McpControllerTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(mapper, paths);
+    StateService state = new StateService(mapper, paths, reducer);
     MockMvc mvc =
         MockMvcBuilders.standaloneSetup(
                 new McpController(

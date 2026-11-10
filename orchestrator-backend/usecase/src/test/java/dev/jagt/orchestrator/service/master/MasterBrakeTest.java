@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.Session;
@@ -20,6 +23,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class MasterBrakeTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @Test
   void stopsActWhenThreeTasksTheMasterMovedEndBadlyInARow(@TempDir Path root) {
     OrchestratorPaths paths =
@@ -27,7 +33,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
 
     brake.observe(
         Map.of(
@@ -64,7 +70,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
 
     brake.observe(
         Map.of(
@@ -103,7 +109,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
 
     brake.observe(
         Map.of(
@@ -136,7 +142,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
 
     brake.observe(
         Map.of(
@@ -175,7 +181,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
 
     brake.observe(
         Map.of(
@@ -216,7 +222,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
 
     brake.observe(
         Map.of(
@@ -246,7 +252,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
 
     brake.observe(
         Map.of(
@@ -273,7 +279,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
@@ -313,7 +319,7 @@ class MasterBrakeTest {
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
 
     boolean restored = brake.restore();
 
@@ -328,7 +334,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     MasterBrake brake = new MasterBrake(state, paths);
     brake.follow();
 
@@ -367,7 +373,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
     brake.observe(
         Map.of(
             "ABC-1",
@@ -420,7 +426,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
     brake.observe(
         Map.of(
             "ABC-1",
@@ -494,7 +500,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     new MasterBrake(state, paths)
         .observe(
             Map.of(
@@ -535,7 +541,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths), paths);
+    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
 
     boolean restored = brake.restore();
 

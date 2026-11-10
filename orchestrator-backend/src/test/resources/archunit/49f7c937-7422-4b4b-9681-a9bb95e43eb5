@@ -1,4 +1,2 @@
 Field <dev.jagt.orchestrator.flow.TaskChart.current>
-Field <dev.jagt.orchestrator.flow.TaskChart.installed>
-Field <dev.jagt.orchestrator.flow.TaskChart.ranTargets>
 Field <dev.jagt.orchestrator.service.ToolGate.board>

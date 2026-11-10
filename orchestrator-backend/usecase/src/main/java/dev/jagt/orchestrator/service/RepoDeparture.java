@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import java.util.List;
@@ -35,8 +34,8 @@ public class RepoDeparture {
       return false;
     }
     Set<String> trustedOnlyByIt = worktrees.trustedOnlyBy(taskId, task, repo);
-    stateService.updateTask(
-        taskId, current -> TaskReducer.repoLeft(current, project, trustedOnlyByIt));
+    stateService.reduce(
+        taskId, (reducer, current) -> reducer.repoLeft(current, project, trustedOnlyByIt));
     settle(taskId, repo, cause);
     return true;
   }

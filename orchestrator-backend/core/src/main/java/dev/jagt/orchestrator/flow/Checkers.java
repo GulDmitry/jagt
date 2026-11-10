@@ -19,19 +19,20 @@ public final class Checkers {
 
   /** The ids of the installed checkers, in composition order. */
   public static List<String> installed() {
-    return TaskChart.installedCheckers();
+    return TaskChart.current().installedCheckers();
   }
 
   /** Where each installed checker stands for the task, in composition order. */
   public static Map<String, CheckerPhase> of(TaskState task) {
     Map<String, CheckerPhase> phases = new LinkedHashMap<>();
-    TaskChart.installedCheckers().forEach(role -> phases.put(role, CheckerPhase.of(task, role)));
+    TaskChart.current().installedCheckers().forEach(role ->
+        phases.put(role, CheckerPhase.of(task, role)));
     return phases;
   }
 
   /** The installed checkers whose {@code role.yml} declares jobs. */
   public static List<String> withJobs() {
-    return TaskChart.composition().withJobs();
+    return TaskChart.current().composition().withJobs();
   }
 
   /** The first checker whose read is running: it holds the turn. */

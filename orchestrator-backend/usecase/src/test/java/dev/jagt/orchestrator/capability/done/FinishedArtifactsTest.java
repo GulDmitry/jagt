@@ -5,6 +5,9 @@ import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -27,6 +30,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class FinishedArtifactsTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @Test
   void keepsTheDocumentsAndTheRecordOfAFinishedTaskWhereAHumanCanStillReadThem(@TempDir Path root)
       throws Exception {
@@ -40,7 +46,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")
@@ -81,7 +87,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")
@@ -115,7 +121,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")
@@ -152,7 +158,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")
@@ -184,7 +190,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")
@@ -228,7 +234,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")
@@ -262,7 +268,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")

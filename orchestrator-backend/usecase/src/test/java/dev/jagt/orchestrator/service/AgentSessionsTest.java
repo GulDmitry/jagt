@@ -21,7 +21,10 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Refusal;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.master.MasterBrake;
@@ -50,6 +53,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class AgentSessionsTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @TempDir Path root;
 
   private StateService state;
@@ -68,7 +74,7 @@ class AgentSessionsTest {
             .withStateFile(root.resolve("state.json").toString())
             .withConfigFile(configFile.toString());
     OrchestratorPaths paths = new OrchestratorPaths(properties);
-    state = new StateService(new JsonMapper(), paths);
+    state = new StateService(new JsonMapper(), paths, reducer);
     config = new ConfigService(paths, agentRuntime, new ActStops(new MasterBrake(state, paths)));
   }
 

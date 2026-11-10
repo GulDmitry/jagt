@@ -80,7 +80,7 @@ public class AgentStatusReports {
                 (was, next) ->
                     closed(
                         signed(
-                            TaskReducer.repoAsked(
+                            stateService.reducer().repoAsked(
                                     planned(was, linked(was, next, url, requestsByProject)),
                                     said.needsProject())
                                 .judged(said.switches())),
@@ -92,10 +92,10 @@ public class AgentStatusReports {
           .task(taskId)
           .map(handBack::pushedTips)
           .ifPresent(
-              tip -> stateService.updateTask(taskId, task -> TaskReducer.headSeen(task, tip)));
+              tip -> stateService.reduce(taskId, (reducer, task) -> reducer.headSeen(task, tip)));
     }
     if (said.noPlan()) {
-      stateService.updateTask(taskId, TaskReducer::noPlanDeclared);
+      stateService.reduce(taskId, TaskReducer::noPlanDeclared);
     }
     TaskStatus previous = written.previous();
     TaskStatus landed = written.now();
@@ -281,18 +281,20 @@ public class AgentStatusReports {
         + (FlowRules.headedForTheMaster(landed) && handBack.masterReads() ? next : "");
   }
 
-  private static TaskState signed(TaskState next) {
-    return TaskReducer.signed(next, new SessionSign.Reported(), next.lastActiveTimestamp());
+  private TaskState signed(TaskState next) {
+    return stateService
+        .reducer()
+        .signed(next, new SessionSign.Reported(), next.lastActiveTimestamp());
   }
 
   private TaskState closed(TaskState next, boolean closesTurn) {
     if (!closesTurn) {
       return next;
     }
-    return TaskTurns.closed(next);
+    return TaskTurns.closed(stateService.reducer(), next);
   }
 
-  private static TaskState linked(
+  private TaskState linked(
       TaskStatus was, TaskState next, @Nullable String url, Map<String, String> requestsByProject) {
     if (url == null) {
       return next;
@@ -310,8 +312,10 @@ public class AgentStatusReports {
                                 .isPresent()));
     boolean newRound = FlowRules.outForReview(next.status()) && !sameRound;
     long now = next.lastActiveTimestamp();
-    return TaskReducer.relinked(
-        TaskReducer.requestLinked(next, requestsByProject, url, newRound, now), now);
+    return stateService
+        .reducer()
+        .relinked(
+            stateService.reducer().requestLinked(next, requestsByProject, url, newRound, now), now);
   }
 
   /** Read as the plan is put up, not after: what VERIFYING runs is what was ratified. */

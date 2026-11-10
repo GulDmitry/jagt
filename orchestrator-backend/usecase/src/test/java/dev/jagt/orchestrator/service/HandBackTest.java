@@ -6,6 +6,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.protocol.PlanProbes;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
@@ -26,6 +29,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class HandBackTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @Test
   void owesNoVerificationForAProjectTheConfigurationNoLongerNames(@TempDir Path root)
       throws IOException {
@@ -45,7 +51,8 @@ class HandBackTest {
         new ConfigService(
             paths,
             mock(AgentRuntime.class),
-            new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths), paths)));
+            new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths,
+            reducer), paths)));
     HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
     boolean owed =
@@ -73,7 +80,8 @@ class HandBackTest {
         new ConfigService(
             paths,
             mock(AgentRuntime.class),
-            new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths), paths)));
+            new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths,
+            reducer), paths)));
     HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
     boolean owed =

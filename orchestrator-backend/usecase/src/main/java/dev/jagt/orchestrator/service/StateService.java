@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.flow.ReducingStore;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AtomicFiles;
 import dev.jagt.orchestrator.task.ForeignLinks;
@@ -19,7 +21,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -35,7 +39,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 @Service
 @Slf4j
-public class StateService implements dev.jagt.orchestrator.port.TaskStore {
+public class StateService implements ReducingStore {
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record StateFile(Map<String, TaskState> tasks) {
@@ -61,7 +65,10 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
 
   private @Nullable FileVersion cachedVersion;
 
-  public StateService(ObjectMapper mapper, OrchestratorPaths paths) {
+  private final TaskReducer reducer;
+
+  public StateService(ObjectMapper mapper, OrchestratorPaths paths, TaskReducer reducer) {
+    this.reducer = reducer;
     // A missing primitive defaults to 0/false instead of failing the whole load: adding a `long` to
     // TaskState would otherwise make every older state.json unreadable.
     this.mapper =
@@ -137,6 +144,21 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
           return file;
         });
     return found.get();
+  }
+
+  @Override
+  public boolean reduce(String taskId, BiFunction<TaskReducer, TaskState, TaskState> update) {
+    return updateTask(taskId, task -> update.apply(reducer, task));
+  }
+
+  /** The reducer behind {@link #reduce}, for a write composed before it reaches the store. */
+  public TaskReducer reducer() {
+    return reducer;
+  }
+
+  /** Writes the task {@code made} builds from the reducer under {@code taskId}. */
+  public void put(String taskId, Function<TaskReducer, TaskState> made) {
+    putTask(taskId, made.apply(reducer));
   }
 
   public boolean removeTask(String taskId) {

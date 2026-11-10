@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.OneLine;
@@ -125,23 +124,23 @@ public class MasterReview {
         .filter(read -> read.round() != sealed.sealedRound())
         .ifPresent(
             read ->
-                state.updateTask(
+                state.reduce(
                     taskId,
-                    current ->
+                    (reducer, current) ->
                         sealedAs(current, fingerprint)
                                 && current.masterOrNone().sealedRound() != read.round()
-                            ? TaskReducer.masterSealed(current, fingerprint, read.round())
+                            ? reducer.masterSealed(current, fingerprint, read.round())
                             : current));
   }
 
   private void clearSeal(String taskId, TaskState task) {
     String held = task.masterOrNone().seal();
     if (!held.isEmpty()) {
-      state.updateTask(
+      state.reduce(
           taskId,
-          current ->
+          (reducer, current) ->
               current.masterOrNone().seal().equals(held)
-                  ? TaskReducer.masterVerdictGone(current)
+                  ? reducer.masterVerdictGone(current)
                   : current);
     }
   }
@@ -159,9 +158,9 @@ public class MasterReview {
         .map(
             bytes -> {
               String fingerprint = JagtJson.fingerprint(bytes);
-              state.updateTask(
+              state.reduce(
                   taskId,
-                  current -> TaskReducer.masterSealed(current, fingerprint, review.round()));
+                  (reducer, current) -> reducer.masterSealed(current, fingerprint, review.round()));
               return JagtJson.write(
                   JagtJson.in(String.valueOf(task.worktreePath()), STORED), bytes);
             })

@@ -8,7 +8,10 @@ import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Outcome;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Specs;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -22,6 +25,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class SpecFoldTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @Test
   void foldsTheChangeInEveryRepositoryOfTheTask(@TempDir Path root) {
     StateService state =
@@ -30,7 +36,8 @@ class SpecFoldTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("api", "/wt/api", TaskStatus.REVIEW_PENDING)
@@ -52,7 +59,8 @@ class SpecFoldTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-42", TaskState.builder("api", "/wt/api", TaskStatus.REVIEW_PENDING).build());
     Specs specs = mock(Specs.class);
     doThrow(new IllegalStateException("openspec/changes/abc-42 does not validate"))

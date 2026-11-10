@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.SessionPhase;
 import dev.jagt.orchestrator.flow.SessionSign;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.port.SessionHost;
@@ -97,8 +96,8 @@ public class WatchdogService implements Job {
             0,
             properties.watchdog().staleAfter().toMillis(),
             null);
-    stateService.updateTask(
-        taskId, task -> TaskReducer.signed(TaskReducer.signed(task, unread, now), sign, now));
+    stateService.reduce(
+        taskId, (reducer, task) -> reducer.signed(reducer.signed(task, unread, now), sign, now));
     check(taskId);
   }
 
@@ -113,10 +112,10 @@ public class WatchdogService implements Job {
     } catch (SessionHost.WindowsUnreadable unknown) {
       return;
     }
-    stateService.updateTask(
+    stateService.reduce(
         taskId,
-        current ->
-            startedOverSince(task, current) ? current : TaskReducer.signed(current, read, now));
+        (reducer, current) ->
+            startedOverSince(task, current) ? current : reducer.signed(current, read, now));
     alert(taskId, stateService.task(taskId).orElse(task), now);
   }
 
@@ -135,8 +134,9 @@ public class WatchdogService implements Job {
       return;
     }
     String said = Objects.requireNonNullElse(SessionPhase.silentBecause(task), "no sign of life");
-    stateService.updateTask(
-        taskId, current -> TaskReducer.told(current, ToldOnce.Kind.SILENCE, String.valueOf(since)));
+    stateService.reduce(
+        taskId,
+        (reducer, current) -> reducer.told(current, ToldOnce.Kind.SILENCE, String.valueOf(since)));
     log.atWarn()
         .setMessage("task stopped")
         .addKeyValue("task", taskId)
@@ -154,8 +154,8 @@ public class WatchdogService implements Job {
 
   private void forgetAlert(String taskId, TaskState task) {
     if (task.toldOrNone().has(ToldOnce.Kind.SILENCE)) {
-      stateService.updateTask(
-          taskId, current -> TaskReducer.untold(current, ToldOnce.Kind.SILENCE));
+      stateService.reduce(
+          taskId, (reducer, current) -> reducer.untold(current, ToldOnce.Kind.SILENCE));
     }
   }
 

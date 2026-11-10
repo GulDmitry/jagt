@@ -47,13 +47,13 @@ public class PlanApproval {
     baseline.keep(id);
     Standing read = stateService.task(id).map(Standing::of).orElse(Standing.ABSENT);
     if (claim == null) {
-      stateService.updateTask(id, TaskReducer::planApproved);
+      stateService.reduce(id, TaskReducer::planApproved);
     }
     String facts = reader + ": the plan holds.";
     boolean told =
         claim == null ? tell(id, facts, placed, read) : tell(id, facts, placed, opened(claim));
     if (claim != null && !told) {
-      stateService.updateTask(id, TaskReducer::planApproved);
+      stateService.reduce(id, TaskReducer::planApproved);
     }
     repos.leave(id);
     log.atInfo()
@@ -77,10 +77,11 @@ public class PlanApproval {
         : relay.relay(id, Step.PLAN, facts, claim);
   }
 
-  private static StepRelay.Claim opened(StepRelay.Claim claim) {
+  private StepRelay.Claim opened(StepRelay.Claim claim) {
     return new StepRelay.Claim(
         claim.read(),
-        opens -> claim.write().apply(task -> TaskReducer.planApproved(opens.apply(task))),
+        opens ->
+            claim.write().apply(task -> stateService.reducer().planApproved(opens.apply(task))),
         claim.undo());
   }
 }

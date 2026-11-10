@@ -11,7 +11,10 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.MasterPhase;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -32,6 +35,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class MasterReviewJobTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private final ConfigService config = mock(ConfigService.class);
   private final MasterPanel panel = mock(MasterPanel.class);
   private final MasterVerdicts verdicts = mock(MasterVerdicts.class);
@@ -42,7 +48,8 @@ class MasterReviewJobTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString())));
+                .withStateFile(root.resolve("state.json").toString())),
+                reducer);
   }
 
   private ConfigService.ConfigFile.MasterConfig master(String mode) {

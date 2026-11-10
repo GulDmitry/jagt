@@ -21,6 +21,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class TurnsTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private static final Map<String, Arbiter.Profile> PROFILES =
       Map.of(
           "off", Arbiter.Profile.OFF,
@@ -212,7 +215,7 @@ class TurnsTest {
   @Test
   void theMasterHoldsARoundWhoseSealWasClearedForItsVerdictFileWasGone() {
     TaskState sealed =
-        TaskReducer.masterVerdictGone(
+        reducer.masterVerdictGone(
             TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .master(Master.defaults().withSeal("fingerprint", 0))
                 .build());

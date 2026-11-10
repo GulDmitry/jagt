@@ -9,6 +9,9 @@ import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
@@ -30,6 +33,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class ReportEffectsTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private static final Instant NOW = Instant.parse("2026-10-29T10:00:00Z");
   private final TaskStops stops = mock(TaskStops.class);
   private final AgentStatusMessage waits =
@@ -41,7 +47,8 @@ class ReportEffectsTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(dir.toString())
-                .withStateFile(dir.resolve("state.json").toString())));
+                .withStateFile(dir.resolve("state.json").toString())),
+                reducer);
   }
 
   private ReportEffects effects(StateService state, InfraWaitProperties properties) {
@@ -121,7 +128,7 @@ class ReportEffectsTest {
             OrchestratorProperties.defaults()
                 .withRoot(dir.toString())
                 .withStateFile(dir.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
     TaskTurns turns = new TaskTurns(state, clock);
     TaskStops realStops =
@@ -155,7 +162,7 @@ class ReportEffectsTest {
             OrchestratorProperties.defaults()
                 .withRoot(dir.toString())
                 .withStateFile(dir.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
     TaskTurns turns = new TaskTurns(state, clock);
     TaskStops realStops =
@@ -191,7 +198,7 @@ class ReportEffectsTest {
             OrchestratorProperties.defaults()
                 .withRoot(dir.toString())
                 .withStateFile(dir.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
     TaskTurns turns = new TaskTurns(state, clock);
     TaskStops realStops =

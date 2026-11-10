@@ -7,8 +7,11 @@ import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionCases;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -28,6 +31,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 import tools.jackson.databind.json.JsonMapper;
 
 class CaseDoorTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final String SHIP_CASE =
       "## ship\n\nmove: ship\nat: REVIEW_PENDING\nby: master\nThe Master ships it.\n";
@@ -62,7 +68,7 @@ class CaseDoorTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -91,7 +97,7 @@ class CaseDoorTest {
     Files.writeString(
         root.resolve("roles/master/cases.md"),
         "## verb\n\nmove: " + move + "\nat: any\nby: master\nThe Master presses it.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -116,7 +122,7 @@ class CaseDoorTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door =
         doorOver(
@@ -140,7 +146,7 @@ class CaseDoorTest {
                 .withStateFile(root.resolve("state.json").toString()));
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -162,7 +168,7 @@ class CaseDoorTest {
                 .withStateFile(root.resolve("state.json").toString()));
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -184,7 +190,7 @@ class CaseDoorTest {
                 .withStateFile(root.resolve("state.json").toString()));
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -204,7 +210,7 @@ class CaseDoorTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -240,7 +246,7 @@ class CaseDoorTest {
     Files.writeString(
         root.resolve("roles/master/cases.md"),
         "## verb\n\nmove: " + move + "\nat: any\nby: master\nThe Master presses it.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)

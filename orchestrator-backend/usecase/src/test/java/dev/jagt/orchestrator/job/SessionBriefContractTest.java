@@ -15,7 +15,10 @@ import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentStatusReports;
@@ -57,6 +60,9 @@ import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.json.JsonMapper;
 
 class SessionBriefContractTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final TicketScenarios scenarios =
       new TicketScenarios(
@@ -103,7 +109,7 @@ class SessionBriefContractTest {
                 .withStateFile(root.resolve("state.json").toString()));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("web", "/w/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
@@ -197,7 +203,7 @@ class SessionBriefContractTest {
                 .withStateFile(root.resolve("state.json").toString()));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("web", "/w/ABC-42", TaskStatus.REVIEW_PENDING)

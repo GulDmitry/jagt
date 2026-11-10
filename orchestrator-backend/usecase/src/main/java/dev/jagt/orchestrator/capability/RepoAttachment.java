@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.capability;
 
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.StateService;
@@ -48,7 +47,7 @@ class RepoAttachment {
 
   /** Makes {@code project} the task's repository request, as if its session had asked. */
   void ask(String taskId, String project) {
-    stateService.updateTask(taskId, task -> TaskReducer.repoAsked(task, project));
+    stateService.reduce(taskId, (reducer, task) -> reducer.repoAsked(task, project));
   }
 
   /** Refuses a project {@code jagt.yml} does not hold. */

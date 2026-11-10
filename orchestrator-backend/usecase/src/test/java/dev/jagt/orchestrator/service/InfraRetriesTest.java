@@ -6,6 +6,9 @@ import static org.mockito.Mockito.mock;
 import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -22,6 +25,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class InfraRetriesTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private static final Instant NOW = Instant.parse("2026-10-29T10:00:00Z");
 
   private static StateService state(Path dir) {
@@ -30,7 +36,8 @@ class InfraRetriesTest {
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(dir.toString())
-                .withStateFile(dir.resolve("state.json").toString())));
+                .withStateFile(dir.resolve("state.json").toString())),
+                reducer);
   }
 
   private static InfraRetries retries(StateService state) {

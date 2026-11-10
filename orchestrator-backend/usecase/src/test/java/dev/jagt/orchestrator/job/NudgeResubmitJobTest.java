@@ -9,6 +9,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskTurns;
@@ -23,6 +26,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class NudgeResubmitJobTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   @Test
   void marksTheTurnWhenItPressesEnterOnANudgeLeftInAnIdleInput(@TempDir Path root) {
     StateService state =
@@ -31,7 +37,8 @@ class NudgeResubmitJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
@@ -51,7 +58,8 @@ class NudgeResubmitJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
@@ -74,7 +82,8 @@ class NudgeResubmitJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
     state.putTask(
         "ABC-42",
@@ -98,7 +107,8 @@ class NudgeResubmitJobTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     AgentSessions sessions = mock(AgentSessions.class);
 

@@ -5,7 +5,10 @@ import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.MasterPhase;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.StateService;
@@ -23,6 +26,9 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class MasterReviewTest {
+
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final MasterReview reviews = new MasterReview(mock(StateService.class));
 
@@ -56,7 +62,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -115,7 +122,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     TaskState handedBackAgain =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -139,7 +147,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     Turn handedBack = new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of());
     TaskState task =
@@ -168,7 +177,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -193,7 +203,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -219,7 +230,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -244,7 +256,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     Files.createDirectories(worktree.resolve(".jagt"));
     Files.writeString(worktree.resolve(".jagt").resolve(MasterReview.STORED), "not json");
@@ -275,7 +288,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     Files.createDirectories(worktree.resolve(".jagt"));
     String stored = "{\"round\":3,\"reads\":[]}";
@@ -306,7 +320,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -332,7 +347,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -358,7 +374,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -381,7 +398,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -486,7 +504,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -511,7 +530,8 @@ class MasterReviewTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())));
+                    .withStateFile(worktree.resolve("state.json").toString())),
+                    reducer);
     MasterReview reviews = new MasterReview(state);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)

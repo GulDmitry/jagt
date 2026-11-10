@@ -13,8 +13,10 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -38,6 +40,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class ConflictStallTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private final ConfigService config = mock(ConfigService.class);
   private final Notifications notifications = mock(Notifications.class);
 
@@ -49,17 +54,18 @@ class ConflictStallTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
     state.putTask(
         "ABC-42",
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000));
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     DeployConflicts.WaitingConflict conflict =
@@ -100,17 +106,18 @@ class ConflictStallTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
     state.putTask(
         "ABC-42",
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000));
     when(config.load())
         .thenReturn(
@@ -151,17 +158,18 @@ class ConflictStallTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
     state.putTask(
         "ABC-42",
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000));
     when(config.load())
         .thenReturn(
@@ -206,16 +214,17 @@ class ConflictStallTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
     TaskState asking =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
                 opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000)
             .withReport(AgentReport.QUESTION);
     state.putTask("ABC-42", asking);
@@ -256,17 +265,18 @@ class ConflictStallTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
     state.putTask(
         "ABC-42",
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000));
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     Path worktree = Path.of("/src/ABC-42-deploy");
@@ -308,17 +318,18 @@ class ConflictStallTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(file.toString())));
+                    .withStateFile(file.toString())),
+                    reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
     before.putTask(
         "ABC-42",
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000));
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     DeployConflicts.WaitingConflict conflict =
@@ -344,7 +355,8 @@ class ConflictStallTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(file.toString())));
+                    .withStateFile(file.toString())),
+                    reducer);
     ConflictStall restarted =
         new ConflictStall(
             after,
@@ -373,17 +385,18 @@ class ConflictStallTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
     state.putTask(
         "ABC-42",
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000));
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     ConflictStall stall =
@@ -401,7 +414,7 @@ class ConflictStallTest {
     state.updateTask(
         "ABC-42",
         task ->
-            TaskReducer.deployStepped(
+            reducer.deployStepped(
                 task, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 900_000));
 
     boolean handed = stall.handed("ABC-42");
@@ -418,17 +431,18 @@ class ConflictStallTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
             .build();
     TaskState opened =
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
     state.putTask(
         "ABC-42",
-        TaskReducer.deployStepped(
+        reducer.deployStepped(
             opened, new DeployStep.Conflicted("web", Deployment.Cause.REVERT), 1_000));
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     DeployConflicts.WaitingConflict conflict =

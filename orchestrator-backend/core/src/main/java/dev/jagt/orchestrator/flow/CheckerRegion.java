@@ -44,7 +44,8 @@ record CheckerRegion(CheckerRole role) implements Role {
   }
 
   @Override
-  public void declareRegion(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  public void declareRegion(
+      ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Landing landing) {
     chart.region(region(), CheckerPhase.NONE);
     for (CheckerPhase from : CheckerPhase.values()) {
       chart
@@ -80,7 +81,7 @@ record CheckerRegion(CheckerRole role) implements Role {
               (others, move) ->
                   others.get(beneath()) == under
                       && others.get(TaskChart.LIFECYCLE) == DEPLOYED
-                      && TaskChart.land(DEPLOYED, move).filter(to -> to != DEPLOYED).isPresent())
+                      && landing.land(DEPLOYED, move).filter(to -> to != DEPLOYED).isPresent())
           .emit(new TaskEffect.ClosesCheckerRead(id()))
           .to(under);
     }

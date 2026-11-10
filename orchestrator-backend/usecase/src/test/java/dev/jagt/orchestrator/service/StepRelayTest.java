@@ -17,8 +17,11 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.config.SessionCases;
 import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.Step;
@@ -42,6 +45,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class StepRelayTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private final AgentSessions sessions = mock(AgentSessions.class);
 
   @Test
@@ -55,7 +61,8 @@ class StepRelayTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
@@ -158,7 +165,8 @@ class StepRelayTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     Standing read = Standing.of(state.task("ABC-42").orElseThrow());
     TaskTurns turns = new TaskTurns(state, Clock.systemUTC());
@@ -190,7 +198,8 @@ class StepRelayTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
@@ -224,7 +233,8 @@ class StepRelayTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.WAKE))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
@@ -251,7 +261,8 @@ class StepRelayTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
@@ -279,7 +290,7 @@ class StepRelayTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -303,7 +314,7 @@ class StepRelayTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -332,7 +343,7 @@ class StepRelayTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -361,7 +372,7 @@ class StepRelayTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -396,7 +407,7 @@ class StepRelayTest {
             + "by: jagt\n"
             + "replies: any; plain\n"
             + "The task is live.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     StepRelay relay =
         new StepRelay(
@@ -440,7 +451,7 @@ class StepRelayTest {
             + "by: jagt\n"
             + "replies: any; plain\n"
             + "The task is live.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     StepRelay relay =
         new StepRelay(
@@ -492,7 +503,7 @@ class StepRelayTest {
             + "by: jagt\n"
             + "replies: any; plain\n"
             + "The task is live.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     StepRelay relay =
         new StepRelay(
@@ -546,7 +557,7 @@ class StepRelayTest {
             + "by: jagt\n"
             + "replies: any; plain\n"
             + "The task is live.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     StepRelay relay =
         new StepRelay(
@@ -594,7 +605,7 @@ class StepRelayTest {
             + "by: jagt\n"
             + "replies: any; plain\n"
             + "The task is live.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     StepRelay relay =
         new StepRelay(
@@ -641,7 +652,7 @@ class StepRelayTest {
             + "by: jagt\n"
             + "replies: any; plain\n"
             + "The command failed.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
     StepRelay relay =
         new StepRelay(
@@ -686,7 +697,7 @@ class StepRelayTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     StepRelay relay =
         new StepRelay(
@@ -760,7 +771,7 @@ class StepRelayTest {
             + "by: jagt\n"
             + "replies: any; plain\n"
             + "The command failed.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
     StepRelay relay =
         new StepRelay(
@@ -808,7 +819,7 @@ class StepRelayTest {
             + "by: master\n"
             + "replies: any; plain\n"
             + "The Master answers.\n");
-    StateService state = new StateService(new JsonMapper(), paths);
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     StepRelay relay =
         new StepRelay(
@@ -850,7 +861,8 @@ class StepRelayTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -882,7 +894,8 @@ class StepRelayTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -913,7 +926,8 @@ class StepRelayTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -944,7 +958,8 @@ class StepRelayTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -975,7 +990,8 @@ class StepRelayTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))
@@ -1008,7 +1024,8 @@ class StepRelayTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())),
+                    reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     CaseDoor door = mock(CaseDoor.class);
     when(door.opens("ABC-42", Step.DEPLOY))

@@ -44,7 +44,7 @@ import org.jspecify.annotations.Nullable;
  * The lifecycle region, one edge per status move; the stop region, one way out per way a stop ends;
  * the plan, report, turn, deploy, session and git regions.
  */
-final class TaskChart {
+public final class TaskChart {
 
   static final RegionId<TaskStatus> LIFECYCLE = new RegionId<>("lifecycle", TaskStatus.class);
 
@@ -117,72 +117,51 @@ final class TaskChart {
   private static final Set<AgentReport> STANDING_THROUGH_A_READ =
       EnumSet.of(AgentReport.QUESTION, AgentReport.PERMISSION);
 
-  private record Assembled(
-      Composition composition,
-      Chart<TaskMove, ChartFacts, TaskEffect> chart,
-      Map<TaskStatus, Configuration> starts) {
+  private static volatile TaskChart current = new TaskChart(Composition.builtIn());
 
-    static Assembled of(Composition composition) {
-      Chart<TaskMove, ChartFacts, TaskEffect> chart = build(composition);
-      return new Assembled(
-          composition,
-          chart,
-          Arrays.stream(TaskStatus.values())
-              .collect(
-                  Collectors.toUnmodifiableMap(
-                      status -> status,
-                      status -> configurationOf(chart, composition, Phases.at(status)))));
-    }
+  private final Composition composition;
+  private final Chart<TaskMove, ChartFacts, TaskEffect> chart;
+  private final Map<TaskStatus, Configuration> starts;
+  private volatile @Nullable Set<TaskStatus> ranTargets;
+
+  public TaskChart(Composition composition) {
+    this.composition = composition;
+    this.chart = build(composition);
+    this.starts =
+        Arrays.stream(TaskStatus.values())
+            .collect(
+                Collectors.toUnmodifiableMap(
+                    status -> status,
+                    status -> configurationOf(chart, composition, Phases.at(status))));
   }
 
-  private static volatile Assembled current = Assembled.of(Composition.builtIn());
-
-  private static boolean installed;
-
-  private static volatile @Nullable Set<TaskStatus> ranTargets;
-
-  private TaskChart() {}
-
-  static Chart<TaskMove, ChartFacts, TaskEffect> chart() {
-    return current.chart();
+  static TaskChart current() {
+    return current;
   }
 
-  static Composition composition() {
-    return current.composition();
-  }
-
-  static List<String> installedCheckers() {
-    return current.composition().checkers();
-  }
-
-  /**
-   * The composition every task is stepped on from now; set once, so a second call must name the
-   * same roles.
-   */
   static synchronized void install(Composition composition) {
-    if (installed && !current.composition().equals(composition)) {
-      throw new IllegalStateException(
-          "roles are installed once: "
-              + current.composition().checkers()
-              + " stand, not "
-              + composition.checkers());
-    }
-    if (!installed) {
-      current = Assembled.of(composition);
-      ranTargets = null;
-      installed = true;
+    if (!current.composition.equals(composition)) {
+      current = new TaskChart(composition);
     }
   }
 
-  static Chart<TaskMove, ChartFacts, TaskEffect> of(Composition composition) {
-    return build(composition);
+  Chart<TaskMove, ChartFacts, TaskEffect> chart() {
+    return chart;
+  }
+
+  Composition composition() {
+    return composition;
+  }
+
+  List<String> installedCheckers() {
+    return composition.checkers();
   }
 
   /**
    * What {@code move} does to a task standing at {@code phases}, in order; empty where no edge
    * takes it.
    */
-  static List<TaskEffect> effects(Phases phases, TaskMove move) {
+  List<TaskEffect> effects(Phases phases, TaskMove move) {
     return step(phases, move).effects();
   }
 
@@ -190,19 +169,15 @@ final class TaskChart {
    * The configuration {@code move} leaves a task standing at {@code phases} in, with the effects it
    * took.
    */
-  static ChartStep<TaskEffect> step(Phases phases, TaskMove move) {
-    Assembled now = current;
-    return now.chart()
-        .step(configurationOf(now.chart(), now.composition(), phases), phases.facts(), move);
+  ChartStep<TaskEffect> step(Phases phases, TaskMove move) {
+    return chart.step(configurationOf(chart, composition, phases), phases.facts(), move);
   }
 
   /** Whether a task at {@code status} with {@code facts} may be offered {@code action}. */
-  static boolean offers(TaskStatus status, TaskAction action, Facts facts) {
-    Assembled now = current;
-    return now.chart()
-        .takes(
+  boolean offers(TaskStatus status, TaskAction action, Facts facts) {
+    return chart.takes(
             LIFECYCLE,
-            Objects.requireNonNull(now.starts().get(status)),
+            Objects.requireNonNull(starts.get(status)),
             new ChartFacts(false, Map.of(), facts),
             new TaskMove.Offers(action));
   }
@@ -235,7 +210,7 @@ final class TaskChart {
   /**
    * Where {@code move} leads a task at {@code from}, or empty where the chart has no edge for it.
    */
-  static Optional<TaskStatus> land(TaskStatus from, TaskMove move) {
+  Optional<TaskStatus> land(TaskStatus from, TaskMove move) {
     return effects(Phases.at(from), move).stream()
         .filter(TaskEffect.Lands.class::isInstance)
         .map(effect -> ((TaskEffect.Lands) effect).to())
@@ -243,7 +218,7 @@ final class TaskChart {
   }
 
   /** Every status some action's outcome leads to; a task that is gone is written nothing. */
-  static Set<TaskStatus> ranTargets() {
+  Set<TaskStatus> ranTargets() {
     Set<TaskStatus> kept = ranTargets;
     if (kept == null) {
       kept = Collections.unmodifiableSet(compute());
@@ -252,7 +227,7 @@ final class TaskChart {
     return kept;
   }
 
-  private static Set<TaskStatus> compute() {
+  private Set<TaskStatus> compute() {
     Set<TaskStatus> targets = EnumSet.noneOf(TaskStatus.class);
     for (TaskAction action : TaskAction.values()) {
       for (TaskStatus from : TaskStatus.values()) {
@@ -282,7 +257,7 @@ final class TaskChart {
     return EnumSet.copyOf(READ);
   }
 
-  private static void reads(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  private void reads(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     for (TaskStatus concluded : READ) {
       edges(chart, READ_FROM, "read " + concluded, new TaskMove.Read(concluded)::equals, concluded);
     }
@@ -330,7 +305,7 @@ final class TaskChart {
    * Statuses a verified hand-back is redirected from: the only way into them is a report that owes
    * verification.
    */
-  static Set<TaskStatus> verifiable() {
+  Set<TaskStatus> verifiable() {
     Set<TaskStatus> from = EnumSet.noneOf(TaskStatus.class);
     for (TaskStatus status : TaskStatus.values()) {
       if (land(status, new TaskMove.Verified(true)).isPresent()) {
@@ -360,7 +335,7 @@ final class TaskChart {
     return checks == Pipeline.GREEN ? Optional.of(REVIEWED) : Optional.empty();
   }
 
-  private static Chart<TaskMove, ChartFacts, TaskEffect> build(Composition composition) {
+  private Chart<TaskMove, ChartFacts, TaskEffect> build(Composition composition) {
     ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart = Chart.builder();
     chart.region(LIFECYCLE, NEW, Set.of(DONE));
     stops(chart);
@@ -374,7 +349,7 @@ final class TaskChart {
     checks(chart);
     approvals(chart);
     infras(chart);
-    composition.roles().forEach(role -> role.declareRegion(chart));
+    composition.roles().forEach(role -> role.declareRegion(chart, this::land));
     sessions(chart, composition);
     ran(chart);
     TaskOffers.declare(chart, LIFECYCLE);
@@ -407,7 +382,7 @@ final class TaskChart {
     return chart.build();
   }
 
-  private static void stops(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  private void stops(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(STOP, StopKind.NONE);
     chart
         .onMatching(STOP, StopKind.NONE, "lift", new TaskMove.Lifted()::equals)
@@ -447,7 +422,7 @@ final class TaskChart {
     }
   }
 
-  private static void plans(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  private void plans(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(PLAN, PlanGate.OPEN);
     chart
         .onMatching(PLAN, PlanGate.OPEN, "autoplan", new TaskMove.Autoplanned()::equals)
@@ -477,7 +452,7 @@ final class TaskChart {
     }
   }
 
-  private static void says(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  private void says(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(REPORT, AgentReport.PLAIN);
     for (AgentReport from : AgentReport.values()) {
       said(
@@ -494,7 +469,7 @@ final class TaskChart {
     }
   }
 
-  private static void turns(
+  private void turns(
       ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Composition composition) {
     chart.region(TURN, TurnKind.CLOSED);
     for (TurnKind from : TurnKind.values()) {
@@ -524,7 +499,7 @@ final class TaskChart {
     }
   }
 
-  private static void deploys(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  private void deploys(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(DEPLOY, DeployPhase.NONE);
     for (DeployPhase from : DeployPhase.values()) {
       deployed(
@@ -610,7 +585,7 @@ final class TaskChart {
     }
   }
 
-  private static void sessions(
+  private void sessions(
       ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Composition composition) {
     chart.region(SESSION, SessionPhase.NONE);
     chart.derived(ASK, facts -> facts.stampedAsk() ? AskStamp.STAMPED : AskStamp.NONE);
@@ -664,7 +639,7 @@ final class TaskChart {
     }
   }
 
-  private static void gits(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  private void gits(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(GIT, GitPhase.UNREAD);
     for (GitPhase from : GitPhase.values()) {
       EdgeBuilder<TaskMove, ChartFacts, TaskEffect, GitPhase> trusted =
@@ -695,7 +670,7 @@ final class TaskChart {
     }
   }
 
-  private static void repos(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  private void repos(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(REPO, RepoPhase.NONE);
     chart
         .onMatching(REPO, RepoPhase.NONE, "asked", move -> move instanceof TaskMove.RepoAsked)
@@ -731,7 +706,7 @@ final class TaskChart {
         .stay();
   }
 
-  private static void requests(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  private void requests(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(REQUEST, RequestPhase.NONE);
     for (RequestPhase from : RequestPhase.values()) {
       regionEdge(
@@ -854,7 +829,7 @@ final class TaskChart {
         : new TaskEffect.MergesRequestByHost(((TaskMove.MergedByHost) move).project());
   }
 
-  private static void checks(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  private void checks(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(CHECKS, ChecksPhase.NONE);
     for (ChecksPhase from : ChecksPhase.values()) {
       regionEdge(
@@ -935,7 +910,7 @@ final class TaskChart {
     return new TaskEffect.SeesHead(((TaskMove.HeadSeen) move).tip());
   }
 
-  private static void approvals(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  private void approvals(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(APPROVAL, ApprovalPhase.UNREAD);
     for (ApprovalPhase from : ApprovalPhase.values()) {
       regionEdge(
@@ -965,7 +940,7 @@ final class TaskChart {
     }
   }
 
-  private static void infras(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  private void infras(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     chart.region(INFRA, InfraPhase.NONE);
     for (InfraPhase from : InfraPhase.values()) {
       regionEdge(
@@ -1063,7 +1038,7 @@ final class TaskChart {
     }
   }
 
-  private static void startedOver(
+  private void startedOver(
       ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, SessionPhase from) {
     EdgeBuilder<TaskMove, ChartFacts, TaskEffect, SessionPhase> over =
         chart
@@ -1076,7 +1051,7 @@ final class TaskChart {
     }
   }
 
-  private static void read(
+  private void read(
       ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
       SessionPhase from,
       String label,
@@ -1100,7 +1075,7 @@ final class TaskChart {
     }
   }
 
-  private static void signed(
+  private void signed(
       ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
       SessionPhase from,
       String label,
@@ -1121,7 +1096,7 @@ final class TaskChart {
     }
   }
 
-  private static void deployed(
+  private void deployed(
       ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
       DeployPhase from,
       String label,
@@ -1143,7 +1118,7 @@ final class TaskChart {
     }
   }
 
-  private static void relayed(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, TurnKind from) {
+  private void relayed(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, TurnKind from) {
     EdgeBuilder<TaskMove, ChartFacts, TaskEffect, TurnKind> relayed =
         chart
             .onMatching(TURN, from, "relayed", move -> move instanceof TaskMove.Relayed)
@@ -1160,7 +1135,7 @@ final class TaskChart {
     }
   }
 
-  private static void becomes(
+  private void becomes(
       ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, AgentReport from) {
     for (AgentReport means : AgentReport.values()) {
       if (means != from) {
@@ -1182,7 +1157,7 @@ final class TaskChart {
     }
   }
 
-  private static void clears(
+  private void clears(
       ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, AgentReport from) {
     said(
         chart,
@@ -1206,7 +1181,7 @@ final class TaskChart {
     }
   }
 
-  private static void said(
+  private void said(
       ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
       AgentReport from,
       String label,
@@ -1226,11 +1201,11 @@ final class TaskChart {
    * Whether a plan can still come first for a task in {@code status}: it has written nothing from
    * the code yet.
    */
-  static boolean planMayComeFirst(TaskStatus status) {
+  boolean planMayComeFirst(TaskStatus status) {
     return land(status, new TaskMove.Reported(PLAN_PENDING, false)).isPresent();
   }
 
-  private static void ran(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  private void ran(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     ran(chart, TaskAction.SHIP, Outcome.Kind.OK, CI_POLLING, TaskOffers.SHIP_FROM);
     ran(chart, TaskAction.SHIP, Outcome.Kind.RELAYED, SHIPPING, TaskOffers.SHIP_FROM);
     ran(
@@ -1283,7 +1258,7 @@ final class TaskChart {
     ran(chart, TaskAction.DONE, Outcome.Kind.GONE, DONE, OPEN);
   }
 
-  private static void ran(
+  private void ran(
       ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
       TaskAction action,
       Outcome.Kind outcome,
@@ -1292,7 +1267,7 @@ final class TaskChart {
     edges(chart, from, action.id() + " " + outcome, new TaskMove.Ran(action, outcome)::equals, to);
   }
 
-  private static void reports(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
+  private void reports(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart) {
     for (TaskStatus to : REPORTED) {
       Set<TaskStatus> free = EnumSet.noneOf(TaskStatus.class);
       OPEN.stream().filter(from -> mayReport(from, to) && !HELD.contains(from)).forEach(free::add);
@@ -1318,7 +1293,7 @@ final class TaskChart {
         && (to != CI_POLLING || BEFORE_THE_VERDICT.contains(from));
   }
 
-  private static void edges(
+  private void edges(
       ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
       Set<TaskStatus> from,
       String label,
@@ -1329,7 +1304,7 @@ final class TaskChart {
     }
   }
 
-  private static void edge(
+  private void edge(
       ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart,
       TaskStatus from,
       String label,

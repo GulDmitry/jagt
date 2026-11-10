@@ -30,4 +30,15 @@ class InstalledRolesTest {
     assertThat(installed.readers()).containsExactly("copied", "shipped");
     assertThat(installed.definitions()).isEmpty();
   }
+
+  @Test
+  void composesAChartEvenWhereNoRoleFileStands(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/bare"));
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+
+    InstalledRoles installed = new InstalledRoles(paths);
+
+    assertThat(installed.composition()).isNotNull();
+  }
 }

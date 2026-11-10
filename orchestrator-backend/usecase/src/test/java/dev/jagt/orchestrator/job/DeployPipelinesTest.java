@@ -8,8 +8,11 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.RedCause;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.port.CommitPipeline;
@@ -34,6 +37,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class DeployPipelinesTest {
 
+  private static final TaskReducer reducer =
+      new TaskReducer(new TaskChart(Composition.builtIn()));
+
   private static final String REMOTE = "https://git.example.invalid/shop/web.git";
   private static final String SHA = "0123456789abcdef";
   private static final Instant NOW = Instant.parse("2026-10-29T12:00:00Z");
@@ -49,7 +55,8 @@ class DeployPipelinesTest {
           Clock.fixed(NOW, ZoneOffset.UTC),
           new FlowReports(
               new StateService(
-                  new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults())),
+                  new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()),
+                  reducer),
               Clock.fixed(NOW, ZoneOffset.UTC)));
   private final TaskState deployed =
       TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)), TaskStatus.DEPLOYED)
