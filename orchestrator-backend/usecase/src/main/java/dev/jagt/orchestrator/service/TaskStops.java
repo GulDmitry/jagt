@@ -48,6 +48,9 @@ public class TaskStops {
       EnumSet.of(
           ReviewSweepService.SweepResult.Kind.GONE, ReviewSweepService.SweepResult.Kind.NO_MR);
 
+  static final int MAX_EVIDENCE = 4_000;
+  private static final String CUT = "\n[cut]";
+
   private final StopPolicy policy;
   private final StateService stateService;
   private final Clock clock;
@@ -55,7 +58,15 @@ public class TaskStops {
   /** The stop standing once this one was set: an earlier stop stands, and keeps its own words. */
   public Optional<TaskStop> stop(String taskId, TaskStop.Trigger trigger, String evidence) {
     return trip(
-        taskId, task -> task, task -> Optional.of(new TaskStop(trigger, clock.millis(), evidence)));
+        taskId,
+        task -> task,
+        task -> Optional.of(new TaskStop(trigger, clock.millis(), bounded(evidence))));
+  }
+
+  private static String bounded(String evidence) {
+    return evidence.length() <= MAX_EVIDENCE
+        ? evidence
+        : evidence.substring(0, MAX_EVIDENCE) + CUT;
   }
 
   /** A pause the human ordered in words, held to the same offer as their press. */

@@ -98,6 +98,58 @@ class TaskStopsTest {
   }
 
   @Test
+  void keepsAStopsEvidenceUpToTheCapAndFlagsTheCut(@TempDir Path root) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    StateService state = new StateService(new JsonMapper(), paths);
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+    TaskStops stops =
+        new TaskStops(
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
+            state,
+            clock);
+
+    TaskStop stop =
+        stops
+            .stop("ABC-42", TaskStop.Trigger.ACCEPTANCE_FAILED, "x".repeat(5_000))
+            .orElseThrow();
+
+    assertThat(stop.evidence()).isEqualTo("x".repeat(4_000) + "\n[cut]");
+  }
+
+  @Test
+  void keepsEvidenceWholeWhenItIsExactlyTheCap(@TempDir Path root) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    StateService state = new StateService(new JsonMapper(), paths);
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+    TaskStops stops =
+        new TaskStops(
+            new StopPolicy(
+                ignored -> Arbiter.Profile.OFF,
+                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
+            state,
+            clock);
+
+    TaskStop stop =
+        stops
+            .stop("ABC-42", TaskStop.Trigger.ACCEPTANCE_FAILED, "x".repeat(4_000))
+            .orElseThrow();
+
+    assertThat(stop.evidence()).isEqualTo("x".repeat(4_000));
+  }
+
+  @Test
   void refusesTheFifthUnaskedShipWithinTheWindow(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(

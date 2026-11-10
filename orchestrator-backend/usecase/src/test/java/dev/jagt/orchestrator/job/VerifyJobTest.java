@@ -200,12 +200,13 @@ class VerifyJobTest {
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
-    verify(verification, times(1)).failure(any());
+    verify(verification, times(2)).failure(any());
     verify(relay, times(1))
         .relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class));
     verify(statusReports, never()).verified(eq(true), any(), any());
-    assertThat(state.task("ABC-1").orElseThrow().stop().trigger())
-        .isEqualTo(TaskStop.Trigger.UNCHANGED_FAILURE);
+    TaskStop stop = state.task("ABC-1").orElseThrow().stop();
+    assertThat(stop.trigger()).isEqualTo(TaskStop.Trigger.UNCHANGED_FAILURE);
+    assertThat(stop.evidence()).endsWith("[proj] `./gradlew test` exited 1\nBUILD FAILED");
   }
 
   @Test

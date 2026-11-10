@@ -77,7 +77,9 @@ public class VerifyJob implements TaskJob {
       stops.stop(
           taskId,
           TaskStop.Trigger.UNCHANGED_FAILURE,
-          "handed back the tree its verification failed on: " + standing(task));
+          "handed back the tree its verification failed on: "
+              + standing(task)
+              + verification.failure(task).map(output -> "\n" + output).orElse(""));
       return;
     }
     Optional<String> failure = verification.failure(task);
