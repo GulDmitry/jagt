@@ -74,4 +74,14 @@ public final class RoundQuotesFixture {
     when(facts.humanSaid(any())).thenReturn(Optional.of(List.of()));
     return store(task, ready("abc123", "PLAIN", quotes.inputs("ABC-1", task).orElseThrow()));
   }
+
+  public RoundQuotes quotingRound(TaskState task, String decided) {
+    MasterDecisions decisions = mock(MasterDecisions.class);
+    when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2")));
+    when(facts.ask("ABC-1", task)).thenReturn("Summary: accept v3 calls");
+    when(facts.diff(task)).thenReturn("+int x;\n");
+    when(facts.notes(task)).thenReturn("disputed: the guard is right");
+    when(decisions.of(task)).thenReturn(decided);
+    return new RoundQuotes(facts, decisions, reviews);
+  }
 }

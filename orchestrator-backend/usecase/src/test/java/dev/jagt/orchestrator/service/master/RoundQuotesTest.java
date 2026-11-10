@@ -251,16 +251,12 @@ class RoundQuotesTest {
 
   @Test
   void quotesTheTicketTheDiffTheDecisionsTheHumanAndTheNotesOfTheRound(@TempDir Path worktree) {
-    MasterDecisions decisions = mock(MasterDecisions.class);
+    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
-    when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2")));
-    when(facts.ask("ABC-1", task)).thenReturn("Summary: accept v3 calls");
-    when(facts.diff(task)).thenReturn("+int x;\n");
-    when(facts.notes(task)).thenReturn("disputed: the guard is right");
-    when(decisions.of(task)).thenReturn("- asked: keep v2? — decided: keep it");
 
-    var read = new RoundQuotes(facts, decisions, reviews).round("ABC-1", task);
+    var read =
+        fixture.quotingRound(task, "- asked: keep v2? — decided: keep it").round("ABC-1", task);
 
     assertThat(read)
         .contains(
@@ -274,16 +270,11 @@ class RoundQuotesTest {
 
   @Test
   void quotesPlanRoundWithNoDiff(@TempDir Path worktree) {
-    MasterDecisions decisions = mock(MasterDecisions.class);
+    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
-    when(decisions.of(task)).thenReturn("");
-    when(facts.notes(task)).thenReturn("disputed: the guard is right");
-    when(facts.diff(task)).thenReturn("+int x;\n");
-    when(facts.ask("ABC-1", task)).thenReturn("Summary: accept v3 calls");
-    when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2")));
 
-    var read = new RoundQuotes(facts, decisions, reviews).plan("ABC-1", task);
+    var read = fixture.quotingRound(task, "").plan("ABC-1", task);
 
     assertThat(read)
         .contains(

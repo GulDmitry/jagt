@@ -369,12 +369,8 @@ class StepRelayTest {
         new StepRelayFixture(root, sessions, Clock.systemUTC()).writeCases(root, VERIFY_CASE);
     fixture.doors.state.putTask(
         "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
-    fixture.relay.relayRound(
-        "ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", fixture.relay.standing("ABC-42"));
-    fixture.relay.relayRound(
-        "ABC-42", Step.VERIFY, "BUILD FAILED in OrderTest", fixture.relay.standing("ABC-42"));
-    fixture.relay.relayRound(
-        "ABC-42", Step.VERIFY, "BUILD FAILED in CartTest again", fixture.relay.standing("ABC-42"));
+    fixture.relayedVerifyRounds(
+        "BUILD FAILED in CartTest", "BUILD FAILED in OrderTest", "BUILD FAILED in CartTest again");
 
     boolean told =
         fixture.relay.relayRound(
@@ -436,14 +432,11 @@ class StepRelayTest {
         new StepRelayFixture(root, sessions, Clock.systemUTC()).writeCases(root, VERIFY_CASE);
     fixture.doors.state.putTask(
         "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
-    fixture.relay.relayRound(
-        "ABC-42", Step.VERIFY, "BUILD FAILED in LedgerTest", fixture.relay.standing("ABC-42"));
-    fixture.relay.relayRound(
-        "ABC-42", Step.VERIFY, "BUILD FAILED in InvoiceTest", fixture.relay.standing("ABC-42"));
+    fixture.relayedVerifyRounds("BUILD FAILED in CartTest", "BUILD FAILED in OrderTest");
 
     boolean told =
         fixture.relay.relayRound(
-            "ABC-42", Step.VERIFY, "BUILD FAILED in AuditTest", fixture.relay.standing("ABC-42"));
+            "ABC-42", Step.VERIFY, "BUILD FAILED in PaymentTest", fixture.relay.standing("ABC-42"));
 
     assertThat(told).isTrue();
     assertThat(fixture.doors.state.task("ABC-42").orElseThrow().stopped()).isFalse();

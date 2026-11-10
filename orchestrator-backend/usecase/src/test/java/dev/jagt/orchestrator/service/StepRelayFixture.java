@@ -46,6 +46,12 @@ public final class StepRelayFixture {
         Clock.systemUTC());
   }
 
+  public void relayedVerifyRounds(String... facts) {
+    for (String text : facts) {
+      relay.relayRound("ABC-42", Step.VERIFY, text, relay.standing("ABC-42"));
+    }
+  }
+
   public StepRelayFixture writeBrief(Path root, String text) throws IOException {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), text);
