@@ -8,8 +8,8 @@ package dev.jagt.orchestrator.task;
 public record RoutingAnswer(String project, String rule) {
 
   public RoutingAnswer {
-    project = project == null ? "" : project.strip();
-    rule = rule == null ? "" : rule.strip();
+    project = project.strip();
+    rule = rule.strip();
   }
 
   public boolean teaches() {

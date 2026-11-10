@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,20 +35,8 @@ class RoutingTest {
     assertThat(question.answerable()).isFalse();
   }
 
-  @Test
-  void treatsMissingEvidenceAsNone() {
-    RoutingQuestion question =
-        new RoutingQuestion(TicketFacts.defaults(), Map.of(), List.of(), List.of());
-
-    assertThat(question.projects()).isEmpty();
-    assertThat(question.precedents()).isEmpty();
-    assertThat(question.rules()).isEmpty();
-  }
-
   @ParameterizedTest
-  @CsvSource(
-      nullValues = "NULL",
-      value = {"api,labels carry it,true", "api,'  ',false", "api,NULL,false"})
+  @CsvSource({"api,labels carry it,true", "api,'  ',false"})
   void teachesOnlyWhenTheAnswerCameWithRule(String project, String rule, boolean teaches) {
     assertThat(new RoutingAnswer(project, rule).teaches()).isEqualTo(teaches);
   }
@@ -63,15 +50,10 @@ class RoutingTest {
   }
 
   @Test
-  void readsMissingProjectAsBlank() {
-    assertThat(new RoutingAnswer("", "x").project()).isEmpty();
-  }
-
-  @Test
-  void readsMissingRuleOfPairAsBlankAndStripsTheOthers() {
-    RulePair pair = new RulePair(" labels carry it ", "");
+  void stripsWhatTheRouterPaddedTheRulePairWith() {
+    RulePair pair = new RulePair(" labels carry it ", " other ");
 
     assertThat(pair.kept()).isEqualTo("labels carry it");
-    assertThat(pair.duplicate()).isEmpty();
+    assertThat(pair.duplicate()).isEqualTo("other");
   }
 }

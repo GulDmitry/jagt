@@ -108,18 +108,6 @@ class ReviewFactsTest {
   }
 
   @Test
-  void readsMissingPipelineFailureAndAwaitingListAsEmpty() {
-    ReviewFacts facts =
-        new ReviewFacts(
-            new ReviewFacts.Request(true, true, false, false, 0),
-            new ReviewFacts.Pipeline("failed", "", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
-
-    assertThat(facts.pipeline().failure()).isEmpty();
-    assertThat(facts.discussion().awaitingReviewer()).isEmpty();
-  }
-
-  @Test
   void keepsTheHostsNoteIdsWhenThreadMovesToTheReviewer() {
     ReviewFacts facts =
         new ReviewFacts(

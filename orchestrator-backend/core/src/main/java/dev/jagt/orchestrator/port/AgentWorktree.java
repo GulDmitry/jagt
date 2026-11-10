@@ -12,7 +12,7 @@ public record AgentWorktree(
     Path path, Path orchestratorRoot, @With List<String> allowedTools, @With Sandbox sandbox) {
 
   public AgentWorktree {
-    allowedTools = allowedTools == null ? List.of() : List.copyOf(allowedTools);
+    allowedTools = List.copyOf(allowedTools);
   }
 
   public static AgentWorktree of(Path path, Path orchestratorRoot) {

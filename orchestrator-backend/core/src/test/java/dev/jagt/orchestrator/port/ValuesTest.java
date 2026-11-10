@@ -141,13 +141,6 @@ class ValuesTest {
   }
 
   @Test
-  void readsMissingHintListsAsEmpty() {
-    AgentWorktree worktree =
-        new AgentWorktree(Path.of("/wt"), Path.of("/root"), List.of(), Sandbox.off());
-    assertThat(worktree.allowedTools()).isEmpty();
-  }
-
-  @Test
   void handsBackTheSameResultWhenTheCommandSucceeded() {
     Processes.Result result = new Processes.Result(0, "out", "");
 

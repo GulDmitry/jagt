@@ -15,9 +15,9 @@ public record RoutingQuestion(
     TicketFacts item, Map<String, String> projects, List<String> precedents, List<String> rules) {
 
   public RoutingQuestion {
-    projects = projects == null ? Map.of() : Map.copyOf(projects);
-    precedents = precedents == null ? List.of() : List.copyOf(precedents);
-    rules = rules == null ? List.of() : List.copyOf(rules);
+    projects = Map.copyOf(projects);
+    precedents = List.copyOf(precedents);
+    rules = List.copyOf(rules);
   }
 
   public static RoutingQuestion defaults() {
@@ -25,6 +25,6 @@ public record RoutingQuestion(
   }
 
   public boolean answerable() {
-    return item != null && !item.key().isBlank() && !projects.isEmpty();
+    return !item.key().isBlank() && !projects.isEmpty();
   }
 }

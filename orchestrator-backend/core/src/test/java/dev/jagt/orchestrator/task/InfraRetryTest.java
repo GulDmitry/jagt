@@ -5,21 +5,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 class InfraRetryTest {
 
   @Test
-  void recordArmedBeforeItNamedItsProjectReadsAsBlank() {
+  void recordArmedBeforeItNamedItsProjectReadsAsBlank() throws Exception {
     InfraRetry old =
-        new InfraRetry(
-            1_000,
-            "",
-            "https://host.invalid/p/1",
-            "unit-tests",
-            "runner_system_failure",
-            false,
-            1,
-            3);
+        new JsonMapper()
+            .readValue(
+                "{\"at\":1000,\"pipelineUrl\":\"https://host.invalid/p/1\","
+                    + "\"jobs\":\"unit-tests\",\"reason\":\"runner_system_failure\","
+                    + "\"sent\":false,\"attempt\":1,\"of\":3}",
+                InfraRetry.class);
 
     assertThat(old.project()).isEmpty();
   }

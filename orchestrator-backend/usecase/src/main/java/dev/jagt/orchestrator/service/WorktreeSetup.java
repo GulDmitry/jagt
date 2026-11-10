@@ -31,7 +31,7 @@ public class WorktreeSetup {
    * guess.
    */
   @Value("${orchestrator.agent-allowed-tools:}")
-  private List<String> agentAllowedTools;
+  private List<String> agentAllowedTools = List.of();
 
   /**
    * Every worktree written again for the set that now includes {@code added}, which the session may

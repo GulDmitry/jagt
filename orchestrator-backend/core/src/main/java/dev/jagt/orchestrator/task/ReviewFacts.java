@@ -26,21 +26,15 @@ public record ReviewFacts(Request request, Pipeline pipeline, Discussion discuss
       boolean exists, boolean approved, boolean merged, boolean closed, long openedAt) {}
 
   @With
-  public record Pipeline(String status, String failure, String url) {
-
-    public Pipeline {
-      failure = failure == null ? "" : failure;
-      url = url == null ? "" : url;
-    }
-  }
+  public record Pipeline(String status, String failure, String url) {}
 
   @With
   public record Discussion(
       List<String> threads, List<String> awaitingReviewer, List<String> newestNotes) {
 
     public Discussion {
-      awaitingReviewer = awaitingReviewer == null ? List.of() : List.copyOf(awaitingReviewer);
-      newestNotes = newestNotes == null ? List.of() : List.copyOf(newestNotes);
+      awaitingReviewer = List.copyOf(awaitingReviewer);
+      newestNotes = List.copyOf(newestNotes);
     }
   }
 

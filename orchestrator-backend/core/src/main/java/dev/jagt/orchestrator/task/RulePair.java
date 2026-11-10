@@ -7,7 +7,7 @@ package dev.jagt.orchestrator.task;
 public record RulePair(String kept, String duplicate) {
 
   public RulePair {
-    kept = kept == null ? "" : kept.strip();
-    duplicate = duplicate == null ? "" : duplicate.strip();
+    kept = kept.strip();
+    duplicate = duplicate.strip();
   }
 }
