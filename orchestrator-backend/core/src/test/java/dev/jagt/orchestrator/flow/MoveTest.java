@@ -264,7 +264,8 @@ class MoveTest {
             false);
 
     assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
-    assertThat(move.hint()).isEqualTo("read the round and the question it left (focus), then ship");
+    assertThat(move.hint())
+        .isEqualTo("read the round and the question it left in the Session tab, then ship");
   }
 
   @Test
@@ -527,8 +528,8 @@ class MoveTest {
 
   @ParameterizedTest
   @CsvSource({
-    "CI_POLLING, focus the agent",
-    "CI_FAILED, focus the agent",
+    "CI_POLLING, open the Session tab",
+    "CI_FAILED, open the Session tab",
     "REVIEWED, close the task"
   })
   void namesWhatIsLeftWhenTheStatusClaimsAReviewRequestThatIsNotThere(
@@ -606,7 +607,7 @@ class MoveTest {
 
     assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
     assertThat(move.hint())
-        .isEqualTo("the deploy was reverted and no request is open; focus the agent");
+        .isEqualTo("the deploy was reverted and no request is open; see the Session tab");
   }
 
   @Test
@@ -615,7 +616,7 @@ class MoveTest {
 
     assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
     assertThat(move.hint())
-        .isEqualTo("no review request to read the failure from; focus the agent");
+        .isEqualTo("no review request to read the failure from; see the Session tab");
   }
 
   @Test

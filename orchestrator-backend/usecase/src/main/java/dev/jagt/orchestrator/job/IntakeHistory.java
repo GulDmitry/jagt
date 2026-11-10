@@ -57,7 +57,7 @@ public class IntakeHistory {
     notifications.send(
         Notification.housekeeping(
             "intake cannot start " + key,
-            cause + " — start it by hand with `do " + key + " <project>`"));
+            cause + " — start it with the board's `do " + key + " <project>`"));
   }
 
   private List<String> kept() {

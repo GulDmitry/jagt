@@ -71,8 +71,7 @@ public record Move(
           "add the repository",
           FlowRules.allowed(status, facts),
           TaskAction.ADD_REPO,
-          "the session asked for another repository: add it, or answer in the agent's window"
-              + " (focus)");
+          "the session asked for another repository: add it, or answer in the Session tab");
     }
     if (nothingLeftToLand(status, facts, round)) {
       return new Move(
@@ -236,9 +235,9 @@ public record Move(
       TaskStatus status, boolean hasReviewRequest, RoundState round) {
     return switch (status) {
       case REVIEW_PENDING -> reviewPendingAct(hasReviewRequest, round);
-      case CI_POLLING -> hasReviewRequest ? "read the review" : "focus the agent";
-      case CI_FAILED -> hasReviewRequest ? "relay the failed checks" : "focus the agent";
-      case REVERTED -> hasReviewRequest ? "ship a fix" : "focus the agent";
+      case CI_POLLING -> hasReviewRequest ? "read the review" : "open the Session tab";
+      case CI_FAILED -> hasReviewRequest ? "relay the failed checks" : "open the Session tab";
+      case REVERTED -> hasReviewRequest ? "ship a fix" : "open the Session tab";
       // REVIEWED is already read: nothing unresolved and the checks green, so only the approval is
       // missing.
       case REVIEWED -> hasReviewRequest ? "check for the approval" : "close the task";
@@ -372,8 +371,8 @@ public record Move(
     }
     // At REVIEW_PENDING the round is already back, so the answer is followed by a ship.
     return status == TaskStatus.REVIEW_PENDING
-        ? "read the round and the question it left (focus), then ship"
-        : "answer the question in the agent's window (focus)";
+        ? "read the round and the question it left in the Session tab, then ship"
+        : "answer the question in the Session tab";
   }
 
   /** One line of prose, for a hint line or a button tooltip. */
@@ -391,7 +390,7 @@ public record Move(
       return askingHint(status, round);
     }
     if (ownerOf(status) == Owner.AGENT && agentSilent) {
-      return "agent stopped without reporting: focus to see why, or respawn";
+      return "agent stopped without reporting: see why in the Session tab, or respawn";
     }
     return switch (status) {
       case NEW, IN_PROGRESS -> "agent is working; no action required";
@@ -403,7 +402,7 @@ public record Move(
       case CI_FAILED ->
           hasReviewRequest
               ? "sweep relays the failure to the agent"
-              : "no review request to read the failure from; focus the agent";
+              : "no review request to read the failure from; see the Session tab";
       case REVIEWED -> reviewedHint(hasReviewRequest, polled);
       case APPROVED -> "approved: deploy or done";
       case DEPLOY_CONFLICT ->
@@ -414,7 +413,7 @@ public record Move(
       case REVERTED ->
           hasReviewRequest
               ? "the deploy was reverted: ship a fix, or done to close"
-              : "the deploy was reverted and no request is open; focus the agent";
+              : "the deploy was reverted and no request is open; see the Session tab";
       case DONE -> "closed";
     };
   }
@@ -442,7 +441,7 @@ public record Move(
   // advised.
   private static String ciPollingHint(boolean hasReviewRequest, boolean polled) {
     if (!hasReviewRequest) {
-      return "no review request on this task; focus the agent";
+      return "no review request on this task; see the Session tab";
     }
     return polled ? "waiting for comments and checks; sweep reads them now" : notPollingHint();
   }
@@ -451,7 +450,7 @@ public record Move(
   // alone.
   private static String reviewedHint(boolean hasReviewRequest, boolean polled) {
     if (!hasReviewRequest) {
-      return "nothing to approve: no request on this task; focus the agent, or done to close";
+      return "nothing to approve: no request on this task; see the Session tab, or done to close";
     }
     return polled
         ? "nothing unresolved: waiting for an approval — deploy without one, or done"
