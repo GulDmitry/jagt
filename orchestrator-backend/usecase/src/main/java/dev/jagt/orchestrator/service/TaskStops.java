@@ -48,7 +48,7 @@ public class TaskStops {
       EnumSet.of(
           ReviewSweepService.SweepResult.Kind.GONE, ReviewSweepService.SweepResult.Kind.NO_MR);
 
-  static final int MAX_EVIDENCE = 4_000;
+  public static final int MAX_EVIDENCE = 4_000;
   private static final String CUT = "\n[cut]";
 
   private final StopPolicy policy;

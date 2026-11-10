@@ -162,7 +162,8 @@ public class VerifyJob implements TaskJob {
                       reducer.told(
                           reducer.told(current, ToldOnce.Kind.VERIFY_FAILED, failing),
                           ToldOnce.Kind.VERIFY_OUTPUT,
-                          facts)));
+                          facts.substring(
+                              0, Math.min(facts.length(), TaskStops.MAX_EVIDENCE + 1)))));
     } else if (stateService.task(taskId).filter(TaskState::stopped).isPresent()) {
       return;
     }

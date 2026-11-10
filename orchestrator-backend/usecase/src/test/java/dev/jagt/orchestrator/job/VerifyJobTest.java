@@ -35,6 +35,7 @@ import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.task.ToldOnce;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
@@ -258,6 +259,42 @@ class VerifyJobTest {
     verify(verification, times(2)).failure(any());
     verify(relay, times(2))
         .relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class));
+  }
+
+  @Test
+  void storesNoMoreOfAFailedRunsOutputThanTheStopCanShowPlusOneCharToFlagTheCut(
+      @TempDir Path root) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+    when(verification.key(any())).thenReturn(Optional.of("tree-1"));
+    when(verification.failure(any())).thenReturn(Optional.of("x".repeat(10_000)));
+    when(relay.relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class)))
+        .thenReturn(true);
+
+    new VerifyJob(
+            state,
+            verification,
+            statusReports,
+            relay,
+            new TaskStops(
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(
+                        new Notifications(List.of(), state, Runnable::run),
+                        new StopLog(new JsonMapper(), paths))),
+                state,
+                Clock.systemUTC()))
+        .runOn(state.tasks());
+
+    String stored =
+        state.task("ABC-1").orElseThrow().toldOrNone().valueOf(ToldOnce.Kind.VERIFY_OUTPUT);
+    assertThat(stored).hasSize(4_001);
   }
 
   @Test
