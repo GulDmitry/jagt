@@ -1,4 +1,3 @@
-// Formatted exactly as the server prints them: one elapsed time must not read "1h" here and "2h" there.
 
 import {full} from './time.js';
 

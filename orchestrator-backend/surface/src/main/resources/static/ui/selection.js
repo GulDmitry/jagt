@@ -1,4 +1,3 @@
-// Which task the pane shows, and whether a narrow window shows the pane instead of the list.
 
 let chosen = null;
 let linked = null;

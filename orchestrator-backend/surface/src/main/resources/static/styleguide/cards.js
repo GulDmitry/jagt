@@ -1,4 +1,3 @@
-// Every state a card is drawn in, by what a human must read off it.
 
 const MINUTE = 60000;
 const now = Date.now();

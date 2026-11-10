@@ -1,4 +1,3 @@
-// The form that starts a task, in its own dialog, and the only place its fields are read.
 
 import {api} from '../core/api.js';
 import {t} from '../core/i18n.js';
@@ -36,7 +35,6 @@ export function render() {
   rendered = signature;
   const chosenBefore = strategy.value;
   strategy.replaceChildren(...choices.map((choice) => new Option(choice.id, choice.id)));
-  // The words are the server's.
   strategy.dataset.tip = choices.map((choice) => `${choice.id} — ${choice.hint}`).join(' · ');
   if (choices.some((choice) => choice.id === chosenBefore)) {
     strategy.value = chosenBefore;

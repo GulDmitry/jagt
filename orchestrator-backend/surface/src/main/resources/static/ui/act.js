@@ -1,4 +1,3 @@
-// One action on one task, pressed or typed: the page decides nothing about whether it is legal.
 
 import {api, refusal} from '../core/api.js';
 import {t} from '../core/i18n.js';

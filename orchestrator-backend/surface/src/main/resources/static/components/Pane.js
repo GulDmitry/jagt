@@ -1,4 +1,3 @@
-// The one task open in full: its card, then a tab of what is known about it.
 
 import {Card} from './Card.js';
 import {reportParts, switchLines} from '../core/format.js';
@@ -23,7 +22,6 @@ const History = ({task, now}) => html`<section class="history" role="tabpanel" i
   </li>`)}</ol>
 </section>`;
 
-// `shown` is what the tab read, `{held, shown}`, or null while it reads.
 const Session = ({task, shown}) => html`<section class="session" role="tabpanel" id="panel-session" aria-labelledby="tab-session">
   <pre class="screen">${shown === null ? t('reading') : shown.held ? shown.shown : t('pane.no-window')}</pre>
   <form class="say" data-say=${task.id}>

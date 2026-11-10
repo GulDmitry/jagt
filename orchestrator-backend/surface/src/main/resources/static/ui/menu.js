@@ -1,4 +1,3 @@
-// The Reports menu: one button opens the list, and a pick, a press elsewhere or Escape closes it.
 
 import {make, span} from '../core/dom.js';
 import * as store from '../core/store.js';

@@ -1,4 +1,3 @@
-// What reading a repository path found, one line a fact, each fine or not.
 
 import {t} from '../core/i18n.js';
 import {html} from './html.js';

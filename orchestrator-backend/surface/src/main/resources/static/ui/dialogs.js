@@ -1,4 +1,3 @@
-// A plain-text report over the board: a <dialog> dims it, cannot be lost behind another window, and closes three ways.
 
 import {render} from 'preact';
 import {html} from '../components/html.js';

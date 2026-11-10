@@ -1,4 +1,3 @@
-// The legend's marks on the rest of the page: the list, the jobs, a verb's answer, the tab and the header.
 
 import {make, span} from '../../core/dom.js';
 import {t} from '../../core/i18n.js';

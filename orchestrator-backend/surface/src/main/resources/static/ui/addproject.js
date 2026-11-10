@@ -1,4 +1,3 @@
-// Adds or edits a project: the path is read as typed and fills the fields untouched.
 
 import {render} from 'preact';
 import {api, refusal} from '../core/api.js';

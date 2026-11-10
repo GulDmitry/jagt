@@ -34,7 +34,6 @@ const offersOn = (task) => store.offersOn(task).flatMap((id) => {
 
 const blockedOn = (task) => new Set((task.actions || []).filter((action) => blocked(task, action)).map((action) => action.id));
 
-// The tasks in the order the list shows them, which is the order the keyboard walks.
 export const ordered = () => walked;
 
 export function render() {
@@ -112,7 +111,6 @@ export const onClick = ({action}) => {
   };
 };
 
-// The line typed under an open session goes into that session, as the say line of a report does.
 board.addEventListener('submit', (event) => {
   const form = event.target.closest('form[data-say]');
   if (!form) return;

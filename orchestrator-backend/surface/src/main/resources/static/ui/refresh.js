@@ -1,4 +1,3 @@
-// Fetched in one call and repainted once: every action ends here, so a refusal is read against a fresh view.
 
 import {api} from '../core/api.js';
 import {t} from '../core/i18n.js';

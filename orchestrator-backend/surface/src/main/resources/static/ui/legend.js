@@ -1,4 +1,3 @@
-// What the board's marks mean, as a section of the help report: every row renders the page's OWN element.
 
 import {make, span} from '../core/dom.js';
 import {t} from '../core/i18n.js';

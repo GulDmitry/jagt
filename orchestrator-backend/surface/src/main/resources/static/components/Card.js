@@ -1,4 +1,3 @@
-// One task, as one card: every fact arrives in its props, so a card renders the same wherever it is drawn.
 
 import {bothNames, stopLines, switchLines} from '../core/format.js';
 import {t} from '../core/i18n.js';

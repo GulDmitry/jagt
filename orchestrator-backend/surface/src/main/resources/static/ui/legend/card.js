@@ -1,4 +1,3 @@
-// The legend's marks on a task: its edges, badge, state, request, checks and replies tab.
 
 import {make, span} from '../../core/dom.js';
 import {t} from '../../core/i18n.js';
@@ -25,7 +24,6 @@ const draftedTab = () => {
   return make('span', 'tabs', '', tab);
 };
 
-// The report's own two marks, drawn as it draws them.
 const blockHead = () => make('span', 'block', '1 · ', span('verdict ok', 'FIXED'), ' · thread 4');
 
 const detailLine = (className, text) => make('div', className, text);

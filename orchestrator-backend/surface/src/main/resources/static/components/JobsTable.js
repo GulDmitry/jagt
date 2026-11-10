@@ -1,4 +1,3 @@
-// Every job as a row, grouped by whom it serves, a failed one first; its words and groups are the server's.
 
 import {countdown} from '../core/format.js';
 import {t} from '../core/i18n.js';

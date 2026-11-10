@@ -1,4 +1,3 @@
-// Everything the page knows, in ONE place: a module that mutated what another renders is a second answer.
 
 import {bothNames} from './format.js';
 

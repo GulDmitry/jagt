@@ -1,4 +1,3 @@
-// A report's text drawn from `reportParts`: one renderer for the dialog and for the round tab.
 
 import {httpOnly} from '../core/dom.js';
 import {html} from './html.js';

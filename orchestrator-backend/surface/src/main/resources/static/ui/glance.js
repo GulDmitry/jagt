@@ -1,4 +1,3 @@
-// What a human sees with the board behind another window: the tab's title counts their moves, its icon wears a dot.
 
 const icon = document.querySelector('link[rel=icon][type="image/svg+xml"]');
 const source = icon?.getAttribute('href');

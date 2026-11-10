@@ -1,4 +1,3 @@
-// Which tasks the human flagged as important. This browser's alone: the server never hears of it.
 
 const KEY = 'jagt.flags';
 
@@ -7,7 +6,6 @@ let flagged = new Set();
 try {
   flagged = new Set(JSON.parse(localStorage.getItem(KEY) || '[]'));
 } catch {
-  // An unreadable store reads as nothing flagged.
 }
 
 export const holds = (taskId) => flagged.has(taskId);
@@ -17,6 +15,5 @@ export const toggle = (taskId) => {
   try {
     localStorage.setItem(KEY, JSON.stringify([...flagged]));
   } catch {
-    // Kept for this page only.
   }
 };

@@ -1,4 +1,3 @@
-// The board's own words: the chosen language over English, which is imported so the page's load waits for it.
 
 import english from '../api/languages/en' with {type: 'json'};
 

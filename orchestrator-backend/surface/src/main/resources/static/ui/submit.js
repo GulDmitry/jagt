@@ -1,4 +1,3 @@
-// Every form asks the backend for one thing and says so the same way, so a fix reaches all of them at once.
 
 import {refusal} from '../core/api.js';
 import {toast} from './toast.js';

@@ -1,4 +1,3 @@
-// Tier 1: a typed line understood WITHOUT a model — a known verb and, for the per-task ones, a task that exists.
 
 import {t} from './i18n.js';
 import * as store from './store.js';

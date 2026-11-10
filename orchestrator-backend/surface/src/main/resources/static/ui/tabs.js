@@ -1,4 +1,3 @@
-// Which tab of the open task is showing, and what that tab read: read once per task and tab, again on a change.
 
 import {text, api} from '../core/api.js';
 import {t} from '../core/i18n.js';
@@ -8,7 +7,6 @@ let tab = 'overview';
 let read = {key: null, shown: null, stale: false};
 let asked = 0;
 
-// Which document of each task its Artifacts tab shows; a name that is not listed any more falls back to the first.
 const picked = new Map();
 
 const artifacts = async (task) => {
@@ -33,7 +31,6 @@ export const pick = (task, name) => {
   forget();
 };
 
-// A press on Refresh, a push from the backend or the tick reads the open tab again.
 export const forget = () => {
   asked++;
   read = {...read, stale: true};
@@ -53,7 +50,6 @@ export const choose = (id) => {
   }, EVERY) : 0;
 };
 
-// What the open tab shows for `task`, null while it is being read; `repaint` runs once the read lands.
 export function shown(task, repaint) {
   repaintOnTick = repaint;
   const source = sources[tab];

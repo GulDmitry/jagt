@@ -1,4 +1,3 @@
-// What NARROWS the board. What ORDERS it is `order.js`, and nothing here decides where a card sits.
 
 export const box = document.getElementById('filter');
 

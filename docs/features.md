@@ -25,7 +25,7 @@
 - **One surface** — The board is the only surface; every card, button and gate reads the same rules.
   [spec](../openspec/specs/board/spec.md#requirement-one-surface-one-projection)
 - **Command palette** — Type a command, or free text that a model turns into one proposed command.
-  [spec](../openspec/specs/board/spec.md#requirement-tier-1-is-grammar-tier-2-only-proposes)
+  [spec](../openspec/specs/board-verbs/spec.md#requirement-tier-1-is-grammar-tier-2-only-proposes)
 - **Lost reach on the head** — jagt's own failed reach of a code host is one mark on the board's head with its login, never a card's stop.
   [spec](../openspec/specs/board/spec.md#requirement-a-lost-reach-of-a-code-host-is-the-boards-head)
 - **Theme and language on the gear** — The gear chooses both per browser; a catalog file adds a language. [spec](../openspec/specs/board/spec.md)

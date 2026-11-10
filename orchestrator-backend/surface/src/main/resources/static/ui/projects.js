@@ -1,4 +1,3 @@
-// The projects a new task can run in, one box each, filled from the same snapshot the board renders.
 
 import {api, refusal} from '../core/api.js';
 import {make, span} from '../core/dom.js';

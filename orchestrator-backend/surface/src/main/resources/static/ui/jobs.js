@@ -1,4 +1,3 @@
-// The jobs table inside the Jobs report: read when the report opens, each row's Run now sent as `run <job>`.
 
 import {render} from 'preact';
 import {api, refusal} from '../core/api.js';

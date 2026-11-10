@@ -1,4 +1,3 @@
-// The gear's menu: the theme and the language for this browser alone; auto leaves the theme to the system.
 
 import {make} from '../core/dom.js';
 import {choose, current, languages, t} from '../core/i18n.js';

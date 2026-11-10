@@ -1,4 +1,3 @@
-// Draws the mermaid fences of a rendered document; the library is fetched only when a document holds one.
 
 import {make} from '../core/dom.js';
 import {toast} from './toast.js';

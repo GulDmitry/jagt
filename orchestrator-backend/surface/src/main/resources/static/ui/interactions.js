@@ -1,5 +1,3 @@
-// What was pressed, and two things shown, sent once a burst settles: a name and its task's status, never a task, a
-// ticket or a typed word.
 
 import {api} from '../core/api.js';
 import * as store from '../core/store.js';

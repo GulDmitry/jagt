@@ -1,4 +1,3 @@
-// Every time the board shows is UTC and English, whatever the browser's own zone or language.
 
 const format = (options) => new Intl.DateTimeFormat('en-GB', {timeZone: 'UTC', hourCycle: 'h23', ...options});
 

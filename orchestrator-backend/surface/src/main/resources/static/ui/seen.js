@@ -1,4 +1,3 @@
-// Which status of each task the human last had open. This browser's alone, like the flags.
 
 const KEY = 'jagt.seen';
 
@@ -6,14 +5,12 @@ let seen = {};
 try {
   seen = JSON.parse(localStorage.getItem(KEY) || '{}');
 } catch {
-  // An unreadable store reads as everything seen.
 }
 
 const save = () => {
   try {
     localStorage.setItem(KEY, JSON.stringify(seen));
   } catch {
-    // Kept for this page only.
   }
 };
 

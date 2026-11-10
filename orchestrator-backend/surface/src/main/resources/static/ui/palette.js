@@ -1,4 +1,3 @@
-// Tier 2, behind ⌘K because it costs a model call: free text mapped to ONE command, run by the gate a button uses.
 
 import {api, refusal} from '../core/api.js';
 import {parse, verdictOf} from '../core/grammar.js';
