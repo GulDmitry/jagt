@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 public class TrustedGitState {
 
   private static final int NAMED = 3;
+  private static final int MAX_CHARS = 20_000;
 
   private final StateService stateService;
   private final GitWorktrees git;
@@ -40,13 +41,59 @@ public class TrustedGitState {
         && task.report() == AgentReport.QUESTION;
   }
 
+  /**
+   * What git obeys now where it differs from what was trusted, as a diff a human reads before
+   * trusting it; kept nowhere. Empty where nothing differs or nothing was recorded.
+   */
+  public Optional<TaskDiff.RepoDiff> changes(String taskId) {
+    TaskState task = stateService.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskId));
+    GitTrust trusted = task.gitTrust();
+    if (trusted == null) {
+      return Optional.empty();
+    }
+    String text;
+    try {
+      Map<String, String> changes = trusted.changes(read(task));
+      text = changes.isEmpty() ? "" : describe(changes, git.gitContents(worktrees(task)));
+    } catch (RuntimeException unreadable) {
+      text = "could not be read: " + unreadable.getMessage();
+    }
+    boolean cut = text.length() > MAX_CHARS;
+    return text.isEmpty()
+        ? Optional.empty()
+        : Optional.of(
+            new TaskDiff.RepoDiff(
+                "git config and hooks",
+                "trusted",
+                cut ? text.substring(0, MAX_CHARS) : text,
+                cut));
+  }
+
+  private static String describe(Map<String, String> changes, Map<String, String> contents) {
+    StringBuilder text = new StringBuilder();
+    changes.forEach(
+        (entry, how) -> {
+          text.append("@@ ").append(entry).append(' ').append(how).append('\n');
+          if (!how.equals("removed")) {
+            contents
+                .getOrDefault(entry, "")
+                .lines()
+                .forEach(line -> text.append('+').append(line).append('\n'));
+          }
+        });
+    return text.toString();
+  }
+
   private Map<String, String> read(TaskState task) {
-    return git.gitState(
-        task.repos().stream()
-            .map(TaskRepo::worktreePath)
-            .filter(path -> path != null && !path.isBlank())
-            .map(Path::of)
-            .toList());
+    return git.gitState(worktrees(task));
+  }
+
+  private static List<Path> worktrees(TaskState task) {
+    return task.repos().stream()
+        .map(TaskRepo::worktreePath)
+        .filter(path -> path != null && !path.isBlank())
+        .map(Path::of)
+        .toList();
   }
 
   /**
@@ -85,7 +132,7 @@ public class TrustedGitState {
         "git config or hooks changed since trusted: "
             + String.join("; ", differences.subList(0, Math.min(NAMED, differences.size())))
             + (differences.size() > NAMED ? "; " + (differences.size() - NAMED) + " more" : "")
-            + " — trust adopts them";
+            + " — read them in the Diff tab, trust adopts them";
     stateService.reduce(
         taskId,
         (reducer, current) -> reducer.gitChanged(current, changed).refused(Guard.GIT_STATE));

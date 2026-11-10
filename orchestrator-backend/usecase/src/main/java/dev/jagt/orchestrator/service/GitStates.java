@@ -26,19 +26,31 @@ import lombok.RequiredArgsConstructor;
 final class GitStates {
 
   static final int MAX_ENTRIES = 512;
+  static final int MAX_VALUE = 2_000;
+
+  /** The digest every record holds, or the text a human reads, with secrets hidden. */
+  enum Form {
+    DIGEST,
+    CONTENT
+  }
+
+  private static final Pattern SECRET_KEY = Pattern.compile("(?i)pass|token|secret|credential");
+  private static final Pattern URL_USER = Pattern.compile("(?<=://)[^/@\\s]*@");
 
   /** Keys git writes itself as branches are created and pushed, none naming a program or a file. */
   private static final Pattern TRACKING =
       Pattern.compile("branch\\..+\\.(remote|merge|rebase|pushremote|description)");
 
   private final GitCommands git;
+  private final Form form;
 
   /** Throws where a worktree's git cannot be read. */
   Map<String, String> read(List<Path> worktrees) {
     Map<String, Map<String, String>> byFile = new LinkedHashMap<>();
     worktrees.forEach(worktree -> read(worktree, byFile));
     Map<String, String> entries = new TreeMap<>();
-    boolean fold = byFile.values().stream().mapToInt(Map::size).sum() > MAX_ENTRIES;
+    boolean fold =
+        form == Form.DIGEST && byFile.values().stream().mapToInt(Map::size).sum() > MAX_ENTRIES;
     byFile.forEach(
         (file, inFile) -> {
           if (fold) {
@@ -98,9 +110,7 @@ final class GitStates {
     values.forEach(
         (key, all) -> {
           if (!TRACKING.matcher(key).matches()) {
-            inFile.put(
-                key + " in " + file,
-                digest(String.join("\0", all).getBytes(StandardCharsets.UTF_8)));
+            inFile.put(key + " in " + file, ofValues(key, all));
           }
         });
     return values;
@@ -119,7 +129,20 @@ final class GitStates {
     return checkout.resolve(named).normalize();
   }
 
-  private static void hooks(Path dir, Map<String, Map<String, String>> byFile) {
+  private String ofValues(String key, List<String> values) {
+    if (form == Form.DIGEST) {
+      return digest(String.join("\0", values).getBytes(StandardCharsets.UTF_8));
+    }
+    return SECRET_KEY.matcher(key).find()
+        ? "(hidden)"
+        : bounded(URL_USER.matcher(String.join("\n", values)).replaceAll("***@"));
+  }
+
+  private static String bounded(String text) {
+    return text.length() <= MAX_VALUE ? text : text.substring(0, MAX_VALUE) + "\n[cut]";
+  }
+
+  private void hooks(Path dir, Map<String, Map<String, String>> byFile) {
     Map<String, String> inDir = byFile.computeIfAbsent(dir.toString(), d -> new TreeMap<>());
     if (!Files.isDirectory(dir)) {
       return;
@@ -130,13 +153,18 @@ final class GitStates {
               .filter(Files::isRegularFile)
               .filter(file -> !file.getFileName().toString().endsWith(".sample"))
               .toList()) {
-        inDir.put(
-            hook.toString(),
-            digest(Files.readAllBytes(hook)) + (Files.isExecutable(hook) ? "+x" : ""));
+        inDir.put(hook.toString(), ofHook(hook));
       }
     } catch (IOException unreadable) {
       throw new UncheckedIOException("hooks of " + dir + " unreadable", unreadable);
     }
+  }
+
+  private String ofHook(Path hook) throws IOException {
+    String executable = Files.isExecutable(hook) ? "+x" : "";
+    return form == Form.DIGEST
+        ? digest(Files.readAllBytes(hook)) + executable
+        : bounded(new String(Files.readAllBytes(hook), StandardCharsets.UTF_8));
   }
 
   private static String digest(byte[] content) {

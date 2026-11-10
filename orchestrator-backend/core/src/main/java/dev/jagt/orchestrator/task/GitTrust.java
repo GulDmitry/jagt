@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.task;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,16 +44,25 @@ public record GitTrust(Map<String, String> recorded, @With @Nullable String chan
 
   /** Each entry differing from the record, in name order, followed by how. */
   public List<String> differences(Map<String, String> read) {
+    return changes(read).entrySet().stream()
+        .map(change -> change.getKey() + " " + change.getValue())
+        .toList();
+  }
+
+  /** Each entry differing from the record, in name order, with how: added, removed or changed. */
+  public Map<String, String> changes(Map<String, String> read) {
     TreeSet<String> entries = new TreeSet<>(recorded.keySet());
     entries.addAll(read.keySet());
-    return entries.stream()
+    Map<String, String> how = new LinkedHashMap<>();
+    entries.stream()
         .filter(entry -> !Objects.equals(recorded.get(entry), read.get(entry)))
-        .map(
+        .forEach(
             entry ->
-                entry
-                    + (!recorded.containsKey(entry)
-                        ? " added"
-                        : !read.containsKey(entry) ? " removed" : " changed"))
-        .toList();
+                how.put(
+                    entry,
+                    !recorded.containsKey(entry)
+                        ? "added"
+                        : !read.containsKey(entry) ? "removed" : "changed"));
+    return how;
   }
 }

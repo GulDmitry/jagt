@@ -103,7 +103,7 @@ class TrustedGitStateTest {
     assertThat(distrust)
         .contains(
             "git config or hooks changed since trusted: a in /c added; b in /c added;"
-                + " c in /c added; 1 more — trust adopts them");
+                + " c in /c added; 1 more — read them in the Diff tab, trust adopts them");
   }
 
   @Test
@@ -129,7 +129,117 @@ class TrustedGitStateTest {
     assertThat(distrust)
         .contains(
             "git config or hooks changed since trusted: a in /c added; b in /c added;"
-                + " c in /c added — trust adopts them");
+                + " c in /c added — read them in the Diff tab, trust adopts them");
+  }
+
+  @Test
+  void showsWhatAddedAndRemovedEntriesHoldAsAReadableDiff(@TempDir Path root) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
+            .gitTrust(GitTrust.of(Map.of("/r/.git/hooks/pre-push", "b2")))
+            .build());
+    when(git.gitState(List.of(Path.of("/wt"))))
+        .thenReturn(Map.of("core.fsmonitor in /r/.git/config", "a1"));
+    when(git.gitContents(List.of(Path.of("/wt"))))
+        .thenReturn(Map.of("core.fsmonitor in /r/.git/config", "/tmp/x"));
+
+    Optional<TaskDiff.RepoDiff> shown = new TrustedGitState(state, git).changes("ABC-42");
+
+    assertThat(shown)
+        .hasValueSatisfying(
+            diff ->
+                assertThat(diff.diff())
+                    .isEqualTo(
+                        "@@ /r/.git/hooks/pre-push removed\n"
+                            + "@@ core.fsmonitor in /r/.git/config added\n"
+                            + "+/tmp/x\n"));
+  }
+
+  @Test
+  void showsNothingWhereGitObeysWhatWasTrusted(@TempDir Path root) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
+            .gitTrust(GitTrust.of(Map.of("a in /c", "1")))
+            .build());
+    when(git.gitState(List.of(Path.of("/wt")))).thenReturn(Map.of("a in /c", "1"));
+
+    assertThat(new TrustedGitState(state, git).changes("ABC-42")).isEmpty();
+  }
+
+  @Test
+  void cutsWhatItShowsPastTheCapAndFlagsIt(@TempDir Path root) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
+            .gitTrust(GitTrust.of(Map.of()))
+            .build());
+    when(git.gitState(List.of(Path.of("/wt")))).thenReturn(Map.of("a in /c", "1"));
+    when(git.gitContents(List.of(Path.of("/wt")))).thenReturn(Map.of("a in /c", "x".repeat(30_000)));
+
+    Optional<TaskDiff.RepoDiff> shown = new TrustedGitState(state, git).changes("ABC-42");
+
+    assertThat(shown).hasValueSatisfying(diff -> assertThat(diff.cut()).isTrue());
+    assertThat(shown.orElseThrow().diff()).hasSize(20_000);
+  }
+
+  @Test
+  void keepsWhatItShowsWholeWhereItIsExactlyTheCap(@TempDir Path root) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
+            .gitTrust(GitTrust.of(Map.of()))
+            .build());
+    when(git.gitState(List.of(Path.of("/wt")))).thenReturn(Map.of("a in /c", "1"));
+    when(git.gitContents(List.of(Path.of("/wt"))))
+        .thenReturn(Map.of("a in /c", "x".repeat(19_981)));
+
+    Optional<TaskDiff.RepoDiff> shown = new TrustedGitState(state, git).changes("ABC-42");
+
+    assertThat(shown).hasValueSatisfying(diff -> assertThat(diff.cut()).isFalse());
+  }
+
+  @Test
+  void refusesToShowChangesOfATaskThatDoesNotExist(@TempDir Path root) {
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())));
+
+    assertThatThrownBy(() -> new TrustedGitState(state, git).changes("ABC-42"))
+        .isInstanceOf(Refusal.class);
   }
 
   @Test

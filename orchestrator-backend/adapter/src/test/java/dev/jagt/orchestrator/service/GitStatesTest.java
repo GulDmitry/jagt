@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class GitStatesTest {
 
@@ -57,6 +59,87 @@ class GitStatesTest {
     assertThat(GitTrust.of(trusted).differences(now))
         .containsExactly(
             "core.fsmonitor in " + repo.toRealPath().resolve(".git/config") + " added");
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "core.fsmonitor,/tmp/watch,/tmp/watch",
+    "remote.origin.url,https://user:pw@host/r.git,https://***@host/r.git",
+    "credential.helper,store,(hidden)"
+  })
+  void readsAConfigValueAsTextWithSecretsHidden(String key, String value, String shown, @TempDir Path dir)
+      throws Exception {
+    Processes runner = new ProcessRunner();
+    Duration timeout = Duration.ofSeconds(30);
+    Path repo = dir.resolve("repo");
+    Path worktree = dir.resolve("wt");
+    runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+    runner.run(
+        repo,
+        timeout,
+        List.of(
+            "git",
+            "-c",
+            "user.email=t@t",
+            "-c",
+            "user.name=t",
+            "commit",
+            "-q",
+            "--allow-empty",
+            "-m",
+            "init"));
+    runner.run(
+        repo,
+        timeout,
+        List.of("git", "worktree", "add", "-q", "-b", "ABC-42", worktree.toString()));
+    GitWorktrees git =
+        new GitWorktrees(
+            new GitCommands(
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
+    runner.run(worktree, timeout, List.of("git", "config", key, value));
+
+    Map<String, String> contents = git.gitContents(List.of(worktree));
+
+    assertThat(contents)
+        .containsEntry(key + " in " + repo.toRealPath().resolve(".git/config"), shown);
+  }
+
+  @Test
+  void readsAHooksTextWhereItHasOne(@TempDir Path dir) throws Exception {
+    Processes runner = new ProcessRunner();
+    Duration timeout = Duration.ofSeconds(30);
+    Path repo = dir.resolve("repo");
+    Path worktree = dir.resolve("wt");
+    runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+    runner.run(
+        repo,
+        timeout,
+        List.of(
+            "git",
+            "-c",
+            "user.email=t@t",
+            "-c",
+            "user.name=t",
+            "commit",
+            "-q",
+            "--allow-empty",
+            "-m",
+            "init"));
+    runner.run(
+        repo,
+        timeout,
+        List.of("git", "worktree", "add", "-q", "-b", "ABC-42", worktree.toString()));
+    GitWorktrees git =
+        new GitWorktrees(
+            new GitCommands(
+                runner, new LsofWorktreeProcesses(runner), path -> java.util.Optional.empty(), stopped -> {}));
+    Files.writeString(repo.resolve(".git/hooks/pre-push"), "#!/bin/sh\ncurl evil\n");
+
+    Map<String, String> contents = git.gitContents(List.of(worktree));
+
+    assertThat(contents)
+        .containsEntry(
+            repo.toRealPath().resolve(".git/hooks/pre-push").toString(), "#!/bin/sh\ncurl evil\n");
   }
 
   @Test

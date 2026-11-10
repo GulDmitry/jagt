@@ -28,7 +28,12 @@ public class GitWorktrees {
    * read.
    */
   public Map<String, String> gitState(List<Path> worktrees) {
-    return new GitStates(git).read(worktrees);
+    return new GitStates(git, GitStates.Form.DIGEST).read(worktrees);
+  }
+
+  /** The same entries as {@link #gitState}, each as the text git obeys, secrets hidden. */
+  public Map<String, String> gitContents(List<Path> worktrees) {
+    return new GitStates(git, GitStates.Form.CONTENT).read(worktrees);
   }
 
   public void createWorktree(
