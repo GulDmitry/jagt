@@ -40,6 +40,7 @@ orchestrator:
 
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────
   containers: docker-compose # docker-compose | none. `docker compose down -v` for each Compose project started inside a task's worktree, run as it is removed
+  supervisor: none         # none | launchd. `launchd` (macOS): the board's `supervise` has the machine keep the staged jar running and restart it on exit; `restart` starts the new jar
   platform: macos          # macos | linux. Not detected: refused when it is not what the machine reports
   archive:
     maxMegabytes: 20       # `archive/` beside state.json, what `done` keeps; past it the oldest snapshots go first

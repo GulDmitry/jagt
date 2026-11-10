@@ -42,7 +42,8 @@ Deploys made since are revertible with one command.
 | It refuses to start, printing a numbered list | the installation is incomplete | fix the whole list — each line names the key |
 | It refuses on Linux over `orchestrator.platform` | the default is `macos`, a choice not a detection | set it to `linux` |
 | The jar exits at once, saying nothing new | usually a port still held | `lsof -ti tcp:8290 \| xargs kill` |
-| An endpoint answers 500 while `/` works | you rebuilt while it ran | restart from the staged jar |
+| An endpoint answers 500 while `/` works | you rebuilt while it ran | press `restart` (`supervisor: launchd`), else restart from the staged jar |
+| `localhost:8290` shows "jagt cannot start" | the start was refused | the page lists every problem and edits `jagt.yml`; saving starts again |
 
 > [!IMPORTANT]
 > `./gradlew build` rewrites `jagt.jar` **in place**, so a running JVM keeps reading a file whose content

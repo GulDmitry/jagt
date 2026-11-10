@@ -71,6 +71,8 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `stats` | subscription limits, jagt's own model spend per task, cycle time, the week's cost per accepted task |
 | `project` | add a repository as a project, change or drop one (`project edit <key>`) |
 | `acceptance [project]` | an interactive acceptance session in its workspace, one per project: write scenarios, answer its questions |
+| `supervise` | with `supervisor: launchd`, have the machine keep the staged jar running; stop the process you started once, launchd takes over |
+| `restart` | restart jagt from the staged jar, after a rebuild or a fixed `jagt.yml` |
 | `login` | log in where jagt lost its reach, in a window of its own |
 | `activity [created\|shipped\|deployed\|stopped\|done] [<project>]` | every status change of every task, live or finished, newest first |
 | `jobs` | every scheduled job, its cadence, last and next run |

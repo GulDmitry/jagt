@@ -139,6 +139,7 @@ and say what to do. It starts an agent session in tmux at once, and a session co
 - **Nothing is written into your project's tracked files** — no git hook, nothing to uninstall.
 - Sessions live in tmux and the state is one JSON file, so restarting the backend loses nothing; a reboot
   costs the windows, and `focus` re-enters each session where it left off.
+- Optional on macOS: `supervisor: launchd` in `jagt.yml`, then `supervise` on the board keeps the staged jar running; `restart` starts a rebuilt one.
 - **Four things cost a model call**: a ticket, a merge request, a review round, a `⌘K` sentence.
 - The board asks for no password and can deploy, so it stays on `127.0.0.1`.
 

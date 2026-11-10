@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.port.Supervisor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,6 +61,7 @@ public class RunningJarWatch implements Job {
   record Stamp(long lastModified, long size) {}
 
   private final Notifications notifications;
+  private final Supervisor supervisor;
 
   /** Null when this JVM is not running from a jar at all, and there is nothing to watch. */
   private final @Nullable Path jar;
@@ -67,8 +69,9 @@ public class RunningJarWatch implements Job {
   private final @Nullable Stamp atStartup;
   private boolean reported;
 
-  public RunningJarWatch(Notifications notifications, Host host) {
+  public RunningJarWatch(Notifications notifications, Host host, Supervisor supervisor) {
     this.notifications = notifications;
+    this.supervisor = supervisor;
     this.jar = host.jar().orElse(null);
     this.atStartup = stamp(jar);
   }
@@ -103,7 +106,9 @@ public class RunningJarWatch implements Job {
     notifications.send(
         Notification.install(
             "restart needed",
-            "the running jar was rebuilt — parts of the board will fail until you restart"));
+            supervisor.supervised()
+                ? "the running jar was rebuilt — press `restart` on the board"
+                : "the running jar was rebuilt — parts of the board will fail until you restart"));
   }
 
   /** A rewrite, not a read: either fact changing is enough, and a file that VANISHED counts too. */

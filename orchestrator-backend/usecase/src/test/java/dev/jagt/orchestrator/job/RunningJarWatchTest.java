@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.port.Supervisor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,12 +26,13 @@ class RunningJarWatchTest {
 
   private final Notifications notifications = mock(Notifications.class);
   private final Host host = mock(Host.class);
+  private final Supervisor supervisor = mock(Supervisor.class);
 
   @Test
   void saysSoOnceWhenTheJarIsRewrittenUnderTheRunningProcess(@TempDir Path dir) throws Exception {
     Path jar = Files.writeString(dir.resolve("jagt.jar"), "first build");
     when(host.jar()).thenReturn(Optional.of(jar));
-    RunningJarWatch watch = new RunningJarWatch(notifications, host);
+    RunningJarWatch watch = new RunningJarWatch(notifications, host, supervisor);
 
     Files.writeString(jar, "a different build entirely");
     Files.setLastModifiedTime(jar, FileTime.fromMillis(1_700_000_000_000L));
@@ -46,10 +48,24 @@ class RunningJarWatchTest {
   }
 
   @Test
+  void namesTheRestartVerbWhenASupervisorStands(@TempDir Path dir) throws Exception {
+    Path jar = Files.writeString(dir.resolve("jagt.jar"), "first build");
+    when(host.jar()).thenReturn(Optional.of(jar));
+    when(supervisor.supervised()).thenReturn(true);
+    RunningJarWatch watch = new RunningJarWatch(notifications, host, supervisor);
+
+    Files.writeString(jar, "a different build entirely");
+    Files.setLastModifiedTime(jar, FileTime.fromMillis(1_700_000_000_000L));
+    watch.run();
+
+    verify(notifications).send(argThat(sent -> sent.body().contains("press `restart`")));
+  }
+
+  @Test
   void staysQuietWhileTheJarIsUntouched(@TempDir Path dir) throws Exception {
     Path jar = Files.writeString(dir.resolve("jagt.jar"), "one build");
     when(host.jar()).thenReturn(Optional.of(jar));
-    RunningJarWatch watch = new RunningJarWatch(notifications, host);
+    RunningJarWatch watch = new RunningJarWatch(notifications, host, supervisor);
 
     watch.run();
     watch.run();
@@ -61,7 +77,7 @@ class RunningJarWatchTest {
   void treatsAVanishedJarAsARewrite(@TempDir Path dir) throws Exception {
     Path jar = Files.writeString(dir.resolve("jagt.jar"), "build");
     when(host.jar()).thenReturn(Optional.of(jar));
-    RunningJarWatch watch = new RunningJarWatch(notifications, host);
+    RunningJarWatch watch = new RunningJarWatch(notifications, host, supervisor);
     Files.delete(jar);
 
     watch.run();
@@ -76,7 +92,7 @@ class RunningJarWatchTest {
 
   @Test
   void watchesNothingWhenTheProcessDidNotStartFromAJar() {
-    RunningJarWatch watch = new RunningJarWatch(notifications, host);
+    RunningJarWatch watch = new RunningJarWatch(notifications, host, supervisor);
 
     watch.run();
 
@@ -104,7 +120,7 @@ class RunningJarWatchTest {
 
     when(host.jar()).thenReturn(Optional.of(built));
 
-    assertThat(new RunningJarWatch(notifications, host).runningTheBuildsOwnJar()).isTrue();
+    assertThat(new RunningJarWatch(notifications, host, supervisor).runningTheBuildsOwnJar()).isTrue();
   }
 
   @Test
@@ -113,6 +129,6 @@ class RunningJarWatchTest {
 
     when(host.jar()).thenReturn(Optional.of(staged));
 
-    assertThat(new RunningJarWatch(notifications, host).runningTheBuildsOwnJar()).isFalse();
+    assertThat(new RunningJarWatch(notifications, host, supervisor).runningTheBuildsOwnJar()).isFalse();
   }
 }

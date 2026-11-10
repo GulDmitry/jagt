@@ -86,7 +86,7 @@
 - **Lessons** — When you disagree with the Master, it offers a lesson and changes no brief.
   [spec](../openspec/specs/master/spec.md#requirement-a-disagreement-offers-a-lesson-never-applies-one)
 
-## Platform · [spec](../openspec/specs/platform/spec.md)
+## Platform · [spec](../openspec/specs/platform/spec.md) · [supervisor](../openspec/specs/supervisor/spec.md)
 - **Keep awake** — The machine stays awake while the Master acts, polls run or tasks are being taken. Key: `orchestrator.keepAwake`, off by default.
   [spec](../openspec/specs/platform/spec.md#requirement-the-machine-stays-awake-only-when-asked)
 - **English and UTC** — Every time on the board and in a report is UTC and every text English, whatever the machine's or browser's locale.
