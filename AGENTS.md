@@ -11,7 +11,8 @@ MCP server; a root session presents jagt's Master token, so every one is Master.
 **One source of truth, no leaking abstraction, composition pinned by small tests**, above all. A unit knows
 what it needs, never who uses it: it names no caller, surface or feature, a comment included (`RingsTest`).
 **jagt is agnostic to everything**: no tracked file names a user's employer, project, ticket, skill, machine
-or local setup; such names live only in git-ignored files.
+or local setup; such names live only in git-ignored files. **A check holds for all code**: its kind is in
+[`ARCHITECTURE.md`](ARCHITECTURE.md#the-kinds) ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)).
 
 ## Where things are written down
 
@@ -84,9 +85,9 @@ or local setup; such names live only in git-ignored files.
   Start work is an `@EventListener` or a `Job`, never `@PostConstruct`
   (`StaticStateTest`, `LifecycleHooksTest`, [0160](docs/decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md)).
 - **No duplicated block of 75 tokens or more in main** (`DuplicationTest`): extract the one holder, never raise the number.
-- **Checkstyle's default counts gate main**: 7 parameters, 8 record components; a suppression needs its reason, zero is the target
+- **Checkstyle's default counts gate all code**: 7 parameters, 8 record components; a suppression needs its reason, zero is the target
   ([0143](docs/decisions/0143-checkstyle-gates-parameter-and-component-counts.md)).
-- **A test wiring over 3 mocks means the class does too much** (`MockCeilingTest`): fix the class, never the fixture.
+- **A test wiring over 5 mocks means the class does too much** (`MockCeilingTest`): fix the class, never the fixture.
 - **A test builds a class through the constructor production uses**: never a second constructor, an overload or a
   seam in `main` that only tests call (`ProductionConstructorTest`).
 - **English and UTC only, set in `main`**: no code reads the machine's locale, zone or clock (`EnglishAndUtcTest`, `BoardAssetsTest`).
@@ -122,8 +123,10 @@ or local setup; such names live only in git-ignored files.
 ## Tests
 
 - The gate is `cd orchestrator-backend && ./gradlew test`; `e2eTest`, `boardTest`, `linuxDriverTest`, `promptEval`,
-  `roleEval -Prole=<id>` and `pitest` are asked for by name. **A cached green is not a run**: `--rerun-tasks` at a batch's end
-  and before a push; a commit inside a batch runs the tests of what it touched and the rule tests.
+  `roleEval -Prole=<id>` and `pitest` are asked for by name. **A cached green is not a run.** **Every linter and test runs locally**
+  at every feature's end and before every release: every source set compiled, `test --rerun-tasks`.
+  `boardTest` and `e2eTest` run where the change reaches and before a release. A commit inside a feature runs the tests of
+  what it touched and the rule tests. CI runs them all nightly.
 - **A change to `roles/session/brief.md.dist` runs `promptEval` and `roleEval -Prole=master`** before its commit.
 - **Before touching a test file, load the unit-testing skill your setup provides, if any**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it. It adds its row to
@@ -144,7 +147,7 @@ or local setup; such names live only in git-ignored files.
 - **Budgets, asserted by `TextBudgetTest`**, in lines on Anthropic's scale
   ([memory](https://code.claude.com/docs/en/memory), [skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)):
   a decision 50, a rule 100, a page read whole 200, `ARCHITECTURE.md` 500; no line past 150 characters outside a
-  table; comments ≤ 15% of main sources. Past a limit, compress first: review the text,
+  table; comments ≤ 15% of all sources. Past a limit, compress first: review the text,
   cut what restates or explains. Only then split the file one level deep; never raise the number.
   **Where no compression keeps every fact, stop and ask the owner** — never trade a fact for a line.
 - **Every log line is structured**: constant event, values as fields, `cause` on every failure, never `{}` or `+`

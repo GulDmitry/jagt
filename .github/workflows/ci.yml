@@ -9,6 +9,9 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+  # The whole gate once a day too: a runner image or a dependency can turn main red with no commit.
+  schedule:
+    - cron: '0 4 * * *'
 
 # A new push supersedes the previous run of the same ref: these jobs take minutes and nobody reads the old one.
 concurrency:

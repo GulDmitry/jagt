@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-10-21.
+Amended by [0162](0162-a-check-holds-for-all-code.md): it holds for every source set.
 
 ## Context
 

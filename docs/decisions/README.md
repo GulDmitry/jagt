@@ -174,3 +174,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0158 Acceptance keeps its checks in a workspace](0158-acceptance-keeps-its-checks-in-a-workspace.md) (reopens 0157 in part)
 - [0160 The chart is an instance and start work is an event](0160-the-chart-is-an-instance-and-start-work-is-an-event.md) (beside 0107)
 - [0161 A supervisor keeps the staged jar running](0161-a-supervisor-keeps-the-staged-jar-running.md) (beside 0130)
+- [0162 A check holds for all code](0162-a-check-holds-for-all-code.md) (amends 0034, 0053, 0143, 0146)

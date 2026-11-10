@@ -37,6 +37,7 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb |
 | `protocol/` | what crosses into jagt, and what makes it valid | built — every tool, every read, the hooks |
+| check | a rule the code must keep, held for every source set of every project | built — `build-logic`'s conventions apply Checkstyle, Error Prone and NullAway to every source set; a rule test reads `SourceRoots`; main-only only for who in production may act and what a test names as its fixture ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)) |
 | `startup/` | why the assembly must not start | built — `port/StartupCheck`, `StartupValidation` and every check |
 | `roles/<id>/` | a role: its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition, brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion`, the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesTest` |
 
@@ -305,7 +306,7 @@ that points outward does not compile. Two folders inside one module it cannot se
 
 | module | holds | sees |
 |--------|-------|------|
-| `:statechart` | `dev.jagt.statechart`: a generic statechart engine, a pure step over stored and derived regions | the JDK only, no jagt type |
+| `:statechart` | `dev.jagt.statechart`: a generic statechart engine, a pure step over stored and derived regions | the JDK and JSpecify only, no jagt type |
 | `:core` | `task/` `flow/` `port/` `protocol/` | nothing of jagt's, no Spring |
 | `:usecase` | `capability/` `command/` `job/` `notify/` `service/` `config/` `startup/` | `:core` |
 | `:adapter` | `adapter/` | `:core`, `:usecase` |
