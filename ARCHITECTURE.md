@@ -30,7 +30,7 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | kind | its one job | state |
 |------|-------------|-------|
 | `task/` | the task record and everything it is made of, its `TaskStatus` too | built — `service/StateService` writes it to `state.json` |
-| `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, acceptance, master, plus derived lazy `ask` and `acceptance beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` |
+| `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (an instance `FlowWiring` composes from the roles, as are `TaskReducer`, `Checkers` and `FlowRules`; regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, acceptance, master, plus derived lazy `ask` and `acceptance beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` |
 | `capability/` | one thing that can be done to a task | built — a class per verb |
 | `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use |
 | `notify/` | something a human must be told | built — the fan-out; the contract is `port/Notification` + `port/Notifier` |

@@ -50,6 +50,8 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
 ## Session roles, tasks and scope
 
 - **A verb runs in the backend process**, no LLM, no MCP round-trip; the **Master** is a root session.
+- **`TaskChart`, `TaskReducer`, `Checkers` and `FlowRules` are instances** `FlowWiring` builds from the installed roles;
+  a class takes the one it needs through its constructor ([0160](../decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md)).
 - **Sub-agents** are agent-CLI sessions in worktrees named `<taskId>-<projectKey>`, siblings of the base repo,
   briefed by `AGENTS.md` (`AgentRuntime.SYSTEM_KNOWLEDGE_FILE`) and `task_context.md`.
 - **A task is created with its item's own facts or not at all.** `TaskLauncher` and `TaskResume` read it on every

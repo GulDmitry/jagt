@@ -17,7 +17,8 @@ Accepted 2026-11-10 by the owner.
 
 - **A static field is final and immutable**; a static method reads its arguments and constants alone.
 - **Pure static holders stay**; file holders stay (`@TempDir` is the seam).
-- **`TaskChart` becomes an instance**, built by `FlowWiring` (follow-up task).
+- **`TaskChart`, `TaskReducer`, `Checkers` and `FlowRules` are instances** built by `FlowWiring`, taken through the constructor;
+  a role composition is the context's, never the process's.
 - **Start work becomes `StateWritten` events**, listened to, not `@PostConstruct` (follow-up task).
 - **`StaticStateTest` and `LifecycleHooksTest` freeze the offenders** in `src/test/resources/archunit/`; the store only shrinks.
 - Exempt by name: `TaskAliasLogFilter`, `AbortedConnectionFilter` (Logback predates the context).
