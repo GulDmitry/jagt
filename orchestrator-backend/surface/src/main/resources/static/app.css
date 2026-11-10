@@ -118,7 +118,7 @@ body.stale #board, body.stale #phases, body.stale #report-line { opacity: .5; }
 #palette { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 16px;
   border-bottom: 1px solid var(--line); background: var(--panel); }
 #palette input#ask { flex: 1; min-width: 260px; }
-/* An id rule outranks the browser's own [hidden], so a toggled form stayed on screen and its button did nothing. */
+/* An id rule outranks [hidden]: a toggled form stayed on screen. */
 #palette[hidden] { display: none; }
 button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 #palette-state.ok { color: var(--ok); }
@@ -161,7 +161,7 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 /* A sample is only the page's own element if it is the SIZE the page draws it. */
 .legend-key button { font-size: 12px; padding: 3px 8px; }
 .legend-says { color: var(--muted); }
-/* The card's edge is a border, which nothing outside a card can wear: here it is the same colour as a bar. */
+/* Outside a card the edge is a bar of the same colour. */
 .legend-edge { width: 4px; height: 18px; border-radius: 2px; background: var(--line); }
 .legend-edge.you { background: var(--you); }
 .legend-edge.agent { background: var(--agent); }
@@ -174,8 +174,8 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 }
 #phases button.phase[aria-pressed="true"] { background: var(--chip-bg); color: var(--text); }
 #phases button.phase:disabled { opacity: .5; cursor: default; }
-#phases .clear-filters { font-size: 11px; padding: 1px 8px; margin-left: 6px; }
-#phases .order { font-size: 11px; padding: 1px 8px; }
+#phases .clear-filters, #phases .order { font-size: 11px; padding: 1px 8px; }
+#phases .clear-filters { margin-left: 6px; }
 #phases .count { font-weight: 700; color: var(--text); }
 #phases .phase.empty .count { font-weight: 400; color: var(--muted); }
 #phases .sep { opacity: .4; }
@@ -217,12 +217,18 @@ main#board:empty { padding: 0; }
   #pane .back { display: inline-block; }
   main#board:not(.open) #pane, main#board.open #tasks { display: none; }
 }
+@media (max-width: 599px) {
+  .menu { position: static; }
+  #reports { left: 8px; right: 8px; width: auto; }
+  .tabs button { padding: 6px 8px; white-space: nowrap; }
+  .field-row .field { flex: 1 1 100%; }
+}
 article {
   background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--line);
   border-radius: 8px; padding: 10px; align-self: start;
 }
 .row.you, article.you { border-left-color: var(--you); }
-/* A move of theirs that nothing is waiting on keeps the plain edge: the colour is for the cards that are stuck. */
+/* A move nothing waits on keeps the plain edge: the colour is for stuck cards. */
 .row.you.optional, article.you.optional { border-left-color: var(--line); }
 .row.agent, article.agent { border-left-color: var(--agent); }
 .row.ci, article.ci { border-left-color: var(--ci); }
@@ -253,7 +259,7 @@ button.flag:hover:not(:disabled) { color: var(--accent); }
 a.id, a.mr-age, a.task-link { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; }
 /* The request wears ONE fact — an APPROVAL, as green and a tick — because the checks answer as their own dot. */
 a.mr-age.approved, .tick { color: var(--ok); }
-/* A poll that STOPPED hands the move back: a ring on the request it was watching, never a fifth thing in the row. */
+/* A STOPPED poll hands the move back: a ring on its request, never a fifth thing in the row. */
 .mr-age.stalled, .repos.stalled, .status.stalled { border: 1px solid var(--you); border-radius: 999px; padding: 0 6px; }
 .chip.stalled { border-color: var(--you); }
 .tick { font-size: 11px; align-self: center; }
@@ -291,7 +297,7 @@ a { color: var(--accent); }
 /* A verdict is filled — red failed, green passed — and a run still going is a hollow pulsing ring, so the three
    read apart with the animation switched off. No dot at all is a verdict nothing here can read. */
 .checks { width: 9px; height: 9px; border-radius: 50%; display: inline-block; align-self: center; }
-/* The class sets a display, which outranks the browser's own [hidden]: a waiting ring stayed on screen. */
+/* A class display outranks [hidden]: a waiting ring stayed on screen. */
 .checks[hidden] { display: none; }
 .checks.red { background: var(--danger); }
 .checks.green { background: var(--ok); }

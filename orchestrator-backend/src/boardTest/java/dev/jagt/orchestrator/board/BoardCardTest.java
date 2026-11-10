@@ -487,6 +487,72 @@ class BoardCardTest extends BoardPageContext {
   }
 
   @Test
+  void aPhoneShowsTheOpenTaskWithItsVerbsAndSayFormAndNoSidewaysScroll() {
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
+            .alias("a1")
+            .mrUrl("https://host.example/mr/7")
+            .title("Widget layout is off on every window narrower than a laptop screen")
+            .lastActiveTimestamp(System.currentTimeMillis())
+            .build());
+    Page page = session.newPage();
+    page.setViewportSize(390, 844);
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Object listSpills =
+        page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth");
+
+    page.locator("#tasks .row .pick").click();
+    page.locator("#pane .tabs button[data-tab=session]").click();
+    Object paneSpills =
+        page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth");
+
+    Object pastTheEdge =
+        page.evaluate(
+            "[...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().width > 0 && e.getBoundingClientRect().right > innerWidth + 1 && !e.closest('dialog, .screen, .doc')).map(e => e.tagName + '.' + e.className + '#' + e.id)");
+
+    org.assertj.core.api.Assertions.assertThat(listSpills).isEqualTo(false);
+    org.assertj.core.api.Assertions.assertThat(paneSpills).isEqualTo(false);
+    org.assertj.core.api.Assertions.assertThat(pastTheEdge).isEqualTo(java.util.List.of());
+    org.assertj.core.api.Assertions.assertThat(
+            page.locator("#pane .tabs button").first().boundingBox().height)
+        .isLessThan(40);
+    assertThat(page.locator("#pane article .actions button").first())
+        .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
+    assertThat(page.locator("#pane .say input"))
+        .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
+    assertThat(page.locator("#pane .say button"))
+        .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
+  }
+
+  @Test
+  void aPhoneShowsTheWholeReportsMenu() {
+    Page page = session.newPage();
+    page.setViewportSize(390, 844);
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+
+    page.locator("#reports-toggle").click();
+
+    assertThat(page.locator("#reports"))
+        .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
+  }
+
+  @Test
+  void aPhoneGivesTheNewTaskBaseBranchFieldRoomToType() {
+    Page page = session.newPage();
+    page.setViewportSize(390, 844);
+    page.navigate("http://localhost:" + port + "/");
+    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+
+    page.locator("#new-task").click();
+
+    org.assertj.core.api.Assertions.assertThat(page.locator("#base-branch").boundingBox().width)
+        .isGreaterThan(200);
+  }
+
+  @Test
   void aTitleWithNoPlaceToBreakStillStaysInsideTheCard() {
     state.putTask(
         "ABC-1",
