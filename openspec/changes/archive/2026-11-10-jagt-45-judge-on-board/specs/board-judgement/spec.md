@@ -15,8 +15,8 @@ evidence, which the card shows with the stop. Evidence past `TaskStops.MAX_EVIDE
 
 ### Requirement: Trust git shows what it adopts
 Where a task's git config or hooks differ from what was trusted, the Diff tab SHALL show one more block after the
-repositories, under the muted header `git config and hooks · trusted`: an added or changed entry's current content,
-a removed one's name. It reads on request and stores nothing. The parked card's hint says where to read it.
+repositories. Its header is muted: `git config and hooks · trusted`. It holds an added or changed entry's current
+content, a removed one's name. It reads on request and stores nothing. The parked card's hint says where to read it.
 
 #### Scenario: A session sets a program
 - **WHEN** a session runs `git config core.fsmonitor /tmp/x` and you open the task's Diff tab
@@ -45,3 +45,21 @@ message, fields), a line past `LogTail.MAX_LINE` characters cut and flagged. It 
 #### Scenario: No log
 - **WHEN** the log file does not exist or is empty
 - **THEN** the report says where the log would be and that it holds nothing yet
+
+### Requirement: Orphaned worktrees are listed, each with its own delete verb
+`worktrees` SHALL be a report listing each directory the orphan scan finds. Each shows its project, its copied secret
+files and the typed verb that deletes it. `delete-worktree <name>` SHALL delete the one listed directory called `<name>`
+with all it holds, and refuse any name the scan does not list. No verb deletes more than one. The Master never runs it.
+The orphan ping points to `worktrees`.
+
+#### Scenario: Listing
+- **WHEN** you type `worktrees` and `ABC-40-demo` holds two copied secret files and no task owns it
+- **THEN** the report shows `ABC-40-demo`, its project, `2 copied secret file(s)` and `delete-worktree ABC-40-demo`
+
+#### Scenario: Deleting one
+- **WHEN** you type `delete-worktree ABC-40-demo`
+- **THEN** that directory is gone and no other
+
+#### Scenario: A name that is no orphan
+- **WHEN** you type `delete-worktree` with the name of a task's live worktree or of any other directory
+- **THEN** it is refused, saying `worktrees` lists them, and nothing is deleted

@@ -140,7 +140,7 @@ class TrustedGitStateTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())), reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -171,7 +171,7 @@ class TrustedGitStateTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())), reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -190,7 +190,7 @@ class TrustedGitStateTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())), reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -213,7 +213,7 @@ class TrustedGitStateTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())), reducer);
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -236,7 +236,7 @@ class TrustedGitStateTest {
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())));
+                    .withStateFile(root.resolve("state.json").toString())), reducer);
 
     assertThatThrownBy(() -> new TrustedGitState(state, git).changes("ABC-42"))
         .isInstanceOf(Refusal.class);

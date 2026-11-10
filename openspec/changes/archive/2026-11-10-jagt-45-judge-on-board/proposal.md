@@ -9,8 +9,9 @@ change contains, jagt's log, and the worktrees nobody owns.
   where the stop is shown.
 - The Diff tab shows what a trusted-git change contains, before the human trusts it.
 - `tail` opens the tail of jagt's own log as a report.
+- `worktrees` lists orphaned worktrees; `delete-worktree <name>` deletes one, never several.
 
 ## Impact
 
 - Specs: new `board-judgement`.
-- Code: `TaskStops`, `VerifyJob`, `GitStates`, `TrustedGitState`, `TaskDiffController`, `LogTail`, `LogCommand`.
+- Code: `TaskStops`, `VerifyJob`, `GitStates`, `TrustedGitState`, `TaskDiffController`, `LogTail`, `LogCommand`, `WorktreeOrphanScanner`, `WorktreesCommand`, `DeleteWorktreeCommand`.

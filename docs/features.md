@@ -22,8 +22,8 @@
   [spec](../openspec/specs/attention/spec.md#requirement-desktop-banners-are-chosen-per-event)
 
 ## Board · [spec](../openspec/specs/board/spec.md)
-- **One surface** — The board is the only surface; every card, button and gate reads the same rules.
-  [spec](../openspec/specs/board/spec.md#requirement-one-surface-one-projection)
+- **One surface** — Cards, buttons and gates read the same rules. [spec](../openspec/specs/board/spec.md#requirement-one-surface-one-projection)
+- **Judge on the board** — A failed check's output, what Trust adopts, `tail` and `worktrees`. [spec](../openspec/specs/board-judgement/spec.md)
 - **Command palette** — Type a command, or free text that a model turns into one proposed command.
   [spec](../openspec/specs/board-verbs/spec.md#requirement-tier-1-is-grammar-tier-2-only-proposes)
 - **Lost reach on the head** — jagt's own failed reach of a code host is one mark on the board's head with its login, never a card's stop.
