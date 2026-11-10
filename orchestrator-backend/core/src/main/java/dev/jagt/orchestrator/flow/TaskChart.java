@@ -1253,6 +1253,23 @@ final class TaskChart {
                 "remove-repo RELAYED",
                 new TaskMove.Ran(TaskAction.REMOVE_REPO, Outcome.Kind.RELAYED)::equals,
                 status));
+    TaskOffers.HAND_OFF_FROM.forEach(
+        status ->
+            edge(
+                chart,
+                status,
+                "hand-off RELAYED",
+                new TaskMove.Ran(TaskAction.HAND_OFF, Outcome.Kind.RELAYED)::equals,
+                status));
+    EnumSet.of(DEPLOYED, DEPLOY_CONFLICT)
+        .forEach(
+            status ->
+                edge(
+                    chart,
+                    status,
+                    "revert RELAYED",
+                    new TaskMove.Ran(TaskAction.REVERT, Outcome.Kind.RELAYED)::equals,
+                    status));
     ran(chart, TaskAction.DEPLOY, Outcome.Kind.OK, DEPLOYED, TaskOffers.DEPLOY_FROM);
     ran(chart, TaskAction.DEPLOY, Outcome.Kind.CONFLICT, DEPLOY_CONFLICT, TaskOffers.DEPLOY_FROM);
     ran(chart, TaskAction.REVERT, Outcome.Kind.OK, REVERTED, OPEN);

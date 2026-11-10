@@ -21,4 +21,12 @@ public class RevertCapability implements TaskCapability {
   public Outcome run(String taskId) {
     return reverts.revert(taskId);
   }
+
+  @Override
+  public Outcome run(String taskId, String pick) {
+    return reverts.revertPicked(taskId, pick);
+  }
+
+  @Override
+  public void vet(String pick) {}
 }

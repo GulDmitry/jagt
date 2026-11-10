@@ -98,6 +98,8 @@ final class TaskOffers {
   private static final Set<TaskStatus> REVERT_ON_A_LIVE_DEPLOY =
       difference(ANY, EnumSet.of(DEPLOYED, DEPLOY_CONFLICT));
 
+  static final Set<TaskStatus> HAND_OFF_FROM = difference(ANY, EnumSet.of(NEW, PLAN_PENDING, DONE));
+
   static final Set<TaskStatus> REMOVE_REPO_FROM =
       difference(ANY, EnumSet.of(NEW, DEPLOY_CONFLICT, DONE));
 
@@ -119,6 +121,7 @@ final class TaskOffers {
           offer(TaskAction.APPROVE_PLAN, APPROVE_PLAN_FROM),
           offer(TaskAction.ADD_REPO, OPEN, yes(REPO_REQUESTED)),
           offer(TaskAction.REMOVE_REPO, REMOVE_REPO_FROM, yes(SEVERAL_REPOS)),
+          offer(TaskAction.HAND_OFF, HAND_OFF_FROM),
           offer(TaskAction.SWEEP, ANY, yes(REVIEW_REQUEST)),
           offer(
               TaskAction.DEPLOY, EnumSet.of(DEPLOY_CONFLICT), no(GIT_CHANGED), no(REVERT_CONFLICT)),

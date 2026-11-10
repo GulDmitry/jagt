@@ -259,8 +259,8 @@ public class GitWorktrees {
   private record Counts(boolean tracked, long behind, long ahead) {}
 
   /**
-   * Refuses outright where both sides carry commits: a branch rewritten on the host is the human's
-   * to reconcile, and moving over what only this machine has would lose it.
+   * Refuses outright where both sides carry commits: a branch rewritten on the host is the
+   * session's to reconcile, and moving over what only this machine has would lose it.
    */
   private Counts countsAgainst(Remote remote, Path projectPath, String branch) {
     if (!remoteRefExists(remote, projectPath, branch)) {
@@ -294,7 +294,9 @@ public class GitWorktrees {
               + " only on "
               + remote.name()
               + ") — it was rewritten on the"
-              + " host. Reconcile it yourself, then resume.");
+              + " host. `hand-off` on the task gives its session both tips and `git rebase "
+              + remote.track(branch)
+              + "`, then resume.");
     }
     return new Counts(true, behind, ahead);
   }

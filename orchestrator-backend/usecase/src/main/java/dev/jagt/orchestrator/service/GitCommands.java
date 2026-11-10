@@ -40,7 +40,7 @@ public class GitCommands {
    * The remote of the configured project this repository or checkout belongs to; origin where none
    * is configured.
    */
-  Remote remote(Path repository) {
+  public Remote remote(Path repository) {
     return remotes
         .of(repository)
         .or(() -> worktreeOwner(repository).flatMap(remotes::of))
@@ -100,7 +100,7 @@ public class GitCommands {
     return Optional.empty();
   }
 
-  Processes.Result run(Path workingDir, List<String> command) {
+  public Processes.Result run(Path workingDir, List<String> command) {
     return processRunner.run(workingDir, GIT_TIMEOUT, command);
   }
 

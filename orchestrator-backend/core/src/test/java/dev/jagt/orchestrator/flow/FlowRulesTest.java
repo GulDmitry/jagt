@@ -250,6 +250,18 @@ class FlowRulesTest {
     assertThat(FlowRules.next(TaskStatus.REVIEWED, action, outcome)).isEmpty();
   }
 
+  @ParameterizedTest
+  @CsvSource({"DEPLOYED", "DEPLOY_CONFLICT"})
+  void letsARevertNameAMergeWhereTheDeployIsLive(TaskStatus status) {
+    assertThat(FlowRules.next(status, TaskAction.REVERT, Outcome.Kind.RELAYED)).contains(status);
+  }
+
+  @ParameterizedTest
+  @CsvSource({"IN_PROGRESS", "CI_POLLING", "DEPLOYED", "DEPLOY_CONFLICT", "REVERTED"})
+  void keepsTheTaskWhereItIsWhenItsGitCaseIsHandedToTheSession(TaskStatus status) {
+    assertThat(FlowRules.next(status, TaskAction.HAND_OFF, Outcome.Kind.RELAYED)).contains(status);
+  }
+
   @Test
   void keepsTheConflictWaitingWhenARevertFromItTookOutOnlySomeOfTheDeploy() {
     assertThat(FlowRules.next(TaskStatus.DEPLOY_CONFLICT, TaskAction.REVERT, Outcome.Kind.PARTIAL))

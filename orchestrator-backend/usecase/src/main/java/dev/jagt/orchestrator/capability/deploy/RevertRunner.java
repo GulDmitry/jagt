@@ -67,6 +67,39 @@ public class RevertRunner {
     return allReverted(taskId, task.repos().size() == 1, landed, reverted, lastRevertCommit);
   }
 
+  /** A merge a human picked from the candidates: the record holds none, so nothing is forgotten. */
+  public Outcome picked(String taskId, Target target, String merge, boolean onlyRepo) {
+    String commit;
+    try {
+      commit =
+          gitDeploy.revertMergeAndPush(
+              target.path(), taskId, target.deployBranch(), merge, List.of());
+    } catch (GitDeploy.RevertConflictException kept) {
+      throw new IllegalStateException(
+          "revert "
+              + taskId
+              + ": CONFLICT reverting "
+              + GitDeploy.shortSha(merge)
+              + " on "
+              + target.deployBranch()
+              + ", nothing pushed. `hand-off` on the task gives the session the worktree "
+              + kept.revertWorktree()
+              + "; `revert "
+              + taskId
+              + " "
+              + GitDeploy.shortSha(merge)
+              + "` finishes it.",
+          kept);
+    }
+    String on = "on " + target.deployBranch() + " (" + GitDeploy.shortSha(commit) + ")";
+    if (onlyRepo) {
+      return Outcome.ok("Reverted " + taskId + " " + on + "; REVERTED.", "reverted " + on);
+    }
+    String half = "reverted " + target.project() + " " + on;
+    return Outcome.partial(
+        "revert " + taskId + ": " + half + "; the others are still live.", half, null);
+  }
+
   /** A conflicted merge with nothing landed before it: the worktree is all there is to take out. */
   public Outcome discard(String taskId, Target at) {
     discardDeploy(taskId, at);

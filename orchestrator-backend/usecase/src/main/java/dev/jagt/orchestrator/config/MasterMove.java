@@ -19,6 +19,7 @@ public enum MasterMove {
   LIFT("lift", false),
   ESCALATE("escalate", false),
   REVERT("revert", false),
+  HAND_OFF("hand-off", false),
   TRUST("trust", false),
   PAUSE("pause", false),
   DONE("done", false),

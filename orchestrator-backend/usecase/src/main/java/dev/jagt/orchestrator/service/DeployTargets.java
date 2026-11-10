@@ -55,6 +55,13 @@ public class DeployTargets {
     return landed;
   }
 
+  /** The project as configured now, none where it left jagt.yml or names no deploy branch. */
+  public Optional<Target> configured(String project) {
+    return Optional.ofNullable(configService.load().projects().get(project))
+        .filter(config -> config.deployBranch() != null && !config.deployBranch().isBlank())
+        .map(config -> new Target(project, config, config.deployBranch()));
+  }
+
   /** The deploy branches the task's repositories land on, each once, joined by a comma. */
   public static String deployBranches(TaskState task, Map<String, ProjectConfig> projects) {
     return task.repos().stream()

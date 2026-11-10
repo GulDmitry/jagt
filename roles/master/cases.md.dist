@@ -86,6 +86,13 @@ at: any
 by: master
 The Master closes the task: the session ends, the worktree goes, the branch stays.
 
+## hand-off
+
+move: hand-off
+at: any but NEW, PLAN_PENDING, DONE
+by: master
+The Master says a task's git case to its session: the branch, the shas and the command to run.
+
 ## remove-repo
 
 move: remove-repo

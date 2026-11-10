@@ -52,8 +52,8 @@
   [spec](../openspec/specs/cases/spec.md#requirement-the-cases-are-files-you-may-copy)
 
 ## Git · [spec](../openspec/specs/git/spec.md)
-- **Deploy and revert** — Only these two write a shared branch, never the base; a revert walks back a deploy or refuses with a recipe.
-  [spec](../openspec/specs/git/spec.md#requirement-only-deploy-and-revert-write-shared-branches)
+- **Deploy and revert** — Only these two write a shared branch; a revert picks from listed merges, `hand-off` gives the session a git case.
+  [spec](../openspec/specs/board-verbs/spec.md#requirement-a-git-case-the-session-can-work-has-a-verb)
   [spec](../openspec/specs/revert/spec.md#requirement-revert-refuses-rather-than-guess)
 - **Ship** — Ship has the session commit, push and open or update its review request against the base it reported; with no code host, push alone.
   [spec](../openspec/specs/git/spec.md#requirement-ship-hands-the-work-to-the-agent)

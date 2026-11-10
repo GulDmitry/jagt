@@ -53,7 +53,14 @@ public enum TaskAction {
       Group.FLOW,
       "revert",
       "Revert",
-      "revert the last deploy's merge commit and push; earlier deploys stay live"),
+      "revert the last deploy's merge commit and push; earlier deploys stay live",
+      "revert <ticket> [merge]"),
+  HAND_OFF(
+      129,
+      Group.FLOW,
+      "hand-off",
+      "Hand to session",
+      "say the task's git case to its session: the branch, the shas and the command to run"),
   TRUST(
       125,
       Group.FLOW,
@@ -137,10 +144,10 @@ public enum TaskAction {
    */
   private static final Set<TaskAction> READ_ONLY = EnumSet.of(FOCUS, IDE, DIFF);
 
-  private static final Set<TaskAction> NAMES_A_PROJECT = EnumSet.of(ADD_REPO, REMOVE_REPO);
+  private static final Set<TaskAction> NAMES_A_PROJECT = EnumSet.of(ADD_REPO, REMOVE_REPO, REVERT);
 
   /** Verbs a human types with what they act on, so no card carries a button for them. */
-  private static final Set<TaskAction> TYPED = EnumSet.of(REMOVE_REPO);
+  private static final Set<TaskAction> TYPED = EnumSet.of(REMOVE_REPO, HAND_OFF);
 
   /** The verb a task needs most often. */
   private static final Set<TaskAction> ON_ROW = EnumSet.of(FOCUS);
@@ -192,8 +199,8 @@ public enum TaskAction {
                   + "?\n\nThis pushes a revert commit to:\n"
                   + lines
                   + "\n\n"
-                  + "Only the LAST deploy comes out; earlier rounds stay live and need reverting by"
-                  + " hand. The task branch keeps every commit.");
+                  + "Only the LAST deploy comes out; earlier rounds stay live."
+                  + " The task branch keeps every commit.");
       case DONE -> Optional.of(label + " " + taskId + "?\n\n" + hint);
       default -> Optional.empty();
     };

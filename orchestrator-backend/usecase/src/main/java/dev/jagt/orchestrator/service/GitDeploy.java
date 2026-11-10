@@ -389,11 +389,11 @@ public class GitDeploy {
       throw new IllegalStateException(
           "Deploy push to "
               + targetBranch
-              + " was rejected. In "
+              + " was rejected: it moved while the deploy was made. The deploy worktree "
               + deployWorktree
-              + " run `git merge "
+              + " is kept; `hand-off` on the task gives the session `git merge "
               + remote.track(targetBranch)
-              + "`, resolve, then deploy again. Details: "
+              + "` to run in it, then deploy again. Details: "
               + d);
     }
     String merged =
@@ -538,12 +538,12 @@ public class GitDeploy {
               + " was rejected — it moved while the"
               + " revert was being made. "
               + (resuming
-                  ? "In "
+                  ? "The revert worktree "
                       + revertWorktree
-                      + " run `git merge "
+                      + " is kept; `hand-off` on the task gives the session `git merge "
                       + remote.track(targetBranch)
-                      + "`, then revert again"
-                  : "Try revert again")
+                      + "` to run in it, then revert again"
+                  : "Revert again")
               + ". Details: "
               + details);
     }
@@ -714,8 +714,8 @@ public class GitDeploy {
               + shortSha(mergeCommit)
               + " on "
               + targetBranch
-              + " is not a merge, so reverting it would undo only part of what was deployed. Revert"
-              + " by hand after deciding what should come out. Nothing was reverted.");
+              + " is not a merge, so reverting it would undo only part of what was deployed."
+              + " Nothing was reverted; pick one of the listed merge commits.");
     }
   }
 

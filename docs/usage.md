@@ -53,7 +53,8 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `replies [ticket]` | every comment of the round with its verdict and the reply drafted for it |
 | `resume <request-url>` | adopt an existing review request: its branch, its commits, its target |
 | `deploy <ticket>` | merge the task branch into `deployBranch` and push |
-| `revert <ticket>` | undo that deploy with a revert commit |
+| `revert <ticket> [merge]` | undo that deploy with a revert commit; where none is recorded, name one of the merges it lists |
+| `hand-off <ticket>` | say the task's git case (rejected deploy push, diverged branch, waiting conflict) to its session, with the shas and the command |
 | `scenarios <ticket>` | where acceptance is on and holds a workspace, before its deploy: an interactive acceptance session in the workspace, the ticket and any open question loaded |
 | `respawn <ticket>` | restart a dead agent session |
 | `add-repo <ticket> [project]` | attach the repository a session asked for, or the project you name: its worktree is cut and the session told |
