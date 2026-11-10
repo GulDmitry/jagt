@@ -7,7 +7,6 @@ import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
-import com.tngtech.archunit.library.freeze.FreezingArchRule;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -29,19 +28,18 @@ class StaticStateTest {
 
   @Test
   void staticFieldIsFinalAndOfAnImmutableType() {
-    FreezingArchRule.freeze(
-            fields()
-                .that()
-                .areStatic()
-                .and()
-                .doNotHaveModifier(JavaModifier.SYNTHETIC)
-                .and()
-                .areDeclaredInClassesThat()
-                .doNotHaveSimpleName("TaskAliasLogFilter")
-                .and()
-                .areDeclaredInClassesThat()
-                .doNotHaveSimpleName("AbortedConnectionFilter")
-                .should(beFinalAndImmutable()))
+    fields()
+        .that()
+        .areStatic()
+        .and()
+        .doNotHaveModifier(JavaModifier.SYNTHETIC)
+        .and()
+        .areDeclaredInClassesThat()
+        .doNotHaveSimpleName("TaskAliasLogFilter")
+        .and()
+        .areDeclaredInClassesThat()
+        .doNotHaveSimpleName("AbortedConnectionFilter")
+        .should(beFinalAndImmutable())
         .check(SourceRoots.ALL);
   }
 

@@ -1,4 +1,3 @@
 #
 #Tue Nov 10 09:36:01 UTC 2026
 fields\ should\ not\ be\ annotated\ with\ @Autowired=c97a611a-0eb1-4787-8f7d-893590917040
-fields\ that\ are\ static\ and\ do\ not\ have\ modifier\ SYNTHETIC\ and\ are\ declared\ in\ classes\ that\ do\ not\ have\ simple\ name\ 'TaskAliasLogFilter'\ and\ are\ declared\ in\ classes\ that\ do\ not\ have\ simple\ name\ 'AbortedConnectionFilter'\ should\ be\ final\ and\ of\ an\ immutable\ type=49f7c937-7422-4b4b-9681-a9bb95e43eb5

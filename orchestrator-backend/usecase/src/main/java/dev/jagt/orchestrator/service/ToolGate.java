@@ -70,10 +70,6 @@ public final class ToolGate {
           "\\b(cd|pushd|checkout|switch|GIT_DIR|GIT_WORK_TREE)\\b"
               + "|(^|\\s)(-C|--git-dir|--work-tree)(\\s|=)");
 
-  private static volatile @Nullable BoardPattern board;
-
-  private record BoardPattern(int port, Pattern pattern) {}
-
   private final HostCliLine hostCli;
   private final Pattern gitWord;
   private final String hostNames;
@@ -87,14 +83,7 @@ public final class ToolGate {
 
   /** The board acts as the human, and the token as the Master: neither is a session's to reach. */
   private static Pattern board(int port) {
-    BoardPattern last = board;
-    if (last == null || last.port() != port) {
-      last =
-          new BoardPattern(
-              port, Pattern.compile("(?i):0*%d\\b|master-token|mcp_client\\.js".formatted(port)));
-      board = last;
-    }
-    return last.pattern();
+    return Pattern.compile("(?i):0*%d\\b|master-token|mcp_client\\.js".formatted(port));
   }
 
   /** Why the line is refused, or empty when it is allowed. */
