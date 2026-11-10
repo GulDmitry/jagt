@@ -21,7 +21,6 @@ class DuplicationTest {
   private static final List<Path> SKIPPED =
       List.of(
           Path.of("adapter/src/test/java"),
-          Path.of("src/boardTest/java"),
           Path.of("usecase/src/test/java"));
 
   @Test

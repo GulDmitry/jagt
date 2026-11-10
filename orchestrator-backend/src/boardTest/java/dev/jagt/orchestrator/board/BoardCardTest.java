@@ -29,18 +29,12 @@ class BoardCardTest extends BoardPageContext {
   void cardShowsTheTaskAsTheProjectionDescribesIt() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.APPROVED)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.APPROVED)
             .title("Widget layout is off")
             .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .alias")).hasText("a1");
     assertThat(page.locator("article .id")).hasText("ABC-1");
@@ -53,14 +47,10 @@ class BoardCardTest extends BoardPageContext {
   void flaggedCardStaysFlaggedAfterTheBoardIsReloaded() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
             .title("Widget layout is off")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     page.locator("article button.flag").click();
     page.reload();
@@ -73,18 +63,12 @@ class BoardCardTest extends BoardPageContext {
   void cardSaysHowLongTheReviewRequestHasBeenOpen() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .requestOpenedAt(System.currentTimeMillis() - java.time.Duration.ofHours(8).toMillis())
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .mr-age")).hasText("request 8h");
   }
@@ -93,17 +77,11 @@ class BoardCardTest extends BoardPageContext {
   void offersTheRequestUnagedWhileNoReadHasSaidWhenItWasOpened() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .mr-age")).hasText("request");
   }
@@ -112,17 +90,11 @@ class BoardCardTest extends BoardPageContext {
   void opensTheReviewRequestFromTheAgeItIsWearing() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article a.mr-age")).hasAttribute("href", "https://host.example/mr/7");
   }
@@ -131,11 +103,9 @@ class BoardCardTest extends BoardPageContext {
   void opensTheRequestFromItsProjectsNameWhereTheBoardNamesProjects() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .requestOpenedAt(System.currentTimeMillis() - java.time.Duration.ofHours(8).toMillis())
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
     state.putTask(
         "ABC-2",
@@ -143,9 +113,7 @@ class BoardCardTest extends BoardPageContext {
             .alias("b2")
             .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
     page.locator("#tasks .row:has-text(\"a1\")").click();
 
     assertThat(page.locator("#pane article a.mr-age")).hasText("alpha 8h");
@@ -173,11 +141,7 @@ class BoardCardTest extends BoardPageContext {
             .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .mr-age")).hasText(new String[] {"alpha", "beta"});
   }
@@ -186,24 +150,12 @@ class BoardCardTest extends BoardPageContext {
   void taskSpanningRepositoriesNamesEachOnceWithItsRequestOnTheName() {
     state.putTask(
         "ABC-1",
-        TaskState.builder(
-                List.of(
-                    TaskRepo.of("alpha", root.resolve("ABC-1-alpha").toString())
-                        .withMrUrl("https://host.example/alpha/mr/7"),
-                    TaskRepo.of("beta", root.resolve("ABC-1-beta").toString())
-                        .withMrUrl("https://host.example/beta/mr/7")),
-                TaskStatus.CI_POLLING)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
+        alphaAndBetaTask()
             .pipelineStatus("failed")
             .approved(true)
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .meta > *")).hasCount(3);
     assertThat(page.locator("article .meta .repos")).hasText("alpha + beta ✓");
@@ -213,17 +165,11 @@ class BoardCardTest extends BoardPageContext {
   void showsTheStatusInWordsWithItsOwnAgeInsideTheSameChip() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .status")).hasText("out for review 0m");
     assertThat(page.locator("article .status .age")).hasText("0m");
@@ -233,18 +179,12 @@ class BoardCardTest extends BoardPageContext {
   void saysNothingUnderCardAboutRequestItAlreadyLinksTo() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .pipelineStatus("running")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .detail")).hasCount(0);
   }
@@ -253,13 +193,11 @@ class BoardCardTest extends BoardPageContext {
   void pollThatStoppedRingsTheRequestRatherThanTakingFifthPlaceInTheRow() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .mrCreatedAt(System.currentTimeMillis() - java.time.Duration.ofDays(9).toMillis())
             .pipelineStatus("failed")
             .lastPolledAt(System.currentTimeMillis())
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
     state.putTask(
         "ABC-2",
@@ -268,11 +206,7 @@ class BoardCardTest extends BoardPageContext {
             .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     Locator meta =
         page.locator("article", new Page.LocatorOptions().setHasText("a1")).locator(".meta");
@@ -284,19 +218,13 @@ class BoardCardTest extends BoardPageContext {
   void requestNothingPollsAnyMoreSaysWhyInItsHover() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .mrCreatedAt(System.currentTimeMillis() - java.time.Duration.ofDays(9).toMillis())
             .lastPolledAt(System.currentTimeMillis())
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article a.mr-age.stalled"))
         .hasAttribute(
@@ -309,35 +237,20 @@ class BoardCardTest extends BoardPageContext {
   void opensTheTicketFromTheTaskNumber() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
             .ticketUrl("https://tracker.example/ABC-1")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article a.id")).hasAttribute("href", "https://tracker.example/ABC-1");
   }
 
   @Test
   void showsTheTaskNumberAsPlainTextWhenNoTrackerGaveItUrl() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article a.id")).hasCount(0);
   }
@@ -346,22 +259,15 @@ class BoardCardTest extends BoardPageContext {
   void answersWhoseMoveItIsOnTheCardThatOffersNoButtonToPress() {
     state.putTask(
         "ABC-1",
-        TaskState.builder(
-                "alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.REVIEW_PENDING)
             .mrUrl("https://host.example/mr/7")
             .mrCreatedAt(System.currentTimeMillis())
             .lastPolledAt(System.currentTimeMillis())
             .message("already handled")
             .report(AgentReport.NO_CHANGES)
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .badge")).hasCount(0);
     assertThat(page.locator("article .hint")).hasCount(0);
@@ -373,24 +279,12 @@ class BoardCardTest extends BoardPageContext {
   void cardColoursItsLineByTheKindTheServerNamesNotByItsWords() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_FAILED)
             .message("lint red")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder(
-                "alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.DEPLOY_CONFLICT)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.DEPLOY_CONFLICT).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .detail.problem")).hasText("PROBLEM: lint red");
     page.locator("#tasks .row:has-text(\"a2\") .pick").click();
@@ -401,22 +295,15 @@ class BoardCardTest extends BoardPageContext {
   void doesNotShoutAboutQuestionWhilePollIsStillReadingTheRoundItWasAskedOn() {
     state.putTask(
         "ABC-1",
-        TaskState.builder(
-                "alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.REVIEW_PENDING)
             .mrUrl("https://host.example/mr/7")
             .mrCreatedAt(System.currentTimeMillis())
             .lastPolledAt(System.currentTimeMillis())
             .message("which lock do we take")
             .report(AgentReport.QUESTION)
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .detail.problem")).hasCount(0);
     assertThat(page.locator("#waiting")).isHidden();
@@ -426,24 +313,16 @@ class BoardCardTest extends BoardPageContext {
   void interruptsForBlockedTaskAndOnlyOffersTheNextMoveForOneThatCanWait() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_FAILED)
             .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
     state.putTask(
         "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.APPROVED)
-            .alias("a2")
+        alphaTask("ABC-2", TaskStatus.APPROVED)
             .mrUrl("https://host.example/mr/8")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("#tasks .row .badge"))
         .hasText(new String[] {"relay the failed checks", "you can deploy it"});
@@ -455,17 +334,11 @@ class BoardCardTest extends BoardPageContext {
   void asksForNothingOnCardWhoseChangeIsAlreadyDeployed() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.DEPLOYED)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.DEPLOYED)
             .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .badge")).hasCount(0);
     assertThat(page.locator("#waiting")).isHidden();
@@ -475,18 +348,12 @@ class BoardCardTest extends BoardPageContext {
   void cardStaysInsideWindowTooNarrowForItsBadgeAndItsTitleAtOnce() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_FAILED)
             .mrUrl("https://host.example/mr/7")
             .title("Widget layout is off on every window narrower than a laptop screen")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.setViewportSize(400, 1200);
     page.locator("#tasks .row .pick").click();
 
@@ -498,11 +365,9 @@ class BoardCardTest extends BoardPageContext {
   void phoneShowsTheOpenTaskWithItsVerbsAndSayFormAndNoSidewaysScroll() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_FAILED)
             .mrUrl("https://host.example/mr/7")
             .title("Widget layout is off on every window narrower than a laptop screen")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
     Page page = session.newPage();
     page.setViewportSize(390, 844);
@@ -569,17 +434,11 @@ class BoardCardTest extends BoardPageContext {
   void titleWithNoPlaceToBreakStillStaysInsideTheCard() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
             .title("w".repeat(150))
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     Object spills =
         page.locator("article .title").evaluate("title => title.scrollWidth > title.clientWidth");
 
@@ -588,15 +447,8 @@ class BoardCardTest extends BoardPageContext {
 
   @Test
   void badgeOpensItsHintFromTheKeyboard() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.REVIEWED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.REVIEWED).build());
+    Page page = openLiveBoard();
 
     page.locator("article .badge").focus();
 
@@ -608,19 +460,13 @@ class BoardCardTest extends BoardPageContext {
   void pollThatStoppedOnRequestWithNoLinkRingsTheStatus() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("!7")
             .mrCreatedAt(System.currentTimeMillis() - java.time.Duration.ofDays(9).toMillis())
             .lastPolledAt(System.currentTimeMillis())
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .status.stalled"))
         .hasAttribute(
@@ -638,11 +484,7 @@ class BoardCardTest extends BoardPageContext {
             .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .alias")).hasText("a1<b>x</b>");
     assertThat(page.locator("article .alias b")).hasCount(0);
@@ -652,17 +494,11 @@ class BoardCardTest extends BoardPageContext {
   void cardGroupsWhatMovesTheTaskOnAwayFromWhatOnlyLooksAtItAndMarksTheObviousOne() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.APPROVED)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.APPROVED)
             .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .actions button"))
         .hasText(
@@ -685,18 +521,9 @@ class BoardCardTest extends BoardPageContext {
 
   @Test
   void theObviousActionKeepsItsLabelReadableEvenWhenItSitsInTheQuietRow() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.REVERTED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.REVERTED).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .actions.tool button.primary")).hasText("Focus");
     assertThat(page.locator("article .actions.tool button.primary"))
@@ -705,18 +532,9 @@ class BoardCardTest extends BoardPageContext {
 
   @Test
   void noVerbIsFilledWhileTheAgentHoldsTheMove() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article button[data-action=focus]"))
         .not()
@@ -725,18 +543,9 @@ class BoardCardTest extends BoardPageContext {
 
   @Test
   void doneStaysMutedAtTheRowsEndEvenWhereItIsTheMove() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.APPROVED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.APPROVED).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article button.apart"))
         .not()
@@ -747,19 +556,12 @@ class BoardCardTest extends BoardPageContext {
   void hoveringTheRevertButtonShowsThatItTakesOnlyTheLastDeployBackOut() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.DEPLOYED)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.DEPLOYED)
             .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Revert").setExact(true))
-        .hover();
+    Page page = openLiveBoard();
+    button(page, "Revert").hover();
 
     assertThat(page.locator("#tip")).isVisible();
     assertThat(page.locator("#tip"))
@@ -770,12 +572,10 @@ class BoardCardTest extends BoardPageContext {
   void keepsLongTipInsideScrollingTipInsteadOfCoveringTheBoard() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .mrCreatedAt(System.currentTimeMillis() - java.time.Duration.ofDays(9).toMillis())
             .lastPolledAt(System.currentTimeMillis())
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
     Page page = session.newPage();
     page.setViewportSize(1300, 170);
@@ -792,17 +592,8 @@ class BoardCardTest extends BoardPageContext {
 
   @Test
   void statusChipCarriesNoHistoryInItsHover() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .status"))
         .not()
@@ -813,18 +604,12 @@ class BoardCardTest extends BoardPageContext {
   void liveStatusOpensItsHoverFromTheKeyboard() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
             .deployment(
                 new Deployment(
                     1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null))
             .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("article .status").focus();
 
     assertThat(page.locator("#tip")).containsText("its work is on a shared branch");
@@ -834,14 +619,10 @@ class BoardCardTest extends BoardPageContext {
   void tipBeingReadStaysOpenInItsNewWordsWhenRepaintRebuildsItsCard() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.APPROVED)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.APPROVED)
             .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("article .badge").focus();
     assertThat(page.locator("#tip")).containsText("approved: deploy or done");
 
@@ -857,20 +638,10 @@ class BoardCardTest extends BoardPageContext {
 
   @Test
   void tooltipGoesAwayWithThePointerThatOpenedIt() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true))
-        .hover();
+    Page page = openLiveBoard();
+    button(page, "Focus").hover();
     page.locator("h1").hover();
 
     assertThat(page.locator("#tip")).isHidden();
@@ -880,18 +651,12 @@ class BoardCardTest extends BoardPageContext {
   void cardShowsTheChecksAsRedAndCarriesWhatTheHostSaidAboutThem() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .pipelineStatus("failed")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .meta .checks.red")).hasCount(1);
     assertThat(page.locator("article .meta .checks.red"))
@@ -902,18 +667,12 @@ class BoardCardTest extends BoardPageContext {
   void markWithoutWordsIsNamedToScreenReaderAndReachableByKeyboard() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .pipelineStatus("failed")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     Locator checks =
         page.getByRole(AriaRole.IMG, new Page.GetByRoleOptions().setName("checks: failed"));
     checks.focus();
@@ -924,18 +683,9 @@ class BoardCardTest extends BoardPageContext {
 
   @Test
   void cardIsNamedToScreenReaderByBothTheNamesItAnswersTo() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.getByRole(AriaRole.ARTICLE, new Page.GetByRoleOptions().setName("a1 · ABC-1")))
         .hasCount(1);
@@ -945,19 +695,13 @@ class BoardCardTest extends BoardPageContext {
   void runStillGoingPulsesBesideTheRequestInsteadOfColouringIt() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .mrCreatedAt(System.currentTimeMillis())
             .pipelineStatus("running")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .meta .checks.running")).hasCount(1);
     assertThat(page.locator("article .meta a.mr-age")).hasClass("mr-age");
@@ -967,26 +711,18 @@ class BoardCardTest extends BoardPageContext {
   void theRequestWearsTickOnceSomebodyHasApprovedIt() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .approved(false)
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
     state.putTask(
         "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.REVIEWED)
-            .alias("a2")
+        alphaTask("ABC-2", TaskStatus.REVIEWED)
             .mrUrl("https://host.example/mr/8")
             .approved(true)
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .meta a.mr-age")).hasText("request");
     assertThat(page.locator("article .meta a.mr-age"))
@@ -999,19 +735,13 @@ class BoardCardTest extends BoardPageContext {
   void redRunDoesNotSwallowTheApprovalItLandedOn() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .pipelineStatus("failed")
             .approved(true)
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .meta a.mr-age.approved")).hasText("request ✓");
     assertThat(page.locator("article .meta .checks.red")).hasCount(1);
@@ -1021,20 +751,14 @@ class BoardCardTest extends BoardPageContext {
   void checksThatPassedWearTheirOwnDotAndLeaveTheRequestPlain() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .mrCreatedAt(System.currentTimeMillis())
             .pipelineStatus("success")
             .approved(false)
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .meta .checks.green"))
         .hasAttribute("data-tip", Pattern.compile("checks: success"));
@@ -1045,18 +769,12 @@ class BoardCardTest extends BoardPageContext {
   void verdictNothingCanReadWearsNoDotAndKeepsTheHostsWordOnTheRequest() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .pipelineStatus("completed")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .meta .checks")).hasCount(0);
     assertThat(page.locator("article .meta a.mr-age"))
@@ -1067,17 +785,11 @@ class BoardCardTest extends BoardPageContext {
   void requestNoReadHasSeenYetWearsNoVerdictAndSaysSoOnHover() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .meta .checks")).hasCount(0);
     assertThat(page.locator("article .meta a.mr-age")).hasText("request");
@@ -1089,24 +801,12 @@ class BoardCardTest extends BoardPageContext {
   void taskSpanningRepositoriesWearsOneTickForAllOfThem() {
     state.putTask(
         "ABC-1",
-        TaskState.builder(
-                List.of(
-                    TaskRepo.of("alpha", root.resolve("ABC-1-alpha").toString())
-                        .withMrUrl("https://host.example/alpha/mr/7"),
-                    TaskRepo.of("beta", root.resolve("ABC-1-beta").toString())
-                        .withMrUrl("https://host.example/beta/mr/7")),
-                TaskStatus.CI_POLLING)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
+        alphaAndBetaTask()
             .pipelineStatus("failed")
             .approved(true)
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .meta a.mr-age")).hasCount(2);
     assertThat(page.locator("article .meta .tick")).hasCount(1);
@@ -1117,20 +817,14 @@ class BoardCardTest extends BoardPageContext {
   void theDeployVerbIsColouredWhileItsLastRunIsStillLive() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.DEPLOYED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
+        alphaTask("ABC-1", TaskStatus.DEPLOYED)
             .mrUrl("https://host.example/mr/7")
             .deployment(
                 new Deployment(
                     1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null))
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article button.again")).hasText("Deploy");
     assertThat(page.locator("article .meta .status.live")).hasCount(0);
@@ -1140,20 +834,14 @@ class BoardCardTest extends BoardPageContext {
   void theDeployVerbKeepsItsFillAndTakesTheMarkAsRingWhileItIsTheHighlightedMove() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.APPROVED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
+        alphaTask("ABC-1", TaskStatus.APPROVED)
             .mrUrl("https://host.example/mr/7")
             .deployment(
                 new Deployment(
                     1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null))
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article button.primary.again")).hasText("Deploy");
   }
@@ -1162,19 +850,13 @@ class BoardCardTest extends BoardPageContext {
   void theStateSaysTheWorkIsLiveWhereNoVerbOnTheCardIsTheDeploy() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
             .deployment(
                 new Deployment(
                     1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null))
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article button.again")).hasCount(0);
     assertThat(page.locator("article .meta .status.live")).hasCount(1);
@@ -1184,17 +866,11 @@ class BoardCardTest extends BoardPageContext {
   void theDeployVerbIsPlainWhileNothingOfTheTaskIsLive() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.APPROVED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
+        alphaTask("ABC-1", TaskStatus.APPROVED)
             .mrUrl("https://host.example/mr/7")
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article button[data-action=deploy]")).isVisible();
     assertThat(page.locator("article button.again")).hasCount(0);
@@ -1204,15 +880,11 @@ class BoardCardTest extends BoardPageContext {
   void cardsHoverSaysWhatTheSessionJudgedOnEachSwitch() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
             .title("Widget layout is off")
             .switches(java.util.Map.of("visualize", "no — config-only change"))
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     assertThat(page.locator("article .title"))
         .hasAttribute("data-tip", "visualize: no — config-only change");
@@ -1222,22 +894,16 @@ class BoardCardTest extends BoardPageContext {
   void stoppedCardAsksToLiftTheStopWithItsReasonAndHoldsTheEvidenceInTheSameHover() {
     state.putTask(
         "ABC-42",
-        TaskState.builder("alpha", root.resolve("ABC-42-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-42", TaskStatus.CI_POLLING).alias("a1")
             .mrUrl("https://host.example/mr/7")
             .stop(
                 new dev.jagt.orchestrator.task.TaskStop(
                     dev.jagt.orchestrator.task.TaskStop.Trigger.SHIPS,
                     1_700_000_000_000L,
                     "a ship asked past 3 without a new note"))
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article .badge")).hasText("lift the stop — ships with no new note");
     assertThat(page.locator("article .badge"))
@@ -1254,8 +920,7 @@ class BoardCardTest extends BoardPageContext {
   void triagedStopCarriesItsReadAsTheLastLineOfTheHover() {
     state.putTask(
         "ABC-42",
-        TaskState.builder("alpha", root.resolve("ABC-42-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-42", TaskStatus.CI_POLLING).alias("a1")
             .mrUrl("https://host.example/mr/7")
             .stop(
                 new dev.jagt.orchestrator.task.TaskStop(
@@ -1270,12 +935,9 @@ class BoardCardTest extends BoardPageContext {
                             dev.jagt.orchestrator.task.StopTriage.Lift.SAFE,
                             "request merged",
                             "")))
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     assertThat(page.locator("article .badge"))
         .hasAttribute(

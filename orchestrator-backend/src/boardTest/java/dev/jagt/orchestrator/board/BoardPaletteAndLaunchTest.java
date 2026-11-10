@@ -10,13 +10,11 @@ import static org.mockito.Mockito.when;
 import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Route;
-import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.RequestOptions;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -43,26 +41,16 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
             + platform
             + ")'})");
 
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     assertThat(page.locator("#open-palette")).hasText(label);
   }
 
   @Test
   void thePaletteConfirmsLineItCanRunAsTyped() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.keyboard().press("Control+k");
     page.locator("#ask").fill("ship a1");
 
@@ -71,23 +59,12 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
   @Test
   void thePaletteExecutesCommandItUnderstandsWithoutPayingForTheModel() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(commands.execute("ABC-1", TaskAction.SHIP, null))
         .thenReturn("Shipped ABC-1 — review request updated.");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("ship a1");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "ship a1");
 
     assertThat(page.locator("#toasts .toast")).hasText("Shipped ABC-1 — review request updated.");
     verifyNoInteractions(naturalLanguage);
@@ -95,18 +72,9 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
   @Test
   void thePaletteSaysSoBeforeRunningWhenItCannotFindTheTask() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.keyboard().press("Control+k");
     page.locator("#ask").fill("ship nope");
 
@@ -137,9 +105,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     page.route("**/api/commands", verbs::add);
     page.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("do ABC-9 plan keep the API stable");
-    page.locator("#ask").press("Enter");
+    ask(page, "do ABC-9 plan keep the API stable");
 
     verbs.get(0).resume();
 
@@ -151,19 +117,13 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   void thePaletteRunsRetiredVerbItselfInsteadOfPayingTheModelForIt() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host/x/merge_requests/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
     when(commands.execute("ABC-1", TaskAction.SWEEP, null))
         .thenReturn("sweep ABC-1: checks success");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.keyboard().press("Control+k");
     page.locator("#ask").fill("review a1");
 
@@ -180,14 +140,8 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     when(naturalLanguage.interpret("send the widget work out for review"))
         .thenReturn("understood as `ship a1` — Shipped ABC-1.");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("send the widget work out for review");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "send the widget work out for review");
 
     assertThat(page.locator("#toasts .toast")).hasText("understood as `ship a1` — Shipped ABC-1.");
   }
@@ -196,11 +150,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   void startingTaskWithNoProjectIsAllowedWhenPlanFirstIsTicked() {
     when(launcher.launchUnplaced(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#new-task").click();
     page.locator("#ref").fill("ABC-9");
     page.locator("#plan").check();
@@ -213,11 +163,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
   @Test
   void startingTaskWithNoProjectAndNoPlanFirstSaysSoAndSendsNothing() {
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#new-task").click();
     page.locator("#ref").fill("ABC-9");
     page.locator("#launch button[type=submit]").click();
@@ -228,11 +174,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
   @Test
   void startingFreshFormSaysItNeedsTicketOrNotesAndSendsNothing() {
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#new-task").click();
     page.locator("#launch button[type=submit]").click();
 
@@ -242,11 +184,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
   @Test
   void startingWithWordsInTheTicketFieldSaysTicketIsKeyOrUrlAndSendsNothing() {
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#new-task").click();
     page.locator("#ref").fill("fix the login page");
     page.locator("#project input[value=alpha]").check();
@@ -258,11 +196,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
   @Test
   void startingNotesWithNoTicketAndNoProjectAmongSeveralSaysToChooseOneAndSendsNothing() {
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#new-task").click();
     page.locator("#notes").fill("fix the login page");
     page.locator("#launch button[type=submit]").click();
@@ -275,11 +209,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   void sendsTheExtraInstructionsTypedForTheAgent() {
     when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#new-task").click();
     page.locator("#ref").fill("ABC-9");
     page.locator("#project input[value=alpha]").check();
@@ -301,11 +231,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
         .thenReturn(
             Launched.refused("error: read failed: ABC-9 (cause in the log) — no task created"));
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#new-task").click();
     page.locator("#ref").fill("ABC-9");
     page.locator("#project input[value=alpha]").check();
@@ -323,14 +249,8 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   void typedLaunchCarriesEveryModifierAndNotOnlyTheTicket() {
     when(launcher.launchLine(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("do ABC-9 plan keep the API stable");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "do ABC-9 plan keep the API stable");
 
     assertThat(page.locator("#toasts .toast")).containsText("Started ABC-9.");
     verify(launcher).launchLine("ABC-9 plan keep the API stable");
@@ -338,12 +258,8 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
   @Test
   void verbTypedAloneHandsOverToThePartOfTheBoardItNames() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("do");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "do");
 
     assertThat(page.locator("#ref")).isFocused();
     verifyNoInteractions(launcher, naturalLanguage);
@@ -354,19 +270,12 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     when(launcher.resume("https://host.example/mr/42"))
         .thenReturn(Launched.created("ABC-9", "Resumed ABC-9 on its existing branch"));
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("resume https://host.example/mr/42");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "resume https://host.example/mr/42");
 
     assertThat(page.locator("#toasts .toast")).hasText("Resumed ABC-9 on its existing branch");
     assertThat(
-            page.getByRole(
-                AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Resume").setExact(true)))
+            button(page, "Resume"))
         .hasCount(0);
   }
 
@@ -375,14 +284,8 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     when(launcher.launchLine(any()))
         .thenReturn(Launched.refused("branch 'ABC-9' already exists in alpha (previous run)"));
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("do ABC-9");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "do ABC-9");
 
     assertThat(page.locator("#toasts .toast")).containsText("already exists in alpha");
     assertThat(page.locator("#ask")).hasValue("do ABC-9");
@@ -390,9 +293,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
   @Test
   void offersEveryProjectAsBoxWithNoneTicked() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     page.locator("#new-task").click();
 
@@ -416,9 +317,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
             "git@code.example:acme/alpha.git")
         .start()
         .waitFor();
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#new-task").click();
     assertThat(page.locator("#project label").first())
         .hasAttribute("data-tip", Pattern.compile("remoteUrl: git@code.example:acme/alpha.git"));
@@ -432,9 +331,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
   @Test
   void offersTheProjectsByNameWhateverOrderJagtYmlListsThem() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     page.locator("#new-task").click();
 
@@ -444,9 +341,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   @Test
   void startingTaskInBothProjectsSendsThemInTheOrderJagtYmlListsThem() {
     when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9 in beta."));
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#new-task").click();
     page.locator("#ref").fill("ABC-9");
     page.locator("#project input[value=alpha]").check();
@@ -461,12 +356,8 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
 
   @Test
   void answersTasklessVerbItselfInsteadOfSendingItToTheModel() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("ship");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "ship");
 
     assertThat(page.locator("#palette-state")).containsText("ship needs a task");
     verifyNoInteractions(naturalLanguage);
@@ -476,11 +367,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   void startingTaskWithPickedProjectSendsThatProject() {
     when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9 in beta."));
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#new-task").click();
     page.locator("#ref").fill("ABC-9");
     page.locator("#project input[value=beta]").check();
@@ -494,11 +381,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   void startingTaskWithChosenBranchStrategySendsIt() {
     when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#new-task").click();
     page.locator("#ref").fill("ABC-9");
     page.locator("#project input[value=alpha]").check();
@@ -544,9 +427,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
     "strategy, when the branch exists"
   })
   void everyFieldIsNamedWithoutLeaningOnItsPlaceholder(String id, String named) {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("#" + id)).hasAttribute("aria-label", Pattern.compile(named));
   }
@@ -554,9 +435,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
   @Test
   void commandEnterStartsTheTaskFromAnyFieldOfTheForm() {
     when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#new-task").click();
     page.locator("#ref").fill("ABC-9");
     page.locator("#project input[value=alpha]").check();
@@ -575,9 +454,7 @@ class BoardPaletteAndLaunchTest extends BoardPageContext {
               release.await();
               return Launched.created("ABC-9", "Started ABC-9.");
             });
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#new-task").click();
     page.locator("#ref").fill("ABC-9");
     page.locator("#project input[value=alpha]").check();

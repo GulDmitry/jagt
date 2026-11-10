@@ -15,13 +15,10 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -36,25 +33,13 @@ class BoardActionsTest extends BoardPageContext {
   void revertingAsksFirstAndSaysOnlyTheLastDeployComesOut() throws Exception {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.DEPLOYED)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.DEPLOYED)
             .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    CompletableFuture<String> asked = new CompletableFuture<>();
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.onDialog(
-        dialog -> {
-          asked.complete(dialog.message());
-          dialog.dismiss();
-        });
-    page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Revert").setExact(true))
-        .click();
+    Page page = openLiveBoard();
+    CompletableFuture<String> asked = dismissedDialogMessage(page);
+    button(page, "Revert").click();
 
     org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS))
         .startsWith("Revert ABC-1?")
@@ -66,22 +51,12 @@ class BoardActionsTest extends BoardPageContext {
 
   @Test
   void clickingAnActionRunsItAndShowsTheSentenceItAnswered() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(commands.execute("ABC-1", TaskAction.FOCUS, null))
         .thenReturn("Focused ABC-1 — its window is in front.");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true))
-        .click();
+    Page page = openLiveBoard();
+    button(page, "Focus").click();
 
     assertThat(page.locator("#toasts .toast")).hasText("Focused ABC-1 — its window is in front.");
     verify(commands).execute("ABC-1", TaskAction.FOCUS, null);
@@ -89,26 +64,11 @@ class BoardActionsTest extends BoardPageContext {
 
   @Test
   void closingTaskAsksBeforeAnythingRuns() throws Exception {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    CompletableFuture<String> asked = new CompletableFuture<>();
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.onDialog(
-        dialog -> {
-          asked.complete(dialog.message());
-          dialog.dismiss();
-        });
-    page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Done").setExact(true))
-        .click();
+    Page page = openLiveBoard();
+    CompletableFuture<String> asked = dismissedDialogMessage(page);
+    button(page, "Done").click();
 
     org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS))
         .startsWith("Done ABC-1?");
@@ -132,20 +92,10 @@ class BoardActionsTest extends BoardPageContext {
             .alias("a1")
             .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    CompletableFuture<String> asked = new CompletableFuture<>();
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.onDialog(
-        dialog -> {
-          asked.complete(dialog.message());
-          dialog.dismiss();
-        });
-    page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Deploy").setExact(true))
-        .click();
+    Page page = openLiveBoard();
+    CompletableFuture<String> asked = dismissedDialogMessage(page);
+    button(page, "Deploy").click();
 
     String question = asked.get(5, TimeUnit.SECONDS);
     org.assertj.core.api.Assertions.assertThat(question)
@@ -158,30 +108,17 @@ class BoardActionsTest extends BoardPageContext {
 
   @Test
   void deployingAsksAboutTheBranchesAndAdvisesNothingAboutTheRound() throws Exception {
-    Path worktree = Files.createDirectories(root.resolve("ABC-1-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nagreed, fixed\n");
+    draftReplies("ABC-1", "## thread 1\nagreed, fixed\n");
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.REVIEW_PENDING)
             .mrUrl("https://host.example/mr/9")
             .message("widget layout fixed")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    CompletableFuture<String> asked = new CompletableFuture<>();
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.onDialog(
-        dialog -> {
-          asked.complete(dialog.message());
-          dialog.dismiss();
-        });
-    page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Deploy").setExact(true))
-        .click();
+    Page page = openLiveBoard();
+    CompletableFuture<String> asked = dismissedDialogMessage(page);
+    button(page, "Deploy").click();
 
     org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS))
         .isEqualTo("Deploy ABC-1?\n\nThis merges and pushes:\nalpha → dev");
@@ -190,25 +127,15 @@ class BoardActionsTest extends BoardPageContext {
 
   @Test
   void refusedActionAlsoSaysTheBoardHasCaughtUp() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(commands.execute("ABC-1", TaskAction.SHIP, null))
         .thenThrow(
             new Refusal(
                 Refusal.Code.ACTION_NOT_AVAILABLE,
                 "Ship is not available for ABC-1 (it is DEPLOYED)"));
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Ship").setExact(true))
-        .click();
+    Page page = openLiveBoard();
+    button(page, "Ship").click();
 
     assertThat(page.locator("#toasts .toast.error"))
         .containsText("Ship is not available for ABC-1 (it is DEPLOYED)");
@@ -217,52 +144,17 @@ class BoardActionsTest extends BoardPageContext {
 
   @Test
   void moveInFlightLocksTheButtonsThatWriteAndLeavesTheLookOnlyOnesClickable() throws Exception {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    CountDownLatch sweeping = new CountDownLatch(1);
-    when(commands.execute("ABC-1", TaskAction.SWEEP, null))
-        .thenAnswer(
-            invocation -> {
-              sweeping.await(10, TimeUnit.SECONDS);
-              return "sweep ABC-1: checks success";
-            });
+    CountDownLatch sweeping = startSweepingTheFirstTask();
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.getByRole(
-            AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Check review").setExact(true))
-        .click();
+    Page page = openLiveBoard();
+    button(page, "Check review").click();
 
     try {
-      assertThat(
-              page.getByRole(
-                  AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)))
-          .isEnabled();
-      assertThat(
-              page.getByRole(
-                  AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Open IDE").setExact(true)))
-          .isEnabled();
-      assertThat(
-              page.getByRole(
-                  AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Diff").setExact(true)))
-          .isEnabled();
-      assertThat(
-              page.getByRole(
-                  AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Ship").setExact(true)))
-          .isDisabled();
-      assertThat(
-              page.getByRole(
-                  AriaRole.BUTTON,
-                  new Page.GetByRoleOptions().setName("Restart agent").setExact(true)))
-          .isDisabled();
+      assertThat(button(page, "Focus")).isEnabled();
+      assertThat(button(page, "Open IDE")).isEnabled();
+      assertThat(button(page, "Diff")).isEnabled();
+      assertThat(button(page, "Ship")).isDisabled();
+      assertThat(button(page, "Restart agent")).isDisabled();
     } finally {
       sweeping.countDown();
     }
@@ -270,44 +162,19 @@ class BoardActionsTest extends BoardPageContext {
 
   @Test
   void lookOnlyClickThatFinishesLeavesTheLockOfTheMoveStillRunning() throws Exception {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    CountDownLatch sweeping = new CountDownLatch(1);
-    when(commands.execute("ABC-1", TaskAction.SWEEP, null))
-        .thenAnswer(
-            invocation -> {
-              sweeping.await(10, TimeUnit.SECONDS);
-              return "sweep ABC-1: checks success";
-            });
+    CountDownLatch sweeping = startSweepingTheFirstTask();
     when(commands.execute("ABC-1", TaskAction.DIFF, null)).thenReturn("Opened the diff for ABC-1.");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.getByRole(
-            AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Check review").setExact(true))
-        .click();
+    Page page = openLiveBoard();
+    button(page, "Check review").click();
 
     try {
       page.waitForResponse(
           response ->
               response.url().endsWith("/api/tasks") && "GET".equals(response.request().method()),
-          () ->
-              page.getByRole(
-                      AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Diff").setExact(true))
-                  .click());
+          () -> button(page, "Diff").click());
 
-      assertThat(
-              page.getByRole(
-                  AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Ship").setExact(true)))
-          .isDisabled();
+      assertThat(button(page, "Ship")).isDisabled();
     } finally {
       sweeping.countDown();
     }
@@ -315,34 +182,13 @@ class BoardActionsTest extends BoardPageContext {
 
   @Test
   void typedMoveIsRefusedWhileAnotherOneIsStillRunningOnTheSameTask() throws Exception {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    CountDownLatch sweeping = new CountDownLatch(1);
-    when(commands.execute("ABC-1", TaskAction.SWEEP, null))
-        .thenAnswer(
-            invocation -> {
-              sweeping.await(10, TimeUnit.SECONDS);
-              return "sweep ABC-1: checks success";
-            });
+    CountDownLatch sweeping = startSweepingTheFirstTask();
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.getByRole(
-            AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Check review").setExact(true))
-        .click();
+    Page page = openLiveBoard();
+    button(page, "Check review").click();
 
     try {
-      page.keyboard().press("Control+k");
-      page.locator("#ask").fill("ship a1");
-      page.locator("#ask").press("Enter");
+      ask(page, "ship a1");
 
       assertThat(page.locator("#toasts .toast.error")).containsText("already running sweep");
       verify(commands, never()).execute("ABC-1", TaskAction.SHIP, null);
@@ -356,14 +202,8 @@ class BoardActionsTest extends BoardPageContext {
     when(launcher.launchLine(any()))
         .thenThrow(new IllegalArgumentException("No ticket ABC-9 anywhere"));
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("do ABC-9");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "do ABC-9");
 
     assertThat(page.locator("#toasts .toast.error")).containsText("No ticket ABC-9 anywhere");
   }
@@ -384,11 +224,7 @@ class BoardActionsTest extends BoardPageContext {
             .build());
     when(commands.execute("41", TaskAction.SHIP, null)).thenReturn("Shipped 41.");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator(
             "#tasks .row", new Page.LocatorOptions().setHas(page.locator(".alias:text-is(\"42\")")))
         .locator(".pick")
@@ -403,22 +239,12 @@ class BoardActionsTest extends BoardPageContext {
 
   @Test
   void refusalIsAnnouncedAsAnAlertAndDismissedByButton() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(commands.execute("ABC-1", TaskAction.SHIP, null))
         .thenThrow(new IllegalStateException("nothing to ship"));
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Ship").setExact(true))
-        .click();
+    Page page = openLiveBoard();
+    button(page, "Ship").click();
     page.getByRole(AriaRole.ALERT).getByRole(AriaRole.BUTTON).click();
 
     assertThat(page.locator("#toasts .toast")).hasCount(0);

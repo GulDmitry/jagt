@@ -13,7 +13,6 @@ import dev.jagt.orchestrator.service.PlanBaseline;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.StatusChange;
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -45,9 +44,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theReportsMenuOpensReportAndClosesOnEscape() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     page.locator("#reports-toggle").click();
     assertThat(page.locator("#reports")).isVisible();
@@ -62,9 +59,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theEnterKeyOpensTheNewTaskFormAtItsTicket() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     page.keyboard().press("t");
 
@@ -76,8 +71,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   void addingProjectReadsThePathAndRefusesOneThatIsNotRepository() throws Exception {
     final Path folder = Files.createDirectories(root.resolve("notes"));
     final String before = Files.readString(root.resolve("jagt.yml"));
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
     page.locator("#new-task").click();
     page.locator("#add-project").click();
 
@@ -95,8 +89,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   @Test
   void commaSeparatedLabelsAndHumanPathsTypedInTheProjectFormAreSentAsLists() throws Exception {
     final Path folder = Files.createDirectories(root.resolve("notes"));
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
     page.locator("#new-task").click();
     page.locator("#add-project").click();
     page.locator("#project-path").fill(folder.toString());
@@ -120,8 +113,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     Files.createDirectories(root.resolve("billing/.git"));
     Files.createDirectories(root.resolve("billboard"));
     Files.createDirectories(root.resolve("notes"));
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
     page.locator("#new-task").click();
     page.locator("#add-project").click();
 
@@ -134,13 +126,9 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theProjectVerbTypedAloneOpensTheAddProjectForm() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("project");
-    page.locator("#ask").press("Enter");
+    ask(page, "project");
 
     assertThat(page.locator("#project-dialog")).isVisible();
     assertThat(page.locator("#project-path")).isFocused();
@@ -148,13 +136,9 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theProjectVerbWithEditAndKeyOpensTheFormFilledWithThatProject() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("project edit beta");
-    page.locator("#ask").press("Enter");
+    ask(page, "project edit beta");
 
     assertThat(page.locator("#project-dialog")).isVisible();
     assertThat(page.locator("#project-title")).hasText("Edit beta");
@@ -168,17 +152,10 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
   void failedJobOpensFromTheHeaderAsTableWhoseRowRunsItNow() {
     breakable.breakIt();
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     jobs.runNow("breakable");
     page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
     page.locator("#jobs-pulse").click();
     assertThat(page.locator("table.jobs tr.failed")).containsText("breakable");
@@ -192,16 +169,10 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theSessionTabShowsTheScreenAndSendsLineToThatSession() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(sessions.screen("ABC-1")).thenReturn(Optional.of("✗ two tests fail"));
     when(sessions.say("ABC-1", "mock the storage")).thenReturn("Said to the agent.");
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
     assertThat(page.locator("#pane article .alias")).hasText("a1");
 
     page.locator("#pane .tabs button[data-tab=session]").click();
@@ -215,23 +186,10 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theReviewRoundTabReadsTheDraftedRepliesOrSaysThereAreNone() throws Exception {
-    Path worktree = Files.createDirectories(root.resolve("ABC-2-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a2")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-3",
-        TaskState.builder("alpha", root.resolve("ABC-3-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a3")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    draftReplies("ABC-2", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-2");
+    state.putTask("ABC-3", alphaTask("ABC-3", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
     page.locator("#tasks .row:has-text(\"a2\") .pick").click();
 
     page.locator("#pane .tabs button[data-tab=round]").click();
@@ -248,15 +206,8 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     Path worktree = Files.createDirectories(root.resolve("ABC-5-alpha"));
     Path replies = worktree.resolve("review_replies.md");
     Files.writeString(replies, "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-5",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a5")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    putReviewTask("ABC-5");
+    Page page = openBoard();
     assertThat(page.locator("#pane .tabs button[data-tab=round]"))
         .hasClass(Pattern.compile("\\byou\\b"));
 
@@ -286,14 +237,8 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     Files.writeString(worktree.resolve("plan.md"), "# The plan\n");
     Files.writeString(
         worktree.resolve("task_visual.md"), "# The sketch\n\n| a | b |\n|---|---|\n| 1 | 2 |\n");
-    state.putTask(
-        "ABC-4",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.IN_PROGRESS)
-            .alias("a4")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-4", alphaTask("ABC-4", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
 
     page.locator("#pane .tabs button[data-tab=artifacts]").click();
     assertThat(page.locator("#pane .doc-names button[data-file=\"task_notes.md\"]")).hasCount(0);
@@ -307,20 +252,14 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   @Test
   void theArtifactsTabMarksPlanLineChangedSinceItsApprovalAndStrikesOneRemoved() throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-7-alpha"));
-    state.putTask(
-        "ABC-7",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.PLAN_PENDING)
-            .alias("a7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-7", alphaTask("ABC-7", TaskStatus.PLAN_PENDING).build());
     Files.writeString(
         worktree.resolve("plan.md"), "# The plan\n\nRetry the upload once\n\nShip it\n");
     planBaseline.keep("ABC-7");
     Files.writeString(
         worktree.resolve("plan.md"),
         "# The plan\n\nRetry the upload twice\n\nShip it\n\nAnnounce it\n");
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     page.locator("#pane .tabs button[data-tab=artifacts]").click();
 
@@ -336,14 +275,8 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     Path worktree = Files.createDirectories(root.resolve("ABC-5-alpha"));
     Files.writeString(
         worktree.resolve("task_visual.md"), "```mermaid\nsequenceDiagram\nA->>B: go\n```\n");
-    state.putTask(
-        "ABC-5",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.IN_PROGRESS)
-            .alias("a5")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-5", alphaTask("ABC-5", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
 
     page.locator("#pane .tabs button[data-tab=artifacts]").click();
 
@@ -352,15 +285,8 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theOpenTaskTabsStandInTheOrderTheyAreUsed() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
 
     assertThat(page.locator("#pane .tabs button"))
         .hasText(new String[] {"Overview", "Drafted review", "Artifacts", "Diff", "Session"});
@@ -368,12 +294,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theDiffTabMarksAddedAndRemovedLinesAndSaysWhenItWasCut() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     Page page = session.newPage();
     page.route(
         "**/api/tasks/diff*",
@@ -397,15 +318,9 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void verbsKeyRunsItOnTheOpenTask() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(commands.execute("ABC-1", TaskAction.FOCUS, null)).thenReturn("Focused ABC-1.");
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
     assertThat(page.locator("#pane article .alias")).hasText("a1");
 
     page.keyboard().press("f");
@@ -416,15 +331,8 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void doneStandsLastInItsRowApartFromTheVerbsThatMoveTheTaskOn() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
 
     assertThat(page.locator("#pane .actions.flow button").last())
         .hasClass(Pattern.compile("\\bapart\\b"));
@@ -458,9 +366,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theReportsMenuDropsBelowItsButtonAndLeavesTheHeaderOneLine() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     page.locator("#reports-toggle").click();
 
@@ -475,12 +381,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void verbsKeyDoesNothingWhileNarrowWindowShowsOnlyTheList() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(commands.execute("ABC-1", TaskAction.FOCUS, null)).thenReturn("Focused ABC-1.");
     Page page = session.newPage();
     page.setViewportSize(800, 900);
@@ -497,12 +398,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theSessionTabReadsTheScreenAgainWhileItStaysOpen() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(sessions.screen("ABC-1")).thenReturn(Optional.of("compiling"), Optional.of("tests pass"));
     Page page = session.newPage();
     page.clock().install();
@@ -528,14 +424,10 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   void taskWaitingOnTheHumanThatBrokeWearsRedBadgeAndItsHistoryReadsInWords() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_FAILED)
             .message("lint red")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     assertThat(page.locator("#tasks .row .badge.problem")).hasCount(1);
     assertThat(page.locator("#pane .history")).containsText("checks failed");
@@ -546,17 +438,14 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     long now = System.currentTimeMillis();
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_FAILED)
             .lastActiveTimestamp(now)
             .history(
                 List.of(
                     new StatusChange(TaskStatus.IN_PROGRESS, now - 3_600_000, null),
                     new StatusChange(TaskStatus.CI_FAILED, now - 60_000, null)))
             .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     assertThat(page.locator("#pane .history li").first()).containsText("checks failed");
   }
@@ -566,17 +455,14 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     long now = System.currentTimeMillis();
     state.putTask(
         "ABC-1",
-        TaskState.builder(
-                "alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.REVIEW_PENDING)
             .lastActiveTimestamp(now)
             .history(
                 List.of(
                     new StatusChange(TaskStatus.REVIEW_PENDING, now - 60_000, null)
                         .because("work done, tests green, ready for review")))
             .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     page.locator("#pane .history li").first().hover();
 
@@ -586,24 +472,15 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theListSaysWhatItsKeysDo() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
 
     assertThat(page.locator("#tasks .keys")).containsText("n next yours");
   }
 
   @Test
   void anEmptyBoardOffersNewTaskAndProject() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     page.locator("#empty-project").click();
 
@@ -613,12 +490,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   @Test
   void theSessionTabKeepsItsScreenWhilePushMakesItReadAgain() throws Exception {
     CountDownLatch release = new CountDownLatch(1);
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(sessions.screen("ABC-1"))
         .thenReturn(Optional.of("compiling"))
         .thenAnswer(
@@ -626,8 +498,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
               release.await();
               return Optional.of("tests pass");
             });
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
     page.locator("#pane .tabs button[data-tab=session]").click();
     assertThat(page.locator("#pane .session .screen")).hasText("compiling");
 
@@ -641,21 +512,14 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theRoundTabReadsRepliesThatAppearedWithoutAnyPush() throws Exception {
-    Path worktree = Files.createDirectories(root.resolve("ABC-4-alpha"));
-    state.putTask(
-        "ABC-4",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a4")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    Files.createDirectories(root.resolve("ABC-4-alpha"));
+    putReviewTask("ABC-4");
     when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
     page.locator("#pane .tabs button[data-tab=round]").click();
     assertThat(page.locator("#pane .round")).containsText("Nothing is drafted for this round.");
 
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+    draftReplies("ABC-4", "## thread 1\nFIXED - Renamed it.\n");
     page.locator("#new-task").click();
     page.locator("#ref").fill("ABC-9");
     page.locator("#project input[value=alpha]").check();
@@ -666,15 +530,9 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void sessionNoWindowHoldsSaysSoAndBlankLiveScreenDoesNot() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(sessions.screen("ABC-1")).thenReturn(Optional.of(""));
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     page.locator("#pane .tabs button[data-tab=session]").click();
 
@@ -685,21 +543,14 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
   void theJobsTableTurnsFailedJobRedWithoutReopeningTheReport() {
     breakable.breakIt();
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#reports-toggle").click();
     page.locator("#show-jobs").click();
     assertThat(page.locator("table.jobs tr.failed")).hasCount(0);
 
     jobs.runNow("breakable");
     page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
     assertThat(page.locator("table.jobs tr.failed")).containsText("breakable");
   }
@@ -726,13 +577,10 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   void theArtifactsTabSaysWhatTheSessionJudgedOnEachSwitch() {
     state.putTask(
         "ABC-6",
-        TaskState.builder("alpha", root.resolve("ABC-6-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a6")
+        alphaTask("ABC-6", TaskStatus.IN_PROGRESS)
             .switches(java.util.Map.of("visualize", "no — config-only change"))
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     page.locator("#pane .tabs button[data-tab=artifacts]").click();
 

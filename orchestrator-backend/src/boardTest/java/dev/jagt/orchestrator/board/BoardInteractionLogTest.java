@@ -4,14 +4,11 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 import static org.mockito.Mockito.when;
 
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Files;
-import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
@@ -28,23 +25,13 @@ class BoardInteractionLogTest extends BoardPageContext {
 
   @Test
   void pressIsLoggedByItsVerbAndItsTasksStatusAlone() throws Exception {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(commands.execute("ABC-1", TaskAction.FOCUS, null)).thenReturn("Focused ABC-1.");
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     page.waitForResponse(
         "**/api/interactions",
-        () ->
-            page.getByRole(
-                    AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true))
-                .click());
+        () -> button(page, "Focus").click());
 
     org.assertj.core.api.Assertions.assertThat(Files.readString(root.resolve("interactions.jsonl")))
         .contains("\"control\":\"action:focus\",\"status\":\"IN_PROGRESS\"")
@@ -54,14 +41,8 @@ class BoardInteractionLogTest extends BoardPageContext {
 
   @Test
   void pickingRowIsLoggedWithTheRowsStatus() throws Exception {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
     assertThat(page.locator("#tasks .row")).hasCount(1);
 
     page.waitForResponse("**/api/interactions", () -> page.locator("#tasks .row .pick").click());
@@ -73,14 +54,8 @@ class BoardInteractionLogTest extends BoardPageContext {
 
   @Test
   void keyIsLoggedByItsLetterAndTheOpenTasksStatus() throws Exception {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
     assertThat(page.locator("#tasks .row")).hasCount(1);
 
     page.waitForResponse("**/api/interactions", () -> page.keyboard().press("j"));
@@ -91,14 +66,8 @@ class BoardInteractionLogTest extends BoardPageContext {
 
   @Test
   void taskTurningRequiredIsLoggedOnceByItsStatusAloneWhateverBoardsAreOpen() throws Exception {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
     Page second = session.newPage();
     second.navigate("http://localhost:" + port + "/");
     assertThat(page.locator("#tasks .row")).hasCount(1);
@@ -107,20 +76,8 @@ class BoardInteractionLogTest extends BoardPageContext {
     page.waitForResponse(
         "**/api/interactions",
         () -> {
-          state.putTask(
-              "ABC-1",
-              TaskState.builder(
-                      "alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.REVIEWED)
-                  .alias("a1")
-                  .lastActiveTimestamp(System.currentTimeMillis())
-                  .build());
-          state.putTask(
-              "ABC-2",
-              TaskState.builder(
-                      "alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-                  .alias("a2")
-                  .lastActiveTimestamp(System.currentTimeMillis())
-                  .build());
+          state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.REVIEWED).build());
+          state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
         });
     second.waitForResponse("**/api/interactions", () -> second.keyboard().press("j"));
 
@@ -136,22 +93,14 @@ class BoardInteractionLogTest extends BoardPageContext {
   @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
   void theFailedJobsChipAppearingIsLoggedWithoutStatus() throws Exception {
     breakable.breakIt();
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     page.waitForResponse(
         "**/api/interactions",
         () -> {
           jobs.runNow("breakable");
           page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
-          state.putTask(
-              "ABC-1",
-              TaskState.builder(
-                      "alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-                  .alias("a1")
-                  .lastActiveTimestamp(System.currentTimeMillis())
-                  .build());
+          state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
         });
 
     org.assertj.core.api.Assertions.assertThat(Files.readString(root.resolve("interactions.jsonl")))

@@ -10,7 +10,6 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.Objects;
-import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -23,23 +22,9 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void taskWaitingOnTheHumanStandsFirstInItsOwnBand() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.CI_FAILED).build());
+    Page page = openLiveBoard();
     assertThat(page.locator("#tasks .row .alias")).hasText(new String[] {"a2", "a1"});
     assertThat(page.locator("#tasks .group.yours .alias")).hasText(new String[] {"a2"});
     assertThat(page.locator("#pane article .alias")).hasText("a2");
@@ -55,35 +40,16 @@ class BoardWorkspaceTest extends BoardPageContext {
             .build());
     state.putTask(
         "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+        alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
+    Page page = openLiveBoard();
     assertThat(page.locator("#tasks .group.project .alias")).hasText(new String[] {"a2", "a1"});
   }
 
   @Test
   void pickingRowOpensThatTaskInThePane() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
+    Page page = openLiveBoard();
 
     page.locator("#tasks .row:has-text(\"a2\") .pick").click();
 
@@ -93,26 +59,10 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void theNextKeyOpensTheNextTaskWaitingOnTheHuman() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-3",
-        TaskState.builder("alpha", root.resolve("ABC-3-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a3")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.CI_FAILED).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-3", alphaTask("ABC-3", TaskStatus.CI_FAILED).build());
+    Page page = openBoard();
     assertThat(page.locator("#pane article .alias")).hasText("a1");
 
     page.keyboard().press("n");
@@ -122,22 +72,10 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void theRowsOwnFocusActsOnItsTaskWithoutOpeningIt() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.CI_FAILED).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
     when(commands.execute("ABC-2", TaskAction.FOCUS, null)).thenReturn("Focused ABC-2.");
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     page.getByLabel("Focus a2", new Page.GetByLabelOptions().setExact(true)).click();
 
@@ -148,41 +86,18 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void theTabsTitleCountsTheTasksWaitingOnTheHuman() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.CI_FAILED).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
 
     assertThat(page).hasTitle("(1) jagt");
   }
 
   @Test
   void rowWhoseStatusMovedWhileItWasClosedIsBoldUntilItIsOpened() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.CI_FAILED).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
     assertThat(page.locator("#tasks .row")).hasCount(2);
 
     state.putTask(
@@ -199,18 +114,8 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void rowThatMovedWhileThePageWasClosedIsBoldWhenItOpensAgain() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.CI_FAILED).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
     Page first = session.newPage();
     first.navigate("http://localhost:" + port + "/");
     assertThat(first.locator("#tasks .row")).hasCount(2);
@@ -232,23 +137,14 @@ class BoardWorkspaceTest extends BoardPageContext {
   void pollThatStoppedRingsTheRowOfTaskThatIsNotOpen() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .mrUrl("https://host.example/mr/7")
             .mrCreatedAt(System.currentTimeMillis() - java.time.Duration.ofDays(9).toMillis())
             .pipelineStatus("failed")
             .lastPolledAt(System.currentTimeMillis())
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
 
     page.locator("#tasks .row:has-text(\"a2\") .pick").click();
     assertThat(page.locator("#pane article .alias")).hasText("a2");
@@ -257,21 +153,14 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void rowWaitingOnTheHumanNamesItsProjectWhereSeveralShareTheBand() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.CI_FAILED).build());
     state.putTask(
         "ABC-2",
         TaskState.builder("beta", root.resolve("ABC-2-beta").toString(), TaskStatus.IN_PROGRESS)
             .alias("b2")
             .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     assertThat(page.locator("#tasks .group.yours .row-facts")).containsText("alpha");
     assertThat(page.locator("#tasks .group.project .row-facts")).not().containsText("beta");
@@ -279,54 +168,14 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void theOpenTaskStaysInViewWhileTheListScrolls() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-3",
-        TaskState.builder("alpha", root.resolve("ABC-3-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a3")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-4",
-        TaskState.builder("alpha", root.resolve("ABC-4-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a4")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-5",
-        TaskState.builder("alpha", root.resolve("ABC-5-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a5")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-6",
-        TaskState.builder("alpha", root.resolve("ABC-6-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a6")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-7",
-        TaskState.builder("alpha", root.resolve("ABC-7-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-8",
-        TaskState.builder("alpha", root.resolve("ABC-8-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a8")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-3", alphaTask("ABC-3", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-4", alphaTask("ABC-4", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-5", alphaTask("ABC-5", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-6", alphaTask("ABC-6", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-7", alphaTask("ABC-7", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-8", alphaTask("ABC-8", TaskStatus.IN_PROGRESS).build());
     Page page = session.newPage();
     page.setViewportSize(1280, 360);
     page.navigate("http://localhost:" + port + "/");
@@ -342,26 +191,10 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void tabReachesTheOpenTaskPastOneRowWhileTheKeysWalkTheRest() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-3",
-        TaskState.builder("alpha", root.resolve("ABC-3-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a3")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-3", alphaTask("ABC-3", TaskStatus.IN_PROGRESS).build());
+    Page page = openBoard();
     assertThat(page.locator("#tasks .row")).hasCount(3);
     page.locator("#tasks .row.selected .pick").focus();
 
@@ -375,18 +208,8 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void linkedTaskStaysOpenOnceItsFilterIsCleared() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.CI_FAILED).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
     Page page = session.newPage();
     page.navigate("http://localhost:" + port + "/?task=a2");
     assertThat(page.locator("#tasks .row")).hasCount(1);
@@ -399,9 +222,7 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void anEmptyBoardLeavesNoGapAboveItsWords() {
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     assertThat(page.locator("#empty")).isVisible();
     org.assertj.core.api.Assertions.assertThat(
@@ -411,12 +232,7 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void taskNarrowWindowNeverOpenedTurnsBoldWhenItMoves() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_FAILED)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.CI_FAILED).build());
     Page page = session.newPage();
     page.setViewportSize(800, 900);
     page.navigate("http://localhost:" + port + "/");
@@ -434,12 +250,7 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void narrowWindowShowsTheListOrTheOpenTaskAndGoesBack() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     Page page = session.newPage();
     page.setViewportSize(800, 900);
     page.navigate("http://localhost:" + port + "/");
@@ -455,12 +266,7 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void escapeClosesThePaletteButLeavesTheOpenTaskOnNarrowWindow() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     Page page = session.newPage();
     page.setViewportSize(800, 900);
     page.navigate("http://localhost:" + port + "/");
@@ -476,21 +282,9 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void flaggedRowLeadsItsGroup() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
+    Page page = openLiveBoard();
     page.locator("#tasks .row:has-text(\"a2\") .pick").click();
 
     page.locator("#pane button.flag").click();
@@ -500,9 +294,7 @@ class BoardWorkspaceTest extends BoardPageContext {
 
   @Test
   void theFilterBoxShowsItHoldsTheFocusWhenSlashMovesItThere() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     page.keyboard().press("/");
 

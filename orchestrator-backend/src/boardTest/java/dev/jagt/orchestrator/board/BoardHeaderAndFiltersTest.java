@@ -41,19 +41,14 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     long shipped = System.currentTimeMillis();
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .lastActiveTimestamp(shipped)
             .mrUrl("https://host/alpha/-/merge_requests/1")
             .mrCreatedAt(shipped)
             .lastPolledAt(shipped)
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("#auto-review")).isHidden();
     assertThat(page.locator("article .meta a.mr-age"))
@@ -62,8 +57,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   void theDarkThemeChosenOnTheGearSurvivesReload() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     page.click("#gear");
     page.click("#gear-menu button[value=dark]");
@@ -74,8 +68,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   void polishChosenOnTheGearReadsInPolishAndSurvivesReload() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     page.click("#gear");
     page.click("#gear-menu button[data-lang=pl]");
@@ -92,8 +85,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     Files.writeString(
         root.resolve("i18n/xx.json"),
         "{\"language.name\": \"Testish\", \"reports.toggle\": \"Reports-xx\"}");
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     page.click("#gear");
     page.click("#gear-menu button[data-lang=xx]");
@@ -107,8 +99,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     long now = System.currentTimeMillis();
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.CI_POLLING)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.CI_POLLING)
             .lastActiveTimestamp(now)
             .mrUrl("https://host/alpha/-/merge_requests/1")
             .mrCreatedAt(now)
@@ -119,9 +110,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
                     new StatusChange(TaskStatus.SHIPPING, now - 1000, null)))
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     assertThat(page.locator("article .meta a.mr-age"))
         .hasAttribute("data-tip", Pattern.compile("shipped 2 times"));
@@ -129,18 +118,9 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   void saysNothingAboutPollForTaskThatIsNotOutForReview() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("article")).hasCount(1);
     assertThat(page.locator("article a.mr-age")).hasCount(0);
@@ -148,19 +128,8 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   void countsEveryPhaseWhetherOrNotItHoldsTask() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder(
-                "alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.REVIEW_PENDING).build());
     state.putTask(
         "ABC-3",
         TaskState.builder("beta", root.resolve("ABC-3-beta").toString(), TaskStatus.DEPLOYED)
@@ -168,11 +137,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
             .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("#phases .phase"))
         .hasText(new String[] {"build 1", "review 1", "check 0", "ready 0", "deploy 1", "done 0"});
@@ -182,48 +147,24 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   void ordersTasksAsTheyWereRegisteredSoReusedAliasCannotMoveCardAlreadyOnTheBoard() {
-    state.putTask(
-        "ABC-10",
-        TaskState.builder("alpha", root.resolve("ABC-10-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a10")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-10", alphaTask("ABC-10", TaskStatus.IN_PROGRESS).build());
     state.putTask(
         "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
+        alphaTask("ABC-2", TaskStatus.IN_PROGRESS)
             .lastActiveTimestamp(System.currentTimeMillis() - 60_000)
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("#tasks .row .alias")).hasText(new String[] {"a10", "a2"});
   }
 
   @Test
   void ordersTasksByAliasWhenTheOrderControlIsPressed() {
-    state.putTask(
-        "ABC-10",
-        TaskState.builder("alpha", root.resolve("ABC-10-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a10")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-10", alphaTask("ABC-10", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#phases button.order").click();
 
     assertThat(page.locator("#tasks .row .alias")).hasText(new String[] {"a2", "a10"});
@@ -233,19 +174,9 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   @Test
   void theOpenTaskShowsTitleTooLongForItsRowWhole() {
     String whole = "A ticket whose first paragraph was pasted into its title".repeat(4);
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .title(whole)
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).title(whole).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("#pane article .title")).hasText(whole);
     assertThat(page.locator("#tasks .row-title")).hasText(whole);
@@ -254,15 +185,8 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   @Test
   void rowTitleTooLongForItsRowShowsWholeOnHover() {
     String whole = "A ticket whose first paragraph was pasted into its title".repeat(4);
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .title(whole)
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).title(whole).build());
+    Page page = openBoard();
 
     page.locator("#tasks .row-title").hover();
 
@@ -273,13 +197,10 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   void rowTitleThatFitsItsRowShowsNoHover() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
             .title("Short")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     page.locator("#tasks .row-title").hover();
 
@@ -291,43 +212,21 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     String reason = "a merge conflict in a file whose path runs on ".repeat(4);
     state.putTask(
         "ABC-1",
-        TaskState.builder(
-                "alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.DEPLOY_CONFLICT)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.DEPLOY_CONFLICT)
             .message(reason)
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("#pane article .detail")).hasText("NEEDS YOU: " + reason);
   }
 
   @Test
   void showsOnlyThePhaseWhoseCountWasClicked() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder(
-                "alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.REVIEW_PENDING).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#phases button.phase").nth(1).click();
 
     assertThat(page.locator("article .alias")).hasText(new String[] {"a2"});
@@ -335,25 +234,10 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   void keepsEveryPhaseCountWhileOneOfThemIsTheFilter() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder(
-                "alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.REVIEW_PENDING).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#phases button.phase").nth(1).click();
 
     assertThat(page.locator("#phases")).containsText("build 1 · review 1");
@@ -361,18 +245,9 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   void refusesToFilterByPhaseThatHoldsNothing() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("#phases button.phase").nth(1)).isDisabled();
   }
@@ -381,17 +256,11 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   void saysThatFiltersAreHidingEverythingRatherThanShowingBlankBoard() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
             .title("Widget layout is off")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#filter").fill("nothing matches this");
 
     assertThat(page.locator("article")).hasCount(0);
@@ -401,25 +270,10 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   void clearsEveryFilterAtOnce() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder(
-                "alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.REVIEW_PENDING).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#phases button.phase").nth(1).click();
     page.locator("#phases .clear-filters").click();
 
@@ -430,24 +284,16 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   void narrowsTheBoardToWhateverMatchesTheTypedText() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
             .title("Widget layout is off")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
     state.putTask(
         "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
+        alphaTask("ABC-2", TaskStatus.IN_PROGRESS)
             .title("Invoice totals are wrong")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#filter").fill("invoice");
 
     assertThat(page.locator("article .alias")).hasText(new String[] {"a2"});
@@ -455,12 +301,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   void findsTaskByItsTicketNumberAsWellAsItsTitle() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     state.putTask(
         "XYZ-9",
         TaskState.builder("alpha", root.resolve("XYZ-9-alpha").toString(), TaskStatus.IN_PROGRESS)
@@ -468,11 +309,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
             .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#filter").fill("xyz-9");
 
     assertThat(page.locator("article .alias")).hasText(new String[] {"x1"});
@@ -480,9 +317,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   void anEmptyBoardSaysWhereTaskComesFrom() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("#empty")).containsText("No tasks yet.");
     assertThat(page.locator("#empty")).not().containsText("ABC-42");
@@ -490,9 +325,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   void saysNothingInTheHeaderAboutJobsWhileNoneHasFailed() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("#jobs-pulse")).isHidden();
   }
@@ -505,8 +338,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
             "git.example.invalid",
             List.of("glab", "auth", "login", "--hostname", "git.example.invalid"),
             "glab not logged in to git.example.invalid"));
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
 
     assertThat(page.locator("#reach-lost")).hasText("glab not logged in to git.example.invalid");
     assertThat(page.locator("#reach-lost"))
@@ -526,8 +358,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
   @Test
   void givesActBackFromTheHeaderWhereItStoppedItself() throws Exception {
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
     assertThat(page.locator("#act-stopped")).isVisible();
 
     page.locator("#act-stopped").click();
@@ -548,8 +379,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
             .lastActiveTimestamp(now)
             .build());
     page.locator("#jobs-pulse").hover();
@@ -558,8 +388,7 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     page.clock().setFixedTime(now - Duration.ofSeconds(330).toMillis());
     state.putTask(
         "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
+        alphaTask("ABC-2", TaskStatus.IN_PROGRESS)
             .lastActiveTimestamp(now)
             .build());
 
@@ -569,24 +398,10 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
 
   @Test
   void theHeaderCountsTheTasksWhoseTurnItIs() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.REVIEWED)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.REVIEWED).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("#waiting")).hasText("1 need your action");
   }

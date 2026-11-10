@@ -13,11 +13,8 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.surface.board.TaskEventStream;
 import dev.jagt.orchestrator.task.Deployment;
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -59,8 +56,7 @@ class BoardConnectionTest extends BoardPageContext {
 
   @Test
   void theManifestTheBoardPageLinksIsServedAsManifest() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
+    Page page = openBoard();
     String href = (String) page.locator("link[rel=manifest]").evaluate("link => link.href");
 
     APIResponse manifest = session.request().get(Objects.requireNonNull(href));
@@ -74,16 +70,9 @@ class BoardConnectionTest extends BoardPageContext {
 
   @Test
   void stateChangeRepaintsAnOpenBoardWithNobodyReloadingIt() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
 
     assertThat(page.locator("article .alias")).hasText("a1");
   }
@@ -93,11 +82,7 @@ class BoardConnectionTest extends BoardPageContext {
     List<String> reads = new java.util.concurrent.CopyOnWriteArrayList<>();
     session.onRequest(request -> reads.add(request.url().replaceFirst("^http://[^/]+", "")));
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     assertThat(page.locator("#show-help")).hasCount(1);
 
     org.assertj.core.api.Assertions.assertThat(reads)
@@ -110,15 +95,8 @@ class BoardConnectionTest extends BoardPageContext {
 
   @Test
   void anOlderReadArrivingLastDoesNotPaintOverNewerOne() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    Page page = openLiveBoard();
     List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
     List<APIResponse> read = new java.util.concurrent.CopyOnWriteArrayList<>();
     page.route(
@@ -161,21 +139,9 @@ class BoardConnectionTest extends BoardPageContext {
 
   @Test
   void repaintLeavesKeyboardFocusOnTheButtonItWasOn() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.IN_PROGRESS).build());
+    Page page = openLiveBoard();
     Locator focus =
         page.locator("article", new Page.LocatorOptions().setHasText("a1"))
             .getByRole(
@@ -196,22 +162,11 @@ class BoardConnectionTest extends BoardPageContext {
 
   @Test
   void buttonPressedFromTheKeyboardKeepsTheFocusOnceItsMoveHasRun() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(commands.execute("ABC-1", TaskAction.FOCUS, null)).thenReturn("Focused ABC-1.");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    Locator focus =
-        page.getByRole(
-            AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true));
+    Page page = openLiveBoard();
+    Locator focus = button(page, "Focus");
     focus.focus();
     focus.press("Enter");
 
@@ -223,16 +178,12 @@ class BoardConnectionTest extends BoardPageContext {
   void repaintLeavesKeyboardFocusOnTheChipOfTheCardItRebuilt() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
             .deployment(
                 new Deployment(
                     1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null))
             .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("article .status").focus();
 
     state.putTask(
@@ -250,25 +201,19 @@ class BoardConnectionTest extends BoardPageContext {
   void repaintKeepsTheTipOfChipWhoseCardDidNotChange() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
             .deployment(
                 new Deployment(
                     1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null))
             .build());
     state.putTask(
         "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
+        alphaTask("ABC-2", TaskStatus.IN_PROGRESS)
             .deployment(
                 new Deployment(
                     1, List.of(Deployment.Target.of("shop", "dev").withMerge("abc1234")), 1, null))
             .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("article", new Page.LocatorOptions().setHasText("a1")).locator(".status").focus();
     assertThat(page.locator("#tip")).containsText("shared branch");
 
@@ -304,21 +249,10 @@ class BoardConnectionTest extends BoardPageContext {
   @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
   void roundOpenWhenTheBackendGoesAwayTakesNoLineForItsSession(
       @Autowired TaskEventStream events, @Autowired ApplicationContext context) throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-18-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-18",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a18")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a18");
-    page.locator("#ask").press("Enter");
+    draftReplies("ABC-18", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-18");
+    Page page = openLiveBoard();
+    ask(page, "replies a18");
     assertThat(page.locator("#report-line")).isVisible();
 
     events.onApplicationEvent(new ContextClosedEvent(context));

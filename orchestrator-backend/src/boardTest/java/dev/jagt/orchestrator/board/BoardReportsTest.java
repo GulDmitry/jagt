@@ -13,7 +13,6 @@ import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.StatusChange;
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -33,22 +32,12 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void theLogButtonKeepsItsNameAndCarriesTheLastMessageInItsHover() {
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(commands.execute("ABC-1", TaskAction.FOCUS, null))
         .thenReturn("Focused ABC-1 — its window is in front.");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true))
-        .click();
+    Page page = openLiveBoard();
+    button(page, "Focus").click();
 
     assertThat(page.locator("#show-log")).hasText("log");
     assertThat(page.locator("#show-log"))
@@ -57,9 +46,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void reportThatAnswersForOneTaskGetsNoButtonInTheBarOfReports() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
     assertThat(page.locator("#show-stats")).hasCount(1);
     assertThat(page.locator("#show-replies")).hasCount(0);
@@ -67,21 +54,10 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void draftedRepliesLiveOnTheirTabAndTheCardCarriesNoRepliesButton() throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-20-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nagreed, fixed\n");
-    state.putTask(
-        "ABC-20",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a20")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    draftReplies("ABC-20", "## thread 1\nagreed, fixed\n");
+    putReviewTask("ABC-20");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#pane .tabs button[data-tab=round]").click();
 
     assertThat(page.locator("#pane .round")).containsText("agreed, fixed");
@@ -90,15 +66,8 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void noRepliesButtonShowsOnTheCardWhileTheVerbsAreStillArriving() throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-19-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-19",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a19")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    draftReplies("ABC-19", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-19");
     List<Route> verbs = new java.util.ArrayList<>();
     Page page = session.newPage();
     page.route("**/api/commands", verbs::add);
@@ -111,25 +80,12 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void lineSaidAtAnOpenRoundReachesTheSessionOfTheTaskItIsAbout() throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-5-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-5",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a5")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    draftReplies("ABC-5", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-5");
     when(sessions.say("a5", "no, answer 1 differently")).thenReturn("Said to the agent.");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a5");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "replies a5");
     page.locator("#say").fill("no, answer 1 differently");
     page.locator("#say").press("Enter");
 
@@ -139,22 +95,10 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void reportThatIsNotAboutOneTaskOffersNoLineEvenWhenAnArgumentNamesOne() {
-    state.putTask(
-        "ABC-12",
-        TaskState.builder(
-                "alpha", root.resolve("ABC-12-alpha").toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a12")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-12", alphaTask("ABC-12", TaskStatus.REVIEW_PENDING).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("activity a12");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "activity a12");
 
     assertThat(page.locator("#report-title")).containsText("activity");
     assertThat(page.locator("#report-line")).isHidden();
@@ -162,64 +106,32 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void lineTypedAtOneRoundIsNotCarriedIntoTheNextOneOpened() throws IOException {
-    Path first = Files.createDirectories(root.resolve("ABC-13-alpha"));
-    Files.writeString(first.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    Path second = Files.createDirectories(root.resolve("ABC-14-alpha"));
-    Files.writeString(
-        second.resolve("review_replies.md"), "## thread 1\nFIXED - Pinned the count.\n");
-    state.putTask(
-        "ABC-13",
-        TaskState.builder("alpha", first.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a13")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    draftReplies("ABC-13", "## thread 1\nFIXED - Renamed it.\n");
+    draftReplies("ABC-14", "## thread 1\nFIXED - Pinned the count.\n");
+    putReviewTask("ABC-13");
     state.putTask(
         "ABC-14",
-        TaskState.builder("alpha", second.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a14")
+        alphaTask("ABC-14", TaskStatus.REVIEW_PENDING)
             .mrUrl("https://host.example/mr/8")
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a13");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "replies a13");
     page.locator("#say").fill("no, answer 1 differently");
     page.locator("#close-report").click();
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a14");
-    page.locator("#ask").press("Enter");
+    ask(page, "replies a14");
 
     assertThat(page.locator("#say")).hasValue("");
   }
 
   @Test
   void whatTheWaitingRingMeansIsReadableOverTheDialogItPulsesIn() throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-15-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-15",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a15")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    draftReplies("ABC-15", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-15");
     when(sessions.say("a15", "no, answer 1 differently")).thenReturn("Said to the agent.");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a15");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "replies a15");
     page.locator("#say").fill("no, answer 1 differently");
     page.locator("#say").press("Enter");
     page.locator("#said").hover();
@@ -229,46 +141,21 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void anOpenRoundNobodyHasAnsweredYetShowsNothingWaiting() throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-11-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-11",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a11")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    draftReplies("ABC-11", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-11");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a11");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "replies a11");
 
     assertThat(page.locator("#said")).isHidden();
   }
 
   @Test
   void reportAnsweringForEveryTaskHasNoSessionToSayAnythingTo() {
-    state.putTask(
-        "ABC-8",
-        TaskState.builder(
-                "alpha", root.resolve("ABC-8-alpha").toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a8")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    state.putTask("ABC-8", alphaTask("ABC-8", TaskStatus.REVIEW_PENDING).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "replies");
 
     assertThat(page.locator("#report")).isVisible();
     assertThat(page.locator("#report-line")).isHidden();
@@ -276,27 +163,12 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void anOpenRoundIsReadAgainWhenTheAgentAnswersUnderIt() throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-9-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-9",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a9")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    draftReplies("ABC-9", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-9");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a9");
-    page.locator("#ask").press("Enter");
-    Files.writeString(
-        worktree.resolve("review_replies.md"),
-        "## thread 1\nNO CHANGE - The name is the one the caller uses.\n");
+    Page page = openLiveBoard();
+    ask(page, "replies a9");
+    draftReplies("ABC-9", "## thread 1\nNO CHANGE - The name is the one the caller uses.\n");
     state.putTask(
         "ABC-9",
         state
@@ -309,25 +181,16 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void roundRewrittenWhileItsReportWasStillBeingReadShowsWhatTheFileSaysNow() throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-10-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-10",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a10")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    draftReplies("ABC-10", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-10");
+    Page page = openLiveBoard();
     page.route(
         "**/api/commands/replies**",
         route -> {
           APIResponse read = route.fetch();
           try {
-            Files.writeString(
-                worktree.resolve("review_replies.md"),
+            draftReplies(
+                "ABC-10",
                 "## thread 1\nNO CHANGE - The name is the one the caller uses.\n");
           } catch (IOException cannotStageTheRewrite) {
             throw new UncheckedIOException(cannotStageTheRewrite);
@@ -335,9 +198,7 @@ class BoardReportsTest extends BoardPageContext {
           route.fulfill(new Route.FulfillOptions().setResponse(read));
         });
 
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a10");
-    page.locator("#ask").press("Enter");
+    ask(page, "replies a10");
 
     assertThat(page.locator("#report-body")).containsText("The name is the one the caller uses.");
   }
@@ -352,22 +213,10 @@ class BoardReportsTest extends BoardPageContext {
         > see https://host.example/mr/7#note_8708.
         FIXED - javascript:alert(1) stays text.
         """);
-    state.putTask(
-        "ABC-6",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a6")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    putReviewTask("ABC-6");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a6");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "replies a6");
 
     assertThat(page.locator("#report-body a"))
         .hasAttribute("href", "https://host.example/mr/7#note_8708");
@@ -378,71 +227,36 @@ class BoardReportsTest extends BoardPageContext {
   @Test
   void reportThatCouldNotBeReadSaysTheSentenceOfTheRefusalRatherThanItsWireShape()
       throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-16-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-16",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a16")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    draftReplies("ABC-16", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-16");
     doThrow(new IllegalStateException("the round file is not readable"))
         .when(replies)
         .render("a16");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a16");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "replies a16");
 
     assertThat(page.locator("#toasts .toast.error")).hasText("the round file is not readable");
   }
 
   @Test
   void reportAboutTaskThatIsGoneSaysTheBoardIsUpToDateNow() throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-18-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-18",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a18")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    draftReplies("ABC-18", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-18");
     doThrow(Refusal.noSuchTask("a18")).when(replies).render("a18");
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
 
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a18");
-    page.locator("#ask").press("Enter");
+    ask(page, "replies a18");
 
     assertThat(page.locator("#toasts .toast.error")).containsText("The board is up to date now.");
   }
 
   @Test
   void roundReadAgainTwiceShowsTheLaterReadWhenTheEarlierOneAnswersLast() throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-19-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-19",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a19")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a19");
-    page.locator("#ask").press("Enter");
+    draftReplies("ABC-19", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-19");
+    Page page = openLiveBoard();
+    ask(page, "replies a19");
     assertThat(page.locator("#report-body")).containsText("Renamed it.");
     List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
     List<APIResponse> read = new java.util.concurrent.CopyOnWriteArrayList<>();
@@ -452,8 +266,7 @@ class BoardReportsTest extends BoardPageContext {
           read.add(route.fetch());
           held.add(route);
         });
-    Files.writeString(
-        worktree.resolve("review_replies.md"), "## thread 1\nFIXED - The older read.\n");
+    draftReplies("ABC-19", "## thread 1\nFIXED - The older read.\n");
     page.waitForRequest(
         "**/api/commands/replies**",
         () ->
@@ -465,8 +278,7 @@ class BoardReportsTest extends BoardPageContext {
                     .withStatus(TaskStatus.REVIEW_PENDING, "older", System.currentTimeMillis())));
     page.waitForCondition(() -> !held.isEmpty());
     int olderReads = held.size();
-    Files.writeString(
-        worktree.resolve("review_replies.md"), "## thread 1\nFIXED - The newer read.\n");
+    draftReplies("ABC-19", "## thread 1\nFIXED - The newer read.\n");
     page.waitForRequest(
         "**/api/commands/replies**",
         () ->
@@ -490,39 +302,19 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void reportAboutOneTaskIsTitledByBothTheNamesItAnswersTo() throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-7-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-7",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a7")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    draftReplies("ABC-7", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-7");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a7");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "replies a7");
 
     assertThat(page.locator("#report-title")).hasText("replies a7 · ABC-7");
   }
 
   @Test
   void reportTypedBeforeTheBoardArrivedIsStillTitledByBothNamesOfItsTask() throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-21-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-21",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a21")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    draftReplies("ABC-21", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-21");
     List<Route> board = new java.util.concurrent.CopyOnWriteArrayList<>();
     Page page = session.newPage();
     page.route("**/api/tasks", board::add);
@@ -530,9 +322,7 @@ class BoardReportsTest extends BoardPageContext {
     page.waitForCondition(() -> !board.isEmpty());
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a21");
-    page.locator("#ask").press("Enter");
+    ask(page, "replies a21");
     board.forEach(Route::resume);
 
     assertThat(page.locator("#report-title")).hasText("replies a21 · ABC-21");
@@ -540,24 +330,11 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void reportIsNamedToScreenReaderByItsTitle() throws IOException {
-    Path worktree = Files.createDirectories(root.resolve("ABC-7-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-7",
-        TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a7")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    draftReplies("ABC-7", "## thread 1\nFIXED - Renamed it.\n");
+    putReviewTask("ABC-7");
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a7");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "replies a7");
 
     assertThat(
             page.getByRole(
@@ -567,31 +344,10 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void reportOpenedEarlierThatFailsAfterLaterOneOpenedRaisesNoError() throws IOException {
-    Path first = Files.createDirectories(root.resolve("ABC-7-alpha"));
-    Files.writeString(
-        first.resolve("review_replies.md"), "## thread 1\nFIXED - The first round.\n");
-    state.putTask(
-        "ABC-7",
-        TaskState.builder("alpha", first.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a7")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
-    page.route(Pattern.compile("/api/commands/replies\\?about=a7$"), held::add);
-    page.waitForRequest(
-        Pattern.compile("/api/commands/replies\\?about=a7$"),
-        () -> {
-          page.keyboard().press("Control+k");
-          page.locator("#ask").fill("replies a7");
-          page.locator("#ask").press("Enter");
-        });
-    page.locator("#reports-toggle").click();
-    page.locator("#show-stats").click();
-    assertThat(page.locator("#report-title")).containsText("stats");
+    draftReplies("ABC-7", "## thread 1\nFIXED - The first round.\n");
+    putReviewTask("ABC-7");
+    Page page = openLiveBoard();
+    List<Route> held = holdTheRepliesAnswerAndOpenStats(page);
 
     page.waitForRequestFinished(
         new Page.WaitForRequestFinishedOptions()
@@ -608,31 +364,10 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void reportOpenedLastStaysOnScreenWhenAnEarlierOneAnswersAfterIt() throws IOException {
-    Path first = Files.createDirectories(root.resolve("ABC-7-alpha"));
-    Files.writeString(
-        first.resolve("review_replies.md"), "## thread 1\nFIXED - The first round.\n");
-    state.putTask(
-        "ABC-7",
-        TaskState.builder("alpha", first.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a7")
-            .mrUrl("https://host.example/mr/7")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
-    page.route(Pattern.compile("/api/commands/replies\\?about=a7$"), held::add);
-    page.waitForRequest(
-        Pattern.compile("/api/commands/replies\\?about=a7$"),
-        () -> {
-          page.keyboard().press("Control+k");
-          page.locator("#ask").fill("replies a7");
-          page.locator("#ask").press("Enter");
-        });
-    page.locator("#reports-toggle").click();
-    page.locator("#show-stats").click();
-    assertThat(page.locator("#report-title")).containsText("stats");
+    draftReplies("ABC-7", "## thread 1\nFIXED - The first round.\n");
+    putReviewTask("ABC-7");
+    Page page = openLiveBoard();
+    List<Route> held = holdTheRepliesAnswerAndOpenStats(page);
 
     page.waitForRequestFinished(
         new Page.WaitForRequestFinishedOptions()
@@ -647,30 +382,12 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void typedReportNarrowsToTheTaskItNamesInsteadOfAnsweringForAllOfThem() throws IOException {
-    Path drafting = Files.createDirectories(root.resolve("ABC-2-alpha"));
-    Files.writeString(drafting.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    state.putTask(
-        "ABC-1",
-        TaskState.builder(
-                "alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("alpha", drafting.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a2")
-            .lastActiveTimestamp(System.currentTimeMillis())
-            .build());
+    draftReplies("ABC-2", "## thread 1\nFIXED - Renamed it.\n");
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.REVIEW_PENDING).build());
+    state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.REVIEW_PENDING).build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
-    page.keyboard().press("Control+k");
-    page.locator("#ask").fill("replies a1");
-    page.locator("#ask").press("Enter");
+    Page page = openLiveBoard();
+    ask(page, "replies a1");
 
     assertThat(page.locator("#report-body")).containsText("a1 has no drafted replies");
   }
@@ -679,24 +396,16 @@ class BoardReportsTest extends BoardPageContext {
   void taskNamedInTheActivityLogOpensFromItsLine() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
+        alphaTask("ABC-1", TaskStatus.IN_PROGRESS)
             .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1_000L, null)))
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
     state.putTask(
         "ABC-2",
-        TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a2")
+        alphaTask("ABC-2", TaskStatus.IN_PROGRESS)
             .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 2_000L, null)))
-            .lastActiveTimestamp(System.currentTimeMillis())
             .build());
 
-    Page page = session.newPage();
-
-    page.navigate("http://localhost:" + port + "/");
-
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#reports-toggle").click();
     page.locator("#show-activity").click();
     assertThat(page.locator("#report-body")).containsText("→ agent working");
@@ -708,9 +417,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void reportClosesWhenTheDimmedAreaAroundItIsClicked() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#reports-toggle").click();
     page.locator("#show-activity").click();
     assertThat(page.locator("#report")).isVisible();
@@ -722,9 +429,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void theShortcutsLeaveTheBoardAloneWhileReportIsOpen() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#reports-toggle").click();
     page.locator("#show-activity").click();
     assertThat(page.locator("#report")).isVisible();
@@ -736,9 +441,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void reportSurvivesSelectionThatStartedInsideItAndEndedOutside() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#reports-toggle").click();
     page.locator("#show-activity").click();
 
@@ -752,9 +455,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void helpAlsoSaysWhatTheBoardsOwnMarksMean() {
-    Page page = session.newPage();
-    page.navigate("http://localhost:" + port + "/");
-    assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
+    Page page = openLiveBoard();
     page.locator("#reports-toggle").click();
     page.locator("#show-help").click();
 
