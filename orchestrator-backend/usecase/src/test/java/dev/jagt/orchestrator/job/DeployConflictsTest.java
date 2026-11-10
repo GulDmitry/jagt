@@ -30,8 +30,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class DeployConflictsTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void findsConflictInTheRepositoryItsRecordNames(@TempDir Path root) {
@@ -42,7 +41,7 @@ class DeployConflictsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -65,9 +64,9 @@ class DeployConflictsTest {
                 .withProjects(
                     Map.of(
                         "api",
-                        new ProjectConfig("/repo/api", "origin/main", "dev", null),
+                        new ProjectConfig("/repo/api", "origin/main", "dev", List.of()),
                         "web",
-                        new ProjectConfig("/src/web", "origin/main", "dev", null))));
+                        new ProjectConfig("/src/web", "origin/main", "dev", List.of()))));
     GitDeploy git = mock(GitDeploy.class);
     when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
     when(git.deployResolved(Path.of("/src/web"), "ABC-1", "dev")).thenReturn(true);
@@ -97,7 +96,7 @@ class DeployConflictsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(List.of(TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT)
@@ -116,7 +115,7 @@ class DeployConflictsTest {
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
-                    Map.of("web", new ProjectConfig("/src/web", "origin/main", "dev", null))));
+                    Map.of("web", new ProjectConfig("/src/web", "origin/main", "dev", List.of()))));
     GitDeploy git = mock(GitDeploy.class);
     when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
     DeployConflicts service = new DeployConflicts(new DeployTargets(config), git);
@@ -144,7 +143,7 @@ class DeployConflictsTest {
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
-                    Map.of("web", new ProjectConfig("/src/web", "origin/main", "dev", null))));
+                    Map.of("web", new ProjectConfig("/src/web", "origin/main", "dev", List.of()))));
     DeployConflicts service = new DeployConflicts(new DeployTargets(config), mock(GitDeploy.class));
 
     var conflicts = service.waiting("ABC-1", task);
@@ -161,7 +160,7 @@ class DeployConflictsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(List.of(TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT)
@@ -181,7 +180,7 @@ class DeployConflictsTest {
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
-                    Map.of("web", new ProjectConfig("/src/web", "origin/main", "dev", null))));
+                    Map.of("web", new ProjectConfig("/src/web", "origin/main", "dev", List.of()))));
     GitDeploy git = mock(GitDeploy.class);
     when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
     when(git.deployProgress(Path.of("/src/web"), "ABC-1"))
@@ -204,7 +203,7 @@ class DeployConflictsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(List.of(TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT)
@@ -223,7 +222,7 @@ class DeployConflictsTest {
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
-                    Map.of("web", new ProjectConfig("/src/web", "origin/main", "dev", null))));
+                    Map.of("web", new ProjectConfig("/src/web", "origin/main", "dev", List.of()))));
     GitDeploy git = mock(GitDeploy.class);
     when(git.hasRevertWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
     when(git.revertResolved(Path.of("/src/web"), "ABC-1")).thenReturn(true);

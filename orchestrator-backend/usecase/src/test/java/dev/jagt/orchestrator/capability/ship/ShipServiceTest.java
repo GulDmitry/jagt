@@ -56,8 +56,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class ShipServiceTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @TempDir Path root;
   private StateService stateService;
@@ -88,7 +87,8 @@ class ShipServiceTest {
                         new Notifications(List.of(), stateService, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 stateService,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -482,11 +482,14 @@ class ShipServiceTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(
         root.resolve("roles/master/cases.md"),
-        "## reply\n\n"
-            + "move: reply\n"
-            + "at: REVIEW_PENDING\n"
-            + "by: master\n"
-            + "The Master lets the session reply.\n");
+        """
+        ## reply
+
+        move: reply
+        at: REVIEW_PENDING
+        by: master
+        The Master lets the session reply.
+        """);
     stateService.putTask(
         "ABC-42", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).title("t").build());
     when(configService.load())

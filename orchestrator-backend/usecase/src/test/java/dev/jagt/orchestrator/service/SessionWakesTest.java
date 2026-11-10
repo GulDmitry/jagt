@@ -20,6 +20,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -52,7 +53,7 @@ class SessionWakesTest {
             new JsonMapper(),
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
-                    .withRoot(file.getParent().toString())
+                    .withRoot(Objects.requireNonNull(file.getParent()).toString())
                     .withStateFile(file.toString())),
             reducer);
     return new SessionWakes(

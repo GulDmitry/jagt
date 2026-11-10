@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,8 +46,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class NewTaskWorktreesTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @TempDir Path root;
 
@@ -408,9 +408,10 @@ class NewTaskWorktreesTest {
                     "proj",
                     new ProjectConfig(
                         new ProjectConfig.Repository(
-                            root.resolve("repo").toString(), List.of(), null, null),
+                            root.resolve("repo").toString(), List.of(), null, List.of()),
                         new ProjectConfig.Branches("upstream/main", null, "upstream"),
-                        new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+                        new ProjectConfig.CodeHost(
+                            null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                         new ProjectConfig.Verify(List.of(), null))));
     when(git.remoteBranchExists(any(), eq("feature/parent"))).thenReturn(true);
 
@@ -880,7 +881,7 @@ class NewTaskWorktreesTest {
 
     worktrees.attach("ABC-7", "registry", configured);
 
-    assertThat(state.task("ABC-7").orElseThrow().gitTrust().recorded())
+    assertThat(Objects.requireNonNull(state.task("ABC-7").orElseThrow().gitTrust()).recorded())
         .isEqualTo(Map.of("core.bare in api", "d1", "core.bare in registry", "d2"));
   }
 

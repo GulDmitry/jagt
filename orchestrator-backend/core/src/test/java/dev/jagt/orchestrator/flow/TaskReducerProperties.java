@@ -23,6 +23,7 @@ import net.jqwik.api.Combinators;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
+import org.jspecify.annotations.Nullable;
 
 class TaskReducerProperties {
 
@@ -34,201 +35,226 @@ class TaskReducerProperties {
   @Property
   void deployConflictNeverTravelsWithStatusChange(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
-    moves.stream()
-        .reduce(
-            start,
-            (task, move) -> {
-              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
-              Optional.of(next)
-                  .filter(moved -> moved.status() != task.status())
-                  .filter(
-                      moved ->
-                          task.status() == TaskStatus.DEPLOY_CONFLICT
-                              || Optional.ofNullable(task.deployment())
-                                  .flatMap(Deployment::conflictedTarget)
-                                  .isEmpty())
-                  .ifPresent(
-                      moved ->
-                          assertThat(
-                                  Optional.ofNullable(moved.deployment())
-                                      .flatMap(Deployment::conflictedTarget))
-                              .isEmpty());
-              return next;
-            },
-            (left, right) -> right);
+    assertThat(
+            moves.stream()
+                .reduce(
+                    start,
+                    (task, move) -> {
+                      TaskState next = reducer.reduce(task, move, "step", true, 1_000);
+                      Optional.of(next)
+                          .filter(moved -> moved.status() != task.status())
+                          .filter(
+                              moved ->
+                                  task.status() == TaskStatus.DEPLOY_CONFLICT
+                                      || Optional.ofNullable(task.deployment())
+                                          .flatMap(Deployment::conflictedTarget)
+                                          .isEmpty())
+                          .ifPresent(
+                              moved ->
+                                  assertThat(
+                                          Optional.ofNullable(moved.deployment())
+                                              .flatMap(Deployment::conflictedTarget))
+                                      .isEmpty());
+                      return next;
+                    },
+                    (left, right) -> right))
+        .isNotNull();
   }
 
   @Property
   void stopEndsOnlyOnLiftOrOnItsOwnEnd(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
-    moves.stream()
-        .reduce(
-            start,
-            (task, move) -> {
-              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
-              Optional.ofNullable(task.stop())
-                  .filter(
-                      stop ->
-                          !(move instanceof TaskMove.Lifted)
-                              && !(move instanceof TaskMove.StopEnded ended
-                                  && ended.ends() == stop.trigger().ends()))
-                  .ifPresent(stop -> assertThat(next.stop()).isEqualTo(stop));
-              return next;
-            },
-            (left, right) -> right);
+    assertThat(
+            moves.stream()
+                .reduce(
+                    start,
+                    (task, move) -> {
+                      TaskState next = reducer.reduce(task, move, "step", true, 1_000);
+                      Optional.ofNullable(task.stop())
+                          .filter(
+                              stop ->
+                                  !(move instanceof TaskMove.Lifted)
+                                      && !(move instanceof TaskMove.StopEnded ended
+                                          && ended.ends() == stop.trigger().ends()))
+                          .ifPresent(stop -> assertThat(next.stop()).isEqualTo(stop));
+                      return next;
+                    },
+                    (left, right) -> right))
+        .isNotNull();
   }
 
   @Property
   void requiredPlanGateOpensOnlyOnTheApproval(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
-    moves.stream()
-        .reduce(
-            start,
-            (task, move) -> {
-              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
-              Optional.of(task)
-                  .filter(before -> before.planGate() == PlanGate.REQUIRED)
-                  .filter(before -> !(move instanceof TaskMove.PlanApproved))
-                  .ifPresent(before -> assertThat(next.planGate()).isEqualTo(PlanGate.REQUIRED));
-              return next;
-            },
-            (left, right) -> right);
+    assertThat(
+            moves.stream()
+                .reduce(
+                    start,
+                    (task, move) -> {
+                      TaskState next = reducer.reduce(task, move, "step", true, 1_000);
+                      Optional.of(task)
+                          .filter(before -> before.planGate() == PlanGate.REQUIRED)
+                          .filter(before -> !(move instanceof TaskMove.PlanApproved))
+                          .ifPresent(
+                              before -> assertThat(next.planGate()).isEqualTo(PlanGate.REQUIRED));
+                      return next;
+                    },
+                    (left, right) -> right))
+        .isNotNull();
   }
 
   @Property
   void questionStandsUntilTheSessionSpeaksOrVerdictOrDeployReadMovesTheStatus(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
-    moves.stream()
-        .reduce(
-            start,
-            (task, move) -> {
-              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
-              Optional.of(task)
-                  .filter(before -> before.report().asks())
-                  .filter(
-                      before ->
-                          !(move instanceof TaskMove.Said
-                              || move instanceof TaskMove.Stamped
-                              || move instanceof TaskMove.Verified))
-                  .filter(
-                      before ->
-                          !(move instanceof TaskMove.DeployRead
-                              && next.status() != before.status()))
-                  .ifPresent(before -> assertThat(next.report()).isEqualTo(before.report()));
-              return next;
-            },
-            (left, right) -> right);
+    assertThat(
+            moves.stream()
+                .reduce(
+                    start,
+                    (task, move) -> {
+                      TaskState next = reducer.reduce(task, move, "step", true, 1_000);
+                      Optional.of(task)
+                          .filter(before -> before.report().asks())
+                          .filter(
+                              before ->
+                                  !(move instanceof TaskMove.Said
+                                      || move instanceof TaskMove.Stamped
+                                      || move instanceof TaskMove.Verified))
+                          .filter(
+                              before ->
+                                  !(move instanceof TaskMove.DeployRead
+                                      && next.status() != before.status()))
+                          .ifPresent(
+                              before -> assertThat(next.report()).isEqualTo(before.report()));
+                      return next;
+                    },
+                    (left, right) -> right))
+        .isNotNull();
   }
 
   @Property
   void gitChangeLeavesOnlyOnTrustMove(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
-    moves.stream()
-        .reduce(
-            start,
-            (task, move) -> {
-              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
-              Optional.of(task)
-                  .filter(TaskState::gitStateChanged)
-                  .filter(before -> !(move instanceof TaskMove.GitTrusted))
-                  .ifPresent(before -> assertThat(next.gitStateChanged()).isTrue());
-              return next;
-            },
-            (left, right) -> right);
+    assertThat(
+            moves.stream()
+                .reduce(
+                    start,
+                    (task, move) -> {
+                      TaskState next = reducer.reduce(task, move, "step", true, 1_000);
+                      Optional.of(task)
+                          .filter(TaskState::gitStateChanged)
+                          .filter(before -> !(move instanceof TaskMove.GitTrusted))
+                          .ifPresent(before -> assertThat(next.gitStateChanged()).isTrue());
+                      return next;
+                    },
+                    (left, right) -> right))
+        .isNotNull();
   }
 
   @Property
   void mergedRequestNeverLetsShipRun(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
-    moves.stream()
-        .reduce(
-            start,
-            (task, move) -> {
-              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
-              Optional.of(next)
-                  .filter(moved -> RequestPhase.of(moved) == RequestPhase.MERGED)
-                  .ifPresent(
-                      moved ->
-                          assertThat(
-                                  rules.allows(
-                                      moved.status(), TaskAction.SHIP, Facts.projected(moved)))
-                              .isFalse());
-              return next;
-            },
-            (left, right) -> right);
+    assertThat(
+            moves.stream()
+                .reduce(
+                    start,
+                    (task, move) -> {
+                      TaskState next = reducer.reduce(task, move, "step", true, 1_000);
+                      Optional.of(next)
+                          .filter(moved -> RequestPhase.of(moved) == RequestPhase.MERGED)
+                          .ifPresent(
+                              moved ->
+                                  assertThat(
+                                          rules.allows(
+                                              moved.status(),
+                                              TaskAction.SHIP,
+                                              Facts.projected(moved)))
+                                      .isFalse());
+                      return next;
+                    },
+                    (left, right) -> right))
+        .isNotNull();
   }
 
   @Property
   void newHeadNeverLeavesAnInfraRetryArmed(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
-    moves.stream()
-        .reduce(
-            start,
-            (task, move) -> {
-              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
-              Optional.of(move)
-                  .filter(seen -> seen instanceof TaskMove.HeadSeen head && head.moved())
-                  .ifPresent(
-                      seen -> assertThat(InfraPhase.of(next)).isNotEqualTo(InfraPhase.ARMED));
-              return next;
-            },
-            (left, right) -> right);
+    assertThat(
+            moves.stream()
+                .reduce(
+                    start,
+                    (task, move) -> {
+                      TaskState next = reducer.reduce(task, move, "step", true, 1_000);
+                      Optional.of(move)
+                          .filter(seen -> seen instanceof TaskMove.HeadSeen head && head.moved())
+                          .ifPresent(
+                              seen ->
+                                  assertThat(InfraPhase.of(next)).isNotEqualTo(InfraPhase.ARMED));
+                      return next;
+                    },
+                    (left, right) -> right))
+        .isNotNull();
   }
 
   @Property
   void moveTheChartHasNoEdgeForLeavesStatusDeploymentAndStopAlone(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
-    moves.stream()
-        .reduce(
-            start,
-            (task, move) -> {
-              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
-              Optional.of(chart.effects(Phases.of(task), move))
-                  .filter(List::isEmpty)
-                  .ifPresent(
-                      none -> {
-                        assertThat(next.status()).isEqualTo(task.status());
-                        assertThat(next.deployment()).isEqualTo(task.deployment());
-                        assertThat(next.stop()).isEqualTo(task.stop());
-                      });
-              return next;
-            },
-            (left, right) -> right);
+    assertThat(
+            moves.stream()
+                .reduce(
+                    start,
+                    (task, move) -> {
+                      TaskState next = reducer.reduce(task, move, "step", true, 1_000);
+                      Optional.of(chart.effects(Phases.of(task), move))
+                          .filter(List::isEmpty)
+                          .ifPresent(
+                              none -> {
+                                assertThat(next.status()).isEqualTo(task.status());
+                                assertThat(next.deployment()).isEqualTo(task.deployment());
+                                assertThat(next.stop()).isEqualTo(task.stop());
+                              });
+                      return next;
+                    },
+                    (left, right) -> right))
+        .isNotNull();
   }
 
   @Property
   void turnCountsExactlyOneMoreOnEveryRelayAndCloseAndOtherwiseNotAtAll(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
-    moves.stream()
-        .reduce(
-            start,
-            (task, move) -> {
-              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
-              long id = task.turnOrNone().id();
-              Optional.of(move)
-                  .filter(
-                      m ->
-                          m instanceof TaskMove.Relayed
-                              || m instanceof TaskMove.TurnClosed
-                              || m instanceof TaskMove.Checked.ReadEnded ended && ended.holds())
-                  .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id + 1));
-              Optional.of(move)
-                  .filter(m -> m instanceof TaskMove.TurnRestored _)
-                  .ifPresent(
-                      m ->
-                          assertThat(next.turnOrNone())
-                              .isEqualTo(((TaskMove.TurnRestored) m).before()));
-              Optional.of(move)
-                  .filter(
-                      m ->
-                          !(m instanceof TaskMove.Relayed
-                              || m instanceof TaskMove.TurnClosed
-                              || m instanceof TaskMove.TurnRestored
-                              || m instanceof TaskMove.Checked.ReadEnded ended && ended.holds()))
-                  .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id));
-              return next;
-            },
-            (left, right) -> right);
+    assertThat(
+            moves.stream()
+                .reduce(
+                    start,
+                    (task, move) -> {
+                      TaskState next = reducer.reduce(task, move, "step", true, 1_000);
+                      long id = task.turnOrNone().id();
+                      Optional.of(move)
+                          .filter(
+                              m ->
+                                  m instanceof TaskMove.Relayed
+                                      || m instanceof TaskMove.TurnClosed
+                                      || (m instanceof TaskMove.Checked.ReadEnded ended
+                                          && ended.holds()))
+                          .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id + 1));
+                      Optional.of(move)
+                          .filter(m -> m instanceof TaskMove.TurnRestored _)
+                          .ifPresent(
+                              m ->
+                                  assertThat(next.turnOrNone())
+                                      .isEqualTo(((TaskMove.TurnRestored) m).before()));
+                      Optional.of(move)
+                          .filter(
+                              m ->
+                                  !(m instanceof TaskMove.Relayed
+                                      || m instanceof TaskMove.TurnClosed
+                                      || m instanceof TaskMove.TurnRestored
+                                      || (m instanceof TaskMove.Checked.ReadEnded ended
+                                          && ended.holds())))
+                          .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id));
+                      return next;
+                    },
+                    (left, right) -> right))
+        .isNotNull();
   }
 
   @Property
@@ -252,127 +278,137 @@ class TaskReducerProperties {
 
   @Property
   void doneTaskStaysDone(@ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
-    moves.stream()
-        .reduce(
-            start,
-            (task, move) -> {
-              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
-              Optional.of(task)
-                  .filter(before -> before.status() == TaskStatus.DONE)
-                  .ifPresent(before -> assertThat(next.status()).isEqualTo(TaskStatus.DONE));
-              return next;
-            },
-            (left, right) -> right);
+    assertThat(
+            moves.stream()
+                .reduce(
+                    start,
+                    (task, move) -> {
+                      TaskState next = reducer.reduce(task, move, "step", true, 1_000);
+                      Optional.of(task)
+                          .filter(before -> before.status() == TaskStatus.DONE)
+                          .ifPresent(
+                              before -> assertThat(next.status()).isEqualTo(TaskStatus.DONE));
+                      return next;
+                    },
+                    (left, right) -> right))
+        .isNotNull();
   }
 
   @Property
   void eachDerivedRegionReadFromTheNewRecordIsTheStateTheTakenEdgeDeclared(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
-    moves.stream()
-        .reduce(
-            start,
-            (task, raw) -> {
-              TaskMove move = reducer.resolved(task, raw);
-              Map<String, String> declared =
-                  chart.step(Phases.of(task), move).configuration().toPlain();
-              TaskState next = reducer.reduce(task, move, "step", true, 1_000);
-              assertThat(
-                      Map.of(
-                          "git",
-                          GitPhase.of(next.gitTrust()).name(),
-                          "repo",
-                          RepoPhase.of(next.repoRequest()).name(),
-                          "request",
-                          RequestPhase.of(next).name(),
-                          "checks",
-                          ChecksPhase.of(next).name(),
-                          "approval",
-                          ApprovalPhase.of(next).name(),
-                          "infra",
-                          InfraPhase.of(next).name(),
-                          "acceptance",
-                          CheckerPhase.of(next, Checkers.ACCEPTANCE).name()))
-                  .isEqualTo(
-                      Map.of(
-                          "git",
-                          declared.get("git"),
-                          "repo",
-                          declared.get("repo"),
-                          "request",
-                          declared.get("request"),
-                          "checks",
-                          declared.get("checks"),
-                          "approval",
-                          declared.get("approval"),
-                          "infra",
-                          declared.get("infra"),
-                          "acceptance",
-                          declared.get("acceptance")));
-              return next;
-            },
-            (left, right) -> right);
+    assertThat(
+            moves.stream()
+                .reduce(
+                    start,
+                    (task, raw) -> {
+                      TaskMove move = reducer.resolved(task, raw);
+                      Map<String, String> declared =
+                          chart.step(Phases.of(task), move).configuration().toPlain();
+                      TaskState next = reducer.reduce(task, move, "step", true, 1_000);
+                      assertThat(
+                              Map.of(
+                                  "git",
+                                  GitPhase.of(next.gitTrust()).name(),
+                                  "repo",
+                                  RepoPhase.of(next.repoRequest()).name(),
+                                  "request",
+                                  RequestPhase.of(next).name(),
+                                  "checks",
+                                  ChecksPhase.of(next).name(),
+                                  "approval",
+                                  ApprovalPhase.of(next).name(),
+                                  "infra",
+                                  InfraPhase.of(next).name(),
+                                  "acceptance",
+                                  CheckerPhase.of(next, Checkers.ACCEPTANCE).name()))
+                          .isEqualTo(
+                              Map.of(
+                                  "git",
+                                  declared.get("git"),
+                                  "repo",
+                                  declared.get("repo"),
+                                  "request",
+                                  declared.get("request"),
+                                  "checks",
+                                  declared.get("checks"),
+                                  "approval",
+                                  declared.get("approval"),
+                                  "infra",
+                                  declared.get("infra"),
+                                  "acceptance",
+                                  declared.get("acceptance")));
+                      return next;
+                    },
+                    (left, right) -> right))
+        .isNotNull();
   }
 
   @Property
   void acceptanceHoldsTheTurnOnlyWhileItsReadRuns(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
-    moves.stream()
-        .reduce(
-            start,
-            (task, raw) -> {
-              TaskState next =
-                  reducer.reduce(task, reducer.resolved(task, raw), "step", true, 1_000);
-              Optional.of(next)
-                  .filter(moved -> !FlowRules.closed(moved.status()) && !moved.stopped())
-                  .ifPresent(
-                      moved ->
-                          assertThat(
-                                  Turns.next(
-                                          moved.status(),
-                                          moved.report(),
-                                          false,
-                                          new Checkers(new TaskChart(Composition.builtIn()))
-                                              .of(moved),
-                                          Arbiter.Profile.OFF)
-                                      .equals(new Turn.Holder.Role("acceptance")))
-                              .isEqualTo(
-                                  CheckerPhase.of(moved, Checkers.ACCEPTANCE)
-                                      == CheckerPhase.READING));
-              return next;
-            },
-            (left, right) -> right);
+    assertThat(
+            moves.stream()
+                .reduce(
+                    start,
+                    (task, raw) -> {
+                      TaskState next =
+                          reducer.reduce(task, reducer.resolved(task, raw), "step", true, 1_000);
+                      Optional.of(next)
+                          .filter(moved -> !FlowRules.closed(moved.status()) && !moved.stopped())
+                          .ifPresent(
+                              moved ->
+                                  assertThat(
+                                          Turns.next(
+                                                  moved.status(),
+                                                  moved.report(),
+                                                  false,
+                                                  new Checkers(new TaskChart(Composition.builtIn()))
+                                                      .of(moved),
+                                                  Arbiter.Profile.OFF)
+                                              .equals(new Turn.Holder.Role("acceptance")))
+                                      .isEqualTo(
+                                          CheckerPhase.of(moved, Checkers.ACCEPTANCE)
+                                              == CheckerPhase.READING));
+                      return next;
+                    },
+                    (left, right) -> right))
+        .isNotNull();
   }
 
   @Property
   void theMasterReadsTheRoundOnlyWhileItsVerdictStands(
       @ForAll("tasks") TaskState start, @ForAll("moves") List<TaskMove> moves) {
-    moves.stream()
-        .reduce(
-            start,
-            (task, raw) -> {
-              TaskState next =
-                  reducer.reduce(task, reducer.resolved(task, raw), "step", true, 1_000);
-              Optional.of(next)
-                  .filter(
-                      moved ->
-                          MasterPhase.of(moved) != MasterPhase.LEFT
-                              && FlowRules.readByTheMaster(moved.status()))
-                  .ifPresent(
-                      moved -> {
-                        TaskState read =
-                            reducer.masterSealed(moved, "fingerprint", moved.turnOrNone().id());
-                        assertThat(MasterPhase.of(read)).isEqualTo(MasterPhase.READ);
-                        assertThat(MasterPhase.of(reducer.masterVerdictGone(read)))
-                            .isEqualTo(MasterPhase.STANDS_IN);
-                      });
-              return next;
-            },
-            (left, right) -> right);
+    assertThat(
+            moves.stream()
+                .reduce(
+                    start,
+                    (task, raw) -> {
+                      TaskState next =
+                          reducer.reduce(task, reducer.resolved(task, raw), "step", true, 1_000);
+                      Optional.of(next)
+                          .filter(
+                              moved ->
+                                  MasterPhase.of(moved) != MasterPhase.LEFT
+                                      && FlowRules.readByTheMaster(moved.status()))
+                          .ifPresent(
+                              moved -> {
+                                TaskState read =
+                                    reducer.masterSealed(
+                                        moved, "fingerprint", moved.turnOrNone().id());
+                                assertThat(MasterPhase.of(read)).isEqualTo(MasterPhase.READ);
+                                assertThat(MasterPhase.of(reducer.masterVerdictGone(read)))
+                                    .isEqualTo(MasterPhase.STANDS_IN);
+                              });
+                      return next;
+                    },
+                    (left, right) -> right))
+        .isNotNull();
   }
 
   @Provide
   Arbitrary<TaskState> tasks() {
-    Arbitrary<Deployment> deployment =
+    Arbitrary<@Nullable Deployment> deployment =
         Arbitraries.of(
                 new Deployment(
                     1_000,
@@ -384,13 +420,14 @@ class TaskReducerProperties {
                 new Deployment(
                     1_000, List.of(Deployment.Target.of("api", "dev").withMerge("abc")), 1, "d1"))
             .injectNull(0.4);
-    Arbitrary<TaskStop> stop =
+    Arbitrary<@Nullable TaskStop> stop =
         Arbitraries.of(TaskStop.Trigger.class)
             .map(trigger -> new TaskStop(trigger, 1_000, "evidence"))
             .injectNull(0.5);
     Arbitrary<Turn> turn =
-        Arbitraries.of("", "d").map(digest -> new Turn("ship", 4, digest, 1_000, null, null));
-    Arbitrary<GitTrust> trust =
+        Arbitraries.of("", "d")
+            .map(digest -> new Turn("ship", 4, digest, 1_000, Map.of(), List.of()));
+    Arbitrary<@Nullable GitTrust> trust =
         Arbitraries.of(
                 GitTrust.of(Map.of("a", "1")),
                 GitTrust.of(Map.of("a", "1")).withChanged("a changed"))
@@ -533,7 +570,8 @@ class TaskReducerProperties {
             Arbitraries.of("", "d")
                 .map(
                     digest ->
-                        new TaskMove.TurnRestored(new Turn("ship", 2, digest, 500, null, null))));
+                        new TaskMove.TurnRestored(
+                            new Turn("ship", 2, digest, 500, Map.of(), List.of()))));
     return move.list().ofMaxSize(50);
   }
 }

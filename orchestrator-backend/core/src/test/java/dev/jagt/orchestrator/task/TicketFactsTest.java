@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import tools.jackson.databind.json.JsonMapper;
 
 class TicketFactsTest {
 
@@ -39,6 +40,7 @@ class TicketFactsTest {
 
   @Test
   void readsMissingLabelsAsNone() {
-    assertThat(TicketFacts.defaults().withLabels(null).labels()).isEmpty();
+    assertThat(new JsonMapper().readValue("{\"exists\":false}", TicketFacts.class).labels())
+        .isEmpty();
   }
 }

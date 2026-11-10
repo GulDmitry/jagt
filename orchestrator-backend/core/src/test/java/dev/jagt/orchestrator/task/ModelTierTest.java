@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.task;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 class ModelTierTest {
@@ -11,7 +12,7 @@ class ModelTierTest {
   void laddersFromTheStartModelUpThroughTheTiersListedAfterIt() {
     ModelTier tier = ModelTier.above("sonnet", List.of("haiku", "sonnet", "opus", "fable"));
 
-    assertThat(tier.models()).containsExactly("sonnet", "opus", "fable");
+    assertThat(Objects.requireNonNull(tier).models()).containsExactly("sonnet", "opus", "fable");
     assertThat(tier.rung()).isZero();
   }
 
@@ -19,7 +20,7 @@ class ModelTierTest {
   void takesTheFirstTierForStartNoTierNames() {
     ModelTier tier = ModelTier.above("", List.of("sonnet", "opus"));
 
-    assertThat(tier.models()).containsExactly("", "opus");
+    assertThat(Objects.requireNonNull(tier).models()).containsExactly("", "opus");
   }
 
   @Test
@@ -34,7 +35,8 @@ class ModelTierTest {
 
   @Test
   void raisesOneRungAndHasNoneAboveTheLast() {
-    ModelTier raised = ModelTier.above("sonnet", List.of("sonnet", "opus")).raise();
+    ModelTier raised =
+        Objects.requireNonNull(ModelTier.above("sonnet", List.of("sonnet", "opus"))).raise();
 
     assertThat(raised.current()).isEqualTo("opus");
     assertThat(raised.raised()).isTrue();
@@ -43,7 +45,10 @@ class ModelTierTest {
 
   @Test
   void lowersBackToTheModelItStartedOn() {
-    ModelTier lowered = ModelTier.above("sonnet", List.of("sonnet", "opus")).raise().lower();
+    ModelTier lowered =
+        Objects.requireNonNull(ModelTier.above("sonnet", List.of("sonnet", "opus")))
+            .raise()
+            .lower();
 
     assertThat(lowered.current()).isEqualTo("sonnet");
     assertThat(lowered.raised()).isFalse();

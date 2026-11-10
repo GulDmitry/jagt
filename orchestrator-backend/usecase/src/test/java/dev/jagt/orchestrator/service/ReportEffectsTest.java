@@ -29,6 +29,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -60,7 +61,7 @@ class ReportEffectsTest {
         new SessionWakes(state, turns, clock), turns, stops, properties, mock(LinkRefusals.class));
   }
 
-  private static TaskState taskAnswering(String step, String waited) {
+  private static TaskState taskAnswering(String step, @Nullable String waited) {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
     Turn turn =
         new Turn(step, 4, "", 0, waited == null ? Map.of() : Map.of("waits", waited), List.of());

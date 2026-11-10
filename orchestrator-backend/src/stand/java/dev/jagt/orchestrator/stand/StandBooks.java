@@ -19,9 +19,7 @@ public final class StandBooks {
 
   public StandBooks(Path root) {
     this.root = root;
-    this.paths =
-        new OrchestratorPaths(
-            new OrchestratorProperties(root.toString(), null, null, null, false, null));
+    this.paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
   }
 
   public SessionBrief brief() {

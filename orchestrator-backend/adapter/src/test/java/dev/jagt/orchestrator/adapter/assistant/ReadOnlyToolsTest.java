@@ -25,7 +25,8 @@ class ReadOnlyToolsTest {
     when(mcp.servers()).thenReturn(Optional.of(List.of("plugin:acme:tracker")));
 
     List<String> allowed =
-        new ReadOnlyTools(mcp, AssistantProperties.empty(), new ReadScopes(), null)
+        new ReadOnlyTools(
+                mcp, AssistantProperties.empty(), new ReadScopes(), mock(HookEndpoint.class))
             .allowed(AssistantCallKind.MR_READ);
 
     assertThat(allowed)
@@ -49,7 +50,7 @@ class ReadOnlyToolsTest {
             .withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
 
     List<String> allowed =
-        new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), null)
+        new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), mock(HookEndpoint.class))
             .allowed(AssistantCallKind.MR_READ);
 
     assertThat(allowed)
@@ -74,7 +75,7 @@ class ReadOnlyToolsTest {
             .withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
 
     List<String> allowed =
-        new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), null)
+        new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), mock(HookEndpoint.class))
             .allowed(AssistantCallKind.MR_READ);
 
     assertThat(allowed)
@@ -100,7 +101,7 @@ class ReadOnlyToolsTest {
             .withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
 
     List<String> allowed =
-        new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), null)
+        new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), mock(HookEndpoint.class))
             .allowed(AssistantCallKind.MR_READ);
 
     assertThat(allowed)
@@ -134,7 +135,7 @@ class ReadOnlyToolsTest {
             .withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
 
     List<String> allowed =
-        new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), null)
+        new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), mock(HookEndpoint.class))
             .allowed(AssistantCallKind.MR_READ);
 
     assertThat(allowed).contains("mcp__gitlab__list*");
@@ -148,7 +149,7 @@ class ReadOnlyToolsTest {
         AssistantProperties.empty().withAllowedTools(List.of("mcp__acme_jira__add_comment"));
 
     List<String> allowed =
-        new ReadOnlyTools(mcp, named, new ReadScopes(), null)
+        new ReadOnlyTools(mcp, named, new ReadScopes(), mock(HookEndpoint.class))
             .allowed(AssistantCallKind.TICKET_READ);
 
     assertThat(allowed).contains("mcp__acme_jira__add_comment", "mcp__gitlab__get*");
@@ -159,7 +160,7 @@ class ReadOnlyToolsTest {
     var named = AssistantProperties.empty().withAllowedTools(List.of("mcp__your-jira-mcp"));
 
     List<String> allowed =
-        new ReadOnlyTools(mock(McpHealth.class), named, new ReadScopes(), null)
+        new ReadOnlyTools(mock(McpHealth.class), named, new ReadScopes(), mock(HookEndpoint.class))
             .allowed(AssistantCallKind.TICKET_READ);
 
     assertThat(allowed)

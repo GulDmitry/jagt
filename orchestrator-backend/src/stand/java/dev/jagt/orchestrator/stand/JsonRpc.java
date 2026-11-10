@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.stand;
 
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -76,7 +77,7 @@ public class JsonRpc {
     return response;
   }
 
-  private ObjectNode error(JsonNode id, int code, String message) {
+  private ObjectNode error(@Nullable JsonNode id, int code, String message) {
     ObjectNode response = mapper.createObjectNode();
     response.put("jsonrpc", "2.0").set("id", id == null ? mapper.nullNode() : id);
     response.putObject("error").put("code", code).put("message", message);

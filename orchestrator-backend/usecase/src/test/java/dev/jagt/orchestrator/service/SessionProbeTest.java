@@ -128,7 +128,7 @@ class SessionProbeTest {
 
     Duration every = new SessionProbe(config, running(), mock(AgentRuntime.class)).every();
 
-    assertThat(every).isEqualTo(Duration.ofSeconds(600));
+    assertThat(every).isEqualTo(Duration.ofMinutes(10));
   }
 
   @Test

@@ -513,7 +513,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void pinsConfiguredOutputStyleInGeneratedAgentSettings() {
-    String json = ClaudeAgentRuntime.settingsJson("team:Engineer", null, null, null);
+    String json = ClaudeAgentRuntime.settingsJson("team:Engineer", List.of(), List.of(), "");
 
     String style = new JsonMapper().readTree(json).path("outputStyle").asString(null);
 
@@ -522,7 +522,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void compactsTaskSessionLongBeforeItsContextWindowIsFull() {
-    String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
+    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of(), "");
 
     String window =
         new JsonMapper()
@@ -536,7 +536,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void keepsTaskSessionFromWritingTheRepositorysAutoMemory() {
-    String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
+    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of(), "");
 
     boolean enabled = new JsonMapper().readTree(json).path("autoMemoryEnabled").asBoolean(true);
 
@@ -545,7 +545,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void keepsAnIdleTaskSessionUncompactedSoColdPromptStillFindsItCold() {
-    String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
+    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of(), "");
 
     boolean idleCompaction = new JsonMapper().readTree(json).path("idleCompaction").asBoolean(true);
 
@@ -554,7 +554,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void deniesTheQuestionDialogSoAnAnswerRelayedToTheSessionIsNotHeldBehindIt() {
-    String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
+    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of(), "");
 
     List<String> deny = new ArrayList<>();
     new JsonMapper()
@@ -568,7 +568,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void preApprovesTheJagtToolsAndTheAgentsGitInGeneratedAgentSettings() {
-    String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
+    String json = ClaudeAgentRuntime.settingsJson(null, List.of(), List.of(), "");
 
     List<String> allow = new ArrayList<>();
     new JsonMapper()
@@ -583,7 +583,7 @@ class ClaudeAgentRuntimeTest {
   @Test
   void preApprovesTheConfiguredToolsBesideJagtsOwnInGeneratedAgentSettings() {
     String json =
-        ClaudeAgentRuntime.settingsJson(null, null, List.of("mcp__host__open_request"), null);
+        ClaudeAgentRuntime.settingsJson(null, List.of(), List.of("mcp__host__open_request"), "");
 
     List<String> allow = new ArrayList<>();
     new JsonMapper()
@@ -601,8 +601,8 @@ class ClaudeAgentRuntimeTest {
     String json =
         ClaudeAgentRuntime.settingsJson(
             null,
-            null,
-            null,
+            List.of(),
+            List.of(),
             ClaudeAgentRuntime.sandboxJson(
                 Sandbox.on(
                     List.of(Path.of("/w/ABC-42"), Path.of("/repo/.git")), List.of("ssh *"))));
@@ -625,7 +625,7 @@ class ClaudeAgentRuntimeTest {
   void leavesTheShellUnsandboxedWhenTheSandboxIsOff() {
     String json =
         ClaudeAgentRuntime.settingsJson(
-            null, null, null, ClaudeAgentRuntime.sandboxJson(Sandbox.off()));
+            null, List.of(), List.of(), ClaudeAgentRuntime.sandboxJson(Sandbox.off()));
 
     assertThat(new JsonMapper().readTree(json).has("sandbox")).isFalse();
   }
@@ -634,7 +634,7 @@ class ClaudeAgentRuntimeTest {
   void disablesConfiguredPluginsInGeneratedAgentSettings() {
     String json =
         ClaudeAgentRuntime.settingsJson(
-            null, List.of("jdtls-lsp@claude-plugins-official"), null, null);
+            null, List.of("jdtls-lsp@claude-plugins-official"), List.of(), "");
 
     boolean enabled =
         new JsonMapper()
@@ -1113,7 +1113,7 @@ class ClaudeAgentRuntimeTest {
   void skipsBlankPluginsInGeneratedAgentSettings() {
     String json =
         ClaudeAgentRuntime.settingsJson(
-            null, List.of("  ", "jdtls-lsp@claude-plugins-official"), null, null);
+            null, List.of("  ", "jdtls-lsp@claude-plugins-official"), List.of(), "");
 
     var plugins = new JsonMapper().readTree(json).path("enabledPlugins");
 
@@ -1125,7 +1125,7 @@ class ClaudeAgentRuntimeTest {
   void skipsBlankToolsInGeneratedAgentSettings() {
     String json =
         ClaudeAgentRuntime.settingsJson(
-            null, null, List.of("  ", " mcp__host__open_request "), null);
+            null, List.of(), List.of("  ", " mcp__host__open_request "), "");
 
     List<String> allow = new ArrayList<>();
     new JsonMapper()
@@ -1184,8 +1184,7 @@ class ClaudeAgentRuntimeTest {
 
     assertThat(
             runtime.working(
-                "\u001b[38;5;174m✶ Thinking…\u001b[0m (12s · esc to interrupt)\n"
-                    + "❯ "))
+                "\u001b[38;5;174m✶ Thinking…\u001b[0m (12s · esc to interrupt)\n" + "❯ "))
         .isTrue();
     assertThat(runtime.working("✶ Clauded… (3s · thinking)\n❯ ")).isTrue();
   }
@@ -1369,7 +1368,7 @@ class ClaudeAgentRuntimeTest {
                 "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
             Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
 
-    assertThat(runtime.pastCacheLifetime(0L, Duration.ofMillis(1_000L))).isFalse();
+    assertThat(runtime.pastCacheLifetime(0L, Duration.ofSeconds(1))).isFalse();
     assertThat(runtime.pastCacheLifetime(0L, Duration.ofMillis(999L))).isTrue();
   }
 

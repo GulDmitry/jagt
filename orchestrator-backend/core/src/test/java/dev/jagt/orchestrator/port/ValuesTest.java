@@ -143,7 +143,7 @@ class ValuesTest {
   @Test
   void readsMissingHintListsAsEmpty() {
     AgentWorktree worktree =
-        new AgentWorktree(Path.of("/wt"), Path.of("/root"), null, Sandbox.off());
+        new AgentWorktree(Path.of("/wt"), Path.of("/root"), List.of(), Sandbox.off());
     assertThat(worktree.allowedTools()).isEmpty();
   }
 

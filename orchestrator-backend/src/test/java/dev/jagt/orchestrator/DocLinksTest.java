@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -97,7 +98,8 @@ class DocLinksTest {
     List<String> sources =
         Stream.concat(
                 namesIn(Path.of("../docs/rules")).stream(),
-                specs().stream().map(spec -> spec.getParent().getFileName() + ".md"))
+                specs().stream()
+                    .map(spec -> Objects.requireNonNull(spec.getParent()).getFileName() + ".md"))
             .toList();
 
     assertThat(namesIn(Path.of("../.claude/rules"))).isSubsetOf(sources);

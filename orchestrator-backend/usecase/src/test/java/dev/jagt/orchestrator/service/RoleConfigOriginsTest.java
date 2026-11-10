@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -27,8 +28,7 @@ class RoleConfigOriginsTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void enabledComesFromJagtYmlAndEnvironmentsFromTheHumanCopy(@TempDir Path root)
-      throws Exception {
+  void enabledComesFromJagtYmlAndEnvironmentsFromTheHumanCopy(@TempDir Path root) throws Exception {
     install(root, "environments: [{url: https://stage.example.com}]\n");
     when(config.load())
         .thenReturn(
@@ -57,7 +57,7 @@ class RoleConfigOriginsTest {
   @Test
   @ResourceLock(Resources.GLOBAL)
   void modelComesFromTheShippedDistWhenNeitherWritesOne(@TempDir Path root) throws Exception {
-    install(root, null);
+    install(root, "");
     when(config.load()).thenReturn(ConfigFile.defaults());
 
     List<String> lines = logged(root);
@@ -80,7 +80,7 @@ class RoleConfigOriginsTest {
   @Test
   @ResourceLock(Resources.GLOBAL)
   void enabledAndEnvironmentsAreDefaultsWhenJagtYmlWritesNone(@TempDir Path root) throws Exception {
-    install(root, null);
+    install(root, "");
     when(config.load()).thenReturn(ConfigFile.defaults());
 
     List<String> lines = logged(root);
@@ -92,7 +92,7 @@ class RoleConfigOriginsTest {
   @Test
   @ResourceLock(Resources.GLOBAL)
   void everyValueIsDefaultedWhereNoJagtYmlExistsYet(@TempDir Path root) throws Exception {
-    install(root, null);
+    install(root, "");
     Files.delete(root.resolve("jagt.yml"));
 
     List<String> lines = logged(root);
@@ -101,7 +101,7 @@ class RoleConfigOriginsTest {
         .contains("acceptance enabled false default", "acceptance environments 0 default");
   }
 
-  private static void install(Path root, String humanCopy) throws Exception {
+  private static void install(Path root, @Nullable String humanCopy) throws Exception {
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
         Path.of("../../roles/acceptance/role.yml.dist"),

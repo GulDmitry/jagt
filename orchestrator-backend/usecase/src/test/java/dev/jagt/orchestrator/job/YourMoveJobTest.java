@@ -595,7 +595,6 @@ class YourMoveJobTest {
                     new MasterReview.Read(
                         "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
             "");
-    judged = state.task("ABC-1").orElseThrow();
 
     job.run();
     clock.advance(Duration.ofSeconds(10));
@@ -703,7 +702,7 @@ class YourMoveJobTest {
                     new MasterReview.Read(
                         "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
             "");
-    judged = state.task("ABC-1").orElseThrow();
+
     job.run();
     clock.advance(Duration.ofSeconds(1));
     state.putTask(
@@ -766,7 +765,7 @@ class YourMoveJobTest {
                     new MasterReview.Read(
                         "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
             "");
-    judged = state.task("ABC-1").orElseThrow();
+
     job.run();
     clock.advance(Duration.ofSeconds(10));
     job.run();
@@ -824,7 +823,7 @@ class YourMoveJobTest {
                     new MasterReview.Read(
                         "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
             "");
-    judged = state.task("ABC-1").orElseThrow();
+
     job.run();
     clock.advance(Duration.ofSeconds(1));
     state.putTask(
@@ -1229,7 +1228,7 @@ class YourMoveJobTest {
                     new MasterReview.Read(
                         "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
             "");
-    judged = state.task("ABC-1").orElseThrow();
+
     job.run();
     clock.advance(Duration.ofSeconds(10));
     job.run();

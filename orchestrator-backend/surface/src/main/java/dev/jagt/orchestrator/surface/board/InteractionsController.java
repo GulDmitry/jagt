@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.service.PressLog.Interaction;
 import java.time.Clock;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class InteractionsController {
 
-  public record Batch(List<Interaction> presses) {}
+  public record Batch(@Nullable List<Interaction> presses) {}
 
   private final PressLog presses;
   private final Clock clock;

@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.service.OriginContext;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
@@ -76,13 +77,13 @@ class MessageToolTest {
             Audience.ANYONE,
             AgentStatusMessage.class,
             (said, caller) -> MessageContext.NONE,
-            (said, caller) -> said.message());
+            (said, caller) -> Objects.requireNonNull(said.message()));
 
     String answer =
         tool.call(
             mapper.readTree(
                 "{\"status\":\"IN_PROGRESS\",\"message\":\"working\",\"mood\":\"cheerful\",\"wh"
-                + "y\":\"started\"}"),
+                    + "y\":\"started\"}"),
             "ABC-1");
 
     assertThat(answer).isEqualTo("working");
@@ -148,7 +149,7 @@ class MessageToolTest {
         tool.call(
             mapper.readTree(
                 "{\"status\":\"IN_PROGRESS\",\"message\":\"working\",\"outcome\":\"\",\"why\":"
-                + "\"started\"}"),
+                    + "\"started\"}"),
             "ABC-1");
 
     assertThat(answer).isEqualTo("null");
@@ -197,7 +198,7 @@ class MessageToolTest {
             Audience.ANYONE,
             AgentStatusMessage.class,
             (said, caller) -> MessageContext.NONE,
-            (said, caller) -> OriginContext.why());
+            (said, caller) -> Objects.requireNonNull(OriginContext.why()));
 
     String answer =
         tool.call(

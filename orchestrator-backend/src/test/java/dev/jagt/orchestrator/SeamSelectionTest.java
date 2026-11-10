@@ -23,7 +23,7 @@ class SeamSelectionTest {
   private static final Pattern HEADER =
       Pattern.compile(
           "(?:public\\s+|final\\s+|abstract\\s+)*(class|interface)\\s+(\\w+)(?:<[^>{]*>)?(?:\\s+e"
-          + "xtends\\s+(\\w+))?"
+              + "xtends\\s+(\\w+))?"
               + "(?:\\s+implements\\s+([^{]+))?\\s*\\{");
   private static final Pattern SELECTED =
       Pattern.compile("@ConditionalOnExpression\\(|@ConditionalOnProperty\\([^)]*orchestrator");
@@ -86,7 +86,7 @@ class SeamSelectionTest {
   private static Set<String> interfaces(String implemented) {
     Set<String> names = new HashSet<>();
     if (implemented != null) {
-      for (String each : implemented.replaceAll("<[^>]*>", "").split(",")) {
+      for (String each : implemented.replaceAll("<[^>]*>", "").split(",", 0)) {
         names.add(each.strip().replaceAll(".*\\.", ""));
       }
     }

@@ -9,6 +9,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.net.SocketException;
 import java.util.Arrays;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.springframework.stereotype.Component;
@@ -57,11 +58,16 @@ public class AbortedConnectionFilter extends TurboFilter {
 
   @Override
   public FilterReply decide(
-      Marker marker, Logger logger, Level level, String format, Object[] params, Throwable t) {
+      @Nullable Marker marker,
+      Logger logger,
+      Level level,
+      @Nullable String format,
+      Object @Nullable [] params,
+      @Nullable Throwable t) {
     return isAbortedBeforeConfigured(logger, t) ? FilterReply.DENY : FilterReply.NEUTRAL;
   }
 
-  private boolean isAbortedBeforeConfigured(Logger logger, Throwable t) {
+  private boolean isAbortedBeforeConfigured(Logger logger, @Nullable Throwable t) {
     return t instanceof SocketException
         && logger != null
         && logger.getName().startsWith(TOMCAT_NET_LOGGER)

@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -44,19 +45,20 @@ class TicketPrefetchJobTest {
       new TicketTexts(
           assistant,
           new UsageTracker(
-              state, new UsageLedger(new JsonMapper(), paths, Clock.systemDefaultZone())),
+              state,
+              new UsageLedger(new JsonMapper(), paths, Clock.system(ZoneId.systemDefault()))),
           new KeptTicketTexts(paths));
   private final TicketPrefetchJob job = new TicketPrefetchJob(config, tickets);
 
   @Test
   void holdsWorkingTasksTicketForItsNextReview() {
-    when(state.tasks())
-        .thenReturn(
-            Map.of(
-                "ABC-42",
-                TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                    .ticketUrl("https://tracker.example/ABC-42")
-                    .build()));
+    Map<String, TaskState> tasks =
+        Map.of(
+            "ABC-42",
+            TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .ticketUrl("https://tracker.example/ABC-42")
+                .build());
+    when(state.tasks()).thenReturn(tasks);
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -65,20 +67,20 @@ class TicketPrefetchJobTest {
     when(assistant.readTicketText("https://tracker.example/ABC-42"))
         .thenReturn(new Answer<>(Optional.of("Summary: accept v3 calls"), TokenUsage.NONE));
 
-    job.runOn(state.tasks());
+    job.runOn(tasks);
 
     assertThat(tickets.of("ABC-42")).contains("Summary: accept v3 calls");
   }
 
   @Test
   void asksOncePerStintEvenWhereTheReadFailed() {
-    when(state.tasks())
-        .thenReturn(
-            Map.of(
-                "ABC-43",
-                TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                    .ticketUrl("https://tracker.example/ABC-43")
-                    .build()));
+    Map<String, TaskState> tasks =
+        Map.of(
+            "ABC-43",
+            TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .ticketUrl("https://tracker.example/ABC-43")
+                .build());
+    when(state.tasks()).thenReturn(tasks);
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -87,28 +89,28 @@ class TicketPrefetchJobTest {
     when(assistant.readTicketText("https://tracker.example/ABC-43"))
         .thenReturn(Answer.unavailable());
 
-    job.runOn(state.tasks());
-    job.runOn(state.tasks());
+    job.runOn(tasks);
+    job.runOn(tasks);
 
     verify(assistant, times(1)).readTicketText("https://tracker.example/ABC-43");
   }
 
   @Test
   void readsNothingWhereNoMasterWillReview() {
-    when(state.tasks())
-        .thenReturn(
-            Map.of(
-                "ABC-44",
-                TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                    .ticketUrl("https://tracker.example/ABC-44")
-                    .build()));
+    Map<String, TaskState> tasks =
+        Map.of(
+            "ABC-44",
+            TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .ticketUrl("https://tracker.example/ABC-44")
+                .build());
+    when(state.tasks()).thenReturn(tasks);
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 
-    job.runOn(state.tasks());
+    job.runOn(tasks);
 
     verify(assistant, never()).readTicketText("https://tracker.example/ABC-44");
   }
@@ -119,7 +121,8 @@ class TicketPrefetchJobTest {
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .ticketUrl("https://tracker.example/ABC-45")
             .build();
-    when(state.tasks()).thenReturn(Map.of("ABC-45", working));
+    Map<String, TaskState> tasks = Map.of("ABC-45", working);
+    when(state.tasks()).thenReturn(tasks);
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -127,16 +130,17 @@ class TicketPrefetchJobTest {
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(assistant.readTicketText("https://tracker.example/ABC-45"))
         .thenReturn(new Answer<>(Optional.of("Summary: accept v3 calls"), TokenUsage.NONE));
-    job.runOn(state.tasks());
+    job.runOn(tasks);
     TrackerAssistant afterRestart = mock(TrackerAssistant.class);
     TicketTexts restartedTickets =
         new TicketTexts(
             afterRestart,
             new UsageTracker(
-                state, new UsageLedger(new JsonMapper(), paths, Clock.systemDefaultZone())),
+                state,
+                new UsageLedger(new JsonMapper(), paths, Clock.system(ZoneId.systemDefault()))),
             new KeptTicketTexts(paths));
 
-    new TicketPrefetchJob(config, restartedTickets).runOn(state.tasks());
+    new TicketPrefetchJob(config, restartedTickets).runOn(tasks);
 
     verify(afterRestart, never()).readTicketText("https://tracker.example/ABC-45");
     assertThat(restartedTickets.of("ABC-45")).contains("Summary: accept v3 calls");

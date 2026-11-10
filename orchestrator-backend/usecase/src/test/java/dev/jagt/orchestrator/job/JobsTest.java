@@ -39,6 +39,7 @@ import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -61,8 +62,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class JobsTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void schedulesNoJobBeforeTheStartHasPassedItsChecks() {
@@ -460,7 +460,7 @@ class JobsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     Job job = mock(Job.class);
     when(job.id()).thenReturn("poll-reviews");
     when(job.every()).thenReturn(Duration.ofMinutes(10));
@@ -551,7 +551,7 @@ class JobsTest {
     TaskJob job = mock(type, withSettings().defaultAnswer(CALLS_REAL_METHODS));
     Map<String, TaskState> tasks = new LinkedHashMap<>();
     for (TaskStatus status : TaskStatus.values()) {
-      tasks.put("ABC-" + status.ordinal(), TaskState.builder("proj", "/wt", status).build());
+      tasks.put("ABC-" + tasks.size(), TaskState.builder("proj", "/wt", status).build());
     }
 
     List<TaskState> reached = reachedBy(job, tasks);
@@ -609,7 +609,10 @@ class JobsTest {
         new ClassPathScanningCandidateComponentProvider(false);
     scan.addIncludeFilter(new AssignableTypeFilter(TaskJob.class));
     return scan.findCandidateComponents("dev.jagt.orchestrator.job").stream()
-        .map(found -> ClassUtils.resolveClassName(found.getBeanClassName(), null));
+        .map(
+            found ->
+                ClassUtils.resolveClassName(
+                    Objects.requireNonNull(found.getBeanClassName()), null));
   }
 
   static Stream<Arguments> taskJobsByStop() {

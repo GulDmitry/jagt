@@ -379,9 +379,10 @@ class WorktreeChangesTest {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
     ProjectConfig project =
         new ProjectConfig(
-            new ProjectConfig.Repository("/repo", List.of(), null, null),
+            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
             new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
-            new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+            new ProjectConfig.CodeHost(
+                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
             new ProjectConfig.Verify(List.of(), null));
 
     assertThat(WorktreeChanges.targetBranch(task, project)).isEqualTo("main");

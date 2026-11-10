@@ -42,11 +42,15 @@ class DecisionIndexTest {
         while (claim.find()) {
           Matcher target = Pattern.compile("\\b0\\d{3}\\b").matcher(claim.group());
           while (target.find()) {
-            Path other =
-                Files.list(Path.of("../docs/decisions"))
-                    .filter(file -> file.getFileName().toString().startsWith(target.group() + "-"))
-                    .findFirst()
-                    .orElseThrow();
+            Path other;
+            try (Stream<Path> stream = Files.list(Path.of("../docs/decisions"))) {
+              other =
+                  stream
+                      .filter(
+                          file -> file.getFileName().toString().startsWith(target.group() + "-"))
+                      .findFirst()
+                      .orElseThrow();
+            }
             Matcher back = status.matcher(Files.readString(other));
             if (!back.find() || !back.group(1).contains(number)) {
               unnamed.add(target.group() + " does not name " + number);

@@ -73,7 +73,7 @@ class MutationProgressTest {
         new StandOutcome(
             "IN_PROGRESS",
             "YOU",
-            Duration.ofSeconds(120),
+            Duration.ofMinutes(2),
             List.of(),
             Path.of("/stand"),
             Ending.HELD,
@@ -97,7 +97,7 @@ class MutationProgressTest {
         new StandOutcome(
             "DEPLOYED",
             "none",
-            Duration.ofSeconds(600),
+            Duration.ofMinutes(10),
             List.of(),
             Path.of("/stand"),
             Ending.REACHED,
@@ -267,7 +267,7 @@ class MutationProgressTest {
         new StandOutcome(
             "DEPLOYED",
             "none",
-            Duration.ofSeconds(600),
+            Duration.ofMinutes(10),
             List.of(),
             Path.of("/stand"),
             Ending.REACHED,

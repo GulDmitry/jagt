@@ -147,9 +147,11 @@ class ProjectSetupTest {
     Path configFile =
         Files.writeString(
             root.resolve("jagt.yml"),
-            "orchestrator:\n"
-                + "  projects:\n"
-                + "    billing: {path: /srv/other, baseBranch: origin/main}\n");
+            """
+            orchestrator:
+              projects:
+                billing: {path: /srv/other, baseBranch: origin/main}
+            """);
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -178,9 +180,11 @@ class ProjectSetupTest {
         .isInstanceOf(IllegalArgumentException.class);
     assertThat(Files.readString(configFile))
         .isEqualTo(
-            "orchestrator:\n"
-                + "  projects:\n"
-                + "    billing: {path: /srv/other, baseBranch: origin/main}\n");
+            """
+            orchestrator:
+              projects:
+                billing: {path: /srv/other, baseBranch: origin/main}
+            """);
   }
 
   @Test
@@ -1366,11 +1370,13 @@ class ProjectSetupTest {
     Path configFile =
         Files.writeString(
             root.resolve("jagt.yml"),
-            "orchestrator:\n"
-                + "  projects:\n"
-                + "    web:\n"
-                + "      path: /srv/web\n"
-                + "      baseBranch: origin/main\n");
+            """
+            orchestrator:
+              projects:
+                web:
+                  path: /srv/web
+                  baseBranch: origin/main
+            """);
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -1550,11 +1556,13 @@ class ProjectSetupTest {
     Path repo = Files.createDirectories(root.resolve("billing"));
     Files.createDirectories(repo.resolve(".git"));
     String before =
-        "orchestrator:\n"
-            + "  projects:\n"
-            + "    billing:\n"
-            + "      path: /srv/billing\n"
-            + "      baseBranch: origin/main\n";
+        """
+        orchestrator:
+          projects:
+            billing:
+              path: /srv/billing
+              baseBranch: origin/main
+        """;
     Path configFile = Files.writeString(root.resolve("jagt.yml"), before);
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -1588,11 +1596,13 @@ class ProjectSetupTest {
     Files.createDirectories(repo.resolve(".git"));
     Path folder = Files.createDirectories(root.resolve("conf"));
     String before =
-        "orchestrator:\n"
-            + "  projects:\n"
-            + "    web:\n"
-            + "      path: /srv/web\n"
-            + "      baseBranch: origin/main\n";
+        """
+        orchestrator:
+          projects:
+            web:
+              path: /srv/web
+              baseBranch: origin/main
+        """;
     Path configFile = Files.writeString(folder.resolve("jagt.yml"), before);
     OrchestratorPaths paths =
         new OrchestratorPaths(

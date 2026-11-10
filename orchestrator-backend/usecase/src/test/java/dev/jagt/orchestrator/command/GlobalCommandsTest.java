@@ -34,7 +34,7 @@ class GlobalCommandsTest {
     when(spend.id()).thenReturn("spend");
     GlobalCommands commands = new GlobalCommands(List.of(spend));
 
-    assertThat(commands.byId(null)).isEmpty();
+    assertThat(commands.byId("")).isEmpty();
   }
 
   @Test

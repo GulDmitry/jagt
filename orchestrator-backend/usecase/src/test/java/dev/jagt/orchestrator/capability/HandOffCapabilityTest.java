@@ -31,8 +31,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class HandOffCapabilityTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void saysTheSessionTheCaseOfEachRepositoryItStandsIn(@TempDir Path root) {
@@ -43,11 +42,12 @@ class HandOffCapabilityTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
-    when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+    when(config.project("proj"))
+        .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     GitCaseFacts facts = mock(GitCaseFacts.class);
     when(facts.cases(Path.of("/repo"), "ABC-1", "proj", "dev"))
         .thenReturn(List.of("proj: the deploy worktree waits; run `git merge origin/dev` in it"));
@@ -58,8 +58,11 @@ class HandOffCapabilityTest {
     Outcome outcome = capability.run("a1");
 
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.RELAYED);
-    verify(sessions).say("ABC-1", "ABC-1 stands in a git case, work it: proj: the deploy worktree"
-        + " waits; run `git merge origin/dev` in it");
+    verify(sessions)
+        .say(
+            "ABC-1",
+            "ABC-1 stands in a git case, work it: proj: the deploy worktree"
+                + " waits; run `git merge origin/dev` in it");
   }
 
   @Test
@@ -71,15 +74,15 @@ class HandOffCapabilityTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
-    when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+    when(config.project("proj"))
+        .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     AgentSessions sessions = mock(AgentSessions.class);
     HandOffCapability capability =
-        new HandOffCapability(
-            state, new DeployTargets(config), mock(GitCaseFacts.class), sessions);
+        new HandOffCapability(state, new DeployTargets(config), mock(GitCaseFacts.class), sessions);
 
     assertThatThrownBy(() -> capability.run("a1"))
         .isInstanceOf(Refusal.class)

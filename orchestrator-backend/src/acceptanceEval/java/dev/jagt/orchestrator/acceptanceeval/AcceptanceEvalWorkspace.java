@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.acceptanceeval;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import dev.jagt.orchestrator.config.RoleOptions;
 import dev.jagt.orchestrator.eval.AcceptanceCase;
 import dev.jagt.orchestrator.eval.EvalShards;
@@ -72,7 +74,7 @@ final class AcceptanceEvalWorkspace {
   static String head(Path repo) throws Exception {
     Process process =
         new ProcessBuilder("git", "rev-parse", "--short", "HEAD").directory(repo.toFile()).start();
-    String sha = new String(process.getInputStream().readAllBytes()).strip();
+    String sha = new String(process.getInputStream().readAllBytes(), UTF_8).strip();
     if (!process.waitFor(2, TimeUnit.MINUTES) || process.exitValue() != 0) {
       throw new IllegalStateException("git rev-parse HEAD failed in " + repo);
     }
@@ -153,7 +155,7 @@ final class AcceptanceEvalWorkspace {
               + " failed in "
               + directory
               + ": "
-              + new String(process.getInputStream().readAllBytes()));
+              + new String(process.getInputStream().readAllBytes(), UTF_8));
     }
   }
 
@@ -163,8 +165,10 @@ final class AcceptanceEvalWorkspace {
     Files.createDirectories(folder);
     Files.writeString(
         folder.resolve("role.yml"),
-        "environments: [{url: \"%s\", landed: \"%s\"}]\nflows: {driver: \"%s\", path: \"%s\", com"
-        + "mand: [%s]}\n"
+        """
+        environments: [{url: "%s", landed: "%s"}]
+        flows: {driver: "%s", path: "%s", command: [%s]}
+        """
             .formatted(
                 environment,
                 landed,

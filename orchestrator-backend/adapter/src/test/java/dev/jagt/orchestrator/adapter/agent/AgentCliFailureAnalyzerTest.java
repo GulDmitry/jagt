@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.diagnostics.FailureAnalysis;
@@ -22,7 +23,8 @@ class AgentCliFailureAnalyzerTest {
     FailureAnalysis analysis =
         analyzer.analyze(new NoSuchBeanDefinitionException(AgentRuntime.class));
 
-    assertThat(analysis.getDescription()).contains("orchestrator.agent.cli", "'foo'");
+    assertThat(Objects.requireNonNull(analysis).getDescription())
+        .contains("orchestrator.agent.cli", "'foo'");
     assertThat(analysis.getAction()).contains("agent.cli", "jagt.yml");
   }
 

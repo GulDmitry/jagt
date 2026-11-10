@@ -25,9 +25,10 @@ class ConfigRemotesTest {
                     Map.of(
                         "shop",
                         new ProjectConfig(
-                            new ProjectConfig.Repository("/repo/shop", List.of(), null, null),
+                            new ProjectConfig.Repository("/repo/shop", List.of(), null, List.of()),
                             new ProjectConfig.Branches("main", "dev", "none"),
-                            new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+                            new ProjectConfig.CodeHost(
+                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                             new ProjectConfig.Verify(List.of(), null)))));
 
     assertThat(remotes.of(Path.of("/repo/shop"))).contains(Remote.LOCAL);

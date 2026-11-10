@@ -57,7 +57,7 @@ public final class StandConfig {
   private static boolean shipped(Path roles, Path file) {
     Path inRole = roles.relativize(file);
     return file.getFileName().toString().endsWith(".dist")
-        || inRole.getNameCount() > 2 && "eval".equals(inRole.getName(1).toString());
+        || (inRole.getNameCount() > 2 && "eval".equals(inRole.getName(1).toString()));
   }
 
   private static String jagtYml(
@@ -67,7 +67,7 @@ public final class StandConfig {
       StandMode mode,
       @Nullable Replay replay,
       String acceptance) {
-    String template =
+    return
         """
         orchestrator:
           %s
@@ -93,17 +93,17 @@ public final class StandConfig {
           tracker: { mode: "off" }
           replay: { file: "%s" }
           %s
-        """;
-    return template.formatted(
-        replay == null ? "" : "codeHost: replay",
-        repo,
-        tmuxSession,
-        replay == null ? "claude" : "replay",
-        servers,
-        servers,
-        mode.id(),
-        replay == null ? "" : replay.recording(),
-        acceptance);
+        """
+        .formatted(
+            replay == null ? "" : "codeHost: replay",
+            repo,
+            tmuxSession,
+            replay == null ? "claude" : "replay",
+            servers,
+            servers,
+            mode.id(),
+            replay == null ? "" : replay.recording(),
+            acceptance);
   }
 
   private static String acceptance(Path root, @Nullable Replay replay) throws IOException {

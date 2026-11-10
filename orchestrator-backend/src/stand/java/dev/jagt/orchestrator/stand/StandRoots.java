@@ -8,6 +8,7 @@ import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 public final class StandRoots {
 
@@ -52,7 +53,7 @@ public final class StandRoots {
     }
   }
 
-  private static Found found(Path dir) {
+  private static @Nullable Found found(Path dir) {
     Matcher name = NAME.matcher(dir.getFileName().toString());
     if (!name.matches()) {
       return null;

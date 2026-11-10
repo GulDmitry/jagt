@@ -7,6 +7,8 @@ import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -20,7 +22,9 @@ class ProjectProblemsTest {
 
     assertThat(
             ProjectProblems.of(
-                "demo", new ProjectConfig(repo.toString(), "origin/main", "dev", null)))
+                "demo",
+                new ProjectConfig(
+                    Objects.requireNonNull(repo).toString(), "origin/main", "dev", List.of())))
         .extracting(Problem::key, Problem::text)
         .containsExactly(
             tuple(

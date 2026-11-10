@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -68,6 +69,7 @@ class LegacyQaTest {
             java.util.Map.of("qa:rows", "- row", "press:ship", "tree"),
             java.util.List.of());
 
-    assertThat(LegacyQa.withoutMarks(turn).marks()).containsOnlyKeys("press:ship");
+    assertThat(Objects.requireNonNull(LegacyQa.withoutMarks(turn)).marks())
+        .containsOnlyKeys("press:ship");
   }
 }

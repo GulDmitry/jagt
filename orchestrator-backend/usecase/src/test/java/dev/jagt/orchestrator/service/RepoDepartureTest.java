@@ -25,6 +25,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -32,8 +33,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class RepoDepartureTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ConfigService config = mock(ConfigService.class);
   private final RetiredWorktrees worktrees = mock(RetiredWorktrees.class);
@@ -48,7 +48,7 @@ class RepoDepartureTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString())),
-                reducer);
+        reducer);
   }
 
   @Test
@@ -92,8 +92,7 @@ class RepoDepartureTest {
         TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"), web), TaskStatus.DEPLOYED)
             .deployment(
                 Deployment.defaults()
-                    .withTargets(
-                        List.of(Deployment.Target.of("web", "dev").withMerge("abc123"))))
+                    .withTargets(List.of(Deployment.Target.of("web", "dev").withMerge("abc123"))))
             .build());
 
     boolean left =
@@ -158,7 +157,7 @@ class RepoDepartureTest {
     new RepoDeparture(config, worktrees, sessions, state)
         .leave("ABC-42", web, "its request was closed on the host");
 
-    assertThat(state.task("ABC-42").orElseThrow().gitTrust().recorded())
+    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().gitTrust()).recorded())
         .containsOnlyKeys("core.bare in /api/.git/config");
   }
 

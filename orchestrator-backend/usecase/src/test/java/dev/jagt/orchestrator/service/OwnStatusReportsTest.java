@@ -37,6 +37,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -237,8 +238,15 @@ class OwnStatusReportsTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
-            + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
+        """
+        ## deploy
+
+        step: deploy
+        at: DEPLOYED
+        by: jagt
+        replies: IN_PROGRESS; plain, question
+        The task is live.
+        """);
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
@@ -289,8 +297,15 @@ class OwnStatusReportsTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
-            + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
+        """
+        ## deploy
+
+        step: deploy
+        at: DEPLOYED
+        by: jagt
+        replies: IN_PROGRESS; plain, question
+        The task is live.
+        """);
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
@@ -342,8 +357,15 @@ class OwnStatusReportsTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
-            + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
+        """
+        ## deploy
+
+        step: deploy
+        at: DEPLOYED
+        by: jagt
+        replies: IN_PROGRESS; plain, question
+        The task is live.
+        """);
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
@@ -383,7 +405,7 @@ class OwnStatusReportsTest {
     assertThat(Files.readString(root.resolve("misses.jsonl")))
         .isEqualTo(
             "{\"at\":1000,\"task\":\"ABC-42\",\"step\":\"deploy\",\"status\":\"DEPLOYED\",\"by\":"
-            + "\"session\",\"got\":\"REVIEW_PENDING;"
+                + "\"session\",\"got\":\"REVIEW_PENDING;"
                 + " plain\",\"expected\":\"IN_PROGRESS; plain, question\"}\n");
   }
 
@@ -397,8 +419,15 @@ class OwnStatusReportsTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## deploy\n\nstep: deploy\nat: DEPLOYED\nby: jagt\n"
-            + "replies: IN_PROGRESS; plain, question\nThe task is live.\n");
+        """
+        ## deploy
+
+        step: deploy
+        at: DEPLOYED
+        by: jagt
+        replies: IN_PROGRESS; plain, question
+        The task is live.
+        """);
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
@@ -435,7 +464,7 @@ class OwnStatusReportsTest {
 
     assertThatThrownBy(() -> reports.report(handBack, "ABC-42")).isInstanceOf(Refusal.class);
 
-    assertThat(state.task("ABC-42").orElseThrow().stop().trigger())
+    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).trigger())
         .isEqualTo(TaskStop.Trigger.MISS);
   }
 }

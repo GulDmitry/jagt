@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -201,7 +202,7 @@ class OpenSpecTest {
         .run(
             eq(worktree),
             any(Duration.class),
-            argThat(env -> env.get("PATH").startsWith("/opt/homebrew/bin")),
+            argThat(env -> Objects.requireNonNull(env.get("PATH")).startsWith("/opt/homebrew/bin")),
             eq(List.of("/opt/homebrew/bin/openspec", "archive", "abc-42", "-y")));
   }
 

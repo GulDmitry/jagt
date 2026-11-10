@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sun.net.httpserver.HttpServer;
@@ -67,7 +68,7 @@ class UsageEndpointTest {
         "/usage",
         exchange -> {
           authorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
-          byte[] body = "{\"ok\":true}".getBytes();
+          byte[] body = "{\"ok\":true}".getBytes(UTF_8);
           exchange.sendResponseHeaders(200, body.length);
           exchange.getResponseBody().write(body);
           exchange.close();

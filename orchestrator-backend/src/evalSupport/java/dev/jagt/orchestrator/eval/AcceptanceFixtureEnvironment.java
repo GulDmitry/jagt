@@ -9,6 +9,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -16,7 +17,7 @@ public final class AcceptanceFixtureEnvironment implements AutoCloseable {
 
   private static final JsonMapper MAPPER = new JsonMapper();
 
-  private final HttpServer server;
+  private final @Nullable HttpServer server;
   private final String url;
   private final Map<String, Reply> replies = new HashMap<>();
 

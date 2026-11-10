@@ -24,6 +24,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -55,7 +57,7 @@ class TaskEventStreamTest {
     verify(stateService).onChange(listener.capture());
     stream.open();
 
-    listener.getValue().accept(new StateService.StateFile(null));
+    listener.getValue().accept(new StateService.StateFile(Map.of()));
 
     verify(broadcaster).execute(any());
   }
@@ -72,13 +74,13 @@ class TaskEventStreamTest {
     verify(stateService).onChange(listener.capture());
     ArgumentCaptor<Runnable> queued = ArgumentCaptor.captor();
 
-    listener.getValue().accept(new StateService.StateFile(null));
-    listener.getValue().accept(new StateService.StateFile(null));
-    listener.getValue().accept(new StateService.StateFile(null));
+    listener.getValue().accept(new StateService.StateFile(Map.of()));
+    listener.getValue().accept(new StateService.StateFile(Map.of()));
+    listener.getValue().accept(new StateService.StateFile(Map.of()));
 
     verify(broadcaster).execute(queued.capture());
     queued.getValue().run();
-    listener.getValue().accept(new StateService.StateFile(null));
+    listener.getValue().accept(new StateService.StateFile(Map.of()));
     verify(broadcaster, times(2)).execute(any());
   }
 
@@ -177,7 +179,7 @@ class TaskEventStreamTest {
     ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
     verify(stateService).onChange(listener.capture());
     SseEmitter browser = stream.open();
-    listener.getValue().accept(new StateService.StateFile(null));
+    listener.getValue().accept(new StateService.StateFile(Map.of()));
     ArgumentCaptor<Runnable> queued = ArgumentCaptor.captor();
     verify(broadcaster).execute(queued.capture());
 
@@ -222,8 +224,8 @@ class TaskEventStreamTest {
     ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
     verify(stateService).onChange(listener.capture());
 
-    listener.getValue().accept(new StateService.StateFile(null));
-    listener.getValue().accept(new StateService.StateFile(null));
+    listener.getValue().accept(new StateService.StateFile(Map.of()));
+    listener.getValue().accept(new StateService.StateFile(Map.of()));
 
     verify(broadcaster, times(2)).execute(any());
   }
@@ -315,7 +317,8 @@ class TaskEventStreamTest {
             .build()
             .perform(MockMvcRequestBuilders.get("/api/events").accept("text/event-stream"))
             .andReturn();
-    MockAsyncContext connection = (MockAsyncContext) opened.getRequest().getAsyncContext();
+    MockAsyncContext connection =
+        (MockAsyncContext) Objects.requireNonNull(opened.getRequest().getAsyncContext());
 
     connection.complete();
     heartbeat.getValue().run();
@@ -355,7 +358,8 @@ class TaskEventStreamTest {
             .build()
             .perform(MockMvcRequestBuilders.get("/api/events").accept("text/event-stream"))
             .andReturn();
-    MockAsyncContext connection = (MockAsyncContext) opened.getRequest().getAsyncContext();
+    MockAsyncContext connection =
+        (MockAsyncContext) Objects.requireNonNull(opened.getRequest().getAsyncContext());
 
     connection.getListeners().getFirst().onTimeout(new AsyncEvent(connection));
     heartbeat.getValue().run();
@@ -395,7 +399,8 @@ class TaskEventStreamTest {
             .build()
             .perform(MockMvcRequestBuilders.get("/api/events").accept("text/event-stream"))
             .andReturn();
-    MockAsyncContext connection = (MockAsyncContext) opened.getRequest().getAsyncContext();
+    MockAsyncContext connection =
+        (MockAsyncContext) Objects.requireNonNull(opened.getRequest().getAsyncContext());
 
     connection
         .getListeners()

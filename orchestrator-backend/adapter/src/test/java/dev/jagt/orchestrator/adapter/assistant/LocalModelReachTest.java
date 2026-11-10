@@ -8,17 +8,20 @@ import dev.jagt.orchestrator.config.LocalModelProperties;
 import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.service.ReachLedger;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 class LocalModelReachTest {
 
-  private HttpServer server;
+  private @Nullable HttpServer server;
 
   @AfterEach
   void stop() {
@@ -30,7 +33,9 @@ class LocalModelReachTest {
   @Test
   void anEndpointServingAnotherModelIsLostReach() throws IOException {
     AtomicReference<String> body = new AtomicReference<>("{\"data\":[{\"id\":\"other\"}]}");
-    server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server =
+        HttpServer.create(
+            new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 0), 0);
     server.createContext(
         "/v1/models",
         exchange -> {
@@ -57,7 +62,9 @@ class LocalModelReachTest {
   @Test
   void theLostMarkEndsWhenTheModelIsListedAgain() throws IOException {
     AtomicReference<String> body = new AtomicReference<>("{\"data\":[{\"id\":\"other\"}]}");
-    server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server =
+        HttpServer.create(
+            new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 0), 0);
     server.createContext(
         "/v1/models",
         exchange -> {
@@ -71,7 +78,9 @@ class LocalModelReachTest {
     ReachLedger reach = new ReachLedger();
     LocalModelReach job =
         new LocalModelReach(
-            new OpenCodeProperties("", endpoint, "qwen", null), LocalModelProperties.off(), reach);
+            new OpenCodeProperties("", endpoint, "qwen", Map.of()),
+            LocalModelProperties.off(),
+            reach);
     job.run();
     assertThat(reach.standing()).hasSize(1);
 
@@ -84,7 +93,9 @@ class LocalModelReachTest {
   @Test
   void anUnreachableAssistantEndpointIsLostReach() throws IOException {
     AtomicReference<String> body = new AtomicReference<>("{}");
-    server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server =
+        HttpServer.create(
+            new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 0), 0);
     server.createContext(
         "/v1/models",
         exchange -> {

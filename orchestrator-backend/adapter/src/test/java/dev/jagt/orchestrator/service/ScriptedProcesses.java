@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 final class ScriptedProcesses extends ProcessRunner {
 
@@ -31,7 +32,7 @@ final class ScriptedProcesses extends ProcessRunner {
   }
 
   @Override
-  public Processes.Result run(Path workingDir, Duration timeout, List<String> command) {
+  public Processes.Result run(@Nullable Path workingDir, Duration timeout, List<String> command) {
     return command.size() >= prefix.size() && command.subList(0, prefix.size()).equals(prefix)
         ? answer.get()
         : super.run(workingDir, timeout, command);

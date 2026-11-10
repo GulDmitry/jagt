@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -208,7 +209,8 @@ class StateFileCompatibilityTest {
     TaskState task = mapper.readValue(json, TaskState.class);
 
     assertThat(task.history().getFirst().origin()).isEqualTo(ActionOrigin.ACCEPTANCE);
-    assertThat(task.stop().trigger()).isEqualTo(TaskStop.Trigger.ACCEPTANCE_FAILED);
+    assertThat(Objects.requireNonNull(task.stop()).trigger())
+        .isEqualTo(TaskStop.Trigger.ACCEPTANCE_FAILED);
     assertThat(task.turnOrNone().step()).isEqualTo("acceptance-round");
     assertThat(task.roleOrNone("acceptance").passed()).isEqualTo("proj@abc");
     assertThat(mapper.writeValueAsString(task))

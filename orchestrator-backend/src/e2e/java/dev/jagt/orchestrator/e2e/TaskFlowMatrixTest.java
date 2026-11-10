@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
+import java.util.Objects;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,13 +68,13 @@ class TaskFlowMatrixTest {
 
   @BeforeEach
   void startFromNoneOfThisRunsSessions() {
-    E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
+    E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.tmuxCommand()));
   }
 
   @AfterEach
   void leaveNothingBehindForTheNextCombinationEvenOneThatFailedEarly() {
     E2eWorkspace.forgetTask(workspace.resolve("proj"), workspace.resolve("ABC-1-proj"), "ABC-1");
-    E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
+    E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.tmuxCommand()));
     stateService.removeTask("ABC-1");
   }
 
@@ -98,7 +99,7 @@ class TaskFlowMatrixTest {
     assertThat(worktree.resolve("mcp_client.js")).doesNotExist();
     assertThat(worktree.resolve(".mcp.json")).doesNotExist();
     assertThat(worktree.resolve(".claude")).doesNotExist();
-    assertThat(E2eWorkspace.tmuxSessions(properties.tmuxCommand()))
+    assertThat(E2eWorkspace.tmuxSessions(Objects.requireNonNull(properties.tmuxCommand())))
         .containsExactly(flowCase.agentSession());
     assertThat(stateService.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.NEW);
     assertThat(stateService.task("ABC-1").orElseThrow().autoReview())

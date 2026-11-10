@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
@@ -140,7 +141,7 @@ class WorktreeHooksTest {
             .directory(worktree.toFile())
             .redirectErrorStream(true)
             .start();
-    String output = new String(push.getInputStream().readAllBytes());
+    String output = new String(push.getInputStream().readAllBytes(), UTF_8);
     assertThat(push.waitFor(30, TimeUnit.SECONDS)).isTrue();
 
     assertThat(push.exitValue()).isNotZero();
@@ -176,7 +177,7 @@ class WorktreeHooksTest {
             .directory(worktree.toFile())
             .redirectErrorStream(true)
             .start();
-    String output = new String(push.getInputStream().readAllBytes());
+    String output = new String(push.getInputStream().readAllBytes(), UTF_8);
     assertThat(push.waitFor(30, TimeUnit.SECONDS)).isTrue();
 
     assertThat(push.exitValue()).describedAs(output).isZero();
@@ -212,7 +213,7 @@ class WorktreeHooksTest {
             .directory(worktree.toFile())
             .redirectErrorStream(true)
             .start();
-    String output = new String(push.getInputStream().readAllBytes());
+    String output = new String(push.getInputStream().readAllBytes(), UTF_8);
     assertThat(push.waitFor(30, TimeUnit.SECONDS)).isTrue();
 
     assertThat(push.exitValue()).isNotZero();

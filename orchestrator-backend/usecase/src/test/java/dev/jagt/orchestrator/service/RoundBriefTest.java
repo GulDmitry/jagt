@@ -37,8 +37,7 @@ class RoundBriefTest {
   }
 
   @Test
-  void relaysReviewRoundAsJudgementCallAndNotAsListOfOrders(@TempDir Path root)
-      throws Exception {
+  void relaysReviewRoundAsJudgementCallAndNotAsListOfOrders(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -110,16 +109,17 @@ class RoundBriefTest {
 
     assertThat(brief)
         .isEqualTo(
-            "Review round for http://mr/1.\n"
-                + "<outside source=\"threads\">\n"
-                + "reviewer (a.java:3): drop the cache\n"
-                + "</outside>\n"
-                + "Done.");
+            """
+            Review round for http://mr/1.
+            <outside source="threads">
+            reviewer (a.java:3): drop the cache
+            </outside>
+            Done.\
+            """);
   }
 
   @Test
-  void relaysThreadWholeSoTheAgentAnswersTheReviewersLastWord(@TempDir Path root)
-      throws Exception {
+  void relaysThreadWholeSoTheAgentAnswersTheReviewersLastWord(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));

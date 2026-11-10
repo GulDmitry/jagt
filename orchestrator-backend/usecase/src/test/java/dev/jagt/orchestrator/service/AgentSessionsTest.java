@@ -40,6 +40,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -160,11 +161,13 @@ class AgentSessionsTest {
     state.putTask("TEST-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("t1").build());
     Files.writeString(
         root.resolve("jagt.yml"),
-        "orchestrator:\n"
-            + "  projects: {}\n"
-            + "  viewer:\n"
-            + "    tmuxSession: jagt\n"
-            + "    viewMode: tab-per-task\n");
+        """
+        orchestrator:
+          projects: {}
+          viewer:
+            tmuxSession: jagt
+            viewMode: tab-per-task
+        """);
     when(tmux.sessionName("jagt")).thenReturn("jagt");
     when(tmux.killTaskWindows("jagt-TEST-1", "TEST-1")).thenReturn(1);
     AgentSessions sessions =
@@ -215,10 +218,12 @@ class AgentSessionsTest {
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     String left =
-        "────\n"
-            + "❯ task_context.md changed — re-read it now and follow the\n"
-            + "  new instructions.\n"
-            + "────";
+        """
+        ────
+        ❯ task_context.md changed — re-read it now and follow the
+          new instructions.
+        ────\
+        """;
     when(tmux.sessionName(null)).thenReturn("jagt");
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(tmux.screenOf("jagt", "ABC-1"))
@@ -706,7 +711,8 @@ class AgentSessionsTest {
 
     assertThat(said).isEqualTo("session of ABC-1 started again on opus");
     verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "opus");
-    assertThat(state.task("ABC-1").orElseThrow().tier().current()).isEqualTo("opus");
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().tier()).current())
+        .isEqualTo("opus");
   }
 
   @Test
@@ -732,7 +738,7 @@ class AgentSessionsTest {
     sessions.openTaskTab("ABC-1", "auto");
 
     verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "sonnet");
-    assertThat(state.task("ABC-1").orElseThrow().tier().raised()).isFalse();
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().tier()).raised()).isFalse();
   }
 
   @Test
@@ -752,7 +758,8 @@ class AgentSessionsTest {
 
     sessions.openTaskTab("ABC-1", "auto");
 
-    assertThat(state.task("ABC-1").orElseThrow().tier().models()).containsExactly("", "opus");
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().tier()).models())
+        .containsExactly("", "opus");
   }
 
   @Test
@@ -1129,8 +1136,7 @@ class AgentSessionsTest {
   void pressesEnterOnTheNudgeLeftUnsentInAnIdleSessionsInput() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
-    String idle =
-        "❯ task_context.md changed — re-read it now and follow the new instructions.";
+    String idle = "❯ task_context.md changed — re-read it now and follow the new instructions.";
     when(tmux.sessionName(null)).thenReturn("jagt");
     when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of(idle));
     when(agentRuntime.draft(idle))
@@ -1156,8 +1162,7 @@ class AgentSessionsTest {
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
             .build()
             .withSession(Session.defaults().withMovedAt(5_000)));
-    String idle =
-        "❯ task_context.md changed — re-read it now and follow the new instructions.";
+    String idle = "❯ task_context.md changed — re-read it now and follow the new instructions.";
     when(tmux.sessionName(null)).thenReturn("jagt");
     when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of(idle));
     when(agentRuntime.draft(idle))

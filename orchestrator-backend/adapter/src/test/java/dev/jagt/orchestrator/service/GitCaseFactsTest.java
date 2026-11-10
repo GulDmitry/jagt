@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
@@ -61,15 +62,13 @@ class GitCaseFactsTest {
     GitCaseFacts facts =
         new GitCaseFacts(
             new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> Optional.empty(),
-                stopped -> {}),
-            null);
+                runner, new LsofWorktreeProcesses(runner), path -> Optional.empty(), stopped -> {}),
+            mock(GitDeploy.class));
 
     List<GitCaseFacts.Candidate> found = facts.mergeCandidates(repo, "dev", "ABC-1");
 
-    assertThat(found).extracting(GitCaseFacts.Candidate::subject)
+    assertThat(found)
+        .extracting(GitCaseFacts.Candidate::subject)
         .containsExactly("Merge ABC-1 second", "Merge ABC-1 first");
   }
 }

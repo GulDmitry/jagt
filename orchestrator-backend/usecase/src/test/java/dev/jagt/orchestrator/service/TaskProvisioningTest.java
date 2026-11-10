@@ -42,8 +42,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class TaskProvisioningTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @TempDir Path root;
 
@@ -81,21 +80,21 @@ class TaskProvisioningTest {
             List.of(
                 new NewRepo(
                     "api",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/api"),
                     Path.of("/ABC-7-api"),
-                    null,
+                    Path.of("/git"),
                     "origin/main",
-                    null,
+                    "",
                     true),
                 new NewRepo(
                     "web",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/web"),
                     Path.of("/ABC-7-web"),
-                    null,
+                    Path.of("/git"),
                     "origin/main",
-                    null,
+                    "",
                     false)));
 
     String answer =
@@ -111,7 +110,14 @@ class TaskProvisioningTest {
     List<NewRepo> cut =
         List.of(
             new NewRepo(
-                "proj", null, Path.of("/repo"), Path.of("/wt"), null, "origin/main", null, true));
+                "proj",
+                new ProjectConfig("/repo", "origin/main", "main", List.of()),
+                Path.of("/repo"),
+                Path.of("/wt"),
+                Path.of("/git"),
+                "origin/main",
+                "",
+                true));
     when(worktrees.cut(any(), any(), any())).thenReturn(cut);
     when(worktrees.trust(cut))
         .thenReturn(GitTrust.of(Map.of("core.editor in /repo/.git/config", "a1")));
@@ -131,12 +137,12 @@ class TaskProvisioningTest {
             List.of(
                 new NewRepo(
                     "proj",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/repo"),
                     Path.of("/two"),
-                    null,
+                    Path.of("/git"),
                     "origin/main",
-                    null,
+                    "",
                     true)));
 
     provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
@@ -151,12 +157,12 @@ class TaskProvisioningTest {
             List.of(
                 new NewRepo(
                     "proj",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/repo"),
                     Path.of("/INF-2-proj"),
-                    null,
+                    Path.of("/git"),
                     "origin/main",
-                    null,
+                    "",
                     true)));
 
     provisioning.initializeTask(NewTask.builder("INF-2", "proj").build());
@@ -171,12 +177,12 @@ class TaskProvisioningTest {
             List.of(
                 new NewRepo(
                     "proj",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/repo"),
                     Path.of("/ABC-3-proj"),
-                    null,
+                    Path.of("/git"),
                     "feature/parent",
-                    null,
+                    "",
                     true)));
 
     provisioning.initializeTask(
@@ -192,12 +198,12 @@ class TaskProvisioningTest {
             List.of(
                 new NewRepo(
                     "proj",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/repo"),
                     Path.of("/ABC-4-proj"),
-                    null,
+                    Path.of("/git"),
                     "origin/main",
-                    null,
+                    "",
                     true)));
 
     provisioning.initializeTask(NewTask.builder("ABC-4", "proj").build());
@@ -222,12 +228,12 @@ class TaskProvisioningTest {
         List.of(
             new NewRepo(
                 "proj",
-                null,
+                new ProjectConfig("/repo", "origin/main", "main", List.of()),
                 Path.of("/repo"),
                 Path.of("/ABC-1-proj"),
-                null,
+                Path.of("/git"),
                 "origin/main",
-                null,
+                "",
                 true));
     when(worktrees.cut(any(), any(), any())).thenReturn(repos);
     root.toFile().setWritable(false);
@@ -250,7 +256,14 @@ class TaskProvisioningTest {
               secondCutting.await(500, TimeUnit.MILLISECONDS);
               return List.of(
                   new NewRepo(
-                      "proj", null, Path.of("/repo"), Path.of("/one"), null, "main", null, true));
+                      "proj",
+                      new ProjectConfig("/repo", "origin/main", "main", List.of()),
+                      Path.of("/repo"),
+                      Path.of("/one"),
+                      Path.of("/git"),
+                      "main",
+                      "",
+                      true));
             })
         .when(worktrees)
         .cut(argThat(task -> task.taskId().equals("ABC-1")), any(), any());
@@ -260,7 +273,14 @@ class TaskProvisioningTest {
               secondCutting.countDown();
               return List.of(
                   new NewRepo(
-                      "proj", null, Path.of("/repo"), Path.of("/two"), null, "main", null, true));
+                      "proj",
+                      new ProjectConfig("/repo", "origin/main", "main", List.of()),
+                      Path.of("/repo"),
+                      Path.of("/two"),
+                      Path.of("/git"),
+                      "main",
+                      "",
+                      true));
             })
         .when(worktrees)
         .cut(argThat(task -> task.taskId().equals("ABC-2")), any(), any());
@@ -289,12 +309,12 @@ class TaskProvisioningTest {
             List.of(
                 new NewRepo(
                     "proj",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/repo"),
                     Path.of("/ABC-1-proj"),
-                    null,
+                    Path.of("/git"),
                     "origin/main",
-                    null,
+                    "",
                     true)));
 
     String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build());
@@ -309,12 +329,12 @@ class TaskProvisioningTest {
             List.of(
                 new NewRepo(
                     "proj",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/repo"),
                     Path.of("/ABC-1-proj"),
-                    null,
+                    Path.of("/git"),
                     "origin/main",
-                    null,
+                    "",
                     true)));
 
     String answer =
@@ -331,12 +351,12 @@ class TaskProvisioningTest {
             List.of(
                 new NewRepo(
                     "proj",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/repo"),
                     Path.of("/ABC-1-proj"),
-                    null,
+                    Path.of("/git"),
                     "origin/main",
-                    null,
+                    "",
                     true)));
 
     String answer =
@@ -352,12 +372,12 @@ class TaskProvisioningTest {
             List.of(
                 new NewRepo(
                     "proj",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/repo"),
                     Path.of("/ABC-1-proj"),
-                    null,
+                    Path.of("/git"),
                     "origin/main",
-                    null,
+                    "",
                     true)));
 
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("plan").build());
@@ -379,12 +399,12 @@ class TaskProvisioningTest {
             List.of(
                 new NewRepo(
                     "proj",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/repo"),
                     Path.of("/ABC-1-proj"),
-                    null,
+                    Path.of("/git"),
                     "origin/main",
-                    null,
+                    "",
                     true)));
 
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
@@ -399,12 +419,12 @@ class TaskProvisioningTest {
             List.of(
                 new NewRepo(
                     "proj",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/repo"),
                     Path.of("/ABC-1-proj"),
-                    null,
+                    Path.of("/git"),
                     "origin/main",
-                    null,
+                    "",
                     true)));
 
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
@@ -419,12 +439,12 @@ class TaskProvisioningTest {
             List.of(
                 new NewRepo(
                     "proj",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/repo"),
                     Path.of("/ABC-1-proj"),
-                    null,
+                    Path.of("/git"),
                     "origin/main",
-                    null,
+                    "",
                     true)));
     doThrow(new IllegalStateException("no tmux"))
         .when(sessions)
@@ -448,12 +468,12 @@ class TaskProvisioningTest {
             List.of(
                 new NewRepo(
                     "proj",
-                    null,
+                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
                     Path.of("/repo"),
                     Path.of("/ABC-1-proj"),
-                    null,
+                    Path.of("/git"),
                     "origin/main",
-                    null,
+                    "",
                     true)));
 
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").ticketUrl(given).build());
@@ -466,9 +486,10 @@ class TaskProvisioningTest {
     when(config.project("proj"))
         .thenReturn(
             new ProjectConfig(
-                new ProjectConfig.Repository("/repo", List.of(), null, null),
+                new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
                 new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
-                new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+                new ProjectConfig.CodeHost(
+                    null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                 new ProjectConfig.Verify(List.of(), null)));
 
     assertThat(provisioning.remoteOf("proj")).isEqualTo(new Remote("upstream"));

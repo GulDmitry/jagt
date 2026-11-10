@@ -32,8 +32,14 @@ class RoleStartupTest {
     Files.createDirectories(root.resolve("roles/dead"));
     Files.writeString(
         root.resolve("roles/dead/role.yml"),
-        "id: dead\nname: Dead\nmodel: sonnet\n"
-            + "trigger: [deployed]\noncePer: deploy\noutcomes: []\n");
+        """
+        id: dead
+        name: Dead
+        model: sonnet
+        trigger: [deployed]
+        oncePer: deploy
+        outcomes: []
+        """);
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 

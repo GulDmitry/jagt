@@ -19,9 +19,10 @@ class HostlessShipsTest {
   private final HostlessShips ships = new HostlessShips(configService, changes);
   private final ProjectConfig hostless =
       new ProjectConfig(
-          new ProjectConfig.Repository("/repo", List.of(), null, null),
+          new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
           new ProjectConfig.Branches("main", "dev", null),
-          new ProjectConfig.CodeHost("none", null, null, null, null, null, null),
+          new ProjectConfig.CodeHost(
+              "none", null, List.of(), List.of(), List.of(), List.of(), List.of()),
           new ProjectConfig.Verify(List.of(), null));
   private final ProjectConfig hosted = new ProjectConfig("/repo", "origin/main", "dev", List.of());
 

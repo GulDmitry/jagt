@@ -36,6 +36,7 @@ import dev.jagt.orchestrator.task.TaskStop;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,8 +44,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class StopTriageJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final Arbiter.Profile ACT = new Arbiter.Profile(MasterMode.ACT, Set.of());
 
@@ -87,7 +87,8 @@ class StopTriageJobTest {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
             state,
-            Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+            Clock.systemUTC(),
+            new FlowRules(new TaskChart(Composition.builtIn()))));
   }
 
   private void triage(boolean enabled) {
@@ -110,7 +111,10 @@ class StopTriageJobTest {
     job.runOn(state.tasks());
 
     verify(panel, times(1)).read(anyString(), any(), any(), anyString());
-    assertThat(state.task("ABC-42").orElseThrow().stop().triage().line())
+    assertThat(
+            Objects.requireNonNull(
+                    Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).triage())
+                .line())
         .isEqualTo("triage reads: jagt — ships counted past a merge (H), lift looks safe");
   }
 
@@ -124,7 +128,7 @@ class StopTriageJobTest {
     job(paths, state, Arbiter.Profile.OFF).runOn(state.tasks());
 
     verifyNoInteractions(panel);
-    assertThat(state.task("ABC-42").orElseThrow().stop().triage()).isNull();
+    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).triage()).isNull();
   }
 
   @Test
@@ -144,7 +148,8 @@ class StopTriageJobTest {
     job.runOn(state.tasks());
 
     verify(panel, times(2)).read(anyString(), any(), any(), anyString());
-    assertThat(state.task("ABC-42").orElseThrow().stop().triage()).isEqualTo(jagtRead);
+    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).triage())
+        .isEqualTo(jagtRead);
   }
 
   @Test
@@ -193,7 +198,10 @@ class StopTriageJobTest {
     job.runOn(state.tasks());
 
     verify(panel, times(1)).read(anyString(), any(), any(), anyString());
-    assertThat(state.task("ABC-42").orElseThrow().stop().triage().line())
+    assertThat(
+            Objects.requireNonNull(
+                    Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).triage())
+                .line())
         .isEqualTo("triage could not read: git state changed");
   }
 

@@ -45,30 +45,20 @@ class AssistantPropertiesTest {
 
   @Test
   void readsTheUserProjectAndLocalSettingsWhereNoSourceIsNamed() {
-    assertThat(
-            new AssistantProperties("  ", null, null, null, null, 0, 0, java.time.Duration.ZERO)
-                .settingSources())
+    assertThat(AssistantProperties.empty().withSettingSources("  ").settingSources())
         .isEqualTo("user,project,local");
   }
 
   @Test
   void keepsTheSettingSourcesTheHumanNamed() {
-    assertThat(
-            new AssistantProperties("user", null, null, null, null, 0, 0, java.time.Duration.ZERO)
-                .settingSources())
+    assertThat(AssistantProperties.empty().withSettingSources("user").settingSources())
         .isEqualTo("user");
   }
 
   @Test
   void allowsNoToolWhereNoneIsListedAndKeepsTheOnesThatAre() {
-    assertThat(
-            new AssistantProperties(null, null, null, null, null, 0, 0, java.time.Duration.ZERO)
-                .allowedTools())
-        .isEmpty();
-    assertThat(
-            new AssistantProperties(
-                    null, null, List.of("Read"), null, null, 0, 0, java.time.Duration.ZERO)
-                .allowedTools())
+    assertThat(AssistantProperties.empty().allowedTools()).isEmpty();
+    assertThat(AssistantProperties.empty().withAllowedTools(List.of("Read")).allowedTools())
         .containsExactly("Read");
   }
 }

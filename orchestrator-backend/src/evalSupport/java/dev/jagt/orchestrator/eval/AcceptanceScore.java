@@ -80,7 +80,7 @@ public record AcceptanceScore(
   }
 
   private static boolean anyOf(String alternatives, String cited) {
-    for (String alternative : alternatives.split("\\|")) {
+    for (String alternative : alternatives.split("\\|", 0)) {
       if (cited.contains(alternative.toLowerCase(Locale.ROOT))) {
         return true;
       }

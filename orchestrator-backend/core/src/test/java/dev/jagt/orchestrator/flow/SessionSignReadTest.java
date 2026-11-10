@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.flow;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.task.Session;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 class SessionSignReadTest {
@@ -59,8 +60,8 @@ class SessionSignReadTest {
     Session printed =
         new SessionSign.Read(Session.Window.State.RUNNING, 8, 0, 0, 0, null).applyTo(held, 100);
 
-    assertThat(same.window().at()).isEqualTo(5);
-    assertThat(printed.window().at()).isEqualTo(100);
+    assertThat(Objects.requireNonNull(same.window()).at()).isEqualTo(5);
+    assertThat(Objects.requireNonNull(printed.window()).at()).isEqualTo(100);
   }
 
   @Test

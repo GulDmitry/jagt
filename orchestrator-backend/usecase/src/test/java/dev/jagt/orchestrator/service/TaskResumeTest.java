@@ -163,7 +163,7 @@ class TaskResumeTest {
 
   @Test
   void refusesAnUnusableTicketIdBeforeResolvingTheProjectFromTheMrUrl() {
-    assertThatThrownBy(() -> resume.link("a b", "https://host/mr/1", null, null))
+    assertThatThrownBy(() -> resume.link("a b", "https://host/mr/1", "", ""))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("is not a branch name");
     verifyNoInteractions(projects, registration);
@@ -171,7 +171,7 @@ class TaskResumeTest {
 
   @Test
   void refusesToResumeWithoutTheRequestUrlItIsSupposedToLinkTo() {
-    assertThatThrownBy(() -> resume.link("ABC-1", null, null, null))
+    assertThatThrownBy(() -> resume.link("ABC-1", null, "", ""))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("resume needs the request url");
     verifyNoInteractions(projects, registration);

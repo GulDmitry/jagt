@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.With;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /** What each running headless call may touch, keyed by the fence its hook names. */
@@ -110,8 +111,11 @@ public class ReadScopes {
   }
 
   /** The scope held under {@code fence}, counting the call as one the fence heard. */
-  public Optional<ReadScope> ask(String fence) {
-    Optional<ReadScope> scope = Optional.ofNullable(fence).map(open::get);
+  public Optional<ReadScope> ask(@Nullable String fence) {
+    if (fence == null) {
+      return Optional.empty();
+    }
+    Optional<ReadScope> scope = Optional.ofNullable(open.get(fence));
     scope.ifPresent(held -> asked.add(fence));
     return scope;
   }

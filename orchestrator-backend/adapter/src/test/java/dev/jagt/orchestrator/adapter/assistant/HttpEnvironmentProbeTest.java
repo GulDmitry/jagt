@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +13,9 @@ class HttpEnvironmentProbeTest {
   private final HttpEnvironmentProbe probe = new HttpEnvironmentProbe();
 
   private static HttpServer answering(int status) throws IOException {
-    HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    HttpServer server =
+        HttpServer.create(
+            new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 0), 0);
     server.createContext(
         "/",
         exchange -> {

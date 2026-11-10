@@ -66,11 +66,14 @@ class PlanCriteriaTest {
   void readsOnlyTheItemsBeforeTheNextHeading() {
     List<Violation> violations =
         PlanCriteria.violationsIn(
-            "## Acceptance criteria\n"
-                + "- [here] one\n"
-                + "- [elsewhere: backend] two\n\n"
-                + "## Files\n"
-                + "- src/Foo.java\n");
+            """
+            ## Acceptance criteria
+            - [here] one
+            - [elsewhere: backend] two
+
+            ## Files
+            - src/Foo.java
+            """);
 
     assertThat(violations).isEmpty();
   }

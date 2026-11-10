@@ -28,7 +28,8 @@ class IdeDiffTest {
   @Test
   void showsTheChangeAgainstTheBaseBranchWhenTheHumanAsksForDiff() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
-    when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+    when(config.project("proj"))
+        .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
     when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any()))
         .thenReturn(Path.of("/tmp/clean"));
@@ -46,7 +47,7 @@ class IdeDiffTest {
   void diffsAgainstWhatTheRequestTargetsRatherThanWhereDeployLands() {
     final TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(config.project("proj"))
-        .thenReturn(new ProjectConfig("/repo", "origin/release/stage", "dev", null));
+        .thenReturn(new ProjectConfig("/repo", "origin/release/stage", "dev", List.of()));
     when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
     when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any()))
         .thenReturn(Path.of("/tmp/clean"));
@@ -64,9 +65,9 @@ class IdeDiffTest {
                 TaskStatus.REVIEW_PENDING)
             .build();
     when(config.project("api"))
-        .thenReturn(new ProjectConfig("/api-repo", "origin/main", "dev", null));
+        .thenReturn(new ProjectConfig("/api-repo", "origin/main", "dev", List.of()));
     when(config.project("web"))
-        .thenReturn(new ProjectConfig("/web-repo", "origin/next", "dev", null));
+        .thenReturn(new ProjectConfig("/web-repo", "origin/next", "dev", List.of()));
     when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
     when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any()))
         .thenReturn(Path.of("/tmp/clean"));

@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.AutoReviewCadence;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.time.Clock;
@@ -286,26 +287,32 @@ class BoardApiControllerTest {
   void offersOnCardTheReportThatDeclaresItselfForThatTask() {
     GlobalCommand drafts =
         new GlobalCommand() {
+          @Override
           public String id() {
             return "replies";
           }
 
+          @Override
           public String hint() {
             return "the drafted answers";
           }
 
+          @Override
           public int rank() {
             return 20;
           }
 
+          @Override
           public boolean report() {
             return true;
           }
 
+          @Override
           public boolean offeredOn(TaskView task) {
             return task.draftedReplies();
           }
 
+          @Override
           public String run(String tail) {
             return "";
           }
@@ -329,7 +336,7 @@ class BoardApiControllerTest {
             "ABC-1",
             TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build(),
             RoundState.of(AgentReport.PLAIN, true),
-            null,
+            AutoReviewWatch.none(),
             Map.of());
     TaskView quiet =
         TaskView.of(
@@ -337,7 +344,7 @@ class BoardApiControllerTest {
             "ABC-2",
             TaskState.builder("demo", "/wt2", TaskStatus.REVIEW_PENDING).build(),
             RoundState.of(AgentReport.PLAIN, false),
-            null,
+            AutoReviewWatch.none(),
             Map.of());
     when(taskViews.snapshot())
         .thenReturn(

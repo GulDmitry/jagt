@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Pattern;
@@ -416,8 +417,11 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     assertThat(page.locator("#pane .actions.flow button").last())
         .hasClass(Pattern.compile("\\bapart\\b"));
     assertThat(page.locator("#pane .actions.flow button.apart")).hasText("Done");
-    org.assertj.core.api.Assertions.assertThat(page.locator("#pane button.apart").boundingBox().x)
-        .isGreaterThan(page.locator("#pane button[data-action=respawn]").boundingBox().x);
+    org.assertj.core.api.Assertions.assertThat(
+            Objects.requireNonNull(page.locator("#pane button.apart").boundingBox()).x)
+        .isGreaterThan(
+            Objects.requireNonNull(page.locator("#pane button[data-action=respawn]").boundingBox())
+                .x);
   }
 
   @Test
@@ -449,9 +453,11 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     page.locator("#reports-toggle").click();
 
     var toggle = page.locator("#reports-toggle").boundingBox();
-    org.assertj.core.api.Assertions.assertThat(page.locator("#reports").boundingBox().y)
-        .isGreaterThanOrEqualTo(toggle.y + toggle.height);
-    org.assertj.core.api.Assertions.assertThat(page.locator("body > header").boundingBox().height)
+    org.assertj.core.api.Assertions.assertThat(
+            Objects.requireNonNull(page.locator("#reports").boundingBox()).y)
+        .isGreaterThanOrEqualTo(Objects.requireNonNull(toggle).y + toggle.height);
+    org.assertj.core.api.Assertions.assertThat(
+            Objects.requireNonNull(page.locator("body > header").boundingBox()).height)
         .isLessThan(60);
   }
 
@@ -694,10 +700,12 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     var first = page.locator("table.jobs").nth(0);
     var second = page.locator("table.jobs").nth(1);
 
-    org.assertj.core.api.Assertions.assertThat(first.locator("th").nth(3).boundingBox().x)
-        .isEqualTo(second.locator("th").nth(3).boundingBox().x);
-    org.assertj.core.api.Assertions.assertThat(first.locator("td").nth(3).boundingBox().x)
-        .isEqualTo(second.locator("td").nth(3).boundingBox().x);
+    org.assertj.core.api.Assertions.assertThat(
+            Objects.requireNonNull(first.locator("th").nth(3).boundingBox()).x)
+        .isEqualTo(Objects.requireNonNull(second.locator("th").nth(3).boundingBox()).x);
+    org.assertj.core.api.Assertions.assertThat(
+            Objects.requireNonNull(first.locator("td").nth(3).boundingBox()).x)
+        .isEqualTo(Objects.requireNonNull(second.locator("td").nth(3).boundingBox()).x);
     org.assertj.core.api.Assertions.assertThat(first.locator("td").nth(3).boundingBox().width)
         .isEqualTo(second.locator("td").nth(3).boundingBox().width);
   }

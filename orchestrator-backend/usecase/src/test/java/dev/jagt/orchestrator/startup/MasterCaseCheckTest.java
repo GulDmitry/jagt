@@ -132,8 +132,15 @@ class MasterCaseCheckTest {
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## answered-under\n\nstep: answered-under\n"
-            + "at: SHIPPING\nby: human\nreplies: any; plain\nYou answer below the instruction.\n");
+        """
+        ## answered-under
+
+        step: answered-under
+        at: SHIPPING
+        by: human
+        replies: any; plain
+        You answer below the instruction.
+        """);
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()

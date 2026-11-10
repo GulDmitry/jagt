@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 class RoundsTest {
@@ -108,7 +109,7 @@ class RoundsTest {
     var round =
         new Rounds(
                 configService,
-                standing -> standing == task,
+                standing -> Objects.equals(standing, task),
                 () -> false,
                 new Checkers(new TaskChart(Composition.builtIn())))
             .of(task, ConfigService.ConfigFile.defaults());

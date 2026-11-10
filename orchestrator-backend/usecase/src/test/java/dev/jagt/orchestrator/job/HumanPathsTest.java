@@ -28,8 +28,9 @@ class HumanPathsTest {
             new ProjectConfig(
                 new ProjectConfig.Repository("/repo", List.of(), null, List.of("**/auth/**")),
                 new ProjectConfig.Branches("origin/main", "dev", null),
-                new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
-                new ProjectConfig.Verify(null, null)));
+                new ProjectConfig.CodeHost(
+                    null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+                new ProjectConfig.Verify(List.of(), null)));
     when(changes.paths(task))
         .thenReturn(Optional.of(Map.of("demo", List.of("README.md", "src/auth/Login.java"))));
 
@@ -46,8 +47,9 @@ class HumanPathsTest {
             new ProjectConfig(
                 new ProjectConfig.Repository("/repo", List.of(), null, List.of("**/auth/**")),
                 new ProjectConfig.Branches("origin/main", "dev", null),
-                new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
-                new ProjectConfig.Verify(null, null)));
+                new ProjectConfig.CodeHost(
+                    null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+                new ProjectConfig.Verify(List.of(), null)));
     when(changes.paths(task)).thenReturn(Optional.of(Map.of("demo", List.of("README.md"))));
 
     Optional<String> touched = new HumanPaths(configService, changes).touched(task);
@@ -63,8 +65,9 @@ class HumanPathsTest {
             new ProjectConfig(
                 new ProjectConfig.Repository("/repo", List.of(), null, List.of("**/auth/**")),
                 new ProjectConfig.Branches("origin/main", "dev", null),
-                new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
-                new ProjectConfig.Verify(null, null)));
+                new ProjectConfig.CodeHost(
+                    null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+                new ProjectConfig.Verify(List.of(), null)));
     when(changes.paths(task)).thenReturn(Optional.empty());
 
     Optional<String> touched = new HumanPaths(configService, changes).touched(task);

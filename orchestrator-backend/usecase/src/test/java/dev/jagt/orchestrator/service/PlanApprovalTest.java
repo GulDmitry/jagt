@@ -26,8 +26,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class PlanApprovalTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final StepRelay relay = mock(StepRelay.class);
   private final CaseDoor door = mock(CaseDoor.class);
@@ -42,7 +41,7 @@ class PlanApprovalTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
@@ -53,14 +52,7 @@ class PlanApprovalTest {
         .thenReturn(true);
 
     boolean told =
-        new PlanApproval(
-                state,
-                relay,
-                door,
-                baseline,
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null)))
+        new PlanApproval(state, relay, door, baseline, mock(ApprovedRepos.class))
             .approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isTrue();
@@ -83,7 +75,7 @@ class PlanApprovalTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
@@ -94,14 +86,7 @@ class PlanApprovalTest {
         .thenReturn(false);
 
     boolean told =
-        new PlanApproval(
-                state,
-                relay,
-                door,
-                baseline,
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null)))
+        new PlanApproval(state, relay, door, baseline, mock(ApprovedRepos.class))
             .approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isFalse();
@@ -116,7 +101,7 @@ class PlanApprovalTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
@@ -125,14 +110,7 @@ class PlanApprovalTest {
     when(door.presses("ABC-1", "approve-plan")).thenReturn(false);
 
     boolean told =
-        new PlanApproval(
-                state,
-                relay,
-                door,
-                baseline,
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null)))
+        new PlanApproval(state, relay, door, baseline, mock(ApprovedRepos.class))
             .approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isFalse();

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.jagt.orchestrator.task.AcceptanceEnding;
 import dev.jagt.orchestrator.task.AcceptanceVerdict.Status;
 import java.nio.file.Path;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 
 class AcceptanceCasesTest {
@@ -58,7 +59,7 @@ class AcceptanceCasesTest {
     AcceptanceCase loaded =
         AcceptanceCases.all().stream().filter(AcceptanceCase::declines).findFirst().orElseThrow();
 
-    assertThat(loaded.decline().why()).contains("pinned");
+    assertThat(Objects.requireNonNull(loaded.decline()).why()).contains("pinned");
   }
 
   @Test

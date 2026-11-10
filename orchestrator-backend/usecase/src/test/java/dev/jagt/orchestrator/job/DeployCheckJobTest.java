@@ -48,6 +48,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -246,7 +247,7 @@ class DeployCheckJobTest {
 
     job.runOn(state.tasks());
 
-    assertThat(state.task("ABC-42").orElseThrow().stop().trigger())
+    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).trigger())
         .isEqualTo(TaskStop.Trigger.DEPLOY_UNREAD);
   }
 
@@ -313,7 +314,8 @@ class DeployCheckJobTest {
 
     TaskState task = state.task("ABC-42").orElseThrow();
     assertThat(task.stopped()).isFalse();
-    assertThat(task.deployment().targets().getFirst().unreadReads()).isEqualTo(2);
+    assertThat(Objects.requireNonNull(task.deployment()).targets().getFirst().unreadReads())
+        .isEqualTo(2);
   }
 
   @Test
@@ -868,7 +870,8 @@ class DeployCheckJobTest {
                 new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
-    assertThat(state.task("ABC-42").orElseThrow().deployment().askedDigest())
+    assertThat(
+            Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment()).askedDigest())
         .isEqualTo(Turn.digestOf("ABC-42 is deployed:\n- proj: 01234567 on dev"));
   }
 
@@ -920,7 +923,9 @@ class DeployCheckJobTest {
                 new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
-    assertThat(state.task("ABC-42").orElseThrow().deployment().askedDigest()).isNull();
+    assertThat(
+            Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment()).askedDigest())
+        .isNull();
   }
 
   @Test
@@ -1158,7 +1163,11 @@ class DeployCheckJobTest {
                 new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
-    assertThat(state.task("ABC-42").orElseThrow().deployment().targets().getFirst().unreadReads())
+    assertThat(
+            Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment())
+                .targets()
+                .getFirst()
+                .unreadReads())
         .isZero();
   }
 }

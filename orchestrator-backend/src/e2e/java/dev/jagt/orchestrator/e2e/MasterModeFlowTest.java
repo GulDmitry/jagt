@@ -50,6 +50,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.AfterEach;
@@ -123,7 +124,7 @@ class MasterModeFlowTest {
     stateService.removeTask(TASK);
     E2eWorkspace.forgetTask(repo(), worktree(), TASK);
     E2eWorkspace.resetDeployBranch(repo());
-    E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
+    E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.tmuxCommand()));
   }
 
   @ParameterizedTest(name = "{0}")
@@ -312,7 +313,7 @@ class MasterModeFlowTest {
     agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed again", "");
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "verify");
 
-    assertThat(awaitTask(TaskState::stopped).stop().trigger())
+    assertThat(Objects.requireNonNull(awaitTask(TaskState::stopped).stop()).trigger())
         .isEqualTo(TaskStop.Trigger.UNCHANGED_FAILURE);
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "verify");
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-stop");
@@ -340,7 +341,8 @@ class MasterModeFlowTest {
     agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed another way", "");
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "verify");
 
-    assertThat(awaitTask(TaskState::stopped).stop().trigger()).isEqualTo(TaskStop.Trigger.ROUNDS);
+    assertThat(Objects.requireNonNull(awaitTask(TaskState::stopped).stop()).trigger())
+        .isEqualTo(TaskStop.Trigger.ROUNDS);
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "verify");
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-stop");
     assertThat(task().status()).isEqualTo(TaskStatus.VERIFYING);
@@ -557,7 +559,7 @@ class MasterModeFlowTest {
     return await()
         .atMost(A_FEW_TICKS_AND_A_DEPLOY_TICK)
         .pollInterval(Duration.ofMillis(500))
-        .until(this::task, reached::test);
+        .until(this::task, reached);
   }
 
   private void awaitTold(String line) {

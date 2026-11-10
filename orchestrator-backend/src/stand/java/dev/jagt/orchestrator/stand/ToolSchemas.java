@@ -16,11 +16,11 @@ final class ToolSchemas {
     ObjectNode properties = schema.putObject("properties");
     ArrayNode requiredNames = schema.putArray("required");
     for (String entry : split(required)) {
-      properties.putObject(entry.split(":")[0]).put("type", entry.split(":")[1]);
-      requiredNames.add(entry.split(":")[0]);
+      properties.putObject(entry.split(":", 2)[0]).put("type", entry.split(":", 2)[1]);
+      requiredNames.add(entry.split(":", 2)[0]);
     }
     for (String entry : split(optional)) {
-      properties.putObject(entry.split(":")[0]).put("type", entry.split(":")[1]);
+      properties.putObject(entry.split(":", 2)[0]).put("type", entry.split(":", 2)[1]);
     }
     return tool;
   }

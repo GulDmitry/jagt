@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
@@ -214,7 +215,8 @@ class TaskStateTest {
     assertThat(task.worktreePath()).isEqualTo("/wt/ABC-1-demo");
     assertThat(task.remoteUrl()).isEqualTo("git@host:g/p.git");
     assertThat(task.mrUrl()).isEqualTo("https://host/mr/9");
-    assertThat(task.deployment().targets().getFirst().landing().merge()).isEqualTo("cafebabe1234");
+    assertThat(Objects.requireNonNull(task.deployment()).targets().getFirst().landing().merge())
+        .isEqualTo("cafebabe1234");
     assertThat(task.status()).isEqualTo(TaskStatus.CI_POLLING);
     assertThat(task.alias()).isEqualTo("a1");
   }
@@ -876,7 +878,7 @@ class TaskStateTest {
                 """,
                 TaskState.class);
 
-    assertThat(old.deployment().targets())
+    assertThat(Objects.requireNonNull(old.deployment()).targets())
         .extracting(
             Deployment.Target::project,
             target -> target.landing().merge(),
@@ -900,11 +902,11 @@ class TaskStateTest {
                 """,
                 TaskState.class);
 
-    assertThat(old.deployment().conflictedTarget())
+    assertThat(Objects.requireNonNull(old.deployment()).conflictedTarget())
         .hasValueSatisfying(
             target -> {
               assertThat(target.project()).isEqualTo("java");
-              assertThat(target.progress().conflict().since()).isEqualTo(3);
+              assertThat(Objects.requireNonNull(target.progress().conflict()).since()).isEqualTo(3);
             });
   }
 
@@ -921,7 +923,8 @@ class TaskStateTest {
                 """,
                 TaskState.class);
 
-    assertThat(old.deployment().conflictedTarget().orElseThrow().project()).isEqualTo("php");
+    assertThat(Objects.requireNonNull(old.deployment()).conflictedTarget().orElseThrow().project())
+        .isEqualTo("php");
   }
 
   @Test

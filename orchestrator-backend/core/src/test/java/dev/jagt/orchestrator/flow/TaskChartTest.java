@@ -53,7 +53,7 @@ class TaskChartTest {
 
   @Test
   void rendersTheDiagramTheDocsPageShows() throws IOException {
-    String[] regions = taskChart.chart().render().split("    --\n");
+    String[] regions = taskChart.chart().render().split("    --\n", 0);
 
     assertThat(Files.readString(Path.of("../../docs/task-chart.md")))
         .isEqualTo("# The task lifecycle chart\n\n```mermaid\n" + regions[0] + "```\n");
@@ -183,7 +183,8 @@ class TaskChartTest {
     plain.put("deploy", from);
 
     ChartStep<TaskEffect> stepped =
-        taskChart.chart()
+        taskChart
+            .chart()
             .step(
                 taskChart.chart().configuration(plain),
                 new ChartFacts(false, Map.of(), Facts.defaults()),
@@ -277,7 +278,8 @@ class TaskChartTest {
     plain.put("infra", from);
 
     ChartStep<TaskEffect> stepped =
-        taskChart.chart()
+        taskChart
+            .chart()
             .step(
                 taskChart.chart().configuration(plain),
                 new ChartFacts(false, Map.of(), Facts.defaults()),
@@ -316,7 +318,8 @@ class TaskChartTest {
     plain.put("session", from);
 
     ChartStep<TaskEffect> stepped =
-        taskChart.chart()
+        taskChart
+            .chart()
             .step(
                 taskChart.chart().configuration(plain),
                 new ChartFacts(false, Map.of(), Facts.defaults()),
@@ -519,7 +522,8 @@ class TaskChartTest {
     plain.put("acceptance", from);
 
     ChartStep<TaskEffect> stepped =
-        taskChart.chart()
+        taskChart
+            .chart()
             .step(
                 taskChart.chart().configuration(plain),
                 new ChartFacts(false, Map.of("acceptance", beneath), Facts.defaults()),
@@ -537,7 +541,8 @@ class TaskChartTest {
     plain.put("acceptance", "ROUND_OPEN");
 
     ChartStep<TaskEffect> stepped =
-        taskChart.chart()
+        taskChart
+            .chart()
             .step(
                 taskChart.chart().configuration(plain),
                 new ChartFacts(
@@ -667,7 +672,8 @@ class TaskChartTest {
     plain.put(region, from);
 
     ChartStep<TaskEffect> stepped =
-        taskChart.chart()
+        taskChart
+            .chart()
             .step(
                 taskChart.chart().configuration(plain),
                 new ChartFacts(false, Map.of(), Facts.defaults()),

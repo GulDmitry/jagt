@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.SandboxConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.JsonNode;
@@ -87,7 +88,7 @@ class OpenCodeAgentRuntimeTest {
     new OpenCodeAgentRuntime(
             new SessionBrief(
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen-4b", null),
+            new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of()),
             new McpEndpoint("http://127.0.0.1:8290/mcp"),
             config)
         .provisionWorktree(AgentWorktree.of(worktree, root));
@@ -113,7 +114,7 @@ class OpenCodeAgentRuntimeTest {
     new OpenCodeAgentRuntime(
             new SessionBrief(
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new OpenCodeProperties("", "", "qwen-4b", null),
+            new OpenCodeProperties("", "", "qwen-4b", Map.of()),
             new McpEndpoint("http://127.0.0.1:8290/mcp"),
             config)
         .provisionWorktree(AgentWorktree.of(worktree, root));
@@ -152,7 +153,7 @@ class OpenCodeAgentRuntimeTest {
         new OpenCodeAgentRuntime(
             new SessionBrief(
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new OpenCodeProperties("/opt/bin/opencode", "", "", null),
+            new OpenCodeProperties("/opt/bin/opencode", "", "", Map.of()),
             new McpEndpoint("http://127.0.0.1:8290/mcp"),
             mock(ConfigService.class));
 
@@ -210,7 +211,7 @@ class OpenCodeAgentRuntimeTest {
 
   @Test
   void fallsBackToTheCliNameWhereTheConfiguredCommandIsBlank() {
-    assertThat(new OpenCodeProperties("  ", "", "", null).command()).isEqualTo("opencode");
+    assertThat(new OpenCodeProperties("  ", "", "", Map.of()).command()).isEqualTo("opencode");
   }
 
   @Test

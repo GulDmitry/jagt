@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,7 @@ class HeadlessOpenCodeTest {
   private final HeadlessOpenCode headless =
       new HeadlessOpenCode(
           processes,
-          new OpenCodeProperties("opencode", "http://127.0.0.1:8080/v1", "qwen-4b", null),
+          new OpenCodeProperties("opencode", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of()),
           usage,
           gate);
 
@@ -106,7 +107,11 @@ class HeadlessOpenCodeTest {
         .thenAnswer(
             call -> {
               String url = call.<Map<String, String>>getArgument(2).get("JAGT_READ_GATE");
-              scopes.hear(url.substring(url.lastIndexOf('/') + 1), "Bash", "git log");
+              scopes.hear(
+                  Objects.requireNonNull(url)
+                      .substring(Objects.requireNonNull(url).lastIndexOf('/') + 1),
+                  "Bash",
+                  "git log");
               return new Processes.Result(
                   0, Files.readString(Path.of("src/test/resources/opencode/run.jsonl")), "");
             });
@@ -129,7 +134,12 @@ class HeadlessOpenCodeTest {
                 AssistantCallKind.ACCEPTANCE_CHECK,
                 Duration.ofMinutes(1)));
 
-    assertThat(reply.envelope().path("structured_output").path("commits").asInt()).isEqualTo(1);
+    assertThat(
+            Objects.requireNonNull(reply.envelope())
+                .path("structured_output")
+                .path("commits")
+                .asInt())
+        .isEqualTo(1);
     assertThat(reply.usage().calls()).isEqualTo(4);
     verify(usage).record(eq(AssistantCallKind.ACCEPTANCE_CHECK), eq(reply.usage()));
   }
@@ -160,7 +170,7 @@ class HeadlessOpenCodeTest {
                 Duration.ofMinutes(1)));
 
     assertThat(reply.envelope()).isNotNull();
-    assertThat(reply.envelope().has("structured_output")).isFalse();
+    assertThat(Objects.requireNonNull(reply.envelope()).has("structured_output")).isFalse();
   }
 
   @Test
@@ -170,7 +180,7 @@ class HeadlessOpenCodeTest {
             new Processes.Result(
                 1,
                 "{\"type\":\"step_finish\",\"part\":{\"cost\":0,\"tokens\":{\"input\":9,\"output"
-                + "\":1,\"cache\":{\"read\":0,\"write\":0}}}}",
+                    + "\":1,\"cache\":{\"read\":0,\"write\":0}}}}",
                 "model not found"));
 
     HeadlessReply reply =
@@ -204,7 +214,9 @@ class HeadlessOpenCodeTest {
         .thenAnswer(
             call -> {
               String url = call.<Map<String, String>>getArgument(2).get("JAGT_READ_GATE");
-              fence.set(url.substring(url.lastIndexOf('/') + 1));
+              fence.set(
+                  Objects.requireNonNull(url)
+                      .substring(Objects.requireNonNull(url).lastIndexOf('/') + 1));
               held.set(scopes.ask(fence.get()).isPresent());
               return new Processes.Result(0, "", "");
             });
@@ -287,7 +299,12 @@ class HeadlessOpenCodeTest {
                 AssistantCallKind.ACCEPTANCE_CHECK,
                 Duration.ofMinutes(1)));
 
-    assertThat(reply.envelope().path("structured_output").path("commits").asInt()).isEqualTo(2);
+    assertThat(
+            Objects.requireNonNull(reply.envelope())
+                .path("structured_output")
+                .path("commits")
+                .asInt())
+        .isEqualTo(2);
   }
 
   @Test
@@ -298,7 +315,7 @@ class HeadlessOpenCodeTest {
             new Processes.Result(
                 0,
                 "{\"type\":\"tool_use\",\"part\":{\"tool\":\"shell\",\"state\":{\"status\":\"erro"
-                + "r\",\"input\":{\"command\":\"touch"
+                    + "r\",\"input\":{\"command\":\"touch"
                     + " c.txt\"}}}}\n"
                     + "{\"type\":\"text\",\"part\":{\"text\":\"```json\\n"
                     + "{\\\"commits\\\":3}\\n"
@@ -323,7 +340,12 @@ class HeadlessOpenCodeTest {
                 AssistantCallKind.ACCEPTANCE_CHECK,
                 Duration.ofMinutes(1)));
 
-    assertThat(reply.envelope().path("structured_output").path("commits").asInt()).isEqualTo(3);
+    assertThat(
+            Objects.requireNonNull(reply.envelope())
+                .path("structured_output")
+                .path("commits")
+                .asInt())
+        .isEqualTo(3);
   }
 
   @Test
@@ -337,7 +359,11 @@ class HeadlessOpenCodeTest {
         .thenAnswer(
             call -> {
               String url = call.<Map<String, String>>getArgument(2).get("JAGT_READ_GATE");
-              scopes.hear(url.substring(url.lastIndexOf('/') + 1), "Read", "review_replies.md");
+              scopes.hear(
+                  Objects.requireNonNull(url)
+                      .substring(Objects.requireNonNull(url).lastIndexOf('/') + 1),
+                  "Read",
+                  "review_replies.md");
               return new Processes.Result(0, ran, "");
             });
 

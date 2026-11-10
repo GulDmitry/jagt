@@ -34,7 +34,9 @@ public class DeployTargets {
     List<Target> targets = new ArrayList<>();
     for (TaskRepo repo : task.repos()) {
       ProjectConfig config = configService.project(Objects.requireNonNull(repo.project()));
-      targets.add(new Target(repo.project(), config, config.deployBranch()));
+      targets.add(
+          new Target(
+              repo.project(), config, Objects.requireNonNullElse(config.deployBranch(), "")));
     }
     return targets;
   }
@@ -59,7 +61,7 @@ public class DeployTargets {
   public Optional<Target> configured(String project) {
     return Optional.ofNullable(configService.load().projects().get(project))
         .filter(config -> config.deployBranch() != null && !config.deployBranch().isBlank())
-        .map(config -> new Target(project, config, config.deployBranch()));
+        .map(config -> new Target(project, config, Objects.requireNonNull(config.deployBranch())));
   }
 
   /** The deploy branches the task's repositories land on, each once, joined by a comma. */
@@ -104,7 +106,9 @@ public class DeployTargets {
     return new Target(
         recorded.project(),
         config,
-        recorded.deployBranch().isBlank() ? config.deployBranch() : recorded.deployBranch());
+        recorded.deployBranch().isBlank()
+            ? Objects.requireNonNullElse(config.deployBranch(), "")
+            : recorded.deployBranch());
   }
 
   /**

@@ -340,9 +340,11 @@ class BoardReportsTest extends BoardPageContext {
     Path worktree = Files.createDirectories(root.resolve("ABC-6-alpha"));
     Files.writeString(
         worktree.resolve("review_replies.md"),
-        "## thread 1\n"
-            + "> see https://host.example/mr/7#note_8708.\n"
-            + "FIXED - javascript:alert(1) stays text.\n");
+        """
+        ## thread 1
+        > see https://host.example/mr/7#note_8708.
+        FIXED - javascript:alert(1) stays text.
+        """);
     state.putTask(
         "ABC-6",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)

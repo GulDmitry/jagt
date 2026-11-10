@@ -423,12 +423,15 @@ class StepRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## deploy\n\n"
-            + "step: deploy\n"
-            + "at: DEPLOYED\n"
-            + "by: jagt\n"
-            + "replies: any; plain\n"
-            + "The task is live.\n");
+        """
+        ## deploy
+
+        step: deploy
+        at: DEPLOYED
+        by: jagt
+        replies: any; plain
+        The task is live.
+        """);
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     StepRelay relay =
@@ -469,12 +472,15 @@ class StepRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## deploy\n\n"
-            + "step: deploy\n"
-            + "at: DEPLOYED\n"
-            + "by: jagt\n"
-            + "replies: any; plain\n"
-            + "The task is live.\n");
+        """
+        ## deploy
+
+        step: deploy
+        at: DEPLOYED
+        by: jagt
+        replies: any; plain
+        The task is live.
+        """);
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     StepRelay relay =
@@ -510,7 +516,7 @@ class StepRelayTest {
     assertThat(Files.readString(root.resolve("misses.jsonl")))
         .isEqualTo(
             "{\"at\":1000,\"task\":\"ABC-42\",\"step\":\"deploy\",\"status\":\"IN_PROGRESS\",\""
-            + "by\":\"jagt\"}\n");
+                + "by\":\"jagt\"}\n");
   }
 
   @Test
@@ -524,12 +530,15 @@ class StepRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## deploy\n\n"
-            + "step: deploy\n"
-            + "at: DEPLOYED\n"
-            + "by: jagt\n"
-            + "replies: any; plain\n"
-            + "The task is live.\n");
+        """
+        ## deploy
+
+        step: deploy
+        at: DEPLOYED
+        by: jagt
+        replies: any; plain
+        The task is live.
+        """);
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     StepRelay relay =
@@ -568,7 +577,7 @@ class StepRelayTest {
     assertThat(Files.readString(root.resolve("misses.jsonl")))
         .isEqualTo(
             "{\"at\":1000,\"task\":\"ABC-42\",\"step\":\"deploy\",\"status\":\"DEPLOYED\",\"by"
-            + "\":\"human\"}\n");
+                + "\":\"human\"}\n");
   }
 
   @Test
@@ -581,12 +590,15 @@ class StepRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## deploy\n\n"
-            + "step: deploy\n"
-            + "at: DEPLOYED\n"
-            + "by: jagt\n"
-            + "replies: any; plain\n"
-            + "The task is live.\n");
+        """
+        ## deploy
+
+        step: deploy
+        at: DEPLOYED
+        by: jagt
+        replies: any; plain
+        The task is live.
+        """);
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     StepRelay relay =
@@ -631,12 +643,15 @@ class StepRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## deploy\n\n"
-            + "step: deploy\n"
-            + "at: DEPLOYED\n"
-            + "by: jagt\n"
-            + "replies: any; plain\n"
-            + "The task is live.\n");
+        """
+        ## deploy
+
+        step: deploy
+        at: DEPLOYED
+        by: jagt
+        replies: any; plain
+        The task is live.
+        """);
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     StepRelay relay =
@@ -680,12 +695,15 @@ class StepRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## verify\n\n"
-            + "step: verify\n"
-            + "at: VERIFYING\n"
-            + "by: jagt\n"
-            + "replies: any; plain\n"
-            + "The command failed.\n");
+        """
+        ## verify
+
+        step: verify
+        at: VERIFYING
+        by: jagt
+        replies: any; plain
+        The command failed.
+        """);
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
     StepRelay relay =
@@ -803,12 +821,15 @@ class StepRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## verify\n\n"
-            + "step: verify\n"
-            + "at: VERIFYING\n"
-            + "by: jagt\n"
-            + "replies: any; plain\n"
-            + "The command failed.\n");
+        """
+        ## verify
+
+        step: verify
+        at: VERIFYING
+        by: jagt
+        replies: any; plain
+        The command failed.
+        """);
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
     StepRelay relay =
@@ -853,12 +874,15 @@ class StepRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## answered\n\n"
-            + "step: answered\n"
-            + "at: IN_PROGRESS\n"
-            + "by: master\n"
-            + "replies: any; plain\n"
-            + "The Master answers.\n");
+        """
+        ## answered
+
+        step: answered
+        at: IN_PROGRESS
+        by: master
+        replies: any; plain
+        The Master answers.
+        """);
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     StepRelay relay =

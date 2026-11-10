@@ -93,10 +93,14 @@ class CarriedBlockTest {
     when(runtime.sessionLogOf(Path.of("/wt/ABC-42")))
         .thenReturn(Optional.of(Path.of("/logs/new.jsonl")));
     String held =
-        "the round\n\n"
-            + "## Carried from the previous session\n\n"
-            + "### Whole transcript\n"
-            + "/logs/old.jsonl\n";
+        """
+        the round
+
+        ## Carried from the previous session
+
+        ### Whole transcript
+        /logs/old.jsonl
+        """;
 
     String carried = new CarriedBlock(changes, runtime).after(held, task);
 

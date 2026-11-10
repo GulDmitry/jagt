@@ -25,6 +25,7 @@ import dev.jagt.orchestrator.task.Turn;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -37,11 +38,13 @@ class ReplaySessionsTest {
   private static final int FEW_TICKS = 4;
   private static final long WAIT_MILLIS = 10_000;
 
-  private ReplaySessions sessions;
+  private @Nullable ReplaySessions sessions;
 
   @AfterEach
   void stopTheTicker() {
-    sessions.stop();
+    if (sessions != null) {
+      sessions.stop();
+    }
   }
 
   @Test

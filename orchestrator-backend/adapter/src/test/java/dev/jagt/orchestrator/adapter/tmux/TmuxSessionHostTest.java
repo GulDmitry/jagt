@@ -86,9 +86,11 @@ class TmuxSessionHostTest {
         .thenReturn(
             new Processes.Result(
                 0,
-                "jagt\t@1 100 1700000000 ABC-1\n"
-                    + "jagt\t@2 200 1700000001 ABC-2\n"
-                    + "jagt\t@3 300 1700000002 ABC-3\n",
+                """
+                jagt\t@1 100 1700000000 ABC-1
+                jagt\t@2 200 1700000001 ABC-2
+                jagt\t@3 300 1700000002 ABC-3
+                """,
                 ""));
     when(processes.run(
             isNull(),
@@ -775,9 +777,11 @@ class TmuxSessionHostTest {
 
     assertThat(host.exitTail("jagt", "ABC-1"))
         .contains(
-            "Loading servers\n"
-                + "Error: Invalid MCP configuration:\n"
-                + "  mcpServers.jagt: missing command");
+            """
+            Loading servers
+            Error: Invalid MCP configuration:
+              mcpServers.jagt: missing command\
+            """);
   }
 
   @Test
@@ -1565,8 +1569,7 @@ class TmuxSessionHostTest {
     "DIGIT_8,8",
     "DIGIT_9,9"
   })
-  void pressesKeyByItsNameInTheTasksWindowNeverAsLiteralText(
-      SessionHost.Key key, String tmuxName) {
+  void pressesKeyByItsNameInTheTasksWindowNeverAsLiteralText(SessionHost.Key key, String tmuxName) {
     Processes processes = mock(Processes.class);
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import com.google.errorprone.annotations.MustBeClosed;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -85,6 +86,7 @@ class LogbackLoggersTest {
     assertThat(appenders).containsExactlyInAnyOrder("CONSOLE", "FILE", "MASTER");
   }
 
+  @MustBeClosed
   private static Stream<Path> walk(Path root) {
     try {
       return Files.walk(root).filter(path -> path.toString().endsWith(".java"));

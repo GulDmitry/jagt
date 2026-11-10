@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -23,8 +24,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class FinishedTasksTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void keepsRetiredTaskAfterTheStateEntryIsGone(@TempDir Path root) {
@@ -108,7 +108,7 @@ class FinishedTasksTest {
         .satisfies(
             archive -> {
               try (var in = new GZIPInputStream(Files.newInputStream(archive))) {
-                assertThat(new String(in.readAllBytes()))
+                assertThat(new String(in.readAllBytes(), UTF_8))
                     .contains("\"ABC-1\"", "\"ABC-2\"")
                     .doesNotContain("\"ABC-3\"");
               }

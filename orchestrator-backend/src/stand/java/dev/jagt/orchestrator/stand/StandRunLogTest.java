@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -28,7 +29,10 @@ class StandRunLogTest {
             new StandSpend("unknown: no usage file", Map.of())),
         "jagt-stand-1-1");
 
-    List<Path> kept = Files.list(dir).toList();
+    List<Path> kept;
+    try (Stream<Path> stream = Files.list(dir)) {
+      kept = stream.toList();
+    }
 
     assertThat(kept)
         .singleElement()
@@ -60,8 +64,10 @@ class StandRunLogTest {
                         new StandSpend("unknown: no usage file", Map.of())),
                     "jagt-stand-1-" + n));
 
-    List<String> kept =
-        Files.list(dir).map(file -> file.getFileName().toString()).sorted().toList();
+    List<String> kept;
+    try (Stream<Path> stream = Files.list(dir)) {
+      kept = stream.map(file -> file.getFileName().toString()).sorted().toList();
+    }
 
     assertThat(kept).hasSize(StandRunLog.KEPT).first().asString().startsWith("0000000000002-");
   }

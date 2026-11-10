@@ -207,7 +207,7 @@ class RoutingMemoryTest {
   void retiresNothingWhenGivenNoRule() {
     when(paths.root()).thenReturn(root);
 
-    assertThat(new RoutingMemory(paths, Clock.systemUTC()).retire(null)).isFalse();
+    assertThat(new RoutingMemory(paths, Clock.systemUTC()).retire("")).isFalse();
   }
 
   @Test

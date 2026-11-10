@@ -40,6 +40,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
@@ -54,8 +55,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class WatchdogServiceTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @ParameterizedTest
   @EnumSource(
@@ -67,8 +67,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", status).alias("a1").lastActiveTimestamp(1_000).build());
@@ -95,8 +95,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     long now = Clock.systemUTC().millis();
     state.putTask(
         "ABC-1",
@@ -127,8 +127,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     long now = Clock.systemUTC().millis();
     state.putTask(
         "ABC-1",
@@ -160,8 +160,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     long now = Clock.systemUTC().millis();
     state.putTask(
         "ABC-1",
@@ -188,8 +188,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.NEW)
@@ -234,8 +234,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     SessionProbe probe = mock(SessionProbe.class);
@@ -252,8 +252,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
     SessionProbe probe = mock(SessionProbe.class);
 
@@ -269,8 +269,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -294,8 +294,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -321,8 +321,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -331,8 +331,7 @@ class WatchdogServiceTest {
             .report(AgentReport.QUESTION)
             .lastActiveTimestamp(1_000)
             .build());
-    state.updateTask(
-        "ABC-1", task -> reducer.signed(task, new SessionSign.TurnEnded(null), 1_000));
+    state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.TurnEnded(null), 1_000));
     Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
@@ -349,8 +348,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -374,8 +373,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -398,8 +397,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -427,8 +426,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     SessionProbe probe = mock(SessionProbe.class);
@@ -451,8 +450,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -478,8 +477,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -502,8 +501,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -530,8 +529,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -556,8 +555,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -587,8 +586,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -624,8 +623,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -658,8 +657,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.NEW)
@@ -669,8 +668,7 @@ class WatchdogServiceTest {
     state.updateTask(
         "ABC-1",
         task ->
-            reducer.signed(
-                task, new SessionSign.Ended("Error: Invalid MCP configuration"), 5_000));
+            reducer.signed(task, new SessionSign.Ended("Error: Invalid MCP configuration"), 5_000));
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
@@ -696,8 +694,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.NEW)
@@ -728,8 +726,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
@@ -738,7 +736,8 @@ class WatchdogServiceTest {
     new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
         .ended("ABC-1", " ");
 
-    assertThat(state.task("ABC-1").orElseThrow().session().halt().cause()).isNull();
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().session().halt()).cause())
+        .isNull();
   }
 
   @Test
@@ -747,8 +746,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     SessionProbe probe = mock(SessionProbe.class);
@@ -768,8 +767,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -795,8 +794,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -814,8 +813,7 @@ class WatchdogServiceTest {
             properties,
             probe,
             Clock.fixed(Instant.ofEpochMilli(10_000), ZoneOffset.UTC));
-    state.updateTask(
-        "ABC-1", task -> reducer.signed(task, new SessionSign.Ended("boom"), 5_000));
+    state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended("boom"), 5_000));
 
     watchdog.run();
     boolean silentAfterEnd = SessionPhase.silent(state.task("ABC-1").orElseThrow());
@@ -836,8 +834,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -865,8 +863,8 @@ class WatchdogServiceTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+    StateService state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
     long now = Clock.systemUTC().millis();
     state.putTask(
         "ABC-1",

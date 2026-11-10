@@ -5,6 +5,7 @@ import static dev.jagt.orchestrator.protocol.Wire.blank;
 import dev.jagt.orchestrator.task.TicketFacts;
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * What an answer about a work item has to hold. The reader is a model, so an answer in the shape of
@@ -31,7 +32,7 @@ public final class TicketRead {
    * Empty means the answer can be acted on. {@code ref} is what was asked for, so a swapped key is
    * caught.
    */
-  public static List<Violation> violations(String ref, TicketFacts facts) {
+  public static List<Violation> violations(@Nullable String ref, TicketFacts facts) {
     List<Violation> found = new ArrayList<>();
     if (!facts.exists()) {
       return List.of();
@@ -68,7 +69,7 @@ public final class TicketRead {
   }
 
   /** Only a bare key can be compared: a URL names its item in a shape no two trackers share. */
-  private static boolean answersForAnotherItem(String ref, String key) {
+  private static boolean answersForAnotherItem(@Nullable String ref, String key) {
     return ref != null && !ref.contains("://") && !blank(key) && !ref.equalsIgnoreCase(key.strip());
   }
 }

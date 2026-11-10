@@ -1473,7 +1473,7 @@ class GitDeployTest {
         List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "dev change"));
     runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
     runner.run(repo, t, List.of("git", "checkout", "-q", "main"));
-    String devTip = runner.run(repo, t, List.of("git", "rev-parse", "origin/dev")).stdout().trim();
+
     Path revertWorktree = dir.resolve("ABC-1-revert");
     assertThatThrownBy(() -> git.revertMergeAndPush(repo, "ABC-1", "dev", merge, List.of()))
         .isInstanceOf(GitDeploy.RevertConflictException.class);

@@ -30,9 +30,11 @@ class DeployFixWorktreesTest {
         .thenReturn(
             List.of(
                 new DeployTargets.Target(
-                    "api", new ProjectConfig("/src/api", "origin/main", "dev", null), "dev"),
+                    "api", new ProjectConfig("/src/api", "origin/main", "dev", List.of()), "dev"),
                 new DeployTargets.Target(
-                    "web", new ProjectConfig("/src/web", "origin/main", "test", null), "test")));
+                    "web",
+                    new ProjectConfig("/src/web", "origin/main", "test", List.of()),
+                    "test")));
 
     new DeployFixWorktrees(targets, gitDeploy).open(task, "ABC-42", "web");
 

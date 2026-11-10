@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.replay;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,7 +54,7 @@ class ReplayMovesTest {
     server.createContext(
         "/mcp",
         exchange -> {
-          body.set(new String(exchange.getRequestBody().readAllBytes()));
+          body.set(new String(exchange.getRequestBody().readAllBytes(), UTF_8));
           caller.set(exchange.getRequestHeaders().getFirst(McpEndpoint.CALLER_HEADER));
           exchange.sendResponseHeaders(200, -1);
           exchange.close();

@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 
 public final class EvalShards {
 
@@ -18,7 +19,7 @@ public final class EvalShards {
 
   private final Path base;
   private final int shards;
-  private Held held;
+  private @Nullable Held held;
 
   private EvalShards(Path base, int shards) {
     this.base = base;

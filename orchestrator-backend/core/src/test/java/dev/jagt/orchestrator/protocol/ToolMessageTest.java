@@ -11,7 +11,7 @@ class ToolMessageTest {
 
   @Test
   void refusesVerbWithNoTaskToActOn() {
-    assertThat(new TaskRef(null).violations(MessageContext.NONE))
+    assertThat(new TaskRef("").violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("taskId");
   }
@@ -25,7 +25,7 @@ class ToolMessageTest {
 
   @Test
   void letsTheEditorOpenTheCallersOwnWorktreeWithoutNamingIt() {
-    assertThat(new IdeOpen(null, "diff").violations(MessageContext.NONE)).isEmpty();
+    assertThat(new IdeOpen("", "diff").violations(MessageContext.NONE)).isEmpty();
   }
 
   @Test
@@ -44,7 +44,7 @@ class ToolMessageTest {
 
   @Test
   void refusesBannerWithNoLineInIt() {
-    assertThat(new UserNotice("jagt", null).violations(MessageContext.NONE))
+    assertThat(new UserNotice("jagt", "").violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("message");
   }

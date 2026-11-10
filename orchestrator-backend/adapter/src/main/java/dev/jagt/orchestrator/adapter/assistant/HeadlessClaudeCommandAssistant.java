@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.protocol.CommandRead;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,7 +19,7 @@ public class HeadlessClaudeCommandAssistant implements CommandAssistant {
   private final ToolLessRead read;
 
   @Override
-  public Answer<CommandProposal> mapCommand(String text, Menu menu) {
+  public Answer<CommandProposal> mapCommand(@Nullable String text, Menu menu) {
     if (text == null || text.isBlank()) {
       return Answer.unavailable();
     }

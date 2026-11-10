@@ -42,7 +42,7 @@ public record Outcome(
     }
   }
 
-  public static Outcome ok(String message, String stamp) {
+  public static Outcome ok(String message, @Nullable String stamp) {
     return new Outcome(Kind.OK, message, stamp, AgentReport.PLAIN, null);
   }
 
@@ -62,7 +62,7 @@ public record Outcome(
     return new Outcome(Kind.NOTHING, message, stamp, AgentReport.PLAIN, null);
   }
 
-  public static Outcome relayed(String message, String stamp) {
+  public static Outcome relayed(String message, @Nullable String stamp) {
     return new Outcome(Kind.RELAYED, message, stamp, AgentReport.PLAIN, null);
   }
 

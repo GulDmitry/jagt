@@ -319,11 +319,9 @@ class MasterAnswerJobTest {
             .report(AgentReport.QUESTION)
             .build();
     state.putTask("ABC-1", asking);
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+    ConfigService.ConfigFile.MasterConfig master =
+        new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(master));
     when(verdicts.answersOverThisTree(asking)).thenReturn(3);
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Undecided("the read returned no findings"));
@@ -337,7 +335,7 @@ class MasterAnswerJobTest {
                 state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .run();
 
-    verify(panel).answer("ABC-1", asking, "override the gate?", config.load().master(), true);
+    verify(panel).answer("ABC-1", asking, "override the gate?", master, true);
   }
 
   @Test

@@ -3,9 +3,14 @@ package dev.jagt.orchestrator.e2e;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 record ReviewRoundCase(
-    String name, ReviewFacts round, TaskStatus expected, String sentence, boolean briefed) {
+    String name,
+    @Nullable ReviewFacts round,
+    TaskStatus expected,
+    String sentence,
+    boolean briefed) {
 
   static List<ReviewRoundCase> matrix() {
     return List.of(

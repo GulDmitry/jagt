@@ -13,6 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,7 +43,7 @@ public class AgentSessionController {
   public String report(
       @PathVariable String state,
       @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
-      @RequestBody(required = false) SessionHookReport session) {
+      @RequestBody(required = false) @Nullable SessionHookReport session) {
     var task = task(cwd);
     SessionProbe.State reported = reported(state);
     if (reported == SessionProbe.State.WORKING) {
@@ -57,7 +58,7 @@ public class AgentSessionController {
   @PostMapping(value = "/turn-end", produces = MediaType.TEXT_PLAIN_VALUE)
   public String turnEnd(
       @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
-      @RequestBody(required = false) SessionHookReport session) {
+      @RequestBody(required = false) @Nullable SessionHookReport session) {
     var task = task(cwd);
     SessionHookReport said = session == null ? SessionHookReport.none() : session;
     return reports.turnEnded(
@@ -67,7 +68,7 @@ public class AgentSessionController {
   @PostMapping(value = "/turn-failure", produces = MediaType.TEXT_PLAIN_VALUE)
   public String turnFailure(
       @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
-      @RequestBody(required = false) SessionHookReport session) {
+      @RequestBody(required = false) @Nullable SessionHookReport session) {
     var task = task(cwd);
     if (reports.turnFailed(task.getKey(), read(task, session))) {
       wakes.arm(task.getKey());
@@ -78,7 +79,7 @@ public class AgentSessionController {
   @PostMapping(value = "/permission", produces = MediaType.TEXT_PLAIN_VALUE)
   public String permission(
       @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
-      @RequestBody(required = false) SessionHookReport session) {
+      @RequestBody(required = false) @Nullable SessionHookReport session) {
     var task = task(cwd);
     reports.permissionAsked(task.getKey(), read(task, session));
     return "";
@@ -90,7 +91,8 @@ public class AgentSessionController {
         .orElseThrow(() -> new IllegalArgumentException("No task runs in '" + cwd + "'"));
   }
 
-  private SessionReports.Report read(Map.Entry<String, TaskState> task, SessionHookReport session) {
+  private SessionReports.Report read(
+      Map.Entry<String, TaskState> task, @Nullable SessionHookReport session) {
     SessionHookReport said = session == null ? SessionHookReport.none() : session;
     // Nobody reads a refusal here — the hook posts what its CLI handed it and discards the answer —
     // so what

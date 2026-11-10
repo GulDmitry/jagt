@@ -32,6 +32,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -99,7 +100,11 @@ class DeployPipelinesRetryTest {
 
     assertThat(reading.kind()).isEqualTo(DeployPipelines.Kind.WAITING);
     verify(fixes, never()).open(org.mockito.ArgumentMatchers.any(), anyString(), anyString());
-    assertThat(state.task("ABC-42").orElseThrow().deployment().targets().getFirst().retriedTip())
+    assertThat(
+            Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment())
+                .targets()
+                .getFirst()
+                .retriedTip())
         .isTrue();
   }
 

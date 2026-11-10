@@ -27,7 +27,7 @@ final class RunEnd {
         && (!conflictStepComes || timeline.relayed("conflict") || timeline.stalledFor(QUIET))) {
       return true;
     }
-    return mode.humanEndsTheRun() && nothingToPress && timeline.stalledFor(QUIET)
+    return (mode.humanEndsTheRun() && nothingToPress && timeline.stalledFor(QUIET))
         || timeline.stalledFor(HELD);
   }
 

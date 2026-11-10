@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /** Every {@link GlobalCommand} there is, collected by the container. */
@@ -37,7 +38,7 @@ public class GlobalCommands {
   }
 
   /** Strict: an unknown word is free text, never the nearest verb. */
-  public Optional<GlobalCommand> byId(String id) {
+  public Optional<GlobalCommand> byId(@Nullable String id) {
     return id == null
         ? Optional.empty()
         : Optional.ofNullable(byId.get(id.strip().toLowerCase(Locale.ROOT)));

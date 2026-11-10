@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.mastereval;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import dev.jagt.orchestrator.adapter.agent.MasterEvalTranscripts;
 import dev.jagt.orchestrator.eval.EvalShards;
 import dev.jagt.orchestrator.eval.MasterCase;
@@ -7,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 final class MasterEvalWorkspace {
@@ -43,7 +46,7 @@ final class MasterEvalWorkspace {
         new ProcessBuilder("tmux", "list-sessions", "-F", "#{session_name}")
             .redirectErrorStream(true)
             .start();
-    String listed = new String(listing.getInputStream().readAllBytes());
+    String listed = new String(listing.getInputStream().readAllBytes(), UTF_8);
     for (String session : listed.lines().filter(MasterEvalWorkspace::ofDeadRun).toList()) {
       new ProcessBuilder("tmux", "kill-session", "-t", "=" + session)
           .start()
@@ -99,7 +102,7 @@ final class MasterEvalWorkspace {
     write(repo, round.baseline());
     git(repo, "add", "-A");
     git(repo, "commit", "-m", "Baseline");
-    Path origin = repo.getParent().resolve("origin.git");
+    Path origin = Objects.requireNonNull(repo.getParent()).resolve("origin.git");
     git(repo.getParent(), "init", "--bare", "--initial-branch=main", origin.toString());
     git(repo, "remote", "add", "origin", origin.toString());
     git(repo, "push", "origin", "main");
@@ -161,7 +164,7 @@ final class MasterEvalWorkspace {
               + " failed in "
               + directory
               + ": "
-              + new String(process.getInputStream().readAllBytes()));
+              + new String(process.getInputStream().readAllBytes(), UTF_8));
     }
   }
 }

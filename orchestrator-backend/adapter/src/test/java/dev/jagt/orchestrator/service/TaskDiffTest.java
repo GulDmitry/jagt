@@ -51,7 +51,7 @@ class TaskDiffTest {
   private TaskDiff diffOf(Path repo, Path worktree) {
     when(state.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(config.project("proj"))
-        .thenReturn(new ProjectConfig(repo.toString(), "origin/main", "dev", null));
+        .thenReturn(new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()));
     TaskState task =
         TaskState.builder(
                 List.of(TaskRepo.of("proj", worktree.toString())), TaskStatus.REVIEW_PENDING)

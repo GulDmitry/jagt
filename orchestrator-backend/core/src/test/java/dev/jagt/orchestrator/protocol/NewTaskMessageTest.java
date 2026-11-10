@@ -12,12 +12,12 @@ class NewTaskMessageTest {
   void refusesLaunchWithNothingToNameTheBranchOrTheRepositoryBy() {
     var said =
         new NewTaskMessage(
-            null,
+            "",
             new NewTaskMessage.Placement(null, List.of(), null, null),
-            null,
-            null,
-            null,
-            null,
+            "",
+            "",
+            "",
+            "",
             "user asked for the widget fix");
 
     assertThat(said.violations(MessageContext.NONE))
@@ -31,10 +31,10 @@ class NewTaskMessageTest {
         new NewTaskMessage(
             "ABC-42",
             new NewTaskMessage.Placement("api", List.of(), null, "clobber"),
-            null,
-            null,
-            null,
-            null,
+            "",
+            "",
+            "",
+            "",
             "user asked for the widget fix");
 
     assertThat(said.violations(MessageContext.NONE))
@@ -48,10 +48,10 @@ class NewTaskMessageTest {
         new NewTaskMessage(
             "ABC-42",
             new NewTaskMessage.Placement("api", List.of(), null, null),
-            null,
-            null,
+            "",
+            "",
             "jira://ABC-42",
-            null,
+            "",
             "user asked for the widget fix");
 
     assertThat(said.violations(MessageContext.NONE))
@@ -65,10 +65,10 @@ class NewTaskMessageTest {
         new NewTaskMessage(
             "ABC-42",
             new NewTaskMessage.Placement("api", List.of("api", "web"), null, null),
-            null,
-            null,
-            null,
-            null,
+            "",
+            "",
+            "",
+            "",
             "user asked for the widget fix");
 
     assertThat(said.violations(MessageContext.NONE))
@@ -82,10 +82,10 @@ class NewTaskMessageTest {
         new NewTaskMessage(
             "ABC-42",
             new NewTaskMessage.Placement("api", List.of(), null, null),
-            null,
-            null,
-            null,
-            null,
+            "",
+            "",
+            "",
+            "",
             "user asked for the widget fix");
 
     assertThat(said.violations(MessageContext.NONE)).isEmpty();
@@ -112,9 +112,9 @@ class NewTaskMessageTest {
         new NewTaskMessage(
             "ABC-42",
             new NewTaskMessage.Placement("api", List.of(), null, null),
-            null,
-            null,
-            null,
+            "",
+            "",
+            "",
             "turbo",
             "user asked for the widget fix");
 
@@ -127,7 +127,7 @@ class NewTaskMessageTest {
   void readsBlankFieldsAsLeftOutSoLaunchOfBlanksIsRefusedForTheThreeItNeeds() {
     var said =
         new NewTaskMessage(
-            " ", new NewTaskMessage.Placement(" ", null, " ", " "), " ", " ", " ", " ", " ");
+            " ", new NewTaskMessage.Placement(" ", List.of(), " ", " "), " ", " ", " ", " ", " ");
 
     assertThat(said.violations(MessageContext.NONE))
         .extracting(Violation::field)
@@ -140,11 +140,11 @@ class NewTaskMessageTest {
         new NewTaskMessage(
             "ABC-42",
             new NewTaskMessage.Placement("api", List.of(), null, null),
-            null,
-            null,
-            null,
-            null,
-            null);
+            "",
+            "",
+            "",
+            "",
+            "");
 
     assertThat(said.violations(MessageContext.NONE))
         .extracting(Violation::field)

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
@@ -42,7 +43,7 @@ public class UsageTracker {
    * Attributes an already-recorded measurement to a task, by id or alias. A task that is gone loses
    * only its per-task detail, but is still logged, the same silence otherwise hiding a wrong id.
    */
-  public void chargeTask(String taskId, TokenUsage usage) {
+  public void chargeTask(@Nullable String taskId, TokenUsage usage) {
     if (usage == null || usage.isNone() || taskId == null || taskId.isBlank()) {
       return;
     }

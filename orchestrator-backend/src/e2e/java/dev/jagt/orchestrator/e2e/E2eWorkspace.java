@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.e2e;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
 
 import dev.jagt.orchestrator.adapter.Executables;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 final class E2eWorkspace {
 
@@ -264,7 +266,7 @@ final class E2eWorkspace {
     return listed.lines().filter(name -> name.startsWith(TMUX_SESSION)).toList();
   }
 
-  private static String run(String command, String... args) {
+  private static @Nullable String run(String command, String... args) {
     List<String> full = new java.util.ArrayList<>(List.of(Executables.resolve(command)));
     full.addAll(List.of(args));
     try {
@@ -273,7 +275,7 @@ final class E2eWorkspace {
       Thread.startVirtualThread(
           () -> {
             try {
-              output.complete(new String(process.getInputStream().readAllBytes()));
+              output.complete(new String(process.getInputStream().readAllBytes(), UTF_8));
             } catch (IOException unreadable) {
               output.complete("");
             }
@@ -309,7 +311,7 @@ final class E2eWorkspace {
     command.addAll(List.of(args));
     Process process =
         new ProcessBuilder(command).directory(cwd.toFile()).redirectErrorStream(true).start();
-    String output = new String(process.getInputStream().readAllBytes());
+    String output = new String(process.getInputStream().readAllBytes(), UTF_8);
     if (!process.waitFor(60, TimeUnit.SECONDS) || process.exitValue() != 0) {
       throw new IllegalStateException(
           "git " + String.join(" ", args) + " failed in " + cwd + ": " + output);

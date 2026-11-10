@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.service.ReachLedger;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 class CodeHostCheckTest {
@@ -22,18 +23,20 @@ class CodeHostCheckTest {
           configService,
           List.of(new CommandPipeline(mock(Processes.class), new ReachLedger()), new NoCodeHost()));
 
-  private static ProjectConfig project(String codeHost, List<String> pipelineCommand) {
+  private static ProjectConfig project(@Nullable String codeHost, List<String> pipelineCommand) {
     return new ProjectConfig(
-        new ProjectConfig.Repository("/repo/shop", List.of(), null, null),
+        new ProjectConfig.Repository("/repo/shop", List.of(), null, List.of()),
         new ProjectConfig.Branches("origin/main", "dev", null),
-        new ProjectConfig.CodeHost(codeHost, null, pipelineCommand, null, null, null, null),
+        new ProjectConfig.CodeHost(
+            codeHost, null, pipelineCommand, List.of(), List.of(), List.of(), List.of()),
         new ProjectConfig.Verify(List.of(), null));
   }
 
   @Test
   void refusesCodeHostNoDriverAnswersForNamingTheKey() {
     when(configService.load())
-        .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("bitbucket", null))));
+        .thenReturn(
+            ConfigFile.defaults().withProjects(Map.of("shop", project("bitbucket", List.of()))));
 
     assertThat(check.problems())
         .extracting(Problem::key)
@@ -56,7 +59,7 @@ class CodeHostCheckTest {
   @Test
   void asksNothingOfProjectThatChoosesNone() {
     when(configService.load())
-        .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("none", null))));
+        .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("none", List.of()))));
 
     assertThat(check.problems()).isEmpty();
   }

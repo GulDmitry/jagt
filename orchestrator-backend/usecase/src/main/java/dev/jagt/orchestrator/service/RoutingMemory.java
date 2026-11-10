@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
@@ -150,7 +151,7 @@ public class RoutingMemory {
    * Takes a rule out of use, keeping it dated. {@code rendered} is a line as {@link #rules()} hands
    * it out, so a caller never has to know how a rule is spelled on disk.
    */
-  public synchronized boolean retire(String rendered) {
+  public synchronized boolean retire(@Nullable String rendered) {
     if (rendered == null) {
       return false;
     }

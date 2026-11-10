@@ -15,14 +15,14 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
 import java.nio.file.Path;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class UsageTrackerTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void splitsTheSessionSpendByWhatEachCallWasFor(@TempDir Path root) {
@@ -34,7 +34,7 @@ class UsageTrackerTest {
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
                         .withStateFile(root.resolve("state.json").toString())),
-                        reducer),
+                reducer),
             mock(UsageLedger.class));
 
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
@@ -42,8 +42,10 @@ class UsageTrackerTest {
     tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(31_000, 0, 210, 0.06));
 
     var byKind = tracker.sessionByKind();
-    assertThat(byKind.get(AssistantCallKind.REVIEW_SWEEP).calls()).isEqualTo(2);
-    assertThat(byKind.get(AssistantCallKind.TICKET_READ).calls()).isEqualTo(1);
+    assertThat(Objects.requireNonNull(byKind.get(AssistantCallKind.REVIEW_SWEEP)).calls())
+        .isEqualTo(2);
+    assertThat(Objects.requireNonNull(byKind.get(AssistantCallKind.TICKET_READ)).calls())
+        .isEqualTo(1);
     assertThat(byKind).doesNotContainKey(AssistantCallKind.MR_READ);
     assertThat(tracker.session().calls()).isEqualTo(3);
     assertThat(tracker.session().inputTokens()).isEqualTo(86_000);
@@ -60,7 +62,7 @@ class UsageTrackerTest {
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
                         .withStateFile(root.resolve("state.json").toString())),
-                        reducer),
+                reducer),
             ledger);
     TokenUsage usage = TokenUsage.ofCall(25_000, 0, 170, 0.05);
 
@@ -78,7 +80,7 @@ class UsageTrackerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
@@ -99,7 +101,7 @@ class UsageTrackerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
@@ -124,7 +126,7 @@ class UsageTrackerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
@@ -143,11 +145,11 @@ class UsageTrackerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
 
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(24_000, 0, 150, 0.05));
-    tracker.chargeTask(null, TokenUsage.ofCall(24_000, 0, 150, 0.05));
+    tracker.chargeTask("", TokenUsage.ofCall(24_000, 0, 150, 0.05));
 
     assertThat(tracker.session().inputTokens()).isEqualTo(24_000);
     assertThat(state.tasks()).isEmpty();
@@ -163,7 +165,7 @@ class UsageTrackerTest {
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
                         .withStateFile(root.resolve("state.json").toString())),
-                        reducer),
+                reducer),
             mock(UsageLedger.class));
 
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.NONE);

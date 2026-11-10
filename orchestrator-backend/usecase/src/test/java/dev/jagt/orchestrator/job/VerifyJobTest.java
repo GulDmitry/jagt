@@ -40,6 +40,7 @@ import dev.jagt.orchestrator.task.ToldOnce;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -47,8 +48,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class VerifyJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final Verification verification = mock(Verification.class);
   private final AgentStatusReports statusReports = mock(AgentStatusReports.class);
@@ -78,7 +78,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(statusReports).verified(true, "verified", "ABC-1");
@@ -111,7 +112,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay)
@@ -147,7 +149,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(verification, never()).failure(any());
@@ -183,7 +186,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     new VerifyJob(
@@ -199,7 +203,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(verification).failure(any());
@@ -207,7 +212,8 @@ class VerifyJobTest {
         .relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class));
     verify(statusReports, never()).verified(eq(true), any(), any());
     TaskStop stop = state.task("ABC-1").orElseThrow().stop();
-    assertThat(stop.trigger()).isEqualTo(TaskStop.Trigger.UNCHANGED_FAILURE);
+    assertThat(Objects.requireNonNull(stop).trigger())
+        .isEqualTo(TaskStop.Trigger.UNCHANGED_FAILURE);
     assertThat(stop.evidence()).endsWith("[proj] `./gradlew test` exited 1\nBUILD FAILED");
   }
 
@@ -238,7 +244,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     new VerifyJob(
@@ -254,7 +261,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(verification, times(2)).failure(any());
@@ -263,8 +271,7 @@ class VerifyJobTest {
   }
 
   @Test
-  void storesNoMoreOfFailedRunsOutputThanTheStopCanShowPlusOneCharToFlagTheCut(
-      @TempDir Path root) {
+  void storesNoMoreOfFailedRunsOutputThanTheStopCanShowPlusOneCharToFlagTheCut(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -290,7 +297,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     String stored =
@@ -321,7 +329,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(verification, never()).failure(any());
@@ -356,7 +365,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay)
@@ -406,7 +416,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(statusReports, never()).verified(eq(false), any(), any());
@@ -445,7 +456,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never())
@@ -484,7 +496,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay, never())
@@ -521,7 +534,8 @@ class VerifyJobTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))))
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
     verify(relay)

@@ -4,6 +4,8 @@ import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public record MasterCase(
     String name,
@@ -15,7 +17,7 @@ public record MasterCase(
     Expect expect,
     Answer answer) {
 
-  public record Expect(MasterReview.Kind verdict, List<String> names) {}
+  public record Expect(MasterReview.@Nullable Kind verdict, List<String> names) {}
 
   public record Answer(String question, List<String> said, List<String> refused) {
 
@@ -23,6 +25,6 @@ public record MasterCase(
   }
 
   public boolean answers() {
-    return answer != Answer.NONE;
+    return !Objects.equals(answer, Answer.NONE);
   }
 }

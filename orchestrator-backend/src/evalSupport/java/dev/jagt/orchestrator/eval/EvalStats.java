@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.HexFormat;
 import java.util.OptionalDouble;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
@@ -39,7 +40,7 @@ public final class EvalStats {
 
   public record Tally(int runs, double seconds, OptionalDouble costUsd, int stalled) {}
 
-  static String briefHash(String file) {
+  static String briefHash(@Nullable String file) {
     if (file == null) {
       return "unknown";
     }

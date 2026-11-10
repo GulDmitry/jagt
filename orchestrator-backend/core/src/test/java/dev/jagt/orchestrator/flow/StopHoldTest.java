@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn.Holder;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,7 +73,8 @@ class StopHoldTest {
   @Test
   void stopTheMasterWasAskedAboutIsTheHumansOnceAsked() {
     TaskState task = stopped(TaskStop.Trigger.ROUNDS);
-    TaskState asked = task.withMaster(Master.defaults().withAskedStop(task.stop().key()));
+    TaskState asked =
+        task.withMaster(Master.defaults().withAskedStop(Objects.requireNonNull(task.stop()).key()));
 
     assertThat(StopHold.of(asked, ACT)).isEqualTo(StopHold.HUMAN);
   }

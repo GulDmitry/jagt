@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.surface.board;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mock.http.MockHttpInputMessage;
@@ -37,11 +38,15 @@ class RefusedRequestsTest {
   }
 
   @Test
-  void answersBadRequestForParameterOfTheWrongType() {
+  void answersBadRequestForParameterOfTheWrongType() throws Exception {
     var answered =
         refusals.malformed(
             new MethodArgumentTypeMismatchException(
-                "x", Integer.class, "n", null, new NumberFormatException("x")),
+                "x",
+                Integer.class,
+                "n",
+                new MethodParameter(String.class.getMethod("valueOf", Object.class), 0),
+                new NumberFormatException("x")),
             request);
 
     assertThat(answered.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);

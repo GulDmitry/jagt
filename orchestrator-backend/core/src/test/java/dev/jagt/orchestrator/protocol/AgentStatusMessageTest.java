@@ -77,7 +77,7 @@ class AgentStatusMessageTest {
   void refusesLinkNobodyCanOpen() {
     var said =
         AgentStatusMessage.of("CI_POLLING", "shipped")
-            .withRequest(new AgentStatusMessage.Request("git@host:proj.git", null));
+            .withRequest(new AgentStatusMessage.Request("git@host:proj.git", Map.of()));
 
     assertThat(said.reportViolations(MessageContext.NONE))
         .extracting(Violation::field)
@@ -180,7 +180,7 @@ class AgentStatusMessageTest {
   void readsTheLinkFromTheFieldTheMapAndTheMessageInThatOrder() {
     var field =
         AgentStatusMessage.of("CI_POLLING", "see https://host/other")
-            .withRequest(new AgentStatusMessage.Request("  https://host/mr/1 ", null));
+            .withRequest(new AgentStatusMessage.Request("  https://host/mr/1 ", Map.of()));
     var message = AgentStatusMessage.of("CI_POLLING", "request https://host/mr/2 opened");
     var neither = AgentStatusMessage.of("REVIEW_PENDING", "all handled");
 
@@ -287,7 +287,7 @@ class AgentStatusMessageTest {
             "IN_PROGRESS",
             "needs the registry",
             "question",
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             "registry",
             null,
@@ -305,7 +305,7 @@ class AgentStatusMessageTest {
             "IN_PROGRESS",
             "needs it",
             "question",
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             "ghost",
             null,
@@ -330,7 +330,7 @@ class AgentStatusMessageTest {
             "IN_PROGRESS",
             "needs it",
             "question",
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             "api",
             null,
@@ -353,7 +353,7 @@ class AgentStatusMessageTest {
             "IN_PROGRESS",
             "working",
             "progress",
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             "registry",
             null,
@@ -383,7 +383,7 @@ class AgentStatusMessageTest {
             "IN_PROGRESS",
             "working",
             null,
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             null,
             "the human asked for the billing repository because the invoice export reads it, and"
@@ -403,7 +403,7 @@ class AgentStatusMessageTest {
             "REVIEW_PENDING",
             "done",
             null,
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             null,
             "work done, tests green, ready for review",
@@ -419,7 +419,7 @@ class AgentStatusMessageTest {
             "IN_PROGRESS",
             "working",
             null,
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             null,
             "starting work",
@@ -439,7 +439,7 @@ class AgentStatusMessageTest {
             "PLAN_PENDING",
             "plan ready",
             null,
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             null,
             "plan written for approval",
@@ -458,7 +458,7 @@ class AgentStatusMessageTest {
             "PLAN_PENDING",
             "plan ready",
             null,
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             null,
             "plan written for approval",
@@ -478,7 +478,7 @@ class AgentStatusMessageTest {
             "PLAN_PENDING",
             "plan ready",
             null,
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             null,
             "plan written for approval",
@@ -494,7 +494,7 @@ class AgentStatusMessageTest {
             "PLAN_PENDING",
             "plan ready",
             null,
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             null,
             "plan written for approval",
@@ -513,7 +513,7 @@ class AgentStatusMessageTest {
             "IN_PROGRESS",
             "working",
             null,
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             null,
             "back to work",
@@ -529,7 +529,7 @@ class AgentStatusMessageTest {
             "IN_PROGRESS",
             "working",
             null,
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             null,
             "starting work",
@@ -545,7 +545,7 @@ class AgentStatusMessageTest {
             "IN_PROGRESS",
             "working",
             null,
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             null,
             "starting work",

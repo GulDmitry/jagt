@@ -7,6 +7,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -36,7 +37,7 @@ public final class StandRecordings {
             .map(Map.Entry::getKey)
             .toList();
     for (String run : oldestFirst.subList(0, Math.max(0, oldestFirst.size() - KEPT))) {
-      for (Path recording : byRun.get(run)) {
+      for (Path recording : Objects.requireNonNull(byRun.get(run))) {
         Files.delete(recording);
       }
     }

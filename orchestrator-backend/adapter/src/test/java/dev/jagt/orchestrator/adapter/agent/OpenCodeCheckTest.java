@@ -26,7 +26,8 @@ class OpenCodeCheckTest {
   void refusesToStartWhereTheSessionsEndpointCannotBeUsed(
       String endpoint, String model, String key) {
     var check =
-        new OpenCodeCheck(new OpenCodeProperties("sh", endpoint, model, null), roles, "opencode");
+        new OpenCodeCheck(
+            new OpenCodeProperties("sh", endpoint, model, Map.of()), roles, "opencode");
 
     assertThat(check.problems()).extracting(Problem::key).containsExactly(key);
   }
@@ -35,7 +36,7 @@ class OpenCodeCheckTest {
   void refusesToStartWithoutTheCliOnPathWhereSessionsRunOnIt() {
     var check =
         new OpenCodeCheck(
-            new OpenCodeProperties("no-such-agent-cli", "", "", null), roles, "opencode");
+            new OpenCodeProperties("no-such-agent-cli", "", "", Map.of()), roles, "opencode");
 
     assertThat(check.problems())
         .extracting(Problem::key)
@@ -63,7 +64,7 @@ class OpenCodeCheckTest {
   void asksNothingWhereNoSessionAndNoReadRunsOnOpenCode() {
     var check =
         new OpenCodeCheck(
-            new OpenCodeProperties("no-such-agent-cli", "ftp://x", "", null), roles, "claude");
+            new OpenCodeProperties("no-such-agent-cli", "ftp://x", "", Map.of()), roles, "claude");
 
     assertThat(check.problems()).isEmpty();
   }
@@ -72,7 +73,7 @@ class OpenCodeCheckTest {
   void acceptsLocalEndpointWithItsModelForTheSessions() {
     var check =
         new OpenCodeCheck(
-            new OpenCodeProperties("sh", "http://127.0.0.1:8080/v1", "qwen-4b", null),
+            new OpenCodeProperties("sh", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of()),
             roles,
             "opencode");
 

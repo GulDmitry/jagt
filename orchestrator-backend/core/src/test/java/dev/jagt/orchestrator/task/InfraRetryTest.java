@@ -13,7 +13,7 @@ class InfraRetryTest {
     InfraRetry old =
         new InfraRetry(
             1_000,
-            null,
+            "",
             "https://host.invalid/p/1",
             "unit-tests",
             "runner_system_failure",

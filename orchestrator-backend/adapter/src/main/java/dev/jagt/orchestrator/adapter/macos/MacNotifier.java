@@ -46,7 +46,7 @@ public class MacNotifier implements UserNotifier {
   }
 
   @Override
-  public void notify(String title, String message, @Nullable String link) {
+  public void notify(@Nullable String title, @Nullable String message, @Nullable String link) {
     String notifier = terminalNotifier;
     if (notifier != null && bannerShown(notifier, title, message, link)) {
       return;
@@ -55,7 +55,7 @@ public class MacNotifier implements UserNotifier {
   }
 
   private boolean bannerShown(
-      String notifier, String title, String message, @Nullable String link) {
+      String notifier, @Nullable String title, @Nullable String message, @Nullable String link) {
     try {
       processRunner
           .run(null, TIMEOUT, command(notifier, title, message, link))
@@ -71,7 +71,7 @@ public class MacNotifier implements UserNotifier {
     }
   }
 
-  private void displayNotification(String title, String message) {
+  private void displayNotification(@Nullable String title, @Nullable String message) {
     try {
       osaScript.run(
           "display notification "
@@ -86,7 +86,10 @@ public class MacNotifier implements UserNotifier {
 
   /** {@code -open} is what makes the banner clickable; osascript has no equivalent. */
   static List<String> command(
-      String terminalNotifier, String title, String message, @Nullable String link) {
+      String terminalNotifier,
+      @Nullable String title,
+      @Nullable String message,
+      @Nullable String link) {
     List<String> command =
         new ArrayList<>(
             List.of(

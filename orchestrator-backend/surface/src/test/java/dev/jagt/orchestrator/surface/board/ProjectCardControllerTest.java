@@ -20,10 +20,11 @@ class ProjectCardControllerTest {
         new ProjectCards.Card(
             "demo",
             "code.example:acme/demo",
-            new ProjectConfig.Repository("/work/demo", List.of("web"), null, null),
+            new ProjectConfig.Repository("/work/demo", List.of("web"), null, List.of()),
             new ProjectConfig.Branches("origin/main", "dev", null),
-            new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
-            new ProjectConfig.Verify(null, null));
+            new ProjectConfig.CodeHost(
+                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+            new ProjectConfig.Verify(List.of(), null));
     when(cards.of("demo")).thenReturn(card);
 
     assertThat(controller.card("demo")).isSameAs(card);

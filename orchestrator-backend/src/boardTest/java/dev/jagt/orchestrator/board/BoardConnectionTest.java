@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +57,7 @@ class BoardConnectionTest extends BoardPageContext {
     page.navigate("http://localhost:" + port + "/");
     String href = (String) page.locator("link[rel=manifest]").evaluate("link => link.href");
 
-    APIResponse manifest = session.request().get(href);
+    APIResponse manifest = session.request().get(Objects.requireNonNull(href));
 
     org.assertj.core.api.Assertions.assertThat(href)
         .isEqualTo("http://localhost:" + port + "/manifest.webmanifest");

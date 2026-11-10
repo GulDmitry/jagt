@@ -47,7 +47,7 @@ class FeaturesTest {
 
   private static boolean describedInOrder(String dist, String key) {
     int from = 0;
-    for (String segment : key.replaceFirst("^orchestrator\\.", "").split("\\.")) {
+    for (String segment : key.replaceFirst("^orchestrator\\.", "").split("\\.", 0)) {
       Matcher found =
           Pattern.compile("(?m)^\\s*#?\\s*" + Pattern.quote(segment) + ":").matcher(dist);
       if (!found.find(from)) {

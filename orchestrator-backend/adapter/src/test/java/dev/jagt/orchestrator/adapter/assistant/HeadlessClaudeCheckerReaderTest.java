@@ -82,7 +82,7 @@ class HeadlessClaudeCheckerReaderTest {
         .noneMatch(
             tool ->
                 tool.startsWith("Write")
-                    || tool.startsWith("Bash(curl") && !tool.equals("Bash(curl -sS:*)"));
+                    || (tool.startsWith("Bash(curl") && !tool.equals("Bash(curl -sS:*)")));
     assertThat(argv.subList(argv.indexOf("--disallowedTools"), argv.indexOf("--allowedTools")))
         .contains("Write", "Edit", "Bash(git * --output*)");
   }
@@ -266,9 +266,18 @@ class HeadlessClaudeCheckerReaderTest {
             AssistantProperties.empty(),
             List.of(
                 RoleDefinitions.compile(
-                    "id: acceptance\nname: acceptance\nmodel: m\ntrigger: [deployed]\n"
-                        + "oncePer: deploy\noutcomes: [round]\ntools:\n  mcp: [mcp__browser]\n"
-                        + "answer:\n  - required: failure\n")));
+                    """
+                    id: acceptance
+                    name: acceptance
+                    model: m
+                    trigger: [deployed]
+                    oncePer: deploy
+                    outcomes: [round]
+                    tools:
+                      mcp: [mcp__browser]
+                    answer:
+                      - required: failure
+                    """)));
 
     browsing.read(
         new CheckerReader.Run(

@@ -158,9 +158,11 @@ class TrustedGitStateTest {
             diff ->
                 assertThat(diff.diff())
                     .isEqualTo(
-                        "@@ /r/.git/hooks/pre-push removed\n"
-                            + "@@ core.fsmonitor in /r/.git/config added\n"
-                            + "+/tmp/x\n"));
+                        """
+                        @@ /r/.git/hooks/pre-push removed
+                        @@ core.fsmonitor in /r/.git/config added
+                        +/tmp/x
+                        """));
   }
 
   @Test

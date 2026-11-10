@@ -22,8 +22,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class TaskRetargetTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void recordsTheNewBaseOnceOriginHasItAndTheWorktreeStandsOnIt(@TempDir Path root) {
@@ -34,7 +33,7 @@ class TaskRetargetTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     GitWorktrees git = mock(GitWorktrees.class);
     ConfigService config = mock(ConfigService.class);
@@ -57,7 +56,7 @@ class TaskRetargetTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     GitWorktrees git = mock(GitWorktrees.class);
     ConfigService config = mock(ConfigService.class);
@@ -79,7 +78,7 @@ class TaskRetargetTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     GitWorktrees git = mock(GitWorktrees.class);
     ConfigService config = mock(ConfigService.class);
@@ -101,16 +100,17 @@ class TaskRetargetTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     GitWorktrees git = mock(GitWorktrees.class);
     ConfigService config = mock(ConfigService.class);
     when(config.project("proj"))
         .thenReturn(
             new ProjectConfig(
-                new ProjectConfig.Repository("/repo", List.of(), null, null),
+                new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
                 new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
-                new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+                new ProjectConfig.CodeHost(
+                    null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                 new ProjectConfig.Verify(List.of(), null)));
     when(git.remoteBranchExists(Path.of("/wt"), "ABC-41")).thenReturn(true);
     when(git.standsOn(Path.of("/wt"), "ABC-41")).thenReturn(true);

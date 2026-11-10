@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.task.ProjectConfig;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 class RemoteCheckTest {
@@ -22,11 +23,12 @@ class RemoteCheckTest {
   private final Processes processes = mock(Processes.class);
   private final RemoteCheck check = new RemoteCheck(configService, processes);
 
-  private static ProjectConfig project(String codeHost, String remote) {
+  private static ProjectConfig project(@Nullable String codeHost, @Nullable String remote) {
     return new ProjectConfig(
-        new ProjectConfig.Repository("/repo/shop", List.of(), null, null),
+        new ProjectConfig.Repository("/repo/shop", List.of(), null, List.of()),
         new ProjectConfig.Branches("main", "dev", remote),
-        new ProjectConfig.CodeHost(codeHost, null, null, null, null, null, null),
+        new ProjectConfig.CodeHost(
+            codeHost, null, List.of(), List.of(), List.of(), List.of(), List.of()),
         new ProjectConfig.Verify(List.of(), null));
   }
 

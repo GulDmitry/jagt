@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service.master;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -47,8 +47,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class MasterPanelTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @TempDir Path stateRoot;
 
@@ -59,7 +58,7 @@ class MasterPanelTest {
             OrchestratorProperties.defaults()
                 .withRoot(stateRoot.toString())
                 .withStateFile(stateRoot.resolve("state.json").toString())),
-                reducer);
+        reducer);
   }
 
   private static final List<MasterPanel.Role> TWO =
@@ -323,9 +322,11 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any()))
         .thenReturn(
             Optional.of(
-                "| role | question |\n"
-                    + "| chaplain | should it exist |\n"
-                    + "| developer | is the code right |"));
+                """
+                | role | question |
+                | chaplain | should it exist |
+                | developer | is the code right |\
+                """));
     when(briefs.author()).thenReturn("");
     when(quotes.round("ABC-1", task))
         .thenReturn(Optional.of(new MasterPanel.RoundRead("", "+int x;\n", "", List.of(), "")));
@@ -355,9 +356,11 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any()))
         .thenReturn(
             Optional.of(
-                "| role | question |\n"
-                    + "| chaplain | should it exist |\n"
-                    + "| developer | is the code right |"));
+                """
+                | role | question |
+                | chaplain | should it exist |
+                | developer | is the code right |\
+                """));
     when(briefs.author()).thenReturn("");
     when(quotes.round("ABC-1", task))
         .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
@@ -645,13 +648,14 @@ class MasterPanelTest {
         .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
     when(reviews.review(eq("ABC-1"), any())).thenThrow(new Processes.Stopped(List.of("claude")));
 
-    catchThrowable(
-        () ->
-            new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
-                .review(
-                    "ABC-1",
-                    task,
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+    assertThatThrownBy(
+            () ->
+                new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+                    .review(
+                        "ABC-1",
+                        task,
+                        new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)))
+        .isInstanceOf(Processes.Stopped.class);
 
     assertThat(worktree.resolve(MasterReview.FILE)).doesNotExist();
   }
@@ -733,9 +737,11 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any()))
         .thenReturn(
             Optional.of(
-                "| role | question | applies |\n"
-                    + "| designer | is the mark worth it | static/** |\n"
-                    + "| QA | is it tested |"));
+                """
+                | role | question | applies |
+                | designer | is the mark worth it | static/** |
+                | QA | is it tested |\
+                """));
     when(briefs.author()).thenReturn("");
     when(quotes.round("ABC-1", task))
         .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
@@ -781,9 +787,11 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any()))
         .thenReturn(
             Optional.of(
-                "| role | question | applies |\n"
-                    + "| designer | is the mark worth it | static/** |\n"
-                    + "| QA | is it tested |"));
+                """
+                | role | question | applies |
+                | designer | is the mark worth it | static/** |
+                | QA | is it tested |\
+                """));
     when(briefs.author()).thenReturn("");
     when(quotes.round("ABC-1", task))
         .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
@@ -960,8 +968,11 @@ class MasterPanelTest {
 
     assertThat(file)
         .endsWith(
-            "The chaplain could not read the round: no tracker tool in this session\n\n"
-                + "VERDICT: question\n");
+            """
+            The chaplain could not read the round: no tracker tool in this session
+
+            VERDICT: question
+            """);
   }
 
   @Test
@@ -1603,9 +1614,11 @@ class MasterPanelTest {
     when(briefs.master(eq("ABC-1"), any()))
         .thenReturn(
             Optional.of(
-                "| role | question |\n"
-                    + "| chaplain | should it exist |\n"
-                    + "| developer | is the code right |"));
+                """
+                | role | question |
+                | chaplain | should it exist |
+                | developer | is the code right |\
+                """));
     when(briefs.author()).thenReturn("");
     when(quotes.round("ABC-1", task))
         .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));

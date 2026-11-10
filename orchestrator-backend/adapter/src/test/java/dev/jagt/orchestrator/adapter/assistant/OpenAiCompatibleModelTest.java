@@ -10,10 +10,13 @@ import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +24,7 @@ class OpenAiCompatibleModelTest {
 
   private static final String SCHEMA = "{\"type\":\"object\",\"required\":[\"command\"]}";
   private final UsageTracker usageTracker = mock(UsageTracker.class);
-  private HttpServer server;
+  private @Nullable HttpServer server;
 
   @AfterEach
   void stop() {
@@ -107,7 +110,7 @@ class OpenAiCompatibleModelTest {
   @Test
   void failsWithoutAnswerWhereNothingListens() throws IOException {
     start(200, "{}", Duration.ZERO, new AtomicReference<>());
-    int port = server.getAddress().getPort();
+    int port = Objects.requireNonNull(server).getAddress().getPort();
     server.stop(0);
     server = null;
     OpenAiCompatibleModel dead =
@@ -126,7 +129,8 @@ class OpenAiCompatibleModelTest {
   private OpenAiCompatibleModel model(Duration timeout) {
     return new OpenAiCompatibleModel(
         LocalModelProperties.off()
-            .withEndpoint("http://127.0.0.1:" + server.getAddress().getPort() + "/v1")
+            .withEndpoint(
+                "http://127.0.0.1:" + Objects.requireNonNull(server).getAddress().getPort() + "/v1")
             .withModel("qwen")
             .withTimeout(timeout),
         usageTracker);
@@ -134,7 +138,9 @@ class OpenAiCompatibleModelTest {
 
   private void start(int status, String body, Duration delay, AtomicReference<String> sent)
       throws IOException {
-    server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    server =
+        HttpServer.create(
+            new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 0), 0);
     server.createContext(
         "/v1/chat/completions",
         exchange -> {

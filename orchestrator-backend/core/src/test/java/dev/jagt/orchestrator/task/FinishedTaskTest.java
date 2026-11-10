@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.task;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -237,8 +238,8 @@ class FinishedTaskTest {
             new FinishedTask.Identity("ABC-1", null, null, List.of(), null),
             6_000L,
             new FinishedTask.Spend(0, null, null, null),
-            new FinishedTask.Course(List.of(), 0, null, null, null, null),
-            null);
+            new FinishedTask.Course(List.of(), 0, null, Map.of(), List.of(), null),
+            List.of());
 
     assertThat(task.tookMillis()).isZero();
   }
@@ -306,8 +307,8 @@ class FinishedTaskTest {
             9L,
             new FinishedTask.Spend(
                 0, 1.0, TokenUsage.ofUnpricedCall(10, 0, 10), TokenUsage.ofCall(10, 0, 10, 1.0)),
-            new FinishedTask.Course(List.of(), 0, null, null, null, null),
-            null);
+            new FinishedTask.Course(List.of(), 0, null, Map.of(), List.of(), null),
+            List.of());
 
     assertThat(task.spend().costIsLowerBound()).isTrue();
   }
@@ -320,8 +321,8 @@ class FinishedTaskTest {
             9L,
             new FinishedTask.Spend(
                 0, 1.0, TokenUsage.ofCall(10, 0, 10, 1.0), TokenUsage.ofUnpricedCall(10, 0, 10)),
-            new FinishedTask.Course(List.of(), 0, null, null, null, null),
-            null);
+            new FinishedTask.Course(List.of(), 0, null, Map.of(), List.of(), null),
+            List.of());
 
     assertThat(task.spend().costIsLowerBound()).isTrue();
   }
@@ -334,8 +335,8 @@ class FinishedTaskTest {
             9L,
             new FinishedTask.Spend(
                 0, 1.0, TokenUsage.ofCall(10, 0, 10, 0.5), TokenUsage.ofCall(10, 0, 10, 0.5)),
-            new FinishedTask.Course(List.of(), 0, null, null, null, null),
-            null);
+            new FinishedTask.Course(List.of(), 0, null, Map.of(), List.of(), null),
+            List.of());
 
     assertThat(task.spend().costIsLowerBound()).isFalse();
   }
@@ -347,8 +348,8 @@ class FinishedTaskTest {
             new FinishedTask.Identity("ABC-1", null, null, List.of(), null),
             9L,
             new FinishedTask.Spend(0, null, TokenUsage.ofUnpricedCall(10, 0, 10), null),
-            new FinishedTask.Course(List.of(), 0, null, null, null, null),
-            null);
+            new FinishedTask.Course(List.of(), 0, null, Map.of(), List.of(), null),
+            List.of());
 
     assertThat(task.spend().costIsLowerBound()).isFalse();
   }

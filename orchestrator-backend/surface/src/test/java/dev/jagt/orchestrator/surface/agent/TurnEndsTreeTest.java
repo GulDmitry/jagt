@@ -37,7 +37,8 @@ class TurnEndsTreeTest {
         .thenReturn("{\"decision\": \"block\"}");
 
     String answered =
-        new TurnEnds(runtime, null, notes, turnTree).answer("ABC-1", task, false, false);
+        new TurnEnds(runtime, mock(ConfigService.class), notes, turnTree)
+            .answer("ABC-1", task, false, false);
 
     assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
   }
@@ -60,7 +61,7 @@ class TurnEndsTreeTest {
 
   @Test
   void turnEndTheRefusalSentOnRecordsTheTreeTheNextTurnIsMeasuredFrom() {
-    new TurnEnds(mock(AgentRuntime.class), null, notes, turnTree)
+    new TurnEnds(mock(AgentRuntime.class), mock(ConfigService.class), notes, turnTree)
         .answer("ABC-1", task, true, false);
 
     verify(turnTree).changedSinceLastEnd("ABC-1", task);

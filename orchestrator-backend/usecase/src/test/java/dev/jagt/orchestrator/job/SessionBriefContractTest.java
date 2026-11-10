@@ -69,7 +69,7 @@ class SessionBriefContractTest {
       new TicketScenarios(
           new RoleSettings(
               RoleDefinition.absent("acceptance"),
-              null,
+              mock(ConfigService.class),
               new OrchestratorPaths(OrchestratorProperties.defaults())));
 
   @Test

@@ -8,6 +8,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -22,8 +23,7 @@ class CiWorkflowTest {
     Map<String, Map<String, Object>> jobs = jobs();
     Set<String> others =
         jobs.keySet().stream().filter(job -> !job.equals("release")).collect(Collectors.toSet());
-
-    assertThat(jobs.get("release").get("needs"))
+    assertThat(Objects.requireNonNull(jobs.get("release")).get("needs"))
         .asInstanceOf(list(String.class))
         .containsExactlyInAnyOrderElementsOf(others);
   }
@@ -55,7 +55,7 @@ class CiWorkflowTest {
   private static Map<String, Map<String, Object>> jobs() {
     try {
       Map<String, Object> workflow = new Yaml().load(Files.readString(WORKFLOW));
-      return (Map<String, Map<String, Object>>) workflow.get("jobs");
+      return Objects.requireNonNull((Map<String, Map<String, Object>>) workflow.get("jobs"));
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

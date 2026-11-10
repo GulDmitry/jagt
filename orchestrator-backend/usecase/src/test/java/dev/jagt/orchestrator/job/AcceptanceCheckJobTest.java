@@ -33,19 +33,18 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class AcceptanceCheckJobTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final ConfigFile ON =
-      ConfigFile.defaults()
-          .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));
+      ConfigFile.defaults().withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));
 
-  private static TaskState deployed(String askedDigest) {
+  private static TaskState deployed(@Nullable String askedDigest) {
     return TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
         .build()
         .withDeployment(
@@ -288,25 +287,26 @@ class AcceptanceCheckJobTest {
       throws IOException {
     Files.writeString(
         root.resolve("role.yml"),
-        "id: acceptance\n"
-            + "name: acceptance\n"
-            + "model: sonnet\n"
-            + "trigger: [deployed, pipelines-green]\n"
-            + "oncePer: deploy\n"
-            + "outcomes: [round]\n"
-            + "tools:\n"
-            + "  shell: [\"git log*\"]\n"
-            + "answer:\n"
-            + "  - required: failure\n"
-            + "decline:\n"
-            + "  - required: failure\n");
+        """
+        id: acceptance
+        name: acceptance
+        model: sonnet
+        trigger: [deployed, pipelines-green]
+        oncePer: deploy
+        outcomes: [round]
+        tools:
+          shell: ["git log*"]
+        answer:
+          - required: failure
+        decline:
+          - required: failure
+        """);
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     when(config.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withRoles(
-                    Map.of("acceptance", new ConfigFile.RoleConfig(true, null))));
+                .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null))));
     when(reader.check(any(), any(), any(), any()))
         .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
     OrchestratorPaths paths =
@@ -329,25 +329,26 @@ class AcceptanceCheckJobTest {
       throws IOException {
     Files.writeString(
         root.resolve("role.yml"),
-        "id: acceptance\n"
-            + "name: acceptance\n"
-            + "model: sonnet\n"
-            + "trigger: [deployed, pipelines-green, environment-named]\n"
-            + "oncePer: deploy\n"
-            + "outcomes: [round]\n"
-            + "tools:\n"
-            + "  shell: [\"git log*\"]\n"
-            + "answer:\n"
-            + "  - required: failure\n"
-            + "decline:\n"
-            + "  - required: failure\n");
+        """
+        id: acceptance
+        name: acceptance
+        model: sonnet
+        trigger: [deployed, pipelines-green, environment-named]
+        oncePer: deploy
+        outcomes: [round]
+        tools:
+          shell: ["git log*"]
+        answer:
+          - required: failure
+        decline:
+          - required: failure
+        """);
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     when(config.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withRoles(
-                    Map.of("acceptance", new ConfigFile.RoleConfig(true, null))));
+                .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null))));
     when(reader.check(any(), any(), any(), any()))
         .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
     OrchestratorPaths paths =
@@ -370,18 +371,20 @@ class AcceptanceCheckJobTest {
       throws IOException {
     Files.writeString(
         root.resolve("role.yml"),
-        "id: acceptance\n"
-            + "name: acceptance\n"
-            + "model: sonnet\n"
-            + "trigger: [deployed, pipelines-green, environment-named]\n"
-            + "oncePer: deploy\n"
-            + "outcomes: [round]\n"
-            + "tools:\n"
-            + "  shell: [\"git log*\"]\n"
-            + "answer:\n"
-            + "  - required: failure\n"
-            + "decline:\n"
-            + "  - required: failure\n");
+        """
+        id: acceptance
+        name: acceptance
+        model: sonnet
+        trigger: [deployed, pipelines-green, environment-named]
+        oncePer: deploy
+        outcomes: [round]
+        tools:
+          shell: ["git log*"]
+        answer:
+          - required: failure
+        decline:
+          - required: failure
+        """);
     ConfigService config = mock(ConfigService.class);
     CheckerReads reader = mock(CheckerReads.class);
     when(config.load()).thenReturn(ON);

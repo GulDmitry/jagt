@@ -139,8 +139,13 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
-        "orchestrator:\n  notifications:\n    channel:\n"
-            + "      command: [sh, -c, cat]\n      events: [stopped, no-such-event]\n");
+        """
+        orchestrator:
+          notifications:
+            channel:
+              command: [sh, -c, cat]
+              events: [stopped, no-such-event]
+        """);
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -206,12 +211,14 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
-        "orchestrator:\n"
-            + "  roles:\n"
-            + "    foo:\n"
-            + "      enabled: true\n"
-            + "    ACCEPTANCE:\n"
-            + "      enabled: true\n");
+        """
+        orchestrator:
+          roles:
+            foo:
+              enabled: true
+            ACCEPTANCE:
+              enabled: true
+        """);
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -257,13 +264,15 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
-        "orchestrator:\n"
-            + "  master:\n"
-            + "    mode: act\n"
-            + "  roles:\n"
-            + "    master:\n"
-            + "      mode: judge\n"
-            + "      mine: [reply]\n");
+        """
+        orchestrator:
+          master:
+            mode: act
+          roles:
+            master:
+              mode: judge
+              mine: [reply]
+        """);
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -288,12 +297,14 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
-        "orchestrator:\n"
-            + "  master:\n"
-            + "    mine: [plan, deploy, revert]\n"
-            + "  roles:\n"
-            + "    master:\n"
-            + "      mode: act\n");
+        """
+        orchestrator:
+          master:
+            mine: [plan, deploy, revert]
+          roles:
+            master:
+              mode: act
+        """);
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -957,12 +968,14 @@ class ConfigServiceTest {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
-        "orchestrator:\n"
-            + "  roles:\n"
-            + "    foo:\n"
-            + "      enabled: true\n"
-            + "    acceptance:\n"
-            + "      enabled: true\n");
+        """
+        orchestrator:
+          roles:
+            foo:
+              enabled: true
+            acceptance:
+              enabled: true
+        """);
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -1050,11 +1063,11 @@ class ConfigServiceTest {
                     "demo",
                     new dev.jagt.orchestrator.task.ProjectConfig(
                         new dev.jagt.orchestrator.task.ProjectConfig.Repository(
-                            "/repo", List.of(), null, null),
+                            "/repo", List.of(), null, List.of()),
                         new dev.jagt.orchestrator.task.ProjectConfig.Branches(
                             "origin/main", "dev", null),
                         new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(
-                            own, null, null, null, null, null, null),
+                            own, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                         new dev.jagt.orchestrator.task.ProjectConfig.Verify(List.of(), null))));
 
     assertThat(config.hasNoCodeHost("demo")).isEqualTo(none);
@@ -1070,11 +1083,11 @@ class ConfigServiceTest {
                     "demo",
                     new dev.jagt.orchestrator.task.ProjectConfig(
                         new dev.jagt.orchestrator.task.ProjectConfig.Repository(
-                            "/repo", List.of(), null, null),
+                            "/repo", List.of(), null, List.of()),
                         new dev.jagt.orchestrator.task.ProjectConfig.Branches(
                             "main", "dev", "none"),
                         new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(
-                            null, null, null, null, null, null, null),
+                            null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                         new dev.jagt.orchestrator.task.ProjectConfig.Verify(List.of(), null))));
 
     assertThat(config.hasNoCodeHost("demo")).isTrue();

@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InOrder;
@@ -42,8 +43,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class RevertServiceTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void revertsTheDeployedMergeAndReportsTheUndoAsDone(@TempDir Path root) {
@@ -54,7 +54,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -67,7 +67,8 @@ class RevertServiceTest {
                     null))
             .build());
     ConfigService config = mock(ConfigService.class);
-    when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+    when(config.project("proj"))
+        .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     GitDeploy git = mock(GitDeploy.class);
     when(git.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
         .thenReturn("f00dfeed5678");
@@ -96,7 +97,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -113,7 +114,8 @@ class RevertServiceTest {
                     null))
             .build());
     ConfigService config = mock(ConfigService.class);
-    when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+    when(config.project("proj"))
+        .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     GitDeploy git = mock(GitDeploy.class);
     when(git.revertMergeAndPush(
             any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), eq(List.of("f1x2", "f1x1"))))
@@ -130,7 +132,8 @@ class RevertServiceTest {
     Outcome outcome = service.revert("a1");
 
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
-    assertThat(state.task("ABC-1").orElseThrow().deployment().live()).isFalse();
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment()).live())
+        .isFalse();
     verify(git)
         .revertMergeAndPush(
             any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), eq(List.of("f1x2", "f1x1")));
@@ -145,7 +148,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -159,7 +162,7 @@ class RevertServiceTest {
             .build());
     ConfigService config = mock(ConfigService.class);
     when(config.project("proj"))
-        .thenReturn(new ProjectConfig("/repo", "origin/main", "staging", null));
+        .thenReturn(new ProjectConfig("/repo", "origin/main", "staging", List.of()));
     GitDeploy git = mock(GitDeploy.class);
     when(git.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
         .thenReturn("f00dfeed5678");
@@ -188,7 +191,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         new JsonMapper()
@@ -199,7 +202,8 @@ class RevertServiceTest {
                 """,
                 TaskState.class));
     ConfigService config = mock(ConfigService.class);
-    when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+    when(config.project("proj"))
+        .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     GitDeploy git = mock(GitDeploy.class);
     when(git.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
         .thenReturn("f00dfeed5678");
@@ -226,7 +230,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
@@ -234,7 +238,7 @@ class RevertServiceTest {
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", null))));
+                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
     GitDeploy git = mock(GitDeploy.class);
     DeployTargets targets = new DeployTargets(config);
     RevertService service =
@@ -264,7 +268,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
@@ -272,7 +276,7 @@ class RevertServiceTest {
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", null))));
+                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
     GitCaseFacts facts = mock(GitCaseFacts.class);
     when(facts.mergeCandidates(Path.of("/repo"), "dev", "ABC-1"))
         .thenReturn(
@@ -303,7 +307,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
@@ -311,7 +315,7 @@ class RevertServiceTest {
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", null))));
+                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
     GitCaseFacts.Candidate listed =
         new GitCaseFacts.Candidate("aaaaaaaa1111", "2026-11-01", "Merge ABC-1");
     GitCaseFacts facts = mock(GitCaseFacts.class);
@@ -342,7 +346,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -356,8 +360,9 @@ class RevertServiceTest {
             ConfigService.ConfigFile.defaults()
                 .withProjects(
                     Map.of(
-                        "api", new ProjectConfig("/repo/api", "origin/main", "dev", null),
-                        "web", new ProjectConfig("/repo/web", "origin/main", "staging", null))));
+                        "api", new ProjectConfig("/repo/api", "origin/main", "dev", List.of()),
+                        "web",
+                            new ProjectConfig("/repo/web", "origin/main", "staging", List.of()))));
     GitCaseFacts.Candidate listed =
         new GitCaseFacts.Candidate("aaaaaaaa1111", "2026-11-01", "Merge ABC-1");
     GitCaseFacts facts = mock(GitCaseFacts.class);
@@ -389,7 +394,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
@@ -397,7 +402,7 @@ class RevertServiceTest {
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", null))));
+                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
     GitCaseFacts facts = mock(GitCaseFacts.class);
     GitDeploy git = mock(GitDeploy.class);
     RevertService service =
@@ -424,7 +429,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -438,8 +443,9 @@ class RevertServiceTest {
             ConfigService.ConfigFile.defaults()
                 .withProjects(
                     Map.of(
-                        "api", new ProjectConfig("/repo/api", "origin/main", "dev", null),
-                        "web", new ProjectConfig("/repo/web", "origin/main", "staging", null))));
+                        "api", new ProjectConfig("/repo/api", "origin/main", "dev", List.of()),
+                        "web",
+                            new ProjectConfig("/repo/web", "origin/main", "staging", List.of()))));
     GitDeploy git = mock(GitDeploy.class);
     DeployTargets targets = new DeployTargets(config);
     RevertService service =
@@ -465,7 +471,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -478,7 +484,8 @@ class RevertServiceTest {
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
-                    Map.of("api", new ProjectConfig("/repo/api", "origin/main", "dev", null))));
+                    Map.of(
+                        "api", new ProjectConfig("/repo/api", "origin/main", "dev", List.of()))));
     GitDeploy git = mock(GitDeploy.class);
     DeployTargets targets = new DeployTargets(config);
     RevertService service =
@@ -504,7 +511,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -525,7 +532,7 @@ class RevertServiceTest {
                     null)));
     ConfigService config = mock(ConfigService.class);
     when(config.project("api"))
-        .thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        .thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", List.of()));
     GitDeploy git = mock(GitDeploy.class);
     when(git.revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234", List.of()))
         .thenReturn("beef00991122");
@@ -553,7 +560,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -574,9 +581,9 @@ class RevertServiceTest {
                     null)));
     ConfigService config = mock(ConfigService.class);
     when(config.project("api"))
-        .thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        .thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", List.of()));
     when(config.project("web"))
-        .thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        .thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", List.of()));
     GitDeploy git = mock(GitDeploy.class);
     when(git.revertMergeAndPush(any(), anyString(), anyString(), anyString(), anyList()))
         .thenReturn("beef00991122");
@@ -600,7 +607,7 @@ class RevertServiceTest {
         .revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234", List.of());
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
     assertThat(outcome.message()).contains("reverted web on dev", "api on dev", "REVERTED");
-    assertThat(state.task("ABC-1").orElseThrow().deployment().targets())
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment()).targets())
         .extracting(target -> target.landing().merge())
         .containsOnlyNulls();
   }
@@ -614,7 +621,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -635,9 +642,9 @@ class RevertServiceTest {
                     null)));
     ConfigService config = mock(ConfigService.class);
     when(config.project("api"))
-        .thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        .thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", List.of()));
     when(config.project("web"))
-        .thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        .thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", List.of()));
     GitDeploy git = mock(GitDeploy.class);
     when(git.revertMergeAndPush(Path.of("/repo/web"), "ABC-1", "dev", "f00dfeed5678", List.of()))
         .thenReturn("beef00991122");
@@ -658,7 +665,7 @@ class RevertServiceTest {
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.PARTIAL);
     assertThat(outcome.message()).contains("reverted web on dev", "api still live on dev");
     assertThat(outcome.stamp()).contains("reverted web on dev", "api still live on dev");
-    assertThat(state.task("ABC-1").orElseThrow().deployment().targets())
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment()).targets())
         .extracting(target -> target.landing().merge())
         .containsExactly("cafebabe1234", null);
   }
@@ -672,7 +679,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -694,18 +701,18 @@ class RevertServiceTest {
                     null)));
     ConfigService config = mock(ConfigService.class);
     when(config.project("api"))
-        .thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        .thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", List.of()));
     when(config.project("web"))
-        .thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        .thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", List.of()));
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "api",
-                        new ProjectConfig("/repo/api", "origin/main", "dev", null),
+                        new ProjectConfig("/repo/api", "origin/main", "dev", List.of()),
                         "web",
-                        new ProjectConfig("/repo/web", "origin/main", "dev", null))));
+                        new ProjectConfig("/repo/web", "origin/main", "dev", List.of()))));
     GitDeploy git = mock(GitDeploy.class);
     when(git.hasDeployWorktree(Path.of("/repo/web"), "ABC-1")).thenReturn(true);
     when(git.revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234", List.of()))
@@ -733,7 +740,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
@@ -752,7 +759,7 @@ class RevertServiceTest {
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", null))));
+                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
     GitDeploy git = mock(GitDeploy.class);
     when(git.hasDeployWorktree(Path.of("/repo"), "ABC-1")).thenReturn(true);
     DeployTargets targets = new DeployTargets(config);
@@ -780,7 +787,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -802,18 +809,18 @@ class RevertServiceTest {
                     null)));
     ConfigService config = mock(ConfigService.class);
     when(config.project("api"))
-        .thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        .thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", List.of()));
     when(config.project("web"))
-        .thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        .thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", List.of()));
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
                     Map.of(
                         "api",
-                        new ProjectConfig("/repo/api", "origin/main", "dev", null),
+                        new ProjectConfig("/repo/api", "origin/main", "dev", List.of()),
                         "web",
-                        new ProjectConfig("/repo/web", "origin/main", "dev", null))));
+                        new ProjectConfig("/repo/web", "origin/main", "dev", List.of()))));
     GitDeploy git = mock(GitDeploy.class);
     doThrow(new IllegalStateException("the revert conflicts"))
         .when(git)
@@ -840,7 +847,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -859,7 +866,7 @@ class RevertServiceTest {
                         Deployment.Target.of("gone", "dev")),
                     1,
                     null)));
-    ProjectConfig api = new ProjectConfig("/repo/api", "origin/main", "dev", null);
+    ProjectConfig api = new ProjectConfig("/repo/api", "origin/main", "dev", List.of());
     ConfigService config = mock(ConfigService.class);
     when(config.project("api")).thenReturn(api);
     when(config.project("gone")).thenThrow(new IllegalArgumentException("Unknown project 'gone'"));
@@ -891,7 +898,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
@@ -907,12 +914,13 @@ class RevertServiceTest {
                     null))
             .build());
     ConfigService config = mock(ConfigService.class);
-    when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+    when(config.project("proj"))
+        .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", null))));
+                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
     GitDeploy git = mock(GitDeploy.class);
     when(git.hasDeployWorktree(Path.of("/repo"), "ABC-1")).thenReturn(true);
     when(git.revertMergeAndPush(Path.of("/repo"), "ABC-1", "dev", "cafebabe1234", List.of()))
@@ -940,7 +948,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
     state.updateTask(
@@ -954,7 +962,7 @@ class RevertServiceTest {
                     null)));
     ConfigService config = mock(ConfigService.class);
     when(config.project("proj"))
-        .thenReturn(new ProjectConfig("/repo", "origin/main", "main", null));
+        .thenReturn(new ProjectConfig("/repo", "origin/main", "main", List.of()));
     GitDeploy git = mock(GitDeploy.class);
     DeployTargets targets = new DeployTargets(config);
     RevertService service =
@@ -980,7 +988,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     GitDeploy git = mock(GitDeploy.class);
     DeployTargets targets = new DeployTargets(mock(ConfigService.class));
     RevertService service =
@@ -1007,7 +1015,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -1020,7 +1028,8 @@ class RevertServiceTest {
                     null))
             .build());
     ConfigService config = mock(ConfigService.class);
-    when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+    when(config.project("proj"))
+        .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     GitDeploy git = mock(GitDeploy.class);
     when(git.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234"), anyList()))
         .thenThrow(
@@ -1039,8 +1048,11 @@ class RevertServiceTest {
     assertThat(outcome.kind()).isEqualTo(Outcome.Kind.CONFLICT);
     assertThat(outcome.message()).contains("/ABC-1-revert", "dev");
     Deployment.Target stopped =
-        state.task("ABC-1").orElseThrow().deployment().conflictedTarget().orElseThrow();
-    assertThat(stopped.progress().conflict().cause()).isEqualTo(Deployment.Cause.REVERT);
+        Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment())
+            .conflictedTarget()
+            .orElseThrow();
+    assertThat(Objects.requireNonNull(stopped.progress().conflict()).cause())
+        .isEqualTo(Deployment.Cause.REVERT);
     assertThat(stopped.landed()).isTrue();
   }
 
@@ -1053,7 +1065,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
@@ -1069,12 +1081,13 @@ class RevertServiceTest {
                     null))
             .build());
     ConfigService config = mock(ConfigService.class);
-    when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+    when(config.project("proj"))
+        .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", null))));
+                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
     GitDeploy git = mock(GitDeploy.class);
     when(git.revertUnmerged(Path.of("/repo"), "ABC-1")).thenReturn("src/A.java\nsrc/B.java");
     RevertService service =
@@ -1090,7 +1103,10 @@ class RevertServiceTest {
         .hasMessageContaining("src/A.java src/B.java");
     verify(git, never())
         .revertMergeAndPush(any(), anyString(), anyString(), anyString(), anyList());
-    assertThat(state.task("ABC-1").orElseThrow().deployment().conflictedTarget()).isPresent();
+    assertThat(
+            Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment())
+                .conflictedTarget())
+        .isPresent();
   }
 
   @Test
@@ -1102,7 +1118,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -1120,16 +1136,16 @@ class RevertServiceTest {
             .build());
     ConfigService config = mock(ConfigService.class);
     when(config.project("api"))
-        .thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        .thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", List.of()));
     when(config.project("web"))
-        .thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        .thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", List.of()));
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
                     Map.of(
-                        "api", new ProjectConfig("/repo/api", "origin/main", "dev", null),
-                        "web", new ProjectConfig("/repo/web", "origin/main", "dev", null))));
+                        "api", new ProjectConfig("/repo/api", "origin/main", "dev", List.of()),
+                        "web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()))));
     GitDeploy git = mock(GitDeploy.class);
     when(git.revertMergeAndPush(
             eq(Path.of("/repo/web")), eq("ABC-1"), eq("dev"), eq("f00dfeed5678"), anyList()))
@@ -1158,6 +1174,7 @@ class RevertServiceTest {
     verify(git, times(1))
         .revertMergeAndPush(
             eq(Path.of("/repo/web")), anyString(), anyString(), anyString(), anyList());
-    assertThat(state.task("ABC-1").orElseThrow().deployment().live()).isFalse();
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().deployment()).live())
+        .isFalse();
   }
 }

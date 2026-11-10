@@ -39,7 +39,7 @@ class KindsTest {
                 .filter(
                     type ->
                         readers(type).stream()
-                            .map(reader -> reader.split("/")[0])
+                            .map(reader -> reader.split("/", 0)[0])
                             .anyMatch(
                                 reader -> USE_CASES.contains(reader) && !reader.equals(kind(type))))
                 .map(type -> type.getSimpleName() + " " + readers(type)))
@@ -77,7 +77,7 @@ class KindsTest {
     String[] packages =
         (type.getPackageName() + ".")
             .replaceFirst("^dev\\.jagt\\.orchestrator\\.?", "")
-            .split("\\.");
+            .split("\\.", 0);
     if (packages[0].isEmpty()) {
       return "root";
     }

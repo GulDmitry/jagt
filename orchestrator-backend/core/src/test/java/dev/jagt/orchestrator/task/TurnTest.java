@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 class TurnTest {
 
@@ -107,7 +108,7 @@ class TurnTest {
 
   @Test
   void readsMissingStepDigestMarksAndRunAsNothing() {
-    Turn bare = new Turn(null, 0, null, 0, null, null);
+    Turn bare = new JsonMapper().readValue("{\"id\":0,\"since\":0}", Turn.class);
 
     assertThat(bare).isEqualTo(Turn.none());
   }

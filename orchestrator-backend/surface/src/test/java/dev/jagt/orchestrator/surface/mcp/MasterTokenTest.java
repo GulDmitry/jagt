@@ -22,7 +22,7 @@ class MasterTokenTest {
 
     assertThat(token.matches(written)).isTrue();
     assertThat(token.matches(written + "0")).isFalse();
-    assertThat(token.matches(null)).isFalse();
+    assertThat(token.matches("")).isFalse();
     assertThat(
             PosixFilePermissions.toString(
                 Files.getPosixFilePermissions(root.resolve(".jagt/master-token"))))

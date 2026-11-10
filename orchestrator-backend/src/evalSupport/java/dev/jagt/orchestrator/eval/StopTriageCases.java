@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.TaskStop;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -23,13 +24,15 @@ public final class StopTriageCases {
     Map<String, Object> stop = (Map<String, Object>) root.get("stop");
     Map<String, Object> expect = (Map<String, Object>) root.get("expect");
     return new StopTriageCase(
-        (String) root.get("case"),
-        TaskStop.Trigger.valueOf((String) stop.get("trigger")),
-        (String) stop.get("evidence"),
-        (String) root.get("trail"),
-        (String) root.get("commits"),
-        StopTriage.Who.valueOf(constant(expect.get("who"))),
-        StopTriage.Lift.valueOf(constant(expect.get("lift"))),
+        Objects.requireNonNull((String) root.get("case")),
+        TaskStop.Trigger.valueOf(
+            Objects.requireNonNull((String) Objects.requireNonNull(stop).get("trigger"))),
+        Objects.requireNonNull((String) stop.get("evidence")),
+        Objects.requireNonNull((String) root.get("trail")),
+        Objects.requireNonNull((String) root.get("commits")),
+        StopTriage.Who.valueOf(
+            constant(Objects.requireNonNull(Objects.requireNonNull(expect).get("who")))),
+        StopTriage.Lift.valueOf(constant(Objects.requireNonNull(expect.get("lift")))),
         String.valueOf(expect.get("family")));
   }
 

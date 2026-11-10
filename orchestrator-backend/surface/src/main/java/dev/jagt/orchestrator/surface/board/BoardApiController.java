@@ -41,10 +41,7 @@ public class BoardApiController {
 
     public record Cadence(String autoReview, boolean autoReviewEnabled) {}
 
-    public record Header(
-        Jobs.Summary jobs,
-        @Nullable ActStop actStop,
-        List<ReachLost> reach) {}
+    public record Header(Jobs.Summary jobs, @Nullable ActStop actStop, List<ReachLost> reach) {}
 
     public record Choices(
         List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases) {}
@@ -64,10 +61,7 @@ public class BoardApiController {
         offers(snapshot.tasks()),
         snapshot.masterMode(),
         new Board.Cadence(snapshot.cadence().summary(), snapshot.cadence().enabled()),
-        new Board.Header(
-            header.summary(),
-            snapshot.actStop(),
-            header.reachLost()),
+        new Board.Header(header.summary(), snapshot.actStop(), header.reachLost()),
         new Board.Choices(BranchStrategy.choices(), Phase.choices()));
   }
 
@@ -101,7 +95,8 @@ public class BoardApiController {
    * verb.
    */
   @GetMapping(value = "/commands/{id}", produces = MediaType.TEXT_PLAIN_VALUE)
-  public String report(@PathVariable String id, @RequestParam(required = false) String about) {
+  public String report(
+      @PathVariable String id, @RequestParam(required = false) @Nullable String about) {
     return globals
         .byId(id)
         .filter(GlobalCommand::report)
@@ -112,7 +107,8 @@ public class BoardApiController {
   public record Ran(String message) {}
 
   @PostMapping("/commands/{id}")
-  public Ran execute(@PathVariable String id, @RequestParam(required = false) String about) {
+  public Ran execute(
+      @PathVariable String id, @RequestParam(required = false) @Nullable String about) {
     return new Ran(
         globals
             .byId(id)

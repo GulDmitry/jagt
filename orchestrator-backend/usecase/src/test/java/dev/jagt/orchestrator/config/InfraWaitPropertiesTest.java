@@ -14,8 +14,7 @@ class InfraWaitPropertiesTest {
   void waitsFiveFifteenAndFortyFiveMinutesWhenNothingIsConfigured() {
     InfraWaitProperties properties =
         new Binder(new MapConfigurationPropertySource(Map.of()))
-            .bind("orchestrator.infra-wait", InfraWaitProperties.class)
-            .orElseGet(() -> new InfraWaitProperties(null));
+            .bindOrCreate("orchestrator.infra-wait", InfraWaitProperties.class);
 
     assertThat(properties.backoff())
         .containsExactly(Duration.ofMinutes(5), Duration.ofMinutes(15), Duration.ofMinutes(45));

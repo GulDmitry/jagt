@@ -16,11 +16,13 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.port.LineChange;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.KeptTicketTexts;
 import dev.jagt.orchestrator.service.PlanBaseline;
 import dev.jagt.orchestrator.service.RetiredWorktrees;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskArtifacts;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -67,8 +69,8 @@ class TaskRetirementTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
-                    null,
-                    null)));
+                    new TaskArtifacts(state),
+                    (earlier, later) -> LineChange.none())));
 
     String result = retirement.retire("a1");
 
@@ -112,8 +114,8 @@ class TaskRetirementTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
-                    null,
-                    null)));
+                    new TaskArtifacts(state),
+                    (earlier, later) -> LineChange.none())));
 
     String result = retirement.retire("a1");
 
@@ -150,8 +152,8 @@ class TaskRetirementTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
-                    null,
-                    null)));
+                    new TaskArtifacts(state),
+                    (earlier, later) -> LineChange.none())));
 
     String result = retirement.retire("a1");
 
@@ -189,8 +191,8 @@ class TaskRetirementTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
-                    null,
-                    null)));
+                    new TaskArtifacts(state),
+                    (earlier, later) -> LineChange.none())));
 
     String result = retirement.retire("a1");
 
@@ -224,8 +226,8 @@ class TaskRetirementTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
-                    null,
-                    null)));
+                    new TaskArtifacts(state),
+                    (earlier, later) -> LineChange.none())));
 
     assertThatThrownBy(() -> retirement.retire("ABC-9"))
         .isInstanceOf(Refusal.class)
@@ -247,7 +249,9 @@ class TaskRetirementTest {
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     final KeptTaskFiles kept =
-        new KeptTaskFiles(new KeptTicketTexts(paths), new PlanBaseline(paths, null, null));
+        new KeptTaskFiles(
+            new KeptTicketTexts(paths),
+            new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()));
     java.nio.file.Files.createDirectories(paths.ticketTexts());
     java.nio.file.Files.writeString(
         paths.ticketTexts().resolve("ABC-1.md"), "Widget layout is off");

@@ -30,8 +30,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class PlanApprovalPlacementTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final StepRelay relay = mock(StepRelay.class);
   private final CaseDoor door = mock(CaseDoor.class);
@@ -62,9 +61,7 @@ class PlanApprovalPlacementTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    placement,
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null)))
+                new ApprovedRepos(placement, mock(UnaffectedRepos.class)))
             .approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isTrue();
@@ -72,8 +69,7 @@ class PlanApprovalPlacementTest {
   }
 
   @Test
-  void startsFreshSessionInTheNewPrimaryWhereTheMasterApprovedAndPlacedTheTask(
-      @TempDir Path root) {
+  void startsFreshSessionInTheNewPrimaryWhereTheMasterApprovedAndPlacedTheTask(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -102,9 +98,7 @@ class PlanApprovalPlacementTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    placement,
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null)))
+                new ApprovedRepos(placement, mock(UnaffectedRepos.class)))
             .approve("ABC-1", "The Master read plan.md", claim);
 
     assertThat(told).isTrue();
@@ -137,9 +131,7 @@ class PlanApprovalPlacementTest {
                         door,
                         new PlanBaseline(
                             paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                        new ApprovedRepos(
-                            placement,
-                            new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null)))
+                        new ApprovedRepos(placement, mock(UnaffectedRepos.class)))
                     .approve("ABC-1", "The human read plan.md"))
         .isInstanceOf(Unplaceable.class);
 
@@ -173,9 +165,7 @@ class PlanApprovalPlacementTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    placement,
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null)))
+                new ApprovedRepos(placement, mock(UnaffectedRepos.class)))
             .approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isFalse();
@@ -211,9 +201,7 @@ class PlanApprovalPlacementTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    placement,
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null)))
+                new ApprovedRepos(placement, mock(UnaffectedRepos.class)))
             .approve("ABC-1", "The Master read plan.md", claim);
 
     assertThat(told).isFalse();

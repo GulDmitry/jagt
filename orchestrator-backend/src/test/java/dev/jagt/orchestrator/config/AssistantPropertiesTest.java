@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
@@ -19,7 +20,8 @@ class AssistantPropertiesTest {
             .getFirst();
 
     var shipped =
-        new Binder(ConfigurationPropertySources.from(yaml))
+        new Binder(
+                Objects.requireNonNull(ConfigurationPropertySources.from(yaml).iterator().next()))
             .bind("orchestrator.assistant", AssistantProperties.class)
             .get();
 
@@ -35,7 +37,8 @@ class AssistantPropertiesTest {
             .getFirst();
 
     var shipped =
-        new Binder(ConfigurationPropertySources.from(yaml))
+        new Binder(
+                Objects.requireNonNull(ConfigurationPropertySources.from(yaml).iterator().next()))
             .bind("orchestrator.assistant", AssistantProperties.class)
             .get();
 

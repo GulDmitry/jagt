@@ -8,26 +8,26 @@ class PressMessagesTest {
 
   @Test
   void acceptsVerbOnTask() {
-    assertThat(new TaskPress("ABC-42", "done", null).violations(MessageContext.NONE)).isEmpty();
+    assertThat(new TaskPress("ABC-42", "done", "").violations(MessageContext.NONE)).isEmpty();
   }
 
   @Test
   void asksForTheTaskWhereTheVerbIsPressedOnNone() {
-    assertThat(new TaskPress(" ", "done", null).violations(MessageContext.NONE))
+    assertThat(new TaskPress(" ", "done", "").violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("taskId");
   }
 
   @Test
   void refusesVerbNoTaskActionNames() {
-    assertThat(new TaskPress("ABC-42", "explode", null).violations(MessageContext.NONE))
+    assertThat(new TaskPress("ABC-42", "explode", "").violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("verb");
   }
 
   @Test
   void asksForTheVerbWhereNoneIsGiven() {
-    assertThat(new TaskPress("ABC-42", null, null).violations(MessageContext.NONE))
+    assertThat(new TaskPress("ABC-42", "", "").violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("verb");
   }
@@ -43,8 +43,8 @@ class PressMessagesTest {
 
   @Test
   void acceptsCommandWithOrWithoutWhatFollowsIt() {
-    assertThat(new CommandPress("stats", null).violations(MessageContext.NONE)).isEmpty();
-    assertThat(new CommandPress("stats", null).tail()).isEmpty();
+    assertThat(new CommandPress("stats", "").violations(MessageContext.NONE)).isEmpty();
+    assertThat(new CommandPress("stats", "").tail()).isEmpty();
     assertThat(new CommandPress("stats", " today ").tail()).isEqualTo("today");
   }
 

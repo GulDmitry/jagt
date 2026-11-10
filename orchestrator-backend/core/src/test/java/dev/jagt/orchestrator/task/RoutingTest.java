@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.task;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,7 +38,8 @@ class RoutingTest {
 
   @Test
   void treatsMissingEvidenceAsNone() {
-    RoutingQuestion question = new RoutingQuestion(TicketFacts.defaults(), null, null, null);
+    RoutingQuestion question =
+        new RoutingQuestion(TicketFacts.defaults(), Map.of(), List.of(), List.of());
 
     assertThat(question.projects()).isEmpty();
     assertThat(question.precedents()).isEmpty();
@@ -62,12 +64,12 @@ class RoutingTest {
 
   @Test
   void readsMissingProjectAsBlank() {
-    assertThat(new RoutingAnswer(null, "x").project()).isEmpty();
+    assertThat(new RoutingAnswer("", "x").project()).isEmpty();
   }
 
   @Test
   void readsMissingRuleOfPairAsBlankAndStripsTheOthers() {
-    RulePair pair = new RulePair(" labels carry it ", null);
+    RulePair pair = new RulePair(" labels carry it ", "");
 
     assertThat(pair.kept()).isEqualTo("labels carry it");
     assertThat(pair.duplicate()).isEmpty();

@@ -65,7 +65,7 @@ class NewTaskTest {
 
   @Test
   void namesNoProjectWhenItWasBuiltWithoutAny() {
-    NewTask task = new NewTask("ABC-42", null, null, null, null, null, null, null);
+    NewTask task = new NewTask("ABC-42", List.of(), null, null, null, null, null, null);
 
     assertThat(task.projectKey()).isNull();
   }

@@ -145,10 +145,11 @@ class MergedRequestsTest {
                         "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
                         "web",
                             new ProjectConfig(
-                                new ProjectConfig.Repository("/web", List.of(), null, null),
+                                new ProjectConfig.Repository("/web", List.of(), null, List.of()),
                                 new ProjectConfig.Branches("main", "dev", null),
                                 new ProjectConfig.CodeHost(
-                                    "none", null, null, null, null, null, null),
+                                    "none", null, List.of(), List.of(), List.of(), List.of(),
+                                    List.of()),
                                 new ProjectConfig.Verify(List.of(), null)),
                         "docs", new ProjectConfig("/docs", "origin/main", "dev", List.of()))));
     MergedRequests requests =

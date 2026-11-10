@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.stand.mutation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sun.net.httpserver.HttpServer;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -13,7 +14,9 @@ class LocalRewriteTest {
 
   @Test
   void theLocalModelRewritesTheTicketWhenItAnswers(@TempDir Path stand) throws Exception {
-    HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    HttpServer server =
+        HttpServer.create(
+            new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 0), 0);
     server.createContext(
         "/v1/chat/completions",
         exchange -> {

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.triageeval;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.eval.EvalPorts;
@@ -21,9 +22,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Objects;
 import java.util.OptionalDouble;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
@@ -54,11 +57,10 @@ class TriageEvalTest {
   private static final AtomicInteger WHO_RIGHT = new AtomicInteger();
   private static final AtomicInteger FAMILY_RIGHT = new AtomicInteger();
   private static final AtomicInteger FALSE_SAFE = new AtomicInteger();
-  private static Path root;
+  private static @Nullable Path root;
 
   @DynamicPropertySource
-  static void orchestratorLivesInThrowawayRoot(DynamicPropertyRegistry registry)
-      throws Exception {
+  static void orchestratorLivesInThrowawayRoot(DynamicPropertyRegistry registry) throws Exception {
     registry.add("server.port", () -> GATE_PORT);
     registry.add("orchestrator.mcp-url", () -> "http://127.0.0.1:" + DEAD_PORT + "/mcp");
     registry.add(
@@ -83,9 +85,13 @@ class TriageEvalTest {
           master: { mode: off }
         """
             .formatted(root.resolve("placeholder")));
-    registry.add("orchestrator.root", () -> root.toString());
-    registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
-    registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
+    registry.add("orchestrator.root", () -> Objects.requireNonNull(root).toString());
+    registry.add(
+        "orchestrator.config-file",
+        () -> Objects.requireNonNull(root).resolve("jagt.yml").toString());
+    registry.add(
+        "orchestrator.state-file",
+        () -> Objects.requireNonNull(root).resolve("state.json").toString());
   }
 
   @MockitoBean private UserNotifier userNotifier;
@@ -116,7 +122,7 @@ class TriageEvalTest {
   }
 
   private void oneRun(StopTriageCase stopped) throws Exception {
-    Path worktree = root.resolve("repos/" + ROUND.incrementAndGet());
+    Path worktree = Objects.requireNonNull(root).resolve("repos/" + ROUND.incrementAndGet());
     Files.createDirectories(worktree);
     init(worktree);
     TaskState task =
@@ -164,7 +170,10 @@ class TriageEvalTest {
             .start();
     if (!process.waitFor(2, TimeUnit.MINUTES) || process.exitValue() != 0) {
       throw new IllegalStateException(
-          "git init failed in " + worktree + ": " + new String(process.getInputStream().readAllBytes()));
+          "git init failed in "
+              + worktree
+              + ": "
+              + new String(process.getInputStream().readAllBytes(), UTF_8));
     }
   }
 

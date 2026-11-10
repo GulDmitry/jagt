@@ -6,6 +6,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -34,7 +35,7 @@ public final class StandBoard {
     }
   }
 
-  public JsonNode open(String ref, String project, String mode) {
+  public JsonNode open(String ref, String project, @Nullable String mode) {
     String body =
         mapper
             .createObjectNode()

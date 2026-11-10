@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -34,7 +35,9 @@ class StandRecordingsTest {
     assertThat(dir)
         .isDirectoryNotContaining(path -> path.getFileName().toString().contains("-stand-1-"))
         .isDirectoryContaining(path -> path.getFileName().toString().contains("-stand-2-"));
-    assertThat(Files.list(dir).count()).isEqualTo(StandRecordings.KEPT * 2L);
+    try (Stream<Path> stream = Files.list(dir)) {
+      assertThat(stream.count()).isEqualTo(StandRecordings.KEPT * 2L);
+    }
   }
 
   @Test

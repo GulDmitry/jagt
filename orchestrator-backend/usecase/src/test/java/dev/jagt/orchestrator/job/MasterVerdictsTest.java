@@ -28,18 +28,22 @@ import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.LineChange;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
+import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ApprovedRepos;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.GitWorktrees;
 import dev.jagt.orchestrator.service.MissLog;
 import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.PlanApproval;
 import dev.jagt.orchestrator.service.PlanBaseline;
 import dev.jagt.orchestrator.service.PlanPlacement;
+import dev.jagt.orchestrator.service.RetiredWorktrees;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.StopAnnouncements;
@@ -51,6 +55,7 @@ import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.UnaffectedRepos;
 import dev.jagt.orchestrator.service.WorktreeChanges;
+import dev.jagt.orchestrator.service.WorktreeSetup;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
@@ -68,6 +73,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -142,9 +148,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.act(
         "ABC-1",
@@ -232,9 +236,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
     MasterReview.Verdict verdict =
         new MasterReview.Verdict(
             kind,
@@ -313,9 +315,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     assertThatThrownBy(
             () ->
@@ -383,9 +383,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
     when(sessions.writeTaskContext(eq("ABC-1"), anyString()))
         .thenThrow(new IllegalStateException("no window"));
 
@@ -415,7 +413,8 @@ class MasterVerdictsTest {
 
     assertThat(state.task("ABC-1").orElseThrow())
         .returns(TaskStatus.REVIEW_PENDING, TaskState::status)
-        .returns(TaskStop.Trigger.UNDELIVERED, live -> live.stop().trigger());
+        .returns(
+            TaskStop.Trigger.UNDELIVERED, live -> Objects.requireNonNull(live.stop()).trigger());
   }
 
   @Test
@@ -474,9 +473,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
     when(sessions.writeTaskContext(eq("ABC-1"), anyString()))
         .thenAnswer(
             told -> {
@@ -578,9 +575,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     assertThatThrownBy(
             () ->
@@ -669,9 +664,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     assertThatThrownBy(
             () ->
@@ -744,9 +737,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
     when(sessions.writeTaskContext(eq("ABC-1"), anyString()))
         .thenAnswer(
             told ->
@@ -832,9 +823,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.act(
@@ -914,9 +903,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.act(
         "ABC-1",
@@ -995,9 +982,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.act(
         "ABC-1",
@@ -1075,9 +1060,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.answered(
@@ -1146,9 +1129,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean told = verdicts.stopReturned("ABC-1", task, "fix the fixture, not the test");
 
@@ -1214,9 +1195,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.answered(
         "ABC-42", task, "keep both imports?", new MasterPanel.Decision("keep both imports", ""));
@@ -1282,9 +1261,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.answered(
         "ABC-1",
@@ -1354,9 +1331,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.act(
         "ABC-1",
@@ -1447,9 +1422,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.act(
         "ABC-1",
@@ -1564,9 +1537,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.act(
         "ABC-1",
@@ -1652,9 +1623,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
     verdicts.act(
         "ABC-1",
         state.task("ABC-1").orElseThrow(),
@@ -1736,7 +1705,7 @@ class MasterVerdictsTest {
 
     assertThat(moved).isFalse();
     assertThat(state.task("ABC-1").orElseThrow())
-        .extracting(TaskState::report, done -> done.stop().trigger())
+        .extracting(TaskState::report, done -> Objects.requireNonNull(done.stop()).trigger())
         .containsExactly(AgentReport.PLAIN, TaskStop.Trigger.ROUNDS);
   }
 
@@ -1798,9 +1767,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
     state.updateTask(
         "ABC-1",
         handedBack ->
@@ -1964,9 +1931,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
     state.updateTask(
         "ABC-1",
         handedBack ->
@@ -2130,9 +2095,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.act(
         "ABC-1",
@@ -2221,9 +2184,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.act(
@@ -2295,9 +2256,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.act(
@@ -2368,9 +2327,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.act(
@@ -2440,9 +2397,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.act(
@@ -2508,14 +2463,19 @@ class MasterVerdictsTest {
             new TaskTurns(
                 state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     ConfigService config =
-        new ConfigService(paths, null, null, new Checkers(new TaskChart(Composition.builtIn())));
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
     PlanPlacement placement =
         new PlanPlacement(
             state,
             new TaskArtifacts(state),
             config,
-            new NewTaskWorktrees(config, state, null, null),
-            null);
+            new NewTaskWorktrees(
+                config, state, mock(GitWorktrees.class), mock(WorktreeSetup.class)),
+            mock(RetiredWorktrees.class));
     MasterVerdicts verdicts =
         new MasterVerdicts(
             relay,
@@ -2532,9 +2492,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    placement,
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                new ApprovedRepos(placement, mock(UnaffectedRepos.class))));
 
     boolean moved =
         verdicts.act(
@@ -2613,9 +2571,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.act(
         "ABC-1",
@@ -2686,9 +2642,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.act(
@@ -2763,9 +2717,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.act(
         "ABC-1",
@@ -2841,9 +2793,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.act(
@@ -2918,9 +2868,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.act(
         "ABC-1",
@@ -3008,9 +2956,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.act(
         "ABC-1",
@@ -3098,9 +3044,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.act(
@@ -3180,9 +3124,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
     OriginContext.as(
         ActionOrigin.MASTER,
         () ->
@@ -3265,9 +3207,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.answered(
         "ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2\nbeside v3", ""));
@@ -3333,9 +3273,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
     OriginContext.as(
         ActionOrigin.MASTER,
         () ->
@@ -3412,9 +3350,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     verdicts.answered(
         "ABC-1",
@@ -3483,9 +3419,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     assertThat(verdicts.answersOverThisTree(task)).isEqualTo(3);
   }
@@ -3547,9 +3481,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.act(
@@ -3625,9 +3557,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.answered(
@@ -3693,9 +3623,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.act(
@@ -3764,9 +3692,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.act(
@@ -3838,9 +3764,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
     verdicts.act(
         "ABC-1",
         state.task("ABC-1").orElseThrow(),
@@ -3917,7 +3841,7 @@ class MasterVerdictsTest {
 
     assertThat(moved).isFalse();
     assertThat(state.task("ABC-1").orElseThrow())
-        .extracting(TaskState::status, done -> done.stop().trigger())
+        .extracting(TaskState::status, done -> Objects.requireNonNull(done.stop()).trigger())
         .containsExactly(TaskStatus.REVIEW_PENDING, TaskStop.Trigger.ROUNDS);
   }
 
@@ -3978,9 +3902,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
     verdicts.act(
         "ABC-1",
         state.task("ABC-1").orElseThrow(),
@@ -4096,9 +4018,7 @@ class MasterVerdictsTest {
                 door,
                 new PlanBaseline(
                     paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(
-                    new PlanPlacement(state, null, null, null, null),
-                    new UnaffectedRepos(state, new TaskArtifacts(state), null, null, null))));
+                mock(ApprovedRepos.class)));
 
     boolean moved =
         verdicts.act(

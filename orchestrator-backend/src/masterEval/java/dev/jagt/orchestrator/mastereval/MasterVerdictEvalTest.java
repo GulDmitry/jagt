@@ -144,7 +144,10 @@ abstract class MasterVerdictEvalTest {
 
   private static void refuseIfSomethingAnswers(int port) {
     try (var socket = new java.net.Socket()) {
-      socket.connect(new java.net.InetSocketAddress("127.0.0.1", port), 500);
+      socket.connect(
+          new java.net.InetSocketAddress(
+              java.net.InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), port),
+          500);
       throw new IllegalStateException(
           "Something is listening on 127.0.0.1:"
               + port

@@ -105,10 +105,12 @@ class PlanRepositoriesTest {
   @Test
   void namesTheRepositoriesThePlanTagsUnaffected() {
     String plan =
-        "## Repositories\n"
-            + "- [changed] api\n"
-            + "- [unaffected: only the API changes] web\n"
-            + "- [unaffected: nothing] docs\n";
+        """
+        ## Repositories
+        - [changed] api
+        - [unaffected: only the API changes] web
+        - [unaffected: nothing] docs
+        """;
 
     assertThat(PlanRepositories.unaffectedIn(plan, List.of("api", "web"))).containsExactly("web");
   }

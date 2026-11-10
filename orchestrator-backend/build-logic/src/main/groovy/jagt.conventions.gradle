@@ -35,10 +35,10 @@ allprojects {
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs.addAll(['-parameters', '-Werror'])
         options.errorprone {
-            enabled = name == 'compileJava'
             error('NullAway')
             option('NullAway:AnnotatedPackages', 'dev.jagt')
             option('NullAway:JSpecifyMode', 'true')
+            option('NullAway:HandleTestAssertionLibraries', 'true')
         }
     }
 

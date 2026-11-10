@@ -182,9 +182,11 @@ class RoundOutcomeTest {
             new ReviewFacts.Discussion(
                 List.of(),
                 List.of(
-                    "http://mr/1#note_1\n"
-                        + "mia: Should this cache expire?\n"
-                        + "agent: No change: entries are immutable"),
+                    """
+                    http://mr/1#note_1
+                    mia: Should this cache expire?
+                    agent: No change: entries are immutable\
+                    """),
                 List.of()));
     outcome.settle("ABC-1", "shop", "http://mr/1", facts, "");
 

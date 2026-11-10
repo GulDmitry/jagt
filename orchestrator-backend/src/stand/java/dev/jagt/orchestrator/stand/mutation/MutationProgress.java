@@ -48,13 +48,13 @@ public final class MutationProgress {
     boolean deployed = outcome.status().equals(TaskStatus.DEPLOYED.name());
     boolean reviewed =
         outcome.ending() == StandOutcome.Ending.WAITING_ON_THE_REVIEWER
-            || outcome.withTheCodeHost()
+            || (outcome.withTheCodeHost()
                 && awaitsTheReviewer
-                && steps.stream().anyMatch(step -> step.status() == TaskStatus.CI_POLLING);
+                && steps.stream().anyMatch(step -> step.status() == TaskStatus.CI_POLLING));
     return deployed
-            || conflicted && (conflict.relayed() || !conflict.stepComes())
+            || (conflicted && (conflict.relayed() || !conflict.stepComes()))
             || outcome.asked()
-            || attack && misses > 0
+            || (attack && misses > 0)
             || reviewed
         ? Optional.empty()
         : Optional.of(

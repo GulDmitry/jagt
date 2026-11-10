@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -46,7 +47,7 @@ public final class StandShell {
       }
       return new Result(process.exitValue(), output);
     } catch (IOException e) {
-      return new Result(-1, e.getMessage());
+      return new Result(-1, Objects.requireNonNullElse(e.getMessage(), ""));
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       return new Result(-1, "interrupted");

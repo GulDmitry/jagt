@@ -134,7 +134,7 @@ class HeadlessClaudeTrackerAssistantTest {
             new Processes.Result(
                 0,
                 "{\"structured_output\":{\"exists\":\"maybe\",\"failure\":\"\",\"key\":\"ABC-42"
-                + "\"}}",
+                    + "\"}}",
                 ""));
     var assistant =
         new HeadlessClaudeTrackerAssistant(
@@ -208,11 +208,14 @@ class HeadlessClaudeTrackerAssistantTest {
         .anyMatch(
             argument ->
                 argument.endsWith(
-                    "\n\n"
-                        + "Your last answer was refused:\n"
-                        + "- the url was empty\n"
-                        + "- the key was lowercase\n"
-                        + "Answer again, fixing every one of those."));
+                    """
+
+
+                    Your last answer was refused:
+                    - the url was empty
+                    - the key was lowercase
+                    Answer again, fixing every one of those.\
+                    """));
   }
 
   @Test

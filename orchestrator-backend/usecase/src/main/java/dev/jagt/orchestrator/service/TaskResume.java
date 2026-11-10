@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.TaskName;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -60,7 +61,7 @@ public class TaskResume {
     return linked;
   }
 
-  Launched link(String taskId, String mrUrl, String title, String targetBranch) {
+  Launched link(String taskId, @Nullable String mrUrl, String title, String targetBranch) {
     if (mrUrl == null || !mrUrl.contains("http")) {
       throw new IllegalArgumentException(
           "resume needs the request url: resume <ticket> <request-url>");

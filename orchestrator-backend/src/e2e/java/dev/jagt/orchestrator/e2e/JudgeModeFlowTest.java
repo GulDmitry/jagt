@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.AfterEach;
@@ -114,7 +115,7 @@ class JudgeModeFlowTest {
     stateService.removeTask(TASK);
     E2eWorkspace.forgetTask(repo(), worktree(), TASK);
     E2eWorkspace.resetDeployBranch(repo());
-    E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
+    E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.tmuxCommand()));
   }
 
   @Test
@@ -241,7 +242,7 @@ class JudgeModeFlowTest {
     return await()
         .atMost(A_FEW_TICKS)
         .pollInterval(Duration.ofMillis(500))
-        .until(this::task, reached::test);
+        .until(this::task, reached);
   }
 
   private void agentReports(String status, String message, String extraArgument) throws Exception {

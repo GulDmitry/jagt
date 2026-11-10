@@ -23,14 +23,14 @@ import dev.jagt.orchestrator.task.TaskStop;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class PauseCapabilityTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void stopsTheTaskOnPauseAndToldNothingMovesUntilTheLift(@TempDir Path root) {
@@ -51,12 +51,13 @@ class PauseCapabilityTest {
                         new Notifications(List.of(), state, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 state,
-                Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))));
 
     var outcome = pause.run("ABC-1");
 
     assertThat(pause.action()).isEqualTo(TaskAction.PAUSE);
-    assertThat(state.task("ABC-1").orElseThrow().stop().trigger())
+    assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().stop()).trigger())
         .isEqualTo(TaskStop.Trigger.PAUSE);
     assertThat(outcome.message())
         .isEqualTo("pause ABC-1: nothing of jagt moves it until you lift the stop");

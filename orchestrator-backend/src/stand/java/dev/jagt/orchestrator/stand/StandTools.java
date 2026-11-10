@@ -2,7 +2,9 @@ package dev.jagt.orchestrator.stand;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -40,7 +42,10 @@ public class StandTools {
         "id:integer",
         "title:string,description:string",
         a ->
-            store.updateRequest(number(a, "id"), optional(a, "title"), optional(a, "description")));
+            store.updateRequest(
+                number(a, "id"),
+                Objects.requireNonNull(optional(a, "title")),
+                Objects.requireNonNull(optional(a, "description"))));
     register(
         "get_merge_request",
         "Read a merge request with its threads and pipeline by id or url",
@@ -130,7 +135,7 @@ public class StandTools {
     return value.asString();
   }
 
-  private static String optional(JsonNode arguments, String name) {
+  private static @Nullable String optional(JsonNode arguments, String name) {
     return arguments.path(name).isString() ? arguments.path(name).asString() : null;
   }
 

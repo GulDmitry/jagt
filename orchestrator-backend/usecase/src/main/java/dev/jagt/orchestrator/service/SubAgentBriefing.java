@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.Step;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -226,7 +227,10 @@ public class SubAgentBriefing {
                 repo ->
                     repo.config().deployBranch() != null && !repo.config().deployBranch().isBlank())
             .toList();
-    String named = named(deployed, repos.size(), repo -> repo.config().deployBranch());
+    String named = named(
+            deployed,
+            repos.size(),
+            repo -> Objects.requireNonNull(repo.config().deployBranch()));
     return switch (deployed.size()) {
       case 0 -> "";
       case 1 -> " The deploy branch " + named + " is jagt's `deploy` alone.";

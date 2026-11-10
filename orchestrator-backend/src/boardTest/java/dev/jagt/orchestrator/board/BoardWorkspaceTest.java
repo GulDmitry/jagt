@@ -8,6 +8,7 @@ import com.microsoft.playwright.Page;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
@@ -396,7 +397,8 @@ class BoardWorkspaceTest extends BoardPageContext {
     page.navigate("http://localhost:" + port + "/");
 
     assertThat(page.locator("#empty")).isVisible();
-    org.assertj.core.api.Assertions.assertThat(page.locator("#board").boundingBox().height)
+    org.assertj.core.api.Assertions.assertThat(
+            Objects.requireNonNull(page.locator("#board").boundingBox()).height)
         .isLessThan(1);
   }
 

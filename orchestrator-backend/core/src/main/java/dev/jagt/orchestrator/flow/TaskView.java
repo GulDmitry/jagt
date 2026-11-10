@@ -308,12 +308,13 @@ public record TaskView(
       String id,
       TaskState task,
       RoundState round,
-      AutoReviewWatch autoReview,
+      @Nullable AutoReviewWatch autoReview,
       Map<String, String> deployBranches) {
     boolean draftedReplies = round.draftedReplies();
     Stop stop = Stop.of(task.stop());
     Facts projected =
         Facts.projected(task).withReach(Facts.Reach.defaults().withScenarios(round.scenarios()));
+    AutoReviewWatch watch = autoReview == null ? AutoReviewWatch.none() : autoReview;
     Move move =
         Move.forTask(
             rules,
@@ -322,7 +323,7 @@ public record TaskView(
                 projected.delivery().withShippedWithoutRequest(round.requestless())),
             round,
             SessionPhase.silent(task),
-            autoReview == null ? AutoReviewWatch.none() : autoReview);
+            watch);
     boolean deployed = Facts.deployLive(task);
     DashboardLine.Line line = DashboardLine.forTask(task, webLink(task.mrUrl()));
     List<ActionView> actions =
@@ -383,7 +384,7 @@ public record TaskView(
             checks(task),
             checksSaid(task),
             task.pipelineUnread()),
-        new Replies(draftedReplies, round.repliesWrittenAt(), autoReview, task.switches()),
+        new Replies(draftedReplies, round.repliesWrittenAt(), watch, task.switches()),
         new Delivery(
             task.repos().stream()
                 .map(repo -> new RepoView(repo.project(), webLink(repo.mrUrl())))

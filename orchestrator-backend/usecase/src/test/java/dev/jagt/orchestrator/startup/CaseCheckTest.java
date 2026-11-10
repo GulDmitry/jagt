@@ -25,8 +25,23 @@ class CaseCheckTest {
     Files.writeString(root.resolve("roles/session/brief.md"), "## wake\n\ngo on\n");
     Files.writeString(
         root.resolve("roles/session/cases.md"),
-        "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: any; plain\nA reset.\n\n"
-            + "## woke\n\nstep: woke\nat: any\nby: jagt\nreplies: any; plain\nA typo.\n");
+        """
+        ## wake
+
+        step: wake
+        at: any
+        by: jagt
+        replies: any; plain
+        A reset.
+
+        ## woke
+
+        step: woke
+        at: any
+        by: jagt
+        replies: any; plain
+        A typo.
+        """);
 
     assertThat(
             new CaseCheck(

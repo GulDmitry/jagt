@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.task.ActionOrigin;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 class OriginContextTest {
@@ -50,7 +51,7 @@ class OriginContextTest {
 
   @Test
   void restoresTheOuterReasonWhenAnInnerOneEnds() {
-    String[] afterInner = new String[1];
+    @Nullable String[] afterInner = new String[1];
 
     OriginContext.because(
         "outer",

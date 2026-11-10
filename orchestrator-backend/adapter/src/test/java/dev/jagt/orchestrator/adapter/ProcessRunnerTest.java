@@ -145,16 +145,18 @@ class ProcessRunnerTest {
   @Test
   void killsTheCommandWhenTheCallerWaitingOnItIsInterrupted(@TempDir Path dir) throws Exception {
     Path pid = dir.resolve("pid");
+    AtomicReference<Throwable> ended = new AtomicReference<>();
     Thread caller =
         Thread.startVirtualThread(
             () ->
-                catchThrowable(
-                    () ->
-                        new ProcessRunner()
-                            .run(
-                                null,
-                                Duration.ofSeconds(30),
-                                List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30"))));
+                ended.set(
+                    catchThrowable(
+                        () ->
+                            new ProcessRunner()
+                                .run(
+                                    null,
+                                    Duration.ofSeconds(30),
+                                    List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
     await()
         .ignoreExceptions()
         .atMost(Duration.ofSeconds(5))
@@ -172,14 +174,16 @@ class ProcessRunnerTest {
   void killsTheCommandsStillRunningWhenJagtStops(@TempDir Path dir) throws Exception {
     ProcessRunner runner = new ProcessRunner();
     Path pid = dir.resolve("pid");
+    AtomicReference<Throwable> ended = new AtomicReference<>();
     Thread.startVirtualThread(
         () ->
-            catchThrowable(
-                () ->
-                    runner.run(
-                        null,
-                        Duration.ofSeconds(30),
-                        List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30"))));
+            ended.set(
+                catchThrowable(
+                    () ->
+                        runner.run(
+                            null,
+                            Duration.ofSeconds(30),
+                            List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
     await()
         .ignoreExceptions()
         .atMost(Duration.ofSeconds(5))
@@ -249,8 +253,7 @@ class ProcessRunnerTest {
     "128, with exit 128",
     "1, with exit 1"
   })
-  void namesTheSignalKilledLaunchDiedOnAndLeavesEveryOtherEndCode(
-      int exitValue, String expected) {
+  void namesTheSignalKilledLaunchDiedOnAndLeavesEveryOtherEndCode(int exitValue, String expected) {
     assertThat(ProcessRunner.endedBy(exitValue)).isEqualTo(expected);
   }
 
@@ -350,16 +353,18 @@ class ProcessRunnerTest {
   void keepsTheCallersInterruptSetAfterKillingTheCommand(@TempDir Path dir) throws Exception {
     Path pid = dir.resolve("pid");
     AtomicBoolean stillInterrupted = new AtomicBoolean();
+    AtomicReference<Throwable> ended = new AtomicReference<>();
     Thread caller =
         Thread.startVirtualThread(
             () -> {
-              catchThrowable(
-                  () ->
-                      new ProcessRunner()
-                          .run(
-                              null,
-                              Duration.ofSeconds(30),
-                              List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")));
+              ended.set(
+                  catchThrowable(
+                      () ->
+                          new ProcessRunner()
+                              .run(
+                                  null,
+                                  Duration.ofSeconds(30),
+                                  List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30"))));
               stillInterrupted.set(Thread.currentThread().isInterrupted());
             });
     await()

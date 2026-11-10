@@ -31,6 +31,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -89,7 +90,7 @@ class DeployConflictJobTest {
 
     TaskState read = state.task("ABC-42").orElseThrow();
     assertThat(read.status()).isEqualTo(TaskStatus.DEPLOYED);
-    assertThat(read.deployment().conflictedTarget()).isEmpty();
+    assertThat(Objects.requireNonNull(read.deployment()).conflictedTarget()).isEmpty();
   }
 
   @Test

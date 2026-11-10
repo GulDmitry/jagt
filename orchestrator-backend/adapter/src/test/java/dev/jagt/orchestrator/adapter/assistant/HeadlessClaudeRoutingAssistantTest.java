@@ -97,11 +97,15 @@ class HeadlessClaudeRoutingAssistantTest {
                 assertThat(argument)
                     .contains("- ledger: invoicing")
                     .contains(
-                        "Rules this install has written, which outrank everything above:\n"
-                            + "VAT goes to ledger\n")
+                        """
+                        Rules this install has written, which outrank everything above:
+                        VAT goes to ledger
+                        """)
                     .contains(
-                        "Items finished before, and the repository each was done in:\n"
-                            + "ABC-7 was done in ledger\n"));
+                        """
+                        Items finished before, and the repository each was done in:
+                        ABC-7 was done in ledger
+                        """));
   }
 
   @Test

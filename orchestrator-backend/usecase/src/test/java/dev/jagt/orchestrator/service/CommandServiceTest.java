@@ -133,11 +133,14 @@ class CommandServiceTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(
         root.resolve("roles/master/cases.md"),
-        "## deploy\n\n"
-            + "move: deploy\n"
-            + "at: APPROVED\n"
-            + "by: master\n"
-            + "Green and approved, the Master deploys it.\n");
+        """
+        ## deploy
+
+        move: deploy
+        at: APPROVED
+        by: master
+        Green and approved, the Master deploys it.
+        """);
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
     CommandService guarded =
@@ -168,7 +171,7 @@ class CommandServiceTest {
     assertThat(Files.readString(root.resolve("misses.jsonl")))
         .isEqualTo(
             "{\"at\":1000,\"task\":\"ABC-1\",\"step\":\"deploy\",\"status\":\"REVIEWED\",\"by\""
-            + ":\"master\"}\n");
+                + ":\"master\"}\n");
     assertThat(state.task("ABC-1").orElseThrow().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
         .containsExactly(TaskStop.Trigger.MISS, "no master case allows deploy at REVIEWED");

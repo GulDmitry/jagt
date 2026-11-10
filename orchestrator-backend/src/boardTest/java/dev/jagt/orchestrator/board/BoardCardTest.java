@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
@@ -520,7 +521,7 @@ class BoardCardTest extends BoardPageContext {
     org.assertj.core.api.Assertions.assertThat(paneSpills).isEqualTo(false);
     org.assertj.core.api.Assertions.assertThat(pastTheEdge).isEqualTo(java.util.List.of());
     org.assertj.core.api.Assertions.assertThat(
-            page.locator("#pane .tabs button").first().boundingBox().height)
+            Objects.requireNonNull(page.locator("#pane .tabs button").first().boundingBox()).height)
         .isLessThan(40);
     assertThat(page.locator("#pane article .actions button").first())
         .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
@@ -552,7 +553,8 @@ class BoardCardTest extends BoardPageContext {
 
     page.locator("#new-task").click();
 
-    org.assertj.core.api.Assertions.assertThat(page.locator("#base-branch").boundingBox().width)
+    org.assertj.core.api.Assertions.assertThat(
+            Objects.requireNonNull(page.locator("#base-branch").boundingBox()).width)
         .isGreaterThan(200);
   }
 
@@ -776,7 +778,7 @@ class BoardCardTest extends BoardPageContext {
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
     assertThat(page.locator("article .mr-age")).isVisible();
     var chip = page.locator("article .mr-age").boundingBox();
-    page.mouse().move(chip.x + 4, chip.y + 4);
+    page.mouse().move(Objects.requireNonNull(chip).x + 4, chip.y + 4);
 
     assertThat(page.locator("#tip")).hasClass("scrolls");
   }
@@ -928,9 +930,7 @@ class BoardCardTest extends BoardPageContext {
 
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
-    assertThat(
-            page.getByRole(
-                AriaRole.ARTICLE, new Page.GetByRoleOptions().setName("a1 · ABC-1")))
+    assertThat(page.getByRole(AriaRole.ARTICLE, new Page.GetByRoleOptions().setName("a1 · ABC-1")))
         .hasCount(1);
   }
 
@@ -1232,8 +1232,7 @@ class BoardCardTest extends BoardPageContext {
 
     assertThat(page.locator("body")).not().hasClass(Pattern.compile("\\bstale\\b"));
 
-    assertThat(page.locator("article .badge"))
-        .hasText("lift the stop — ships with no new note");
+    assertThat(page.locator("article .badge")).hasText("lift the stop — ships with no new note");
     assertThat(page.locator("article .badge"))
         .hasAttribute(
             "data-tip",

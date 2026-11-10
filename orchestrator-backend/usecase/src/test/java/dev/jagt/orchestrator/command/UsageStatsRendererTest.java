@@ -39,8 +39,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class UsageStatsRendererTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final long NOW = 1_000_000_000L;
 
@@ -54,7 +53,7 @@ class UsageStatsRendererTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     FinishedTasks finished = mock(FinishedTasks.class);
     var shipped =
         new FinishedTask(
@@ -117,7 +116,7 @@ class UsageStatsRendererTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
     tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
@@ -143,7 +142,7 @@ class UsageStatsRendererTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     state.putTask(
@@ -174,7 +173,7 @@ class UsageStatsRendererTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
@@ -203,7 +202,7 @@ class UsageStatsRendererTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
     String out =
         new UsageStatsRenderer(
@@ -277,7 +276,7 @@ class UsageStatsRendererTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
     tracker.record(
         AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05).asStart());
@@ -309,7 +308,7 @@ class UsageStatsRendererTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -346,7 +345,7 @@ class UsageStatsRendererTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     String out =
@@ -369,7 +368,7 @@ class UsageStatsRendererTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(4_000, 0, 1_000, 0.05));
     tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(4_000, 0, 1_000, 0.05));
@@ -396,10 +395,10 @@ class UsageStatsRendererTest {
                     List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)),
                     0,
                     null,
-                    null,
-                    null,
+                    Map.of(),
+                    List.of(),
                     null),
-                null),
+                List.of()),
             new FinishedTask(
                 new FinishedTask.Identity("ABC-2", null, null, List.of(), null),
                 9L,
@@ -408,10 +407,10 @@ class UsageStatsRendererTest {
                     List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)),
                     0,
                     null,
-                    null,
-                    null,
+                    Map.of(),
+                    List.of(),
                     null),
-                null),
+                List.of()),
             new FinishedTask(
                 new FinishedTask.Identity("ABC-3", null, null, List.of(), null),
                 9L,
@@ -420,10 +419,10 @@ class UsageStatsRendererTest {
                     List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)),
                     0,
                     null,
-                    null,
-                    null,
+                    Map.of(),
+                    List.of(),
                     null),
-                null),
+                List.of()),
             new FinishedTask(
                 new FinishedTask.Identity("ABC-4", null, null, List.of(), null),
                 9L,
@@ -432,10 +431,10 @@ class UsageStatsRendererTest {
                     List.of(new StatusChange(TaskStatus.CI_POLLING, 1L, null)),
                     0,
                     null,
-                    null,
-                    null,
+                    Map.of(),
+                    List.of(),
                     null),
-                null));
+                List.of()));
 
     assertThat(UsageStatsRenderer.costPerDeployed(finished))
         .isEqualTo(
@@ -454,10 +453,10 @@ class UsageStatsRendererTest {
                     List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)),
                     0,
                     null,
-                    null,
-                    null,
+                    Map.of(),
+                    List.of(),
                     null),
-                null));
+                List.of()));
 
     assertThat(UsageStatsRenderer.costPerDeployed(finished))
         .isEqualTo(
@@ -480,10 +479,10 @@ class UsageStatsRendererTest {
                     List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)),
                     0,
                     null,
-                    null,
-                    null,
+                    Map.of(),
+                    List.of(),
                     null),
-                null));
+                List.of()));
 
     assertThat(UsageStatsRenderer.costPerDeployed(finished))
         .isEqualTo(
@@ -499,7 +498,7 @@ class UsageStatsRendererTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+            reducer);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));

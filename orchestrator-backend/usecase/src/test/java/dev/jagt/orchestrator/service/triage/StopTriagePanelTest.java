@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -40,7 +41,7 @@ class StopTriagePanelTest {
   private final StopTriagePanel.Trail trail =
       new StopTriagePanel.Trail("10:00 round relayed", "abc1234 Change");
 
-  private StopTriagePanel panel(Path root, String brief) throws Exception {
+  private StopTriagePanel panel(Path root, @Nullable String brief) throws Exception {
     Files.createDirectories(root.resolve("roles/triage"));
     if (brief != null) {
       Files.writeString(root.resolve("roles/triage/brief.md.dist"), brief);

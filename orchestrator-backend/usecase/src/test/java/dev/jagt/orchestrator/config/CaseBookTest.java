@@ -17,13 +17,17 @@ class CaseBookTest {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",
-            "# Cases\n\n"
-                + "## plan-by-human\n\n"
-                + "step: plan\n"
-                + "at: PLAN_PENDING\n"
-                + "by: human\n"
-                + "replies: IN_PROGRESS, REVIEW_PENDING; plain, question\n"
-                + "You approved the plan.\n");
+            """
+            # Cases
+
+            ## plan-by-human
+
+            step: plan
+            at: PLAN_PENDING
+            by: human
+            replies: IN_PROGRESS, REVIEW_PENDING; plain, question
+            You approved the plan.
+            """);
 
     assertThat(book.cases())
         .containsExactly(
@@ -43,12 +47,15 @@ class CaseBookTest {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",
-            "## acceptance-round-by-acceptance\n\n"
-                + "step: acceptance-round\n"
-                + "at: DEPLOYED\n"
-                + "by: acceptance\n"
-                + "replies: IN_PROGRESS; plain, wait\n"
-                + "Acceptance sends its rows back.\n");
+            """
+            ## acceptance-round-by-acceptance
+
+            step: acceptance-round
+            at: DEPLOYED
+            by: acceptance
+            replies: IN_PROGRESS; plain, wait
+            Acceptance sends its rows back.
+            """);
 
     assertThat(book.faults()).isEmpty();
     assertThat(
@@ -66,8 +73,15 @@ class CaseBookTest {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",
-            "## acceptance-round-by-lint\n\nstep: acceptance-round\nat: DEPLOYED\n"
-                + "by: lint\nreplies: IN_PROGRESS; plain\nNobody installed.\n");
+            """
+            ## acceptance-round-by-lint
+
+            step: acceptance-round
+            at: DEPLOYED
+            by: lint
+            replies: IN_PROGRESS; plain
+            Nobody installed.
+            """);
 
     assertThat(book.problems(Set.of("acceptance-round"), "roles/session/cases.md", List.of()))
         .hasSize(1);
@@ -78,12 +92,15 @@ class CaseBookTest {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",
-            "## wake\n\n"
-                + "step: wake\n"
-                + "at: any but DONE\n"
-                + "by: jagt\n"
-                + "replies: any; plain\n"
-                + "A limit reset.\n");
+            """
+            ## wake
+
+            step: wake
+            at: any but DONE
+            by: jagt
+            replies: any; plain
+            A limit reset.
+            """);
 
     assertThat(book.sends("wake", TaskStatus.DEPLOYED)).isTrue();
     assertThat(book.sends("wake", TaskStatus.DONE)).isFalse();
@@ -94,8 +111,23 @@ class CaseBookTest {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",
-            "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: any; plain\nA reset.\n\n"
-                + "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: any; plain\nA reset.\n");
+            """
+            ## wake
+
+            step: wake
+            at: any
+            by: jagt
+            replies: any; plain
+            A reset.
+
+            ## wake
+
+            step: wake
+            at: any
+            by: jagt
+            replies: any; plain
+            A reset.
+            """);
 
     assertThat(book.faults())
         .singleElement()
@@ -145,18 +177,23 @@ class CaseBookTest {
     CaseBook book =
         CaseBook.parse(
             "roles/session/cases.md",
-            "## round-threads\n\n"
-                + "step: round-threads\n"
-                + "at: any\n"
-                + "by: jagt\n"
-                + "replies: IN_PROGRESS; plain\n"
-                + "Threads.\n\n"
-                + "## round-threads-done\n\n"
-                + "step: round-threads-done\n"
-                + "at: any\n"
-                + "by: jagt\n"
-                + "replies: REVIEW_PENDING; no_changes\n"
-                + "The round ends.\n");
+            """
+            ## round-threads
+
+            step: round-threads
+            at: any
+            by: jagt
+            replies: IN_PROGRESS; plain
+            Threads.
+
+            ## round-threads-done
+
+            step: round-threads-done
+            at: any
+            by: jagt
+            replies: REVIEW_PENDING; no_changes
+            The round ends.
+            """);
 
     CaseBook.Replies replies = book.replies("round-threads+round-threads-done").orElseThrow();
 

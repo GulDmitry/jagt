@@ -33,7 +33,7 @@ public final class ShippedRoot {
 
   private static boolean shipped(Path inRoles) {
     return inRoles.getFileName().toString().endsWith(".dist")
-        || inRoles.getNameCount() > 2 && "eval".equals(inRoles.getName(1).toString());
+        || (inRoles.getNameCount() > 2 && "eval".equals(inRoles.getName(1).toString()));
   }
 
   private static void copy(Path file, Path target) throws IOException {

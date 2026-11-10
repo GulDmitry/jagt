@@ -1058,7 +1058,8 @@ public record TaskState(
     return toBuilder().usage(usageOrNone().plus(added)).build();
   }
 
-  public static TaskStateBuilder builder(String project, String worktreePath, TaskStatus status) {
+  public static TaskStateBuilder builder(
+      @Nullable String project, @Nullable String worktreePath, TaskStatus status) {
     return builder(List.of(TaskRepo.of(project, worktreePath)), status);
   }
 

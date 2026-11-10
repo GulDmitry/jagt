@@ -30,8 +30,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class HandBackTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void owesNoVerificationForProjectTheConfigurationNoLongerNames(@TempDir Path root)
@@ -52,8 +51,9 @@ class HandBackTest {
         new ConfigService(
             paths,
             mock(AgentRuntime.class),
-            new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths,
-            reducer), paths)), new Checkers(new TaskChart(Composition.builtIn())));
+            new ActStops(
+                new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths)),
+            new Checkers(new TaskChart(Composition.builtIn())));
     HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
     boolean owed =
@@ -81,8 +81,9 @@ class HandBackTest {
         new ConfigService(
             paths,
             mock(AgentRuntime.class),
-            new ActStops(new MasterBrake(new StateService(new JsonMapper(), paths,
-            reducer), paths)), new Checkers(new TaskChart(Composition.builtIn())));
+            new ActStops(
+                new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths)),
+            new Checkers(new TaskChart(Composition.builtIn())));
     HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
     boolean owed =
@@ -157,8 +158,14 @@ class HandBackTest {
   void refusesProbeNamingRepositoryTheTaskLacks(@TempDir Path worktree) throws IOException {
     Files.writeString(
         worktree.resolve("plan.md"),
-        "## Acceptance criteria\n- [here] it works\n\n```probes\n"
-            + "command repo=front npm test\n```\n");
+        """
+        ## Acceptance criteria
+        - [here] it works
+
+        ```probes
+        command repo=front npm test
+        ```
+        """);
     HandBack handBack =
         new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
 
@@ -177,9 +184,18 @@ class HandBackTest {
   void acceptsProbeNamingRepositoryOfTheTask(@TempDir Path worktree) throws IOException {
     Files.writeString(
         worktree.resolve("plan.md"),
-        "## Acceptance criteria\n- [here] it works\n\n"
-            + "## Repositories\n- [changed] proj\n- [unaffected: no UI change] front\n\n```probes\n"
-            + "command repo=front npm test\n```\n");
+        """
+        ## Acceptance criteria
+        - [here] it works
+
+        ## Repositories
+        - [changed] proj
+        - [unaffected: no UI change] front
+
+        ```probes
+        command repo=front npm test
+        ```
+        """);
     HandBack handBack =
         new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
     TaskState task =
@@ -200,8 +216,17 @@ class HandBackTest {
       throws IOException {
     Files.writeString(
         worktree.resolve("plan.md"),
-        "## Acceptance criteria\n- [here] it works\n\n"
-            + "## Repositories\n- [changed] api\n\n```probes\ncommand repo=api npm test\n```\n");
+        """
+        ## Acceptance criteria
+        - [here] it works
+
+        ## Repositories
+        - [changed] api
+
+        ```probes
+        command repo=api npm test
+        ```
+        """);
     HandBack handBack =
         new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
     TaskState task =
@@ -218,8 +243,17 @@ class HandBackTest {
       throws IOException {
     Files.writeString(
         worktree.resolve("plan.md"),
-        "## Acceptance criteria\n- [here] it works\n\n"
-            + "## Repositories\n- [changed] api\n\n```probes\ncommand repo=front npm test\n```\n");
+        """
+        ## Acceptance criteria
+        - [here] it works
+
+        ## Repositories
+        - [changed] api
+
+        ```probes
+        command repo=front npm test
+        ```
+        """);
     HandBack handBack =
         new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
     TaskState task =

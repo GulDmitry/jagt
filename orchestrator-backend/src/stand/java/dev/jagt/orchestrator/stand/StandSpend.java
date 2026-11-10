@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -54,7 +55,7 @@ public record StandSpend(String unknown, Map<String, Figures> kinds) {
    * Every kind summed; null while a source is unknown, since a partial sum would read as the whole.
    */
   @JsonProperty("total")
-  public Figures total() {
+  public @Nullable Figures total() {
     return unknown.isEmpty()
         ? kinds.values().stream().reduce(new Figures(0, 0, 0, 0), StandSpend::plus)
         : null;
@@ -72,7 +73,7 @@ public record StandSpend(String unknown, Map<String, Figures> kinds) {
     return kinds;
   }
 
-  private static Figures sessions(Path state) throws IOException {
+  private static @Nullable Figures sessions(Path state) throws IOException {
     if (!Files.isRegularFile(state)) {
       throw new NoSuchFileException(state.toString());
     }

@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -24,7 +25,7 @@ public class HeadlessClaudeRoutingAssistant implements RoutingAssistant {
   private final HeadlessClaude claude;
 
   @Override
-  public Answer<RoutingAnswer> routeProject(RoutingQuestion question) {
+  public Answer<RoutingAnswer> routeProject(@Nullable RoutingQuestion question) {
     if (question == null || !question.answerable()) {
       return Answer.unavailable();
     }
@@ -101,7 +102,8 @@ public class HeadlessClaudeRoutingAssistant implements RoutingAssistant {
   }
 
   @Override
-  public Answer<String> staleRule(String ticketKey, String project, List<String> rules) {
+  public Answer<String> staleRule(
+      @Nullable String ticketKey, @Nullable String project, @Nullable List<String> rules) {
     if (ticketKey == null || project == null || rules == null || rules.isEmpty()) {
       return Answer.unavailable();
     }

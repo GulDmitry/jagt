@@ -35,7 +35,7 @@ public class ReviewRepliesReport {
   private final StateService state;
   private final ReviewDrafts drafts;
 
-  public String render(String tail) {
+  public String render(@Nullable String tail) {
     String asked = tail == null ? "" : tail.strip();
     return asked.isEmpty() ? everything() : one(asked);
   }

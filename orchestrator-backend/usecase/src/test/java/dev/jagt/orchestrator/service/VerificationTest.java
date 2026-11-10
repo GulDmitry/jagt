@@ -53,9 +53,10 @@ class VerificationTest {
                     Map.of(
                         "proj",
                         new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, null),
+                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
                             new ProjectConfig.Branches("origin/main", "dev", null),
-                            new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+                            new ProjectConfig.CodeHost(
+                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                             new ProjectConfig.Verify(List.of("./gradlew", "test"), 5)))));
     Processes processes = mock(Processes.class);
     when(processes.run(Path.of("/wt"), Duration.ofMinutes(5), List.of("./gradlew", "test")))
@@ -82,9 +83,10 @@ class VerificationTest {
                     Map.of(
                         "proj",
                         new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, null),
+                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
                             new ProjectConfig.Branches("origin/main", "dev", null),
-                            new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+                            new ProjectConfig.CodeHost(
+                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                             new ProjectConfig.Verify(List.of("./gradlew", "test"), null)))));
     Processes processes = mock(Processes.class);
     when(processes.run(Path.of("/wt"), Duration.ofMinutes(20), List.of("./gradlew", "test")))
@@ -111,9 +113,10 @@ class VerificationTest {
                     Map.of(
                         "proj",
                         new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, null),
+                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
                             new ProjectConfig.Branches("origin/main", "dev", null),
-                            new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+                            new ProjectConfig.CodeHost(
+                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                             new ProjectConfig.Verify(List.of("./gradlew", "test"), null)))));
     Processes processes = mock(Processes.class);
     String errors =
@@ -148,9 +151,10 @@ class VerificationTest {
                     Map.of(
                         "proj",
                         new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, null),
+                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
                             new ProjectConfig.Branches("origin/main", "dev", null),
-                            new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+                            new ProjectConfig.CodeHost(
+                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                             new ProjectConfig.Verify(List.of("./gradlew", "test"), null)))));
     Processes processes = mock(Processes.class);
     String errors =
@@ -179,9 +183,10 @@ class VerificationTest {
                     Map.of(
                         "proj",
                         new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, null),
+                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
                             new ProjectConfig.Branches("origin/main", "dev", null),
-                            new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+                            new ProjectConfig.CodeHost(
+                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                             new ProjectConfig.Verify(List.of("npm", "test"), null)))));
     Processes processes = mock(Processes.class);
     when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("npm", "test"))))
@@ -208,9 +213,10 @@ class VerificationTest {
                     Map.of(
                         "proj",
                         new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, null),
+                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
                             new ProjectConfig.Branches("origin/main", "dev", null),
-                            new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+                            new ProjectConfig.CodeHost(
+                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                             new ProjectConfig.Verify(List.of("npm", "test"), null)))));
     Processes processes = mock(Processes.class);
     when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("npm", "test"))))
@@ -237,17 +243,19 @@ class VerificationTest {
                     Map.of(
                         "proj",
                             new ProjectConfig(
-                                new ProjectConfig.Repository("/repo", List.of(), null, null),
+                                new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
                                 new ProjectConfig.Branches("origin/main", "dev", null),
                                 new ProjectConfig.CodeHost(
-                                    null, null, null, null, null, null, null),
+                                    null, null, List.of(), List.of(), List.of(), List.of(),
+                                    List.of()),
                                 new ProjectConfig.Verify(List.of("npm", "test"), null)),
                         "web",
                             new ProjectConfig(
-                                new ProjectConfig.Repository("/web", List.of(), null, null),
+                                new ProjectConfig.Repository("/web", List.of(), null, List.of()),
                                 new ProjectConfig.Branches("origin/main", "dev", null),
                                 new ProjectConfig.CodeHost(
-                                    null, null, null, null, null, null, null),
+                                    null, null, List.of(), List.of(), List.of(), List.of(),
+                                    List.of()),
                                 new ProjectConfig.Verify(List.of("npm", "test"), null)))));
     Processes processes = mock(Processes.class);
     when(processes.run(any(), any(), eq(List.of("npm", "test"))))
@@ -318,9 +326,10 @@ class VerificationTest {
                     Map.of(
                         "proj",
                         new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, null),
+                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
                             new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
-                            new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+                            new ProjectConfig.CodeHost(
+                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                             new ProjectConfig.Verify(List.of(), null)))));
     Processes processes = mock(Processes.class);
 
@@ -388,9 +397,10 @@ class VerificationTest {
                     Map.of(
                         "front",
                         new ProjectConfig(
-                            new ProjectConfig.Repository("/front", List.of(), null, null),
+                            new ProjectConfig.Repository("/front", List.of(), null, List.of()),
                             new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
-                            new ProjectConfig.CodeHost(null, null, null, null, null, null, null),
+                            new ProjectConfig.CodeHost(
+                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                             new ProjectConfig.Verify(List.of(), null)))));
     Processes processes = mock(Processes.class);
 

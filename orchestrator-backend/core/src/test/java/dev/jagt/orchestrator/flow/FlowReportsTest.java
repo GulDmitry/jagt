@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.time.Clock;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import org.junit.jupiter.api.Test;
@@ -239,9 +240,9 @@ class FlowReportsTest {
         .thenAnswer(
             call -> {
               BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              write.apply(
-                  reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-              return true;
+              return write.apply(
+                      reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
+                  != null;
             });
 
     boolean accepted = reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed");
@@ -271,9 +272,9 @@ class FlowReportsTest {
         .thenAnswer(
             call -> {
               BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              write.apply(
-                  reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-              return true;
+              return write.apply(
+                      reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
+                  != null;
             });
 
     var landed =
@@ -295,9 +296,9 @@ class FlowReportsTest {
         .thenAnswer(
             call -> {
               BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              write.apply(
-                  reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-              return true;
+              return write.apply(
+                      reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
+                  != null;
             });
 
     var landed =
@@ -319,9 +320,9 @@ class FlowReportsTest {
         .thenAnswer(
             call -> {
               BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              write.apply(
-                  reducer, TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
-              return true;
+              return write.apply(
+                      reducer, TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build())
+                  != null;
             });
 
     assertThatThrownBy(() -> reports.report("ABC-1", TaskStatus.PLAN_PENDING, "a plan"))
@@ -338,8 +339,9 @@ class FlowReportsTest {
         .thenAnswer(
             call -> {
               BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              write.apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-              return true;
+              return write.apply(
+                      reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                  != null;
             });
 
     assertThatThrownBy(() -> reports.report("ABC-1", TaskStatus.CI_POLLING, asked, "which one?"))
@@ -371,8 +373,9 @@ class FlowReportsTest {
         .thenAnswer(
             call -> {
               BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              write.apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-              return true;
+              return write.apply(
+                      reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                  != null;
             });
 
     var landed = reports.read("ABC-1", TaskStatus.APPROVED, "approved");
@@ -452,7 +455,14 @@ class FlowReportsTest {
             .apply(
                 reducer,
                 TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).deployment(recorded).build());
-    assertThat(handed.deployment().conflictedTarget().get().progress().conflict().cause())
+    assertThat(
+            Objects.requireNonNull(
+                    Objects.requireNonNull(handed.deployment())
+                        .conflictedTarget()
+                        .get()
+                        .progress()
+                        .conflict())
+                .cause())
         .isEqualTo(Deployment.Cause.RED_PIPELINE);
   }
 

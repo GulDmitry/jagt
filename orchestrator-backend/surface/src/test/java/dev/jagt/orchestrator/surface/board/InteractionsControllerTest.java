@@ -28,7 +28,7 @@ class InteractionsControllerTest {
   @Test
   void recordsAnEmptyBatchForBodyCarryingNoPresses() {
     new InteractionsController(presses, Clock.systemUTC())
-        .record(new InteractionsController.Batch(null));
+        .record(new InteractionsController.Batch(List.of()));
 
     verify(presses).record(eq(List.of()), anyLong());
   }

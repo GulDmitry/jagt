@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -23,23 +24,24 @@ public final class MasterCases {
     Map<String, Object> expect = (Map<String, Object>) root.get("expect");
     Map<String, Object> question = (Map<String, Object>) root.get("question");
     return new MasterCase(
-        (String) root.get("case"),
-        (String) root.get("instructions"),
-        TaskStatus.valueOf(constant(root.get("status"))),
-        (Map<String, String>) root.get("baseline"),
+        Objects.requireNonNull((String) root.get("case")),
+        Objects.requireNonNull((String) root.get("instructions")),
+        TaskStatus.valueOf(constant(Objects.requireNonNull(root.get("status")))),
+        Objects.requireNonNull((Map<String, String>) root.get("baseline")),
         (Map<String, String>) root.getOrDefault("change", Map.of()),
         (String) root.getOrDefault("plan", ""),
         new MasterCase.Expect(
-            expect.get("verdict") == null
+            Objects.requireNonNull(expect).get("verdict") == null
                 ? null
-                : MasterReview.Kind.valueOf(constant(expect.get("verdict"))),
-            (List<String>) expect.get("names")),
+                : MasterReview.Kind.valueOf(
+                    constant(Objects.requireNonNull(expect.get("verdict")))),
+            Objects.requireNonNull((List<String>) expect.get("names"))),
         question == null
             ? MasterCase.Answer.NONE
             : new MasterCase.Answer(
-                (String) question.get("asked"),
-                (List<String>) question.get("human_said"),
-                (List<String>) expect.get("refused")));
+                Objects.requireNonNull((String) question.get("asked")),
+                Objects.requireNonNull((List<String>) question.get("human_said")),
+                Objects.requireNonNull((List<String>) expect.get("refused"))));
   }
 
   private static String constant(Object value) {

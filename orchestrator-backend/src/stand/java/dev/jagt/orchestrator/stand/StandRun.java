@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.jspecify.annotations.Nullable;
@@ -52,7 +53,7 @@ public final class StandRun implements AutoCloseable {
   private @Nullable StandOutcome last;
   private boolean resting;
   private boolean sweepsWaiting;
-  private RunEnd end;
+  private @Nullable RunEnd end;
 
   private StandRun(
       Path root,
@@ -239,11 +240,13 @@ public final class StandRun implements AutoCloseable {
             slept != null,
             stop.isPresent(),
             held(timeline),
-            end.waitingOnTheReviewer(sweepsWaiting, timeline),
+            Objects.requireNonNull(end).waitingOnTheReviewer(sweepsWaiting, timeline),
             timeline.stalledFor(STALL));
     String detail =
         switch (ending) {
-          case SUSPENDED -> slept.toSeconds() + "s between two polls, the host was suspended";
+          case SUSPENDED ->
+              Objects.requireNonNull(slept).toSeconds()
+                  + "s between two polls, the host was suspended";
           case STOPPED -> stop.get().trigger() + ": " + stop.get().evidence();
           default -> "";
         };
@@ -260,7 +263,7 @@ public final class StandRun implements AutoCloseable {
   }
 
   private boolean held(Timeline timeline) {
-    return end.held(timeline, resting);
+    return Objects.requireNonNull(end).held(timeline, resting);
   }
 
   private boolean going(Script script, Timeline timeline, Instant deadline, boolean eventsPending) {
@@ -275,7 +278,8 @@ public final class StandRun implements AutoCloseable {
               && (!acceptanceRecorded() || statusLabel(script.ref()).equals("accepted"));
       return replay.divergences().isEmpty() && !done && Instant.now().isBefore(deadline);
     }
-    return !end.reached(timeline.lastStatus().equals(script.until()), eventsPending, timeline)
+    return !Objects.requireNonNull(end)
+            .reached(timeline.lastStatus().equals(script.until()), eventsPending, timeline)
         && Instant.now().isBefore(deadline)
         && !timeline.stalledFor(STALL)
         && !held(timeline)
@@ -341,7 +345,11 @@ public final class StandRun implements AutoCloseable {
             : suspended ? StandMarker.SUSPENDED : StandMarker.FAILED);
     keepRunRecord();
     if (suspended) {
-      System.out.println("stand run " + marker.scenario() + " host suspended: " + last.detail());
+      System.out.println(
+          "stand run "
+              + marker.scenario()
+              + " host suspended: "
+              + Objects.requireNonNull(last).detail());
     } else if (!marker.outcome().equals(StandMarker.PASSED)) {
       marker.withOutcome(StandMarker.FAILED).writeTo(root);
       System.out.println(
@@ -351,7 +359,8 @@ public final class StandRun implements AutoCloseable {
               + StandEvidence.keep(root, marker.scenario(), StandEvidence.DIR).toAbsolutePath());
     }
     StandShell.deleteRoot(root);
-    StandTraces.ofTheHuman(root.getParent()).remove(root.getFileName().toString()::equals);
+    StandTraces.ofTheHuman(Objects.requireNonNull(root.getParent()))
+        .remove(root.getFileName().toString()::equals);
   }
 
   private void keepRunRecord() {

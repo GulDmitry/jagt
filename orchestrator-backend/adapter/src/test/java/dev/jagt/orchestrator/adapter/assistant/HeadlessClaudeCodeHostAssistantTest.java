@@ -222,7 +222,7 @@ class HeadlessClaudeCodeHostAssistantTest {
             new Processes.Result(
                 0,
                 "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\""
-                + "none\","
+                    + "none\","
                     + "\"closed\":true,\"merged\":false,\"openedAt\":\"\",\"threads\":[]}}",
                 ""));
     var assistant =
@@ -253,7 +253,7 @@ class HeadlessClaudeCodeHostAssistantTest {
             new Processes.Result(
                 0,
                 "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\""
-                + "success\",\"openedAt\":\"\",\"threads\":[\"bot:"
+                    + "success\",\"openedAt\":\"\",\"threads\":[\"bot:"
                     + " "
                     + "x".repeat(3000)
                     + "\\ndev: it is bound\\nbot: then bound the input\"]}}",
@@ -349,9 +349,11 @@ class HeadlessClaudeCodeHostAssistantTest {
     assertThat(facts.get().discussion().threads()).isEmpty();
     assertThat(facts.get().discussion().awaitingReviewer())
         .containsExactly(
-            "https://host/mr/9#note_1\n"
-                + "mia: Why is this loop not bounded?\n"
-                + "lee: The page size bounds it, see Paging.java");
+            """
+            https://host/mr/9#note_1
+            mia: Why is this loop not bounded?
+            lee: The page size bounds it, see Paging.java\
+            """);
   }
 
   @Test

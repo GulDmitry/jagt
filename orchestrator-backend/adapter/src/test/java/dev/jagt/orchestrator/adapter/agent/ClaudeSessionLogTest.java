@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ch.qos.logback.classic.Logger;
@@ -60,10 +61,10 @@ class ClaudeSessionLogTest {
     Path log = dir.resolve("session.jsonl");
     String first =
         "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":1,\"o"
-        + "utput_tokens\":9}}}\n";
+            + "utput_tokens\":9}}}\n";
     String open =
         "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_2\",\"usage\":{\"input_tokens\":2,\"o"
-        + "utput_tokens\":40}}}\n";
+            + "utput_tokens\":40}}}\n";
     Files.writeString(log, first + open);
     SessionLog.Spent before = new ClaudeSessionLog().spent(log, 0, Files.size(log));
     Files.writeString(
@@ -151,7 +152,7 @@ class ClaudeSessionLogTest {
     SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
 
     assertThat(spent.usage()).isEqualTo(new TokenUsage(1, 5, 0, 10, 0, 0, 0, 1));
-    assertThat(spent.upTo()).isEqualTo(complete.getBytes().length);
+    assertThat(spent.upTo()).isEqualTo(complete.getBytes(UTF_8).length);
   }
 
   @Test
@@ -167,10 +168,10 @@ class ClaudeSessionLogTest {
         """;
     Files.writeString(log, first + next);
 
-    SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, first.getBytes().length);
+    SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, first.getBytes(UTF_8).length);
 
     assertThat(spent.usage()).isEqualTo(new TokenUsage(1, 5, 0, 10, 0, 0, 0, 1));
-    assertThat(spent.upTo()).isEqualTo(first.getBytes().length);
+    assertThat(spent.upTo()).isEqualTo(first.getBytes(UTF_8).length);
   }
 
   @Test
@@ -238,7 +239,7 @@ class ClaudeSessionLogTest {
         {"type":"assistant","message":{"usage":{"input_tokens":3,\
         "cache_read_input_tokens":0,"output_tokens":150}}}
         """);
-    long mark = Files.readAllLines(log).get(0).length() + 1;
+    long mark = Files.readAllLines(log).get(0).length() + 1L;
 
     assertThat(
             new ClaudeSessionLog()
@@ -260,7 +261,7 @@ class ClaudeSessionLogTest {
         {"type":"assistant","message":{"usage":{"input_tokens":7,"output_tokens":20}}}
         """;
     Files.writeString(log, before + next);
-    long mark = before.getBytes().length;
+    long mark = before.getBytes(UTF_8).length;
 
     SessionLog.Spent spent = new ClaudeSessionLog().spent(log, mark, Files.size(log) - mark);
 
@@ -283,24 +284,24 @@ class ClaudeSessionLogTest {
       throws IOException {
     String closed =
         "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":1,\"o"
-        + "utput_tokens\":9}}}\n";
+            + "utput_tokens\":9}}}\n";
     String open =
         "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_2\",\"usage\":{\"input_tokens\":2,\"o"
-        + "utput_tokens\":40}}}\n";
+            + "utput_tokens\":40}}}\n";
     Path log = dir.resolve("session.jsonl");
     Files.writeString(log, closed + open);
 
     SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
 
     assertThat(spent.usage().total()).isEqualTo(10);
-    assertThat(spent.upTo()).isEqualTo(closed.getBytes().length);
+    assertThat(spent.upTo()).isEqualTo(closed.getBytes(UTF_8).length);
   }
 
   @Test
   void countsMessageWhoseBlocksAreAllThatTheWindowHolds(@TempDir Path dir) throws IOException {
     String block =
         "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":3,\"o"
-        + "utput_tokens\":100}}}\n";
+            + "utput_tokens\":100}}}\n";
     Path log = dir.resolve("session.jsonl");
     Files.writeString(log, block + block);
 
@@ -314,7 +315,7 @@ class ClaudeSessionLogTest {
   void countsEveryLineWhereTheLastOneCarriesNoUsage(@TempDir Path dir) throws IOException {
     String closed =
         "{\"type\":\"assistant\",\"message\":{\"id\":\"msg_1\",\"usage\":{\"input_tokens\":1,\"o"
-        + "utput_tokens\":9}}}\n";
+            + "utput_tokens\":9}}}\n";
     String user = "{\"type\":\"user\",\"message\":{\"content\":\"ok\"}}\n";
     Path log = dir.resolve("session.jsonl");
     Files.writeString(log, closed + user);

@@ -46,15 +46,16 @@ class MasterDeployJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig(
                         "act", null, null, List.of("revert"), null)));
-    when(state.tasks())
-        .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()));
+    Map<String, TaskState> tasks =
+        Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build());
+    when(state.tasks()).thenReturn(tasks);
 
     new MasterDeployJob(
             config,
             press,
             new TaskTurns(
                 state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+        .runOn(tasks);
 
     verify(press).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
   }
@@ -66,15 +67,16 @@ class MasterDeployJobTest {
             ConfigService.ConfigFile.defaults()
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(state.tasks())
-        .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.APPROVED).build()));
+    Map<String, TaskState> tasks =
+        Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.APPROVED).build());
+    when(state.tasks()).thenReturn(tasks);
 
     new MasterDeployJob(
             config,
             press,
             new TaskTurns(
                 state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+        .runOn(tasks);
 
     verify(press).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
   }
@@ -87,15 +89,16 @@ class MasterDeployJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig(
                         "act", null, null, List.of("deploy"), null)));
-    when(state.tasks())
-        .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()));
+    Map<String, TaskState> tasks =
+        Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build());
+    when(state.tasks()).thenReturn(tasks);
 
     new MasterDeployJob(
             config,
             press,
             new TaskTurns(
                 state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+        .runOn(tasks);
 
     verify(press, never()).press(anyString(), any(), any());
   }
@@ -107,16 +110,16 @@ class MasterDeployJobTest {
             ConfigService.ConfigFile.defaults()
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(state.tasks())
-        .thenReturn(
-            Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.CI_POLLING).build()));
+    Map<String, TaskState> tasks =
+        Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.CI_POLLING).build());
+    when(state.tasks()).thenReturn(tasks);
 
     new MasterDeployJob(
             config,
             press,
             new TaskTurns(
                 state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+        .runOn(tasks);
 
     verify(press, never()).press(anyString(), any(), any());
   }
@@ -161,15 +164,16 @@ class MasterDeployJobTest {
             ConfigService.ConfigFile.defaults()
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
-    when(state.tasks())
-        .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()));
+    Map<String, TaskState> tasks =
+        Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build());
+    when(state.tasks()).thenReturn(tasks);
 
     new MasterDeployJob(
             config,
             press,
             new TaskTurns(
                 state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+        .runOn(tasks);
 
     verify(press, never()).press(anyString(), any(), any());
   }
@@ -182,15 +186,16 @@ class MasterDeployJobTest {
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig(
                         "act", null, null, List.of("revert"), null)));
-    when(state.tasks())
-        .thenReturn(Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DEPLOYED).build()));
+    Map<String, TaskState> tasks =
+        Map.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DEPLOYED).build());
+    when(state.tasks()).thenReturn(tasks);
 
     new MasterDeployJob(
             config,
             press,
             new TaskTurns(
                 state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+        .runOn(tasks);
 
     verify(press, never()).press(anyString(), any(), any());
   }
@@ -202,20 +207,20 @@ class MasterDeployJobTest {
             ConfigService.ConfigFile.defaults()
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(state.tasks())
-        .thenReturn(
-            Map.of(
-                "ABC-1",
-                TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
-                    .build()
-                    .withMaster(Master.defaults().withLeft("ship src/Login.java"))));
+    Map<String, TaskState> tasks =
+        Map.of(
+            "ABC-1",
+            TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
+                .build()
+                .withMaster(Master.defaults().withLeft("ship src/Login.java")));
+    when(state.tasks()).thenReturn(tasks);
 
     new MasterDeployJob(
             config,
             press,
             new TaskTurns(
                 state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+        .runOn(tasks);
 
     verify(press).press(eq("ABC-1"), any(), eq(TaskAction.DEPLOY));
   }

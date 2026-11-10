@@ -36,16 +36,18 @@ class RoleDefinitionsTest {
   void flatRoleDocumentCompilesItsTriggerAndItsRepliesIntoOneValueEach() {
     RoleDefinition compiled =
         RoleDefinitions.compile(
-            "id: x\n"
-                + "name: X\n"
-                + "model: m\n"
-                + "trigger: [deployed, pipelines-green]\n"
-                + "oncePer: deploy\n"
-                + "outcomes: [round, stop]\n"
-                + "answer:\n"
-                + "  - required: verdict\n"
-                + "decline:\n"
-                + "  - text: why\n");
+            """
+            id: x
+            name: X
+            model: m
+            trigger: [deployed, pipelines-green]
+            oncePer: deploy
+            outcomes: [round, stop]
+            answer:
+              - required: verdict
+            decline:
+              - text: why
+            """);
 
     assertThat(compiled.trigger().trigger()).containsExactly("deployed", "pipelines-green");
     assertThat(compiled.trigger().oncePer()).isEqualTo("deploy");
@@ -67,8 +69,14 @@ class RoleDefinitionsTest {
   void roleDeclaringNeitherKeyRunsNoJobsAndOpensNoRead() {
     RoleDefinition compiled =
         RoleDefinitions.compile(
-            "id: x\nname: X\nmodel: m\ntrigger: [deployed]\n"
-                + "oncePer: deploy\noutcomes: [round]\n");
+            """
+            id: x
+            name: X
+            model: m
+            trigger: [deployed]
+            oncePer: deploy
+            outcomes: [round]
+            """);
 
     assertThat(compiled.checking().jobs()).isFalse();
     assertThat(compiled.checking().readSteps()).isEmpty();
@@ -78,8 +86,16 @@ class RoleDefinitionsTest {
   void jobsHoldsOnlyForTheLiteralTrue() {
     RoleDefinition compiled =
         RoleDefinitions.compile(
-            "id: x\nname: X\nmodel: m\ntrigger: [deployed]\n"
-                + "oncePer: deploy\noutcomes: [round]\njobs: \"true\"\nreadSteps: [one, two]\n");
+            """
+            id: x
+            name: X
+            model: m
+            trigger: [deployed]
+            oncePer: deploy
+            outcomes: [round]
+            jobs: "true"
+            readSteps: [one, two]
+            """);
 
     assertThat(compiled.checking().jobs()).isFalse();
     assertThat(compiled.checking().readSteps()).containsExactly("one", "two");
@@ -102,8 +118,14 @@ class RoleDefinitionsTest {
     assertThatThrownBy(
             () ->
                 RoleDefinitions.compile(
-                    "id: x\nname: X\nmodel: m\ntrigger: [whenever]\n"
-                        + "oncePer: deploy\noutcomes: [round]\n"))
+                    """
+                    id: x
+                    name: X
+                    model: m
+                    trigger: [whenever]
+                    oncePer: deploy
+                    outcomes: [round]
+                    """))
         .isInstanceOf(RoleInvalid.class)
         .hasMessageContaining("whenever");
   }
@@ -113,8 +135,14 @@ class RoleDefinitionsTest {
     assertThatThrownBy(
             () ->
                 RoleDefinitions.compile(
-                    "id: x\nname: X\nmodel: m\ntrigger: [pipelines-green]\n"
-                        + "oncePer: deploy\noutcomes: [round]\n"))
+                    """
+                    id: x
+                    name: X
+                    model: m
+                    trigger: [pipelines-green]
+                    oncePer: deploy
+                    outcomes: [round]
+                    """))
         .isInstanceOf(RoleInvalid.class)
         .hasMessageContaining("deployed");
   }
@@ -141,8 +169,14 @@ class RoleDefinitionsTest {
     assertThatThrownBy(
             () ->
                 RoleDefinitions.compile(
-                    "id: x\nname: X\nmodel: m\ntrigger: [deployed]\n"
-                        + "oncePer: deploy\noutcomes: []\n"))
+                    """
+                    id: x
+                    name: X
+                    model: m
+                    trigger: [deployed]
+                    oncePer: deploy
+                    outcomes: []
+                    """))
         .isInstanceOf(RoleInvalid.class)
         .hasMessageContaining("no exit");
   }

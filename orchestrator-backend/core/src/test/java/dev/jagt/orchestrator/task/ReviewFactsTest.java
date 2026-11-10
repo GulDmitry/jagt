@@ -12,7 +12,7 @@ class ReviewFactsTest {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(
                 List.of("rev: fix this\nbot: done", "rev: and this"),
                 List.of("old thread"),
@@ -55,7 +55,7 @@ class ReviewFactsTest {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(
                 List.of("bot: first\nrev: reply\n\n"), List.of(), List.of()));
 
@@ -67,7 +67,7 @@ class ReviewFactsTest {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(List.of("rev: x\n@Bot: done"), List.of(), List.of()));
 
     assertThat(facts.answeredBy(" @bot ").discussion().awaitingReviewer()).hasSize(1);
@@ -79,7 +79,7 @@ class ReviewFactsTest {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(List.of(": done"), List.of(), List.of()));
 
     assertThat(facts.answeredBy(" ").discussion().awaitingReviewer()).isEmpty();
@@ -90,7 +90,7 @@ class ReviewFactsTest {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(List.of("rev: x\n: bot says"), List.of(), List.of()));
 
     assertThat(facts.answeredBy("bot").discussion().awaitingReviewer()).isEmpty();
@@ -101,7 +101,7 @@ class ReviewFactsTest {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(List.of(""), List.of(), List.of()));
 
     assertThat(facts.answeredBy("bot").discussion().threads()).containsExactly("");
@@ -112,8 +112,8 @@ class ReviewFactsTest {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, true, false, false, 0),
-            new ReviewFacts.Pipeline("failed", null, ""),
-            new ReviewFacts.Discussion(List.of(), null, List.of()));
+            new ReviewFacts.Pipeline("failed", "", ""),
+            new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
 
     assertThat(facts.pipeline().failure()).isEmpty();
     assertThat(facts.discussion().awaitingReviewer()).isEmpty();
@@ -124,7 +124,7 @@ class ReviewFactsTest {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(
                 List.of("l1\nrev: a", "l2\nrev: b\nbot: done", "l3\nrev: c"),
                 List.of(),
@@ -141,7 +141,7 @@ class ReviewFactsTest {
     ReviewFacts first =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(
                 List.of("l2\nrev: b", "l1\nrev: a\nbot: fine"),
                 List.of(),
@@ -149,7 +149,7 @@ class ReviewFactsTest {
     ReviewFacts second =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 9),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(
                 List.of("l1\nrev: a\nbot: fine, agreed", "other\nrev: b"),
                 List.of(),
@@ -163,12 +163,12 @@ class ReviewFactsTest {
     ReviewFacts before =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(List.of("l1\nrev: a"), List.of(), List.of("note_1")));
     ReviewFacts after =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(List.of("l1\nrev: a"), List.of(), List.of("note_2")));
 
     assertThat(before.noteFingerprint()).isNotEqualTo(after.noteFingerprint());
@@ -179,7 +179,7 @@ class ReviewFactsTest {
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(List.of("l1\nrev: a", "l2\nrev: b"), List.of(), List.of()));
 
     assertThat(facts.noteFingerprint()).isEmpty();
@@ -190,12 +190,12 @@ class ReviewFactsTest {
     ReviewFacts first =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 7),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(List.of("l1\nrev: a"), List.of(), List.of("note_1", "")));
     ReviewFacts second =
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 9),
-            new ReviewFacts.Pipeline("success", null, ""),
+            new ReviewFacts.Pipeline("success", "", ""),
             new ReviewFacts.Discussion(List.of("l1\nrev: a"), List.of(), List.of("note_1", "")));
 
     assertThat(first.noteKey().sameAs(second.noteKey())).isFalse();

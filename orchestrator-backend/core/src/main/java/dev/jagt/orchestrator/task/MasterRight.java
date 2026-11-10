@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A step a human may keep for themselves even where the Master acts for them. Named rather than
@@ -40,7 +41,7 @@ public enum MasterRight {
   /**
    * Empty where the word is not one of these, so a misspelled step is refused rather than ignored.
    */
-  public static Optional<MasterRight> of(String right) {
+  public static Optional<MasterRight> of(@Nullable String right) {
     return right == null
         ? Optional.empty()
         : Arrays.stream(values())

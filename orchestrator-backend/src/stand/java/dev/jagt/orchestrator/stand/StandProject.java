@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Objects;
 
 public final class StandProject {
 
@@ -86,7 +87,12 @@ public final class StandProject {
   public String commitOnDeployBranch(Path scratch, String file, String content, String message) {
     if (!Files.isDirectory(scratch)) {
       StandShell.git(
-          origin.getParent(), "clone", "--branch", "dev", "file://" + origin, scratch.toString());
+          Objects.requireNonNull(origin.getParent()),
+          "clone",
+          "--branch",
+          "dev",
+          "file://" + origin,
+          scratch.toString());
       StandShell.git(scratch, "config", "user.email", "outsider@example.com");
       StandShell.git(scratch, "config", "user.name", "someone else");
     }

@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -103,6 +104,8 @@ class DeployCheckJobAcceptanceTest {
         .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
-    assertThat(state.task("ABC-42").orElseThrow().deployment().askedDigest()).isNotNull();
+    assertThat(
+            Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment()).askedDigest())
+        .isNotNull();
   }
 }

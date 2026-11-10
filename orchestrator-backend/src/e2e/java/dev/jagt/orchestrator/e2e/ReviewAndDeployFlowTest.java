@@ -44,7 +44,9 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -129,7 +131,7 @@ class ReviewAndDeployFlowTest {
     E2eWorkspace.forgetTask(webRepo(), webWorktree(), TASK);
     E2eWorkspace.resetDeployBranch(repo());
     E2eWorkspace.resetDeployBranch(webRepo());
-    E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
+    E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.tmuxCommand()));
   }
 
   @ParameterizedTest(name = "[{index}] {0}")
@@ -194,7 +196,8 @@ class ReviewAndDeployFlowTest {
     assertThat(task().status()).isEqualTo(TaskStatus.APPROVED);
 
     assertThat(act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");
-    assertThat(task().deployment().targets().getFirst().landing().merge()).isNotBlank();
+    assertThat(Objects.requireNonNull(task().deployment()).targets().getFirst().landing().merge())
+        .isNotBlank();
     assertThat(E2eWorkspace.git(origin(), "log", "-1", "--format=%s", "dev"))
         .contains("Merge branch '" + TASK + "' into dev");
 
@@ -451,7 +454,7 @@ class ReviewAndDeployFlowTest {
     }
     agentHandsBack("fifth round");
     assertThat(stops.mayShip(TASK)).isFalse();
-    assertThat(task().stop().trigger()).isEqualTo(TaskStop.Trigger.SHIPS);
+    assertThat(Objects.requireNonNull(task().stop()).trigger()).isEqualTo(TaskStop.Trigger.SHIPS);
     assertThat(task().stop().request()).isEqualTo(request());
     assertThat(actionsOfTheTask()).contains("ship");
     long ships = shipSteps();
@@ -525,7 +528,7 @@ class ReviewAndDeployFlowTest {
     E2eWorkspace.git(worktree, "push", "-u", "origin", TASK);
   }
 
-  private void reads(ReviewFacts facts) {
+  private void reads(@Nullable ReviewFacts facts) {
     Answer<ReviewFacts> answer = new Answer<>(Optional.ofNullable(facts), TokenUsage.NONE);
     when(assistant.readReview(request())).thenReturn(answer);
     when(assistant.readReview(webRequest())).thenReturn(answer);
@@ -540,7 +543,8 @@ class ReviewAndDeployFlowTest {
     agentReports(status, message, null);
   }
 
-  private void agentReports(String status, String message, String requestUrl) throws Exception {
+  private void agentReports(String status, String message, @Nullable String requestUrl)
+      throws Exception {
     String request = requestUrl == null ? "" : ", \"reviewRequestUrl\": \"" + requestUrl + "\"";
     String call =
         """

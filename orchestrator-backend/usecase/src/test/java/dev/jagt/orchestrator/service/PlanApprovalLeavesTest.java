@@ -23,8 +23,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class PlanApprovalLeavesTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final StepRelay relay = mock(StepRelay.class);
   private final CaseDoor door = mock(CaseDoor.class);
@@ -50,11 +49,7 @@ class PlanApprovalLeavesTest {
         new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none());
 
     new PlanApproval(
-            state,
-            relay,
-            door,
-            baseline,
-            new ApprovedRepos(new PlanPlacement(state, null, null, null, null), unaffected))
+            state, relay, door, baseline, new ApprovedRepos(mock(PlanPlacement.class), unaffected))
         .approve("ABC-1", "The human read plan.md");
 
     verify(unaffected).leave("ABC-1");
@@ -80,11 +75,7 @@ class PlanApprovalLeavesTest {
         new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none());
 
     new PlanApproval(
-            state,
-            relay,
-            door,
-            baseline,
-            new ApprovedRepos(new PlanPlacement(state, null, null, null, null), unaffected))
+            state, relay, door, baseline, new ApprovedRepos(mock(PlanPlacement.class), unaffected))
         .approve("ABC-1", "The human read plan.md");
 
     verify(unaffected, never()).leave("ABC-1");

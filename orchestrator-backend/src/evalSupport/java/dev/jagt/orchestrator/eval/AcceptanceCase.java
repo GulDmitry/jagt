@@ -5,12 +5,13 @@ import dev.jagt.orchestrator.task.AcceptanceVerdict.Status;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public record AcceptanceCase(
     String name,
     Ticket ticket,
     Landing landing,
-    Decline decline,
+    @Nullable Decline decline,
     Expect expect,
     Flows flows,
     Workspace workspace) {

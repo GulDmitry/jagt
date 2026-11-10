@@ -34,7 +34,8 @@ public record ProjectConfig(
    * on this machine.
    */
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
-  public record Branches(String baseBranch, String deployBranch, @Nullable String remote) {}
+  public record Branches(
+      String baseBranch, @Nullable String deployBranch, @Nullable String remote) {}
 
   @JsonInclude(JsonInclude.Include.NON_EMPTY)
   public record CodeHost(
@@ -76,7 +77,8 @@ public record ProjectConfig(
   public static final String NO_CODE_HOST = "none";
 
   /** A project declaring no command of its own: the four keys every install has always had. */
-  public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels) {
+  public ProjectConfig(
+      String path, String baseBranch, @Nullable String deployBranch, List<String> labels) {
     this(
         new Repository(path, labels, null, List.of()),
         new Branches(baseBranch, deployBranch, null),
@@ -104,7 +106,7 @@ public record ProjectConfig(
     return branches.baseBranch();
   }
 
-  public String deployBranch() {
+  public @Nullable String deployBranch() {
     return branches.deployBranch();
   }
 

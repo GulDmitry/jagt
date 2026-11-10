@@ -56,8 +56,15 @@ class AcceptanceCaseCheckTest {
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.writeString(
         root.resolve("roles/acceptance/cases.md"),
-        "## accept\n\nstep: accept\nat: DEPLOYED\nby: jagt\n"
-            + "replies: DEPLOYED; plain\nChecks.\n");
+        """
+        ## accept
+
+        step: accept
+        at: DEPLOYED
+        by: jagt
+        replies: DEPLOYED; plain
+        Checks.
+        """);
     Files.writeString(root.resolve("roles/acceptance/brief.md"), "## other\n\ntext\n");
 
     assertThat(check(root).problems()).hasSize(2);

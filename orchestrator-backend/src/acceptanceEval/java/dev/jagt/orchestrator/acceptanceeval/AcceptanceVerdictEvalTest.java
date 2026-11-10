@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -188,7 +189,7 @@ abstract class AcceptanceVerdictEvalTest {
                 "- "
                     + deployed.ticket().criteria().getFirst().id()
                     + " — not met: "
-                    + deployed.decline().evidence(),
+                    + Objects.requireNonNull(deployed.decline()).evidence(),
                 deployed.decline().why())
             : prompts.accept(
                 deployed.ticket().key(),

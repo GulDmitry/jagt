@@ -79,11 +79,11 @@ class AgentStatusReportsTest {
                         "proj",
                         new dev.jagt.orchestrator.task.ProjectConfig(
                             new dev.jagt.orchestrator.task.ProjectConfig.Repository(
-                                "/repo", List.of(), null, null),
+                                "/repo", List.of(), null, List.of()),
                             new dev.jagt.orchestrator.task.ProjectConfig.Branches(
                                 "origin/main", "dev", null),
                             new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(
-                                null, null, null, null, null, null, null),
+                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                             new dev.jagt.orchestrator.task.ProjectConfig.Verify(
                                 List.of("./gradlew", "test"), null)))));
     AgentStatusReports reports =
@@ -167,11 +167,11 @@ class AgentStatusReportsTest {
                         "proj",
                         new dev.jagt.orchestrator.task.ProjectConfig(
                             new dev.jagt.orchestrator.task.ProjectConfig.Repository(
-                                "/repo", List.of(), null, null),
+                                "/repo", List.of(), null, List.of()),
                             new dev.jagt.orchestrator.task.ProjectConfig.Branches(
                                 "origin/main", "dev", null),
                             new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(
-                                null, null, null, null, null, null, null),
+                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                             new dev.jagt.orchestrator.task.ProjectConfig.Verify(
                                 List.of("./gradlew", "test"), null)))));
     AgentStatusReports reports =
@@ -1962,11 +1962,11 @@ class AgentStatusReportsTest {
                         "proj",
                         new dev.jagt.orchestrator.task.ProjectConfig(
                             new dev.jagt.orchestrator.task.ProjectConfig.Repository(
-                                "/repo", List.of(), null, null),
+                                "/repo", List.of(), null, List.of()),
                             new dev.jagt.orchestrator.task.ProjectConfig.Branches(
                                 "origin/main", "dev", null),
                             new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(
-                                null, null, null, null, null, null, null),
+                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
                             new dev.jagt.orchestrator.task.ProjectConfig.Verify(
                                 List.of("./gradlew", "test"), null)))));
 
@@ -1990,12 +1990,14 @@ class AgentStatusReportsTest {
             reducer);
     Files.writeString(
         root.resolve("plan.md"),
-        "# Plan\n"
-            + "## Acceptance criteria\n"
-            + "- [here] guide exists\n"
-            + "```probes\n"
-            + "artifact docs/guide.md\n"
-            + "```\n");
+        """
+        # Plan
+        ## Acceptance criteria
+        - [here] guide exists
+        ```probes
+        artifact docs/guide.md
+        ```
+        """);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -2036,11 +2038,13 @@ class AgentStatusReportsTest {
             reducer);
     Files.writeString(
         root.resolve("plan.md"),
-        "## Acceptance criteria\n"
-            + "- [here] builds\n"
-            + "```probes\n"
-            + "command ./gradlew test | tee out.log\n"
-            + "```\n");
+        """
+        ## Acceptance criteria
+        - [here] builds
+        ```probes
+        command ./gradlew test | tee out.log
+        ```
+        """);
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -2256,7 +2260,7 @@ class AgentStatusReportsTest {
             "IN_PROGRESS",
             "needs the registry",
             "question",
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             "registry",
             null,
@@ -2312,7 +2316,7 @@ class AgentStatusReportsTest {
                         "IN_PROGRESS",
                         "needs it",
                         "question",
-                        new AgentStatusMessage.Request(null, null),
+                        new AgentStatusMessage.Request(null, Map.of()),
                         null,
                         "ghost",
                         null,
@@ -2888,7 +2892,7 @@ class AgentStatusReportsTest {
             "IN_PROGRESS",
             "working",
             null,
-            new AgentStatusMessage.Request(null, null),
+            new AgentStatusMessage.Request(null, Map.of()),
             null,
             null,
             null,

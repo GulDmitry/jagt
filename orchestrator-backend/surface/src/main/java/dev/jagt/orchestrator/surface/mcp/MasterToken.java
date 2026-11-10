@@ -10,6 +10,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.HexFormat;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**
@@ -32,7 +33,7 @@ public class MasterToken {
     write(paths.root().resolve(FILE), value);
   }
 
-  public boolean matches(String presented) {
+  public boolean matches(@Nullable String presented) {
     return presented != null
         && MessageDigest.isEqual(token, presented.getBytes(StandardCharsets.UTF_8));
   }

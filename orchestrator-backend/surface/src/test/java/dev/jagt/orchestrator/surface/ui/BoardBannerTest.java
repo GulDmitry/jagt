@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
+import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
@@ -16,7 +17,7 @@ class BoardBannerTest {
   @Test
   @ResourceLock(Resources.GLOBAL)
   void tellsTheHumanWhereTheBoardListens(CapturedOutput output) {
-    new BoardBanner(new BoardUrl("8290")).run(null);
+    new BoardBanner(new BoardUrl("8290")).run(new DefaultApplicationArguments());
 
     assertThat(output.getOut()).contains("jagt board → http://localhost:8290   (Ctrl-C stops)");
   }
