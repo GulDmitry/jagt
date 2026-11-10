@@ -7,24 +7,35 @@ import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermission;
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class WorktreeHooksTest {
 
+  @TempDir Path dir;
+
+  private final Processes runner = new ProcessRunner();
+  private Path repo;
+  private Path worktree;
+
+  @BeforeEach
+  void cutWorktreeFromClone() throws Exception {
+    repo = GitRepos.clone(runner, dir, "repo", "base");
+    worktree = dir.resolve("wt");
+    GitRepos.addWorktree(runner, repo, worktree, "ABC-42");
+  }
+
   @Test
-  void leavesSessionUngatedRatherThanTakingAwayTheProjectsOwnHooks(@TempDir Path dir) {
+  void leavesSessionUngatedRatherThanTakingAwayTheProjectsOwnHooks() {
     assertThat(WorktreeHooks.gitEnv(dir.resolve("a worktree from before this existed"))).isEmpty();
   }
 
   @Test
-  void writesNoStubForHookThatNeverRunsInWorktree(@TempDir Path worktree) {
+  void writesNoStubForHookThatNeverRunsInWorktree() {
     WorktreeHooks.install(worktree, "ABC-42");
 
     assertThat(worktree.resolve(".jagt/hooks"))
@@ -32,23 +43,7 @@ class WorktreeHooksTest {
   }
 
   @Test
-  void leavesTheRepositorysOwnHooksExactlyAsTheyWere(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path repo = dir.resolve("repo");
-    final Path worktree = dir.resolve("wt");
-    Files.createDirectories(repo);
-    runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "worktree", "add", "-q", worktree.toString(), "-b", "ABC-42"));
+  void leavesTheRepositorysOwnHooksExactlyAsTheyWere() throws Exception {
     Path hooks = repo.resolve(".git").resolve("hooks");
     Files.writeString(hooks.resolve("pre-push"), "#!/bin/sh\nexit 0\n");
     List<String> untouched =
@@ -61,86 +56,32 @@ class WorktreeHooksTest {
   }
 
   @Test
-  void runsProjectHookTheRepositoryGainedAfterTheWorktreeWasCut(@TempDir Path dir)
-      throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path repo = dir.resolve("repo");
-    final Path worktree = dir.resolve("wt");
-    Files.createDirectories(repo);
-    runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "worktree", "add", "-q", worktree.toString(), "-b", "ABC-42"));
+  void runsProjectHookTheRepositoryGainedAfterTheWorktreeWasCut() throws Exception {
     WorktreeHooks.install(worktree, "ABC-42");
-    Files.writeString(
+    GitRepos.executable(
         repo.resolve(".git").resolve("hooks").resolve("pre-commit"),
         "#!/bin/sh\necho ran > " + dir.resolve("linted.txt") + "\n");
-    Files.setPosixFilePermissions(
-        repo.resolve(".git").resolve("hooks").resolve("pre-commit"),
-        Set.of(
-            PosixFilePermission.OWNER_READ,
-            PosixFilePermission.OWNER_WRITE,
-            PosixFilePermission.OWNER_EXECUTE));
-
     Files.writeString(worktree.resolve("f.txt"), "changed");
+
     Process commit =
-        new ProcessBuilder(
-                "/bin/sh",
-                "-c",
-                WorktreeHooks.gitEnv(worktree)
-                    + "git -c user.email=t@t -c user.name=t commit -qam work")
-            .directory(worktree.toFile())
-            .redirectErrorStream(true)
-            .start();
+        GitRepos.shell(
+            worktree,
+            WorktreeHooks.gitEnv(worktree)
+                + "git -c user.email=t@t -c user.name=t commit -qam work");
     assertThat(commit.waitFor(30, TimeUnit.SECONDS)).isTrue();
 
     assertThat(dir.resolve("linted.txt")).exists();
   }
 
   @Test
-  void refusesPushToAnyBranchButTheTaskBranch(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    final Path worktree = dir.resolve("wt");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "worktree", "add", "-q", worktree.toString(), "-b", "ABC-42"));
+  void refusesPushToAnyBranchButTheTaskBranch() throws Exception {
     Files.writeString(worktree.resolve("f.txt"), "work");
-    runner.run(
-        worktree,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "work"));
+    GitRepos.git(runner, worktree, "commit", "-qam", "work");
     WorktreeHooks.install(worktree, "ABC-42");
 
     Process push =
-        new ProcessBuilder(
-                "/bin/sh",
-                "-c",
-                WorktreeHooks.gitEnv(worktree) + "git push origin HEAD:refs/heads/main")
-            .directory(worktree.toFile())
-            .redirectErrorStream(true)
-            .start();
+        GitRepos.shell(
+            worktree, WorktreeHooks.gitEnv(worktree) + "git push origin HEAD:refs/heads/main");
     String output = new String(push.getInputStream().readAllBytes(), UTF_8);
     assertThat(push.waitFor(30, TimeUnit.SECONDS)).isTrue();
 
@@ -149,34 +90,11 @@ class WorktreeHooksTest {
   }
 
   @Test
-  void pushesTheTaskBranchItself(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    final Path worktree = dir.resolve("wt");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "worktree", "add", "-q", worktree.toString(), "-b", "ABC-42"));
+  void pushesTheTaskBranchItself() throws Exception {
     WorktreeHooks.install(worktree, "ABC-42");
 
     Process push =
-        new ProcessBuilder(
-                "/bin/sh", "-c", WorktreeHooks.gitEnv(worktree) + "git push origin ABC-42")
-            .directory(worktree.toFile())
-            .redirectErrorStream(true)
-            .start();
+        GitRepos.shell(worktree, WorktreeHooks.gitEnv(worktree) + "git push origin ABC-42");
     String output = new String(push.getInputStream().readAllBytes(), UTF_8);
     assertThat(push.waitFor(30, TimeUnit.SECONDS)).isTrue();
 
@@ -184,35 +102,12 @@ class WorktreeHooksTest {
   }
 
   @Test
-  void refusesDeletingTheBranchTheReviewRequestIsBuiltOn(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    final Path worktree = dir.resolve("wt");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "worktree", "add", "-q", worktree.toString(), "-b", "ABC-42"));
-    runner.run(worktree, timeout, List.of("git", "push", "-q", "origin", "ABC-42"));
+  void refusesDeletingTheBranchTheReviewRequestIsBuiltOn() throws Exception {
+    GitRepos.git(runner, worktree, "push", "-q", "origin", "ABC-42");
     WorktreeHooks.install(worktree, "ABC-42");
 
     Process push =
-        new ProcessBuilder(
-                "/bin/sh", "-c", WorktreeHooks.gitEnv(worktree) + "git push origin :ABC-42")
-            .directory(worktree.toFile())
-            .redirectErrorStream(true)
-            .start();
+        GitRepos.shell(worktree, WorktreeHooks.gitEnv(worktree) + "git push origin :ABC-42");
     String output = new String(push.getInputStream().readAllBytes(), UTF_8);
     assertThat(push.waitFor(30, TimeUnit.SECONDS)).isTrue();
 
@@ -221,97 +116,32 @@ class WorktreeHooksTest {
   }
 
   @Test
-  void runsTheProjectsOwnPushHookOnAnAllowedPush(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    final Path worktree = dir.resolve("wt");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "worktree", "add", "-q", worktree.toString(), "-b", "ABC-42"));
-    Path projectHooks = repo.resolve(".git").resolve("hooks");
-    Files.writeString(
-        projectHooks.resolve("pre-push"),
+  void runsTheProjectsOwnPushHookOnAnAllowedPush() throws Exception {
+    GitRepos.executable(
+        repo.resolve(".git").resolve("hooks").resolve("pre-push"),
         "#!/bin/sh\ncat > " + dir.resolve("seen-by-the-project.txt") + "\n");
-    Files.setPosixFilePermissions(
-        projectHooks.resolve("pre-push"),
-        Set.of(
-            PosixFilePermission.OWNER_READ,
-            PosixFilePermission.OWNER_WRITE,
-            PosixFilePermission.OWNER_EXECUTE));
     WorktreeHooks.install(worktree, "ABC-42");
 
     Process push =
-        new ProcessBuilder(
-                "/bin/sh", "-c", WorktreeHooks.gitEnv(worktree) + "git push origin ABC-42")
-            .directory(worktree.toFile())
-            .redirectErrorStream(true)
-            .start();
+        GitRepos.shell(worktree, WorktreeHooks.gitEnv(worktree) + "git push origin ABC-42");
     assertThat(push.waitFor(30, TimeUnit.SECONDS)).isTrue();
 
     assertThat(dir.resolve("seen-by-the-project.txt")).content().contains("refs/heads/ABC-42");
   }
 
   @Test
-  void delegatesToTheHooksOfTheRepositoryBeingPushedNotOfTheOneItWasWrittenFor(@TempDir Path dir)
-      throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path sessionRepo = dir.resolve("session");
-    final Path siblingRepo = dir.resolve("sibling");
-    final Path sessionWorktree = dir.resolve("session-wt");
-    final Path siblingWorktree = dir.resolve("sibling-wt");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(
-        dir, timeout, List.of("git", "clone", "-q", origin.toString(), sessionRepo.toString()));
-    Files.writeString(sessionRepo.resolve("f.txt"), "base");
-    runner.run(sessionRepo, timeout, List.of("git", "add", "."));
-    runner.run(
-        sessionRepo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(sessionRepo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    runner.run(
-        dir, timeout, List.of("git", "clone", "-q", origin.toString(), siblingRepo.toString()));
-    runner.run(
-        sessionRepo,
-        timeout,
-        List.of("git", "worktree", "add", "-q", sessionWorktree.toString(), "-b", "ABC-42"));
-    runner.run(
-        siblingRepo,
-        timeout,
-        List.of("git", "worktree", "add", "-q", siblingWorktree.toString(), "-b", "ABC-42"));
-    Files.writeString(
+  void delegatesToTheHooksOfTheRepositoryBeingPushedNotOfTheOneItWasWrittenFor() throws Exception {
+    Path siblingRepo =
+        GitRepos.siblingClone(runner, dir, GitRepos.originOf(dir, "repo"), "sibling");
+    Path siblingWorktree = dir.resolve("sibling-wt");
+    GitRepos.addWorktree(runner, siblingRepo, siblingWorktree, "ABC-42");
+    GitRepos.executable(
         siblingRepo.resolve(".git").resolve("hooks").resolve("pre-push"),
         "#!/bin/sh\ncat > " + dir.resolve("seen-by-the-sibling.txt") + "\n");
-    Files.setPosixFilePermissions(
-        siblingRepo.resolve(".git").resolve("hooks").resolve("pre-push"),
-        Set.of(
-            PosixFilePermission.OWNER_READ,
-            PosixFilePermission.OWNER_WRITE,
-            PosixFilePermission.OWNER_EXECUTE));
-    WorktreeHooks.install(sessionWorktree, "ABC-42");
+    WorktreeHooks.install(worktree, "ABC-42");
 
     Process push =
-        new ProcessBuilder(
-                "/bin/sh", "-c", WorktreeHooks.gitEnv(sessionWorktree) + "git push origin ABC-42")
-            .directory(siblingWorktree.toFile())
-            .redirectErrorStream(true)
-            .start();
+        GitRepos.shell(siblingWorktree, WorktreeHooks.gitEnv(worktree) + "git push origin ABC-42");
     assertThat(push.waitFor(30, TimeUnit.SECONDS)).isTrue();
 
     assertThat(dir.resolve("seen-by-the-sibling.txt")).content().contains("refs/heads/ABC-42");

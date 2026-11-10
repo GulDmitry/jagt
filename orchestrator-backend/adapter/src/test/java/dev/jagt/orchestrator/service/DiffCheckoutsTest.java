@@ -2,43 +2,35 @@ package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class DiffCheckoutsTest {
 
+  @TempDir Path dir;
+
+  private final Processes runner = new ProcessRunner();
+  private Path repo;
+  private GitWorktrees git;
+  private DiffCheckouts diffs;
+
+  @BeforeEach
+  void cloneRepository() throws Exception {
+    repo = GitRepos.clone(runner, dir, "repo", "base");
+    GitCommands commands = GitRepos.commands(runner);
+    git = new GitWorktrees(commands);
+    diffs = new DiffCheckouts(commands);
+  }
+
   @Test
-  void excludesGitIgnoredPlumbingFromTheIdeDiffSnapshot(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    GitCommands commands =
-        new GitCommands(
-            runner,
-            new LsofWorktreeProcesses(runner),
-            path -> java.util.Optional.empty(),
-            stopped -> {});
-    GitWorktrees git = new GitWorktrees(commands);
-    final DiffCheckouts diffs = new DiffCheckouts(commands);
+  void excludesGitIgnoredPlumbingFromTheIdeDiffSnapshot() throws Exception {
     Path wt = dir.resolve("wt");
     git.createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
     Files.writeString(wt.resolve("f.txt"), "task change");
@@ -59,63 +51,18 @@ class DiffCheckoutsTest {
   }
 
   @Test
-  void prunesTheAdminEntryOfDiffCheckoutSomethingElseAlreadyDeleted(@TempDir Path dir)
-      throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    GitCommands commands =
-        new GitCommands(
-            runner,
-            new LsofWorktreeProcesses(runner),
-            path -> java.util.Optional.empty(),
-            stopped -> {});
-    GitWorktrees git = new GitWorktrees(commands);
-    DiffCheckouts diffs = new DiffCheckouts(commands);
+  void prunesTheAdminEntryOfDiffCheckoutSomethingElseAlreadyDeleted() throws Exception {
     Path base = diffs.checkoutBaseForDiff(repo, "origin/main", "ABC-8", "proj");
-    runner.run(dir, timeout, List.of("rm", "-rf", base.toString()));
+    runner.run(dir, GitRepos.TIMEOUT, List.of("rm", "-rf", base.toString()));
 
     git.removeDiffWorktrees(repo, "ABC-8", "proj");
 
-    assertThat(runner.run(repo, timeout, List.of("git", "worktree", "list")).stdout())
+    assertThat(runner.run(repo, GitRepos.TIMEOUT, List.of("git", "worktree", "list")).stdout())
         .doesNotContain(base.getFileName().toString());
   }
 
   @Test
-  void deletesBothThrowawayDiffCheckoutsWhenTheTaskIsRetired(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    GitCommands commands =
-        new GitCommands(
-            runner,
-            new LsofWorktreeProcesses(runner),
-            path -> java.util.Optional.empty(),
-            stopped -> {});
-    GitWorktrees git = new GitWorktrees(commands);
-    DiffCheckouts diffs = new DiffCheckouts(commands);
+  void deletesBothThrowawayDiffCheckoutsWhenTheTaskIsRetired() throws Exception {
     Path wt = dir.resolve("wt");
     git.createWorktree(repo, wt, "ABC-9", "origin/main", BranchStrategy.FRESH);
     Path base = diffs.checkoutBaseForDiff(repo, "origin/main", "ABC-9", "proj");
@@ -128,79 +75,22 @@ class DiffCheckoutsTest {
   }
 
   @Test
-  void keepsTheDiffCheckoutsApartWhenOneTaskSpansTwoRepositories(@TempDir Path dir)
-      throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path apiOrigin = dir.resolve("api-origin.git");
-    Path api = dir.resolve("api");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", apiOrigin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", apiOrigin.toString(), api.toString()));
-    Files.writeString(api.resolve("f.txt"), "api base");
-    runner.run(api, timeout, List.of("git", "add", "."));
-    runner.run(
-        api,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(api, timeout, List.of("git", "push", "-q", "origin", "main"));
-    Path webOrigin = dir.resolve("web-origin.git");
-    Path web = dir.resolve("web");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", webOrigin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", webOrigin.toString(), web.toString()));
-    Files.writeString(web.resolve("f.txt"), "web base");
-    runner.run(web, timeout, List.of("git", "add", "."));
-    runner.run(
-        web,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(web, timeout, List.of("git", "push", "-q", "origin", "main"));
-    GitCommands commands =
-        new GitCommands(
-            runner,
-            new LsofWorktreeProcesses(runner),
-            path -> java.util.Optional.empty(),
-            stopped -> {});
-    GitWorktrees git = new GitWorktrees(commands);
-    DiffCheckouts diffs = new DiffCheckouts(commands);
+  void keepsTheDiffCheckoutsApartWhenOneTaskSpansTwoRepositories() throws Exception {
+    Path web = GitRepos.clone(runner, dir, "web", "web base");
 
-    Path apiBase = diffs.checkoutBaseForDiff(api, "origin/main", "ABC-7", "api");
+    Path apiBase = diffs.checkoutBaseForDiff(repo, "origin/main", "ABC-7", "api");
     Path webBase = diffs.checkoutBaseForDiff(web, "origin/main", "ABC-7", "web");
 
     String apiSaid = Files.readString(apiBase.resolve("f.txt"));
     final String webSaid = Files.readString(webBase.resolve("f.txt"));
-    git.removeDiffWorktrees(api, "ABC-7", "api");
+    git.removeDiffWorktrees(repo, "ABC-7", "api");
     git.removeDiffWorktrees(web, "ABC-7", "web");
-    assertThat(apiSaid).isEqualTo("api base");
+    assertThat(apiSaid).isEqualTo("base");
     assertThat(webSaid).isEqualTo("web base");
   }
 
   @Test
-  void replacesLeftoverSnapshotOfTheTasksWorkWhenTheDiffIsOpenedAgain(@TempDir Path dir)
-      throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    GitCommands commands =
-        new GitCommands(
-            runner,
-            new LsofWorktreeProcesses(runner),
-            path -> java.util.Optional.empty(),
-            stopped -> {});
-    GitWorktrees git = new GitWorktrees(commands);
-    final DiffCheckouts diffs = new DiffCheckouts(commands);
+  void replacesLeftoverSnapshotOfTheTasksWorkWhenTheDiffIsOpenedAgain() throws Exception {
     Path wt = dir.resolve("wt");
     git.createWorktree(repo, wt, "ABC-6", "origin/main", BranchStrategy.FRESH);
     Files.writeString(wt.resolve("f.txt"), "task change");
