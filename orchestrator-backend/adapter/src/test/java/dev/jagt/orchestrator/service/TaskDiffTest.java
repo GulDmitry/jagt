@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import static dev.jagt.orchestrator.service.TaskDiffFixtures.commandsOver;
-import static dev.jagt.orchestrator.service.TaskDiffFixtures.freshWorktree;
+import static dev.jagt.orchestrator.service.GitRepos.commands;
+import static dev.jagt.orchestrator.service.GitRepos.freshWorktree;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -57,7 +57,7 @@ class TaskDiffTest {
                 List.of(TaskRepo.of("proj", worktree.toString())), TaskStatus.REVIEW_PENDING)
             .build();
     when(state.task("ABC-1")).thenReturn(Optional.of(task));
-    GitCommands commands = commandsOver(runner);
+    GitCommands commands = commands(runner);
     return new TaskDiff(state, new DiffBases(config), new DiffCheckouts(commands), commands);
   }
 
@@ -105,7 +105,7 @@ class TaskDiffTest {
                 TaskState.builder(
                         List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.PLAN_PENDING)
                     .build()));
-    GitCommands commands = commandsOver(runner);
+    GitCommands commands = commands(runner);
 
     List<TaskDiff.RepoDiff> diffs =
         new TaskDiff(state, new DiffBases(config), new DiffCheckouts(commands), commands)

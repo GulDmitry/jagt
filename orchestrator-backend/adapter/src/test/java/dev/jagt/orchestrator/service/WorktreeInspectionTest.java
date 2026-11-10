@@ -15,7 +15,6 @@ import dev.jagt.orchestrator.adapter.agent.StubAgentRuntime;
 import dev.jagt.orchestrator.port.Processes;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -24,28 +23,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class WorktreeInspectionTest {
 
+  @TempDir Path dir;
+  private final Processes runner = new ProcessRunner();
+  private final WorktreeInspection git =
+      new WorktreeInspection(
+          GitRepos.commands(runner), new StubAgentRuntime(StubAgentProperties.defaults()));
+
   @Test
-  void readsTheWorkWorktreeHoldsUncommittedAndIgnoresJagtsOwnFiles(@TempDir Path dir)
-      throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
+  void readsTheWorkWorktreeHoldsUncommittedAndIgnoresJagtsOwnFiles() throws Exception {
     Path repo = dir.resolve("repo");
     Files.createDirectories(repo);
-    runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+    GitRepos.git(runner, dir, "init", "-q", "-b", "main", repo.toString());
     Files.writeString(repo.resolve("a file.java"), "class A {}");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
+    GitRepos.commit(runner, repo, "init");
 
     Files.writeString(repo.resolve("task_context.md"), "the round brief");
     assertThat(git.hasUncommittedChanges(repo, repo)).isFalse();
@@ -55,27 +45,12 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void readsTheTreeAsChangedByAnEditToItsWorkButNotByJagtsOwnFiles(@TempDir Path dir)
-      throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
+  void readsTheTreeAsChangedByAnEditToItsWorkButNotByJagtsOwnFiles() throws Exception {
     Path repo = dir.resolve("repo");
     Files.createDirectories(repo);
-    runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+    GitRepos.git(runner, dir, "init", "-q", "-b", "main", repo.toString());
     Files.writeString(repo.resolve("A.java"), "class A {}");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
+    GitRepos.commit(runner, repo, "init");
     Files.writeString(repo.resolve("A.java"), "class A { int x; }");
     String answered = git.treeState(repo, repo);
 
@@ -87,32 +62,18 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void readsTheTreeWithoutRunningDiffProgramTheSessionSet(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
+  void readsTheTreeWithoutRunningDiffProgramTheSessionSet() throws Exception {
     Path repo = dir.resolve("repo");
     Files.createDirectories(repo);
-    runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+    GitRepos.git(runner, dir, "init", "-q", "-b", "main", repo.toString());
     Files.writeString(repo.resolve("A.java"), "class A {}");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+    GitRepos.commit(runner, repo, "init");
     Path ran = dir.resolve("ran");
     Path program = dir.resolve("external.sh");
     Files.writeString(program, "#!/bin/sh\ntouch " + ran + "\n");
     program.toFile().setExecutable(true);
-    runner.run(repo, timeout, List.of("git", "config", "diff.external", program.toString()));
+    GitRepos.git(runner, repo, "config", "diff.external", program.toString());
     Files.writeString(repo.resolve("A.java"), "class A { int x; }");
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
 
     git.treeState(repo, repo);
 
@@ -121,47 +82,18 @@ class WorktreeInspectionTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"main", "origin/main"})
-  void readsTheChangesSinceTheBaseCommittedAndNotNamingNewFilesButNotJagtsOwn(
-      String baseBranch, @TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+  void readsTheChangesSinceTheBaseCommittedAndNotNamingNewFilesButNotJagtsOwn(String baseBranch)
+      throws Exception {
+    Path repo = GitRepos.bareClone(runner, dir, "repo");
     Files.writeString(repo.resolve("a.txt"), "base\n");
     Files.writeString(repo.resolve("b.txt"), "base\n");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+    GitRepos.commit(runner, repo, "init");
+    GitRepos.git(runner, repo, "push", "-q", "origin", "main");
     Files.writeString(repo.resolve("a.txt"), "committed\n");
-    runner.run(
-        repo,
-        timeout,
-        List.of(
-            "git",
-            "-c",
-            "user.email=t@t",
-            "-c",
-            "user.name=t",
-            "commit",
-            "-qam",
-            "ABC-42 Widen the column"));
+    GitRepos.git(runner, repo, "commit", "-qam", "ABC-42 Widen the column");
     Files.writeString(repo.resolve("b.txt"), "uncommitted\n");
     Files.writeString(repo.resolve("new.txt"), "fresh\n");
     Files.writeString(repo.resolve("task_context.md"), "the round brief");
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
 
     String changes = git.changesSince(repo, repo, baseBranch);
 
@@ -171,42 +103,26 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void identifiesTheTasksOwnDiffTheSameAfterTheBaseMovedUnderItAndDifferentOnceItsWorkChanges(
-      @TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    final List<String> commit =
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "c");
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+  void identifiesTheTasksOwnDiffTheSameAfterTheBaseMovedUnderItAndDifferentOnceItsWorkChanges()
+      throws Exception {
+    Path repo = GitRepos.bareClone(runner, dir, "repo");
     Files.writeString(repo.resolve("a.txt"), "1\n2\n3\n4\n5\n6\n7\n8\n");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(repo, timeout, commit);
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "work"));
+    GitRepos.git(runner, repo, "add", ".");
+    GitRepos.git(runner, repo, "commit", "-qam", "c");
+    GitRepos.git(runner, repo, "push", "-q", "origin", "main");
+    GitRepos.git(runner, repo, "checkout", "-q", "-b", "work");
     Files.writeString(repo.resolve("a.txt"), "1\n2\n3\n4\n5\n6\n7 changed\n8\n");
-    runner.run(repo, timeout, commit);
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
+    GitRepos.git(runner, repo, "commit", "-qam", "c");
     final String before = git.ownDiffId(repo, repo, "main").orElseThrow();
 
-    runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+    GitRepos.git(runner, repo, "checkout", "-q", "main");
     Files.writeString(repo.resolve("a.txt"), "0\n1\n2\n3\n4\n5\n6\n7\n8\n");
     Files.writeString(repo.resolve("other.txt"), "elsewhere\n");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(repo, timeout, commit);
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    runner.run(repo, timeout, List.of("git", "checkout", "-q", "work"));
-    runner.run(repo, timeout, List.of("git", "rebase", "-q", "main"));
+    GitRepos.git(runner, repo, "add", ".");
+    GitRepos.git(runner, repo, "commit", "-qam", "c");
+    GitRepos.git(runner, repo, "push", "-q", "origin", "main");
+    GitRepos.git(runner, repo, "checkout", "-q", "work");
+    GitRepos.git(runner, repo, "rebase", "-q", "main");
     String afterBaseMoved = git.ownDiffId(repo, repo, "main").orElseThrow();
 
     Files.writeString(repo.resolve("a.txt"), "0\n1\n2\n3\n4\n5\n6\n7 changed again\n8\n");
@@ -217,68 +133,25 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void cannotIdentifyAnOwnDiffWhileNewFileIsUntracked(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
+  void cannotIdentifyAnOwnDiffWhileNewFileIsUntracked() throws Exception {
     Path repo = dir.resolve("repo");
     Files.createDirectories(repo);
-    runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+    GitRepos.git(runner, dir, "init", "-q", "-b", "main", repo.toString());
     Files.writeString(repo.resolve("A.java"), "class A {}");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+    GitRepos.commit(runner, repo, "init");
     Files.writeString(repo.resolve("New.java"), "class New {}");
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.ownDiffId(repo, repo, "main")).isEmpty();
   }
 
   @Test
-  void listsTheCommitsAndFilesTheTaskAddedSinceTheBase(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+  void listsTheCommitsAndFilesTheTaskAddedSinceTheBase() throws Exception {
+    Path repo = GitRepos.bareClone(runner, dir, "repo");
     Files.writeString(repo.resolve("a.txt"), "base\n");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+    GitRepos.commit(runner, repo, "init");
+    GitRepos.git(runner, repo, "push", "-q", "origin", "main");
     Files.writeString(repo.resolve("a.txt"), "committed\n");
-    runner.run(
-        repo,
-        timeout,
-        List.of(
-            "git",
-            "-c",
-            "user.email=t@t",
-            "-c",
-            "user.name=t",
-            "commit",
-            "-qam",
-            "ABC-42 Widen the column"));
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
+    GitRepos.git(runner, repo, "commit", "-qam", "ABC-42 Widen the column");
 
     assertThat(git.commitsSince(repo, repo, "main"))
         .contains("ABC-42 Widen the column")
@@ -287,48 +160,19 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void namesEveryChangedPathCommittedUncommittedNewAndBothSidesOfRenameButNotJagtsOwn(
-      @TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+  void namesEveryChangedPathCommittedUncommittedNewAndBothSidesOfRenameButNotJagtsOwn()
+      throws Exception {
+    Path repo = GitRepos.bareClone(runner, dir, "repo");
     Files.createDirectories(repo.resolve("auth"));
     Files.writeString(repo.resolve("auth/Login.java"), "class Login {}\n");
     Files.writeString(repo.resolve("b.txt"), "base\n");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    runner.run(repo, timeout, List.of("git", "mv", "auth/Login.java", "Login.java"));
-    runner.run(
-        repo,
-        timeout,
-        List.of(
-            "git",
-            "-c",
-            "user.email=t@t",
-            "-c",
-            "user.name=t",
-            "commit",
-            "-qm",
-            "ABC-42 Move the login"));
+    GitRepos.commit(runner, repo, "init");
+    GitRepos.git(runner, repo, "push", "-q", "origin", "main");
+    GitRepos.git(runner, repo, "mv", "auth/Login.java", "Login.java");
+    GitRepos.git(runner, repo, "commit", "-qm", "ABC-42 Move the login");
     Files.writeString(repo.resolve("b.txt"), "uncommitted\n");
     Files.writeString(repo.resolve("new ü.txt"), "fresh\n");
     Files.writeString(repo.resolve("task_context.md"), "the round brief");
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
 
     List<String> paths = git.changedPaths(repo, repo, "main");
 
@@ -337,45 +181,16 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void countsTheLinesTheTaskAddedToTheAgentFileCommittedAndNot(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+  void countsTheLinesTheTaskAddedToTheAgentFileCommittedAndNot() throws Exception {
+    Path repo = GitRepos.bareClone(runner, dir, "repo");
     Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\n");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+    GitRepos.commit(runner, repo, "init");
+    GitRepos.git(runner, repo, "push", "-q", "origin", "main");
     Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\nregistry: local\n");
-    runner.run(
-        repo,
-        timeout,
-        List.of(
-            "git",
-            "-c",
-            "user.email=t@t",
-            "-c",
-            "user.name=t",
-            "commit",
-            "-qam",
-            "ABC-42 Name the registry"));
+    GitRepos.git(runner, repo, "commit", "-qam", "ABC-42 Name the registry");
     Files.writeString(
         repo.resolve("AGENTS.md"), "build: ./gradlew test\nregistry: local\ninfra: its own repo\n");
     Files.writeString(repo.resolve("other.md"), "not the agent file\n");
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
 
     int added = git.agentFileLinesAdded(repo, repo, "main");
 
@@ -383,129 +198,47 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void readsBranchAsAheadOfItsTargetOnlyOnceItCarriesCommitTheTargetLacks(@TempDir Path dir)
-      throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
+  void readsBranchAsAheadOfItsTargetOnlyOnceItCarriesCommitTheTargetLacks() throws Exception {
+    Path repo = GitRepos.clone(runner, dir, "repo", "base");
 
     assertThat(git.aheadOfTarget(repo, repo, "main")).isFalse();
 
     Files.writeString(repo.resolve("f.txt"), "changed");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of(
-            "git",
-            "-c",
-            "user.email=t@t",
-            "-c",
-            "user.name=t",
-            "commit",
-            "-qm",
-            "ABC-42 Widen the column"));
+    GitRepos.commit(runner, repo, "ABC-42 Widen the column");
 
     assertThat(git.aheadOfTarget(repo, repo, "main")).isTrue();
   }
 
   @Test
-  void readsBranchAsUnpublishedUntilItsRemoteBranchHoldsItsHead(@TempDir Path dir)
-      throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+  void readsBranchAsUnpublishedUntilItsRemoteBranchHoldsItsHead() throws Exception {
+    Path repo = GitRepos.bareClone(runner, dir, "repo");
     Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-42"));
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
+    GitRepos.commit(runner, repo, "init");
+    GitRepos.git(runner, repo, "checkout", "-q", "-b", "ABC-42");
 
     assertThat(git.unpublished(repo, repo)).isTrue();
 
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-42"));
+    GitRepos.git(runner, repo, "push", "-q", "origin", "ABC-42");
 
     assertThat(git.unpublished(repo, repo)).isFalse();
 
     Files.writeString(repo.resolve("f.txt"), "changed");
-    runner.run(
-        repo,
-        timeout,
-        List.of(
-            "git",
-            "-c",
-            "user.email=t@t",
-            "-c",
-            "user.name=t",
-            "commit",
-            "-qam",
-            "ABC-42 Widen the column"));
+    GitRepos.git(runner, repo, "commit", "-qam", "ABC-42 Widen the column");
 
     assertThat(git.unpublished(repo, repo)).isTrue();
   }
 
   @Test
-  void namesTheCommitTheRemoteBranchHoldsOnceThePushLanded(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+  void namesTheCommitTheRemoteBranchHoldsOnceThePushLanded() throws Exception {
+    Path repo = GitRepos.bareClone(runner, dir, "repo");
     Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-42"));
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
+    GitRepos.commit(runner, repo, "init");
+    GitRepos.git(runner, repo, "checkout", "-q", "-b", "ABC-42");
 
     assertThat(git.pushedTip(repo, repo)).isEmpty();
 
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-42"));
-    String head = runner.run(repo, timeout, List.of("git", "rev-parse", "HEAD")).stdout().strip();
+    GitRepos.git(runner, repo, "push", "-q", "origin", "ABC-42");
+    String head = GitRepos.git(runner, repo, "rev-parse", "HEAD").stdout().strip();
 
     assertThat(git.pushedTip(repo, repo)).contains(head);
   }
@@ -518,59 +251,23 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void identifiesTheOwnDiffWhileOnlyJagtsOwnFilesAreUntracked(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+  void identifiesTheOwnDiffWhileOnlyJagtsOwnFilesAreUntracked() throws Exception {
+    Path repo = GitRepos.bareClone(runner, dir, "repo");
     Files.writeString(repo.resolve("a.txt"), "1\n");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+    GitRepos.commit(runner, repo, "init");
+    GitRepos.git(runner, repo, "push", "-q", "origin", "main");
     Files.writeString(repo.resolve("task_context.md"), "the round brief");
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
 
     assertThat(git.ownDiffId(repo, repo, "main")).isPresent();
   }
 
   @Test
-  void countsNoLinesForAnAgentFileThatTurnedBinary(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+  void countsNoLinesForAnAgentFileThatTurnedBinary() throws Exception {
+    Path repo = GitRepos.bareClone(runner, dir, "repo");
     Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\n");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+    GitRepos.commit(runner, repo, "init");
+    GitRepos.git(runner, repo, "push", "-q", "origin", "main");
     Files.write(repo.resolve("AGENTS.md"), new byte[] {0, 1, 2, 0});
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
 
     int added = git.agentFileLinesAdded(repo, repo, "main");
 
@@ -578,206 +275,75 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void readsFileRenamedIntoJagtsOwnFileAsNoUncommittedWork(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+  void readsFileRenamedIntoJagtsOwnFileAsNoUncommittedWork() throws Exception {
+    Path repo = GitRepos.bareClone(runner, dir, "repo");
     Files.writeString(repo.resolve("brief.md"), "the round brief");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "mv", "brief.md", "task_context.md"));
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
+    GitRepos.commit(runner, repo, "init");
+    GitRepos.git(runner, repo, "mv", "brief.md", "task_context.md");
 
     assertThat(git.hasUncommittedChanges(repo, repo)).isFalse();
   }
 
   @Test
-  void readsBranchMergedByMergeCommitAsMerged(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-42"));
+  void readsBranchMergedByMergeCommitAsMerged() throws Exception {
+    Path repo = GitRepos.clone(runner, dir, "repo", "base");
+    GitRepos.git(runner, repo, "checkout", "-q", "-b", "ABC-42");
     Files.writeString(repo.resolve("g.txt"), "work");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
-    runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
-    runner.run(
-        repo,
-        timeout,
-        List.of(
-            "git",
-            "-c",
-            "user.email=t@t",
-            "-c",
-            "user.name=t",
-            "merge",
-            "-q",
-            "--no-ff",
-            "-m",
-            "Merge ABC-42",
-            "ABC-42"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    runner.run(repo, timeout, List.of("git", "checkout", "-q", "ABC-42"));
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
+    GitRepos.commit(runner, repo, "work");
+    GitRepos.git(runner, repo, "checkout", "-q", "main");
+    GitRepos.git(runner, repo, "merge", "-q", "--no-ff", "-m", "Merge ABC-42", "ABC-42");
+    GitRepos.git(runner, repo, "push", "-q", "origin", "main");
+    GitRepos.git(runner, repo, "checkout", "-q", "ABC-42");
 
     assertThat(git.mergedIntoTarget(repo, repo, "main")).isTrue();
   }
 
   @Test
-  void readsBranchWithCommitsTheTargetLacksAsNotMerged(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-42"));
+  void readsBranchWithCommitsTheTargetLacksAsNotMerged() throws Exception {
+    Path repo = GitRepos.clone(runner, dir, "repo", "base");
+    GitRepos.git(runner, repo, "checkout", "-q", "-b", "ABC-42");
     Files.writeString(repo.resolve("g.txt"), "work");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
+    GitRepos.commit(runner, repo, "work");
 
     assertThat(git.mergedIntoTarget(repo, repo, "main")).isFalse();
   }
 
   @Test
-  void readsBranchThatNeverDivergedAsNotMerged(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-42"));
-    runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+  void readsBranchThatNeverDivergedAsNotMerged() throws Exception {
+    Path repo = GitRepos.clone(runner, dir, "repo", "base");
+    GitRepos.git(runner, repo, "checkout", "-q", "-b", "ABC-42");
+    GitRepos.git(runner, repo, "checkout", "-q", "main");
     Files.writeString(repo.resolve("g.txt"), "later");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "later"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-    runner.run(repo, timeout, List.of("git", "checkout", "-q", "ABC-42"));
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
+    GitRepos.commit(runner, repo, "later");
+    GitRepos.git(runner, repo, "push", "-q", "origin", "main");
+    GitRepos.git(runner, repo, "checkout", "-q", "ABC-42");
 
     assertThat(git.mergedIntoTarget(repo, repo, "main")).isFalse();
   }
 
   @Test
-  void failsToReadMergedWhenTheTargetCannotBeFetched(@TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
+  void failsToReadMergedWhenTheTargetCannotBeFetched() throws Exception {
     Path repo = dir.resolve("repo");
-    runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+    GitRepos.git(runner, dir, "init", "-q", "-b", "main", repo.toString());
     Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    WorktreeInspection git =
-        new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
+    GitRepos.commit(runner, repo, "init");
 
     assertThatThrownBy(() -> git.mergedIntoTarget(repo, repo, "main"))
         .isInstanceOf(IllegalStateException.class);
   }
 
   @Test
-  void readsWorktreeAheadOfItsTargetAndNeverUnpublishedWhereTheRepositoryHasNoRemote(
-      @TempDir Path dir) throws Exception {
-    Processes runner = new ProcessRunner();
-    Duration timeout = Duration.ofSeconds(30);
+  void readsWorktreeAheadOfItsTargetAndNeverUnpublishedWhereTheRepositoryHasNoRemote()
+      throws Exception {
     Path repo = dir.resolve("repo");
     Files.createDirectories(repo);
-    runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+    GitRepos.git(runner, dir, "init", "-q", "-b", "main", repo.toString());
     Files.writeString(repo.resolve("A.java"), "class A {}");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "branch", "dev"));
-    runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+    GitRepos.commit(runner, repo, "init");
+    GitRepos.git(runner, repo, "branch", "dev");
+    GitRepos.git(runner, repo, "checkout", "-q", "-b", "ABC-1");
     Files.writeString(repo.resolve("B.java"), "class B {}");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
+    GitRepos.commit(runner, repo, "task");
     WorktreeInspection git =
         new WorktreeInspection(
             new GitCommands(
@@ -792,30 +358,12 @@ class WorktreeInspectionTest {
   }
 
   @Test
-  void fetchesTheTargetOnceForTwoTasksOfOneRepositoryInOneSweep(@TempDir Path dir)
-      throws Exception {
+  void fetchesTheTargetOnceForTwoTasksOfOneRepositoryInOneSweep() throws Exception {
     Processes runner = spy(new ProcessRunner());
-    Duration timeout = Duration.ofSeconds(30);
-    Path origin = dir.resolve("origin.git");
-    Path repo = dir.resolve("repo");
-    runner.run(
-        dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-    runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-    Files.writeString(repo.resolve("f.txt"), "base");
-    runner.run(repo, timeout, List.of("git", "add", "."));
-    runner.run(
-        repo,
-        timeout,
-        List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-    runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+    Path repo = GitRepos.clone(runner, dir, "repo", "base");
     WorktreeInspection git =
         new WorktreeInspection(
-            new GitCommands(
-                runner,
-                new LsofWorktreeProcesses(runner),
-                path -> java.util.Optional.empty(),
-                stopped -> {}),
-            new StubAgentRuntime(StubAgentProperties.defaults()));
+            GitRepos.commands(runner), new StubAgentRuntime(StubAgentProperties.defaults()));
 
     try (OriginContext.Scope ignored = SweepFetches.create().open()) {
       git.mergedIntoTarget(repo, repo, "main");

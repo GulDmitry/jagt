@@ -18,10 +18,7 @@ class DuplicationTest {
 
   private static final int MINIMUM_TOKENS = 75;
 
-  private static final List<Path> SKIPPED =
-      List.of(
-          Path.of("adapter/src/test/java"),
-          Path.of("usecase/src/test/java"));
+  private static final List<Path> SKIPPED = List.of(Path.of("usecase/src/test/java"));
 
   @Test
   void noBlockOfCodeIsCopiedElsewhere() throws IOException {
