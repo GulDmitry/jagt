@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.port.Exit;
 import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Supervisor;
 import java.util.Optional;
@@ -12,6 +13,7 @@ public class SuperviseCommand implements GlobalCommand {
 
   private final Supervisor supervisor;
   private final Host host;
+  private final Exit exit;
 
   @Override
   public String id() {
@@ -41,6 +43,10 @@ public class SuperviseCommand implements GlobalCommand {
                 () -> new IllegalArgumentException("this process runs from no single jar"));
     return switch (supervisor.install(jar)) {
       case Supervisor.Supervision.Done done -> done.sentence();
+      case Supervisor.Supervision.Handover handover -> {
+        exit.afterAnswer();
+        yield handover.sentence();
+      }
       case Supervisor.Supervision.Refused refused ->
           throw new IllegalArgumentException(refused.sentence());
     };

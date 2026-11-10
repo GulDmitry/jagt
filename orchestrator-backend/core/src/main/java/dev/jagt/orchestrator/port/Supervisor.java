@@ -12,6 +12,9 @@ public interface Supervisor {
 
     record Done(String sentence) implements Supervision {}
 
+    /** Done, and the running jagt must end so the supervisor's start takes the port. */
+    record Handover(String sentence) implements Supervision {}
+
     record Refused(String sentence) implements Supervision {}
   }
 

@@ -23,6 +23,7 @@ public class LaunchdSupervisor implements Supervisor {
 
   static final String LABEL = "jagt.orchestrator";
 
+  private static final String STARTED_BY = "XPC_SERVICE_NAME";
   private static final String STAGED = "jagt-run.jar";
   private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
@@ -54,10 +55,11 @@ public class LaunchdSupervisor implements Supervisor {
       processes
           .run(null, TIMEOUT, List.of(launchctl(), "bootstrap", domain, plist.toString()))
           .expectSuccess("launchctl bootstrap");
-      return new Supervision.Done(
-          "launchd keeps "
-              + jar
-              + " running and starts it once the board's port is free: stop this process once");
+      return host.env(STARTED_BY).filter(LABEL::equals).isPresent()
+          ? new Supervision.Done(
+              "launchd keeps " + jar + " running, and this jagt already runs under it")
+          : new Supervision.Handover(
+              "launchd keeps " + jar + " running: this jagt ends and comes back under launchd");
     } catch (IOException | RuntimeException e) {
       return failed("install", e);
     }

@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.port.Supervisor.Supervision;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -32,7 +33,7 @@ class LaunchdSupervisorTest {
 
     Supervision result = new LaunchdSupervisor(processes, host).install(jar);
 
-    assertThat(result).isInstanceOf(Supervision.Done.class);
+    assertThat(result).isInstanceOf(Supervision.Handover.class);
     assertThat(dir.resolve("Library/LaunchAgents/jagt.orchestrator.plist"))
         .content()
         .contains("<string>" + jar + "</string>")
@@ -46,6 +47,19 @@ class LaunchdSupervisorTest {
                 assertThat(line)
                     .contains("bootstrap", "gui/501")
                     .anyMatch(word -> word.endsWith("launchctl")));
+  }
+
+  @Test
+  void doesNotHandOverWhenLaunchdStartedThisProcess(@TempDir Path dir) throws Exception {
+    Path jar = Files.createFile(dir.resolve("jagt-run.jar"));
+    when(host.home()).thenReturn(dir);
+    when(host.workingDir()).thenReturn(dir);
+    when(host.env("XPC_SERVICE_NAME")).thenReturn(Optional.of("jagt.orchestrator"));
+    when(processes.run(isNull(), any(), any())).thenReturn(new Processes.Result(0, "501\n", ""));
+
+    Supervision result = new LaunchdSupervisor(processes, host).install(jar);
+
+    assertThat(result).isInstanceOf(Supervision.Done.class);
   }
 
   @Test

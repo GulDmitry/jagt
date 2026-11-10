@@ -34,9 +34,9 @@ public class RestartCommand implements GlobalCommand {
   @Override
   public String run(String tail) {
     return switch (supervisor.restart()) {
-      case Supervisor.Supervision.Done done -> done.sentence();
       case Supervisor.Supervision.Refused refused ->
           throw new IllegalArgumentException(refused.sentence());
+      case Supervisor.Supervision done -> done.sentence();
     };
   }
 }
