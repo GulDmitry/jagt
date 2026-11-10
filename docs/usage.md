@@ -76,6 +76,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `login` | log in where jagt lost its reach, in a window of its own |
 | `activity [created\|shipped\|deployed\|stopped\|done] [<project>]` | every status change of every task, live or finished, newest first |
 | `jobs` | every scheduled job, its cadence, last and next run |
+| `tail` | the last lines of jagt's own log, one readable line each |
 | `run <job>` | run an unattended job now instead of at its next tick |
 | `finished` | what has been closed, how long each took, how many rounds it cost and who held it |
 | `master` | the unattended reviewer: what it may do, and what it judges by |

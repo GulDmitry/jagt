@@ -8,8 +8,9 @@ change contains, jagt's log, and the worktrees nobody owns.
 - A stop set by a failed check carries that check's output as its evidence, bounded and flagged where cut, shown
   where the stop is shown.
 - The Diff tab shows what a trusted-git change contains, before the human trusts it.
+- `tail` opens the tail of jagt's own log as a report.
 
 ## Impact
 
 - Specs: new `board-judgement`.
-- Code: `TaskStops`, `VerifyJob`, `GitStates`, `TrustedGitState`, `TaskDiffController`.
+- Code: `TaskStops`, `VerifyJob`, `GitStates`, `TrustedGitState`, `TaskDiffController`, `LogTail`, `LogCommand`.
