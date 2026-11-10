@@ -1112,6 +1112,32 @@ class AgentSessionsTest {
   }
 
   @Test
+  void typesALineIntoAColdSessionSittingAtAnOpenDialogInsteadOfStartingAFreshOne() {
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .build()
+            .withSession(Session.defaults().withMovedAt(5_000)));
+    when(tmux.sessionName(null)).thenReturn("jagt");
+    when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+    when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("dialog"));
+    when(agentRuntime.unansweredPrompt("dialog"))
+        .thenReturn(Optional.of("waiting on a permission dialog"));
+    when(agentRuntime.pastCacheLifetime(5_000L, java.time.Duration.ofHours(1))).thenReturn(true);
+    when(tmux.nudgeTaskWindow("jagt", "ABC-1", "1")).thenReturn(true);
+    AgentSessions sessions =
+        new AgentSessions(
+            config, state, tmux, agentRuntime, new CarriedBlock(changes, agentRuntime));
+
+    String answer = sessions.say("ABC-1", "1");
+
+    assertThat(answer).isEqualTo("Said to the agent.");
+    verify(tmux, never())
+        .openTaskWindow(
+            anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
+  }
+
+  @Test
   void refusesALineWhereNoSessionIsRunningForTheTask() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());

@@ -216,10 +216,10 @@ public class AgentSessions implements SessionLines {
     String id = stateService.canonicalTaskId(taskId);
     TaskState task = requireTask(id);
     ConfigService.ConfigFile config = configService.load();
-    if (cold(task, config)) {
+    String session = agentSession(config, id);
+    if (cold(task, config) && !promptOpen(session, id)) {
       return relayUnderCold(id, line);
     }
-    String session = agentSession(config, id);
     if (sessions.taskWindowState(session, id) != SessionHost.WindowState.AGENT_RUNNING
         || !sessions.nudgeTaskWindow(session, id, line)) {
       throw new IllegalStateException(
@@ -592,7 +592,11 @@ public class AgentSessions implements SessionLines {
   private boolean humanHolds(String session, String taskId) {
     return running(session, taskId)
         && stateService.task(taskId).isPresent()
-        && (composing(session, taskId) || humanTurnOpen(taskId));
+        && (composing(session, taskId) || promptOpen(session, taskId) || humanTurnOpen(taskId));
+  }
+
+  private boolean promptOpen(String session, String taskId) {
+    return shown(session, taskId).flatMap(agentRuntime::unansweredPrompt).isPresent();
   }
 
   private boolean humanTurnOpen(String taskId) {

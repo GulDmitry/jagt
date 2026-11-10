@@ -82,6 +82,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | C15 | the root session, holding the Master token, moves a task → the step reads `root`, so the task session's turn never takes it as the session's own answer | seen 2026-11-07: a root call was recorded `mcp` | `McpProtocolServiceTest`, `TaskTurnsTest` |
 | C16 | a replayed task passes acceptance → the turn the acceptance read holds is left to the read, so the replay neither answers it as the session's nor ends on it | seen 2026-11-08: the stand's acceptance replay diverged when its tick fell inside the read | `ReplaySessionsTest` |
 | C17 | a fresh start carries the old conversation while jagt's own typed lines sit in it as human-origin entries → its nudge, start and revive lines are cut from the carried human words as from what the human said, never read by the new session as the human's | seen 2026-11-09 | `ClaudeTranscriptsTest`, `CarriedBlockTest` |
+| C18 | a cold session sits at an open permission or trust dialog and a line is said → the line is typed into its window, the dialog is a hold on a fresh start, and no fresh session loses the pending prompt | seen 2026-11-10 | `AgentSessionsTest`, `ClaudeAgentRuntimeTest` |
 ## D — model overreach
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

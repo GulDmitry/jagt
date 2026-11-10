@@ -47,6 +47,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   private static final JsonMapper JSON = new JsonMapper();
   private static final String PROMPT_MARK = "❯";
   private static final String INTERRUPT_HINT = "esc to interrupt";
+  private static final String PERMISSION_QUESTION = "Do you want to ";
+  private static final String PERMISSION_CANCEL = "Esc to cancel";
   private static final Pattern SPINNER_LINE =
       Pattern.compile("(?m)^\\s*[^\\p{L}\\p{N}\\s❯⏺>]\\s\\p{L}+…");
   private static final Pattern DIMMED = Pattern.compile("\u001b\\[2m.*?(?=\u001b\\[(?:0|22)?m|$)");
@@ -186,8 +188,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
   @Override
   public Optional<String> unansweredPrompt(String screen) {
     String shown = Ansi.strip(screen);
-    return SessionHooks.trustDialog("claude").stream().anyMatch(shown::contains)
-        ? Optional.of("waiting on the trust dialog")
+    if (SessionHooks.trustDialog("claude").stream().anyMatch(shown::contains)) {
+      return Optional.of("waiting on the trust dialog");
+    }
+    return shown.contains(PERMISSION_QUESTION) && shown.contains(PERMISSION_CANCEL)
+        ? Optional.of("waiting on a permission dialog")
         : Optional.empty();
   }
 

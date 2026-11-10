@@ -976,6 +976,30 @@ class ClaudeAgentRuntimeTest {
   }
 
   @Test
+  void tellsASessionWaitingOnAPermissionDialogFromItsScreen() {
+    var runtime =
+        new ClaudeAgentRuntime(
+            new SessionBrief(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+            new ClaudeProperties("claude", "", "", List.of()),
+            new McpEndpoint("http://localhost:8290/mcp"),
+            new HookEndpoint(
+                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
+            Clock.systemUTC());
+    String screen =
+        """
+        Bash command
+          git status
+        Do you want to proceed?
+        \u276f 1. Yes
+          2. No, and tell Claude what to do differently (esc)
+         Esc to cancel
+        """;
+
+    assertThat(runtime.unansweredPrompt(screen)).contains("waiting on a permission dialog");
+  }
+
+  @Test
   void pinsTheModelAskedForAsOneShellArgument(@TempDir Path root) throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
