@@ -62,54 +62,57 @@ public class DiffCheckouts {
         () -> {
           Path temp = diffWorktreePaths(taskId, project).getLast();
           git.clearWorktreePath(projectPath, temp);
-          Path index;
-          try {
-            index = Files.createTempFile("jagt-diff-index-" + TaskName.slug(taskId) + "-", "");
-          } catch (IOException e) {
-            throw new UncheckedIOException(
-                "Cannot allocate temp git index for diff of " + taskId, e);
-          }
-          try {
-            Map<String, String> env = Map.of("GIT_INDEX_FILE", index.toString());
-            git.run(worktreePath, env, List.of("git", "read-tree", "HEAD"))
-                .expectSuccess("git read-tree (clean diff) " + taskId);
-            git.run(worktreePath, env, List.of("git", "add", "-A"))
-                .expectSuccess("git add -A (clean diff) " + taskId);
-            String tree =
-                git.run(worktreePath, env, List.of("git", "write-tree"))
-                    .expectSuccess("git write-tree (clean diff) " + taskId)
-                    .stdout()
-                    .trim();
-            String commit =
-                git.run(
-                        worktreePath,
-                        List.of(
-                            "git",
-                            "commit-tree",
-                            tree,
-                            "-p",
-                            baseBranch,
-                            "-m",
-                            "jagt diff " + taskId))
-                    .expectSuccess("git commit-tree (clean diff) " + taskId)
-                    .stdout()
-                    .trim();
-            git.run(
-                    projectPath,
-                    List.of("git", "worktree", "add", "--detach", temp.toString(), commit))
-                .expectSuccess("git worktree add (clean diff) " + temp);
-            return temp;
-          } finally {
-            try {
-              Files.deleteIfExists(index);
-            } catch (IOException e) {
-              log.atWarn()
-                  .setMessage("temp diff index delete failed")
-                  .addKeyValue("path", index)
-                  .addKeyValue("cause", e.toString())
-                  .log();
-            }
-          }
+          String tree = snapshotTree(worktreePath, taskId);
+          String commit =
+              git.run(
+                      worktreePath,
+                      List.of(
+                          "git",
+                          "commit-tree",
+                          tree,
+                          "-p",
+                          baseBranch,
+                          "-m",
+                          "jagt diff " + taskId))
+                  .expectSuccess("git commit-tree (clean diff) " + taskId)
+                  .stdout()
+                  .trim();
+          git.run(
+                  projectPath,
+                  List.of("git", "worktree", "add", "--detach", temp.toString(), commit))
+              .expectSuccess("git worktree add (clean diff) " + temp);
+          return temp;
         });
+  }
+
+  /** The tree of the worktree's tracked and untracked files, ignored ones left out. */
+  public String snapshotTree(Path worktreePath, String taskId) {
+    Path index;
+    try {
+      index = Files.createTempFile("jagt-diff-index-" + TaskName.slug(taskId) + "-", "");
+    } catch (IOException e) {
+      throw new UncheckedIOException("Cannot allocate temp git index for diff of " + taskId, e);
+    }
+    try {
+      Map<String, String> env = Map.of("GIT_INDEX_FILE", index.toString());
+      git.run(worktreePath, env, List.of("git", "read-tree", "HEAD"))
+          .expectSuccess("git read-tree (clean diff) " + taskId);
+      git.run(worktreePath, env, List.of("git", "add", "-A"))
+          .expectSuccess("git add -A (clean diff) " + taskId);
+      return git.run(worktreePath, env, List.of("git", "write-tree"))
+          .expectSuccess("git write-tree (clean diff) " + taskId)
+          .stdout()
+          .trim();
+    } finally {
+      try {
+        Files.deleteIfExists(index);
+      } catch (IOException e) {
+        log.atWarn()
+            .setMessage("temp diff index delete failed")
+            .addKeyValue("path", index)
+            .addKeyValue("cause", e.toString())
+            .log();
+      }
+    }
   }
 }

@@ -1,9 +1,8 @@
 package dev.jagt.orchestrator.capability.ide;
 
 import dev.jagt.orchestrator.port.EditorDriver;
-import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.DiffBases;
 import dev.jagt.orchestrator.service.DiffCheckouts;
-import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import java.nio.file.Path;
@@ -18,7 +17,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 class IdeDiff {
 
-  private final ConfigService configService;
+  private final DiffBases bases;
   private final DiffCheckouts diffCheckouts;
   private final EditorDriver editorDriver;
 
@@ -44,31 +43,14 @@ class IdeDiff {
 
   /** The base it was read against. */
   private String openDiffOf(String taskId, TaskState task, TaskRepo repo) {
-    ProjectConfig project = configService.project(Objects.requireNonNull(repo.project()));
-    Path projectPath = Path.of(project.path());
-    // The effective base, read exactly as the request's target is.
-    String configured = task.baseBranchOr(project.baseBranch());
-    if (configured == null || configured.isBlank()) {
-      throw new IllegalStateException(
-          "Project "
-              + repo.project()
-              + " has no baseBranch in jagt.yml,"
-              + " so a diff of "
-              + taskId
-              + " has nothing to read against");
-    }
-    String diffBase = project.gitRemote().track(project.gitRemote().branchOf(configured));
-    Path base =
-        diffCheckouts.checkoutBaseForDiff(
-            projectPath, diffBase, taskId, Objects.requireNonNull(repo.project()));
+    DiffBases.Base base = bases.of(taskId, task, repo);
+    String project = Objects.requireNonNull(repo.project());
+    Path baseCheckout =
+        diffCheckouts.checkoutBaseForDiff(base.projectPath(), base.ref(), taskId, project);
     Path clean =
         diffCheckouts.checkoutWorktreeCleanForDiff(
-            Path.of(repo.worktreePath()),
-            projectPath,
-            diffBase,
-            taskId,
-            Objects.requireNonNull(repo.project()));
-    editorDriver.openDiff(base, clean);
-    return diffBase;
+            Path.of(repo.worktreePath()), base.projectPath(), base.ref(), taskId, project);
+    editorDriver.openDiff(baseCheckout, clean);
+    return base.ref();
   }
 }

@@ -8,7 +8,7 @@ import {draw} from '../ui/mermaid.js';
 import {dayAndMinutes, minutes, sameDay} from '../core/time.js';
 
 export const TABS = [{id: 'overview', label: t('tab.overview')}, {id: 'round', label: t('tab.round')},
-  {id: 'artifacts', label: t('tab.artifacts')}, {id: 'session', label: t('tab.session')}];
+  {id: 'artifacts', label: t('tab.artifacts')}, {id: 'diff', label: t('tab.diff')}, {id: 'session', label: t('tab.session')}];
 
 // Today's steps by the clock alone; an older one by its day too.
 const when = (at, now) => (sameDay(at, now) ? minutes(at) : dayAndMinutes(at));
@@ -53,6 +53,17 @@ const Artifacts = ({task, shown}) => html`<section class="artifacts" role="tabpa
       <div class="doc" ref=${(root) => draw(root)} dangerouslySetInnerHTML=${{__html: shown.html}}></div>`}
 </section>`;
 
+const kind = (line) => (/^(\+\+\+|---|diff|index|@@)/.test(line) ? 'muted' : line[0] === '+' ? 'changed' : line[0] === '-' ? 'removed' : '');
+
+// `shown` is `[{project, base, diff, cut}]`, an error sentence, or null while it reads.
+const Diff = ({shown}) => html`<section class="diff" role="tabpanel" id="panel-diff" aria-labelledby="tab-diff">
+  ${shown === null ? html`<p class="muted">${t('reading')}</p>`
+    : typeof shown === 'string' || !shown.length ? html`<p class="muted">${shown || t('pane.no-diff')}</p>`
+      : shown.map((repo) => html`<h2 class="group-head">${repo.project} · ${repo.base}</h2>
+        <pre class="screen">${repo.diff ? repo.diff.split('\n').map((line) => html`<span class=${kind(line)}>${line}\n</span>`) : t('pane.no-diff')}</pre>
+        ${repo.cut ? html`<p class="muted">${t('pane.diff-cut')}</p>` : ''}`)}
+</section>`;
+
 // `fresh` is that the round's replies were written since this tab was last opened.
 export const Pane = ({card, tab, shown, fresh = false}) => html`<section id="pane" aria-label=${t('pane.label')}>
   <button class="back" data-back="">${t('pane.back')}</button>
@@ -62,6 +73,7 @@ export const Pane = ({card, tab, shown, fresh = false}) => html`<section id="pan
     aria-selected=${String(one.id === tab)} aria-controls=${one.id === tab ? `panel-${one.id}` : undefined}>${one.label}</button>`)}</div>
   ${tab === 'session' ? html`<${Session} task=${card.task} shown=${shown}/>`
     : tab === 'artifacts' ? html`<${Artifacts} task=${card.task} shown=${shown}/>`
+    : tab === 'diff' ? html`<${Diff} shown=${shown}/>`
     : tab === 'round' ? html`<${Round} shown=${shown}
       offered=${card.offers.some((offer) => offer.part === 'round')}/>`
     : html`<${History} task=${card.task} now=${card.now}/>`}

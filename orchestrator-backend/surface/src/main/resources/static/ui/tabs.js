@@ -19,6 +19,7 @@ const artifacts = async (task) => {
 
 const sources = {
   artifacts,
+  diff: (task) => api(`/api/tasks/diff?task=${encodeURIComponent(task.id)}`),
   session: (task) => api(`/api/tasks/screen?task=${encodeURIComponent(task.id)}`)
     .catch((e) => ({held: true, shown: t('tabs.unread', {cause: e.message})})),
   round: (task, offer) => text(`/api/commands/${offer.id}?about=${encodeURIComponent(task.alias || task.id)}`),
@@ -43,6 +44,7 @@ let repaintOnTick = () => {};
 
 export const choose = (id) => {
   tab = id;
+  if (id === 'diff') forget();
   clearInterval(ticking);
   ticking = id === 'session' ? setInterval(() => {
     forget();

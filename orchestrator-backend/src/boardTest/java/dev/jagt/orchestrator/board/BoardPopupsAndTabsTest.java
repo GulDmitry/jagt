@@ -350,7 +350,35 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     page.navigate("http://localhost:" + port + "/");
 
     assertThat(page.locator("#pane .tabs button"))
-        .hasText(new String[] {"Overview", "Drafted review", "Artifacts", "Session"});
+        .hasText(new String[] {"Overview", "Drafted review", "Artifacts", "Diff", "Session"});
+  }
+
+  @Test
+  void theDiffTabMarksAddedAndRemovedLinesAndSaysWhenItWasCut() {
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(), TaskStatus.IN_PROGRESS)
+            .alias("a1")
+            .lastActiveTimestamp(System.currentTimeMillis())
+            .build());
+    Page page = session.newPage();
+    page.route(
+        "**/api/tasks/diff*",
+        route ->
+            route.fulfill(
+                new com.microsoft.playwright.Route.FulfillOptions()
+                    .setContentType("application/json")
+                    .setBody(
+                        "[{\"project\":\"alpha\",\"base\":\"origin/main\",\"cut\":true,\"diff\":"
+                            + "\"--- a/f\\n+++ b/f\\n@@ -1 +1 @@\\n-old\\n+new\\n\"}]")));
+    page.navigate("http://localhost:" + port + "/");
+
+    page.locator("#pane .tabs button[data-tab=diff]").click();
+
+    assertThat(page.locator("#pane .diff h2")).hasText("alpha · origin/main");
+    assertThat(page.locator("#pane .diff .changed")).hasText("+new\n");
+    assertThat(page.locator("#pane .diff .removed")).hasText("-old\n");
+    assertThat(page.locator("#pane .diff p.muted")).hasText("The diff is cut here; the rest is not shown.");
   }
 
   @Test

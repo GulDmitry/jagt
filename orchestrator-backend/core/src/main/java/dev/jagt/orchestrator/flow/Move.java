@@ -407,8 +407,8 @@ public record Move(
       case APPROVED -> "approved: deploy or done";
       case DEPLOY_CONFLICT ->
           revertConflict
-              ? "resolve the conflict in the revert worktree (ide), git add, then revert"
-              : "resolve the conflict in the deploy worktree (ide), git add, then deploy";
+              ? "resolve the conflict in the revert worktree, git add, then revert"
+              : "resolve the conflict in the deploy worktree, git add, then deploy";
       case DEPLOYED -> "done closes the task; ship again to deploy further changes";
       case REVERTED ->
           hasReviewRequest
@@ -422,7 +422,7 @@ public record Move(
       boolean hasReviewRequest, RoundState round, boolean polled) {
     return switch (round.report()) {
       case NO_CHANGES -> noChangesHint(hasReviewRequest, round.draftedReplies(), polled);
-      case QUESTION, PERMISSION, PLAIN, WAIT -> "read the diff (ide), then ship";
+      case QUESTION, PERMISSION, PLAIN, WAIT -> "read the diff in the Diff tab, then ship";
     };
   }
 

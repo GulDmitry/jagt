@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.DiffBases;
 import dev.jagt.orchestrator.service.DiffCheckouts;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -32,7 +33,7 @@ class IdeDiffTest {
     when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any()))
         .thenReturn(Path.of("/tmp/clean"));
 
-    String opened = new IdeDiff(config, diffs, editor).open("ABC-1", task);
+    String opened = new IdeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
 
     verify(editor).openDiff(Path.of("/tmp/base"), Path.of("/tmp/clean"));
     assertThat(opened)
@@ -50,7 +51,7 @@ class IdeDiffTest {
     when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any()))
         .thenReturn(Path.of("/tmp/clean"));
 
-    new IdeDiff(config, diffs, editor).open("ABC-1", task);
+    new IdeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
 
     verify(diffs).checkoutBaseForDiff(Path.of("/repo"), "origin/release/stage", "ABC-1", "proj");
   }
@@ -70,7 +71,7 @@ class IdeDiffTest {
     when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any()))
         .thenReturn(Path.of("/tmp/clean"));
 
-    String opened = new IdeDiff(config, diffs, editor).open("ABC-1", task);
+    String opened = new IdeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
 
     assertThat(opened).contains("(api vs origin/main, web vs origin/next)");
     verify(diffs).checkoutBaseForDiff(Path.of("/api-repo"), "origin/main", "ABC-1", "api");
@@ -83,7 +84,7 @@ class IdeDiffTest {
         TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.PLAN_PENDING)
             .build();
 
-    String answer = new IdeDiff(config, diffs, editor).open("ABC-1", task);
+    String answer = new IdeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
 
     assertThat(answer)
         .isEqualTo("Nothing to diff yet: ABC-1 has no repository until its plan is approved");
