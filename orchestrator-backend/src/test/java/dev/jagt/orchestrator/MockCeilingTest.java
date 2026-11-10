@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 
 class MockCeilingTest {
 
-  private static final Pattern A_WHOLE_APP_SUITE = Pattern.compile("@Tag\\(\"e2e\"\\)");
   private static final Pattern A_TEST = Pattern.compile("@(Parameterized)?Test\\b");
   private static final Pattern A_MOCK =
       Pattern.compile(
@@ -24,7 +23,7 @@ class MockCeilingTest {
           + "\\s+\\w+\\s*[;=]");
 
   @Test
-  void testWiresThreeMocksAtMost() {
+  void testWiresTheCollaboratorCeilingOfMocksAtMost() {
     assertThat(unitTests().flatMap(MockCeilingTest::testsOverTheCeiling)).isEmpty();
   }
 
@@ -42,7 +41,7 @@ class MockCeilingTest {
             body ->
                 Stream.concat(shared.stream(), mocked(body).stream())
                     .collect(Collectors.toCollection(TreeSet::new)))
-        .filter(mocks -> mocks.size() > 3)
+        .filter(mocks -> mocks.size() > CollaboratorCeilingTest.CEILING)
         .map(mocks -> test.getFileName() + " " + mocks)
         .distinct();
   }
@@ -59,8 +58,7 @@ class MockCeilingTest {
     return SourceRoots.ROOTS.stream()
         .filter(SourceRoots::isTest)
         .flatMap(SourceRoots::javaFilesUnder)
-        .filter(path -> path.getFileName().toString().endsWith("Test.java"))
-        .filter(path -> !A_WHOLE_APP_SUITE.matcher(read(path)).find());
+        .filter(path -> path.getFileName().toString().endsWith("Test.java"));
   }
 
   private static String read(Path path) {

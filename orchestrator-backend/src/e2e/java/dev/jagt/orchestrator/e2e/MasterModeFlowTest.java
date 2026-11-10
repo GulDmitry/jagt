@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.e2e;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.doReturn;
@@ -16,16 +17,14 @@ import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CodeHostAssistant;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.port.RoutingAssistant;
 import dev.jagt.orchestrator.port.TerminalDriver;
-import dev.jagt.orchestrator.port.TrackerAssistant;
 import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
@@ -96,11 +95,9 @@ class MasterModeFlowTest {
   @MockitoBean private TerminalDriver terminalDriver;
   @MockitoBean private EditorDriver editorDriver;
   @MockitoBean private UserNotifier userNotifier;
-  @MockitoBean private CodeHostAssistant assistant;
-  @MockitoBean private TrackerAssistant tracker;
-  @MockitoBean private RoutingAssistant routing;
+  @MockitoBean(answers = RETURNS_DEEP_STUBS)
+  private Assistants assistants;
   @MockitoBean private McpHealth mcp;
-  @MockitoBean private RoundReviewer reviewer;
   @MockitoSpyBean private Clock clock;
   private final TaskProvisioning provisioning;
   private final StateService stateService;
@@ -333,7 +330,7 @@ class MasterModeFlowTest {
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "verify");
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-stop");
     assertThat(task().status()).isEqualTo(TaskStatus.VERIFYING);
-    assertThat(mockingDetails(reviewer).getInvocations())
+    assertThat(mockingDetails(assistants.reviewer()).getInvocations())
         .extracting(call -> call.<RoundReviewer.Round>getArgument(0).prompt())
         .singleElement()
         .asString()
@@ -361,7 +358,7 @@ class MasterModeFlowTest {
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "verify");
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-stop");
     assertThat(task().status()).isEqualTo(TaskStatus.VERIFYING);
-    assertThat(mockingDetails(reviewer).getInvocations())
+    assertThat(mockingDetails(assistants.reviewer()).getInvocations())
         .extracting(call -> call.<RoundReviewer.Round>getArgument(0).prompt())
         .singleElement()
         .asString()
@@ -514,11 +511,12 @@ class MasterModeFlowTest {
   }
 
   private void judges(Judgement judgement) {
-    when(reviewer.review(any())).thenReturn(new Answer<>(Optional.of(judgement), TokenUsage.NONE));
+    when(assistants.reviewer().review(any()))
+        .thenReturn(new Answer<>(Optional.of(judgement), TokenUsage.NONE));
   }
 
   private boolean asked() {
-    return !mockingDetails(reviewer).getInvocations().isEmpty();
+    return !mockingDetails(assistants.reviewer()).getInvocations().isEmpty();
   }
 
   private void handBackTheFirstRound() throws Exception {
@@ -552,7 +550,7 @@ class MasterModeFlowTest {
     E2eWorkspace.git(worktree(), "push", "-u", "origin", TASK);
     agentReports(
         "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + request() + "\"");
-    when(assistant.readReview(request()))
+    when(assistants.codeHost().readReview(request()))
         .thenReturn(
             new Answer<>(
                 Optional.of(

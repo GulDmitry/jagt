@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 
 class CollaboratorCeilingTest {
 
+  static final int CEILING = 5;
+
   @Test
   void componentTakesFiveCollaboratorsAtMost() {
     constructors()
@@ -16,7 +18,7 @@ class CollaboratorCeilingTest {
         .areMetaAnnotatedWith(Component.class)
         .should()
         .haveRawParameterTypes(
-            DescribedPredicate.describe("five at most", types -> types.size() <= 5))
+            DescribedPredicate.describe("the ceiling at most", types -> types.size() <= CEILING))
         .check(SourceRoots.ALL);
   }
 }

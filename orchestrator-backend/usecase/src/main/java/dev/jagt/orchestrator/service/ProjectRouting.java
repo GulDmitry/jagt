@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.RoutingAssistant;
 import dev.jagt.orchestrator.protocol.ProjectRead;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.FinishedTask;
@@ -37,7 +36,7 @@ public class ProjectRouting {
   private static final int PRECEDENTS = 40;
 
   private final ConfigService configService;
-  private final RoutingAssistant assistant;
+  private final Assistants assistants;
   private final FinishedTasks finished;
   private final RoutingMemory memory;
 
@@ -87,7 +86,7 @@ public class ProjectRouting {
 
   private Placement asked(
       TicketFacts item, Map<String, ProjectConfig> projects, RoutingQuestion question) {
-    Answer<RoutingAnswer> answer = assistant.routeProject(question);
+    Answer<RoutingAnswer> answer = assistants.routing().routeProject(question);
     if (answer.facts().isEmpty()) {
       log.atWarn()
           .setMessage("project routing unreadable")
@@ -124,7 +123,7 @@ public class ProjectRouting {
     if (rules.isEmpty() || !routerPlacedElsewhere(ticketKey, project)) {
       return;
     }
-    Answer<String> answer = assistant.staleRule(ticketKey, project, rules);
+    Answer<String> answer = assistants.routing().staleRule(ticketKey, project, rules);
     if (answer.facts().isEmpty()) {
       log.atWarn()
           .setMessage("stale rule unreadable")
@@ -182,7 +181,7 @@ public class ProjectRouting {
    * sees it.
    */
   private void mergeSecondWording() {
-    Optional<RulePair> pair = assistant.sameRules(memory.rules()).facts();
+    Optional<RulePair> pair = assistants.routing().sameRules(memory.rules()).facts();
     if (pair.isPresent() && memory.merge(pair.get().kept(), pair.get().duplicate())) {
       log.atInfo()
           .setMessage("routing rules merged")

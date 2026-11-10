@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -8,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CodeHostAssistant;
 import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.protocol.RetryPolicy;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
@@ -21,13 +21,13 @@ import org.junit.jupiter.api.Test;
 
 class ReviewReaderTest {
 
-  private final CodeHostAssistant assistant = mock(CodeHostAssistant.class);
+  private final Assistants assistants = mock(Assistants.class, RETURNS_DEEP_STUBS);
   private final McpHealth mcp = mock(McpHealth.class);
   private final UsageTracker usage = mock(UsageTracker.class);
 
   @Test
   void answersTheRoundWithWhatTheReadCameBackWith() {
-    when(assistant.readReview("https://other.example.com/g/p/-/merge_requests/7"))
+    when(assistants.codeHost().readReview("https://other.example.com/g/p/-/merge_requests/7"))
         .thenReturn(
             new Answer<>(
                 Optional.of(
@@ -38,7 +38,7 @@ class ReviewReaderTest {
                 TokenUsage.NONE));
 
     var facts =
-        new ReviewReader(assistant, mcp, usage, RetryPolicy.PAID_READ)
+        new ReviewReader(assistants, mcp, usage, RetryPolicy.PAID_READ)
             .read("ABC-1", "https://other.example.com/g/p/-/merge_requests/7");
 
     assertThat(facts.facts())
@@ -51,19 +51,19 @@ class ReviewReaderTest {
 
   @Test
   void sendsReadThatCameBackWithNothingToReadAgainUpToTheLimit() {
-    when(assistant.readReview("https://host/g/p/-/merge_requests/7"))
+    when(assistants.codeHost().readReview("https://host/g/p/-/merge_requests/7"))
         .thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
 
     new ReviewReader(
-            assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+            assistants, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
         .read("ABC-1", "https://host/g/p/-/merge_requests/7");
 
-    verify(assistant, times(3)).readReview("https://host/g/p/-/merge_requests/7");
+    verify(assistants.codeHost(), times(3)).readReview("https://host/g/p/-/merge_requests/7");
   }
 
   @Test
   void believesHostSayingThereIsNoSuchRequestWithoutPayingToHearItAgain() {
-    when(assistant.readReview("https://host/g/p/-/merge_requests/7"))
+    when(assistants.codeHost().readReview("https://host/g/p/-/merge_requests/7"))
         .thenReturn(
             new Answer<>(
                 Optional.of(
@@ -74,19 +74,19 @@ class ReviewReaderTest {
                 TokenUsage.NONE));
 
     new ReviewReader(
-            assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+            assistants, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
         .read("ABC-1", "https://host/g/p/-/merge_requests/7");
 
-    verify(assistant, times(1)).readReview("https://host/g/p/-/merge_requests/7");
+    verify(assistants.codeHost(), times(1)).readReview("https://host/g/p/-/merge_requests/7");
   }
 
   @Test
   void chargesEveryAttemptItPaidForEvenWhereTheReadCameBackEmpty() {
-    when(assistant.readReview("https://host/g/p/-/merge_requests/7"))
+    when(assistants.codeHost().readReview("https://host/g/p/-/merge_requests/7"))
         .thenReturn(new Answer<>(Optional.empty(), TokenUsage.ofCall(10, 0, 1, 0.5)));
 
     new ReviewReader(
-            assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+            assistants, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
         .read("ABC-1", "https://host/g/p/-/merge_requests/7");
 
     verify(usage).chargeTask("ABC-1", new TokenUsage(3, 30, 0, 3, 1.5));
@@ -94,13 +94,13 @@ class ReviewReaderTest {
 
   @Test
   void answersAnOpenRequestWithWhatTheReadCameBackWith() {
-    when(assistant.readMergeRequest("https://other.example.com/g/p/-/merge_requests/7"))
+    when(assistants.codeHost().readMergeRequest("https://other.example.com/g/p/-/merge_requests/7"))
         .thenReturn(
             new Answer<>(
                 Optional.of(new MergeRequestFacts(true, "ABC-1", "main", "t")), TokenUsage.NONE));
 
     var read =
-        new ReviewReader(assistant, mcp, usage, RetryPolicy.PAID_READ)
+        new ReviewReader(assistants, mcp, usage, RetryPolicy.PAID_READ)
             .readRequest("https://other.example.com/g/p/-/merge_requests/7");
 
     assertThat(read.facts()).contains(new MergeRequestFacts(true, "ABC-1", "main", "t"));
@@ -108,11 +108,11 @@ class ReviewReaderTest {
 
   @Test
   void asksWhichMcpServersAreDownWhenPaidReadDeniesTheRequest() {
-    when(assistant.readMergeRequest("https://other.example.com/g/p/-/merge_requests/7"))
+    when(assistants.codeHost().readMergeRequest("https://other.example.com/g/p/-/merge_requests/7"))
         .thenReturn(
             new Answer<>(Optional.of(new MergeRequestFacts(false, "", "", "")), TokenUsage.NONE));
 
-    new ReviewReader(assistant, mcp, usage, RetryPolicy.PAID_READ)
+    new ReviewReader(assistants, mcp, usage, RetryPolicy.PAID_READ)
         .readRequest("https://other.example.com/g/p/-/merge_requests/7");
 
     verify(mcp).brokenServers();
@@ -120,13 +120,13 @@ class ReviewReaderTest {
 
   @Test
   void doesNotProbeTheMcpServersForRequestItReadFine() {
-    when(assistant.readMergeRequest("https://other.example.com/g/p/-/merge_requests/7"))
+    when(assistants.codeHost().readMergeRequest("https://other.example.com/g/p/-/merge_requests/7"))
         .thenReturn(
             new Answer<>(
                 Optional.of(new MergeRequestFacts(true, "ABC-42", "main", "Excel export")),
                 TokenUsage.NONE));
 
-    new ReviewReader(assistant, mcp, usage, RetryPolicy.PAID_READ)
+    new ReviewReader(assistants, mcp, usage, RetryPolicy.PAID_READ)
         .readRequest("https://other.example.com/g/p/-/merge_requests/7");
 
     verify(mcp, never()).brokenServers();
@@ -134,7 +134,7 @@ class ReviewReaderTest {
 
   @Test
   void asksAgainForRoundWhoseFailureLinesBelongToRunThatDidNotFail() {
-    when(assistant.readReview("https://host/g/p/-/merge_requests/7"))
+    when(assistants.codeHost().readReview("https://host/g/p/-/merge_requests/7"))
         .thenReturn(
             new Answer<>(
                 Optional.of(
@@ -145,23 +145,23 @@ class ReviewReaderTest {
                 TokenUsage.NONE));
 
     new ReviewReader(
-            assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+            assistants, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
         .read("ABC-1", "https://host/g/p/-/merge_requests/7");
 
-    verify(assistant, times(3)).readReview("https://host/g/p/-/merge_requests/7");
+    verify(assistants.codeHost(), times(3)).readReview("https://host/g/p/-/merge_requests/7");
   }
 
   @Test
   void asksAgainForAnOpenRequestThatNamesNoSourceBranch() {
-    when(assistant.readMergeRequest("https://host/g/p/-/merge_requests/7"))
+    when(assistants.codeHost().readMergeRequest("https://host/g/p/-/merge_requests/7"))
         .thenReturn(
             new Answer<>(
                 Optional.of(new MergeRequestFacts(true, "", "main", "t")), TokenUsage.NONE));
 
     new ReviewReader(
-            assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+            assistants, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
         .readRequest("https://host/g/p/-/merge_requests/7");
 
-    verify(assistant, times(3)).readMergeRequest("https://host/g/p/-/merge_requests/7");
+    verify(assistants.codeHost(), times(3)).readMergeRequest("https://host/g/p/-/merge_requests/7");
   }
 }

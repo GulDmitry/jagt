@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service.master;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -13,6 +14,7 @@ import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.TrustedGitState;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -26,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 class ChargedReviewsTest {
 
-  private final RoundReviewer reviewer = mock(RoundReviewer.class);
+  private final Assistants assistants = mock(Assistants.class, RETURNS_DEEP_STUBS);
   private final UsageTracker usage = mock(UsageTracker.class);
   private final TrustedGitState trusted = mock(TrustedGitState.class);
 
@@ -34,9 +36,9 @@ class ChargedReviewsTest {
   void chargesTheTaskWhatItsReadSpent() {
     RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
     TokenUsage spent = TokenUsage.ofCall(1_000, 0, 10, 0.01);
-    when(reviewer.review(round)).thenReturn(new Answer<>(Optional.empty(), spent));
+    when(assistants.reviewer().review(round)).thenReturn(new Answer<>(Optional.empty(), spent));
 
-    new ChargedReviews(reviewer, usage, trusted, List::of).review("ABC-1", round);
+    new ChargedReviews(assistants, usage, trusted, List::of).review("ABC-1", round);
 
     verify(usage).chargeTask("ABC-1", spent);
   }
@@ -44,10 +46,10 @@ class ChargedReviewsTest {
   @Test
   void failsReadThatAnsweredNothing() {
     RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
-    when(reviewer.review(round)).thenReturn(Answer.unavailable());
+    when(assistants.reviewer().review(round)).thenReturn(Answer.unavailable());
 
     Judgement judged =
-        new ChargedReviews(reviewer, usage, trusted, List::of).review("ABC-1", round);
+        new ChargedReviews(assistants, usage, trusted, List::of).review("ABC-1", round);
 
     assertThat(judged.failure()).isEqualTo("the review answered nothing");
   }
@@ -59,10 +61,10 @@ class ChargedReviewsTest {
         .thenReturn(Optional.of("core.fsmonitor in /r/.git/config added"));
 
     Judgement judged =
-        new ChargedReviews(reviewer, usage, trusted, List::of).review("ABC-1", round);
+        new ChargedReviews(assistants, usage, trusted, List::of).review("ABC-1", round);
 
     assertThat(judged.failure()).isEqualTo("core.fsmonitor in /r/.git/config added");
-    verifyNoInteractions(reviewer);
+    verifyNoInteractions(assistants.reviewer());
   }
 
   @Test
@@ -71,34 +73,34 @@ class ChargedReviewsTest {
         new RoundReviewer.Round("", "prompt", List.of(Path.of("/wt/ABC-1")), "");
     RoundReviewer.Round reaching =
         new RoundReviewer.Round("", "prompt", List.of(Path.of("/wt/ABC-1"), Path.of("/specs")), "");
-    when(reviewer.review(reaching)).thenReturn(Answer.unavailable());
+    when(assistants.reviewer().review(reaching)).thenReturn(Answer.unavailable());
 
-    new ChargedReviews(reviewer, usage, trusted, () -> List.of(Path.of("/specs")))
+    new ChargedReviews(assistants, usage, trusted, () -> List.of(Path.of("/specs")))
         .review("ABC-1", round);
 
-    verify(reviewer).review(reaching);
+    verify(assistants.reviewer()).review(reaching);
   }
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
   void saysWhetherTheReaderLoadsAnMcpServerAsTheReaderDoes(boolean loads) {
-    when(reviewer.loadsMcpServer()).thenReturn(loads);
+    when(assistants.reviewer().loadsMcpServer()).thenReturn(loads);
 
-    assertThat(new ChargedReviews(reviewer, usage, trusted, List::of).loadsMcpServer())
+    assertThat(new ChargedReviews(assistants, usage, trusted, List::of).loadsMcpServer())
         .isEqualTo(loads);
   }
 
   @Test
   void logsEachChargedCallWithItsKind() {
     RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
-    when(reviewer.review(round)).thenReturn(Answer.unavailable());
+    when(assistants.reviewer().review(round)).thenReturn(Answer.unavailable());
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger logger = (Logger) LoggerFactory.getLogger(ChargedReviews.class);
     logger.setLevel(Level.INFO);
     logger.addAppender(log);
 
-    new ChargedReviews(reviewer, usage, trusted, List::of).review("ABC-1", round);
+    new ChargedReviews(assistants, usage, trusted, List::of).review("ABC-1", round);
 
     assertThat(log.list)
         .filteredOn(event -> event.getMessage().equals("master call charged"))

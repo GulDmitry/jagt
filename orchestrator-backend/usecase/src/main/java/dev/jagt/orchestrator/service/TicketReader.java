@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.McpHealth;
-import dev.jagt.orchestrator.port.TrackerAssistant;
 import dev.jagt.orchestrator.protocol.RetryPolicy;
 import dev.jagt.orchestrator.protocol.TicketRead;
 import dev.jagt.orchestrator.task.TicketFacts;
@@ -23,7 +22,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TicketReader {
 
-  private final TrackerAssistant assistant;
+  private final Assistants assistants;
   private final McpHealth mcp;
   private final UsageTracker usage;
   private final RetryPolicy policy;
@@ -37,7 +36,7 @@ public class TicketReader {
         PaidRead.untilUsable(
             policy,
             ticketRef,
-            corrections -> assistant.readTicket(ticketRef, corrections),
+            corrections -> assistants.tracker().readTicket(ticketRef, corrections),
             facts -> TicketRead.violations(ticketRef, facts),
             TicketFacts::usable);
     if (answer.facts().filter(TicketFacts::usable).isPresent()) {

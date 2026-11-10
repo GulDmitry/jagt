@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.TrackerAssistant;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -14,13 +13,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TicketTexts {
 
-  private final TrackerAssistant assistant;
+  private final Assistants assistants;
   private final UsageTracker usage;
   private final KeptTicketTexts kept;
 
   /** A failed read is booked too: asking again every tick is paid for every tick. */
   public void read(String taskId, String ticketRef, long asOf) {
-    Answer<String> answer = assistant.readTicketText(ticketRef);
+    Answer<String> answer = assistants.tracker().readTicketText(ticketRef);
     usage.chargeTask(taskId, answer.usage());
     kept.markRead(taskId, asOf);
     answer.facts().ifPresent(text -> kept.keep(taskId, text));

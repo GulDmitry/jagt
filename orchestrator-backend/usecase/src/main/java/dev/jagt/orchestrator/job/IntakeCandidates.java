@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.TrackerAssistant;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
+import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -30,7 +30,7 @@ public class IntakeCandidates {
    */
   private static final int READS_PER_POLL = 5;
 
-  private final TrackerAssistant assistant;
+  private final Assistants assistants;
   private final TicketReader tickets;
   private final TrackerWorkflow workflow;
 
@@ -41,7 +41,7 @@ public class IntakeCandidates {
    * Empty where nobody got to ask; an empty list means the tracker answered and nothing is waiting.
    */
   public Optional<List<Ready>> waiting(Set<String> held) {
-    Answer<List<String>> found = assistant.findCandidates(workflow.candidateQuery());
+    Answer<List<String>> found = assistants.tracker().findCandidates(workflow.candidateQuery());
     if (found.facts().isEmpty()) {
       log.atWarn()
           .setMessage("intake search unreadable")

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -10,7 +11,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.TrackerAssistant;
+import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.KeptTicketTexts;
 import dev.jagt.orchestrator.service.StateService;
@@ -34,7 +35,7 @@ class TicketPrefetchJobTest {
 
   private final StateService state = mock(StateService.class);
   private final ConfigService config = mock(ConfigService.class);
-  private final TrackerAssistant assistant = mock(TrackerAssistant.class);
+  private final Assistants assistants = mock(Assistants.class, RETURNS_DEEP_STUBS);
   private final OrchestratorPaths paths =
       new OrchestratorPaths(
           OrchestratorProperties.defaults()
@@ -42,7 +43,7 @@ class TicketPrefetchJobTest {
               .withStateFile(root.resolve("state.json").toString()));
   private final TicketTexts tickets =
       new TicketTexts(
-          assistant,
+          assistants,
           new UsageTracker(
               state,
               new UsageLedger(new JsonMapper(), paths, Clock.systemUTC())),
@@ -63,7 +64,7 @@ class TicketPrefetchJobTest {
             ConfigService.ConfigFile.defaults()
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(assistant.readTicketText("https://tracker.example/ABC-42"))
+    when(assistants.tracker().readTicketText("https://tracker.example/ABC-42"))
         .thenReturn(new Answer<>(Optional.of("Summary: accept v3 calls"), TokenUsage.NONE));
 
     job.runOn(tasks);
@@ -85,13 +86,13 @@ class TicketPrefetchJobTest {
             ConfigService.ConfigFile.defaults()
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(assistant.readTicketText("https://tracker.example/ABC-43"))
+    when(assistants.tracker().readTicketText("https://tracker.example/ABC-43"))
         .thenReturn(Answer.unavailable());
 
     job.runOn(tasks);
     job.runOn(tasks);
 
-    verify(assistant, times(1)).readTicketText("https://tracker.example/ABC-43");
+    verify(assistants.tracker(), times(1)).readTicketText("https://tracker.example/ABC-43");
   }
 
   @Test
@@ -111,7 +112,7 @@ class TicketPrefetchJobTest {
 
     job.runOn(tasks);
 
-    verify(assistant, never()).readTicketText("https://tracker.example/ABC-44");
+    verify(assistants.tracker(), never()).readTicketText("https://tracker.example/ABC-44");
   }
 
   @Test
@@ -127,13 +128,13 @@ class TicketPrefetchJobTest {
             ConfigService.ConfigFile.defaults()
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(assistant.readTicketText("https://tracker.example/ABC-45"))
+    when(assistants.tracker().readTicketText("https://tracker.example/ABC-45"))
         .thenReturn(new Answer<>(Optional.of("Summary: accept v3 calls"), TokenUsage.NONE));
     job.runOn(tasks);
-    TrackerAssistant afterRestart = mock(TrackerAssistant.class);
+    Assistants afterRestartAssistants = mock(Assistants.class, RETURNS_DEEP_STUBS);
     TicketTexts restartedTickets =
         new TicketTexts(
-            afterRestart,
+            afterRestartAssistants,
             new UsageTracker(
                 state,
                 new UsageLedger(new JsonMapper(), paths, Clock.systemUTC())),
@@ -141,7 +142,7 @@ class TicketPrefetchJobTest {
 
     new TicketPrefetchJob(config, restartedTickets).runOn(tasks);
 
-    verify(afterRestart, never()).readTicketText("https://tracker.example/ABC-45");
+    verify(afterRestartAssistants.tracker(), never()).readTicketText("https://tracker.example/ABC-45");
     assertThat(restartedTickets.of("ABC-45")).contains("Summary: accept v3 calls");
   }
 }

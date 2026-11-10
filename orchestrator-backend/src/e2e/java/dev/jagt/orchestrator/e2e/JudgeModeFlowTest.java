@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.e2e;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -11,16 +12,13 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CodeHostAssistant;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.McpHealth;
-import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.port.RoutingAssistant;
 import dev.jagt.orchestrator.port.TerminalDriver;
-import dev.jagt.orchestrator.port.TrackerAssistant;
 import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -83,11 +81,9 @@ class JudgeModeFlowTest {
   @MockitoBean private TerminalDriver terminalDriver;
   @MockitoBean private EditorDriver editorDriver;
   @MockitoBean private UserNotifier userNotifier;
-  @MockitoBean private CodeHostAssistant assistant;
-  @MockitoBean private TrackerAssistant tracker;
-  @MockitoBean private RoutingAssistant routing;
+  @MockitoBean(answers = RETURNS_DEEP_STUBS)
+  private Assistants assistants;
   @MockitoBean private McpHealth mcp;
-  @MockitoBean private RoundReviewer reviewer;
   private final TaskProvisioning provisioning;
   private final StateService stateService;
   private final OrchestratorPaths paths;
@@ -197,7 +193,7 @@ class JudgeModeFlowTest {
     E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-review");
 
     assertThat(task().message()).contains("keep v2?");
-    verify(reviewer, never()).review(any());
+    verify(assistants.reviewer(), never()).review(any());
   }
 
   @Test
@@ -212,7 +208,7 @@ class JudgeModeFlowTest {
     E2eWorkspace.git(worktree(), "push", "-u", "origin", TASK);
     agentReports(
         "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + request() + "\"");
-    when(assistant.readReview(request()))
+    when(assistants.codeHost().readReview(request()))
         .thenReturn(
             new Answer<>(
                 Optional.of(
@@ -230,7 +226,8 @@ class JudgeModeFlowTest {
   }
 
   private void judges(Judgement judgement) {
-    when(reviewer.review(any())).thenReturn(new Answer<>(Optional.of(judgement), TokenUsage.NONE));
+    when(assistants.reviewer().review(any()))
+        .thenReturn(new Answer<>(Optional.of(judgement), TokenUsage.NONE));
   }
 
   private void handBackTheFirstRound() throws Exception {

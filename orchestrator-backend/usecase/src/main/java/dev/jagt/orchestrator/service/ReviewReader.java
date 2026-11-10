@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CodeHostAssistant;
 import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.protocol.MergeRequestRead;
 import dev.jagt.orchestrator.protocol.RetryPolicy;
@@ -25,7 +24,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ReviewReader {
 
-  private final CodeHostAssistant assistant;
+  private final Assistants assistants;
   private final McpHealth mcp;
   private final UsageTracker usage;
   private final RetryPolicy policy;
@@ -36,7 +35,7 @@ public class ReviewReader {
         PaidRead.untilUsable(
             policy,
             reviewRequestUrl,
-            corrections -> assistant.readReview(reviewRequestUrl),
+            corrections -> assistants.codeHost().readReview(reviewRequestUrl),
             ReviewRead::violations,
             facts -> ReviewRead.violations(facts).isEmpty());
     // Charged even when the read came back empty: every call was paid for either way.
@@ -57,7 +56,7 @@ public class ReviewReader {
         PaidRead.untilUsable(
             policy,
             reviewRequestUrl,
-            corrections -> assistant.readMergeRequest(reviewRequestUrl),
+            corrections -> assistants.codeHost().readMergeRequest(reviewRequestUrl),
             MergeRequestRead::violations,
             facts -> MergeRequestRead.violations(facts).isEmpty());
     return new Answer<>(

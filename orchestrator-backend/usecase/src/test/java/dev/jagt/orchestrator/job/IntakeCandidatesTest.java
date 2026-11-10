@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -13,8 +14,8 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.TrackerAssistant;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
+import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -28,15 +29,15 @@ import org.slf4j.LoggerFactory;
 
 class IntakeCandidatesTest {
 
-  private final TrackerAssistant assistant = mock(TrackerAssistant.class);
+  private final Assistants assistants = mock(Assistants.class, RETURNS_DEEP_STUBS);
   private final TicketReader tickets = mock(TicketReader.class);
   private final TrackerWorkflow workflow = mock(TrackerWorkflow.class);
-  private final IntakeCandidates candidates = new IntakeCandidates(assistant, tickets, workflow);
+  private final IntakeCandidates candidates = new IntakeCandidates(assistants, tickets, workflow);
 
   @Test
   void answersNothingAtAllWhenTheSearchNeverReachedTheTracker() {
     when(workflow.candidateQuery()).thenReturn("whatever is ready");
-    when(assistant.findCandidates("whatever is ready")).thenReturn(Answer.unavailable());
+    when(assistants.tracker().findCandidates("whatever is ready")).thenReturn(Answer.unavailable());
 
     assertThat(candidates.waiting(Set.of())).isEmpty();
   }
@@ -49,7 +50,7 @@ class IntakeCandidatesTest {
     Logger intakeLog = (Logger) LoggerFactory.getLogger(IntakeCandidates.class);
     intakeLog.addAppender(log);
     when(workflow.candidateQuery()).thenReturn("whatever is ready");
-    when(assistant.findCandidates("whatever is ready")).thenReturn(Answer.unavailable());
+    when(assistants.tracker().findCandidates("whatever is ready")).thenReturn(Answer.unavailable());
 
     candidates.waiting(Set.of());
 
@@ -60,7 +61,7 @@ class IntakeCandidatesTest {
   @Test
   void buysNoReadForAnItemJagtAlreadyHolds() {
     when(workflow.candidateQuery()).thenReturn("whatever is ready");
-    when(assistant.findCandidates("whatever is ready"))
+    when(assistants.tracker().findCandidates("whatever is ready"))
         .thenReturn(new Answer<>(Optional.of(List.of("ABC-42")), TokenUsage.NONE));
 
     candidates.waiting(Set.of("ABC-42"));
@@ -71,7 +72,7 @@ class IntakeCandidatesTest {
   @Test
   void buysNoReadForSomethingTheSearchAnsweredThatIsNotAnIssueKey() {
     when(workflow.candidateQuery()).thenReturn("whatever is ready");
-    when(assistant.findCandidates("whatever is ready"))
+    when(assistants.tracker().findCandidates("whatever is ready"))
         .thenReturn(new Answer<>(Optional.of(List.of("I could not find any")), TokenUsage.NONE));
 
     candidates.waiting(Set.of());
@@ -82,7 +83,7 @@ class IntakeCandidatesTest {
   @Test
   void asksTheWorkflowNothingAboutAnItemWhoseStageNobodyCouldRead() {
     when(workflow.candidateQuery()).thenReturn("whatever is ready");
-    when(assistant.findCandidates("whatever is ready"))
+    when(assistants.tracker().findCandidates("whatever is ready"))
         .thenReturn(new Answer<>(Optional.of(List.of("ABC-42")), TokenUsage.NONE));
     when(tickets.read("ABC-42"))
         .thenReturn(
@@ -111,7 +112,7 @@ class IntakeCandidatesTest {
             .withTrackerStatus("In Progress")
             .withAssignee("jdoe");
     when(workflow.candidateQuery()).thenReturn("whatever is ready");
-    when(assistant.findCandidates("whatever is ready"))
+    when(assistants.tracker().findCandidates("whatever is ready"))
         .thenReturn(new Answer<>(Optional.of(List.of("ABC-42")), TokenUsage.NONE));
     when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
     when(workflow.startsWork(item)).thenReturn(true);
@@ -123,7 +124,7 @@ class IntakeCandidatesTest {
   @Test
   void buysNoSixthReadWithinOnePoll() {
     when(workflow.candidateQuery()).thenReturn("whatever is ready");
-    when(assistant.findCandidates("whatever is ready"))
+    when(assistants.tracker().findCandidates("whatever is ready"))
         .thenReturn(
             new Answer<>(
                 Optional.of(List.of("ABC-1", "ABC-2", "ABC-3", "ABC-4", "ABC-5", "ABC-6")),

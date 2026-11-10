@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -11,7 +12,6 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.RoutingAssistant;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.FinishedTask;
@@ -40,7 +40,7 @@ import org.mockito.ArgumentCaptor;
 class ProjectRoutingTest {
 
   private final ConfigService configService = mock(ConfigService.class);
-  private final RoutingAssistant assistant = mock(RoutingAssistant.class);
+  private final Assistants assistants = mock(Assistants.class, RETURNS_DEEP_STUBS);
   private final FinishedTasks finished = mock(FinishedTasks.class);
   @TempDir Path root;
 
@@ -67,7 +67,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -76,7 +76,7 @@ class ProjectRoutingTest {
 
     assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42")))
         .isEqualTo(new ProjectRouting.Placed(List.of("api")));
-    verify(assistant, never()).routeProject(any());
+    verify(assistants.routing(), never()).routeProject(any());
   }
 
   @Test
@@ -85,7 +85,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     TicketFacts item = TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend"));
     when(configService.load())
         .thenReturn(
@@ -97,7 +97,7 @@ class ProjectRoutingTest {
                             new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
 
     assertThat(routing.projectFor(item)).isEqualTo(new ProjectRouting.Placed(List.of("api")));
-    verify(assistant, never()).routeProject(any());
+    verify(assistants.routing(), never()).routeProject(any());
   }
 
   @Test
@@ -106,7 +106,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     TicketFacts item =
         TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend", "frontend"));
     when(configService.load())
@@ -119,7 +119,7 @@ class ProjectRoutingTest {
                             new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
 
     assertThat(routing.projectFor(item).projects()).containsExactlyInAnyOrder("api", "web");
-    verify(assistant, never()).routeProject(any());
+    verify(assistants.routing(), never()).routeProject(any());
   }
 
   @Test
@@ -128,7 +128,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    final ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -155,13 +155,13 @@ class ProjectRoutingTest {
                             List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.TRACKER)))
                         .build(),
                     2L)));
-    when(assistant.routeProject(any()))
+    when(assistants.routing().routeProject(any()))
         .thenReturn(new Answer<>(Optional.of(new RoutingAnswer("api", "")), TokenUsage.NONE));
     ArgumentCaptor<RoutingQuestion> asked = ArgumentCaptor.captor();
 
     routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
 
-    verify(assistant).routeProject(asked.capture());
+    verify(assistants.routing()).routeProject(asked.capture());
     assertThat(asked.getValue().precedents()).containsExactly("- ABC-1 \"Quote import\" → api");
   }
 
@@ -171,7 +171,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    final ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -181,7 +181,7 @@ class ProjectRoutingTest {
                         "web",
                             new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
     when(finished.all()).thenReturn(List.of());
-    when(assistant.routeProject(any()))
+    when(assistants.routing().routeProject(any()))
         .thenReturn(
             new Answer<>(
                 Optional.of(new RoutingAnswer("api", "ABC items about quote import")),
@@ -198,7 +198,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    final ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -208,7 +208,7 @@ class ProjectRoutingTest {
                         "web",
                             new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
     when(finished.all()).thenReturn(List.of());
-    when(assistant.routeProject(any()))
+    when(assistants.routing().routeProject(any()))
         .thenReturn(
             new Answer<>(
                 Optional.of(new RoutingAnswer("api", "importing quotes")), TokenUsage.NONE));
@@ -219,7 +219,7 @@ class ProjectRoutingTest {
             + IntStream.rangeClosed(1, 58)
                 .mapToObj(n -> "used rule " + n + " -> web #1\n")
                 .collect(Collectors.joining()));
-    when(assistant.sameRules(any()))
+    when(assistants.routing().sameRules(any()))
         .thenReturn(
             new Answer<>(
                 Optional.of(new RulePair("quote import -> api", "importing quotes -> api")),
@@ -238,7 +238,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    final ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     memory.remember("ABC items about quote import", "web");
     when(finished.all())
         .thenReturn(
@@ -251,7 +251,9 @@ class ProjectRoutingTest {
                             List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.TRACKER)))
                         .build(),
                     2L)));
-    when(assistant.staleRule("ABC-42", "api", List.of("ABC items about quote import -> web")))
+    when(assistants
+            .routing()
+            .staleRule("ABC-42", "api", List.of("ABC items about quote import -> web")))
         .thenReturn(
             new Answer<>(Optional.of("ABC items about quote import -> web"), TokenUsage.NONE));
 
@@ -266,7 +268,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     memory.remember("ABC items about quote import", "web");
     when(finished.all())
         .thenReturn(
@@ -281,7 +283,7 @@ class ProjectRoutingTest {
 
     routing.placedByHand("ABC-42", "api");
 
-    verify(assistant, never()).staleRule(anyString(), anyString(), any());
+    verify(assistants.routing(), never()).staleRule(anyString(), anyString(), any());
     assertThat(memory.rules()).containsExactly("ABC items about quote import -> web");
   }
 
@@ -291,7 +293,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    final ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -301,13 +303,13 @@ class ProjectRoutingTest {
                         "web",
                             new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
     when(finished.all()).thenReturn(List.of());
-    when(assistant.routeProject(any()))
+    when(assistants.routing().routeProject(any()))
         .thenReturn(new Answer<>(Optional.of(new RoutingAnswer("api", "")), TokenUsage.NONE));
     ArgumentCaptor<RoutingQuestion> asked = ArgumentCaptor.captor();
 
     routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
 
-    verify(assistant).routeProject(asked.capture());
+    verify(assistants.routing()).routeProject(asked.capture());
     assertThat(asked.getValue().projects())
         .containsOnly(Map.entry("api", "/api"), Map.entry("web", "/web"));
   }
@@ -318,7 +320,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     memory.remember("ABC items about quote import", "web");
     when(finished.all())
         .thenReturn(
@@ -341,7 +343,7 @@ class ProjectRoutingTest {
 
     routing.placedByHand("ABC-42", "api");
 
-    verify(assistant, never()).staleRule(anyString(), anyString(), any());
+    verify(assistants.routing(), never()).staleRule(anyString(), anyString(), any());
   }
 
   @Test
@@ -350,7 +352,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -360,7 +362,7 @@ class ProjectRoutingTest {
                         "web",
                             new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
     when(finished.all()).thenReturn(List.of());
-    when(assistant.routeProject(any()))
+    when(assistants.routing().routeProject(any()))
         .thenReturn(new Answer<>(Optional.of(new RoutingAnswer("mobile", "")), TokenUsage.NONE));
 
     assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42")))
@@ -373,7 +375,7 @@ class ProjectRoutingTest {
         new RoutingMemory(
             new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
             Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -383,7 +385,7 @@ class ProjectRoutingTest {
                         "web",
                             new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
     when(finished.all()).thenReturn(List.of());
-    when(assistant.routeProject(any())).thenReturn(Answer.unavailable());
+    when(assistants.routing().routeProject(any())).thenReturn(Answer.unavailable());
 
     assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42")))
         .isInstanceOf(ProjectRouting.Unreadable.class);

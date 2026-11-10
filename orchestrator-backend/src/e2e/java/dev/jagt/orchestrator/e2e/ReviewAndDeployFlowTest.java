@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.e2e;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -12,13 +13,11 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.CodeHostAssistant;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.McpHealth;
-import dev.jagt.orchestrator.port.RoutingAssistant;
 import dev.jagt.orchestrator.port.TerminalDriver;
-import dev.jagt.orchestrator.port.TrackerAssistant;
 import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
@@ -98,9 +97,8 @@ class ReviewAndDeployFlowTest {
   @MockitoBean private TerminalDriver terminalDriver;
   @MockitoBean private EditorDriver editorDriver;
   @MockitoBean private UserNotifier userNotifier;
-  @MockitoBean private CodeHostAssistant assistant;
-  @MockitoBean private TrackerAssistant tracker;
-  @MockitoBean private RoutingAssistant routing;
+  @MockitoBean(answers = RETURNS_DEEP_STUBS)
+  private Assistants assistants;
   @MockitoBean private McpHealth mcp;
   private final TaskProvisioning provisioning;
   private final StateService stateService;
@@ -387,12 +385,12 @@ class ReviewAndDeployFlowTest {
   @Test
   void resumeAdoptsAnOpenRequestOnTheBranchThatIsAlreadyThere() throws Exception {
     E2eWorkspace.git(repo(), "branch", TASK, "main");
-    when(assistant.readMergeRequest(request()))
+    when(assistants.codeHost().readMergeRequest(request()))
         .thenReturn(
             new Answer<>(
                 Optional.of(new MergeRequestFacts(true, TASK, "main", TASK + " " + TITLE)),
                 TokenUsage.NONE));
-    when(tracker.readTicket(eq(TASK), any()))
+    when(assistants.tracker().readTicket(eq(TASK), any()))
         .thenReturn(
             new Answer<>(
                 Optional.of(
@@ -421,7 +419,7 @@ class ReviewAndDeployFlowTest {
 
   @Test
   void taskOpenedOnTheBoardRecordsTheBoardAsItsOpener() throws Exception {
-    when(tracker.readTicket(eq(TASK), any()))
+    when(assistants.tracker().readTicket(eq(TASK), any()))
         .thenReturn(
             new Answer<>(
                 Optional.of(
@@ -489,7 +487,7 @@ class ReviewAndDeployFlowTest {
       assertThat(actionsOfTheTask()).doesNotContain("ship");
 
       String followUp = request().replace("/merge_requests/1", "/merge_requests/2");
-      when(assistant.readReview(followUp))
+      when(assistants.codeHost().readReview(followUp))
           .thenReturn(
               new Answer<>(
                   Optional.of(
@@ -506,7 +504,7 @@ class ReviewAndDeployFlowTest {
       assertThat(task().stopped()).isFalse();
       assertThat(stops.mayShip(TASK)).isTrue();
       assertThat(act("sweep")).doesNotContain("stopped");
-      verify(assistant, atLeastOnce()).readReview(followUp);
+      verify(assistants.codeHost(), atLeastOnce()).readReview(followUp);
     } finally {
       E2eWorkspace.git(clone, "push", "-q", "--force", "origin", main + ":refs/heads/main");
       E2eWorkspace.git(repo(), "fetch", "-q", "origin");
@@ -547,8 +545,8 @@ class ReviewAndDeployFlowTest {
 
   private void reads(@Nullable ReviewFacts facts) {
     Answer<ReviewFacts> answer = new Answer<>(Optional.ofNullable(facts), TokenUsage.NONE);
-    when(assistant.readReview(request())).thenReturn(answer);
-    when(assistant.readReview(webRequest())).thenReturn(answer);
+    when(assistants.codeHost().readReview(request())).thenReturn(answer);
+    when(assistants.codeHost().readReview(webRequest())).thenReturn(answer);
   }
 
   private void agentHandsBack(String message) throws Exception {
