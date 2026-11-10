@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -30,18 +31,24 @@ class CheckerFlowsTest {
 
   private static final String STAGE = "https://stage.example.com";
 
-  @TempDir static Path root;
+  @TempDir Path root;
 
   private final AcceptanceRunner runner = mock(AcceptanceRunner.class);
   private final ConfigService config = mock(ConfigService.class);
-  private final CheckerFlows flows =
-      new CheckerFlows(
-          runner,
-          RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-          new RoleSettings(
-              RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-              config,
-              new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))));
+  private CheckerFlows flows;
+
+  @BeforeEach
+  void flowsOverThisTestsRoot() {
+    flows =
+        new CheckerFlows(
+            runner,
+            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+            new RoleSettings(
+                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                config,
+                new OrchestratorPaths(
+                    OrchestratorProperties.defaults().withRoot(root.toString()))));
+  }
 
   private void stageListed() throws IOException {
     when(config.load())
