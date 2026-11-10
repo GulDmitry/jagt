@@ -43,7 +43,7 @@ class LinkRefusalsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)

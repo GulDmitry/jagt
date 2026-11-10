@@ -50,7 +50,7 @@ class TicketCloseJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     when(configService.load()).thenReturn(ConfigFile.defaults());
     TicketCloseJob job =
         new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
@@ -69,7 +69,7 @@ class TicketCloseJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -96,7 +96,7 @@ class TicketCloseJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
     when(configService.load())
         .thenReturn(
@@ -129,7 +129,7 @@ class TicketCloseJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
     stateService.putTask("ABC-1", task);
     stateService.putTask("ABC-2", task);
@@ -162,7 +162,7 @@ class TicketCloseJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .alias("a1")
@@ -195,7 +195,7 @@ class TicketCloseJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     TaskState stood =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .alias("a1")
@@ -233,7 +233,7 @@ class TicketCloseJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
     when(configService.load())
         .thenReturn(
@@ -260,7 +260,7 @@ class TicketCloseJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
     stateService.putTask("ABC-1", task);
     stateService.putTask("ABC-2", task);
@@ -293,7 +293,7 @@ class TicketCloseJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .alias("a1")

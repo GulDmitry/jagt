@@ -1,10 +1,12 @@
 package dev.jagt.orchestrator.surface.ui;
 
+import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
-import jakarta.annotation.PostConstruct;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -13,10 +15,14 @@ public class TaskAliasFeed {
 
   private final StateService stateService;
 
-  @PostConstruct
-  void follow() {
+  @EventListener(ApplicationReadyEvent.class)
+  void rememberStored() {
     remember(stateService.tasks());
-    stateService.onChange(written -> remember(written.tasks()));
+  }
+
+  @EventListener
+  void rememberWritten(StateWritten written) {
+    remember(written.tasks());
   }
 
   private static void remember(Map<String, TaskState> tasks) {

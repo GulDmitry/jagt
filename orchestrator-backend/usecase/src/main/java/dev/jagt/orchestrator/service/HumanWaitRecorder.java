@@ -5,16 +5,16 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.HumanWaits;
 import dev.jagt.orchestrator.flow.StopHold;
 import dev.jagt.orchestrator.flow.Turns;
+import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import dev.jagt.orchestrator.task.HumanWait;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Turn.Holder;
-import jakarta.annotation.PostConstruct;
 import java.time.Clock;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
@@ -32,14 +32,9 @@ public class HumanWaitRecorder {
   private final Clock clock;
   private final Checkers checkers;
 
-  @PostConstruct
-  void follow() {
-    sweep(stateService.tasks());
-    stateService.onChange(written -> sweep(written.tasks()));
-  }
-
-  void sweep(Map<String, TaskState> tasks) {
-    tasks.forEach(
+  @EventListener
+  void sweep(StateWritten written) {
+    written.tasks().forEach(
         (id, task) -> {
           if (!task.equals(
               HumanWaits.noted(task, holder(task), rounds.judged(task), clock.millis()))) {

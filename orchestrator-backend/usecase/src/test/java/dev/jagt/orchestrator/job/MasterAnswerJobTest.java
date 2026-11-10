@@ -62,7 +62,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState asking =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .message("keep v2?")
@@ -99,7 +99,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -137,7 +137,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
@@ -171,7 +171,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -206,7 +206,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
@@ -241,7 +241,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState asking =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .message("keep v2?")
@@ -277,7 +277,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -312,7 +312,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState asking =
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
             .message("override the gate?")
@@ -347,7 +347,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState asking =
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
             .message("override the gate?")
@@ -384,7 +384,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).message("working").build());
@@ -415,7 +415,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState asking =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .message("keep v2?")
@@ -454,7 +454,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -503,7 +503,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState asking =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .message("keep v2?")
@@ -542,7 +542,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -579,7 +579,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -615,7 +615,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState asking =
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .message("keep v2?")
@@ -651,7 +651,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState asking =
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
             .lastActiveTimestamp(7)
@@ -688,7 +688,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState asking =
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
             .message("keep v2?")
@@ -725,7 +725,7 @@ class MasterAnswerJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     final FlowReports reports =
         new FlowReports(
             state,

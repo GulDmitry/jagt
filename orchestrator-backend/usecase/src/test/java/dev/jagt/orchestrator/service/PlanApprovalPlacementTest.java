@@ -41,7 +41,7 @@ class PlanApprovalPlacementTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
@@ -68,7 +68,7 @@ class PlanApprovalPlacementTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState planned =
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
             .planGate(PlanGate.REQUIRED)
@@ -100,7 +100,7 @@ class PlanApprovalPlacementTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
@@ -127,7 +127,7 @@ class PlanApprovalPlacementTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
@@ -153,7 +153,7 @@ class PlanApprovalPlacementTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState planned =
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
             .planGate(PlanGate.REQUIRED)

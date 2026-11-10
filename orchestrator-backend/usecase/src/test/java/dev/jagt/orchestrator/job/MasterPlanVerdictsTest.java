@@ -78,7 +78,7 @@ class MasterPlanVerdictsTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.copy(
         Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
     state.putTask("ABC-1", read);
     state.updateTask(
@@ -148,7 +148,7 @@ class MasterPlanVerdictsTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.copy(
         Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
     state.putTask("ABC-1", planned);
     var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
@@ -215,7 +215,7 @@ class MasterPlanVerdictsTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.copy(
         Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState planned =
         TaskState.builder(List.of(TaskRepo.of(null, root.toString())), TaskStatus.PLAN_PENDING)
             .alias("a1")
@@ -290,7 +290,7 @@ class MasterPlanVerdictsTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.copy(
         Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState planned =
         TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
             .planGate(PlanGate.CLOSED)
@@ -355,7 +355,7 @@ class MasterPlanVerdictsTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.copy(
         Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState planned =
         TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
             .planGate(PlanGate.REQUIRED)
@@ -424,7 +424,7 @@ class MasterPlanVerdictsTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.copy(
         Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
     state.putTask("ABC-1", planned);
     var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null);
@@ -489,7 +489,7 @@ class MasterPlanVerdictsTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.copy(
         Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState planned =
         TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
             .message("admins only or every user?")
@@ -573,7 +573,7 @@ class MasterPlanVerdictsTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.copy(
         Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
     state.putTask("ABC-1", planned);
     var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
@@ -635,7 +635,7 @@ class MasterPlanVerdictsTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
     state.putTask("ABC-1", planned);
     var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
@@ -699,7 +699,7 @@ class MasterPlanVerdictsTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.copy(
         Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).alias("a1").build();
     var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);

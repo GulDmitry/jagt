@@ -54,7 +54,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -97,7 +97,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -148,7 +148,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -191,7 +191,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         new JsonMapper()
@@ -230,7 +230,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
@@ -268,7 +268,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
@@ -307,7 +307,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
@@ -346,7 +346,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -394,7 +394,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
     ConfigService config = mock(ConfigService.class);
@@ -429,7 +429,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -471,7 +471,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -511,7 +511,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -560,7 +560,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -621,7 +621,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -679,7 +679,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -740,7 +740,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
@@ -787,7 +787,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -847,7 +847,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -898,7 +898,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
@@ -948,7 +948,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
     state.updateTask(
@@ -988,7 +988,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     GitDeploy git = mock(GitDeploy.class);
     DeployTargets targets = new DeployTargets(mock(ConfigService.class));
     RevertService service =
@@ -1015,7 +1015,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
@@ -1065,7 +1065,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
@@ -1118,7 +1118,7 @@ class RevertServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(

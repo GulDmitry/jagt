@@ -60,7 +60,7 @@ class DeployPipelinesRetryTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder(List.of(new TaskRepo("shop", "/wt", REMOTE, null)), TaskStatus.DEPLOYED)

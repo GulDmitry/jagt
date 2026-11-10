@@ -131,21 +131,21 @@ class MasterDeployJobTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    new StateService(new JsonMapper(), paths, reducer)
+    new StateService(new JsonMapper(), paths, reducer, event -> {})
         .putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build());
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withMaster(
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    StateService before = new StateService(new JsonMapper(), paths, reducer);
+    StateService before = new StateService(new JsonMapper(), paths, reducer, event -> {});
     new MasterDeployJob(
             config,
             press,
             new TaskTurns(
                 before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(before.tasks());
-    StateService restarted = new StateService(new JsonMapper(), paths, reducer);
+    StateService restarted = new StateService(new JsonMapper(), paths, reducer, event -> {});
 
     new MasterDeployJob(
             config,

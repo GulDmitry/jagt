@@ -37,7 +37,7 @@ class LaunchExitsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
     AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.exitTail("ABC-42"))
@@ -58,7 +58,7 @@ class LaunchExitsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
     AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.exitTail("ABC-42")).thenReturn(Optional.empty());
@@ -83,7 +83,7 @@ class LaunchExitsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.NEW).report(AgentReport.PERMISSION).build());
@@ -107,7 +107,7 @@ class LaunchExitsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     AgentSessions sessions = mock(AgentSessions.class);
 

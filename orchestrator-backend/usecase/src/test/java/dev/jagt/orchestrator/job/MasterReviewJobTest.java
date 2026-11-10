@@ -49,7 +49,7 @@ class MasterReviewJobTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString())),
-                reducer);
+                reducer, event -> {});
   }
 
   private ConfigService.ConfigFile.MasterConfig master(String mode) {

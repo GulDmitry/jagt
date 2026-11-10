@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.service.StateService;
-import jakarta.annotation.PostConstruct;
+import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
@@ -16,6 +15,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -30,7 +30,6 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
 
   private static final Duration HEARTBEAT = Duration.ofSeconds(20);
 
-  private final StateService stateService;
   private final TaskScheduler scheduler;
   private final Clock clock;
   private final ExecutorService broadcaster;
@@ -41,26 +40,17 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
   private final String started;
 
   public TaskEventStream(
-      StateService stateService,
       Clock clock,
       TaskScheduler scheduler,
       @Qualifier("boardBroadcaster") ExecutorService broadcaster) {
-    this.stateService = stateService;
     this.scheduler = scheduler;
     this.clock = clock;
     this.broadcaster = broadcaster;
     this.started = Long.toString(clock.millis(), 36);
   }
 
-  @PostConstruct
-  void followStateChanges() {
-    stateService.onChange(written -> queueBroadcast());
-    heartbeat =
-        scheduler.scheduleAtFixedRate(
-            () -> browsers.forEach(this::beat), clock.instant().plus(HEARTBEAT), HEARTBEAT);
-  }
-
-  private void queueBroadcast() {
+  @EventListener
+  void queueBroadcast(StateWritten written) {
     if (!broadcastQueued.compareAndSet(false, true)) {
       return;
     }
@@ -97,6 +87,11 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
         return browser;
       }
       browsers.add(browser);
+      if (heartbeat == null) {
+        heartbeat =
+            scheduler.scheduleAtFixedRate(
+                () -> browsers.forEach(this::beat), clock.instant().plus(HEARTBEAT), HEARTBEAT);
+      }
     }
     send(browser, "open", started);
     beat(browser);

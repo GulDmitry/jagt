@@ -55,7 +55,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -113,7 +113,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -170,7 +170,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -232,7 +232,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -288,7 +288,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -347,7 +347,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(file.toString())),
-            reducer);
+            reducer, event -> {});
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -389,7 +389,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(file.toString())),
-            reducer);
+            reducer, event -> {});
     ConflictStall restarted =
         new ConflictStall(
             after,
@@ -421,7 +421,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)
@@ -471,7 +471,7 @@ class ConflictStallTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState conflicted =
         TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .lastActiveTimestamp(1_000)

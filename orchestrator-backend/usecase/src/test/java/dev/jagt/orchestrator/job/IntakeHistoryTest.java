@@ -97,7 +97,6 @@ class IntakeHistoryTest {
     history().turnAway("ABC-42", "nothing routes it");
 
     IntakeHistory restarted = history();
-    restarted.follow();
     restarted.turnAway("ABC-42", "nothing routes it");
 
     verify(notifications, times(1)).send(any(Notification.class));

@@ -2,20 +2,22 @@ package dev.jagt.orchestrator.surface.ui;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.LoggingEvent;
+import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import java.time.Duration;
 import java.util.Map;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.slf4j.event.KeyValuePair;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 class TaskAliasFeedTest {
 
@@ -31,8 +33,12 @@ class TaskAliasFeedTest {
         new LoggingEvent(
             "x", new LoggerContext().getLogger("x"), Level.INFO, "master presses", null, null);
     event.addKeyValuePair(new KeyValuePair("task", "ABC-44"));
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(TaskAliasFeed.class, () -> new TaskAliasFeed(stateService));
+    context.refresh();
 
-    new TaskAliasFeed(stateService).follow();
+    context.publishEvent(
+        new ApplicationReadyEvent(new SpringApplication(), new String[0], context, Duration.ZERO));
     new TaskAliasLogFilter().decide(event);
 
     assertThat(event.getKeyValuePairs())
@@ -42,22 +48,20 @@ class TaskAliasFeedTest {
 
   @Test
   void taskStoredAfterStartLogsWithItsAlias() {
-    StateService stateService = mock(StateService.class);
-    ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
     var event =
         new LoggingEvent(
             "x", new LoggerContext().getLogger("x"), Level.INFO, "master presses", null, null);
     event.addKeyValuePair(new KeyValuePair("task", "ABC-45"));
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(TaskAliasFeed.class, () -> new TaskAliasFeed(mock(StateService.class)));
+    context.refresh();
 
-    new TaskAliasFeed(stateService).follow();
-    verify(stateService).onChange(listener.capture());
-    listener
-        .getValue()
-        .accept(
-            new StateService.StateFile(
-                Map.of(
-                    "ABC-45",
-                    TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("p6").build())));
+    context.publishEvent(
+        new StateWritten(
+            Map.of(),
+            Map.of(
+                "ABC-45",
+                TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("p6").build())));
     new TaskAliasLogFilter().decide(event);
 
     assertThat(event.getKeyValuePairs())

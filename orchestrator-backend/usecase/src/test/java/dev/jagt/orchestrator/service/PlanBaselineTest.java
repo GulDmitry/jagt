@@ -32,7 +32,7 @@ class PlanBaselineTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42", TaskState.builder("web", worktree.toString(), TaskStatus.PLAN_PENDING).build());
     return new PlanBaseline(

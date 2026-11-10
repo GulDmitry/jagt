@@ -63,7 +63,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     AtomicReference<ActionOrigin> seen = new AtomicReference<>();
     McpTools moving =
         tools ->
@@ -101,7 +101,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpProtocolService protocol =
         new McpProtocolService(
             mapper,
@@ -147,7 +147,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpProtocolService protocol =
         new McpProtocolService(
             mapper,
@@ -183,7 +183,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
@@ -223,7 +223,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpTools failing =
         tools ->
             tools.tool(
@@ -269,7 +269,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS)
@@ -327,7 +327,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpTools refusing =
         tools ->
             tools.tool(
@@ -367,7 +367,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpTools failing =
         tools ->
             tools.tool(
@@ -411,7 +411,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpTools failing =
         tools ->
             tools.tool(
@@ -453,7 +453,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpTools echoing =
         tools ->
             tools.tool(
@@ -491,7 +491,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
@@ -520,7 +520,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
@@ -547,7 +547,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
@@ -574,7 +574,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -605,7 +605,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -636,7 +636,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpProtocolService protocol =
         new McpProtocolService(
             mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
@@ -666,7 +666,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -713,7 +713,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpProtocolService protocol =
         new McpProtocolService(
             mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));
@@ -744,7 +744,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
@@ -772,7 +772,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
@@ -804,7 +804,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
@@ -836,7 +836,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     long freshTimestamp = System.currentTimeMillis();
     state.putTask(
         "ABC-1",
@@ -865,7 +865,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
@@ -897,7 +897,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
@@ -949,7 +949,7 @@ class McpProtocolServiceTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     McpProtocolService protocol =
         new McpProtocolService(
             mapper, state, Clock.systemUTC(), List.of(new DeployTools(mock(CommandService.class))));

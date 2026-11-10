@@ -41,7 +41,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).build());
     when(git.gitState(List.of(Path.of("/wt"))))
         .thenReturn(Map.of("core.editor in /r/.git/config", "a1"));
@@ -62,7 +62,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -88,7 +88,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -114,7 +114,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -140,7 +140,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -174,7 +174,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -194,7 +194,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -219,7 +219,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -243,7 +243,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
 
     assertThatThrownBy(() -> new TrustedGitState(state, git).changes("ABC-42"))
         .isInstanceOf(Refusal.class);
@@ -258,7 +258,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "", TaskStatus.APPROVED).build());
     when(git.gitState(List.of())).thenReturn(Map.of("core.editor in /r/.git/config", "a1"));
 
@@ -277,7 +277,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
 
     assertThatThrownBy(() -> new TrustedGitState(state, git).trust("ABC-42"))
         .isInstanceOf(Refusal.class);
@@ -292,7 +292,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
 
     assertThat(new TrustedGitState(state, git).distrust("ABC-42")).isEmpty();
   }
@@ -306,7 +306,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -329,7 +329,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -351,7 +351,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -372,7 +372,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -394,7 +394,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -418,7 +418,7 @@ class TrustedGitStateTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)

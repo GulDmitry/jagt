@@ -67,7 +67,9 @@ class RepoAttachmentTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    state = new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
+    state =
+        new StateService(
+            new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
     attachment = new RepoAttachment(config, state, worktrees, relay);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
   }

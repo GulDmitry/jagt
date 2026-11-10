@@ -37,7 +37,7 @@ class SpecFoldTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("api", "/wt/api", TaskStatus.REVIEW_PENDING)
@@ -60,7 +60,7 @@ class SpecFoldTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("api", "/wt/api", TaskStatus.REVIEW_PENDING).build());
     Specs specs = mock(Specs.class);
     doThrow(new IllegalStateException("openspec/changes/abc-42 does not validate"))

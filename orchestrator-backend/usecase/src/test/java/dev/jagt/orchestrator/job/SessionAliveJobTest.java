@@ -44,7 +44,7 @@ class SessionAliveJobTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(
@@ -70,7 +70,7 @@ class SessionAliveJobTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(
@@ -96,7 +96,7 @@ class SessionAliveJobTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     TaskStops stops =
         new TaskStops(

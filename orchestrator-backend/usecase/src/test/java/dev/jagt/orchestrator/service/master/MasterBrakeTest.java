@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.Session;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import tools.jackson.databind.json.JsonMapper;
 
 class MasterBrakeTest {
@@ -33,9 +35,11 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    context.refresh();
 
-    brake.observe(
+    context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
                 TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
@@ -58,7 +62,7 @@ class MasterBrakeTest {
                     .session(
                         Session.defaults()
                             .withHalt(new Session.Halt(Session.Halt.Kind.GONE, 22, "crash")))
-                    .build()));
+                    .build())));
 
     assertThat(root.resolve("act-stopped")).exists();
   }
@@ -70,9 +74,11 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    context.refresh();
 
-    brake.observe(
+    context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
                 TaskState.builder("proj", "/wt1", TaskStatus.IN_PROGRESS)
@@ -97,7 +103,7 @@ class MasterBrakeTest {
                             new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
                             new StatusChange(TaskStatus.IN_PROGRESS, 22, ActionOrigin.MCP)))
                     .session(Session.defaults().withQuietSince(32))
-                    .build()));
+                    .build())));
 
     assertThat(root.resolve("act-stopped")).doesNotExist();
   }
@@ -109,9 +115,11 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    context.refresh();
 
-    brake.observe(
+    context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
                 TaskState.builder("proj", "/wt1", TaskStatus.IN_PROGRESS)
@@ -130,7 +138,7 @@ class MasterBrakeTest {
                     .history(
                         List.of(new StatusChange(TaskStatus.IN_PROGRESS, 12, ActionOrigin.MASTER)))
                     .session(Session.defaults().withQuietSince(32))
-                    .build()));
+                    .build())));
 
     assertThat(root.resolve("act-stopped")).exists();
   }
@@ -142,9 +150,11 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    context.refresh();
 
-    brake.observe(
+    context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
                 TaskState.builder("proj", "/wt1", TaskStatus.IN_PROGRESS)
@@ -169,7 +179,7 @@ class MasterBrakeTest {
                             new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
                             new StatusChange(TaskStatus.IN_PROGRESS, 22, ActionOrigin.BOARD)))
                     .session(Session.defaults().withQuietSince(32))
-                    .build()));
+                    .build())));
 
     assertThat(root.resolve("act-stopped")).doesNotExist();
   }
@@ -181,9 +191,11 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    context.refresh();
 
-    brake.observe(
+    context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
                 TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
@@ -210,7 +222,7 @@ class MasterBrakeTest {
                         List.of(
                             new StatusChange(TaskStatus.SHIPPING, 13, ActionOrigin.MASTER),
                             new StatusChange(TaskStatus.REVERTED, 23, ActionOrigin.BOARD)))
-                    .build()));
+                    .build())));
 
     assertThat(root.resolve("act-stopped")).doesNotExist();
   }
@@ -222,9 +234,11 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    context.refresh();
 
-    brake.observe(
+    context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
                 TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
@@ -240,7 +254,7 @@ class MasterBrakeTest {
                         List.of(
                             new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
                             new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
-                    .build()));
+                    .build())));
 
     assertThat(root.resolve("act-stopped")).doesNotExist();
   }
@@ -252,9 +266,11 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    context.refresh();
 
-    brake.observe(
+    context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
                 TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
@@ -267,7 +283,7 @@ class MasterBrakeTest {
             "ABC-3",
                 TaskState.builder("proj", "/wt3", TaskStatus.REVERTED)
                     .history(List.of(new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD)))
-                    .build()));
+                    .build())));
 
     assertThat(root.resolve("act-stopped")).doesNotExist();
   }
@@ -279,8 +295,8 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
-    state.putTask(
+    StateService before = new StateService(new JsonMapper(), paths, reducer, event -> {});
+    before.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
             .history(
@@ -288,7 +304,7 @@ class MasterBrakeTest {
                     new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
                     new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD)))
             .build());
-    state.putTask(
+    before.putTask(
         "ABC-2",
         TaskState.builder("proj", "/wt2", TaskStatus.REVERTED)
             .history(
@@ -296,8 +312,10 @@ class MasterBrakeTest {
                     new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
                     new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
             .build());
-    MasterBrake brake = new MasterBrake(state, paths);
-    brake.follow();
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    context.refresh();
+    StateService state = new StateService(new JsonMapper(), paths, reducer, context::publishEvent);
 
     state.putTask(
         "ABC-3",
@@ -319,7 +337,7 @@ class MasterBrakeTest {
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
+    MasterBrake brake = new MasterBrake(paths);
 
     boolean restored = brake.restore();
 
@@ -334,9 +352,10 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
-    MasterBrake brake = new MasterBrake(state, paths);
-    brake.follow();
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    context.refresh();
+    StateService state = new StateService(new JsonMapper(), paths, reducer, context::publishEvent);
 
     state.putTask(
         "ABC-1",
@@ -373,8 +392,11 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
-    brake.observe(
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    context.refresh();
+    MasterBrake brake = context.getBean(MasterBrake.class);
+    context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
             TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
@@ -389,10 +411,10 @@ class MasterBrakeTest {
                     List.of(
                         new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
                         new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
-                .build()));
+                .build())));
     brake.restore();
 
-    brake.observe(
+    context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
             TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
@@ -414,7 +436,7 @@ class MasterBrakeTest {
                     List.of(
                         new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
                         new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD)))
-                .build()));
+                .build())));
 
     assertThat(root.resolve("act-stopped")).doesNotExist();
   }
@@ -426,8 +448,10 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
-    brake.observe(
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    context.refresh();
+    context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
             TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
@@ -449,10 +473,10 @@ class MasterBrakeTest {
                     List.of(
                         new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
                         new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD)))
-                .build()));
+                .build())));
     Files.delete(root.resolve("act-stopped"));
 
-    brake.observe(
+    context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
             TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
@@ -488,7 +512,7 @@ class MasterBrakeTest {
                     List.of(
                         new StatusChange(TaskStatus.SHIPPING, 14, ActionOrigin.MASTER),
                         new StatusChange(TaskStatus.REVERTED, 24, ActionOrigin.BOARD)))
-                .build()));
+                .build())));
 
     assertThat(root.resolve("act-stopped")).doesNotExist();
   }
@@ -500,9 +524,12 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
-    new MasterBrake(state, paths)
-        .observe(
+    AnnotationConfigApplicationContext first = new AnnotationConfigApplicationContext();
+    first.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    first.refresh();
+    first.publishEvent(
+        new StateWritten(
+            Map.of(),
             Map.of(
                 "ABC-1",
                     TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
@@ -517,19 +544,22 @@ class MasterBrakeTest {
                             List.of(
                                 new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
                                 new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
-                        .build()));
-    MasterBrake restarted = new MasterBrake(state, paths);
-    restarted.follow();
+                        .build())));
+    AnnotationConfigApplicationContext restarted = new AnnotationConfigApplicationContext();
+    restarted.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    restarted.refresh();
 
-    restarted.observe(
-        Map.of(
+    restarted.publishEvent(
+        new StateWritten(
+            Map.of(),
+            Map.of(
             "ABC-3",
             TaskState.builder("proj", "/wt3", TaskStatus.REVERTED)
                 .history(
                     List.of(
                         new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
                         new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD)))
-                .build()));
+                .build())));
 
     assertThat(root.resolve("act-stopped")).exists();
   }
@@ -541,7 +571,7 @@ class MasterBrakeTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    MasterBrake brake = new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths);
+    MasterBrake brake = new MasterBrake(paths);
 
     boolean restored = brake.restore();
 

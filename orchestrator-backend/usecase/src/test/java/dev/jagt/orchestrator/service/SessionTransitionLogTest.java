@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 class SessionTransitionLogTest {
 
@@ -26,7 +27,9 @@ class SessionTransitionLogTest {
     Logger watched = (Logger) LoggerFactory.getLogger(SessionTransitionLog.class);
     watched.addAppender(log);
     try {
-      SessionTransitionLog transitions = new SessionTransitionLog(mock(StateService.class));
+      AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+      context.registerBean(SessionTransitionLog.class);
+      context.refresh();
       TaskState running =
           TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
               .build()
@@ -39,8 +42,7 @@ class SessionTransitionLogTest {
                   .session()
                   .withWindow(new Session.Window(Session.Window.State.MISSING, 2_000, 0)));
 
-      transitions.observe(Map.of("ABC-1", running));
-      transitions.observe(Map.of("ABC-1", missing));
+      context.publishEvent(new StateWritten(Map.of("ABC-1", running), Map.of("ABC-1", missing)));
 
       assertThat(List.copyOf(log.list))
           .filteredOn(event -> "session window changed".equals(event.getMessage()))

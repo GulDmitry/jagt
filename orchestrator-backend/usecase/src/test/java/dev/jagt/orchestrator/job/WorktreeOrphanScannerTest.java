@@ -54,7 +54,7 @@ class WorktreeOrphanScannerTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
-                    reducer),
+                    reducer, event -> {}),
                 mock(GitCommands.class)),
             notifications)
         .run();
@@ -91,7 +91,7 @@ class WorktreeOrphanScannerTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
-                    reducer),
+                    reducer, event -> {}),
                 mock(GitCommands.class)),
             notifications)
         .run();
@@ -126,7 +126,7 @@ class WorktreeOrphanScannerTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
-                    reducer),
+                    reducer, event -> {}),
                 mock(GitCommands.class)),
             mock(Notifications.class))
         .run();
@@ -159,7 +159,7 @@ class WorktreeOrphanScannerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     WorktreeOrphanScanner scanner =
         new WorktreeOrphanScanner(
             new WorktreeOrphans(config, state, mock(GitCommands.class)), mock(Notifications.class));
@@ -192,7 +192,7 @@ class WorktreeOrphanScannerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     WorktreeOrphanScanner scanner =
         new WorktreeOrphanScanner(
             new WorktreeOrphans(config, state, mock(GitCommands.class)), mock(Notifications.class));
@@ -225,7 +225,7 @@ class WorktreeOrphanScannerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     WorktreeOrphanScanner scanner =
         new WorktreeOrphanScanner(
             new WorktreeOrphans(config, state, mock(GitCommands.class)), mock(Notifications.class));
@@ -259,7 +259,7 @@ class WorktreeOrphanScannerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
 
     new WorktreeOrphanScanner(
             new WorktreeOrphans(config, state, mock(GitCommands.class)), notifications)
@@ -298,7 +298,7 @@ class WorktreeOrphanScannerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
 
     new WorktreeOrphanScanner(
             new WorktreeOrphans(config, state, mock(GitCommands.class)), notifications)
@@ -339,7 +339,7 @@ class WorktreeOrphanScannerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
 
     new WorktreeOrphanScanner(
             new WorktreeOrphans(config, state, mock(GitCommands.class)), notifications)

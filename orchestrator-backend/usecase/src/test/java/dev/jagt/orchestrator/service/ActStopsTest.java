@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -44,6 +43,6 @@ class ActStopsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    return new ActStops(new MasterBrake(mock(StateService.class), paths));
+    return new ActStops(new MasterBrake(paths));
   }
 }

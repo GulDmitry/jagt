@@ -43,7 +43,7 @@ class RoundQuotesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     MasterReview reviews = new MasterReview(state);
     final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -83,7 +83,7 @@ class RoundQuotesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     MasterReview reviews = new MasterReview(state);
     final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -122,7 +122,7 @@ class RoundQuotesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     MasterReview reviews = new MasterReview(state);
     final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -170,7 +170,7 @@ class RoundQuotesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     MasterReview reviews = new MasterReview(state);
     final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -209,7 +209,7 @@ class RoundQuotesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     MasterReview reviews = new MasterReview(state);
     final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -247,7 +247,7 @@ class RoundQuotesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -290,7 +290,7 @@ class RoundQuotesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -333,7 +333,7 @@ class RoundQuotesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -377,7 +377,7 @@ class RoundQuotesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -421,7 +421,7 @@ class RoundQuotesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     MasterReview reviews = new MasterReview(state);
     RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =
@@ -478,7 +478,7 @@ class RoundQuotesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     MasterReview reviews = new MasterReview(state);
     final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
     TaskState task =

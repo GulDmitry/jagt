@@ -58,7 +58,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -105,7 +105,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -152,7 +152,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -208,7 +208,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -254,7 +254,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -299,7 +299,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -346,7 +346,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -394,7 +394,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     CommandAssistant assistant =
@@ -441,7 +441,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -490,7 +490,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -535,7 +535,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -582,7 +582,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -623,7 +623,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -664,7 +664,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -705,7 +705,7 @@ class NaturalLanguageDispatchTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)

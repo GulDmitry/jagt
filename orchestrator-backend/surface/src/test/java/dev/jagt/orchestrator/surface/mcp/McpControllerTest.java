@@ -85,7 +85,7 @@ class McpControllerTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(mapper, paths, reducer);
+    StateService state = new StateService(mapper, paths, reducer, event -> {});
     MockMvc mvc =
         MockMvcBuilders.standaloneSetup(
                 new McpController(
@@ -111,7 +111,7 @@ class McpControllerTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(mapper, paths, reducer);
+    StateService state = new StateService(mapper, paths, reducer, event -> {});
     MockMvc mvc =
         MockMvcBuilders.standaloneSetup(
                 new McpController(
@@ -153,7 +153,7 @@ class McpControllerTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(mapper, paths, reducer);
+    StateService state = new StateService(mapper, paths, reducer, event -> {});
     MockMvc mvc =
         MockMvcBuilders.standaloneSetup(
                 new McpController(

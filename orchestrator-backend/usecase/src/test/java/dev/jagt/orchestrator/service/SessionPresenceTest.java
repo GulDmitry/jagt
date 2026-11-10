@@ -38,7 +38,7 @@ class SessionPresenceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+        reducer, event -> {});
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
@@ -55,7 +55,7 @@ class SessionPresenceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+        reducer, event -> {});
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
@@ -77,7 +77,7 @@ class SessionPresenceTest {
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
     StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer);
+        reducer, event -> {});
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))

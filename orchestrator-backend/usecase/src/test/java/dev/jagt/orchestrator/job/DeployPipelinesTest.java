@@ -58,7 +58,7 @@ class DeployPipelinesTest {
               new StateService(
                   new JsonMapper(),
                   new OrchestratorPaths(OrchestratorProperties.defaults()),
-                  reducer),
+                  reducer, event -> {}),
               Clock.fixed(NOW, ZoneOffset.UTC),
               new Checkers(new TaskChart(Composition.builtIn())),
               new FlowRules(new TaskChart(Composition.builtIn()))));

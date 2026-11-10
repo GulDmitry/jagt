@@ -48,7 +48,7 @@ class RepoDepartureTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString())),
-        reducer);
+        reducer, event -> {});
   }
 
   @Test

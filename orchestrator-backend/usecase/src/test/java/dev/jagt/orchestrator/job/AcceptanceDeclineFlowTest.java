@@ -53,7 +53,7 @@ class AcceptanceDeclineFlowTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask("ABC-42", deployed());
 
     AcceptanceEnding ending =
@@ -82,7 +82,7 @@ class AcceptanceDeclineFlowTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask("ABC-42", deployed());
 
     AcceptanceEnding ending =
@@ -117,7 +117,7 @@ class AcceptanceDeclineFlowTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask("ABC-42", deployed());
 
     AcceptanceEnding ending =
@@ -150,7 +150,7 @@ class AcceptanceDeclineFlowTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask("ABC-42", deployed());
 
     AcceptanceEnding ending =

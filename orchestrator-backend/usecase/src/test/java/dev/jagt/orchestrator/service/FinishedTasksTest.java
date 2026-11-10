@@ -34,7 +34,7 @@ class FinishedTasksTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(mapper, paths, reducer);
+    StateService state = new StateService(mapper, paths, reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").title("a thing").build());
@@ -62,7 +62,7 @@ class FinishedTasksTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(mapper, paths, reducer);
+    StateService state = new StateService(mapper, paths, reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
     FinishedTasks finished =
@@ -85,7 +85,7 @@ class FinishedTasksTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(mapper, paths, reducer);
+    StateService state = new StateService(mapper, paths, reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
     state.putTask(

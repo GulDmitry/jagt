@@ -460,7 +460,7 @@ class JobsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     Job job = mock(Job.class);
     when(job.id()).thenReturn("poll-reviews");
     when(job.every()).thenReturn(Duration.ofMinutes(10));

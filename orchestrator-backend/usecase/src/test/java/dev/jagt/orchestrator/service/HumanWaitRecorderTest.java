@@ -30,6 +30,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.KeyValuePair;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import tools.jackson.databind.json.JsonMapper;
 
 class HumanWaitRecorderTest {
@@ -40,6 +41,12 @@ class HumanWaitRecorderTest {
   @Test
   void recordsTheIntervalQuestionHoldsTheHumanAndLogsItOnceTheSessionIsAnswered(
       @TempDir Path root) {
+    ConfigService config = mock(ConfigService.class);
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    ((Logger) LoggerFactory.getLogger(HumanWaitRecorder.class)).addAppender(log);
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -47,23 +54,22 @@ class HumanWaitRecorderTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
-    ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+            reducer,
+            context::publishEvent);
+    context.registerBean(
+        HumanWaitRecorder.class,
+        () ->
+            new HumanWaitRecorder(
+                state,
+                new Rounds(
+                    config,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC),
+                new Checkers(new TaskChart(Composition.builtIn()))));
+    context.refresh();
     state.putTask("ABC-77", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(HumanWaitRecorder.class)).addAppender(log);
-    new HumanWaitRecorder(
-            state,
-            new Rounds(
-                config,
-                ignored -> false,
-                () -> false,
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .follow();
 
     state.updateTask("ABC-77", task -> task.withReport(AgentReport.QUESTION));
     state.updateTask("ABC-77", task -> task.withReport(AgentReport.PLAIN));
@@ -86,33 +92,37 @@ class HumanWaitRecorderTest {
 
   @Test
   void keepsAnIntervalOpenAcrossRestartWhileTheHumanStillHoldsTheTurn(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    new StateService(new JsonMapper(), paths, reducer, event -> {})
+        .putTask(
+            "ABC-42",
+            TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .report(AgentReport.QUESTION)
+                .waits(List.of(new HumanWait(1_000, 0, Why.QUESTION)))
+                .build());
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    StateService state = new StateService(new JsonMapper(), paths, reducer, context::publishEvent);
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .report(AgentReport.QUESTION)
-            .waits(List.of(new HumanWait(1_000, 0, Why.QUESTION)))
-            .build());
+    context.registerBean(
+        HumanWaitRecorder.class,
+        () ->
+            new HumanWaitRecorder(
+                state,
+                new Rounds(
+                    config,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC),
+                new Checkers(new TaskChart(Composition.builtIn()))));
+    context.refresh();
 
-    new HumanWaitRecorder(
-            state,
-            new Rounds(
-                config,
-                ignored -> false,
-                () -> false,
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .follow();
+    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
 
     assertThat(state.task("ABC-42").orElseThrow().waits())
         .containsExactly(new HumanWait(1_000, 0, Why.QUESTION));
@@ -120,32 +130,36 @@ class HumanWaitRecorderTest {
 
   @Test
   void closesAnIntervalAfterRestartOnceTheTurnHasLeftTheHuman(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    new StateService(new JsonMapper(), paths, reducer, event -> {})
+        .putTask(
+            "ABC-42",
+            TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .waits(List.of(new HumanWait(1_000, 0, Why.QUESTION)))
+                .build());
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    StateService state = new StateService(new JsonMapper(), paths, reducer, context::publishEvent);
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .waits(List.of(new HumanWait(1_000, 0, Why.QUESTION)))
-            .build());
+    context.registerBean(
+        HumanWaitRecorder.class,
+        () ->
+            new HumanWaitRecorder(
+                state,
+                new Rounds(
+                    config,
+                    ignored -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC),
+                new Checkers(new TaskChart(Composition.builtIn()))));
+    context.refresh();
 
-    new HumanWaitRecorder(
-            state,
-            new Rounds(
-                config,
-                ignored -> false,
-                () -> false,
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .follow();
+    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
 
     assertThat(state.task("ABC-42").orElseThrow().waits())
         .containsExactly(new HumanWait(1_000, 9_000, Why.QUESTION));

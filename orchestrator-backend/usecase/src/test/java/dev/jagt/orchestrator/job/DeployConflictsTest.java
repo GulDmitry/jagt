@@ -41,7 +41,7 @@ class DeployConflictsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -96,7 +96,7 @@ class DeployConflictsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(List.of(TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT)
@@ -160,7 +160,7 @@ class DeployConflictsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(List.of(TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT)
@@ -203,7 +203,7 @@ class DeployConflictsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(List.of(TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT)

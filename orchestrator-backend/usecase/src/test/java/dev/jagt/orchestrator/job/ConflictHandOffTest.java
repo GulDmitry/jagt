@@ -60,7 +60,7 @@ class ConflictHandOffTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
@@ -111,7 +111,7 @@ class ConflictHandOffTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
@@ -162,7 +162,7 @@ class ConflictHandOffTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     when(stall.handed("ABC-42")).thenReturn(true);
 
     StepRelay relay =
@@ -208,7 +208,7 @@ class ConflictHandOffTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     DeployConflicts.WaitingConflict conflict =
         new DeployConflicts.WaitingConflict(
             Path.of("/src/ABC-42-deploy"),
@@ -254,7 +254,7 @@ class ConflictHandOffTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     when(stall.handed("ABC-42")).thenReturn(true);
 
     StepRelay relay =
@@ -300,7 +300,7 @@ class ConflictHandOffTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     StepRelay relay =
         new StepRelay(
             new SessionBrief(paths),
@@ -345,7 +345,7 @@ class ConflictHandOffTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
@@ -402,7 +402,7 @@ class ConflictHandOffTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
@@ -454,7 +454,7 @@ class ConflictHandOffTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));

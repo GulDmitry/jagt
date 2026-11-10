@@ -390,7 +390,7 @@ class ConfigServiceTest {
             .withStateFile(root.resolve("state.json").toString());
 
     OrchestratorPaths paths = new OrchestratorPaths(properties);
-    ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
+    ActStops stops = new ActStops(new MasterBrake(paths));
 
     String mode =
         new ConfigService(
@@ -545,7 +545,7 @@ class ConfigServiceTest {
             .withStateFile(root.resolve("state.json").toString());
 
     OrchestratorPaths paths = new OrchestratorPaths(properties);
-    ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
+    ActStops stops = new ActStops(new MasterBrake(paths));
 
     String mode =
         new ConfigService(
@@ -570,7 +570,7 @@ class ConfigServiceTest {
             .withConfigFile(configFile.toString())
             .withStateFile(root.resolve("state.json").toString());
     OrchestratorPaths paths = new OrchestratorPaths(properties);
-    ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
+    ActStops stops = new ActStops(new MasterBrake(paths));
 
     ConfigService config =
         new ConfigService(
@@ -595,7 +595,7 @@ class ConfigServiceTest {
     OrchestratorPaths paths = new OrchestratorPaths(properties);
     AgentRuntime runtime = mock(AgentRuntime.class);
     when(runtime.readsWhatTheHumanTyped()).thenReturn(true);
-    ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
+    ActStops stops = new ActStops(new MasterBrake(paths));
 
     ConfigFile config =
         new ConfigService(paths, runtime, stops, new Checkers(new TaskChart(Composition.builtIn())))
@@ -617,7 +617,7 @@ class ConfigServiceTest {
             .withConfigFile(configFile.toString())
             .withStateFile(root.resolve("state.json").toString());
     OrchestratorPaths paths = new OrchestratorPaths(properties);
-    ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
+    ActStops stops = new ActStops(new MasterBrake(paths));
     ConfigService config =
         new ConfigService(
             paths,
@@ -951,7 +951,7 @@ class ConfigServiceTest {
             .withConfigFile(configFile.toString())
             .withStateFile(root.resolve("state.json").toString());
     OrchestratorPaths paths = new OrchestratorPaths(properties);
-    ActStops stops = new ActStops(new MasterBrake(mock(StateService.class), paths));
+    ActStops stops = new ActStops(new MasterBrake(paths));
 
     ConfigService config =
         new ConfigService(

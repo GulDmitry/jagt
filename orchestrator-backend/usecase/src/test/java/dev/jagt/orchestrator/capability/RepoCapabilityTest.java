@@ -74,7 +74,7 @@ class RepoCapabilityTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask(
         "ABC-7",
         TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
@@ -111,7 +111,7 @@ class RepoCapabilityTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask(
         "ABC-7",
         TaskState.builder("api", "/wt", TaskStatus.CI_FAILED)
@@ -144,7 +144,7 @@ class RepoCapabilityTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask(
         "ABC-7", TaskState.builder("api", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     when(attachment.attach("ABC-7"))
@@ -172,7 +172,7 @@ class RepoCapabilityTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask(
         "ABC-7", TaskState.builder("api", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     doThrow(Refusal.byState("Unknown project 'gamma'")).when(attachment).vet("gamma");

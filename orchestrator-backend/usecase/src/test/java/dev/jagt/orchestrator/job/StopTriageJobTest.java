@@ -68,7 +68,7 @@ class StopTriageJobTest {
   }
 
   private StateService stateWith(OrchestratorPaths paths, TaskStop stop, Master master) {
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).stop(stop).master(master).build());

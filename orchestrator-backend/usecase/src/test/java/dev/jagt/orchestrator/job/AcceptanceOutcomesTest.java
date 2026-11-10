@@ -41,7 +41,7 @@ class AcceptanceOutcomesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -89,7 +89,7 @@ class AcceptanceOutcomesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -163,7 +163,7 @@ class AcceptanceOutcomesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -211,7 +211,7 @@ class AcceptanceOutcomesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -257,7 +257,7 @@ class AcceptanceOutcomesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()
@@ -305,7 +305,7 @@ class AcceptanceOutcomesTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
             .build()

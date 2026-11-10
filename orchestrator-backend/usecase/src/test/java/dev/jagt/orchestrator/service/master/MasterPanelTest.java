@@ -58,7 +58,7 @@ class MasterPanelTest {
             OrchestratorProperties.defaults()
                 .withRoot(stateRoot.toString())
                 .withStateFile(stateRoot.resolve("state.json").toString())),
-        reducer);
+        reducer, event -> {});
   }
 
   private static final List<MasterPanel.Role> TWO =

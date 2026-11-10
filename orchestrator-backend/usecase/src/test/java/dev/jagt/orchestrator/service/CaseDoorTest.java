@@ -69,7 +69,7 @@ class CaseDoorTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -98,7 +98,7 @@ class CaseDoorTest {
     Files.writeString(
         root.resolve("roles/master/cases.md"),
         "## verb\n\nmove: " + move + "\nat: any\nby: master\nThe Master presses it.\n");
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -123,7 +123,7 @@ class CaseDoorTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door =
         doorOver(
@@ -147,7 +147,7 @@ class CaseDoorTest {
                 .withStateFile(root.resolve("state.json").toString()));
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -169,7 +169,7 @@ class CaseDoorTest {
                 .withStateFile(root.resolve("state.json").toString()));
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -191,7 +191,7 @@ class CaseDoorTest {
                 .withStateFile(root.resolve("state.json").toString()));
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -211,7 +211,7 @@ class CaseDoorTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -247,7 +247,7 @@ class CaseDoorTest {
     Files.writeString(
         root.resolve("roles/master/cases.md"),
         "## verb\n\nmove: " + move + "\nat: any\nby: master\nThe Master presses it.\n");
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)

@@ -1,15 +1,16 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.SessionPhase;
+import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
-import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -17,7 +18,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class SessionTransitionLog {
 
-  private final StateService stateService;
   private final Map<String, Seen> seen = new HashMap<>();
 
   private record Seen(SessionPhase phase, Session.@Nullable Window window) {
@@ -31,13 +31,10 @@ public class SessionTransitionLog {
     }
   }
 
-  @PostConstruct
-  void follow() {
-    stateService.tasks().forEach((id, task) -> seen.put(id, Seen.of(task)));
-    stateService.onChange(written -> observe(written.tasks()));
-  }
-
-  synchronized void observe(Map<String, TaskState> tasks) {
+  @EventListener
+  synchronized void observe(StateWritten written) {
+    written.previous().forEach((id, task) -> seen.putIfAbsent(id, Seen.of(task)));
+    Map<String, TaskState> tasks = written.tasks();
     tasks.forEach(
         (id, task) -> {
           Seen now = Seen.of(task);

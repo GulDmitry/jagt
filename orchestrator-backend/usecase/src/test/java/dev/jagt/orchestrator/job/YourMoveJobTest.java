@@ -85,7 +85,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -130,7 +130,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -181,7 +181,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -225,7 +225,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -275,7 +275,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -314,7 +314,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -358,7 +358,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -400,7 +400,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -451,7 +451,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -501,7 +501,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -555,7 +555,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -615,7 +615,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -661,7 +661,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -724,7 +724,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -783,7 +783,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -844,7 +844,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -899,7 +899,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -961,7 +961,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -1014,7 +1014,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -1068,7 +1068,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -1122,7 +1122,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -1183,7 +1183,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -1245,7 +1245,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -1304,7 +1304,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -1365,7 +1365,7 @@ class YourMoveJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()

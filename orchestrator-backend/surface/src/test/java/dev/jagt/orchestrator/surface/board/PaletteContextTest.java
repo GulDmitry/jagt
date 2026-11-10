@@ -37,7 +37,7 @@ class PaletteContextTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -77,7 +77,7 @@ class PaletteContextTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -109,7 +109,7 @@ class PaletteContextTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     PaletteContext board = new PaletteContext(state, mock(TaskViews.class));
@@ -126,7 +126,7 @@ class PaletteContextTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     PaletteContext board = new PaletteContext(state, mock(TaskViews.class));
 
     assertThat(board.existingTask("  ")).isNull();
@@ -141,7 +141,7 @@ class PaletteContextTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     PaletteContext board = new PaletteContext(state, mock(TaskViews.class));
 
     assertThat(board.existingTask("ABC-99")).isNull();
@@ -156,7 +156,7 @@ class PaletteContextTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)

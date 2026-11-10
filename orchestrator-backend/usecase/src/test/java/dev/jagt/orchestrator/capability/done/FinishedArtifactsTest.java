@@ -46,7 +46,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")
@@ -92,7 +92,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")
@@ -131,7 +131,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")
@@ -173,7 +173,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")
@@ -210,7 +210,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")
@@ -259,7 +259,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")
@@ -298,7 +298,7 @@ class FinishedArtifactsTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")

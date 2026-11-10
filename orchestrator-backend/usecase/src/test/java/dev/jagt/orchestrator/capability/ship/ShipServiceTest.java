@@ -72,7 +72,7 @@ class ShipServiceTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    stateService = new StateService(new JsonMapper(), paths, reducer);
+    stateService = new StateService(new JsonMapper(), paths, reducer, event -> {});
     door =
         new CaseDoor(
             new SessionCases(paths),

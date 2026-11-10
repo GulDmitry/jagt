@@ -15,7 +15,7 @@ import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.job.Jobs;
-import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import dev.jagt.orchestrator.service.TaskViews;
 import jakarta.servlet.AsyncEvent;
 import java.io.IOException;
@@ -31,9 +31,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.support.StaticApplicationContext;
 import org.springframework.mock.web.MockAsyncContext;
@@ -47,40 +47,38 @@ class TaskEventStreamTest {
 
   @Test
   void handsTheBroadcastOffInsteadOfWritingOnTheThreadThatChangedTheState() {
-    StateService stateService = mock(StateService.class);
     ExecutorService broadcaster = mock(ExecutorService.class);
     TaskEventStream stream =
         new TaskEventStream(
-            stateService, Clock.systemUTC(), mock(TaskScheduler.class), broadcaster);
-    stream.followStateChanges();
-    ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
-    verify(stateService).onChange(listener.capture());
+            Clock.systemUTC(), mock(TaskScheduler.class), broadcaster);
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(TaskEventStream.class, () -> stream);
+    context.refresh();
     stream.open();
 
-    listener.getValue().accept(new StateService.StateFile(Map.of()));
+    context.publishEvent(new StateWritten(Map.of(), Map.of()));
 
     verify(broadcaster).execute(any());
   }
 
   @Test
   void keepsOnlyOnePendingBroadcastForBurstOfChanges() {
-    StateService stateService = mock(StateService.class);
     ExecutorService broadcaster = mock(ExecutorService.class);
     TaskEventStream stream =
         new TaskEventStream(
-            stateService, Clock.systemUTC(), mock(TaskScheduler.class), broadcaster);
-    stream.followStateChanges();
-    ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
-    verify(stateService).onChange(listener.capture());
+            Clock.systemUTC(), mock(TaskScheduler.class), broadcaster);
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(TaskEventStream.class, () -> stream);
+    context.refresh();
+
+    context.publishEvent(new StateWritten(Map.of(), Map.of()));
+    context.publishEvent(new StateWritten(Map.of(), Map.of()));
+    context.publishEvent(new StateWritten(Map.of(), Map.of()));
+
     ArgumentCaptor<Runnable> queued = ArgumentCaptor.captor();
-
-    listener.getValue().accept(new StateService.StateFile(Map.of()));
-    listener.getValue().accept(new StateService.StateFile(Map.of()));
-    listener.getValue().accept(new StateService.StateFile(Map.of()));
-
     verify(broadcaster).execute(queued.capture());
     queued.getValue().run();
-    listener.getValue().accept(new StateService.StateFile(Map.of()));
+    context.publishEvent(new StateWritten(Map.of(), Map.of()));
     verify(broadcaster, times(2)).execute(any());
   }
 
@@ -88,7 +86,6 @@ class TaskEventStreamTest {
   void handsEachBrowserItsOwnStream() {
     TaskEventStream stream =
         new TaskEventStream(
-            mock(StateService.class),
             Clock.systemUTC(),
             mock(TaskScheduler.class),
             mock(ExecutorService.class));
@@ -100,7 +97,6 @@ class TaskEventStreamTest {
   void endsEveryBoardConnectionWhenTheBackendShutsDown() {
     TaskEventStream stream =
         new TaskEventStream(
-            mock(StateService.class),
             Clock.systemUTC(),
             mock(TaskScheduler.class),
             mock(ExecutorService.class));
@@ -115,7 +111,6 @@ class TaskEventStreamTest {
   void handsBackAnAlreadyEndedStreamToTabThatReconnectsDuringShutdown() {
     TaskEventStream stream =
         new TaskEventStream(
-            mock(StateService.class),
             Clock.systemUTC(),
             mock(TaskScheduler.class),
             mock(ExecutorService.class));
@@ -128,7 +123,6 @@ class TaskEventStreamTest {
   void endsConnectionWhoseWriteFailedInsteadOfMerelyForgettingIt() {
     TaskEventStream stream =
         new TaskEventStream(
-            mock(StateService.class),
             Clock.systemUTC(),
             mock(TaskScheduler.class),
             mock(ExecutorService.class));
@@ -156,7 +150,6 @@ class TaskEventStreamTest {
     TaskEventStream stream =
         spy(
             new TaskEventStream(
-                mock(StateService.class),
                 Clock.systemUTC(),
                 mock(TaskScheduler.class),
                 mock(ExecutorService.class)));
@@ -169,19 +162,18 @@ class TaskEventStreamTest {
 
   @Test
   void tellsEveryOpenBrowserThatTheStateChanged() {
-    StateService stateService = mock(StateService.class);
     ExecutorService broadcaster = mock(ExecutorService.class);
     TaskEventStream stream =
         spy(
             new TaskEventStream(
-                stateService, Clock.systemUTC(), mock(TaskScheduler.class), broadcaster));
-    stream.followStateChanges();
-    ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
-    verify(stateService).onChange(listener.capture());
-    SseEmitter browser = stream.open();
-    listener.getValue().accept(new StateService.StateFile(Map.of()));
+                Clock.systemUTC(), mock(TaskScheduler.class), broadcaster));
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(TaskEventStream.class, () -> stream);
+    context.refresh();
+    context.publishEvent(new StateWritten(Map.of(), Map.of()));
     ArgumentCaptor<Runnable> queued = ArgumentCaptor.captor();
     verify(broadcaster).execute(queued.capture());
+    SseEmitter browser = stream.open();
 
     queued.getValue().run();
 
@@ -194,11 +186,9 @@ class TaskEventStreamTest {
     TaskEventStream stream =
         spy(
             new TaskEventStream(
-                mock(StateService.class),
                 Clock.systemUTC(),
                 scheduler,
                 Executors.newSingleThreadExecutor()));
-    stream.followStateChanges();
     SseEmitter browser = stream.open();
     ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
     verify(scheduler)
@@ -211,7 +201,6 @@ class TaskEventStreamTest {
 
   @Test
   void queuesTheNextBroadcastWhenTheBackendRefusedTheLastOne() {
-    StateService stateService = mock(StateService.class);
     ExecutorService broadcaster = mock(ExecutorService.class);
     doThrow(new RejectedExecutionException("stopping"))
         .doNothing()
@@ -219,13 +208,13 @@ class TaskEventStreamTest {
         .execute(any());
     TaskEventStream stream =
         new TaskEventStream(
-            stateService, Clock.systemUTC(), mock(TaskScheduler.class), broadcaster);
-    stream.followStateChanges();
-    ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
-    verify(stateService).onChange(listener.capture());
+            Clock.systemUTC(), mock(TaskScheduler.class), broadcaster);
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.registerBean(TaskEventStream.class, () -> stream);
+    context.refresh();
 
-    listener.getValue().accept(new StateService.StateFile(Map.of()));
-    listener.getValue().accept(new StateService.StateFile(Map.of()));
+    context.publishEvent(new StateWritten(Map.of(), Map.of()));
+    context.publishEvent(new StateWritten(Map.of(), Map.of()));
 
     verify(broadcaster, times(2)).execute(any());
   }
@@ -239,11 +228,10 @@ class TaskEventStreamTest {
         .scheduleAtFixedRate(any(Runnable.class), any(Instant.class), any(Duration.class));
     TaskEventStream stream =
         new TaskEventStream(
-            mock(StateService.class),
             Clock.systemUTC(),
             scheduler,
             Executors.newSingleThreadExecutor());
-    stream.followStateChanges();
+    stream.open();
 
     stream.onApplicationEvent(new ContextClosedEvent(new StaticApplicationContext()));
 
@@ -255,7 +243,7 @@ class TaskEventStreamTest {
     ExecutorService broadcaster = mock(ExecutorService.class);
     TaskEventStream stream =
         new TaskEventStream(
-            mock(StateService.class), Clock.systemUTC(), mock(TaskScheduler.class), broadcaster);
+            Clock.systemUTC(), mock(TaskScheduler.class), broadcaster);
 
     stream.onApplicationEvent(new ContextClosedEvent(new StaticApplicationContext()));
 
@@ -269,11 +257,9 @@ class TaskEventStreamTest {
     TaskEventStream stream =
         spy(
             new TaskEventStream(
-                mock(StateService.class),
                 Clock.systemUTC(),
                 scheduler,
                 Executors.newSingleThreadExecutor()));
-    stream.followStateChanges();
     final SseEmitter browser = stream.open();
     ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
     verify(scheduler)
@@ -291,14 +277,9 @@ class TaskEventStreamTest {
     TaskEventStream stream =
         spy(
             new TaskEventStream(
-                mock(StateService.class),
                 Clock.systemUTC(),
                 scheduler,
                 Executors.newSingleThreadExecutor()));
-    stream.followStateChanges();
-    ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
-    verify(scheduler)
-        .scheduleAtFixedRate(heartbeat.capture(), any(Instant.class), any(Duration.class));
     MvcResult opened =
         MockMvcBuilders.standaloneSetup(
                 new BoardApiController(
@@ -321,6 +302,9 @@ class TaskEventStreamTest {
         (MockAsyncContext) Objects.requireNonNull(opened.getRequest().getAsyncContext());
 
     connection.complete();
+    ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
+    verify(scheduler)
+        .scheduleAtFixedRate(heartbeat.capture(), any(Instant.class), any(Duration.class));
     heartbeat.getValue().run();
 
     verify(stream, times(1)).send(any(), eq("beat"), eq("20000"));
@@ -332,14 +316,9 @@ class TaskEventStreamTest {
     TaskEventStream stream =
         spy(
             new TaskEventStream(
-                mock(StateService.class),
                 Clock.systemUTC(),
                 scheduler,
                 Executors.newSingleThreadExecutor()));
-    stream.followStateChanges();
-    ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
-    verify(scheduler)
-        .scheduleAtFixedRate(heartbeat.capture(), any(Instant.class), any(Duration.class));
     MvcResult opened =
         MockMvcBuilders.standaloneSetup(
                 new BoardApiController(
@@ -362,6 +341,9 @@ class TaskEventStreamTest {
         (MockAsyncContext) Objects.requireNonNull(opened.getRequest().getAsyncContext());
 
     connection.getListeners().getFirst().onTimeout(new AsyncEvent(connection));
+    ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
+    verify(scheduler)
+        .scheduleAtFixedRate(heartbeat.capture(), any(Instant.class), any(Duration.class));
     heartbeat.getValue().run();
 
     verify(stream, times(1)).send(any(), eq("beat"), eq("20000"));
@@ -373,14 +355,9 @@ class TaskEventStreamTest {
     TaskEventStream stream =
         spy(
             new TaskEventStream(
-                mock(StateService.class),
                 Clock.systemUTC(),
                 scheduler,
                 Executors.newSingleThreadExecutor()));
-    stream.followStateChanges();
-    ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
-    verify(scheduler)
-        .scheduleAtFixedRate(heartbeat.capture(), any(Instant.class), any(Duration.class));
     MvcResult opened =
         MockMvcBuilders.standaloneSetup(
                 new BoardApiController(
@@ -406,6 +383,9 @@ class TaskEventStreamTest {
         .getListeners()
         .getFirst()
         .onError(new AsyncEvent(connection, new IOException("reset")));
+    ArgumentCaptor<Runnable> heartbeat = ArgumentCaptor.captor();
+    verify(scheduler)
+        .scheduleAtFixedRate(heartbeat.capture(), any(Instant.class), any(Duration.class));
     heartbeat.getValue().run();
 
     verify(stream, times(1)).send(any(), eq("beat"), eq("20000"));
@@ -413,16 +393,14 @@ class TaskEventStreamTest {
 
   @Test
   void beatsEveryOpenBoardOnTheConfiguredInterval() {
-    StateService stateService = mock(StateService.class);
     TaskScheduler scheduler = mock(TaskScheduler.class);
     TaskEventStream stream =
         new TaskEventStream(
-            stateService,
             Clock.fixed(Instant.EPOCH, ZoneOffset.UTC),
             scheduler,
             Executors.newSingleThreadExecutor());
 
-    stream.followStateChanges();
+    stream.open();
 
     verify(scheduler)
         .scheduleAtFixedRate(

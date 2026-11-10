@@ -81,7 +81,7 @@ class RemoveRepoCapabilityTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask(
         "ABC-7",
         TaskState.builder(
@@ -113,7 +113,7 @@ class RemoveRepoCapabilityTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask(
         "ABC-7", TaskState.builder("api", "/wt", TaskStatus.REVIEWED).alias("a1").build());
     FlowEngine engine =

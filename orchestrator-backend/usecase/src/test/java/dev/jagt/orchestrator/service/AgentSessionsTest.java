@@ -76,12 +76,12 @@ class AgentSessionsTest {
             .withStateFile(root.resolve("state.json").toString())
             .withConfigFile(configFile.toString());
     OrchestratorPaths paths = new OrchestratorPaths(properties);
-    state = new StateService(new JsonMapper(), paths, reducer);
+    state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     config =
         new ConfigService(
             paths,
             agentRuntime,
-            new ActStops(new MasterBrake(state, paths)),
+            new ActStops(new MasterBrake(paths)),
             new Checkers(new TaskChart(Composition.builtIn())));
   }
 

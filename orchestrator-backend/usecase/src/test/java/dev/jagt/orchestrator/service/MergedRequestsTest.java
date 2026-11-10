@@ -37,7 +37,7 @@ class MergedRequestsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
@@ -66,7 +66,7 @@ class MergedRequestsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
@@ -94,7 +94,7 @@ class MergedRequestsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("http://mr/1").build());
@@ -115,7 +115,7 @@ class MergedRequestsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
@@ -160,7 +160,7 @@ class MergedRequestsTest {
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
                         .withStateFile(root.resolve("state.json").toString())),
-                reducer),
+                reducer, event -> {}),
             config,
             inspection,
             new WorktreeChanges(config, inspection),
@@ -186,7 +186,7 @@ class MergedRequestsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskRepo web = new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web");
     when(departure.leave("ABC-42", web, "its request was closed on the host")).thenReturn(true);
 
@@ -207,7 +207,7 @@ class MergedRequestsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskRepo primary = new TaskRepo("api", "/api-wt", "git@host:g/api.git", "http://mr/api");
     when(departure.leave("ABC-42", primary, "its request was closed on the host"))
         .thenReturn(false);

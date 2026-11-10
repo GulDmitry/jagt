@@ -84,7 +84,7 @@ class OwnStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
@@ -114,7 +114,7 @@ class OwnStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
@@ -141,7 +141,7 @@ class OwnStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
@@ -182,7 +182,7 @@ class OwnStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
@@ -210,7 +210,7 @@ class OwnStatusReportsTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     AgentStatusReports statusReports = mock(AgentStatusReports.class);
@@ -247,7 +247,7 @@ class OwnStatusReportsTest {
         replies: IN_PROGRESS; plain, question
         The task is live.
         """);
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
     new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
@@ -306,7 +306,7 @@ class OwnStatusReportsTest {
         replies: IN_PROGRESS; plain, question
         The task is live.
         """);
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
     new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
@@ -366,7 +366,7 @@ class OwnStatusReportsTest {
         replies: IN_PROGRESS; plain, question
         The task is live.
         """);
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
     new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
@@ -428,7 +428,7 @@ class OwnStatusReportsTest {
         replies: IN_PROGRESS; plain, question
         The task is live.
         """);
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
     new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))

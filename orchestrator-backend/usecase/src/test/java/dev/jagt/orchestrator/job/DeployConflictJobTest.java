@@ -50,7 +50,7 @@ class DeployConflictJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     ConfigService config = mock(ConfigService.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     state.putTask(
@@ -102,7 +102,7 @@ class DeployConflictJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .build()
@@ -138,7 +138,7 @@ class DeployConflictJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .build()
@@ -173,7 +173,7 @@ class DeployConflictJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     final TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .build()
@@ -204,7 +204,7 @@ class DeployConflictJobTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
             .build()

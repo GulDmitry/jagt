@@ -9,7 +9,6 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.protocol.PlanProbes;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
@@ -26,11 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import tools.jackson.databind.json.JsonMapper;
 
 class HandBackTest {
-
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void owesNoVerificationForProjectTheConfigurationNoLongerNames(@TempDir Path root)
@@ -52,7 +48,7 @@ class HandBackTest {
             paths,
             mock(AgentRuntime.class),
             new ActStops(
-                new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths)),
+                new MasterBrake(paths)),
             new Checkers(new TaskChart(Composition.builtIn())));
     HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 
@@ -82,7 +78,7 @@ class HandBackTest {
             paths,
             mock(AgentRuntime.class),
             new ActStops(
-                new MasterBrake(new StateService(new JsonMapper(), paths, reducer), paths)),
+                new MasterBrake(paths)),
             new Checkers(new TaskChart(Composition.builtIn())));
     HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
 

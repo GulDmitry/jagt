@@ -58,7 +58,7 @@ class RoundRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     CaseDoor door =
         new CaseDoor(
@@ -120,7 +120,7 @@ class RoundRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -188,7 +188,7 @@ class RoundRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -260,7 +260,7 @@ class RoundRelayTest {
     when(stops.round(anyString(), any(), anyString(), anyString()))
         .thenReturn(TaskStops.Relay.RELAY);
     when(stops.sinceLast(anyString(), any())).thenReturn("");
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
 
     CaseDoor door =
         new CaseDoor(
@@ -323,7 +323,7 @@ class RoundRelayTest {
         .thenReturn(TaskStops.Relay.RELAY);
     when(stops.sinceLast(anyString(), any())).thenReturn("");
     when(stops.asking("ABC-42")).thenReturn(true);
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
 
     CaseDoor door =
         new CaseDoor(
@@ -381,7 +381,7 @@ class RoundRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     TaskStops stops = mock(TaskStops.class);
     when(stops.round(anyString(), any(), anyString(), anyString()))
@@ -437,7 +437,7 @@ class RoundRelayTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
     TaskStops stops = mock(TaskStops.class);
     CaseDoor door =

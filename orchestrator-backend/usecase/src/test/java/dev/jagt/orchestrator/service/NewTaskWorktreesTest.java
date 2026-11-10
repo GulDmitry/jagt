@@ -62,7 +62,9 @@ class NewTaskWorktreesTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    state = new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
+    state =
+        new StateService(
+            new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
     worktrees = new NewTaskWorktrees(config, state, git, setup);
   }
 

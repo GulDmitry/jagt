@@ -3,6 +3,7 @@ package dev.jagt.orchestrator;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.job.TickScheduler;
 import dev.jagt.orchestrator.port.ReadScope;
+import dev.jagt.orchestrator.port.StateEvents;
 import dev.jagt.orchestrator.protocol.RetryPolicy;
 import java.net.http.HttpClient;
 import java.time.Clock;
@@ -14,6 +15,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
@@ -34,6 +36,16 @@ public class RuntimeWiring {
   @Bean
   public Clock clock() {
     return utcClock();
+  }
+
+  @Bean
+  public StateWrittenIsolation applicationEventMulticaster() {
+    return new StateWrittenIsolation();
+  }
+
+  @Bean
+  public StateEvents stateEvents(ApplicationEventPublisher publisher) {
+    return publisher::publishEvent;
   }
 
   @Bean

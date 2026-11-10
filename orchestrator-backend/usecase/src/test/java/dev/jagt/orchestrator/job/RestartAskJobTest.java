@@ -49,7 +49,7 @@ class RestartAskJobTest {
   }
 
   private StateService state(Path root) {
-    return new StateService(new JsonMapper(), paths(root), reducer);
+    return new StateService(new JsonMapper(), paths(root), reducer, event -> {});
   }
 
   @Test

@@ -49,7 +49,7 @@ class RepoRemovalTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     TaskRepo web = new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web");
     state.putTask(
         "ABC-42",
@@ -75,7 +75,7 @@ class RepoRemovalTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     TaskRepo web = TaskRepo.of("web", "/web-wt");
     state.putTask(
         "ABC-42",
@@ -98,7 +98,7 @@ class RepoRemovalTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder(
@@ -127,7 +127,7 @@ class RepoRemovalTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder(

@@ -49,7 +49,7 @@ class TaskRetirementTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     TaskRetirement retirement =
@@ -90,7 +90,7 @@ class TaskRetirementTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.PLAN_PENDING)
@@ -131,7 +131,7 @@ class TaskRetirementTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask("ABC-1", TaskState.builder("gone", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     when(worktrees.remove(anyString(), any(), any())).thenReturn(true);
@@ -170,7 +170,7 @@ class TaskRetirementTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     when(viewer.closeIfNoTasksLeft()).thenReturn(true);
@@ -208,7 +208,7 @@ class TaskRetirementTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskRetirement retirement =
         new TaskRetirement(
             state,
@@ -245,7 +245,7 @@ class TaskRetirementTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     final KeptTaskFiles kept =

@@ -37,7 +37,7 @@ class InfraRetriesTest {
             OrchestratorProperties.defaults()
                 .withRoot(dir.toString())
                 .withStateFile(dir.resolve("state.json").toString())),
-                reducer);
+                reducer, event -> {});
   }
 
   private static InfraRetries retries(StateService state) {

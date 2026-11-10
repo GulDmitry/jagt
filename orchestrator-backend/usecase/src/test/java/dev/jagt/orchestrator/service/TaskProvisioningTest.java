@@ -58,7 +58,9 @@ class TaskProvisioningTest {
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    state = new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer);
+    state =
+        new StateService(
+            new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
     provisioning = new TaskProvisioning(config, state, worktrees, sessions, Clock.systemUTC());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
   }

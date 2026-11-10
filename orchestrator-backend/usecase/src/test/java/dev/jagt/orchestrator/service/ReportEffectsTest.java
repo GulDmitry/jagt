@@ -50,7 +50,7 @@ class ReportEffectsTest {
             OrchestratorProperties.defaults()
                 .withRoot(dir.toString())
                 .withStateFile(dir.resolve("state.json").toString())),
-        reducer);
+        reducer, event -> {});
   }
 
   private ReportEffects effects(StateService state, InfraWaitProperties properties) {
@@ -131,7 +131,7 @@ class ReportEffectsTest {
             OrchestratorProperties.defaults()
                 .withRoot(dir.toString())
                 .withStateFile(dir.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
     TaskTurns turns =
         new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
@@ -167,7 +167,7 @@ class ReportEffectsTest {
             OrchestratorProperties.defaults()
                 .withRoot(dir.toString())
                 .withStateFile(dir.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
     TaskTurns turns =
         new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
@@ -205,7 +205,7 @@ class ReportEffectsTest {
             OrchestratorProperties.defaults()
                 .withRoot(dir.toString())
                 .withStateFile(dir.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
     TaskTurns turns =
         new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));

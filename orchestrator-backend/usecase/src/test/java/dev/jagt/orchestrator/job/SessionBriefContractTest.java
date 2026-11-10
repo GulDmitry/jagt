@@ -107,7 +107,7 @@ class SessionBriefContractTest {
                 .withStateFile(root.resolve("state.json").toString()));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42", TaskState.builder("web", "/w/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
@@ -204,7 +204,7 @@ class SessionBriefContractTest {
                 .withStateFile(root.resolve("state.json").toString()));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("web", "/w/ABC-42", TaskStatus.REVIEW_PENDING)

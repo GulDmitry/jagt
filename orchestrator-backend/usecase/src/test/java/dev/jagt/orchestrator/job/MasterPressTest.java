@@ -60,7 +60,7 @@ class MasterPressTest {
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
-                        reducer),
+                        reducer, event -> {}),
                     Clock.systemUTC(),
                     new Checkers(new TaskChart(Composition.builtIn()))))
             .press("ABC-1", task, TaskAction.DEPLOY);
@@ -86,7 +86,7 @@ class MasterPressTest {
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
-                        reducer),
+                        reducer, event -> {}),
                     Clock.systemUTC(),
                     new Checkers(new TaskChart(Composition.builtIn()))))
             .press("ABC-1", task, TaskAction.DEPLOY);
@@ -113,7 +113,7 @@ class MasterPressTest {
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
-                        reducer),
+                        reducer, event -> {}),
                     Clock.systemUTC(),
                     new Checkers(new TaskChart(Composition.builtIn()))))
             .press("ABC-1", task, TaskAction.DEPLOY);
@@ -136,7 +136,7 @@ class MasterPressTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
-                    reducer),
+                    reducer, event -> {}),
                 Clock.systemUTC(),
                 new Checkers(new TaskChart(Composition.builtIn()))))
         .execute("ABC-1", TaskAction.ADD_REPO);
@@ -154,7 +154,7 @@ class MasterPressTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     state.putTask("ABC-1", task);
     when(humanPaths.touched(task)).thenReturn(Optional.of("demo/src/auth/Login.java"));
@@ -180,7 +180,7 @@ class MasterPressTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState task =
         TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
             .master(Master.defaults().withLeft("deploy demo/src/old/Old.java"))
@@ -209,7 +209,7 @@ class MasterPressTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     TaskState task =
         TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
             .master(Master.defaults().withLeft("deploy demo/src/old/Old.java"))
@@ -250,7 +250,7 @@ class MasterPressTest {
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
-                        reducer),
+                        reducer, event -> {}),
                     Clock.systemUTC(),
                     new Checkers(new TaskChart(Composition.builtIn()))))
             .press("ABC-1", task, TaskAction.DEPLOY);
@@ -276,7 +276,7 @@ class MasterPressTest {
                         OrchestratorProperties.defaults()
                             .withRoot(root.toString())
                             .withStateFile(root.resolve("state.json").toString())),
-                    reducer),
+                    reducer, event -> {}),
                 Clock.systemUTC(),
                 new Checkers(new TaskChart(Composition.builtIn()))));
 
@@ -298,7 +298,7 @@ class MasterPressTest {
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
-                        reducer),
+                        reducer, event -> {}),
                     Clock.systemUTC(),
                     new Checkers(new TaskChart(Composition.builtIn()))))
             .lift("ABC-1");
@@ -326,7 +326,7 @@ class MasterPressTest {
                             OrchestratorProperties.defaults()
                                 .withRoot(root.toString())
                                 .withStateFile(root.resolve("state.json").toString())),
-                        reducer),
+                        reducer, event -> {}),
                     Clock.systemUTC(),
                     new Checkers(new TaskChart(Composition.builtIn()))))
             .lift("ABC-1");

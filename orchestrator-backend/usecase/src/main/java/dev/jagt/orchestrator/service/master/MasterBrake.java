@@ -2,11 +2,10 @@ package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.flow.SessionPhase;
-import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -19,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 /**
@@ -32,10 +32,10 @@ public class MasterBrake {
 
   static final int STRIKES = 3;
 
-  private final StateService stateService;
   private final OrchestratorPaths paths;
   private final Map<String, Seen> seen = new HashMap<>();
   private final Set<String> strikes = new LinkedHashSet<>();
+  private boolean begun;
 
   private record Seen(long step, long silence) {
 
@@ -48,15 +48,15 @@ public class MasterBrake {
 
   private record Ending(String task, long at, boolean bad, String why) {}
 
-  /** Only what happens after this start counts. */
-  @PostConstruct
-  void follow() {
-    stateService.tasks().forEach((id, task) -> seen.put(id, Seen.of(task)));
-    strikes.addAll(kept());
-    stateService.onChange(written -> observe(written.tasks()));
-  }
-
-  synchronized void observe(Map<String, TaskState> tasks) {
+  /** Only what happens after this start counts: the first write seeds from what it replaced. */
+  @EventListener
+  synchronized void observe(StateWritten written) {
+    if (!begun) {
+      begun = true;
+      written.previous().forEach((id, task) -> seen.put(id, Seen.of(task)));
+      strikes.addAll(kept());
+    }
+    Map<String, TaskState> tasks = written.tasks();
     List<Ending> endings = new ArrayList<>();
     tasks.forEach(
         (id, task) -> {

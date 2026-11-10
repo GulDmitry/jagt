@@ -5,13 +5,13 @@ import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.service.StateService;
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,11 +31,7 @@ public class IntakeHistory {
   private final Notifications notifications;
   private final OrchestratorPaths paths;
   private final Set<String> told = ConcurrentHashMap.newKeySet();
-
-  @PostConstruct
-  void follow() {
-    told.addAll(kept());
-  }
+  private final AtomicBoolean loaded = new AtomicBoolean();
 
   public Set<String> held() {
     Set<String> keys = new HashSet<>(stateService.tasks().keySet());
@@ -45,6 +41,9 @@ public class IntakeHistory {
 
   /** Said once per key: a human reads it, and a second copy every poll is not a second fact. */
   public void turnAway(String key, String cause) {
+    if (loaded.compareAndSet(false, true)) {
+      told.addAll(kept());
+    }
     if (!told.add(key)) {
       return;
     }

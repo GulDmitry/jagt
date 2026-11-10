@@ -72,7 +72,7 @@ class AcceptanceRoundFlowTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.copy(
         Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED)
             .alias("a1")
@@ -174,7 +174,7 @@ class AcceptanceRoundFlowTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.copy(
         Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED)
             .alias("a1")
@@ -265,7 +265,7 @@ class AcceptanceRoundFlowTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED)
             .alias("a1")
@@ -313,7 +313,7 @@ class AcceptanceRoundFlowTest {
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     TaskState task =
         TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED)
             .alias("a1")

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.flow.ReducingStore;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.port.StateEvents;
+import dev.jagt.orchestrator.port.StateEvents.StateWritten;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AtomicFiles;
 import dev.jagt.orchestrator.task.ForeignLinks;
@@ -16,13 +18,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import lombok.extern.slf4j.Slf4j;
@@ -54,7 +53,7 @@ public class StateService implements ReducingStore {
   private final Path backupFile;
   private final Path corruptFile;
   private final Object lock = new Object();
-  private final List<Consumer<StateFile>> changeListeners = new CopyOnWriteArrayList<>();
+  private final StateEvents events;
 
   /**
    * The last parse, keyed by the file version it came from: re-parsing per accessor lets one
@@ -67,8 +66,10 @@ public class StateService implements ReducingStore {
 
   private final TaskReducer reducer;
 
-  public StateService(ObjectMapper mapper, OrchestratorPaths paths, TaskReducer reducer) {
+  public StateService(
+      ObjectMapper mapper, OrchestratorPaths paths, TaskReducer reducer, StateEvents events) {
     this.reducer = reducer;
+    this.events = events;
     // A missing primitive defaults to 0/false instead of failing the whole load: adding a `long` to
     // TaskState would otherwise make every older state.json unreadable.
     this.mapper =
@@ -80,16 +81,6 @@ public class StateService implements ReducingStore {
 
   private static Path sibling(Path file, String suffix) {
     return file.resolveSibling(file.getFileName() + suffix);
-  }
-
-  /**
-   * Registers a listener for "state changed", called with the state as it was just written. It
-   * fires AFTER the file is on disk and OUTSIDE the write lock, not at all when a mutation changed
-   * nothing, and one listener throwing neither fails the mutation nor stops the others. Coalescing
-   * is the LISTENER's business.
-   */
-  public void onChange(Consumer<StateFile> listener) {
-    changeListeners.add(listener);
   }
 
   public StateFile read() {
@@ -245,33 +236,23 @@ public class StateService implements ReducingStore {
 
   private void mutate(UnaryOperator<StateFile> mutation) {
     StateFile written;
+    StateFile unchanged;
     synchronized (lock) {
       StateFile before = readUnlocked();
       // The map is mutated in place by the callers' operators, so snapshot BEFORE applying it —
       // otherwise "did anything change?" compares the new state with itself.
-      StateFile unchanged = new StateFile(before.tasks());
+      unchanged = new StateFile(before.tasks());
       written = mutation.apply(before);
       if (unchanged.equals(written)) {
         return;
       }
       writeUnlocked(written);
     }
-    publish(written); // outside the lock: a listener must never block a tool call
+    publish(unchanged, written); // outside the lock: a listener must never block a tool call
   }
 
-  private void publish(StateFile written) {
-    StateFile snapshot = new StateFile(written.tasks()); // listeners cannot disturb each other
-    for (Consumer<StateFile> listener : changeListeners) {
-      try {
-        listener.accept(snapshot);
-      } catch (RuntimeException e) {
-        log.atWarn()
-            .setMessage("state listener failed")
-            .addKeyValue("cause", e.toString())
-            .addKeyValue("effect", "write completed")
-            .log();
-      }
-    }
+  private void publish(StateFile previous, StateFile written) {
+    events.publish(new StateWritten(previous.tasks(), written.tasks()));
   }
 
   private StateFile readUnlocked() {

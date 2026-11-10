@@ -55,7 +55,7 @@ class PlanPlacementTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer);
+                    reducer, event -> {});
     placement = new PlanPlacement(state, new TaskArtifacts(state), config, worktrees, retired);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
   }

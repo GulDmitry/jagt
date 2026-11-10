@@ -55,7 +55,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -102,7 +102,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -143,7 +143,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -184,7 +184,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -222,7 +222,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -262,7 +262,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("wt").toString(), TaskStatus.REVIEW_PENDING)
@@ -299,7 +299,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
 
     String out =
         new ReviewRepliesReport(
@@ -332,7 +332,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", drafting.toString(), TaskStatus.REVIEW_PENDING)
@@ -373,7 +373,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("wt").toString(), TaskStatus.REVIEW_PENDING)
@@ -427,7 +427,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", first.toString(), TaskStatus.REVIEW_PENDING)
@@ -473,7 +473,7 @@ class ReviewRepliesReportTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)

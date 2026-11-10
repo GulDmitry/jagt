@@ -10,13 +10,12 @@ class LifecycleHooksTest {
 
   @Test
   void noMethodRunsWorkAsPostConstructHook() {
-    FreezingArchRule.freeze(
-            noMethods()
-                .that()
-                .areDeclaredInClassesThat()
-                .doNotHaveSimpleName("AbortedConnectionFilter")
-                .should()
-                .beAnnotatedWith("jakarta.annotation.PostConstruct"))
+    noMethods()
+        .that()
+        .areDeclaredInClassesThat()
+        .doNotHaveSimpleName("AbortedConnectionFilter")
+        .should()
+        .beAnnotatedWith("jakarta.annotation.PostConstruct")
         .check(SourceRoots.ALL);
   }
 

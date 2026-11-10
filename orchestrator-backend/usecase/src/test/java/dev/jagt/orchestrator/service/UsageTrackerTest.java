@@ -34,7 +34,7 @@ class UsageTrackerTest {
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
                         .withStateFile(root.resolve("state.json").toString())),
-                reducer),
+                reducer, event -> {}),
             mock(UsageLedger.class));
 
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
@@ -62,7 +62,7 @@ class UsageTrackerTest {
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
                         .withStateFile(root.resolve("state.json").toString())),
-                reducer),
+                reducer, event -> {}),
             ledger);
     TokenUsage usage = TokenUsage.ofCall(25_000, 0, 170, 0.05);
 
@@ -80,7 +80,7 @@ class UsageTrackerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
@@ -101,7 +101,7 @@ class UsageTrackerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
@@ -126,7 +126,7 @@ class UsageTrackerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
@@ -145,7 +145,7 @@ class UsageTrackerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
 
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(24_000, 0, 150, 0.05));
@@ -165,7 +165,7 @@ class UsageTrackerTest {
                     OrchestratorProperties.defaults()
                         .withRoot(root.toString())
                         .withStateFile(root.resolve("state.json").toString())),
-                reducer),
+                reducer, event -> {}),
             mock(UsageLedger.class));
 
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.NONE);

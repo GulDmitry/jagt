@@ -58,7 +58,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     GitCommands git = mock(GitCommands.class);
     WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
@@ -97,7 +97,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -136,7 +136,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     GitCommands git = mock(GitCommands.class);
     WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
@@ -167,7 +167,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
     GitCommands git = mock(GitCommands.class);
@@ -202,7 +202,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     GitCommands git = mock(GitCommands.class);
     WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
@@ -235,7 +235,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     GitCommands git = mock(GitCommands.class);
     WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
@@ -268,7 +268,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     GitCommands git = mock(GitCommands.class);
     WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
@@ -304,7 +304,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     GitCommands git = mock(GitCommands.class);
     WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
@@ -337,7 +337,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     GitCommands git = mock(GitCommands.class);
     final WorktreeOrphans orphans = new WorktreeOrphans(config, state, git);
 
@@ -376,7 +376,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     GitCommands git = mock(GitCommands.class);
     when(git.run(repo, List.of("git", "worktree", "list", "--porcelain")))
         .thenReturn(
@@ -413,7 +413,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     GitCommands git = mock(GitCommands.class);
     when(git.run(repo, List.of("git", "worktree", "list", "--porcelain")))
         .thenReturn(
@@ -489,7 +489,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
     GitCommands git = mock(GitCommands.class);
@@ -528,7 +528,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
     GitCommands git = mock(GitCommands.class);
@@ -563,7 +563,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
     GitCommands git = mock(GitCommands.class);
@@ -595,7 +595,7 @@ class WorktreeOrphansTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer);
+            reducer, event -> {});
     state.putTask(
         "ABC-41",
         TaskState.builder(List.of(TaskRepo.of("demo", null)), TaskStatus.IN_PROGRESS).build());
