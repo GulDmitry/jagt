@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.service.WorktreeOrphans;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -30,12 +29,6 @@ public class DeleteWorktreeCommand implements GlobalCommand {
   @Override
   public List<String> usage() {
     return List.of("delete-worktree <name>");
-  }
-
-  @Override
-  public Optional<String> whyNotTheMaster() {
-    return Optional.of(
-        "an orphan may hold work nobody committed; only a human decides it is rubbish");
   }
 
   @Override

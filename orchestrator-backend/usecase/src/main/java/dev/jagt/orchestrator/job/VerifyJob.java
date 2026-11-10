@@ -79,7 +79,7 @@ public class VerifyJob implements TaskJob {
           TaskStop.Trigger.UNCHANGED_FAILURE,
           "handed back the tree its verification failed on: "
               + standing(task)
-              + verification.failure(task).map(output -> "\n" + output).orElse(""));
+              + failedOutput(task));
       return;
     }
     Optional<String> failure = verification.failure(task);
@@ -128,6 +128,11 @@ public class VerifyJob implements TaskJob {
     return same;
   }
 
+  private static String failedOutput(TaskState task) {
+    String output = task.toldOrNone().valueOf(ToldOnce.Kind.VERIFY_OUTPUT);
+    return output.isEmpty() ? "" : "\n" + output;
+  }
+
   private static String standing(TaskState task) {
     String probes =
         task.probes().stream()
@@ -154,7 +159,10 @@ public class VerifyJob implements TaskJob {
               stateService.reduce(
                   taskId,
                   (reducer, current) ->
-                      reducer.told(current, ToldOnce.Kind.VERIFY_FAILED, failing)));
+                      reducer.told(
+                          reducer.told(current, ToldOnce.Kind.VERIFY_FAILED, failing),
+                          ToldOnce.Kind.VERIFY_OUTPUT,
+                          facts)));
     } else if (stateService.task(taskId).filter(TaskState::stopped).isPresent()) {
       return;
     }

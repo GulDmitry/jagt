@@ -21,7 +21,8 @@ public record ToldOnce(Map<Kind, String> entries) {
     AUTO_REVIEW_UNREADABLE("unreadable"),
     CONFLICT_REQUEST_GONE("conflictRequestGone"),
     SILENCE("silence"),
-    VERIFY_FAILED("verifyFailed");
+    VERIFY_FAILED("verifyFailed"),
+    VERIFY_OUTPUT("verifyOutput");
 
     private final String id;
 
@@ -66,6 +67,10 @@ public record ToldOnce(Map<Kind, String> entries) {
 
   public boolean has(Kind kind) {
     return entries.containsKey(kind);
+  }
+
+  public String valueOf(Kind kind) {
+    return entries.getOrDefault(kind, "");
   }
 
   public boolean said(Kind kind, String key) {

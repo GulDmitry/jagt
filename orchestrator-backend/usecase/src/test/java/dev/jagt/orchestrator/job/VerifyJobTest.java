@@ -200,7 +200,7 @@ class VerifyJobTest {
                 Clock.systemUTC()))
         .runOn(state.tasks());
 
-    verify(verification, times(2)).failure(any());
+    verify(verification).failure(any());
     verify(relay, times(1))
         .relayRound(eq("ABC-1"), eq(Step.VERIFY), anyString(), any(Standing.class));
     verify(statusReports, never()).verified(eq(true), any(), any());

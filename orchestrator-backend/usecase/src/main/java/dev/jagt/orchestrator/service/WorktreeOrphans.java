@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskRepo;
 import java.io.IOException;
@@ -34,6 +36,7 @@ public class WorktreeOrphans {
 
   private final ConfigService configService;
   private final StateService stateService;
+  private final GitCommands git;
 
   /** Deletes the one orphan directory called {@code name}; any other path is refused. */
   public String delete(String name) {
@@ -46,6 +49,11 @@ public class WorktreeOrphans {
                     new IllegalArgumentException(
                         "no orphaned worktree called " + name + " — `worktrees` lists them"));
     try {
+      ProjectConfig project = configService.load().projects().get(orphan.projectKey());
+      Path repository = project == null ? null : Path.of(project.path());
+      if (repository != null && registeredIn(repository, orphan.path())) {
+        return removeRegistered(repository, orphan.path());
+      }
       FileSystemUtils.deleteRecursively(orphan.path());
     } catch (IOException e) {
       log.atWarn()
@@ -58,6 +66,34 @@ public class WorktreeOrphans {
     }
     log.atInfo().setMessage("worktree deleted").addKeyValue("path", orphan.path()).log();
     return "deleted " + orphan.path();
+  }
+
+  private boolean registeredIn(Path repository, Path directory) {
+    Processes.Result listing =
+        git.run(repository, List.of("git", "worktree", "list", "--porcelain"));
+    return listing.exitCode() == 0
+        && listing
+            .stdout()
+            .lines()
+            .filter(line -> line.startsWith("worktree "))
+            .map(line -> Path.of(line.substring("worktree ".length())))
+            .anyMatch(listed -> GitCommands.sameDirectory(listed, directory));
+  }
+
+  private String removeRegistered(Path repository, Path directory) {
+    Processes.Result removal =
+        git.run(repository, List.of("git", "worktree", "remove", "--force", directory.toString()));
+    if (removal.exitCode() != 0) {
+      log.atWarn()
+          .setMessage("worktree remove failed")
+          .addKeyValue("path", directory)
+          .addKeyValue("cause", removal.stderr())
+          .addKeyValue("effect", "the worktree stays")
+          .log();
+      return "could not remove " + directory + ": " + removal.stderr().strip();
+    }
+    log.atInfo().setMessage("worktree removed").addKeyValue("path", directory).log();
+    return "deleted " + directory;
   }
 
   public List<Orphan> scan() {

@@ -30,7 +30,7 @@ class DeleteWorktreeCommandTest {
   }
 
   @Test
-  void staysOutOfTheMastersReach() {
-    assertThat(new DeleteWorktreeCommand(orphans).whyNotTheMaster()).isPresent();
+  void isInTheMastersReach() {
+    assertThat(new DeleteWorktreeCommand(orphans).whyNotTheMaster()).isEmpty();
   }
 }
