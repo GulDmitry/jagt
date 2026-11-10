@@ -5,10 +5,7 @@ import dev.jagt.orchestrator.task.TaskStop;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
-import org.yaml.snakeyaml.LoaderOptions;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.jspecify.annotations.Nullable;
 
 public final class StopTriageCases {
 
@@ -18,25 +15,22 @@ public final class StopTriageCases {
     return RoleCases.of("triage", StopTriageCases::parse);
   }
 
-  @SuppressWarnings("unchecked")
   public static StopTriageCase parse(String yaml) {
-    Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
-    Map<String, Object> stop = (Map<String, Object>) root.get("stop");
-    Map<String, Object> expect = (Map<String, Object>) root.get("expect");
+    Map<String, Object> root = Yamls.load(yaml);
+    Map<String, Object> stop = Yamls.map(root.get("stop"));
+    Map<String, Object> expect = Yamls.map(root.get("expect"));
     return new StopTriageCase(
-        Objects.requireNonNull((String) root.get("case")),
-        TaskStop.Trigger.valueOf(
-            Objects.requireNonNull((String) Objects.requireNonNull(stop).get("trigger"))),
-        Objects.requireNonNull((String) stop.get("evidence")),
-        Objects.requireNonNull((String) root.get("trail")),
-        Objects.requireNonNull((String) root.get("commits")),
-        StopTriage.Who.valueOf(
-            constant(Objects.requireNonNull(Objects.requireNonNull(expect).get("who")))),
-        StopTriage.Lift.valueOf(constant(Objects.requireNonNull(expect.get("lift")))),
+        Yamls.text(root.get("case")),
+        TaskStop.Trigger.valueOf(Yamls.text(stop.get("trigger"))),
+        Yamls.text(stop.get("evidence")),
+        Yamls.text(root.get("trail")),
+        Yamls.text(root.get("commits")),
+        StopTriage.Who.valueOf(constant(expect.get("who"))),
+        StopTriage.Lift.valueOf(constant(expect.get("lift"))),
         String.valueOf(expect.get("family")));
   }
 
-  private static String constant(Object value) {
-    return String.valueOf(value).toUpperCase(Locale.ROOT);
+  private static String constant(@Nullable Object value) {
+    return Yamls.text(value).toUpperCase(Locale.ROOT);
   }
 }

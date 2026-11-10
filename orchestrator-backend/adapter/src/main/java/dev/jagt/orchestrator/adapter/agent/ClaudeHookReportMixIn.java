@@ -11,7 +11,7 @@ import tools.jackson.databind.module.SimpleModule;
 /** The field names Claude's hooks post, bound onto the neutral report. */
 abstract class ClaudeHookReportMixIn {
 
-  @SuppressWarnings("unused")
+  @SuppressWarnings("unused") // Jackson reads the parameter annotations; nothing calls it
   private ClaudeHookReportMixIn(
       @JsonProperty("transcript_path") @Nullable String transcriptPath,
       @JsonProperty("source") @Nullable String source,
@@ -21,7 +21,7 @@ abstract class ClaudeHookReportMixIn {
 
   abstract static class EndingMixIn {
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings("unused") // Jackson reads the parameter annotations; nothing calls it
     private EndingMixIn(
         @JsonProperty("stop_hook_active") @Nullable Boolean continuing,
         @JsonProperty("error") @Nullable String error,
@@ -30,7 +30,7 @@ abstract class ClaudeHookReportMixIn {
 
   abstract static class TurnMixIn {
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings("unused") // Jackson reads the parameter annotations; nothing calls it
     private TurnMixIn(
         @JsonProperty("prompt") @Nullable String prompt,
         @JsonProperty("tool_name") @Nullable String toolName,

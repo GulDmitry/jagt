@@ -28,9 +28,8 @@ public final class AcceptanceFixtureEnvironment implements AutoCloseable {
     url = live;
   }
 
-  @SuppressWarnings("unchecked")
   private AcceptanceFixtureEnvironment(Map<String, Object> environment) throws IOException {
-    ((Map<String, Object>) environment.getOrDefault("login", Map.of()))
+    Yamls.mapOrEmpty(environment.get("login"))
         .forEach(
             (role, said) ->
                 replies.put(
@@ -38,9 +37,9 @@ public final class AcceptanceFixtureEnvironment implements AutoCloseable {
                     "ok".equals(said)
                         ? new Reply(200, "text/plain", "signed in as " + role)
                         : new Reply(401, "text/plain", String.valueOf(said))));
-    ((Map<String, Object>) environment.getOrDefault("http", Map.of()))
-        .forEach((call, said) -> replies.put(call, http((Map<String, Object>) said)));
-    ((Map<String, Object>) environment.getOrDefault("ui", Map.of()))
+    Yamls.mapOrEmpty(environment.get("http"))
+        .forEach((call, said) -> replies.put(call, http(Yamls.map(said))));
+    Yamls.mapOrEmpty(environment.get("ui"))
         .forEach(
             (page, said) ->
                 replies.put("GET " + page, new Reply(200, "application/json", json(said))));

@@ -5,10 +5,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
-import org.yaml.snakeyaml.LoaderOptions;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.jspecify.annotations.Nullable;
 
 public final class MasterCases {
 
@@ -18,33 +15,35 @@ public final class MasterCases {
     return RoleCases.of("master", MasterCases::parse);
   }
 
-  @SuppressWarnings("unchecked")
   public static MasterCase parse(String yaml) {
-    Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
-    Map<String, Object> expect = (Map<String, Object>) root.get("expect");
-    Map<String, Object> question = (Map<String, Object>) root.get("question");
+    Map<String, Object> root = Yamls.load(yaml);
+    Map<String, Object> expect = Yamls.map(root.get("expect"));
     return new MasterCase(
-        Objects.requireNonNull((String) root.get("case")),
-        Objects.requireNonNull((String) root.get("instructions")),
-        TaskStatus.valueOf(constant(Objects.requireNonNull(root.get("status")))),
-        Objects.requireNonNull((Map<String, String>) root.get("baseline")),
-        (Map<String, String>) root.getOrDefault("change", Map.of()),
-        (String) root.getOrDefault("plan", ""),
+        Yamls.text(root.get("case")),
+        Yamls.text(root.get("instructions")),
+        TaskStatus.valueOf(constant(root.get("status"))),
+        Yamls.textsByKey(root.get("baseline")),
+        Yamls.textsByKey(Yamls.mapOrEmpty(root.get("change"))),
+        root.get("plan") == null ? "" : Yamls.text(root.get("plan")),
         new MasterCase.Expect(
-            Objects.requireNonNull(expect).get("verdict") == null
+            expect.get("verdict") == null
                 ? null
-                : MasterReview.Kind.valueOf(
-                    constant(Objects.requireNonNull(expect.get("verdict")))),
-            Objects.requireNonNull((List<String>) expect.get("names"))),
-        question == null
+                : MasterReview.Kind.valueOf(constant(expect.get("verdict"))),
+            Yamls.texts(expect.get("names"))),
+        root.get("question") == null
             ? MasterCase.Answer.NONE
-            : new MasterCase.Answer(
-                Objects.requireNonNull((String) question.get("asked")),
-                Objects.requireNonNull((List<String>) question.get("human_said")),
-                Objects.requireNonNull((List<String>) expect.get("refused"))));
+            : answer(Yamls.map(root.get("question")), expect));
   }
 
-  private static String constant(Object value) {
-    return String.valueOf(value).toUpperCase(Locale.ROOT).replace('-', '_');
+  private static MasterCase.Answer answer(
+      Map<String, Object> question, Map<String, Object> expect) {
+    return new MasterCase.Answer(
+        Yamls.text(question.get("asked")),
+        Yamls.texts(question.get("human_said")),
+        Yamls.texts(expect.get("refused")));
+  }
+
+  private static String constant(@Nullable Object value) {
+    return Yamls.text(value).toUpperCase(Locale.ROOT).replace('-', '_');
   }
 }

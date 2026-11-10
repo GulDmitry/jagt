@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import lombok.Builder;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -13,7 +12,6 @@ import org.jspecify.annotations.Nullable;
  * targets; null means the project's own. {@code projectKeys} holds every repository the one session
  * works in, the agent's own FIRST.
  */
-@Builder
 public record NewTask(
     String taskId,
     List<String> projectKeys,
@@ -49,19 +47,64 @@ public record NewTask(
   }
 
   public static NewTaskBuilder builder(String taskId, @Nullable String projectKey) {
-    NewTaskBuilder builder = new NewTaskBuilder().taskId(taskId);
+    NewTaskBuilder builder = new NewTaskBuilder(taskId);
     builder.projectKeys.add(projectKey);
     return builder;
   }
 
   /** A task that plans before it has a repository. */
   public static NewTaskBuilder unplacedBuilder(String taskId) {
-    return new NewTaskBuilder().taskId(taskId);
+    return new NewTaskBuilder(taskId);
   }
 
-  @SuppressWarnings("NullAway.Init")
   public static class NewTaskBuilder {
+    private final String taskId;
     private List<String> projectKeys = new ArrayList<>();
+    private @Nullable String instructions;
+    private @Nullable String mode;
+    private @Nullable String branchStrategy;
+    private @Nullable String baseBranch;
+    private @Nullable String title;
+    private @Nullable String ticketUrl;
+
+    private NewTaskBuilder(String taskId) {
+      this.taskId = taskId;
+    }
+
+    public NewTaskBuilder instructions(@Nullable String instructions) {
+      this.instructions = instructions;
+      return this;
+    }
+
+    public NewTaskBuilder mode(@Nullable String mode) {
+      this.mode = mode;
+      return this;
+    }
+
+    public NewTaskBuilder branchStrategy(@Nullable String branchStrategy) {
+      this.branchStrategy = branchStrategy;
+      return this;
+    }
+
+    public NewTaskBuilder baseBranch(@Nullable String baseBranch) {
+      this.baseBranch = baseBranch;
+      return this;
+    }
+
+    public NewTaskBuilder title(@Nullable String title) {
+      this.title = title;
+      return this;
+    }
+
+    public NewTaskBuilder ticketUrl(@Nullable String ticketUrl) {
+      this.ticketUrl = ticketUrl;
+      return this;
+    }
+
+    public NewTask build() {
+      return new NewTask(
+          taskId, projectKeys, instructions, mode, branchStrategy, baseBranch, title, ticketUrl);
+    }
 
     /** Further repositories the same session works in; the session's own project stays first. */
     public NewTaskBuilder alsoIn(@Nullable List<String> projects) {

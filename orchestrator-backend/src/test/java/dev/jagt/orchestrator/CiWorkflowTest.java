@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -51,11 +52,19 @@ class CiWorkflowTest {
     assertThat(writing).containsExactly("release");
   }
 
-  @SuppressWarnings("unchecked")
   private static Map<String, Map<String, Object>> jobs() {
     try {
-      Map<String, Object> workflow = new Yaml().load(Files.readString(WORKFLOW));
-      return Objects.requireNonNull((Map<String, Map<String, Object>>) workflow.get("jobs"));
+      Map<?, ?> workflow = new Yaml().load(Files.readString(WORKFLOW));
+      Map<String, Map<String, Object>> jobs = new LinkedHashMap<>();
+      Map<?, ?> declared = (Map<?, ?>) Objects.requireNonNull(workflow.get("jobs"));
+      for (Map.Entry<?, ?> job : declared.entrySet()) {
+        Map<String, Object> fields = new LinkedHashMap<>();
+        for (Map.Entry<?, ?> field : ((Map<?, ?>) job.getValue()).entrySet()) {
+          fields.put((String) field.getKey(), field.getValue());
+        }
+        jobs.put((String) job.getKey(), fields);
+      }
+      return jobs;
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

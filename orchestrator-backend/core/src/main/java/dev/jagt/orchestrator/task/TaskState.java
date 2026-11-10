@@ -361,9 +361,7 @@ public record TaskState(
   }
 
   public TaskStateBuilder toBuilder() {
-    return new TaskStateBuilder()
-        .repos(repos)
-        .status(status())
+    return new TaskStateBuilder(repos, status())
         .lastActiveTimestamp(lastActiveTimestamp())
         .message(message())
         .report(report())
@@ -1064,13 +1062,11 @@ public record TaskState(
   }
 
   public static TaskStateBuilder builder(List<TaskRepo> repos, TaskStatus status) {
-    return new TaskStateBuilder()
-        .repos(repos == null || repos.isEmpty() ? List.of(TaskRepo.of(null, null)) : repos)
-        .status(status);
+    return new TaskStateBuilder(
+        repos == null || repos.isEmpty() ? List.of(TaskRepo.of(null, null)) : repos, status);
   }
 
   /** Missing fields stay unset; the single-repo setters write the FIRST repo. */
-  @SuppressWarnings("NullAway.Init")
   public static class TaskStateBuilder {
     private List<TaskRepo> repos;
     private TaskStatus status;
@@ -1109,6 +1105,11 @@ public record TaskState(
     private @Nullable Deployment deployment;
     private Map<String, RoleRecord> roles = Map.of();
     private @Nullable Master master;
+
+    private TaskStateBuilder(List<TaskRepo> repos, TaskStatus status) {
+      this.repos = repos;
+      this.status = status;
+    }
 
     public TaskStateBuilder repos(List<TaskRepo> repos) {
       this.repos = repos;

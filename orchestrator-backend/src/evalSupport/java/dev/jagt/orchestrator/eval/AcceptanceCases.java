@@ -4,11 +4,7 @@ import dev.jagt.orchestrator.task.AcceptanceVerdict.Status;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import org.yaml.snakeyaml.LoaderOptions;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 public final class AcceptanceCases {
 
@@ -18,101 +14,75 @@ public final class AcceptanceCases {
     return RoleCases.of("acceptance", AcceptanceCases::parse);
   }
 
-  @SuppressWarnings("unchecked")
   public static AcceptanceCase parse(String yaml) {
-    Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
-    Map<String, Object> ticket = (Map<String, Object>) root.get("ticket");
-    Map<String, Object> deploy = (Map<String, Object>) root.get("deploy");
-    Map<String, Object> expect = (Map<String, Object>) root.get("expect");
+    Map<String, Object> root = Yamls.load(yaml);
+    Map<String, Object> ticket = Yamls.map(root.get("ticket"));
+    Map<String, Object> deploy = Yamls.map(root.get("deploy"));
+    Map<String, Object> expect = Yamls.map(root.get("expect"));
     List<AcceptanceCase.Criterion> criteria =
-        Objects.requireNonNull(
-                (List<Map<String, Object>>) Objects.requireNonNull(ticket).get("criteria"))
-            .stream()
+        Yamls.list(ticket.get("criteria")).stream()
+            .map(Yamls::map)
             .map(
                 criterion ->
                     new AcceptanceCase.Criterion(
-                        text(Objects.requireNonNull(criterion.get("id"))),
-                        text(Objects.requireNonNull(criterion.get("text"))),
+                        Yamls.text(criterion.get("id")),
+                        Yamls.text(criterion.get("text")),
                         !Boolean.FALSE.equals(criterion.get("testable"))))
             .toList();
     Map<String, Status> rows = new LinkedHashMap<>();
-    Objects.requireNonNull((Map<String, Object>) Objects.requireNonNull(expect).get("rows"))
-        .forEach((id, status) -> rows.put(id, Status.of(text(status)).orElseThrow()));
+    Yamls.map(expect.get("rows"))
+        .forEach((id, status) -> rows.put(id, Status.of(Yamls.text(status)).orElseThrow()));
     return new AcceptanceCase(
-        text(Objects.requireNonNull(root.get("case"))),
+        Yamls.text(root.get("case")),
         new AcceptanceCase.Ticket(
-            text(Objects.requireNonNull(ticket.get("key"))),
-            text(Objects.requireNonNull(ticket.get("title"))),
-            criteria),
+            Yamls.text(ticket.get("key")), Yamls.text(ticket.get("title")), criteria),
         new AcceptanceCase.Landing(
             new AcceptanceCase.Deploy(
-                text(Objects.requireNonNull(Objects.requireNonNull(deploy).get("sha"))),
-                text(Objects.requireNonNull(deploy.get("landed"))),
-                Objects.requireNonNull(((List<Object>) deploy.get("diff"))).stream()
-                    .map(AcceptanceCases::text)
-                    .toList(),
+                Yamls.text(deploy.get("sha")),
+                Yamls.text(deploy.get("landed")),
+                Yamls.texts(deploy.get("diff")),
                 deploy.get("landed_sha_served") == null
                     ? ""
-                    : text(deploy.get("landed_sha_served"))),
-            (Map<String, Object>) root.getOrDefault("environment", Map.of())),
+                    : Yamls.text(deploy.get("landed_sha_served"))),
+            Yamls.mapOrEmpty(root.get("environment"))),
         decline(root),
         new AcceptanceCase.Expect(
             rows,
-            text(Objects.requireNonNull(expect.get("report"))),
-            expect.get("probe") == null ? "" : text(expect.get("probe")),
-            text(Objects.requireNonNull(expect.get("ending"))),
-            Objects.requireNonNull(((List<Object>) root.get("names"))).stream()
-                .map(AcceptanceCases::text)
-                .toList()),
+            Yamls.text(expect.get("report")),
+            expect.get("probe") == null ? "" : Yamls.text(expect.get("probe")),
+            Yamls.text(expect.get("ending")),
+            Yamls.texts(root.get("names"))),
         flows(root),
         workspace(root));
   }
 
-  @SuppressWarnings("unchecked")
   private static AcceptanceCase.Workspace workspace(Map<String, Object> root) {
-    Map<String, Object> files = (Map<String, Object>) root.getOrDefault("workspace", Map.of());
-    Map<String, Object> expect = (Map<String, Object>) root.get("expect");
-    Map<String, String> content = new LinkedHashMap<>();
-    files.forEach((name, text) -> content.put(name, text(text)));
+    Map<String, Object> expect = Yamls.map(root.get("expect"));
     return new AcceptanceCase.Workspace(
-        content,
-        Objects.requireNonNull(expect).get("writes") == null
-            ? ""
-            : text(Objects.requireNonNull(expect.get("writes"))));
+        Yamls.textsByKey(Yamls.mapOrEmpty(root.get("workspace"))),
+        expect.get("writes") == null ? "" : Yamls.text(expect.get("writes")));
   }
 
-  @SuppressWarnings("unchecked")
   private static AcceptanceCase.Flows flows(Map<String, Object> root) {
-    Map<String, Object> files = (Map<String, Object>) root.getOrDefault("flows", Map.of());
-    Map<String, Object> expect = (Map<String, Object>) root.get("expect");
-    final Map<String, Object> flows =
-        (Map<String, Object>) Objects.requireNonNull(expect).getOrDefault("flows", Map.of());
-    Map<String, String> content = new LinkedHashMap<>();
-    files.forEach((name, text) -> content.put(name, text(text)));
+    Map<String, Object> files = Yamls.mapOrEmpty(root.get("flows"));
+    Map<String, Object> flows = Yamls.mapOrEmpty(Yamls.map(root.get("expect")).get("flows"));
+    Map<String, String> content = Yamls.textsByKey(files);
     content.remove("path");
     content.remove("command");
     return new AcceptanceCase.Flows(
         content,
-        ((List<Object>) flows.getOrDefault("ids", List.of()))
-            .stream().map(AcceptanceCases::text).toList(),
-        files.containsKey("path") ? text(files.get("path")) : "",
-        ((List<Object>) files.getOrDefault("command", List.of()))
-            .stream().map(AcceptanceCases::text).toList());
+        Yamls.listOrEmpty(flows.get("ids")).stream().map(Yamls::text).toList(),
+        files.containsKey("path") ? Yamls.text(files.get("path")) : "",
+        Yamls.listOrEmpty(files.get("command")).stream().map(Yamls::text).toList());
   }
 
-  @SuppressWarnings("unchecked")
   private static AcceptanceCase.@Nullable Decline decline(Map<String, Object> root) {
-    Map<String, Object> reply = (Map<String, Object>) root.get("session_reply");
-    if (reply == null) {
+    if (root.get("session_reply") == null) {
       return null;
     }
-    Map<String, Object> previous = (Map<String, Object>) root.get("previous_check");
+    Map<String, Object> reply = Yamls.map(root.get("session_reply"));
+    Map<String, Object> previous = Yamls.map(root.get("previous_check"));
     return new AcceptanceCase.Decline(
-        text(Objects.requireNonNull(Objects.requireNonNull(previous).get("evidence"))),
-        text(Objects.requireNonNull(reply.get("why"))));
-  }
-
-  private static String text(Object value) {
-    return String.valueOf(value);
+        Yamls.text(previous.get("evidence")), Yamls.text(reply.get("why")));
   }
 }
