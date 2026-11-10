@@ -21,12 +21,19 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
 class FlowReportsTest {
 
   private final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+
+  private final ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write =
+      ArgumentCaptor.captor();
+
+  private final Deployment.Target mergedWeb =
+      Deployment.Target.of("web", "dev").withMerge("0123456789abcdef");
 
   private final ReducingStore stateService = mock(ReducingStore.class);
   private final FlowReports reports =
@@ -42,7 +49,6 @@ class FlowReportsTest {
 
     reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed");
 
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     assertThat(
             write
@@ -138,7 +144,6 @@ class FlowReportsTest {
 
     reports.read("ABC-1", TaskStatus.APPROVED, "approved");
 
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     assertThat(
             write
@@ -157,7 +162,6 @@ class FlowReportsTest {
 
     reports.report("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.NO_CHANGES, "clean worktree");
 
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState after =
         write
@@ -178,7 +182,6 @@ class FlowReportsTest {
     reports.report(
         "ABC-1", TaskStatus.IN_PROGRESS, AgentReport.QUESTION, "keep both sides of Foo.java?");
 
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState after =
         write
@@ -198,7 +201,6 @@ class FlowReportsTest {
 
     reports.report("ABC-1", TaskStatus.IN_PROGRESS, "resolving the merge");
 
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState after =
         write
@@ -224,7 +226,6 @@ class FlowReportsTest {
         "review request: http://host/1",
         (was, task) -> task.withMrUrl("http://host/1", 2_000));
 
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState after =
         write
@@ -266,8 +267,13 @@ class FlowReportsTest {
     assertThat(reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed")).isFalse();
   }
 
-  @Test
-  void landsHandBackAtVerifyingWhileTheVerificationIsOwed() {
+  @ParameterizedTest
+  @CsvSource({
+    "PLAIN, widget fixed, VERIFYING",
+    "QUESTION, which widget?, REVIEW_PENDING"
+  })
+  void holdsHandBackForTheOwedVerificationUnlessTheSessionAsks(
+      AgentReport report, String message, TaskStatus lands) {
     when(stateService.reduce(eq("ABC-1"), any()))
         .thenAnswer(
             call -> {
@@ -281,37 +287,12 @@ class FlowReportsTest {
         reports.report(
             "ABC-1",
             TaskStatus.REVIEW_PENDING,
-            AgentReport.PLAIN,
-            "widget fixed",
+            report,
+            message,
             (was, task) -> task,
             task -> true);
 
-    assertThat(landed)
-        .contains(new FlowReports.Landed(TaskStatus.IN_PROGRESS, TaskStatus.VERIFYING));
-  }
-
-  @Test
-  void questionIsNotHeldForVerificationRun() {
-    when(stateService.reduce(eq("ABC-1"), any()))
-        .thenAnswer(
-            call -> {
-              BiFunction<TaskReducer, TaskState, TaskState> write = call.getArgument(1);
-              return write.apply(
-                      reducer, TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build())
-                  != null;
-            });
-
-    var landed =
-        reports.report(
-            "ABC-1",
-            TaskStatus.REVIEW_PENDING,
-            AgentReport.QUESTION,
-            "which widget?",
-            (was, task) -> task,
-            task -> true);
-
-    assertThat(landed)
-        .contains(new FlowReports.Landed(TaskStatus.IN_PROGRESS, TaskStatus.REVIEW_PENDING));
+    assertThat(landed).contains(new FlowReports.Landed(TaskStatus.IN_PROGRESS, lands));
   }
 
   @Test
@@ -430,7 +411,6 @@ class FlowReportsTest {
   void handsDeployedTaskBackWhenItsDeployPipelineIsRedOnTheCode() {
     reports.readDeploy("ABC-1", "web", "deploy pipeline red");
 
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState handed =
         write
@@ -444,7 +424,6 @@ class FlowReportsTest {
   void recordsTheRedPipelineAsTheCauseTheDeployWaitsOn() {
     reports.readDeploy("ABC-1", "web", "deploy pipeline red");
 
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     Deployment recorded =
         Deployment.defaults()
@@ -470,15 +449,12 @@ class FlowReportsTest {
   void endsConflictHeldByRedPipelineAlone() {
     reports.endRedConflict("ABC-1", "deployed to dev");
 
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     Deployment held =
         Deployment.defaults()
             .withTargets(
                 java.util.List.of(
-                    Deployment.Target.of("web", "dev")
-                        .withMerge("0123456789abcdef")
-                        .withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 1))));
+                    mergedWeb.withConflict(Conflict.of(Deployment.Cause.RED_PIPELINE, 1))));
     TaskState ended =
         write
             .getValue()
@@ -495,15 +471,12 @@ class FlowReportsTest {
   void leavesConflictOfMergeStandingWhateverTheDeployBranchPipelinesSay() {
     reports.endRedConflict("ABC-1", "deployed to dev");
 
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     Deployment held =
         Deployment.defaults()
             .withTargets(
                 java.util.List.of(
-                    Deployment.Target.of("web", "dev")
-                        .withMerge("0123456789abcdef")
-                        .withConflict(Conflict.of(Deployment.Cause.MERGE, 1))));
+                    mergedWeb.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))));
     TaskState conflicted =
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).deployment(held).build();
     assertThat(write.getValue().apply(reducer, conflicted)).isSameAs(conflicted);
@@ -513,7 +486,6 @@ class FlowReportsTest {
   void keepsDeployedTaskDeployedWhileItsPipelineIsOnlyWaited() {
     reports.readDeploy("ABC-1", null, "waiting on its pipeline");
 
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState said =
         write
@@ -527,7 +499,6 @@ class FlowReportsTest {
   void movesNoTaskThatIsNotLiveOnTheDeployBranchWhateverItsDeployPipelineSays() {
     reports.readDeploy("ABC-1", "web", "deploy pipeline red");
 
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
     verify(stateService).reduce(eq("ABC-1"), write.capture());
     TaskState reverted = TaskState.builder("proj", "/wt", TaskStatus.REVERTED).build();
     assertThat(write.getValue().apply(reducer, reverted)).isSameAs(reverted);

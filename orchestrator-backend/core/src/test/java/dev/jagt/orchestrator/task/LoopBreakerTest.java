@@ -10,6 +10,13 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 class LoopBreakerTest {
 
+  private final List<StatusChange> fourShips =
+      List.of(
+          new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
+          new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
+          new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
+          new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER));
+
   private final LoopBreaker breaker = new LoopBreaker(3, 4, 3, 20, Duration.ofHours(24));
 
   @Test
@@ -89,14 +96,7 @@ class LoopBreakerTest {
                 new RoundTrail.Round(3_500, 6, "", "d", "t1 note_1"),
                 new RoundTrail.Round(4_500, 5, "", "e", "t1 note_1")),
             0);
-    List<StatusChange> history =
-        List.of(
-            new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER));
-
-    var stop = breaker.beforeShip(watch, history, 5_000);
+    var stop = breaker.beforeShip(watch, fourShips, 5_000);
 
     assertThat(stop)
         .hasValueSatisfying(
@@ -133,14 +133,7 @@ class LoopBreakerTest {
                 new RoundTrail.Round(3_500, 6, "", "d", ""),
                 new RoundTrail.Round(4_500, 5, "", "e", "")),
             0);
-    List<StatusChange> history =
-        List.of(
-            new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER));
-
-    assertThat(breaker.beforeShip(watch, history, 5_000)).isEmpty();
+    assertThat(breaker.beforeShip(watch, fourShips, 5_000)).isEmpty();
   }
 
   @Test
@@ -166,14 +159,7 @@ class LoopBreakerTest {
 
   @Test
   void countsEveryShipWhereNoRoundHasThreadData() {
-    List<StatusChange> history =
-        List.of(
-            new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER));
-
-    var stop = breaker.beforeShip(RoundTrail.none(), history, 5_000);
+    var stop = breaker.beforeShip(RoundTrail.none(), fourShips, 5_000);
 
     assertThat(stop)
         .hasValueSatisfying(
@@ -211,14 +197,7 @@ class LoopBreakerTest {
 
   @Test
   void countsNoShipFromBeforeTheHumanLiftedTheLastStop() {
-    List<StatusChange> history =
-        List.of(
-            new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER));
-
-    assertThat(breaker.beforeShip(RoundTrail.liftedAt(4_500), history, 5_000)).isEmpty();
+    assertThat(breaker.beforeShip(RoundTrail.liftedAt(4_500), fourShips, 5_000)).isEmpty();
   }
 
   @Test
@@ -274,14 +253,7 @@ class LoopBreakerTest {
 
   @Test
   void countsNoShipAskedAtTheMomentOfTheLift() {
-    List<StatusChange> history =
-        List.of(
-            new StatusChange(TaskStatus.SHIPPING, 1_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 2_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 3_000, ActionOrigin.MASTER),
-            new StatusChange(TaskStatus.SHIPPING, 4_000, ActionOrigin.MASTER));
-
-    assertThat(breaker.beforeShip(RoundTrail.liftedAt(1_000), history, 5_000)).isEmpty();
+    assertThat(breaker.beforeShip(RoundTrail.liftedAt(1_000), fourShips, 5_000)).isEmpty();
   }
 
   @Test

@@ -31,6 +31,12 @@ class FlowEngineTest {
 
   private final ReducingStore stateService = mock(ReducingStore.class);
   private final AgentPresence sessions = mock(AgentPresence.class);
+  private final FactSources facts = new FactSources(sessions, ignored -> false);
+  private final TaskState shipping = TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build();
+  private final Capabilities neverRunShip =
+      new Capabilities(List.of(new NeverRunCapability(TaskAction.SHIP)), List.of());
+  private final TaskState reviewPending =
+      TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
   private record FixedCapability(TaskAction action, Outcome outcome) implements TaskCapability {
 
@@ -100,7 +106,7 @@ class FlowEngineTest {
         new FlowEngine(
             stateService,
             new Capabilities(List.of(new NeverRunCapability(TaskAction.FOCUS)), List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -123,7 +129,7 @@ class FlowEngineTest {
         new FlowEngine(
             stateService,
             new Capabilities(List.of(new ScenariosThatAre(false, Outcome.ok("opened"))), List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -142,7 +148,7 @@ class FlowEngineTest {
         new FlowEngine(
             stateService,
             new Capabilities(List.of(new ScenariosThatAre(true, Outcome.ok("opened"))), List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -158,7 +164,7 @@ class FlowEngineTest {
         new FlowEngine(
             stateService,
             new Capabilities(List.of(new NeverRunCapability(TaskAction.DEPLOY)), List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -177,8 +183,7 @@ class FlowEngineTest {
   void movesTheTaskToTheStatusTheRulesGiveForAnOutcomeThatWorked() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
-        .thenReturn(
-            Optional.of(TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build()));
+        .thenReturn(Optional.of(reviewPending));
     FlowEngine engine =
         new FlowEngine(
             stateService,
@@ -188,7 +193,7 @@ class FlowEngineTest {
                         TaskAction.SHIP,
                         Outcome.ok("ship ABC-1: request opened", "review request: http://host/1"))),
                 List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
@@ -216,7 +221,7 @@ class FlowEngineTest {
             new Capabilities(
                 List.of(new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1"))),
                 List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -246,7 +251,7 @@ class FlowEngineTest {
                             "revert stopped",
                             cause))),
                 List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
@@ -285,7 +290,7 @@ class FlowEngineTest {
             new Capabilities(
                 List.of(new FixedCapability(TaskAction.REVERT, Outcome.ok("reverted ABC-1"))),
                 List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
@@ -320,7 +325,7 @@ class FlowEngineTest {
                         TaskAction.SWEEP,
                         Outcome.ok("ABC-1: pipeline still running", "checks running"))),
                 List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
@@ -350,7 +355,7 @@ class FlowEngineTest {
             new Capabilities(
                 List.of(new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1"))),
                 List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -361,13 +366,12 @@ class FlowEngineTest {
   void failsLoudlyWhenAnActionTheRulesAllowHasNoCapabilityDeclared() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
-        .thenReturn(
-            Optional.of(TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build()));
+        .thenReturn(Optional.of(reviewPending));
     FlowEngine engine =
         new FlowEngine(
             stateService,
             new Capabilities(List.of(), List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -380,8 +384,7 @@ class FlowEngineTest {
   void keepsTheTaskMessageWhenTheOutcomeMovedItWithoutStampingOne() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
-        .thenReturn(
-            Optional.of(TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build()));
+        .thenReturn(Optional.of(reviewPending));
     FlowEngine engine =
         new FlowEngine(
             stateService,
@@ -390,7 +393,7 @@ class FlowEngineTest {
                     new FixedCapability(
                         TaskAction.SHIP, Outcome.ok("ship ABC-1: request opened", null))),
                 List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> write = ArgumentCaptor.captor();
@@ -407,13 +410,13 @@ class FlowEngineTest {
   void shipsStuckTaskAgainOnlyWhenItsAgentIsGoneAsTheProbeAnswersAtTheMomentOfTheRun() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build()));
+        .thenReturn(Optional.of(shipping));
     when(sessions.agentLive("ABC-1")).thenReturn(true);
     FlowEngine engine =
         new FlowEngine(
             stateService,
-            new Capabilities(List.of(new NeverRunCapability(TaskAction.SHIP)), List.of()),
-            new FactSources(sessions, ignored -> false),
+            neverRunShip,
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -427,7 +430,7 @@ class FlowEngineTest {
   void shipsStuckTaskAgainWhenTheProbeSaysItsAgentIsGone() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build()));
+        .thenReturn(Optional.of(shipping));
     when(sessions.agentLive("ABC-1")).thenReturn(false);
     FlowEngine engine =
         new FlowEngine(
@@ -435,7 +438,7 @@ class FlowEngineTest {
             new Capabilities(
                 List.of(new FixedCapability(TaskAction.SHIP, Outcome.ok("shipped again"))),
                 List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -446,13 +449,13 @@ class FlowEngineTest {
   void refusesToShipStuckTaskWhoseSessionWindowCouldNotBeRead() {
     when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build()));
+        .thenReturn(Optional.of(shipping));
     when(sessions.agentLive("ABC-1")).thenThrow(new AgentPresence.Unread("tmux timed out"));
     FlowEngine engine =
         new FlowEngine(
             stateService,
-            new Capabilities(List.of(new NeverRunCapability(TaskAction.SHIP)), List.of()),
-            new FactSources(sessions, ignored -> false),
+            neverRunShip,
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -475,7 +478,7 @@ class FlowEngineTest {
                     new KnowingCapability(
                         TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "beta")),
                 List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
     ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> writes = ArgumentCaptor.captor();
@@ -509,7 +512,7 @@ class FlowEngineTest {
                     new KnowingCapability(
                         TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "beta")),
                 List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -533,7 +536,7 @@ class FlowEngineTest {
                     new KnowingCapability(
                         TaskAction.ADD_REPO, Outcome.relayed("added", "repository added"), "beta")),
                 List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -554,7 +557,7 @@ class FlowEngineTest {
             new Capabilities(
                 List.of(new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1"))),
                 List.of()),
-            new FactSources(sessions, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 

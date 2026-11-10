@@ -27,6 +27,44 @@ class TaskReducerTest {
 
   private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
+  private final TaskState openedThree =
+      reducer.deployStepped(
+          TaskState.builder(
+                  List.of(
+                      new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
+                      new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta"),
+                      new TaskRepo(
+                          "gamma", "/gamma-wt", "git@host:g/gamma.git", "http://mr/gamma")),
+                  TaskStatus.DEPLOY_CONFLICT)
+              .build(),
+          new DeployStep.Opened(
+              List.of(
+                  Deployment.Target.of("alpha", "dev"),
+                  Deployment.Target.of("beta", "dev"),
+                  Deployment.Target.of("gamma", "dev"))),
+          1_000);
+
+  private final TaskState openedTwo =
+      reducer.deployStepped(
+          TaskState.builder(
+                  List.of(
+                      new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
+                      new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta")),
+                  TaskStatus.DEPLOY_CONFLICT)
+              .build(),
+          new DeployStep.Opened(
+              List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
+          1_000);
+
+  private final TaskState conflicted =
+      reducer.deployStepped(
+          reducer.deployStepped(
+              TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT).build(),
+              new DeployStep.Opened(List.of(Deployment.Target.of("api", "dev"))),
+              1_000),
+          new DeployStep.Conflicted("api", Deployment.Cause.MERGE),
+          1_000);
+
   @Test
   void keepsTheSilenceToldWhereTheAutoReviewPingsAreForgotten() {
     TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
@@ -43,14 +81,6 @@ class TaskReducerTest {
 
   @Test
   void forgetsTheDeployConflictOnceTheDeployLands() {
-    TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT).build();
-    TaskState opened =
-        reducer.deployStepped(
-            task, new DeployStep.Opened(List.of(Deployment.Target.of("api", "dev"))), 1_000);
-    TaskState conflicted =
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("api", Deployment.Cause.MERGE), 1_000);
-
     TaskState deployed =
         reducer.reduce(
             conflicted,
@@ -70,14 +100,6 @@ class TaskReducerTest {
 
   @Test
   void turnsStalledConflictIntoTheSessionsQuestionAndRestartsItsClock() {
-    TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT).build();
-    TaskState opened =
-        reducer.deployStepped(
-            task, new DeployStep.Opened(List.of(Deployment.Target.of("api", "dev"))), 1_000);
-    TaskState conflicted =
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("api", Deployment.Cause.MERGE), 1_000);
-
     TaskState referred = reducer.conflictReferred(conflicted, "stalled for 20 min", 2_000);
 
     assertThat(referred.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
@@ -90,13 +112,6 @@ class TaskReducerTest {
 
   @Test
   void asksTheMasterOfStalledConflictOnlyOnce() {
-    TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT).build();
-    TaskState opened =
-        reducer.deployStepped(
-            task, new DeployStep.Opened(List.of(Deployment.Target.of("api", "dev"))), 1_000);
-    TaskState conflicted =
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("api", Deployment.Cause.MERGE), 1_000);
     TaskState referred = reducer.conflictReferred(conflicted, "first", 2_000);
 
     TaskState again = reducer.conflictReferred(referred, "second", 3_000);
@@ -335,14 +350,6 @@ class TaskReducerTest {
 
   @Test
   void keepsTheDeployConflictWhereHeldReportLeavesTheTaskInIt() {
-    TaskState task = TaskState.builder("api", "/wt", TaskStatus.DEPLOY_CONFLICT).build();
-    TaskState opened =
-        reducer.deployStepped(
-            task, new DeployStep.Opened(List.of(Deployment.Target.of("api", "dev"))), 1_000);
-    TaskState conflicted =
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("api", Deployment.Cause.MERGE), 1_000);
-
     TaskState held =
         reducer.reduce(
             conflicted,
@@ -974,27 +981,10 @@ class TaskReducerTest {
 
   @Test
   void keepsTheLandedTargetInTheRecordWhereItsRepositoryLeavesTheTask() {
-    TaskState task =
-        TaskState.builder(
-                List.of(
-                    new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
-                    new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta"),
-                    new TaskRepo("gamma", "/gamma-wt", "git@host:g/gamma.git", "http://mr/gamma")),
-                TaskStatus.DEPLOY_CONFLICT)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            task,
-            new DeployStep.Opened(
-                List.of(
-                    Deployment.Target.of("alpha", "dev"),
-                    Deployment.Target.of("beta", "dev"),
-                    Deployment.Target.of("gamma", "dev"))),
-            1_000);
     TaskState merged =
         reducer.deployStepped(
             reducer.deployStepped(
-                reducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100),
+                reducer.deployStepped(openedThree, new DeployStep.Merged("alpha", "a1"), 1_100),
                 new DeployStep.Merged("beta", "b1"),
                 1_100),
             new DeployStep.Merged("gamma", "c1"),
@@ -1016,22 +1006,9 @@ class TaskReducerTest {
 
   @Test
   void leavesTheDeployLandingSoItsCheckIsAskedAgainWhereTheConflictedRepositoryLeavesTheTask() {
-    TaskState task =
-        TaskState.builder(
-                List.of(
-                    new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
-                    new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta")),
-                TaskStatus.DEPLOY_CONFLICT)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            task,
-            new DeployStep.Opened(
-                List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
-            1_000);
     TaskState merged =
         reducer.deployStepped(
-            reducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100),
+            reducer.deployStepped(openedTwo, new DeployStep.Merged("alpha", "a1"), 1_100),
             new DeployStep.Merged("beta", "b1"),
             1_100);
     TaskState red =
@@ -1068,22 +1045,9 @@ class TaskReducerTest {
 
   @Test
   void offersDeployAgainWhereTheConflictedRepositoryLeavesAndNothingLanded() {
-    TaskState task =
-        TaskState.builder(
-                List.of(
-                    new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
-                    new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta")),
-                TaskStatus.DEPLOY_CONFLICT)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            task,
-            new DeployStep.Opened(
-                List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
-            1_000);
     TaskState conflicted =
         reducer.deployStepped(
-            opened, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_100);
+            openedTwo, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_100);
 
     TaskState left = reducer.repoLeft(conflicted, "beta");
 
@@ -1093,24 +1057,8 @@ class TaskReducerTest {
 
   @Test
   void holdsTheDeployConflictOnTheUnpushedRepositoryWhereTheMergeConflictedOneLeavesTheTask() {
-    TaskState task =
-        TaskState.builder(
-                List.of(
-                    new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
-                    new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta"),
-                    new TaskRepo("gamma", "/gamma-wt", "git@host:g/gamma.git", "http://mr/gamma")),
-                TaskStatus.DEPLOY_CONFLICT)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            task,
-            new DeployStep.Opened(
-                List.of(
-                    Deployment.Target.of("alpha", "dev"),
-                    Deployment.Target.of("beta", "dev"),
-                    Deployment.Target.of("gamma", "dev"))),
-            1_000);
-    TaskState merged = reducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100);
+    TaskState merged =
+        reducer.deployStepped(openedThree, new DeployStep.Merged("alpha", "a1"), 1_100);
     TaskState conflicted =
         reducer.deployStepped(
             merged, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_200);
@@ -1130,20 +1078,8 @@ class TaskReducerTest {
 
   @Test
   void landsDeployedWhereTheMergeConflictedLastRepositoryLeavesAfterAnotherLanded() {
-    TaskState task =
-        TaskState.builder(
-                List.of(
-                    new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
-                    new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta")),
-                TaskStatus.DEPLOY_CONFLICT)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            task,
-            new DeployStep.Opened(
-                List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
-            1_000);
-    TaskState merged = reducer.deployStepped(opened, new DeployStep.Merged("alpha", "a1"), 1_100);
+    TaskState merged =
+        reducer.deployStepped(openedTwo, new DeployStep.Merged("alpha", "a1"), 1_100);
     TaskState conflicted =
         reducer.deployStepped(
             merged, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_200);
@@ -1159,26 +1095,9 @@ class TaskReducerTest {
 
   @Test
   void leavesNothingToPushWhereThePipelineConflictedRepositoryLeavesTheTask() {
-    TaskState task =
-        TaskState.builder(
-                List.of(
-                    new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
-                    new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta"),
-                    new TaskRepo("gamma", "/gamma-wt", "git@host:g/gamma.git", "http://mr/gamma")),
-                TaskStatus.DEPLOY_CONFLICT)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            task,
-            new DeployStep.Opened(
-                List.of(
-                    Deployment.Target.of("alpha", "dev"),
-                    Deployment.Target.of("beta", "dev"),
-                    Deployment.Target.of("gamma", "dev"))),
-            1_000);
     TaskState red =
         reducer.deployStepped(
-            opened, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_200);
+            openedThree, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_200);
 
     TaskState left = reducer.repoLeft(red, "beta");
 
@@ -1187,26 +1106,9 @@ class TaskReducerTest {
 
   @Test
   void keepsTheDeployConflictWhereAnotherRepositoryThanTheConflictedOneLeavesTheTask() {
-    TaskState task =
-        TaskState.builder(
-                List.of(
-                    new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
-                    new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta"),
-                    new TaskRepo("gamma", "/gamma-wt", "git@host:g/gamma.git", "http://mr/gamma")),
-                TaskStatus.DEPLOY_CONFLICT)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            task,
-            new DeployStep.Opened(
-                List.of(
-                    Deployment.Target.of("alpha", "dev"),
-                    Deployment.Target.of("beta", "dev"),
-                    Deployment.Target.of("gamma", "dev"))),
-            1_000);
     TaskState red =
         reducer.deployStepped(
-            opened, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_200);
+            openedThree, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_200);
 
     TaskState left = reducer.repoLeft(red, "gamma");
 

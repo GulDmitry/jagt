@@ -66,18 +66,21 @@ class InterceptedCapabilityTest {
   private final List<String> log = new ArrayList<>();
   private final ReducingStore tasks = mock(ReducingStore.class);
   private final AgentPresence agents = mock(AgentPresence.class);
+  private final FactSources facts = new FactSources(agents, ignored -> false);
+  private final TaskState inProgress =
+      TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build();
 
   @Test
   void runsTheWorkInsideEveryStepAnInstallPutAroundTheVerb() {
     when(tasks.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(tasks.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build()));
+        .thenReturn(Optional.of(inProgress));
     FlowEngine engine =
         new FlowEngine(
             tasks,
             new Capabilities(
                 List.of(new Ships(log)), List.of(new Announces(log, 2), new Announces(log, 1))),
-            new FactSources(agents, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -90,12 +93,12 @@ class InterceptedCapabilityTest {
   void stopsTheWorkAndTheTransitionWhenStepAroundItRefuses() {
     when(tasks.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(tasks.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build()));
+        .thenReturn(Optional.of(inProgress));
     FlowEngine engine =
         new FlowEngine(
             tasks,
             new Capabilities(List.of(new Ships(log)), List.of(new Refuses())),
-            new FactSources(agents, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 
@@ -110,12 +113,12 @@ class InterceptedCapabilityTest {
   void leavesVerbNobodyWrappedExactlyAsItWas() {
     when(tasks.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
     when(tasks.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).build()));
+        .thenReturn(Optional.of(inProgress));
     FlowEngine engine =
         new FlowEngine(
             tasks,
             new Capabilities(List.of(new Ships(log)), List.of()),
-            new FactSources(agents, ignored -> false),
+            facts,
             Clock.systemUTC(),
             rules);
 

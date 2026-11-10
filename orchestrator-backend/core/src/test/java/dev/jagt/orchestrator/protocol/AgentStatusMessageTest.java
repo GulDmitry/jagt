@@ -11,6 +11,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 class AgentStatusMessageTest {
 
+  private final MessageContext context =
+      new MessageContext(List.of("api"), false, List.of("api", "registry"));
+
   @Test
   void refusesAnOutcomeItDoesNotNameInsteadOfReadingTheMessageInstead() {
     var said = AgentStatusMessage.of("IN_PROGRESS", "still going").withOutcome("done");
@@ -292,7 +295,6 @@ class AgentStatusMessageTest {
             "registry",
             null,
             Map.of());
-    var context = new MessageContext(List.of("api"), false, List.of("api", "registry"));
 
     assertThat(said.reportViolations(context)).isEmpty();
     assertThat(said.accepted(context).orElseThrow().needsProject()).isEqualTo("registry");
@@ -310,7 +312,6 @@ class AgentStatusMessageTest {
             "ghost",
             null,
             Map.of());
-    var context = new MessageContext(List.of("api"), false, List.of("api", "registry"));
 
     assertThat(said.reportViolations(context))
         .singleElement()
@@ -335,7 +336,6 @@ class AgentStatusMessageTest {
             "api",
             null,
             Map.of());
-    var context = new MessageContext(List.of("api"), false, List.of("api", "registry"));
 
     assertThat(said.reportViolations(context))
         .singleElement()
@@ -359,9 +359,7 @@ class AgentStatusMessageTest {
             null,
             Map.of());
 
-    assertThat(
-            said.reportViolations(
-                new MessageContext(List.of("api"), false, List.of("api", "registry"))))
+    assertThat(said.reportViolations(context))
         .singleElement()
         .satisfies(
             violation -> assertThat(violation.expected()).isEqualTo("only with outcome=question"));

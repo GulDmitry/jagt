@@ -29,6 +29,24 @@ class TaskViewTest {
 
   private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 
+  private final TaskView workingTask =
+      TaskView.of(
+          rules,
+          "ABC-1",
+          TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
+          RoundState.of(AgentReport.PLAIN, false),
+          AutoReviewWatch.none(),
+          Map.of("api", "dev"));
+
+  private final Deployment apiLandedWebWaiting =
+      new Deployment(
+          1,
+          List.of(
+              Deployment.Target.of("api", "dev").withMerge("abc1234"),
+              Deployment.Target.of("web", "dev")),
+          1,
+          null);
+
   private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> watches() {
@@ -325,16 +343,7 @@ class TaskViewTest {
 
   @Test
   void doneStandsApartFromTheOtherVerbs() {
-    TaskView view =
-        TaskView.of(
-            rules,
-            "ABC-1",
-            TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
-            RoundState.of(AgentReport.PLAIN, false),
-            AutoReviewWatch.none(),
-            Map.of("api", "dev"));
-
-    assertThat(view.actions())
+    assertThat(workingTask.actions())
         .filteredOn(TaskView.ActionView::apart)
         .extracting(TaskView.ActionView::id)
         .containsExactly("done");
@@ -342,16 +351,7 @@ class TaskViewTest {
 
   @Test
   void doneCarriesNoKey() {
-    TaskView view =
-        TaskView.of(
-            rules,
-            "ABC-1",
-            TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
-            RoundState.of(AgentReport.PLAIN, false),
-            AutoReviewWatch.none(),
-            Map.of("api", "dev"));
-
-    assertThat(view.actions())
+    assertThat(workingTask.actions())
         .filteredOn(action -> action.id().equals("done"))
         .singleElement()
         .extracting(TaskView.ActionView::key)
@@ -360,16 +360,7 @@ class TaskViewTest {
 
   @Test
   void shipCarriesItsLetter() {
-    TaskView view =
-        TaskView.of(
-            rules,
-            "ABC-1",
-            TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
-            RoundState.of(AgentReport.PLAIN, false),
-            AutoReviewWatch.none(),
-            Map.of("api", "dev"));
-
-    assertThat(view.actions())
+    assertThat(workingTask.actions())
         .filteredOn(action -> action.id().equals("ship"))
         .singleElement()
         .extracting(TaskView.ActionView::key)
@@ -378,16 +369,7 @@ class TaskViewTest {
 
   @Test
   void highlightsNoVerbWhileTheAgentHoldsTheMove() {
-    TaskView view =
-        TaskView.of(
-            rules,
-            "ABC-1",
-            TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
-            RoundState.of(AgentReport.PLAIN, false),
-            AutoReviewWatch.none(),
-            Map.of("api", "dev"));
-
-    assertThat(view.actions()).noneMatch(TaskView.ActionView::primary);
+    assertThat(workingTask.actions()).noneMatch(TaskView.ActionView::primary);
   }
 
   @Test
@@ -427,16 +409,7 @@ class TaskViewTest {
 
   @Test
   void onlyFocusRidesOnTheRowOfWorkingTask() {
-    TaskView view =
-        TaskView.of(
-            rules,
-            "ABC-1",
-            TaskState.builder("api", "/api-wt", TaskStatus.IN_PROGRESS).alias("a1").build(),
-            RoundState.of(AgentReport.PLAIN, false),
-            AutoReviewWatch.none(),
-            Map.of("api", "dev"));
-
-    assertThat(view.actions())
+    assertThat(workingTask.actions())
         .filteredOn(TaskView.ActionView::onRow)
         .extracting(TaskView.ActionView::id)
         .containsExactly("focus");
@@ -582,14 +555,7 @@ class TaskViewTest {
                     List.of(TaskRepo.of("api", "/api-wt"), TaskRepo.of("web", "/web-wt")),
                     TaskStatus.APPROVED)
                 .alias("a1")
-                .deployment(
-                    new Deployment(
-                        1,
-                        List.of(
-                            Deployment.Target.of("api", "dev").withMerge("abc1234"),
-                            Deployment.Target.of("web", "dev")),
-                        1,
-                        null))
+                .deployment(apiLandedWebWaiting)
                 .build(),
             RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),
@@ -608,14 +574,7 @@ class TaskViewTest {
                     List.of(TaskRepo.of("api", "/api-wt"), TaskRepo.of("web", "/web-wt")),
                     TaskStatus.DEPLOY_CONFLICT)
                 .alias("a1")
-                .deployment(
-                    new Deployment(
-                        1,
-                        List.of(
-                            Deployment.Target.of("api", "dev").withMerge("abc1234"),
-                            Deployment.Target.of("web", "dev")),
-                        1,
-                        null))
+                .deployment(apiLandedWebWaiting)
                 .build(),
             RoundState.of(AgentReport.PLAIN, false),
             AutoReviewWatch.none(),

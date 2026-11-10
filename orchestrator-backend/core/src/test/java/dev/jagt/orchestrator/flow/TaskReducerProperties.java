@@ -57,7 +57,7 @@ class TaskReducerProperties {
                                       .isEmpty());
                       return next;
                     },
-                    (left, right) -> right))
+                    TaskWalk::lastOf))
         .isNotNull();
   }
 
@@ -79,7 +79,7 @@ class TaskReducerProperties {
                           .ifPresent(stop -> assertThat(next.stop()).isEqualTo(stop));
                       return next;
                     },
-                    (left, right) -> right))
+                    TaskWalk::lastOf))
         .isNotNull();
   }
 
@@ -99,7 +99,7 @@ class TaskReducerProperties {
                               before -> assertThat(next.planGate()).isEqualTo(PlanGate.REQUIRED));
                       return next;
                     },
-                    (left, right) -> right))
+                    TaskWalk::lastOf))
         .isNotNull();
   }
 
@@ -127,7 +127,7 @@ class TaskReducerProperties {
                               before -> assertThat(next.report()).isEqualTo(before.report()));
                       return next;
                     },
-                    (left, right) -> right))
+                    TaskWalk::lastOf))
         .isNotNull();
   }
 
@@ -146,7 +146,7 @@ class TaskReducerProperties {
                           .ifPresent(before -> assertThat(next.gitStateChanged()).isTrue());
                       return next;
                     },
-                    (left, right) -> right))
+                    TaskWalk::lastOf))
         .isNotNull();
   }
 
@@ -171,7 +171,7 @@ class TaskReducerProperties {
                                       .isFalse());
                       return next;
                     },
-                    (left, right) -> right))
+                    TaskWalk::lastOf))
         .isNotNull();
   }
 
@@ -191,7 +191,7 @@ class TaskReducerProperties {
                                   assertThat(InfraPhase.of(next)).isNotEqualTo(InfraPhase.ARMED));
                       return next;
                     },
-                    (left, right) -> right))
+                    TaskWalk::lastOf))
         .isNotNull();
   }
 
@@ -214,7 +214,7 @@ class TaskReducerProperties {
                               });
                       return next;
                     },
-                    (left, right) -> right))
+                    TaskWalk::lastOf))
         .isNotNull();
   }
 
@@ -253,7 +253,7 @@ class TaskReducerProperties {
                           .ifPresent(m -> assertThat(next.turnOrNone().id()).isEqualTo(id));
                       return next;
                     },
-                    (left, right) -> right))
+                    TaskWalk::lastOf))
         .isNotNull();
   }
 
@@ -265,13 +265,13 @@ class TaskReducerProperties {
             .reduce(
                 start,
                 (task, move) -> reducer.reduce(task, move, "step", true, 1_000),
-                (left, right) -> right);
+                TaskWalk::lastOf);
     TaskState second =
         moves.stream()
             .reduce(
                 start,
                 (task, move) -> reducer.reduce(task, move, "step", true, 1_000),
-                (left, right) -> right);
+                TaskWalk::lastOf);
 
     assertThat(second).isEqualTo(first);
   }
@@ -290,7 +290,7 @@ class TaskReducerProperties {
                               before -> assertThat(next.status()).isEqualTo(TaskStatus.DONE));
                       return next;
                     },
-                    (left, right) -> right))
+                    TaskWalk::lastOf))
         .isNotNull();
   }
 
@@ -340,7 +340,7 @@ class TaskReducerProperties {
                                   declared.get("acceptance")));
                       return next;
                     },
-                    (left, right) -> right))
+                    TaskWalk::lastOf))
         .isNotNull();
   }
 
@@ -353,7 +353,7 @@ class TaskReducerProperties {
                     start,
                     (task, raw) -> {
                       TaskState next =
-                          reducer.reduce(task, reducer.resolved(task, raw), "step", true, 1_000);
+                          TaskWalk.step(reducer, task, raw);
                       Optional.of(next)
                           .filter(moved -> !FlowRules.closed(moved.status()) && !moved.stopped())
                           .ifPresent(
@@ -372,7 +372,7 @@ class TaskReducerProperties {
                                               == CheckerPhase.READING));
                       return next;
                     },
-                    (left, right) -> right))
+                    TaskWalk::lastOf))
         .isNotNull();
   }
 
@@ -385,7 +385,7 @@ class TaskReducerProperties {
                     start,
                     (task, raw) -> {
                       TaskState next =
-                          reducer.reduce(task, reducer.resolved(task, raw), "step", true, 1_000);
+                          TaskWalk.step(reducer, task, raw);
                       Optional.of(next)
                           .filter(
                               moved ->
@@ -402,7 +402,7 @@ class TaskReducerProperties {
                               });
                       return next;
                     },
-                    (left, right) -> right))
+                    TaskWalk::lastOf))
         .isNotNull();
   }
 

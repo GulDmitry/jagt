@@ -33,6 +33,12 @@ class TurnsTest {
           "act-mine-plan", new Arbiter.Profile(MasterMode.ACT, Set.of("plan")),
           "act", new Arbiter.Profile(MasterMode.ACT, Set.of()));
 
+  private static final Facts withReviewRequest =
+      Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true));
+
+  private static final AutoReviewWatch neverExpiringWatch =
+      AutoReviewWatch.watching(Long.MAX_VALUE);
+
   static Stream<Arguments> everyTurn() {
     return Arrays.stream(TaskStatus.values())
         .flatMap(
@@ -79,10 +85,10 @@ class TurnsTest {
         Move.forTask(
             rules,
             status,
-            Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
+            withReviewRequest,
             RoundState.of(report, false).withMaster(Objects.requireNonNull(PROFILES.get(profile))),
             false,
-            AutoReviewWatch.watching(Long.MAX_VALUE));
+            neverExpiringWatch);
 
     assertThat(move.owner()).isEqualTo(Owner.of(holder));
   }
@@ -100,10 +106,10 @@ class TurnsTest {
         Move.forTask(
             rules,
             status,
-            Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
+            withReviewRequest,
             RoundState.of(report, false).withMaster(Objects.requireNonNull(PROFILES.get(profile))),
             false,
-            AutoReviewWatch.watching(Long.MAX_VALUE));
+            neverExpiringWatch);
 
     assertThat(move.owner()).isEqualTo(Owner.AGENT);
   }
@@ -139,7 +145,7 @@ class TurnsTest {
         Move.forTask(
             rules,
             status,
-            Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
+            withReviewRequest,
             RoundState.of(report, false).withMasterReading(true),
             false);
 
@@ -197,7 +203,7 @@ class TurnsTest {
         Move.forTask(
             rules,
             TaskStatus.DEPLOYED,
-            Facts.defaults().withDelivery(Facts.Delivery.defaults().withHasReviewRequest(true)),
+            withReviewRequest,
             RoundState.of(AgentReport.PLAIN, false)
                 .withCheckers(Map.of("acceptance", CheckerPhase.READING))
                 .withMaster(Objects.requireNonNull(PROFILES.get(profile))),
