@@ -79,6 +79,10 @@ or local setup; such names live only in git-ignored files.
 - **Three collaborators per class is the target, five the ceiling**, delegates included (`CollaboratorCeilingTest`):
   group them into a component, never add a field.
 - **A method reads at cognitive complexity 12 at most** (`CognitiveComplexityTest`): split it, never raise the number.
+- **No static state, no lifecycle hook that does work**: a static field is final and immutable.
+  A holder's inputs are its arguments; a collaborator arrives through the constructor.
+  Start work is an `@EventListener` or a `Job`, never `@PostConstruct`
+  (`StaticStateTest`, `LifecycleHooksTest`, [0160](docs/decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md)).
 - **No duplicated block of 75 tokens or more in main** (`DuplicationTest`): extract the one holder, never raise the number.
 - **Checkstyle's default counts gate main**: 7 parameters, 8 record components; a suppression needs its reason, zero is the target
   ([0143](docs/decisions/0143-checkstyle-gates-parameter-and-component-counts.md)).

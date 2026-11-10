@@ -1,0 +1,7 @@
+Method <dev.jagt.orchestrator.job.IntakeHistory.follow()> is annotated with @PostConstruct in (IntakeHistory.java:37)
+Method <dev.jagt.orchestrator.service.HumanWaitRecorder.follow()> is annotated with @PostConstruct in (HumanWaitRecorder.java:36)
+Method <dev.jagt.orchestrator.service.InstalledRoles.install()> is annotated with @PostConstruct in (InstalledRoles.java:51)
+Method <dev.jagt.orchestrator.service.SessionTransitionLog.follow()> is annotated with @PostConstruct in (SessionTransitionLog.java:36)
+Method <dev.jagt.orchestrator.service.master.MasterBrake.follow()> is annotated with @PostConstruct in (MasterBrake.java:54)
+Method <dev.jagt.orchestrator.surface.board.TaskEventStream.followStateChanges()> is annotated with @PostConstruct in (TaskEventStream.java:57)
+Method <dev.jagt.orchestrator.surface.ui.TaskAliasFeed.follow()> is annotated with @PostConstruct in (TaskAliasFeed.java:18)

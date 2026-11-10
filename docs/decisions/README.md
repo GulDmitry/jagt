@@ -172,3 +172,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0156 A poll reads an unchanged request from the host alone](0156-a-poll-reads-an-unchanged-request-from-the-host-alone.md) (beside 0130)
 - [0157 A role's options live in its folder](0157-a-roles-options-live-in-its-folder.md) (amends 0130)
 - [0158 Acceptance keeps its checks in a workspace](0158-acceptance-keeps-its-checks-in-a-workspace.md) (reopens 0157 in part)
+- [0160 The chart is an instance and start work is an event](0160-the-chart-is-an-instance-and-start-work-is-an-event.md) (beside 0107)

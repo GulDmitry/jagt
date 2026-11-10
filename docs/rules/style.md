@@ -61,6 +61,14 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
 - **Checkstyle's default counts gate main**: 7 parameters, 8 record components
   ([0143](../decisions/0143-checkstyle-gates-parameter-and-component-counts.md)); over them, nested records or a builder.
   A suppression carries its reason and estimated cost; zero suppressions is the target.
+- **Static is for pure functions and constants** (`StaticStateTest`, `LifecycleHooksTest`,
+  [0160](../decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md)): a static method reads only its
+  arguments and immutable constants; a static field is final, of an immutable type. A class needing a clock, a file root,
+  the composition or a registry is an instance built by its `*Wiring`. `@PostConstruct` validates configuration only;
+  no field `@Autowired`, no `static {}` initializer, no `ApplicationContext` lookup. Exempt by name: `TaskAliasLogFilter`,
+  `AbortedConnectionFilter` (Logback predates the context). A global is a second constructor nobody sees; a hook only
+  tests call sidesteps `ProductionConstructorTest`. Existing offenders sit in the frozen store
+  `src/test/resources/archunit/`, which only shrinks.
 - Over the ceiling, group by composition and never inheritance, or use a registry of small units
   (`surface/mcp/McpTools`, `Move.actions()`).
 - **English and UTC only**, set in `main` ([0055](../decisions/0055-jagt-speaks-english-and-keeps-utc.md)):

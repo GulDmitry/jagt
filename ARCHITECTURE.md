@@ -62,6 +62,7 @@ centre, `port/` `task/` `flow/` `protocol/`: the records, the rules, and the int
 - no OS name (`osascript`, `notify-send`, `setsid`, an install prefix, a Windows shell), and no vendor or editor
   name anywhere in a source, outside `adapter/`.
 - no ring between the centre and the edge depends on `adapter/`.
+- no static mutable field in any ring (`StaticStateTest`).
 - it proves it read every ring, so a refactor cannot empty it.
 - it cannot see resources and scripts, or the words a host invents.
 - it exempts only `tmuxCommand`, `tmuxSession` and `tmuxSocket`, keys naming a vendor by design; renaming one a human already
@@ -323,5 +324,7 @@ that points outward does not compile. Two folders inside one module it cannot se
   build/libs/jagt-run.jar` starts the board.
 - **A bean has one constructor**, the one a test calls too: what varies — a clock, a pool, a policy, a host fact — is
   a collaborator that `RuntimeWiring` or `adapter/SystemHost` supplies (`ProductionConstructorTest`).
+- **No init hook that does work**: `@PostConstruct` validates configuration only; start work is an event or a `Job`
+  (`LifecycleHooksTest`).
 - `config/` keeps what the human wrote and the edge resolves a binary where it spawns it, so no use case names
   `adapter/Executables`.
