@@ -1,20 +1,13 @@
 package dev.jagt.orchestrator.adapter.flows;
 
+import static dev.jagt.orchestrator.adapter.flows.AcceptanceFolders.ENABLED;
+import static dev.jagt.orchestrator.adapter.flows.AcceptanceFolders.folder;
+import static dev.jagt.orchestrator.adapter.flows.AcceptanceFolders.readOver;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.RoleDefinitions;
-import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.ReachLost;
-import dev.jagt.orchestrator.service.ActStops;
-import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ReachLedger;
-import dev.jagt.orchestrator.service.RoleSettings;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -39,32 +32,10 @@ class RoleFolderReachTest {
       })
   void anEnabledRoleWhoseFolderCannotRunCheckIsOneMarkOnTheBoardsHead(
       String written, String said, @TempDir Path root) throws Exception {
-    Files.writeString(
-        root.resolve("jagt.yml"),
-        "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.copy(
-        Path.of("../../roles/acceptance/role.yml.dist"),
-        root.resolve("roles/acceptance/role.yml.dist"));
+    OrchestratorPaths paths = folder(root, ENABLED);
     Files.writeString(root.resolve("roles/acceptance/role.yml"), written + "\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
-    ReachLedger reach = new ReachLedger();
 
-    new RoleFolderReach(
-            new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new ConfigService(
-                    paths,
-                    mock(AgentRuntime.class),
-                    mock(ActStops.class),
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                paths),
-            reach)
-        .run();
+    ReachLedger reach = readOver(paths);
 
     assertThat(reach.standing())
         .singleElement()
@@ -78,30 +49,7 @@ class RoleFolderReachTest {
   @Test
   void theMarkEndsOnTheFirstReadAfterTheFolderNamesAnEnvironment(@TempDir Path root)
       throws Exception {
-    Files.writeString(
-        root.resolve("jagt.yml"),
-        "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.copy(
-        Path.of("../../roles/acceptance/role.yml.dist"),
-        root.resolve("roles/acceptance/role.yml.dist"));
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
-    ReachLedger reach = new ReachLedger();
-    new RoleFolderReach(
-            new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new ConfigService(
-                    paths,
-                    mock(AgentRuntime.class),
-                    mock(ActStops.class),
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                paths),
-            reach)
-        .run();
+    ReachLedger reach = readOver(folder(root, ENABLED));
     Files.writeString(
         root.resolve("roles/acceptance/role.yml"), "environments: [{url: https://a.test}]\n");
 
@@ -112,63 +60,19 @@ class RoleFolderReachTest {
 
   @Test
   void folderNamingAnEnvironmentAndAnMcpServerRaisesNoMark(@TempDir Path root) throws Exception {
-    Files.writeString(
-        root.resolve("jagt.yml"),
-        "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.copy(
-        Path.of("../../roles/acceptance/role.yml.dist"),
-        root.resolve("roles/acceptance/role.yml.dist"));
+    OrchestratorPaths paths = folder(root, ENABLED);
     Files.writeString(
         root.resolve("roles/acceptance/role.yml"),
         "{environments: [{url: a}], tools: {mcp: [mcp__logs]}}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
-    ReachLedger reach = new ReachLedger();
 
-    new RoleFolderReach(
-            new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new ConfigService(
-                    paths,
-                    mock(AgentRuntime.class),
-                    mock(ActStops.class),
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                paths),
-            reach)
-        .run();
+    ReachLedger reach = readOver(paths);
 
     assertThat(reach.standing()).isEmpty();
   }
 
   @Test
   void roleTurnedOffRaisesNoMarkWhateverItsFolderLacks(@TempDir Path root) throws Exception {
-    Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.copy(
-        Path.of("../../roles/acceptance/role.yml.dist"),
-        root.resolve("roles/acceptance/role.yml.dist"));
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
-    ReachLedger reach = new ReachLedger();
-
-    new RoleFolderReach(
-            new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new ConfigService(
-                    paths,
-                    mock(AgentRuntime.class),
-                    mock(ActStops.class),
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                paths),
-            reach)
-        .run();
+    ReachLedger reach = readOver(folder(root, "orchestrator:\n  projects: {}\n"));
 
     assertThat(reach.standing()).isEmpty();
   }

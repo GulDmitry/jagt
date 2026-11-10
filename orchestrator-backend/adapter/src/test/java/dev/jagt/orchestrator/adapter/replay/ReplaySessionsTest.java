@@ -1,5 +1,10 @@
 package dev.jagt.orchestrator.adapter.replay;
 
+import static dev.jagt.orchestrator.adapter.replay.ReplayFixtures.attached;
+import static dev.jagt.orchestrator.adapter.replay.ReplayFixtures.holding;
+import static dev.jagt.orchestrator.adapter.replay.ReplayFixtures.newTaskAt;
+import static dev.jagt.orchestrator.adapter.replay.ReplayFixtures.recordingFile;
+import static dev.jagt.orchestrator.adapter.replay.ReplayFixtures.sessionsOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,15 +19,11 @@ import static org.mockito.Mockito.when;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.RoleRecord;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -50,20 +51,16 @@ class ReplaySessionsTest {
   @Test
   void launchedSessionIsAnsweredWithTheMovesRecordedBeforeItsFirstTurnOnce(@TempDir Path root)
       throws Exception {
-    Path file = root.resolve("recording.jsonl");
-    Files.writeString(
-        file,
-        """
-        {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"done"}}
-        """);
+    Path file =
+        recordingFile(
+            root,
+            """
+            {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"done"}}
+            """);
     Recording recording = new Recording(file.toString());
-    TaskStore tasks = mock(TaskStore.class);
-    when(tasks.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("p", "/work/ABC-1", TaskStatus.NEW).build()));
+    TaskStore tasks = holding("ABC-1", newTaskAt("/work/ABC-1"));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions =
-        new ReplaySessions(
-            recording, tasks, moves, new Checkers(new TaskChart(Composition.builtIn())));
+    sessions = sessionsOf(recording, tasks, moves);
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -77,14 +74,6 @@ class ReplaySessionsTest {
 
   @Test
   void sessionThatNeverLaunchedOrHasNoWorktreeYetIsLeftAlone(@TempDir Path root) throws Exception {
-    Path file = root.resolve("recording.jsonl");
-    Files.writeString(
-        file,
-        """
-        {"type":"tree","task":"ABC-3","turn":0,"files":{"notes.md":"three"}}
-        {"type":"tree","task":"ABC-2","turn":0,"files":{"notes.md":"two"}}
-        {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"one"}}
-        """);
     TaskStore tasks = mock(TaskStore.class);
     when(tasks.task("ABC-3"))
         .thenReturn(Optional.of(TaskState.builder("p", null, TaskStatus.NEW).build()));
@@ -93,12 +82,17 @@ class ReplaySessionsTest {
     when(tasks.task("ABC-1"))
         .thenReturn(Optional.of(TaskState.builder("p", "/work/ABC-1", TaskStatus.NEW).build()));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions =
-        new ReplaySessions(
-            new Recording(file.toString()),
-            tasks,
-            moves,
-            new Checkers(new TaskChart(Composition.builtIn())));
+    Recording recording =
+        new Recording(
+            recordingFile(
+                    root,
+                    """
+                    {"type":"tree","task":"ABC-3","turn":0,"files":{"notes.md":"three"}}
+                    {"type":"tree","task":"ABC-2","turn":0,"files":{"notes.md":"two"}}
+                    {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"one"}}
+                    """)
+                .toString());
+    sessions = sessionsOf(recording, tasks, moves);
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -109,21 +103,17 @@ class ReplaySessionsTest {
 
   @Test
   void replayThatAlreadyDivergedMakesNoMoreMoves(@TempDir Path root) throws Exception {
-    Path file = root.resolve("recording.jsonl");
-    Files.writeString(
-        file,
-        """
-        {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"one"}}
-        """);
+    Path file =
+        recordingFile(
+            root,
+            """
+            {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"one"}}
+            """);
     Recording recording = new Recording(file.toString());
     recording.diverge("ABC-2", "ship", "a read the recording never held");
-    TaskStore tasks = mock(TaskStore.class);
-    when(tasks.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("p", "/work/ABC-1", TaskStatus.NEW).build()));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions =
-        new ReplaySessions(
-            recording, tasks, moves, new Checkers(new TaskChart(Composition.builtIn())));
+    TaskStore tasks = holding("ABC-1", newTaskAt("/work/ABC-1"));
+    sessions = sessionsOf(recording, tasks, moves);
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -135,13 +125,13 @@ class ReplaySessionsTest {
   @Test
   void turnJagtOpensIsAnsweredWithItsRecordedMovesOnceHoweverOftenItIsPolled(@TempDir Path root)
       throws Exception {
-    Path file = root.resolve("recording.jsonl");
-    Files.writeString(
-        file,
-        """
-        {"type":"turn","task":"ABC-1","turn":1,"step":"ship"}
-        {"type":"push","task":"ABC-1","turn":1,"message":"Fix the widget","paths":["a.txt"]}
-        """);
+    Path file =
+        recordingFile(
+            root,
+            """
+            {"type":"turn","task":"ABC-1","turn":1,"step":"ship"}
+            {"type":"push","task":"ABC-1","turn":1,"message":"Fix the widget","paths":["a.txt"]}
+            """);
     Recording recording = new Recording(file.toString());
     Turn shipping = Turn.none().relayed("ship", "facts", "", 1);
     TaskStore tasks = mock(TaskStore.class);
@@ -152,9 +142,7 @@ class ReplaySessionsTest {
                     .turn(shipping)
                     .build()));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions =
-        new ReplaySessions(
-            recording, tasks, moves, new Checkers(new TaskChart(Composition.builtIn())));
+    sessions = sessionsOf(recording, tasks, moves);
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -168,21 +156,17 @@ class ReplaySessionsTest {
 
   @Test
   void turnNobodyOpenedYetIsNotAnsweredNorDivergence(@TempDir Path root) throws Exception {
-    Path file = root.resolve("recording.jsonl");
-    Files.writeString(
-        file,
-        """
-        {"type":"turn","task":"ABC-1","turn":1,"step":"ship"}
-        {"type":"push","task":"ABC-1","turn":1,"message":"Fix the widget","paths":["a.txt"]}
-        """);
+    Path file =
+        recordingFile(
+            root,
+            """
+            {"type":"turn","task":"ABC-1","turn":1,"step":"ship"}
+            {"type":"push","task":"ABC-1","turn":1,"message":"Fix the widget","paths":["a.txt"]}
+            """);
     Recording recording = new Recording(file.toString());
-    TaskStore tasks = mock(TaskStore.class);
-    when(tasks.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("p", "/work/ABC-1", TaskStatus.NEW).build()));
+    TaskStore tasks = holding("ABC-1", newTaskAt("/work/ABC-1"));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions =
-        new ReplaySessions(
-            recording, tasks, moves, new Checkers(new TaskChart(Composition.builtIn())));
+    sessions = sessionsOf(recording, tasks, moves);
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -195,13 +179,13 @@ class ReplaySessionsTest {
   @Test
   void turnOpenedAtAnotherStepThanRecordedEndsTheReplayWithoutItsMoves(@TempDir Path root)
       throws Exception {
-    Path file = root.resolve("recording.jsonl");
-    Files.writeString(
-        file,
-        """
-        {"type":"turn","task":"ABC-1","turn":1,"step":"ship"}
-        {"type":"push","task":"ABC-1","turn":1,"message":"Fix the widget","paths":["a.txt"]}
-        """);
+    Path file =
+        recordingFile(
+            root,
+            """
+            {"type":"turn","task":"ABC-1","turn":1,"step":"ship"}
+            {"type":"push","task":"ABC-1","turn":1,"message":"Fix the widget","paths":["a.txt"]}
+            """);
     Recording recording = new Recording(file.toString());
     Turn verifying = Turn.none().relayed("verify", "facts", "", 1);
     TaskStore tasks = mock(TaskStore.class);
@@ -212,9 +196,7 @@ class ReplaySessionsTest {
                     .turn(verifying)
                     .build()));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions =
-        new ReplaySessions(
-            recording, tasks, moves, new Checkers(new TaskChart(Composition.builtIn())));
+    sessions = sessionsOf(recording, tasks, moves);
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -226,13 +208,13 @@ class ReplaySessionsTest {
 
   @Test
   void turnCheckersReadHoldsIsNeitherAnsweredNorDivergence(@TempDir Path root) throws Exception {
-    Path file = root.resolve("recording.jsonl");
-    Files.writeString(
-        file,
-        """
-        {"type":"turn","task":"ABC-1","turn":1,"step":"ship"}
-        {"type":"push","task":"ABC-1","turn":1,"message":"Fix the widget","paths":["a.txt"]}
-        """);
+    Path file =
+        recordingFile(
+            root,
+            """
+            {"type":"turn","task":"ABC-1","turn":1,"step":"ship"}
+            {"type":"push","task":"ABC-1","turn":1,"message":"Fix the widget","paths":["a.txt"]}
+            """);
     Recording recording = new Recording(file.toString());
     Turn checking = Turn.none().relayed("accept", "facts", "", 1);
     TaskStore tasks = mock(TaskStore.class);
@@ -244,9 +226,7 @@ class ReplaySessionsTest {
                     .build()
                     .withRole("acceptance", RoleRecord.defaults().withReading("accept"))));
     ReplayMoves moves = mock(ReplayMoves.class);
-    sessions =
-        new ReplaySessions(
-            recording, tasks, moves, new Checkers(new TaskChart(Composition.builtIn())));
+    sessions = sessionsOf(recording, tasks, moves);
     sessions.launched(Path.of("/work/ABC-1"));
 
     sessions.start();
@@ -258,21 +238,16 @@ class ReplaySessionsTest {
 
   @Test
   void replayThatFailsInsideTheTaskStoreEndsTheReplay(@TempDir Path root) throws Exception {
-    Path file = root.resolve("recording.jsonl");
-    Files.writeString(
-        file,
-        """
-        {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"one"}}
-        """);
+    Path file =
+        recordingFile(
+            root,
+            """
+            {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"one"}}
+            """);
     Recording recording = new Recording(file.toString());
     TaskStore tasks = mock(TaskStore.class);
     when(tasks.task("ABC-1")).thenThrow(new IllegalStateException("state unreadable"));
-    sessions =
-        new ReplaySessions(
-            recording,
-            tasks,
-            mock(ReplayMoves.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
+    sessions = sessionsOf(recording, tasks, mock(ReplayMoves.class));
 
     sessions.start();
 
@@ -282,22 +257,15 @@ class ReplaySessionsTest {
 
   @Test
   void recordingWithNoSessionMovesAsksTheTaskStoreForNoTask(@TempDir Path root) throws Exception {
-    Path file = root.resolve("recording.jsonl");
-    Files.writeString(
-        file,
-        """
-        {"type":"read","kind":"TICKET_READ","ref":"ABC-1","answer":{"title":"first"}}
-        {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"one"}}
-        """);
-    TaskStore tasks = mock(TaskStore.class);
-    when(tasks.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("p", "/work/ABC-1", TaskStatus.NEW).build()));
-    sessions =
-        new ReplaySessions(
-            new Recording(file.toString()),
-            tasks,
-            mock(ReplayMoves.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
+    Path file =
+        recordingFile(
+            root,
+            """
+            {"type":"read","kind":"TICKET_READ","ref":"ABC-1","answer":{"title":"first"}}
+            {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"one"}}
+            """);
+    TaskStore tasks = holding("ABC-1", newTaskAt("/work/ABC-1"));
+    sessions = sessionsOf(new Recording(file.toString()), tasks, mock(ReplayMoves.class));
 
     sessions.start();
 
@@ -309,26 +277,18 @@ class ReplaySessionsTest {
   @ResourceLock(Resources.GLOBAL)
   void saysOnceThatTheReplayDrainedWhenEveryRecordedMoveWasMade(@TempDir Path root)
       throws Exception {
-    Path file = root.resolve("recording.jsonl");
-    Files.writeString(
-        file,
-        """
-        {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"one"}}
-        """);
-    TaskStore tasks = mock(TaskStore.class);
-    when(tasks.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("p", "/work/ABC-1", TaskStatus.NEW).build()));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger sessionsLog = (Logger) LoggerFactory.getLogger(ReplaySessions.class);
-    sessionsLog.addAppender(log);
-    sessions =
-        new ReplaySessions(
-            new Recording(file.toString()),
-            tasks,
-            mock(ReplayMoves.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
+    Path file =
+        recordingFile(
+            root,
+            """
+            {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"one"}}
+            """);
+    TaskStore tasks = holding("ABC-1", newTaskAt("/work/ABC-1"));
+    sessions = sessionsOf(new Recording(file.toString()), tasks, mock(ReplayMoves.class));
     sessions.launched(Path.of("/work/ABC-1"));
+
+    Logger sessionsLog = (Logger) LoggerFactory.getLogger(ReplaySessions.class);
+    ListAppender<ILoggingEvent> log = attached(sessionsLog);
 
     sessions.start();
 
@@ -342,25 +302,19 @@ class ReplaySessionsTest {
   @Test
   @ResourceLock(Resources.GLOBAL)
   void neverSaysTheReplayDrainedOnceItDiverged(@TempDir Path root) throws Exception {
-    Path file = root.resolve("recording.jsonl");
-    Files.writeString(
-        file,
-        """
-        {"type":"read","kind":"TICKET_READ","ref":"ABC-1","answer":{"title":"first"}}
-        """);
+    Path file =
+        recordingFile(
+            root,
+            """
+            {"type":"read","kind":"TICKET_READ","ref":"ABC-1","answer":{"title":"first"}}
+            """);
     Recording recording = new Recording(file.toString());
     recording.diverge("", "intake", "a read the recording never held");
     TaskStore tasks = mock(TaskStore.class);
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
+    sessions = sessionsOf(recording, tasks, mock(ReplayMoves.class));
+
     Logger sessionsLog = (Logger) LoggerFactory.getLogger(ReplaySessions.class);
-    sessionsLog.addAppender(log);
-    sessions =
-        new ReplaySessions(
-            recording,
-            tasks,
-            mock(ReplayMoves.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
+    ListAppender<ILoggingEvent> log = attached(sessionsLog);
 
     sessions.start();
 

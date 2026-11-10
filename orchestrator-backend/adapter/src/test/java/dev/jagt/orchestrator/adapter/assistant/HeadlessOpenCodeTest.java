@@ -1,5 +1,9 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import static dev.jagt.orchestrator.adapter.assistant.OpenCodeReads.answeringAfterHearing;
+import static dev.jagt.orchestrator.adapter.assistant.OpenCodeReads.countingCommits;
+import static dev.jagt.orchestrator.adapter.assistant.OpenCodeReads.gate;
+import static dev.jagt.orchestrator.adapter.assistant.OpenCodeReads.withoutShell;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -8,12 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.adapter.agent.HookEndpoint;
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
-import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.ReadScopes;
 import dev.jagt.orchestrator.service.UsageTracker;
@@ -42,17 +41,7 @@ class HeadlessOpenCodeTest {
   private final Processes processes = mock(Processes.class);
   private final UsageTracker usage = mock(UsageTracker.class);
   private final ReadScopes scopes = new ReadScopes();
-  private final OpenCodeGate gate =
-      new OpenCodeGate(
-          new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(state.toString())),
-          new ReadOnlyTools(
-              mock(McpHealth.class),
-              AssistantProperties.empty(),
-              scopes,
-              new HookEndpoint(
-                  "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent")),
-          new HookEndpoint(
-              "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+  private final OpenCodeGate gate = gate(state, scopes);
   private final HeadlessOpenCode headless =
       new HeadlessOpenCode(
           processes,
@@ -66,22 +55,7 @@ class HeadlessOpenCodeTest {
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
         .thenReturn(new Processes.Result(0, "", ""));
 
-    headless.run(
-        new OpenCodeRead(
-            worktree,
-            "count the commits",
-            SCHEMA,
-            "qwen-4b",
-            OpenCodeScope.of(
-                List.of("git log*"),
-                List.of(),
-                List.of(),
-                false,
-                true,
-                List.of(worktree),
-                List.of()),
-            AssistantCallKind.ACCEPTANCE_CHECK,
-            Duration.ofMinutes(1)));
+    headless.run(countingCommits(worktree, SCHEMA));
 
     ArgumentCaptor<Map<String, String>> env = ArgumentCaptor.captor();
     ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
@@ -103,36 +77,15 @@ class HeadlessOpenCodeTest {
   @Test
   void mapsTheFencedObjectOfTheLastTextToTheStructuredOutputAndBooksEveryStep(
       @TempDir Path worktree) throws IOException {
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
-        .thenAnswer(
-            call -> {
-              String url = call.<Map<String, String>>getArgument(2).get("JAGT_READ_GATE");
-              scopes.hear(
-                  Objects.requireNonNull(url)
-                      .substring(Objects.requireNonNull(url).lastIndexOf('/') + 1),
-                  "Bash",
-                  "git log");
-              return new Processes.Result(
-                  0, Files.readString(Path.of("src/test/resources/opencode/run.jsonl")), "");
-            });
+    answeringAfterHearing(
+        processes,
+        scopes,
+        "Bash",
+        "git log",
+        new Processes.Result(
+            0, Files.readString(Path.of("src/test/resources/opencode/run.jsonl")), ""));
 
-    HeadlessReply reply =
-        headless.run(
-            new OpenCodeRead(
-                worktree,
-                "count the commits",
-                SCHEMA,
-                "qwen-4b",
-                OpenCodeScope.of(
-                    List.of("git log*"),
-                    List.of(),
-                    List.of(),
-                    false,
-                    true,
-                    List.of(worktree),
-                    List.of()),
-                AssistantCallKind.ACCEPTANCE_CHECK,
-                Duration.ofMinutes(1)));
+    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
 
     assertThat(
             Objects.requireNonNull(reply.envelope())
@@ -151,23 +104,7 @@ class HeadlessOpenCodeTest {
             new Processes.Result(
                 0, "{\"type\":\"text\",\"part\":{\"text\":\"I could not tell.\"}}", ""));
 
-    HeadlessReply reply =
-        headless.run(
-            new OpenCodeRead(
-                worktree,
-                "count the commits",
-                SCHEMA,
-                "qwen-4b",
-                OpenCodeScope.of(
-                    List.of("git log*"),
-                    List.of(),
-                    List.of(),
-                    false,
-                    true,
-                    List.of(worktree),
-                    List.of()),
-                AssistantCallKind.ACCEPTANCE_CHECK,
-                Duration.ofMinutes(1)));
+    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
 
     assertThat(reply.envelope()).isNotNull();
     assertThat(Objects.requireNonNull(reply.envelope()).has("structured_output")).isFalse();
@@ -183,23 +120,7 @@ class HeadlessOpenCodeTest {
                     + "\":1,\"cache\":{\"read\":0,\"write\":0}}}}",
                 "model not found"));
 
-    HeadlessReply reply =
-        headless.run(
-            new OpenCodeRead(
-                worktree,
-                "count the commits",
-                SCHEMA,
-                "qwen-4b",
-                OpenCodeScope.of(
-                    List.of("git log*"),
-                    List.of(),
-                    List.of(),
-                    false,
-                    true,
-                    List.of(worktree),
-                    List.of()),
-                AssistantCallKind.ACCEPTANCE_CHECK,
-                Duration.ofMinutes(1)));
+    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
 
     assertThat(reply.envelope()).isNull();
     assertThat(reply.cause()).isEqualTo("exit 1");
@@ -221,22 +142,7 @@ class HeadlessOpenCodeTest {
               return new Processes.Result(0, "", "");
             });
 
-    headless.run(
-        new OpenCodeRead(
-            worktree,
-            "count the commits",
-            SCHEMA,
-            "qwen-4b",
-            OpenCodeScope.of(
-                List.of("git log*"),
-                List.of(),
-                List.of(),
-                false,
-                true,
-                List.of(worktree),
-                List.of()),
-            AssistantCallKind.ACCEPTANCE_CHECK,
-            Duration.ofMinutes(1)));
+    headless.run(countingCommits(worktree, SCHEMA));
 
     assertThat(held).isTrue();
     assertThat(scopes.ask(fence.get())).isEmpty();
@@ -250,23 +156,7 @@ class HeadlessOpenCodeTest {
             new Processes.Result(
                 0, Files.readString(Path.of("src/test/resources/opencode/run.jsonl")), ""));
 
-    HeadlessReply reply =
-        headless.run(
-            new OpenCodeRead(
-                worktree,
-                "count the commits",
-                SCHEMA,
-                "qwen-4b",
-                OpenCodeScope.of(
-                    List.of("git log*"),
-                    List.of(),
-                    List.of(),
-                    false,
-                    true,
-                    List.of(worktree),
-                    List.of()),
-                AssistantCallKind.ACCEPTANCE_CHECK,
-                Duration.ofMinutes(1)));
+    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
 
     assertThat(reply.envelope()).isNull();
     assertThat(reply.cause()).isEqualTo("unfenced: no call reached the read gate");
@@ -281,23 +171,7 @@ class HeadlessOpenCodeTest {
                 "{\"type\":\"text\",\"part\":{\"text\":\"```json\\n{\\\"commits\\\":2}\\n```\"}}",
                 ""));
 
-    HeadlessReply reply =
-        headless.run(
-            new OpenCodeRead(
-                worktree,
-                "count the commits",
-                SCHEMA,
-                "qwen-4b",
-                OpenCodeScope.of(
-                    List.of("git log*"),
-                    List.of(),
-                    List.of(),
-                    false,
-                    true,
-                    List.of(worktree),
-                    List.of()),
-                AssistantCallKind.ACCEPTANCE_CHECK,
-                Duration.ofMinutes(1)));
+    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
 
     assertThat(
             Objects.requireNonNull(reply.envelope())
@@ -322,23 +196,7 @@ class HeadlessOpenCodeTest {
                     + "```\"}}",
                 ""));
 
-    HeadlessReply reply =
-        headless.run(
-            new OpenCodeRead(
-                worktree,
-                "count the commits",
-                SCHEMA,
-                "qwen-4b",
-                OpenCodeScope.of(
-                    List.of("git log*"),
-                    List.of(),
-                    List.of(),
-                    false,
-                    true,
-                    List.of(worktree),
-                    List.of()),
-                AssistantCallKind.ACCEPTANCE_CHECK,
-                Duration.ofMinutes(1)));
+    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
 
     assertThat(
             Objects.requireNonNull(reply.envelope())
@@ -355,35 +213,10 @@ class HeadlessOpenCodeTest {
             + "\"input\":{\"filePath\":\""
             + worktree.resolve("review_replies.md")
             + "\"}}}}\n";
-    when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
-        .thenAnswer(
-            call -> {
-              String url = call.<Map<String, String>>getArgument(2).get("JAGT_READ_GATE");
-              scopes.hear(
-                  Objects.requireNonNull(url)
-                      .substring(Objects.requireNonNull(url).lastIndexOf('/') + 1),
-                  "Read",
-                  "review_replies.md");
-              return new Processes.Result(0, ran, "");
-            });
+    answeringAfterHearing(
+        processes, scopes, "Read", "review_replies.md", new Processes.Result(0, ran, ""));
 
-    HeadlessReply reply =
-        headless.run(
-            new OpenCodeRead(
-                worktree,
-                "count the commits",
-                SCHEMA,
-                "qwen-4b",
-                OpenCodeScope.of(
-                    List.of(),
-                    List.of(),
-                    List.of("**/review_replies.md"),
-                    false,
-                    false,
-                    List.of(worktree),
-                    List.of()),
-                AssistantCallKind.ACCEPTANCE_CHECK,
-                Duration.ofMinutes(1)));
+    HeadlessReply reply = headless.run(withoutShell(worktree, SCHEMA));
 
     assertThat(reply.envelope()).isNull();
     assertThat(reply.cause()).startsWith("out of scope: read ");
@@ -394,23 +227,7 @@ class HeadlessOpenCodeTest {
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
         .thenThrow(new IllegalStateException("Command timed out"));
 
-    HeadlessReply reply =
-        headless.run(
-            new OpenCodeRead(
-                worktree,
-                "count the commits",
-                SCHEMA,
-                "qwen-4b",
-                OpenCodeScope.of(
-                    List.of("git log*"),
-                    List.of(),
-                    List.of(),
-                    false,
-                    true,
-                    List.of(worktree),
-                    List.of()),
-                AssistantCallKind.ACCEPTANCE_CHECK,
-                Duration.ofMinutes(1)));
+    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
 
     assertThat(reply.envelope()).isNull();
     assertThat(reply.cause()).startsWith("did not return");
@@ -422,24 +239,7 @@ class HeadlessOpenCodeTest {
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
         .thenThrow(new Processes.Stopped(List.of("opencode")));
 
-    assertThatThrownBy(
-            () ->
-                headless.run(
-                    new OpenCodeRead(
-                        worktree,
-                        "count the commits",
-                        SCHEMA,
-                        "qwen-4b",
-                        OpenCodeScope.of(
-                            List.of("git log*"),
-                            List.of(),
-                            List.of(),
-                            false,
-                            true,
-                            List.of(worktree),
-                            List.of()),
-                        AssistantCallKind.ACCEPTANCE_CHECK,
-                        Duration.ofMinutes(1))))
+    assertThatThrownBy(() -> headless.run(countingCommits(worktree, SCHEMA)))
         .isInstanceOf(Processes.Stopped.class);
   }
 }

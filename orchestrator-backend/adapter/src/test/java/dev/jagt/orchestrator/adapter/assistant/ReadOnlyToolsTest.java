@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import static dev.jagt.orchestrator.adapter.assistant.ReadTools.allowedOnPinnedGitlab;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -45,13 +46,7 @@ class ReadOnlyToolsTest {
         "mcp__gitlab__issue_notes"
       })
   void allowsReadNamedByTheDiscussionsOrNotesItReturns(String tool) {
-    var pinned =
-        AssistantProperties.empty()
-            .withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
-
-    List<String> allowed =
-        new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), mock(HookEndpoint.class))
-            .allowed(AssistantCallKind.MR_READ);
+    List<String> allowed = allowedOnPinnedGitlab();
 
     assertThat(allowed)
         .anyMatch(
@@ -70,13 +65,7 @@ class ReadOnlyToolsTest {
         "mcp__gitlab__list_pipeline_jobs"
       })
   void allowsReadThatAsksWhoIsSignedInOrWhichToolsTheHostHas(String tool) {
-    var pinned =
-        AssistantProperties.empty()
-            .withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
-
-    List<String> allowed =
-        new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), mock(HookEndpoint.class))
-            .allowed(AssistantCallKind.MR_READ);
+    List<String> allowed = allowedOnPinnedGitlab();
 
     assertThat(allowed)
         .anyMatch(
@@ -96,13 +85,7 @@ class ReadOnlyToolsTest {
         "mcp__gitlab__post_note"
       })
   void neverAllowsWriteOfTheServerWhoseReadsAreAllowed(String tool) {
-    var pinned =
-        AssistantProperties.empty()
-            .withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
-
-    List<String> allowed =
-        new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), mock(HookEndpoint.class))
-            .allowed(AssistantCallKind.MR_READ);
+    List<String> allowed = allowedOnPinnedGitlab();
 
     assertThat(allowed)
         .noneMatch(
@@ -130,13 +113,7 @@ class ReadOnlyToolsTest {
 
   @Test
   void allowsTheReadsOfTheDeclaredServersWhenTheServersArePinned() {
-    var pinned =
-        AssistantProperties.empty()
-            .withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}");
-
-    List<String> allowed =
-        new ReadOnlyTools(mock(McpHealth.class), pinned, new ReadScopes(), mock(HookEndpoint.class))
-            .allowed(AssistantCallKind.MR_READ);
+    List<String> allowed = allowedOnPinnedGitlab();
 
     assertThat(allowed).contains("mcp__gitlab__list*");
   }

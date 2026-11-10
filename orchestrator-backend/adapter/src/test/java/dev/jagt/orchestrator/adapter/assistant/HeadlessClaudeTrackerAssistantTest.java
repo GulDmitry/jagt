@@ -1,54 +1,37 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.answering;
+import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.answeringNoFacts;
+import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.claude;
+import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.commandOf;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
-import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
-import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentCaptor;
 
 class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void takesTheSiteIdFromTheHostsOwnListingSoSearchIsNotSentToSiteNobodyGranted() {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"keys\":[]}}", ""));
-    var assistant =
-        new HeadlessClaudeTrackerAssistant(
-            new HeadlessClaude(
-                new AssistantProcess(
-                    runner,
-                    new AssistantBreaker(
-                        AssistantProperties.empty(),
-                        java.time.Clock.systemUTC(),
-                        new dev.jagt.orchestrator.service.ReachLedger())),
-                ClaudeProperties.defaults(),
-                AssistantProperties.empty(),
-                mock(UsageTracker.class),
-                mock(ReadOnlyTools.class)));
+    ProcessRunner runner =
+        answering(new Processes.Result(0, "{\"structured_output\":{\"keys\":[]}}", ""));
+    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     assistant.findCandidates("assignee = currentUser()");
 
-    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-    verify(runner).run(any(Path.class), any(Duration.class), command.capture());
-    assertThat(command.getValue())
+    List<String> command = commandOf(runner);
+    assertThat(command)
         .anyMatch(
             argument ->
                 argument.contains(
@@ -58,9 +41,8 @@ class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void readsTheTicketOutOfTheEnvelopesStructuredOutput() {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
+    ProcessRunner runner =
+        answering(
             new Processes.Result(
                 0,
                 """
@@ -71,19 +53,7 @@ class HeadlessClaudeTrackerAssistantTest {
                 "trackerProject":"ABC","labels":["backend"],"url":"https://tracker/ABC-42"}}\
                 """,
                 ""));
-    var assistant =
-        new HeadlessClaudeTrackerAssistant(
-            new HeadlessClaude(
-                new AssistantProcess(
-                    runner,
-                    new AssistantBreaker(
-                        AssistantProperties.empty(),
-                        java.time.Clock.systemUTC(),
-                        new dev.jagt.orchestrator.service.ReachLedger())),
-                ClaudeProperties.defaults(),
-                AssistantProperties.empty(),
-                mock(UsageTracker.class),
-                mock(ReadOnlyTools.class)));
+    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     var facts = assistant.readTicket("ABC-42").facts();
 
@@ -96,9 +66,8 @@ class HeadlessClaudeTrackerAssistantTest {
   @ParameterizedTest
   @ValueSource(strings = {"True", "TRUE", "tRuE"})
   void readsTheItemAsExistingWhenTheModelWritesTrueAsText(String written) {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
+    ProcessRunner runner =
+        answering(
             new Processes.Result(
                 0,
                 "{\"result\":\"{\\\"exists\\\":\\\""
@@ -106,19 +75,7 @@ class HeadlessClaudeTrackerAssistantTest {
                     + "\\\",\\\"failure\\\":\\\"\\\","
                     + "\\\"key\\\":\\\"ABC-42\\\",\\\"title\\\":\\\"Widget\\\"}\"}",
                 ""));
-    var assistant =
-        new HeadlessClaudeTrackerAssistant(
-            new HeadlessClaude(
-                new AssistantProcess(
-                    runner,
-                    new AssistantBreaker(
-                        AssistantProperties.empty(),
-                        java.time.Clock.systemUTC(),
-                        new dev.jagt.orchestrator.service.ReachLedger())),
-                ClaudeProperties.defaults(),
-                AssistantProperties.empty(),
-                mock(UsageTracker.class),
-                mock(ReadOnlyTools.class)));
+    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     var facts = assistant.readTicket("ABC-42").facts();
 
@@ -128,27 +85,14 @@ class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void refusesTheAnswerAsUnusableWhenTheModelWritesBooleanAsMaybe() {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
+    ProcessRunner runner =
+        answering(
             new Processes.Result(
                 0,
                 "{\"structured_output\":{\"exists\":\"maybe\",\"failure\":\"\",\"key\":\"ABC-42"
                     + "\"}}",
                 ""));
-    var assistant =
-        new HeadlessClaudeTrackerAssistant(
-            new HeadlessClaude(
-                new AssistantProcess(
-                    runner,
-                    new AssistantBreaker(
-                        AssistantProperties.empty(),
-                        java.time.Clock.systemUTC(),
-                        new dev.jagt.orchestrator.service.ReachLedger())),
-                ClaudeProperties.defaults(),
-                AssistantProperties.empty(),
-                mock(UsageTracker.class),
-                mock(ReadOnlyTools.class)));
+    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     var facts = assistant.readTicket("ABC-42").facts();
 
@@ -157,24 +101,11 @@ class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void listsTheKeysTheSearchAnsweredWithoutBlanksOrPadding() {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
+    ProcessRunner runner =
+        answering(
             new Processes.Result(
                 0, "{\"structured_output\":{\"keys\":[\" ABC-1 \",\"\",\"ABC-2\"]}}", ""));
-    var assistant =
-        new HeadlessClaudeTrackerAssistant(
-            new HeadlessClaude(
-                new AssistantProcess(
-                    runner,
-                    new AssistantBreaker(
-                        AssistantProperties.empty(),
-                        java.time.Clock.systemUTC(),
-                        new dev.jagt.orchestrator.service.ReachLedger())),
-                ClaudeProperties.defaults(),
-                AssistantProperties.empty(),
-                mock(UsageTracker.class),
-                mock(ReadOnlyTools.class)));
+    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     var keys = assistant.findCandidates("assignee = currentUser()").facts();
 
@@ -183,28 +114,13 @@ class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void tellsTheNextAnswerWhatTheLastOneGotWrong() {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-    var assistant =
-        new HeadlessClaudeTrackerAssistant(
-            new HeadlessClaude(
-                new AssistantProcess(
-                    runner,
-                    new AssistantBreaker(
-                        AssistantProperties.empty(),
-                        java.time.Clock.systemUTC(),
-                        new dev.jagt.orchestrator.service.ReachLedger())),
-                ClaudeProperties.defaults(),
-                AssistantProperties.empty(),
-                mock(UsageTracker.class),
-                mock(ReadOnlyTools.class)));
+    ProcessRunner runner = answeringNoFacts();
+    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     assistant.readTicket("ABC-42", List.of("the url was empty", "the key was lowercase"));
 
-    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-    verify(runner).run(any(Path.class), any(Duration.class), command.capture());
-    assertThat(command.getValue())
+    List<String> command = commandOf(runner);
+    assertThat(command)
         .anyMatch(
             argument ->
                 argument.endsWith(
@@ -220,29 +136,13 @@ class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void addsNoCorrectionToFirstAnswer() {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-    var assistant =
-        new HeadlessClaudeTrackerAssistant(
-            new HeadlessClaude(
-                new AssistantProcess(
-                    runner,
-                    new AssistantBreaker(
-                        AssistantProperties.empty(),
-                        java.time.Clock.systemUTC(),
-                        new dev.jagt.orchestrator.service.ReachLedger())),
-                ClaudeProperties.defaults(),
-                AssistantProperties.empty(),
-                mock(UsageTracker.class),
-                mock(ReadOnlyTools.class)));
+    ProcessRunner runner = answeringNoFacts();
+    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     assistant.readTicket("ABC-42", List.of());
 
-    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-    verify(runner).run(any(Path.class), any(Duration.class), command.capture());
-    assertThat(command.getValue())
-        .noneMatch(argument -> argument.contains("Your last answer was refused"));
+    List<String> command = commandOf(runner);
+    assertThat(command).noneMatch(argument -> argument.contains("Your last answer was refused"));
   }
 
   @ParameterizedTest
@@ -250,19 +150,7 @@ class HeadlessClaudeTrackerAssistantTest {
   @ValueSource(strings = {"", "  "})
   void readsNoTicketWithoutReference(String ref) {
     ProcessRunner runner = mock(ProcessRunner.class);
-    var assistant =
-        new HeadlessClaudeTrackerAssistant(
-            new HeadlessClaude(
-                new AssistantProcess(
-                    runner,
-                    new AssistantBreaker(
-                        AssistantProperties.empty(),
-                        java.time.Clock.systemUTC(),
-                        new dev.jagt.orchestrator.service.ReachLedger())),
-                ClaudeProperties.defaults(),
-                AssistantProperties.empty(),
-                mock(UsageTracker.class),
-                mock(ReadOnlyTools.class)));
+    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     assertThat(assistant.readTicket(ref, List.of()).facts()).isEmpty();
     assertThat(assistant.readTicketText(ref).facts()).isEmpty();
@@ -274,19 +162,7 @@ class HeadlessClaudeTrackerAssistantTest {
   @ValueSource(strings = {"", "  "})
   void searchesNoTrackerWithoutQuery(String query) {
     ProcessRunner runner = mock(ProcessRunner.class);
-    var assistant =
-        new HeadlessClaudeTrackerAssistant(
-            new HeadlessClaude(
-                new AssistantProcess(
-                    runner,
-                    new AssistantBreaker(
-                        AssistantProperties.empty(),
-                        java.time.Clock.systemUTC(),
-                        new dev.jagt.orchestrator.service.ReachLedger())),
-                ClaudeProperties.defaults(),
-                AssistantProperties.empty(),
-                mock(UsageTracker.class),
-                mock(ReadOnlyTools.class)));
+    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     assertThat(assistant.findCandidates(query).facts()).isEmpty();
     verifyNoInteractions(runner);
@@ -294,25 +170,12 @@ class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void copiesTheTicketTextOutStrippedAndAnswersNothingForAnEmptyOne() {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
+    ProcessRunner runner =
+        answering(
             new Processes.Result(
                 0, "{\"structured_output\":{\"text\":\"  # Summary\\nbody  \"}}", ""),
             new Processes.Result(0, "{\"structured_output\":{\"text\":\"  \"}}", ""));
-    var assistant =
-        new HeadlessClaudeTrackerAssistant(
-            new HeadlessClaude(
-                new AssistantProcess(
-                    runner,
-                    new AssistantBreaker(
-                        AssistantProperties.empty(),
-                        java.time.Clock.systemUTC(),
-                        new dev.jagt.orchestrator.service.ReachLedger())),
-                ClaudeProperties.defaults(),
-                AssistantProperties.empty(),
-                mock(UsageTracker.class),
-                mock(ReadOnlyTools.class)));
+    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     var copied = assistant.readTicketText("ABC-42").facts();
     var empty = assistant.readTicketText("ABC-42").facts();
@@ -323,9 +186,8 @@ class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void booksTheTicketTextCopyAsTicketTextCallNotMasterReview() {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
+    ProcessRunner runner =
+        answering(
             new Processes.Result(
                 0,
                 """
@@ -334,19 +196,7 @@ class HeadlessClaudeTrackerAssistantTest {
                 """,
                 ""));
     UsageTracker usage = mock(UsageTracker.class);
-    var assistant =
-        new HeadlessClaudeTrackerAssistant(
-            new HeadlessClaude(
-                new AssistantProcess(
-                    runner,
-                    new AssistantBreaker(
-                        AssistantProperties.empty(),
-                        java.time.Clock.systemUTC(),
-                        new dev.jagt.orchestrator.service.ReachLedger())),
-                ClaudeProperties.defaults(),
-                AssistantProperties.empty(),
-                usage,
-                mock(ReadOnlyTools.class)));
+    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner, usage));
 
     assistant.readTicketText("ABC-42");
 

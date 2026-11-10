@@ -1,21 +1,17 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import static dev.jagt.orchestrator.adapter.assistant.OpenCodeReads.gate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.adapter.agent.HookEndpoint;
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
-import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CheckerReader;
-import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.ReadScopes;
 import dev.jagt.orchestrator.service.UsageTracker;
@@ -39,17 +35,7 @@ class OpenCodeCheckerReaderTest {
 
   private final Processes processes = mock(Processes.class);
   private final ReadScopes scopes = new ReadScopes();
-  private final OpenCodeGate gate =
-      new OpenCodeGate(
-          new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(state.toString())),
-          new ReadOnlyTools(
-              mock(McpHealth.class),
-              AssistantProperties.empty(),
-              scopes,
-              new HookEndpoint(
-                  "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent")),
-          new HookEndpoint(
-              "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+  private final OpenCodeGate gate = gate(state, scopes);
   private final OpenCodeCheckerReader reader =
       new OpenCodeCheckerReader(
           new HeadlessOpenCode(
@@ -108,7 +94,8 @@ class OpenCodeCheckerReaderTest {
             worktree,
             "abc123",
             "sonnet",
-            new CheckerReader.Reach(List.of("https://dev.example.test"), List.of(), Optional.empty()),
+            new CheckerReader.Reach(
+                List.of("https://dev.example.test"), List.of(), Optional.empty()),
             ACCEPTANCE.replies().decline().json(),
             "acceptance"));
 

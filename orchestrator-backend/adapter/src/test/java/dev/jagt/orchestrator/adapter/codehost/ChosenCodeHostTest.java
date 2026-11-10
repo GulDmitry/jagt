@@ -1,8 +1,11 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
+import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.answerEveryRun;
+import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.project;
+import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.serving;
+import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.shopOn;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -19,7 +22,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -39,15 +41,6 @@ class ChosenCodeHostTest {
               new CommandPipeline(processes, reach),
               new NoCodeHost()));
 
-  private static ProjectConfig project(@Nullable String codeHost, List<String> pipelineCommand) {
-    return new ProjectConfig(
-        new ProjectConfig.Repository("/repo/shop", List.of(), null, List.of()),
-        new ProjectConfig.Branches("origin/main", "dev", null),
-        new ProjectConfig.CodeHost(
-            codeHost, null, pipelineCommand, List.of(), List.of(), List.of(), List.of()),
-        new ProjectConfig.Verify(List.of(), null));
-  }
-
   private String firstWordOfTheCommandRun() {
     ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
     verify(processes).run(any(), any(Duration.class), command.capture());
@@ -56,10 +49,8 @@ class ChosenCodeHostTest {
 
   @Test
   void theCodeHostIsGitHubWhereNoKeyNamesOne() {
-    when(configService.load())
-        .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project(null, List.of()))));
-    when(processes.run(any(), any(Duration.class), anyList()))
-        .thenReturn(new Processes.Result(0, "[]", ""));
+    serving(configService, shopOn(null));
+    answerEveryRun(processes, new Processes.Result(0, "[]", ""));
 
     pipelines.onCommit("shop", REMOTE, "0123abc");
 
@@ -68,11 +59,8 @@ class ChosenCodeHostTest {
 
   @Test
   void branchIsReadThroughTheDriverTheKeyChooses() {
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults().withProjects(Map.of("shop", project("gitlab", List.of()))));
-    when(processes.run(any(), any(Duration.class), anyList()))
-        .thenReturn(new Processes.Result(0, "[]", ""));
+    serving(configService, shopOn("gitlab"));
+    answerEveryRun(processes, new Processes.Result(0, "[]", ""));
 
     Answer<CommitPipeline> answer = pipelines.onBranchSince("shop", REMOTE, "dev", "0123abc");
 
@@ -82,11 +70,8 @@ class ChosenCodeHostTest {
 
   @Test
   void hostWithoutGitlabInItsNameIsReadThroughGlabWhereTheKeyChoosesIt() {
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults().withProjects(Map.of("shop", project("gitlab", List.of()))));
-    when(processes.run(any(), any(Duration.class), anyList()))
-        .thenReturn(new Processes.Result(0, "[]", ""));
+    serving(configService, shopOn("gitlab"));
+    answerEveryRun(processes, new Processes.Result(0, "[]", ""));
 
     pipelines.onCommit("shop", REMOTE, "0123abc");
 
@@ -95,11 +80,8 @@ class ChosenCodeHostTest {
 
   @Test
   void hostNamedAfterGithubIsReadThroughGlabWhereTheKeyChoosesIt() {
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults().withProjects(Map.of("shop", project("gitlab", List.of()))));
-    when(processes.run(any(), any(Duration.class), anyList()))
-        .thenReturn(new Processes.Result(0, "[]", ""));
+    serving(configService, shopOn("gitlab"));
+    answerEveryRun(processes, new Processes.Result(0, "[]", ""));
 
     pipelines.onCommit("shop", "https://github.corp.invalid/shop/web.git", "0123abc");
 
@@ -113,8 +95,7 @@ class ChosenCodeHostTest {
             ConfigFile.defaults()
                 .withCodeHost("gitlab")
                 .withProjects(Map.of("shop", project(null, List.of()))));
-    when(processes.run(any(), any(Duration.class), anyList()))
-        .thenReturn(new Processes.Result(0, "[]", ""));
+    answerEveryRun(processes, new Processes.Result(0, "[]", ""));
 
     pipelines.onCommit("shop", REMOTE, "0123abc");
 
@@ -128,8 +109,7 @@ class ChosenCodeHostTest {
             ConfigFile.defaults()
                 .withCodeHost("gitlab")
                 .withProjects(Map.of("shop", project("github", List.of()))));
-    when(processes.run(any(), any(Duration.class), anyList()))
-        .thenReturn(new Processes.Result(0, "[]", ""));
+    answerEveryRun(processes, new Processes.Result(0, "[]", ""));
 
     pipelines.onCommit("shop", REMOTE, "0123abc");
 
@@ -143,8 +123,7 @@ class ChosenCodeHostTest {
             ConfigFile.defaults()
                 .withProjects(
                     Map.of("shop", project("command", List.of("/bin/ci-state", "{sha}")))));
-    when(processes.run(any(), any(Duration.class), anyList()))
-        .thenReturn(new Processes.Result(0, "success", ""));
+    answerEveryRun(processes, new Processes.Result(0, "success", ""));
 
     Answer<CommitPipeline> answer = pipelines.onCommit("shop", REMOTE, "0123abc");
 
@@ -153,8 +132,7 @@ class ChosenCodeHostTest {
 
   @Test
   void projectChoosingNoneSettlesWithoutReadingAnything() {
-    when(configService.load())
-        .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("none", List.of()))));
+    serving(configService, shopOn("none"));
 
     Answer<CommitPipeline> answer = pipelines.onCommit("shop", REMOTE, "0123abc");
 
@@ -164,9 +142,7 @@ class ChosenCodeHostTest {
 
   @Test
   void kindNoDriverAnswersForIsUnreadNamingTheKey() {
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults().withProjects(Map.of("shop", project("bitbucket", List.of()))));
+    serving(configService, shopOn("bitbucket"));
 
     Answer<CommitPipeline> answer = pipelines.onCommit("shop", REMOTE, "0123abc");
 
@@ -195,11 +171,8 @@ class ChosenCodeHostTest {
 
   @Test
   void requestIsClosedThroughTheDriverTheKeyChooses() {
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults().withProjects(Map.of("shop", project("gitlab", List.of()))));
-    when(processes.run(any(), any(Duration.class), anyList()))
-        .thenReturn(new Processes.Result(0, "", "Closed"));
+    serving(configService, shopOn("gitlab"));
+    answerEveryRun(processes, new Processes.Result(0, "", "Closed"));
 
     Answer<String> answer =
         pipelines.closeRequest(
@@ -211,9 +184,7 @@ class ChosenCodeHostTest {
 
   @Test
   void noRequestIsClosedWhereTheRemoteIsLocalPath() {
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults().withProjects(Map.of("shop", project("github", List.of()))));
+    serving(configService, shopOn("github"));
 
     Answer<String> answer =
         pipelines.closeRequest(
@@ -225,9 +196,7 @@ class ChosenCodeHostTest {
 
   @Test
   void noRequestIsClosedOnHostOtherThanTheRemotesWhateverItsPath() {
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults().withProjects(Map.of("shop", project("github", List.of()))));
+    serving(configService, shopOn("github"));
 
     Answer<String> answer =
         pipelines.closeRequest("shop", REMOTE, "https://other.example.invalid/shop/web/pull/9");
@@ -238,8 +207,7 @@ class ChosenCodeHostTest {
 
   @Test
   void theNotesAreReadThroughTheDriverTheProjectChose() {
-    when(configService.load())
-        .thenReturn(ConfigFile.defaults().withProjects(Map.of("shop", project("none", List.of()))));
+    serving(configService, shopOn("none"));
 
     Answer<List<String>> answer =
         pipelines.unresolvedNotes(

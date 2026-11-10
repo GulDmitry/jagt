@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter;
 
+import static dev.jagt.orchestrator.adapter.ProcessFixtures.awaitedPid;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -157,11 +158,7 @@ class ProcessRunnerTest {
                                     null,
                                     Duration.ofSeconds(30),
                                     List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
-    await()
-        .ignoreExceptions()
-        .atMost(Duration.ofSeconds(5))
-        .until(() -> Files.readString(pid).endsWith("\n"));
-    long command = Long.parseLong(Files.readString(pid).strip());
+    long command = awaitedPid(pid);
 
     caller.interrupt();
 
@@ -184,11 +181,7 @@ class ProcessRunnerTest {
                             null,
                             Duration.ofSeconds(30),
                             List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30")))));
-    await()
-        .ignoreExceptions()
-        .atMost(Duration.ofSeconds(5))
-        .until(() -> Files.readString(pid).endsWith("\n"));
-    long command = Long.parseLong(Files.readString(pid).strip());
+    long command = awaitedPid(pid);
 
     runner.destroyRunning();
 

@@ -1,13 +1,13 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TaskDiffFixtures.commandsOver;
+import static dev.jagt.orchestrator.service.TaskDiffFixtures.freshWorktree;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
-import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -57,9 +57,7 @@ class TaskDiffTest {
                 List.of(TaskRepo.of("proj", worktree.toString())), TaskStatus.REVIEW_PENDING)
             .build();
     when(state.task("ABC-1")).thenReturn(Optional.of(task));
-    GitCommands commands =
-        new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> Optional.empty(), stopped -> {});
+    GitCommands commands = commandsOver(runner);
     return new TaskDiff(state, new DiffBases(config), new DiffCheckouts(commands), commands);
   }
 
@@ -68,11 +66,7 @@ class TaskDiffTest {
       throws Exception {
     Path repo = repoWithOneCommit(dir);
     Path wt = dir.resolve("wt");
-    GitCommands commands =
-        new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> Optional.empty(), stopped -> {});
-    new GitWorktrees(commands)
-        .createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
+    freshWorktree(runner, repo, wt);
     Files.writeString(repo.resolve("other.txt"), "landed on the base meanwhile\n");
     commitAndPush(repo, "base moves on");
     Files.writeString(wt.resolve("a.txt"), "task change\n");
@@ -93,11 +87,7 @@ class TaskDiffTest {
   void cutsDiffPastTheCapAndSaysSo(@TempDir Path dir) throws Exception {
     Path repo = repoWithOneCommit(dir);
     Path wt = dir.resolve("wt");
-    GitCommands commands =
-        new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> Optional.empty(), stopped -> {});
-    new GitWorktrees(commands)
-        .createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
+    freshWorktree(runner, repo, wt);
     Files.writeString(wt.resolve("big.txt"), "line\n".repeat(30_000));
 
     TaskDiff.RepoDiff diff = diffOf(repo, wt).read("ABC-1").getFirst();
@@ -115,9 +105,7 @@ class TaskDiffTest {
                 TaskState.builder(
                         List.of(TaskRepo.of(null, "/scratch/ABC-1")), TaskStatus.PLAN_PENDING)
                     .build()));
-    GitCommands commands =
-        new GitCommands(
-            runner, new LsofWorktreeProcesses(runner), path -> Optional.empty(), stopped -> {});
+    GitCommands commands = commandsOver(runner);
 
     List<TaskDiff.RepoDiff> diffs =
         new TaskDiff(state, new DiffBases(config), new DiffCheckouts(commands), commands)

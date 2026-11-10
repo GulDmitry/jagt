@@ -1,11 +1,14 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import static dev.jagt.orchestrator.adapter.agent.ClaudeRuntimes.provisionedWorktree;
+import static dev.jagt.orchestrator.adapter.agent.ClaudeRuntimes.runtime;
+import static dev.jagt.orchestrator.adapter.agent.ClaudeRuntimes.runtimeBriefedBy;
+import static dev.jagt.orchestrator.adapter.agent.ClaudeRuntimes.settingsOf;
+import static dev.jagt.orchestrator.adapter.agent.ClaudeRuntimes.transcriptOf;
+import static dev.jagt.orchestrator.adapter.agent.ClaudeRuntimes.writeBrief;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.SessionBrief;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.port.CheckerReader;
@@ -31,18 +34,8 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void launchesTheClaudeCliWithTheBootstrapPromptQuoted(@TempDir Path root) throws Exception {
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.writeString(
-        root.resolve("roles/session/brief.md"), "## start\n\nRead AGENTS.md and work\n");
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    writeBrief(root, "## start\n\nRead AGENTS.md and work\n");
+    var runtime = runtimeBriefedBy(root);
 
     assertThat(runtime.launchCommand(Path.of("/wt"), false))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'Read AGENTS.md and work'");
@@ -51,17 +44,8 @@ class ClaudeAgentRuntimeTest {
   @Test
   void startsNoCliPlanModeWhenThePlanIsAskedFirstBecauseTheBoardApprovesIt(@TempDir Path root)
       throws Exception {
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    writeBrief(root, "## start\n\ngo\n");
+    var runtime = runtimeBriefedBy(root);
 
     assertThat(runtime.launchCommand(Path.of("/wt"), true))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'go'");
@@ -70,25 +54,10 @@ class ClaudeAgentRuntimeTest {
   @Test
   void continuesTheWorktreesNewestConversationWhenJagtReEntersSessionItDidNotEnd(@TempDir Path root)
       throws Exception {
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.writeString(
-        root.resolve("roles/session/brief.md"),
-        "## start\n\ngo\n\n## revive\n\npick up where you left off\n");
+    writeBrief(root, "## start\n\ngo\n\n## revive\n\npick up where you left off\n");
     Path worktree = Files.createDirectories(root.resolve("wt"));
-    Files.writeString(
-        Files.createDirectories(
-                ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)))
-            .resolve("s.jsonl"),
-        "{}\n");
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    transcriptOf(worktree, "{}\n");
+    var runtime = runtimeBriefedBy(root);
 
     assertThat(runtime.reviveCommand(worktree))
         .isEqualTo(
@@ -99,19 +68,8 @@ class ClaudeAgentRuntimeTest {
   @Test
   void startsAfreshWhenJagtRevivesWorktreeHoldingNoConversation(@TempDir Path root)
       throws Exception {
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.writeString(
-        root.resolve("roles/session/brief.md"),
-        "## start\n\ngo\n\n## revive\n\npick up where you left off\n");
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    writeBrief(root, "## start\n\ngo\n\n## revive\n\npick up where you left off\n");
+    var runtime = runtimeBriefedBy(root);
 
     assertThat(runtime.reviveCommand(root.resolve("wt")))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'go'");
@@ -120,17 +78,8 @@ class ClaudeAgentRuntimeTest {
   @Test
   void keepsPromptWithAnApostropheOneShellArgumentInsteadOfBreakingTheLaunch(@TempDir Path root)
       throws Exception {
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\nit's fine\n");
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    writeBrief(root, "## start\n\nit's fine\n");
+    var runtime = runtimeBriefedBy(root);
 
     assertThat(runtime.launchCommand(Path.of("/wt"), false))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'it'\\''s fine'");
@@ -140,15 +89,7 @@ class ClaudeAgentRuntimeTest {
   void trustsProvisionedWorktreeSoNoDialogStopsTheSessionAndForgetsItOnceRetired(@TempDir Path root)
       throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-7-proj"));
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     String key = worktree.toRealPath().toString();
 
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
@@ -174,15 +115,7 @@ class ClaudeAgentRuntimeTest {
   void trustsTheWorktreeAgainAtLaunchWhenAnotherWriterDroppedTheFlagSinceProvisioning(
       @TempDir Path root) throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-8-proj"));
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
     ClaudeTrust.forget(ClaudeTrust.configFile(), worktree);
 
@@ -201,18 +134,7 @@ class ClaudeAgentRuntimeTest {
   @Test
   void declaresTheJagtMcpServerOverHttpWithThisWorktreeAsTheCaller(@TempDir Path root)
       throws Exception {
-    Path worktree = root.resolve("ABC-1-proj");
-    worktree.toFile().mkdirs();
-
-    new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC())
-        .provisionWorktree(AgentWorktree.of(worktree, root));
+    Path worktree = provisionedWorktree(root);
 
     var config =
         new JsonMapper()
@@ -230,25 +152,14 @@ class ClaudeAgentRuntimeTest {
     Path worktree = root.resolve("ABC-1-proj");
     worktree.toFile().mkdirs();
 
-    new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC())
+    runtime()
         .provisionWorktree(
             AgentWorktree.of(worktree, root)
                 .withSandbox(
                     Sandbox.on(List.of(Path.of("/w/ABC-1"), Path.of("/notes")), List.of())));
 
     List<String> allow = new ArrayList<>();
-    new JsonMapper()
-        .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
-        .path("permissions")
-        .path("allow")
-        .forEach(n -> allow.add(n.asString("")));
+    settingsOf(worktree).path("permissions").path("allow").forEach(n -> allow.add(n.asString("")));
     assertThat(allow).contains("Edit(//w/ABC-1/**)", "Edit(//notes/**)");
   }
 
@@ -257,23 +168,12 @@ class ClaudeAgentRuntimeTest {
       throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
     Path deploy = Files.createDirectories(root.resolve("ABC-1-deploy"));
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
 
     AgentRuntime.Admission admission = runtime.admit(worktree, deploy);
 
-    var permissions =
-        new JsonMapper()
-            .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
-            .path("permissions");
+    var permissions = settingsOf(worktree).path("permissions");
     List<String> allow = new ArrayList<>();
     permissions.path("allow").forEach(n -> allow.add(n.asString("")));
     List<String> directories = new ArrayList<>();
@@ -287,15 +187,7 @@ class ClaudeAgentRuntimeTest {
   void letsSandboxedSessionWriteInDirectoryItWasAdmittedTo(@TempDir Path root) throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
     Path deploy = Files.createDirectories(root.resolve("ABC-1-deploy"));
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     runtime.provisionWorktree(
         AgentWorktree.of(worktree, root)
             .withSandbox(Sandbox.on(List.of(Path.of("/w/ABC-1")), List.of())));
@@ -303,8 +195,7 @@ class ClaudeAgentRuntimeTest {
     runtime.admit(worktree, deploy);
 
     List<String> writable = new ArrayList<>();
-    new JsonMapper()
-        .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
+    settingsOf(worktree)
         .path("sandbox")
         .path("filesystem")
         .path("allowWrite")
@@ -315,23 +206,12 @@ class ClaudeAgentRuntimeTest {
   @Test
   void grantsDirectoryNotThereYetAsPathRuleAlone(@TempDir Path root) throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
 
     runtime.admit(worktree, Path.of("/src/ABC-1-deploy"));
 
-    var permissions =
-        new JsonMapper()
-            .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
-            .path("permissions");
+    var permissions = settingsOf(worktree).path("permissions");
     List<String> allow = new ArrayList<>();
     permissions.path("allow").forEach(n -> allow.add(n.asString("")));
     assertThat(allow).contains("Read(//src/ABC-1-deploy/**)", "Edit(//src/ABC-1-deploy/**)");
@@ -341,15 +221,7 @@ class ClaudeAgentRuntimeTest {
   @Test
   void admitsNothingWhereItProvisionedNothing(@TempDir Path root) throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
 
     AgentRuntime.Admission admission = runtime.admit(worktree, Path.of("/src/ABC-1-deploy"));
 
@@ -358,18 +230,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void leavesNoStdioProxyInTheWorktree(@TempDir Path root) throws Exception {
-    Path worktree = root.resolve("ABC-1-proj");
-    worktree.toFile().mkdirs();
-
-    new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC())
-        .provisionWorktree(AgentWorktree.of(worktree, root));
+    Path worktree = provisionedWorktree(root);
 
     assertThat(worktree.resolve("mcp_client.js")).doesNotExist();
   }
@@ -377,18 +238,7 @@ class ClaudeAgentRuntimeTest {
   @Test
   void aliasesClaudeMdToTheSharedSystemKnowledgeFileSoOnlyOneCopyExists(@TempDir Path root)
       throws Exception {
-    Path worktree = root.resolve("ABC-1-proj");
-    worktree.toFile().mkdirs();
-
-    new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC())
-        .provisionWorktree(AgentWorktree.of(worktree, root));
+    Path worktree = provisionedWorktree(root);
     Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "system knowledge");
 
     assertThat(Files.readString(worktree.resolve("CLAUDE.md"))).isEqualTo("system knowledge");
@@ -401,15 +251,7 @@ class ClaudeAgentRuntimeTest {
     worktree.toFile().mkdirs();
     Files.writeString(worktree.resolve("CLAUDE.md"), "project rules");
 
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     Path briefing = runtime.systemKnowledgeFile(worktree);
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
 
@@ -424,15 +266,7 @@ class ClaudeAgentRuntimeTest {
     worktree.toFile().mkdirs();
     Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "project rules");
 
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     Path briefing = runtime.systemKnowledgeFile(worktree);
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
 
@@ -447,15 +281,7 @@ class ClaudeAgentRuntimeTest {
     Path worktree = root.resolve("ABC-1-proj");
     worktree.toFile().mkdirs();
     Files.writeString(worktree.resolve("CLAUDE.md"), "project rules");
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     Path briefing = runtime.systemKnowledgeFile(worktree);
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
     Files.writeString(briefing, "the briefing");
@@ -470,15 +296,7 @@ class ClaudeAgentRuntimeTest {
       @TempDir Path root) throws Exception {
     Path worktree = root.resolve("ABC-1-proj");
     worktree.toFile().mkdirs();
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     Path briefing = runtime.systemKnowledgeFile(worktree);
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
     Files.writeString(briefing, "the briefing");
@@ -496,15 +314,7 @@ class ClaudeAgentRuntimeTest {
     Files.writeString(worktree.resolve("CLAUDE.md"), "project rules");
     Files.writeString(worktree.resolve("CLAUDE.local.md"), "personal rules");
 
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
 
     assertThatThrownBy(() -> runtime.systemKnowledgeFile(worktree))
         .isInstanceOf(IllegalStateException.class)
@@ -648,22 +458,10 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void writesDeclaredEventAsHookThatReportsTheStateItMeans(@TempDir Path root) throws Exception {
-    Path worktree = root.resolve("ABC-1-proj");
-    worktree.toFile().mkdirs();
-
-    new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC())
-        .provisionWorktree(AgentWorktree.of(worktree, root));
+    Path worktree = provisionedWorktree(root);
 
     String command =
-        new JsonMapper()
-            .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")))
+        settingsOf(worktree)
             .path("hooks")
             .path("SessionEnd")
             .path(0)
@@ -680,19 +478,10 @@ class ClaudeAgentRuntimeTest {
     Path worktree = root.resolve("ABC-1-proj");
     worktree.toFile().mkdirs();
 
-    new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "team:Engineer", List.of("lsp@market")),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC())
+    runtime(new ClaudeProperties("claude", "", "team:Engineer", List.of("lsp@market")))
         .provisionWorktree(AgentWorktree.of(worktree, root));
 
-    var settings =
-        new JsonMapper()
-            .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")));
+    var settings = settingsOf(worktree);
     assertThat(settings.path("outputStyle").asString("")).isEqualTo("team:Engineer");
     assertThat(settings.path("enabledPlugins").path("lsp@market").asBoolean(true)).isFalse();
   }
@@ -715,22 +504,10 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void asksJagtAtTheEndOfEveryTurnWhetherTheTurnMayEnd(@TempDir Path root) throws Exception {
-    Path worktree = root.resolve("ABC-1-proj");
-    worktree.toFile().mkdirs();
-
-    new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC())
-        .provisionWorktree(AgentWorktree.of(worktree, root));
+    Path worktree = provisionedWorktree(root);
 
     String command =
-        new JsonMapper()
-            .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")))
+        settingsOf(worktree)
             .path("hooks")
             .path("Stop")
             .path(0)
@@ -744,25 +521,9 @@ class ClaudeAgentRuntimeTest {
   @Test
   void reportsTurnEndedOnAnApiErrorThroughItsOwnUnmatchedEvent(@TempDir Path root)
       throws Exception {
-    Path worktree = root.resolve("ABC-1-proj");
-    worktree.toFile().mkdirs();
+    Path worktree = provisionedWorktree(root);
 
-    new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC())
-        .provisionWorktree(AgentWorktree.of(worktree, root));
-
-    var hook =
-        new JsonMapper()
-            .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")))
-            .path("hooks")
-            .path("StopFailure")
-            .path(0);
+    var hook = settingsOf(worktree).path("hooks").path("StopFailure").path(0);
     assertThat(hook.has("matcher")).isFalse();
     assertThat(hook.path("hooks").path(0).path("command").asString(""))
         .contains("/api/agent/session/turn-failure", worktree.toString());
@@ -771,25 +532,9 @@ class ClaudeAgentRuntimeTest {
   @Test
   void reportsPermissionPromptThroughItsOwnEventToTheEndpointAnsweringNothing(@TempDir Path root)
       throws Exception {
-    Path worktree = root.resolve("ABC-1-proj");
-    worktree.toFile().mkdirs();
+    Path worktree = provisionedWorktree(root);
 
-    new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC())
-        .provisionWorktree(AgentWorktree.of(worktree, root));
-
-    var hook =
-        new JsonMapper()
-            .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")))
-            .path("hooks")
-            .path("PermissionRequest")
-            .path(0);
+    var hook = settingsOf(worktree).path("hooks").path("PermissionRequest").path(0);
     assertThat(hook.has("matcher")).isFalse();
     assertThat(hook.path("hooks").path(0).path("command").asString(""))
         .contains("/api/agent/session/permission", worktree.toString());
@@ -797,16 +542,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void refusesTurnEndInTheShapeClaudeReadsAsKeepGoing() {
-    String refusal =
-        new ClaudeAgentRuntime(
-                new SessionBrief(
-                    new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-                new ClaudeProperties("claude", "", "", List.of()),
-                new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint(
-                    "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-                Clock.systemUTC())
-            .refusedTurnEnd("report \"first\"");
+    String refusal = runtime().refusedTurnEnd("report \"first\"");
 
     var answer = new JsonMapper().readTree(refusal);
     assertThat(answer.path("decision").asString("")).isEqualTo("block");
@@ -815,16 +551,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void showsTheHumanLineInTheFieldClaudeKeepsFromTheModel() {
-    String line =
-        new ClaudeAgentRuntime(
-                new SessionBrief(
-                    new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-                new ClaudeProperties("claude", "", "", List.of()),
-                new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint(
-                    "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-                Clock.systemUTC())
-            .toldTheHuman("with the \"Master\"");
+    String line = runtime().toldTheHuman("with the \"Master\"");
 
     var answer = new JsonMapper().readTree(line);
     assertThat(answer.path("systemMessage").asString("")).isEqualTo("with the \"Master\"");
@@ -832,25 +559,9 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void writesTheGateAsHookOnTheShellAndTheFileWritingTools(@TempDir Path root) throws Exception {
-    Path worktree = root.resolve("ABC-1-proj");
-    worktree.toFile().mkdirs();
+    Path worktree = provisionedWorktree(root);
 
-    new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC())
-        .provisionWorktree(AgentWorktree.of(worktree, root));
-
-    var gate =
-        new JsonMapper()
-            .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
-            .path("hooks")
-            .path("PreToolUse")
-            .path(0);
+    var gate = settingsOf(worktree).path("hooks").path("PreToolUse").path(0);
     assertThat(gate.path("matcher").asString(""))
         .isEqualTo("Bash|Edit|Write|MultiEdit|NotebookEdit");
     assertThat(gate.path("hooks").path(0).path("command").asString(""))
@@ -867,30 +578,14 @@ class ClaudeAgentRuntimeTest {
       })
   void tellsDraftTheHumanIsComposingFromTheSuggestionAndFromWhatTheyAlreadySent(
       String screen, boolean draft) {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
 
     assertThat(runtime.holdsDraft(screen.translateEscapes())).isEqualTo(draft);
   }
 
   @Test
   void readsThePromptSuggestionOfAnIdleSessionAsNoDraftAndTypedLineOverItAsOne() throws Exception {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     String screen =
         new String(
             getClass().getResourceAsStream("/screens/suggestion-2.1.308.txt").readAllBytes(),
@@ -912,15 +607,7 @@ class ClaudeAgentRuntimeTest {
   })
   void readsTheScreensOfTheInstalledCliAsWorkingAndAsHoldingDraft(
       String fixture, boolean working, boolean draft) throws Exception {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     String screen =
         new String(
             getClass().getResourceAsStream("/screens/" + fixture).readAllBytes(),
@@ -932,15 +619,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void readsTheFirstRowOfWrappedInputAsTheDraft() {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
 
     var draft =
         runtime.draft(
@@ -952,15 +631,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void tellsSessionWaitingOnTheTrustDialogFromItsScreen() {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     String screen =
         """
         \u001b[38;5;174m╭──────────────────────────────────────────────────────────────╮\u001b[39m
@@ -977,15 +648,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void tellsSessionWaitingOnPermissionDialogFromItsScreen() {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     String screen =
         """
         Bash command
@@ -1001,17 +664,8 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void pinsTheModelAskedForAsOneShellArgument(@TempDir Path root) throws Exception {
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    writeBrief(root, "## start\n\ngo\n");
+    var runtime = runtimeBriefedBy(root);
 
     assertThat(runtime.launchCommand(Path.of("/wt"), true, " opus "))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --model 'opus' 'go'");
@@ -1019,17 +673,8 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void leavesTheModelToTheCliWhenNoneIsAskedFor(@TempDir Path root) throws Exception {
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    writeBrief(root, "## start\n\ngo\n");
+    var runtime = runtimeBriefedBy(root);
 
     assertThat(runtime.launchCommand(Path.of("/wt"), false, "  "))
         .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'go'");
@@ -1038,17 +683,8 @@ class ClaudeAgentRuntimeTest {
   @Test
   void allowsWorkspaceSessionToWriteItsWorkspaceAndRunItsCommandsAfterThePrompt(@TempDir Path root)
       throws Exception {
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    writeBrief(root, "## start\n\ngo\n");
+    var runtime = runtimeBriefedBy(root);
 
     assertThat(
             runtime.workspaceCommand(
@@ -1064,17 +700,10 @@ class ClaudeAgentRuntimeTest {
   @Test
   void startsWithJagtsServerAndThePinnedOnesAloneWhenServersArePinned(@TempDir Path root)
       throws Exception {
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
+    writeBrief(root, "## start\n\ngo\n");
     var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
-            new ClaudeProperties("claude", "/stand/servers.json", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+        runtimeBriefedBy(
+            root, new ClaudeProperties("claude", "/stand/servers.json", "", List.of()));
 
     assertThat(runtime.launchCommand(Path.of("/wt"), false))
         .isEqualTo(
@@ -1084,23 +713,12 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void revivesWithThePinnedServersAloneWhenServersArePinned(@TempDir Path root) throws Exception {
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.writeString(root.resolve("roles/session/brief.md"), "## revive\n\ngo on\n");
+    writeBrief(root, "## revive\n\ngo on\n");
     Path worktree = Files.createDirectories(root.resolve("wt"));
-    Files.writeString(
-        Files.createDirectories(
-                ClaudeTranscripts.projectsDir().resolve(ClaudeTranscripts.slug(worktree)))
-            .resolve("s.jsonl"),
-        "{}\n");
+    transcriptOf(worktree, "{}\n");
     var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
-            new ClaudeProperties("claude", "/stand/servers.json", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+        runtimeBriefedBy(
+            root, new ClaudeProperties("claude", "/stand/servers.json", "", List.of()));
 
     assertThat(runtime.reviveCommand(worktree))
         .isEqualTo(
@@ -1151,15 +769,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void readsTheNudgeAndAnIdleSessionFromTheScreenOfSessionFinishedWithItsTurn() throws Exception {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     String screen =
         new String(
             getClass().getResourceAsStream("/screens/idle-nudge.txt").readAllBytes(),
@@ -1172,15 +782,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void readsTurnRunningFromItsInterruptHint() {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
 
     assertThat(
             runtime.working(
@@ -1191,15 +793,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void readsTurnRunningFromItsSpinnerLine() {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
 
     assertThat(
             runtime.working(
@@ -1220,15 +814,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void readsTurnIdleWhenOnlyItsFinishedLineOrDraftRemains() {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
 
     assertThat(runtime.working("✻ Brewed for 12s\n❯ ")).isFalse();
     assertThat(runtime.working("⏺ Checking…\n❯ ")).isFalse();
@@ -1240,24 +826,9 @@ class ClaudeAgentRuntimeTest {
   @Test
   void asksJagtBeforeTypedPromptReachesTheModelAndWaitsLongerForTheAnswer(@TempDir Path root)
       throws Exception {
-    Path worktree = root.resolve("ABC-1-proj");
-    worktree.toFile().mkdirs();
+    Path worktree = provisionedWorktree(root);
 
-    new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC())
-        .provisionWorktree(AgentWorktree.of(worktree, root));
-
-    var hook =
-        new JsonMapper()
-            .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")))
-            .path("hooks")
-            .path("UserPromptSubmit");
+    var hook = settingsOf(worktree).path("hooks").path("UserPromptSubmit");
     assertThat(hook).hasSize(1);
     assertThat(hook.path(0).path("hooks").path(0).path("command").asString(""))
         .contains("/api/agent/session/prompt", "-m 10", worktree.toString());
@@ -1269,13 +840,7 @@ class ClaudeAgentRuntimeTest {
   void judgesConversationColdOnlyPastNonZeroCacheLifetime(
       long idleMillis, long lifetimeMillis, boolean cold) {
     var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
+        runtime(
             Clock.fixed(java.time.Instant.ofEpochMilli(1_000_000_000L), java.time.ZoneOffset.UTC));
 
     boolean past =
@@ -1287,16 +852,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void blocksPromptInTheShapeClaudeReadsAsBlocked() {
-    String blocked =
-        new ClaudeAgentRuntime(
-                new SessionBrief(
-                    new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-                new ClaudeProperties("claude", "", "", List.of()),
-                new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint(
-                    "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-                Clock.systemUTC())
-            .blockedPrompt("went to a fresh session");
+    String blocked = runtime().blockedPrompt("went to a fresh session");
 
     assertThat(blocked)
         .isEqualTo("{\"decision\": \"block\", \"reason\": \"went to a fresh session\"}");
@@ -1304,15 +860,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void namesItselfAndTheModelsItOffersAndReadsWhatTheHumanTyped() {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
 
     assertThat(runtime.displayName()).isEqualTo("Claude");
     assertThat(runtime.models()).containsExactly("fable", "opus", "sonnet", "haiku");
@@ -1322,15 +870,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void declaresTheFilesItGeneratesAndTheOnesTheStatusLeavesOut() {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
 
     assertThat(runtime.generatedFiles())
         .containsExactly(".mcp.json", ".claude/settings.local.json");
@@ -1341,15 +881,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void declaresWhatTheCliSaysAtCompactionUsageLimitAndAnEndThatIsFollowedByStart() {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
 
     assertThat(runtime.compactedStart()).isEqualTo("compact");
     assertThat(runtime.rateLimitError()).isEqualTo("rate_limit");
@@ -1358,15 +890,7 @@ class ClaudeAgentRuntimeTest {
 
   @Test
   void isNotPastTheCacheLifetimeAtTheMomentItsLastActivityExactlyFillsIt() {
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
+    var runtime = runtime(Clock.fixed(Instant.ofEpochMilli(1_000L), ZoneOffset.UTC));
 
     assertThat(runtime.pastCacheLifetime(0L, Duration.ofSeconds(1))).isFalse();
     assertThat(runtime.pastCacheLifetime(0L, Duration.ofMillis(999L))).isTrue();
@@ -1376,25 +900,13 @@ class ClaudeAgentRuntimeTest {
   void grantsTheSameDirectoryOnlyOnceHoweverOftenItIsAdmitted(@TempDir Path root) throws Exception {
     Path worktree = Files.createDirectories(root.resolve("ABC-1-proj"));
     Path deploy = Files.createDirectories(root.resolve("ABC-1-deploy"));
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
     runtime.provisionWorktree(AgentWorktree.of(worktree, root));
 
     runtime.admit(worktree, deploy);
     runtime.admit(worktree, deploy);
 
-    var allow =
-        new JsonMapper()
-            .readTree(Files.readString(worktree.resolve(".claude/settings.local.json")))
-            .path("permissions")
-            .path("allow");
+    var allow = settingsOf(worktree).path("permissions").path("allow");
     List<String> reads = new ArrayList<>();
     allow.forEach(n -> reads.add(n.asString("")));
     assertThat(reads).filteredOn(rule -> rule.startsWith("Read(/")).hasSize(1);
@@ -1413,15 +925,7 @@ class ClaudeAgentRuntimeTest {
             {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"fix the login"}}
             """);
     Files.setLastModifiedTime(log, java.nio.file.attribute.FileTime.fromMillis(1_700_000_000_000L));
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
 
     assertThat(runtime.conversationTail(worktree, 16_000, Set.of()))
         .contains("human: fix the login");
@@ -1441,15 +945,7 @@ class ClaudeAgentRuntimeTest {
         """
         {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"why is it red?"}}
         """);
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
 
     assertThat(runtime.humanExchangeOpen(worktree, Set.of("Re-read the file."))).isTrue();
   }
@@ -1464,15 +960,7 @@ class ClaudeAgentRuntimeTest {
         """
         {"type":"user","entrypoint":"cli","origin":{"kind":"human"},"message":{"content":"Re-read the file."}}
         """);
-    var runtime =
-        new ClaudeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new ClaudeProperties("claude", "", "", List.of()),
-            new McpEndpoint("http://localhost:8290/mcp"),
-            new HookEndpoint(
-                "http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"),
-            Clock.systemUTC());
+    var runtime = runtime();
 
     assertThat(runtime.humanExchangeOpen(worktree, Set.of("Re-read the file."))).isFalse();
   }

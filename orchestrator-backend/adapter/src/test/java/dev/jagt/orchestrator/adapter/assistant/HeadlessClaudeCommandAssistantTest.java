@@ -1,15 +1,14 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.claude;
+import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.commandOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
-import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.LocalModelProperties;
 import dev.jagt.orchestrator.port.CommandAssistant;
 import dev.jagt.orchestrator.port.Processes;
@@ -18,7 +17,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 class HeadlessClaudeCommandAssistantTest {
 
@@ -26,17 +24,7 @@ class HeadlessClaudeCommandAssistantTest {
   private final HeadlessClaudeCommandAssistant assistant =
       new HeadlessClaudeCommandAssistant(
           new ToolLessRead(
-              new HeadlessClaude(
-                  new AssistantProcess(
-                      runner,
-                      new AssistantBreaker(
-                          AssistantProperties.empty(),
-                          java.time.Clock.systemUTC(),
-                          new dev.jagt.orchestrator.service.ReachLedger())),
-                  ClaudeProperties.defaults(),
-                  AssistantProperties.empty(),
-                  mock(UsageTracker.class),
-                  mock(ReadOnlyTools.class)),
+              claude(runner),
               new OpenAiCompatibleModel(LocalModelProperties.off(), mock(UsageTracker.class)),
               LocalModelProperties.off()));
   private final CommandAssistant.Menu menu =
@@ -83,9 +71,8 @@ class HeadlessClaudeCommandAssistantTest {
 
     assistant.mapCommand("send ABC-5 out for review", menu);
 
-    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-    verify(runner).run(any(Path.class), any(Duration.class), command.capture());
-    assertThat(command.getValue())
+    List<String> command = commandOf(runner);
+    assertThat(command)
         .anySatisfy(
             argument ->
                 assertThat(argument)

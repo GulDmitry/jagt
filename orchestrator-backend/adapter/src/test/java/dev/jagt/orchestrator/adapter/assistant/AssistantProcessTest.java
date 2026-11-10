@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import static dev.jagt.orchestrator.adapter.assistant.AssistantProcessFixtures.openedThenCooledDown;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -16,7 +17,6 @@ import dev.jagt.orchestrator.port.Processes;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -104,21 +104,7 @@ class AssistantProcessTest {
   @Test
   void letsTheNextReadProbeAgainWhenTheProbeThrewBeforeAnswering() {
     Clock clock = mock(Clock.class);
-    when(clock.instant()).thenReturn(Instant.ofEpochMilli(0L));
-    AssistantProcess probing =
-        new AssistantProcess(
-            runner,
-            new AssistantBreaker(
-                AssistantProperties.empty()
-                    .withBreakerFailures(3)
-                    .withBreakerCooldown(Duration.ofMinutes(5)),
-                clock,
-                new dev.jagt.orchestrator.service.ReachLedger()));
-    when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(OVERLOADED);
-    probing.run(CWD, TIMEOUT, List.of("claude"));
-    probing.run(CWD, TIMEOUT, List.of("claude"));
-    probing.run(CWD, TIMEOUT, List.of("claude"));
-    when(clock.instant()).thenReturn(Instant.ofEpochMilli(300_001L));
+    AssistantProcess probing = openedThenCooledDown(runner, clock, OVERLOADED);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenThrow(new IllegalStateException("timed out"));
     assertThatThrownBy(() -> probing.run(CWD, TIMEOUT, List.of("claude")))
@@ -131,21 +117,7 @@ class AssistantProcessTest {
   @Test
   void letsTheNextReadProbeAgainWhenTheProbeSaidNothingAboutTheProvider() {
     Clock clock = mock(Clock.class);
-    when(clock.instant()).thenReturn(Instant.ofEpochMilli(0L));
-    AssistantProcess probing =
-        new AssistantProcess(
-            runner,
-            new AssistantBreaker(
-                AssistantProperties.empty()
-                    .withBreakerFailures(3)
-                    .withBreakerCooldown(Duration.ofMinutes(5)),
-                clock,
-                new dev.jagt.orchestrator.service.ReachLedger()));
-    when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(OVERLOADED);
-    probing.run(CWD, TIMEOUT, List.of("claude"));
-    probing.run(CWD, TIMEOUT, List.of("claude"));
-    probing.run(CWD, TIMEOUT, List.of("claude"));
-    when(clock.instant()).thenReturn(Instant.ofEpochMilli(300_001L));
+    AssistantProcess probing = openedThenCooledDown(runner, clock, OVERLOADED);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(1, "", "budget"));
     probing.run(CWD, TIMEOUT, List.of("claude"));
@@ -156,21 +128,7 @@ class AssistantProcessTest {
   @Test
   void closesTheBreakerWhenTheProbeGotAnAnswer() {
     Clock clock = mock(Clock.class);
-    when(clock.instant()).thenReturn(Instant.ofEpochMilli(0L));
-    AssistantProcess probing =
-        new AssistantProcess(
-            runner,
-            new AssistantBreaker(
-                AssistantProperties.empty()
-                    .withBreakerFailures(3)
-                    .withBreakerCooldown(Duration.ofMinutes(5)),
-                clock,
-                new dev.jagt.orchestrator.service.ReachLedger()));
-    when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(OVERLOADED);
-    probing.run(CWD, TIMEOUT, List.of("claude"));
-    probing.run(CWD, TIMEOUT, List.of("claude"));
-    probing.run(CWD, TIMEOUT, List.of("claude"));
-    when(clock.instant()).thenReturn(Instant.ofEpochMilli(300_001L));
+    AssistantProcess probing = openedThenCooledDown(runner, clock, OVERLOADED);
     when(runner.run(any(Path.class), any(Duration.class), any()))
         .thenReturn(new Processes.Result(0, "{\"type\":\"result\",\"is_error\":false}", ""));
     probing.run(CWD, TIMEOUT, List.of("claude"));

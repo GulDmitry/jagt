@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import static dev.jagt.orchestrator.adapter.agent.OpenCodeRuntimes.provisioned;
+import static dev.jagt.orchestrator.adapter.agent.OpenCodeRuntimes.runtime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -54,21 +56,8 @@ class OpenCodeAgentRuntimeTest {
   @Test
   void runsUnattendedBecauseNobodyApprovesInTheWindowAndNeverUpdatesOrShares(@TempDir Path root)
       throws Exception {
-    Path worktree = root.resolve("ABC-1-proj");
-    worktree.toFile().mkdirs();
-    ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigFile.defaults());
-
-    new OpenCodeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            OpenCodeProperties.defaults(),
-            new McpEndpoint("http://127.0.0.1:8290/mcp"),
-            config)
-        .provisionWorktree(AgentWorktree.of(worktree, root));
-
     JsonNode written =
-        new JsonMapper().readTree(worktree.resolve(".jagt/opencode/opencode.json").toFile());
+        provisioned(root, OpenCodeProperties.defaults(), "http://127.0.0.1:8290/mcp");
     assertThat(written.path("permission").path("edit").asString()).isEqualTo("allow");
     assertThat(written.path("permission").path("bash").asString()).isEqualTo("allow");
     assertThat(written.path("permission").path("webfetch").asString()).isEqualTo("allow");
@@ -80,21 +69,11 @@ class OpenCodeAgentRuntimeTest {
   @Test
   void usesTheConfiguredLocalEndpointAndModelAsTheSessionsModel(@TempDir Path root)
       throws Exception {
-    Path worktree = root.resolve("ABC-1-proj");
-    worktree.toFile().mkdirs();
-    ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigFile.defaults());
-
-    new OpenCodeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of()),
-            new McpEndpoint("http://127.0.0.1:8290/mcp"),
-            config)
-        .provisionWorktree(AgentWorktree.of(worktree, root));
-
     JsonNode written =
-        new JsonMapper().readTree(worktree.resolve(".jagt/opencode/opencode.json").toFile());
+        provisioned(
+            root,
+            new OpenCodeProperties("", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of()),
+            "http://127.0.0.1:8290/mcp");
     JsonNode local = written.path("provider").path("local");
     assertThat(local.path("npm").asString()).isEqualTo("@ai-sdk/openai-compatible");
     assertThat(local.path("options").path("baseURL").asString())
@@ -106,21 +85,9 @@ class OpenCodeAgentRuntimeTest {
   @Test
   void leavesTheModelToTheUsersOwnOpenCodeConfigWhereNoEndpointIsSet(@TempDir Path root)
       throws Exception {
-    Path worktree = root.resolve("ABC-1-proj");
-    worktree.toFile().mkdirs();
-    ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigFile.defaults());
-
-    new OpenCodeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            new OpenCodeProperties("", "", "qwen-4b", Map.of()),
-            new McpEndpoint("http://127.0.0.1:8290/mcp"),
-            config)
-        .provisionWorktree(AgentWorktree.of(worktree, root));
-
     JsonNode written =
-        new JsonMapper().readTree(worktree.resolve(".jagt/opencode/opencode.json").toFile());
+        provisioned(
+            root, new OpenCodeProperties("", "", "qwen-4b", Map.of()), "http://127.0.0.1:8290/mcp");
     assertThat(written.has("provider")).isFalse();
     assertThat(written.has("model")).isFalse();
   }
@@ -150,11 +117,8 @@ class OpenCodeAgentRuntimeTest {
   @Test
   void startsOnThePlanAgentInPlanModeSoNothingIsEditedBeforeTheHumanApproves() {
     var runtime =
-        new OpenCodeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
+        runtime(
             new OpenCodeProperties("/opt/bin/opencode", "", "", Map.of()),
-            new McpEndpoint("http://127.0.0.1:8290/mcp"),
             mock(ConfigService.class));
 
     assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), true, "", "go"))
@@ -175,13 +139,7 @@ class OpenCodeAgentRuntimeTest {
                     AgentConfig.defaults()
                         .withSandbox(SandboxConfig.defaults().withEnabled(true))));
 
-    var runtime =
-        new OpenCodeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            OpenCodeProperties.defaults(),
-            new McpEndpoint("http://127.0.0.1:8290/mcp"),
-            config);
+    var runtime = runtime(OpenCodeProperties.defaults(), config);
 
     assertThat(runtime.problems())
         .extracting(Problem::key)
@@ -198,13 +156,7 @@ class OpenCodeAgentRuntimeTest {
                     AgentConfig.defaults()
                         .withSandbox(SandboxConfig.defaults().withEnabled(false))));
 
-    var runtime =
-        new OpenCodeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            OpenCodeProperties.defaults(),
-            new McpEndpoint("http://127.0.0.1:8290/mcp"),
-            config);
+    var runtime = runtime(OpenCodeProperties.defaults(), config);
 
     assertThat(runtime.problems()).isEmpty();
   }
@@ -216,13 +168,7 @@ class OpenCodeAgentRuntimeTest {
 
   @Test
   void namesItselfOpenCodeWhereTheBoardSaysWhichAgentRuns() {
-    var runtime =
-        new OpenCodeAgentRuntime(
-            new SessionBrief(
-                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/no-brief"))),
-            OpenCodeProperties.defaults(),
-            new McpEndpoint("http://127.0.0.1:8290/mcp"),
-            mock(ConfigService.class));
+    var runtime = runtime(OpenCodeProperties.defaults(), mock(ConfigService.class));
 
     assertThat(runtime.displayName()).isEqualTo("OpenCode");
   }

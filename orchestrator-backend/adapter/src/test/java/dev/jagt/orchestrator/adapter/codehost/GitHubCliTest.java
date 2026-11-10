@@ -1,11 +1,12 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
+import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.bareRepoHost;
+import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.twoCommandsOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -15,7 +16,6 @@ import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.ReachLedger;
 import dev.jagt.orchestrator.task.FailedJob;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -28,13 +28,7 @@ class GitHubCliTest {
   private final Processes processes = mock(Processes.class);
   private final ReachLedger reach = new ReachLedger();
   private final GitHubCli github = new GitHubCli(processes, reach);
-  private final HostSettings host =
-      new HostSettings(
-          "shop",
-          "orchestrator.codeHost",
-          Path.of("/repo"),
-          new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(
-              null, null, List.of(), List.of(), List.of(), List.of(), List.of()));
+  private final HostSettings host = bareRepoHost();
 
   @Test
   void runReRunsOnlyItsFailedJobsOnTheHostItLivesOn() {
@@ -79,11 +73,10 @@ class GitHubCliTest {
     Answer<CommitPipeline> answer =
         github.onBranchSince(host, "git@ghe.corp.invalid:acme/shop.git", "dev", "0123abc");
 
-    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-    verify(processes, times(2)).run(isNull(), any(Duration.class), command.capture());
-    assertThat(command.getAllValues().get(0))
+    List<List<String>> command = twoCommandsOf(processes);
+    assertThat(command.get(0))
         .containsSubsequence("run", "list", "--branch", "dev", "-R", "ghe.corp.invalid/acme/shop");
-    assertThat(command.getAllValues().get(1))
+    assertThat(command.get(1))
         .containsSubsequence(
             "api", "--hostname", "ghe.corp.invalid", "repos/acme/shop/compare/0123abc...fedcba98");
     assertThat(answer.facts())
@@ -107,9 +100,8 @@ class GitHubCliTest {
     Answer<CommitPipeline> answer =
         github.onBranchSince(host, "git@ghe.corp.invalid:acme/shop.git", "dev", "0123abc");
 
-    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-    verify(processes, times(2)).run(isNull(), any(Duration.class), command.capture());
-    assertThat(command.getAllValues().get(0)).doesNotContain("--status");
+    List<List<String>> command = twoCommandsOf(processes);
+    assertThat(command.get(0)).doesNotContain("--status");
     assertThat(answer.facts()).contains(new CommitPipeline("running", "u10"));
   }
 
@@ -170,7 +162,7 @@ class GitHubCliTest {
             new Processes.Result(
                 0,
                 "{\"conclusion\":\"failure\",\"jobs\":[{\"databaseId\":3,\"name\":\"build\",\"con"
-                + "clusion\":\"failure\"},"
+                    + "clusion\":\"failure\"},"
                     + "{\"databaseId\":4,\"name\":\"lint\",\"conclusion\":\"success\"}]}",
                 ""));
 
