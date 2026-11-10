@@ -1,60 +1,33 @@
 package dev.jagt.orchestrator.e2e;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.ToolchainProperties;
-import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.McpHealth;
-import dev.jagt.orchestrator.port.RoundReviewer;
-import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.GitDeploy;
-import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Conflict;
-import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
-import dev.jagt.orchestrator.task.TokenUsage;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Predicate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,105 +35,71 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
-@Tag("e2e")
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = {
-      "spring.config.import=",
-      "orchestrator.agent.cli=stub",
-      "orchestrator.open-terminal-window=false",
-      "orchestrator.startup-checks=false"
-    })
+@E2eFlow(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class MasterModeFlowTest {
 
   private static final String TASK = "ABC-7";
-  private static final Duration A_FEW_TICKS_AND_A_DEPLOY_TICK = Duration.ofSeconds(55);
-
-  private final HttpClient client = HttpClient.newHttpClient();
 
   @TempDir static Path workspace;
 
   @DynamicPropertySource
   static void orchestratorLivesInTheTempWorkspace(DynamicPropertyRegistry registry) {
-    registry.add("orchestrator.root", () -> workspace.resolve("root").toString());
-    registry.add("orchestrator.config-file", () -> workspace.resolve("root/jagt.yml").toString());
-    registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
+    FlowHarness.livesIn(registry, workspace);
   }
 
-  @MockitoBean private TerminalDriver terminalDriver;
-  @MockitoBean private EditorDriver editorDriver;
-  @MockitoBean private UserNotifier userNotifier;
   @MockitoBean(answers = RETURNS_DEEP_STUBS)
   private Assistants assistants;
+
   @MockitoBean private McpHealth mcp;
   @MockitoSpyBean private Clock clock;
-  private final TaskProvisioning provisioning;
-  private final StateService stateService;
-  private final OrchestratorPaths paths;
-  private final ToolchainProperties properties;
-  private final Jobs jobs;
+  private final UserNotifier userNotifier;
+  private final FlowHarness flow;
 
   @Autowired
   MasterModeFlowTest(
-      TaskProvisioning provisioning,
-      StateService stateService,
-      OrchestratorPaths paths,
-      ToolchainProperties properties,
-      Jobs jobs) {
-    this.provisioning = provisioning;
-    this.stateService = stateService;
-    this.paths = paths;
-    this.properties = properties;
-    this.jobs = jobs;
+      UserNotifier userNotifier, ApplicationContext context, @LocalServerPort int port) {
+    this.userNotifier = userNotifier;
+    this.flow = new FlowHarness(context, workspace, TASK, port);
   }
-
-  @LocalServerPort private int port;
 
   @BeforeAll
   static void createTheThrowawayOutsideWorld() throws Exception {
-    E2eWorkspace.createRootMarker(workspace.resolve("root"));
-    Files.copy(
-        Path.of("../roles/master/brief.md.dist"),
-        workspace.resolve("root/roles/master/brief.md.dist"));
-    E2eWorkspace.createRepositoryWithOrigin(
-        workspace.resolve("origin.git"), workspace.resolve("proj"));
+    FlowHarness.createThrowawayWorld(workspace, true);
   }
 
   @AfterEach
   void leaveNothingBehindForTheNextFlow() {
-    stateService.removeTask(TASK);
-    E2eWorkspace.forgetTask(repo(), worktree(), TASK);
-    E2eWorkspace.resetDeployBranch(repo());
-    E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.tmuxCommand()));
+    flow.leaveNothingBehind();
   }
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("dev.jagt.orchestrator.e2e.MasterModeCase#rounds")
   void readsAndPressesRoundAsTheModeAllows(MasterModeCase master) throws Exception {
-    E2eWorkspace.writeConfig(paths.configFile(), repo(), master);
-    judges(new Judgement("", master.verdict(), List.of(), "", List.of(), ""));
+    flow.writeConfig(master);
+    flow.judges(new Judgement("", master.verdict(), List.of(), "", List.of(), ""));
 
-    handBackTheFirstRound();
+    flow.handBackTheFirstRound();
 
-    assertThat(settled(master).status()).isEqualTo(master.expected());
-    assertThat(asked()).isEqualTo(master.read());
-    assertThat(Files.readString(worktree().resolve("task_context.md"))).contains(master.told());
+    assertThat(flow.settled(master).status()).isEqualTo(master.expected());
+    assertThat(flow.asked()).isEqualTo(master.read());
+    assertThat(flow.taskContext())
+        .contains(master.told());
   }
 
   @Test
   void stampsTheShipItPressesAsTheMastersOwn() throws Exception {
-    E2eWorkspace.writeConfig(
-        paths.configFile(), repo(), MasterModeCase.rounds().findFirst().orElseThrow());
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    flow.writeConfig(MasterModeCase.rounds().findFirst().orElseThrow());
+    flow.judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
-    handBackTheFirstRound();
+    flow.handBackTheFirstRound();
 
-    assertThat(awaitTask(task -> task.status() == TaskStatus.SHIPPING).history())
+    assertThat(flow.awaitTask(task -> task.status() == TaskStatus.SHIPPING).history())
         .filteredOn(change -> change.status() == TaskStatus.SHIPPING)
         .extracting(StatusChange::origin)
         .containsExactly(ActionOrigin.MASTER);
@@ -169,169 +108,124 @@ class MasterModeFlowTest {
   @ParameterizedTest(name = "{0}")
   @MethodSource("dev.jagt.orchestrator.e2e.MasterModeCase#plans")
   void readsAndStartsPlanAsTheModeAllows(MasterModeCase master) throws Exception {
-    E2eWorkspace.writeConfig(paths.configFile(), repo(), master);
-    judges(new Judgement("", master.verdict(), List.of(), "", List.of(), ""));
-    provisioning.initializeTask(
-        NewTask.builder(TASK, "proj")
-            .instructions("Fix the widget")
-            .title("Widget layout is off")
-            .build());
+    flow.writeConfig(master);
+    flow.judges(new Judgement("", master.verdict(), List.of(), "", List.of(), ""));
+    flow.initializeTask();
     Files.writeString(
-        worktree().resolve("plan.md"),
+        flow.worktree().resolve("plan.md"),
         "## Acceptance criteria\n\n- [here] The widget sits left.\n\nMove the widget left.\n");
 
-    agentReports("PLAN_PENDING", "plan written", "");
+    flow.agentReports("PLAN_PENDING", "plan written", "");
 
-    assertThat(settled(master).status()).isEqualTo(master.expected());
-    assertThat(asked()).isEqualTo(master.read());
-    assertThat(Files.readString(worktree().resolve("task_context.md"))).contains(master.told());
+    assertThat(flow.settled(master).status()).isEqualTo(master.expected());
+    assertThat(flow.asked()).isEqualTo(master.read());
+    assertThat(flow.taskContext())
+        .contains(master.told());
   }
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("dev.jagt.orchestrator.e2e.MasterModeCase#questions")
   void answersSessionsQuestionAsTheModeAllows(MasterModeCase master) throws Exception {
-    E2eWorkspace.writeConfig(paths.configFile(), repo(), master);
-    judges(
-        new Judgement(
-            "",
-            "ready",
-            List.of(new Finding("", "keep v2 beside v3", "decided", "advice", "", "")),
-            "",
-            List.of(),
-            ""));
-    provisioning.initializeTask(
-        NewTask.builder(TASK, "proj")
-            .instructions("Fix the widget")
-            .title("Widget layout is off")
-            .build());
+    flow.writeConfig(master);
+    flow.judgesReadyWithAdvice("keep v2 beside v3");
+    flow.initializeTask();
 
-    agentReports("IN_PROGRESS", "keep v2?", ", \"outcome\": \"question\"");
+    flow.agentReports("IN_PROGRESS", "keep v2?", ", \"outcome\": \"question\"");
 
-    assertThat(settled(master).status()).isEqualTo(master.expected());
-    assertThat(asked()).isEqualTo(master.read());
-    assertThat(Files.readString(worktree().resolve("task_context.md"))).contains(master.told());
+    assertThat(flow.settled(master).status()).isEqualTo(master.expected());
+    assertThat(flow.asked()).isEqualTo(master.read());
+    assertThat(flow.taskContext())
+        .contains(master.told());
   }
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("dev.jagt.orchestrator.e2e.MasterModeCase#deploys")
   void deploysGreenRequestAsTheModeAllows(MasterModeCase master) throws Exception {
-    E2eWorkspace.writeConfig(paths.configFile(), repo(), master);
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
-    handBackTheFirstRound();
-    shipsTheRoundTheMasterShipped();
+    flow.writeConfig(master);
+    flow.judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    flow.handBackTheFirstRound();
+    flow.shipsTheRoundTheMasterShipped();
 
-    act("sweep");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-deploy");
+    flow.act("sweep");
+    flow.awaitRun("master-deploy");
 
-    assertThat(awaitTask(task -> task.status() == master.expected()).status())
+    assertThat(flow.awaitTask(task -> task.status() == master.expected()).status())
         .isEqualTo(master.expected());
   }
 
   @Test
   void handsDeployConflictToTheSessionAndFinishesTheDeployOnceItIsResolved() throws Exception {
-    E2eWorkspace.writeConfig(
-        paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
-    handBackTheFirstRound();
-    shipsTheRoundTheMasterShipped();
-    E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
-    act("sweep");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-deploy");
-    awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
-    awaitTold("did not deploy");
+    flow.writeConfig(MasterModeCase.deploys().findFirst().orElseThrow());
+    flow.reachesDeployConflict();
 
-    Path resolveIn = GitDeploy.deployWorktreePath(repo(), TASK);
-    assertThat(Files.readString(worktree().resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)).lines())
+    Path resolveIn = GitDeploy.deployWorktreePath(flow.repo(), TASK);
+    assertThat(
+            Files.readString(flow.worktree().resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)).lines())
         .anySatisfy(line -> assertThat(line).contains("Also yours", resolveIn.toString()));
     Files.writeString(resolveIn.resolve("widget.txt"), "both sides, resolved\n");
     E2eWorkspace.git(resolveIn, "add", "widget.txt");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
+    flow.awaitRun("deploy-conflict");
 
-    assertThat(awaitTask(task -> task.status() == TaskStatus.DEPLOYED).status())
+    assertThat(flow.awaitTask(task -> task.status() == TaskStatus.DEPLOYED).status())
         .isEqualTo(TaskStatus.DEPLOYED);
-    assertThat(E2eWorkspace.git(workspace.resolve("origin.git"), "log", "-1", "--format=%s", "dev"))
+    assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
         .contains("Merge branch '" + TASK + "' into dev");
   }
 
   @Test
   void answersQuestionAtDeployConflictUnderTheHandOffItLeavesStanding() throws Exception {
-    E2eWorkspace.writeConfig(
-        paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
-    handBackTheFirstRound();
-    shipsTheRoundTheMasterShipped();
-    E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
-    act("sweep");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-deploy");
-    awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
-    awaitTold("did not deploy");
-    judges(
-        new Judgement(
-            "",
-            "ready",
-            List.of(new Finding("", "keep both lines", "decided", "advice", "", "")),
-            "",
-            List.of(),
-            ""));
+    flow.writeConfig(MasterModeCase.deploys().findFirst().orElseThrow());
+    flow.reachesDeployConflict();
+    flow.judgesReadyWithAdvice("keep both lines");
 
-    post(
-        "/mcp",
+    flow.mcp(
         """
         {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
          "params": {"name": "update_agent_status",
                     "arguments": {"status": "IN_PROGRESS", "message": "keep both lines?", "why": "a conflict needs a call",
                                   "outcome": "question"}}}\
-        """,
-        Map.of("X-Working-Directory", worktree().toString()));
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-answer");
+        """);
+    flow.awaitRun("master-answer");
 
-    awaitTold("keep both lines");
-    assertThat(Files.readString(worktree().resolve("task_context.md"))).contains("did not deploy");
-    assertThat(task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    flow.awaitTold("keep both lines");
+    assertThat(flow.taskContext())
+        .contains("did not deploy");
+    assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
   }
 
   @Test
   void sendsRedVerificationBackToTheSession() throws Exception {
-    E2eWorkspace.writeConfig(
-        paths.configFile(), repo(), MasterModeCase.rounds().findFirst().orElseThrow());
-    E2eWorkspace.failVerificationWith(paths.configFile(), "echo widget broken >&2; exit 1");
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    flow.writeConfig(MasterModeCase.rounds().findFirst().orElseThrow());
+    E2eWorkspace.failVerificationWith(flow.configFile(), "echo widget broken >&2; exit 1");
 
-    handBackOwingVerification();
+    flow.handBackOwingVerification();
 
-    awaitTold("jagt ran this project's verification command and it failed");
-    assertThat(awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS).history())
+    flow.awaitTold("jagt ran this project's verification command and it failed");
+    assertThat(flow.awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS).history())
         .extracting(StatusChange::status)
         .contains(TaskStatus.VERIFYING)
         .doesNotContain(TaskStatus.REVIEW_PENDING);
-    assertThat(Files.readString(worktree().resolve("task_context.md")))
+    assertThat(flow.taskContext())
         .contains("[proj] `sh -c echo widget broken >&2; exit 1` exited 1\nwidget broken");
-    assertThat(asked()).isFalse();
+    assertThat(flow.asked()).isFalse();
   }
 
   @Test
   void stopsTaskHandedBackOnTheTreeItsVerificationFailedOn() throws Exception {
-    E2eWorkspace.writeConfig(
-        paths.configFile(), repo(), MasterModeCase.rounds().findFirst().orElseThrow());
-    E2eWorkspace.failVerificationWith(paths.configFile(), "echo widget broken >&2; exit 1");
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
-    handBackOwingVerification();
-    awaitTold("jagt ran this project's verification command and it failed");
-    awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS);
-    Files.writeString(worktree().resolve("task_notes.md"), "widget fixed again\n");
+    flow.writeConfig(MasterModeCase.rounds().findFirst().orElseThrow());
+    E2eWorkspace.failVerificationWith(flow.configFile(), "echo widget broken >&2; exit 1");
+    flow.handBackOwingVerification();
+    flow.awaitVerificationSentBack();
+    Files.writeString(flow.worktree().resolve("task_notes.md"), "widget fixed again\n");
 
-    agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed again", "");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "verify");
+    flow.agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed again", "");
+    flow.awaitRun("verify");
 
-    assertThat(Objects.requireNonNull(awaitTask(TaskState::stopped).stop()).trigger())
+    assertThat(Objects.requireNonNull(flow.awaitTask(TaskState::stopped).stop()).trigger())
         .isEqualTo(TaskStop.Trigger.UNCHANGED_FAILURE);
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "verify");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-stop");
-    assertThat(task().status()).isEqualTo(TaskStatus.VERIFYING);
-    assertThat(mockingDetails(assistants.reviewer()).getInvocations())
-        .extracting(call -> call.<RoundReviewer.Round>getArgument(0).prompt())
+    flow.awaitMasterStop();
+    assertThat(flow.task().status()).isEqualTo(TaskStatus.VERIFYING);
+    assertThat(flow.reviewerPrompts())
         .singleElement()
         .asString()
         .contains("which jagt stopped because it suspects a loop");
@@ -339,27 +233,22 @@ class MasterModeFlowTest {
 
   @Test
   void stopsTaskWhoseVerificationRoundIsSentBackPastTheCeiling() throws Exception {
-    E2eWorkspace.writeConfig(
-        paths.configFile(), repo(), MasterModeCase.rounds().findFirst().orElseThrow());
-    E2eWorkspace.failVerificationWith(paths.configFile(), "echo widget broken >&2; exit 1");
-    E2eWorkspace.stopRoundsOfOneStepAfter(paths.configFile(), 1);
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
-    handBackOwingVerification();
-    awaitTold("jagt ran this project's verification command and it failed");
-    awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS);
-    Files.writeString(worktree().resolve("README.md"), "e2e fixture, edited\n");
-    Files.writeString(worktree().resolve("task_notes.md"), "widget fixed another way\n");
+    flow.writeConfig(MasterModeCase.rounds().findFirst().orElseThrow());
+    E2eWorkspace.failVerificationWith(flow.configFile(), "echo widget broken >&2; exit 1");
+    E2eWorkspace.stopRoundsOfOneStepAfter(flow.configFile(), 1);
+    flow.handBackOwingVerification();
+    flow.awaitVerificationSentBack();
+    Files.writeString(flow.worktree().resolve("README.md"), "e2e fixture, edited\n");
+    Files.writeString(flow.worktree().resolve("task_notes.md"), "widget fixed another way\n");
 
-    agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed another way", "");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "verify");
+    flow.agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed another way", "");
+    flow.awaitRun("verify");
 
-    assertThat(Objects.requireNonNull(awaitTask(TaskState::stopped).stop()).trigger())
+    assertThat(Objects.requireNonNull(flow.awaitTask(TaskState::stopped).stop()).trigger())
         .isEqualTo(TaskStop.Trigger.ROUNDS);
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "verify");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-stop");
-    assertThat(task().status()).isEqualTo(TaskStatus.VERIFYING);
-    assertThat(mockingDetails(assistants.reviewer()).getInvocations())
-        .extracting(call -> call.<RoundReviewer.Round>getArgument(0).prompt())
+    flow.awaitMasterStop();
+    assertThat(flow.task().status()).isEqualTo(TaskStatus.VERIFYING);
+    assertThat(flow.reviewerPrompts())
         .singleElement()
         .asString()
         .contains("which jagt stopped because it suspects a loop");
@@ -367,269 +256,89 @@ class MasterModeFlowTest {
 
   @Test
   void asksTheMasterFirstWhenConflictStallsAndRelaysItsAnswerToTheSession() throws Exception {
-    E2eWorkspace.writeConfig(
-        paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
-    E2eWorkspace.stallConflictsAfterMinutes(paths.configFile(), 1);
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
-    handBackTheFirstRound();
-    shipsTheRoundTheMasterShipped();
-    E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
-    act("sweep");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-deploy");
-    awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
-    awaitTold("did not deploy");
-    judges(
-        new Judgement(
-            "",
-            "ready",
-            List.of(new Finding("", "keep both lines", "decided", "advice", "", "")),
-            "",
-            List.of(),
-            ""));
-    Instant twoMinutesOn = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
-    doReturn(twoMinutesOn).when(clock).instant();
-    doReturn(twoMinutesOn.toEpochMilli()).when(clock).millis();
+    flow.writeConfig(MasterModeCase.deploys().findFirst().orElseThrow());
+    E2eWorkspace.stallConflictsAfterMinutes(flow.configFile(), 1);
+    flow.reachesDeployConflict();
+    flow.judgesReadyWithAdvice("keep both lines");
 
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-answer");
+    flow.conflictStallsFor(clock, 2);
+    flow.awaitRun("master-answer");
 
-    awaitTold("keep both lines");
-    assertThat(task().currentConflict().filter(Conflict::askedTheMaster)).isPresent();
-    assertThat(task().currentConflict().map(Conflict::told).isPresent()).isFalse();
+    flow.awaitTold("keep both lines");
+    assertThat(flow.task().currentConflict().filter(Conflict::askedTheMaster)).isPresent();
+    assertThat(flow.task().currentConflict().map(Conflict::told).isPresent()).isFalse();
     verify(userNotifier, never()).notify(contains("deploy conflict stalled"), any(), any());
-    assertThat(task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
   }
 
   @Test
   void leavesStalledConflictToTheHumanWhenTheMastersAnswerIsUnusable() throws Exception {
-    E2eWorkspace.writeConfig(
-        paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
-    E2eWorkspace.stallConflictsAfterMinutes(paths.configFile(), 1);
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
-    handBackTheFirstRound();
-    shipsTheRoundTheMasterShipped();
-    E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
-    act("sweep");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-deploy");
-    awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
-    awaitTold("did not deploy");
-    Instant twoMinutesOn = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
-    doReturn(twoMinutesOn).when(clock).instant();
-    doReturn(twoMinutesOn.toEpochMilli()).when(clock).millis();
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
+    flow.writeConfig(MasterModeCase.deploys().findFirst().orElseThrow());
+    E2eWorkspace.stallConflictsAfterMinutes(flow.configFile(), 1);
+    flow.reachesDeployConflict();
+    flow.conflictStallsFor(clock, 2);
 
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-answer");
+    flow.awaitRun("master-answer");
 
-    awaitTask(task -> !task.masterOrNone().unanswered().isEmpty());
-    assertThat(task().masterOrNone().unanswered()).isEqualTo(task().askedDigest());
-    assertThat(task().message()).startsWith("The deploy conflict stalled");
-    assertThat(task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    flow.awaitTask(task -> !task.masterOrNone().unanswered().isEmpty());
+    assertThat(flow.task().masterOrNone().unanswered()).isEqualTo(flow.task().askedDigest());
+    assertThat(flow.task().message()).startsWith("The deploy conflict stalled");
+    assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
   }
 
   @Test
   void tellsTheHumanOnceConflictStallsAgainAfterTheMasterWasAskedAndPressesNothing()
       throws Exception {
-    E2eWorkspace.writeConfig(
-        paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
-    E2eWorkspace.stallConflictsAfterMinutes(paths.configFile(), 1);
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
-    handBackTheFirstRound();
-    shipsTheRoundTheMasterShipped();
-    E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
-    act("sweep");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-deploy");
-    awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
-    awaitTold("did not deploy");
-    Instant twoMinutesOn = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
-    doReturn(twoMinutesOn).when(clock).instant();
-    doReturn(twoMinutesOn.toEpochMilli()).when(clock).millis();
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
-    awaitTask(task -> task.currentConflict().filter(Conflict::askedTheMaster).isPresent());
-    Instant fourMinutesOn = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(4));
-    doReturn(fourMinutesOn).when(clock).instant();
-    doReturn(fourMinutesOn.toEpochMilli()).when(clock).millis();
+    flow.writeConfig(MasterModeCase.deploys().findFirst().orElseThrow());
+    E2eWorkspace.stallConflictsAfterMinutes(flow.configFile(), 1);
+    flow.reachesDeployConflict();
+    flow.conflictStallsFor(clock, 2);
+    flow.awaitTask(task -> task.currentConflict().filter(Conflict::askedTheMaster).isPresent());
 
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-conflict");
+    flow.conflictStallsFor(clock, 4);
 
-    assertThat(task().currentConflict().filter(conflict -> conflict.told() != null)).isPresent();
+    assertThat(flow.task().currentConflict().filter(conflict -> conflict.told() != null))
+        .isPresent();
 
     verify(userNotifier, timeout(10_000).times(1))
         .notify(contains("deploy conflict stalled"), any(), any());
-    assertThat(task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-    assertThat(E2eWorkspace.git(workspace.resolve("origin.git"), "log", "-1", "--format=%s", "dev"))
+    assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
         .contains("Someone else changed widget.txt");
   }
 
   @Test
   void asksTheSessionToCheckTheDeployOnceItsPipelineIsGreen() throws Exception {
-    E2eWorkspace.writeConfig(
-        paths.configFile(), repo(), MasterModeCase.deploys().findFirst().orElseThrow());
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
-    handBackTheFirstRound();
-    shipsTheRoundTheMasterShipped();
-    act("sweep");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-deploy");
-    awaitTask(task -> task.status() == TaskStatus.DEPLOYED);
+    flow.writeConfig(MasterModeCase.deploys().findFirst().orElseThrow());
+    flow.judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    flow.handBackTheFirstRound();
+    flow.shipsTheRoundTheMasterShipped();
+    flow.act("sweep");
+    flow.awaitRun("master-deploy");
+    flow.awaitTask(task -> task.status() == TaskStatus.DEPLOYED);
     String deployed =
-        E2eWorkspace.git(workspace.resolve("origin.git"), "rev-parse", "dev").substring(0, 8);
+        E2eWorkspace.git(flow.origin(), "rev-parse", "dev").substring(0, 8);
 
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "deploy-check");
+    flow.awaitRun("deploy-check");
 
-    awaitTold("Make sure it is deployed and works");
-    assertThat(Files.readString(worktree().resolve("task_context.md")))
+    flow.awaitTold("Make sure it is deployed and works");
+    assertThat(flow.taskContext())
         .contains(TASK + " is deployed:\n- proj: " + deployed + " on dev");
   }
 
   @Test
   void leavesPermissionTheSessionAsksForToTheHuman() throws Exception {
-    E2eWorkspace.writeConfig(
-        paths.configFile(), repo(), MasterModeCase.questions().findFirst().orElseThrow());
-    judges(
-        new Judgement(
-            "",
-            "ready",
-            List.of(new Finding("", "go ahead", "decided", "advice", "", "")),
-            "",
-            List.of(),
-            ""));
-    provisioning.initializeTask(
-        NewTask.builder(TASK, "proj")
-            .instructions("Fix the widget")
-            .title("Widget layout is off")
-            .build());
+    flow.writeConfig(MasterModeCase.questions().findFirst().orElseThrow());
+    flow.judgesReadyWithAdvice("go ahead");
+    flow.initializeTask();
 
-    agentReports(
+    flow.agentReports(
         "IN_PROGRESS", "may I write outside the worktree?", ", \"outcome\": \"permission\"");
 
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-answer");
-    assertThat(asked()).isFalse();
-    assertThat(task().report()).isEqualTo(AgentReport.PERMISSION);
-    assertThat(Files.readString(worktree().resolve("task_context.md"))).isEqualTo("Fix the widget");
-  }
-
-  private void judges(Judgement judgement) {
-    when(assistants.reviewer().review(any()))
-        .thenReturn(new Answer<>(Optional.of(judgement), TokenUsage.NONE));
-  }
-
-  private boolean asked() {
-    return !mockingDetails(assistants.reviewer()).getInvocations().isEmpty();
-  }
-
-  private void handBackTheFirstRound() throws Exception {
-    provisioning.initializeTask(
-        NewTask.builder(TASK, "proj")
-            .instructions("Fix the widget")
-            .title("Widget layout is off")
-            .build());
-    Files.writeString(worktree().resolve("widget.txt"), "fixed\n");
-    Files.writeString(worktree().resolve("task_notes.md"), "widget fixed\n");
-    agentReports("REVIEW_PENDING", "widget fixed", "");
-  }
-
-  private void handBackOwingVerification() throws Exception {
-    provisioning.initializeTask(
-        NewTask.builder(TASK, "proj")
-            .instructions("Fix the widget")
-            .title("Widget layout is off")
-            .build());
-    Files.writeString(worktree().resolve("widget.txt"), "fixed\n");
-    Files.writeString(worktree().resolve("task_notes.md"), "widget fixed\n");
-    agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed", "");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "verify");
-  }
-
-  private void shipsTheRoundTheMasterShipped() throws Exception {
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-review");
-    awaitTask(task -> task.status() == TaskStatus.SHIPPING);
-    E2eWorkspace.git(worktree(), "add", "widget.txt");
-    E2eWorkspace.git(worktree(), "commit", "-m", TASK + " fix the widget");
-    E2eWorkspace.git(worktree(), "push", "-u", "origin", TASK);
-    agentReports(
-        "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + request() + "\"");
-    when(assistants.codeHost().readReview(request()))
-        .thenReturn(
-            new Answer<>(
-                Optional.of(
-                    new ReviewFacts(
-                        new ReviewFacts.Request(true, false, false, false, 0),
-                        new ReviewFacts.Pipeline("success", "", ""),
-                        new ReviewFacts.Discussion(List.of(), List.of(), List.of()))),
-                TokenUsage.NONE));
-  }
-
-  private TaskState settled(MasterModeCase master) {
-    awaitTask(task -> task.status() == master.expected());
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-review");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-answer");
-    return task();
-  }
-
-  private TaskState awaitTask(Predicate<TaskState> reached) {
-    return await()
-        .atMost(A_FEW_TICKS_AND_A_DEPLOY_TICK)
-        .pollInterval(Duration.ofMillis(500))
-        .until(this::task, reached);
-  }
-
-  private void awaitTold(String line) {
-    Path context = worktree().resolve("task_context.md");
-    await()
-        .atMost(A_FEW_TICKS_AND_A_DEPLOY_TICK)
-        .pollInterval(Duration.ofMillis(500))
-        .until(() -> Files.readString(context).contains(line));
-  }
-
-  private void agentReports(String status, String message, String extraArgument) throws Exception {
-    agentReports(status, status, message, extraArgument);
-  }
-
-  private void agentReports(String status, String landsAt, String message, String extraArgument)
-      throws Exception {
-    String call =
-        """
-        {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
-         "params": {"name": "update_agent_status",
-                    "arguments": {"status": "%s", "message": "%s", "why": "the session reports"%s}}}\
-        """
-            .formatted(status, message, extraArgument);
-    assertThat(post("/mcp", call, Map.of("X-Working-Directory", worktree().toString())))
-        .contains("-> " + landsAt);
-  }
-
-  private String act(String action) throws Exception {
-    return post("/api/tasks/actions/" + action + "?task=" + TASK, "", Map.of());
-  }
-
-  private String post(String path, String body, Map<String, String> headers) throws Exception {
-    HttpRequest.Builder request =
-        HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
-            .header("Content-Type", "application/json")
-            .header("Origin", "http://127.0.0.1:" + port)
-            .POST(HttpRequest.BodyPublishers.ofString(body));
-    headers.forEach(request::header);
-    HttpResponse<String> answer =
-        client.send(request.build(), HttpResponse.BodyHandlers.ofString());
-    assertThat(answer.statusCode()).as("%s", answer.body()).isEqualTo(200);
-    return answer.body();
-  }
-
-  private String request() {
-    return E2eWorkspace.requestUrl(workspace.resolve("origin.git"));
-  }
-
-  private TaskState task() {
-    return stateService.task(TASK).orElseThrow();
-  }
-
-  private Path repo() {
-    return workspace.resolve("proj");
-  }
-
-  private Path worktree() {
-    return workspace.resolve(TASK + "-proj");
+    flow.awaitRun("master-answer");
+    assertThat(flow.asked()).isFalse();
+    assertThat(flow.task().report()).isEqualTo(AgentReport.PERMISSION);
+    assertThat(flow.taskContext())
+        .isEqualTo("Fix the widget");
   }
 }

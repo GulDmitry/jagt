@@ -7,9 +7,6 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.EditorDriver;
-import dev.jagt.orchestrator.port.TerminalDriver;
-import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.task.NewTask;
@@ -19,38 +16,22 @@ import java.util.Objects;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@Tag("e2e")
-@SpringBootTest(
-    properties = {
-      "spring.config.import=",
-      "orchestrator.agent.cli=stub",
-      "orchestrator.open-terminal-window=false",
-      "orchestrator.startup-checks=false"
-    })
+@E2eFlow
 class TaskFlowMatrixTest {
 
   @TempDir static Path workspace;
 
   @DynamicPropertySource
   static void orchestratorLivesInTheTempWorkspace(DynamicPropertyRegistry registry) {
-    registry.add("orchestrator.root", () -> workspace.resolve("root").toString());
-    registry.add("orchestrator.config-file", () -> workspace.resolve("root/jagt.yml").toString());
-    registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
+    FlowHarness.livesIn(registry, workspace);
   }
-
-  @MockitoBean private TerminalDriver terminalDriver;
-  @MockitoBean private EditorDriver editorDriver;
-  @MockitoBean private UserNotifier userNotifier;
 
   private final Jobs jobs;
   private final TaskProvisioning provisioning;
@@ -77,9 +58,7 @@ class TaskFlowMatrixTest {
 
   @BeforeAll
   static void createTheThrowawayOutsideWorld() throws Exception {
-    E2eWorkspace.createRootMarker(workspace.resolve("root"));
-    E2eWorkspace.createRepositoryWithOrigin(
-        workspace.resolve("origin.git"), workspace.resolve("proj"));
+    FlowHarness.createThrowawayWorld(workspace, false);
   }
 
   @BeforeEach

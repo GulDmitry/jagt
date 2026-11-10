@@ -1,151 +1,86 @@
 package dev.jagt.orchestrator.e2e;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.ToolchainProperties;
-import dev.jagt.orchestrator.job.Jobs;
-import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
-import dev.jagt.orchestrator.port.TerminalDriver;
-import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.Assistants;
-import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.StatusChange;
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TokenUsage;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Predicate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@Tag("e2e")
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = {
-      "spring.config.import=",
-      "orchestrator.agent.cli=stub",
-      "orchestrator.open-terminal-window=false",
-      "orchestrator.startup-checks=false"
-    })
+@E2eFlow(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class JudgeModeFlowTest {
 
   private static final String TASK = "ABC-7";
-  private static final Duration A_FEW_TICKS = Duration.ofSeconds(30);
-
-  private final HttpClient client = HttpClient.newHttpClient();
 
   @TempDir static Path workspace;
 
   @DynamicPropertySource
   static void orchestratorLivesInTheTempWorkspace(DynamicPropertyRegistry registry) {
-    registry.add("orchestrator.root", () -> workspace.resolve("root").toString());
-    registry.add("orchestrator.config-file", () -> workspace.resolve("root/jagt.yml").toString());
-    registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
+    FlowHarness.livesIn(registry, workspace);
   }
 
-  @MockitoBean private TerminalDriver terminalDriver;
-  @MockitoBean private EditorDriver editorDriver;
-  @MockitoBean private UserNotifier userNotifier;
   @MockitoBean(answers = RETURNS_DEEP_STUBS)
   private Assistants assistants;
+
   @MockitoBean private McpHealth mcp;
-  private final TaskProvisioning provisioning;
-  private final StateService stateService;
-  private final OrchestratorPaths paths;
-  private final ToolchainProperties properties;
-  private final Jobs jobs;
+  private final FlowHarness flow;
 
-  @Autowired
-  JudgeModeFlowTest(
-      TaskProvisioning provisioning,
-      StateService stateService,
-      OrchestratorPaths paths,
-      ToolchainProperties properties,
-      Jobs jobs) {
-    this.provisioning = provisioning;
-    this.stateService = stateService;
-    this.paths = paths;
-    this.properties = properties;
-    this.jobs = jobs;
+  JudgeModeFlowTest(ApplicationContext context, @LocalServerPort int port) {
+    this.flow = new FlowHarness(context, workspace, TASK, port);
   }
-
-  @LocalServerPort private int port;
 
   @BeforeAll
   static void createTheThrowawayOutsideWorld() throws Exception {
-    E2eWorkspace.createRootMarker(workspace.resolve("root"));
-    Files.copy(
-        Path.of("../roles/master/brief.md.dist"),
-        workspace.resolve("root/roles/master/brief.md.dist"));
-    E2eWorkspace.createRepositoryWithOrigin(
-        workspace.resolve("origin.git"), workspace.resolve("proj"));
+    FlowHarness.createThrowawayWorld(workspace, true);
   }
 
   @BeforeEach
   void oneProjectAndNoMasterModeWritten() throws Exception {
-    E2eWorkspace.writeConfig(paths.configFile(), repo(), "shared", false);
+    E2eWorkspace.writeConfig(flow.configFile(), flow.repo(), "shared", false);
   }
 
   @AfterEach
   void leaveNothingBehindForTheNextFlow() {
-    stateService.removeTask(TASK);
-    E2eWorkspace.forgetTask(repo(), worktree(), TASK);
-    E2eWorkspace.resetDeployBranch(repo());
-    E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.tmuxCommand()));
+    flow.leaveNothingBehind();
   }
 
   @Test
   void readsReadyRoundAndLeavesEveryPressToTheHuman() throws Exception {
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    flow.judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
-    handBackTheFirstRound();
+    flow.handBackTheFirstRound();
 
-    assertThat(awaitReview()).contains("VERDICT: ready");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-review");
-    assertThat(task().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
-    assertThat(task().history())
+    assertThat(flow.awaitReview()).contains("VERDICT: ready");
+    flow.awaitRun("master-review");
+    assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+    assertThat(flow.task().history())
         .extracting(StatusChange::status)
         .doesNotContain(TaskStatus.SHIPPING);
   }
 
   @Test
   void sendsNotReadyRoundBackToTheSessionThatWroteIt() throws Exception {
-    judges(
+    flow.judges(
         new Judgement(
             "",
             "not ready",
@@ -156,25 +91,21 @@ class JudgeModeFlowTest {
             List.of(),
             ""));
 
-    handBackTheFirstRound();
+    flow.handBackTheFirstRound();
 
-    Path context = worktree().resolve("task_context.md");
-    await()
-        .atMost(A_FEW_TICKS)
-        .pollInterval(Duration.ofMillis(500))
-        .until(() -> Files.readString(context).contains("the guard is inverted"));
-    assertThat(awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS).status())
+    flow.awaitTold("the guard is inverted");
+    assertThat(flow.awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS).status())
         .isEqualTo(TaskStatus.IN_PROGRESS);
   }
 
   @Test
   void putsTheReviewersQuestionToTheHumanRatherThanAnsweringIt() throws Exception {
-    judges(new Judgement("", "question", List.of(), "keep v2 beside v3?", List.of(), ""));
+    flow.judges(new Judgement("", "question", List.of(), "keep v2 beside v3?", List.of(), ""));
 
-    handBackTheFirstRound();
+    flow.handBackTheFirstRound();
 
     assertThat(
-            awaitTask(
+            flow.awaitTask(
                     task -> task.message() != null && task.message().contains("keep v2 beside v3?"))
                 .report())
         .isEqualTo(AgentReport.QUESTION);
@@ -182,123 +113,34 @@ class JudgeModeFlowTest {
 
   @Test
   void leavesTheSessionsOwnQuestionForTheHuman() throws Exception {
-    provisioning.initializeTask(
-        NewTask.builder(TASK, "proj")
-            .instructions("Fix the widget")
-            .title("Widget layout is off")
-            .build());
+    flow.initializeTask();
 
-    agentReports("IN_PROGRESS", "keep v2?", ", \"outcome\": \"question\"");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-answer");
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-review");
+    flow.agentReports("IN_PROGRESS", "keep v2?", ", \"outcome\": \"question\"");
+    flow.awaitRun("master-answer");
+    flow.awaitRun("master-review");
 
-    assertThat(task().message()).contains("keep v2?");
+    assertThat(flow.task().message()).contains("keep v2?");
     verify(assistants.reviewer(), never()).review(any());
   }
 
   @Test
   void shipsAndDeploysOnlyWhenTheHumanPresses() throws Exception {
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
-    handBackTheFirstRound();
-    awaitReview();
+    flow.judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    flow.handBackTheFirstRound();
+    flow.awaitReview();
 
-    assertThat(act("ship")).contains("relayed to the agent");
-    E2eWorkspace.git(worktree(), "add", "-A");
-    E2eWorkspace.git(worktree(), "commit", "-m", TASK + " fix the widget");
-    E2eWorkspace.git(worktree(), "push", "-u", "origin", TASK);
-    agentReports(
-        "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + request() + "\"");
-    when(assistants.codeHost().readReview(request()))
-        .thenReturn(
-            new Answer<>(
-                Optional.of(
-                    new ReviewFacts(
-                        new ReviewFacts.Request(true, false, false, false, 0),
-                        new ReviewFacts.Pipeline("success", "", ""),
-                        new ReviewFacts.Discussion(List.of(), List.of(), List.of()))),
-                TokenUsage.NONE));
-    act("sweep");
-    assertThat(task().status()).isEqualTo(TaskStatus.REVIEWED);
-    E2eWorkspace.awaitFullRunStartedAfterNow(jobs, "master-deploy");
-    assertThat(task().status()).isEqualTo(TaskStatus.REVIEWED);
+    assertThat(flow.act("ship")).contains("relayed to the agent");
+    E2eWorkspace.git(flow.worktree(), "add", "-A");
+    E2eWorkspace.git(flow.worktree(), "commit", "-m", TASK + " fix the widget");
+    E2eWorkspace.git(flow.worktree(), "push", "-u", "origin", TASK);
+    flow.agentReports(
+        "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + flow.request() + "\"");
+    FlowHarness.readsGreenReview(assistants, flow.request());
+    flow.act("sweep");
+    assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEWED);
+    flow.awaitRun("master-deploy");
+    assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEWED);
 
-    assertThat(act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");
-  }
-
-  private void judges(Judgement judgement) {
-    when(assistants.reviewer().review(any()))
-        .thenReturn(new Answer<>(Optional.of(judgement), TokenUsage.NONE));
-  }
-
-  private void handBackTheFirstRound() throws Exception {
-    provisioning.initializeTask(
-        NewTask.builder(TASK, "proj")
-            .instructions("Fix the widget")
-            .title("Widget layout is off")
-            .build());
-    Files.writeString(worktree().resolve("widget.txt"), "fixed\n");
-    Files.writeString(worktree().resolve("task_notes.md"), "widget fixed\n");
-    agentReports("REVIEW_PENDING", "widget fixed", "");
-  }
-
-  private String awaitReview() throws Exception {
-    Path review = worktree().resolve("master-review.md");
-    await()
-        .atMost(A_FEW_TICKS)
-        .pollInterval(Duration.ofMillis(500))
-        .until(() -> Files.exists(review));
-    return Files.readString(review);
-  }
-
-  private TaskState awaitTask(Predicate<TaskState> reached) {
-    return await()
-        .atMost(A_FEW_TICKS)
-        .pollInterval(Duration.ofMillis(500))
-        .until(this::task, reached);
-  }
-
-  private void agentReports(String status, String message, String extraArgument) throws Exception {
-    String call =
-        """
-        {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
-         "params": {"name": "update_agent_status",
-                    "arguments": {"status": "%s", "message": "%s", "why": "the session reports"%s}}}\
-        """
-            .formatted(status, message, extraArgument);
-    assertThat(post("/mcp", call, Map.of("X-Working-Directory", worktree().toString())))
-        .contains("-> " + status);
-  }
-
-  private String act(String action) throws Exception {
-    return post("/api/tasks/actions/" + action + "?task=" + TASK, "", Map.of());
-  }
-
-  private String post(String path, String body, Map<String, String> headers) throws Exception {
-    HttpRequest.Builder request =
-        HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
-            .header("Content-Type", "application/json")
-            .header("Origin", "http://127.0.0.1:" + port)
-            .POST(HttpRequest.BodyPublishers.ofString(body));
-    headers.forEach(request::header);
-    HttpResponse<String> answer =
-        client.send(request.build(), HttpResponse.BodyHandlers.ofString());
-    assertThat(answer.statusCode()).as("%s", answer.body()).isEqualTo(200);
-    return answer.body();
-  }
-
-  private String request() {
-    return E2eWorkspace.requestUrl(workspace.resolve("origin.git"));
-  }
-
-  private TaskState task() {
-    return stateService.task(TASK).orElseThrow();
-  }
-
-  private Path repo() {
-    return workspace.resolve("proj");
-  }
-
-  private Path worktree() {
-    return workspace.resolve(TASK + "-proj");
+    assertThat(flow.act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");
   }
 }

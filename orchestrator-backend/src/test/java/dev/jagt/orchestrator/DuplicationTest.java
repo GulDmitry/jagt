@@ -22,7 +22,6 @@ class DuplicationTest {
       List.of(
           Path.of("adapter/src/test/java"),
           Path.of("src/boardTest/java"),
-          Path.of("src/e2e/java"),
           Path.of("usecase/src/test/java"));
 
   @Test
