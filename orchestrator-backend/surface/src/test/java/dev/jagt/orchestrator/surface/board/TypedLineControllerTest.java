@@ -6,9 +6,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.AgentSessions;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class TypedLineControllerTest {
 
@@ -31,6 +34,22 @@ class TypedLineControllerTest {
     assertThatThrownBy(() -> api.say("a1", new TypedLineController.LineRequest("   ")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("nothing to say");
+    verifyNoInteractions(sessions);
+  }
+
+  @Test
+  void pressesTheNamedKeyInTheSessionOfTheTask() {
+    when(sessions.press("a1", SessionHost.Key.CTRL_C)).thenReturn("Pressed CTRL_C.");
+
+    assertThat(api.key("a1", new TypedLineController.KeyRequest("CTRL_C")).message())
+        .isEqualTo("Pressed CTRL_C.");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"ctrl-c", "Escape", "C-c; rm", ""})
+  void refusesAKeyOutsideTheFixedSet(String name) {
+    assertThatThrownBy(() -> api.key("a1", new TypedLineController.KeyRequest(name)))
+        .isInstanceOf(IllegalArgumentException.class);
     verifyNoInteractions(sessions);
   }
 

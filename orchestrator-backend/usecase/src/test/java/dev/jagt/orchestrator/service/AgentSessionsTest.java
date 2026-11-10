@@ -954,6 +954,41 @@ class AgentSessionsTest {
   }
 
   @Test
+  void pressesAKeyInTheWindowOfARunningAgent() {
+    state.putTask(
+        "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+    when(tmux.sessionName(null)).thenReturn("jagt");
+    when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+    when(tmux.pressTaskWindow("jagt", "ABC-1", SessionHost.Key.ESCAPE)).thenReturn(true);
+    AgentSessions sessions =
+        new AgentSessions(
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+
+    assertThat(sessions.press("ABC-1", SessionHost.Key.ESCAPE)).isEqualTo("Pressed ESCAPE.");
+  }
+
+  @Test
+  void refusesAKeyWhereNoAgentRuns() {
+    state.putTask(
+        "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+    when(tmux.sessionName(null)).thenReturn("jagt");
+    when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.DEAD_SHELL);
+    when(agentRuntime.displayName()).thenReturn("Claude");
+    AgentSessions sessions =
+        new AgentSessions(
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)));
+
+    assertThatThrownBy(() -> sessions.press("ABC-1", SessionHost.Key.TAB))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("No Claude session is running");
+    verify(tmux, never()).pressTaskWindow(anyString(), anyString(), any());
+  }
+
+  @Test
   void saysTheHumanIsComposingWhereTheWindowHoldsADraft() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());

@@ -25,6 +25,29 @@ public interface SessionHost {
     AGENT_RUNNING
   }
 
+  /** The keys a human can press in a task's window; text goes through {@link #nudgeTaskWindow}. */
+  enum Key {
+    ESCAPE,
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
+    TAB,
+    SPACE,
+    ENTER,
+    CTRL_C,
+    CTRL_U,
+    DIGIT_1,
+    DIGIT_2,
+    DIGIT_3,
+    DIGIT_4,
+    DIGIT_5,
+    DIGIT_6,
+    DIGIT_7,
+    DIGIT_8,
+    DIGIT_9
+  }
+
   /**
    * The session's windows could not be listed, which says nothing about whether one exists; the
    * cause is in the message.
@@ -116,6 +139,9 @@ public interface SessionHost {
 
   /** Presses Enter in the task's window, sending what its input holds; false when it is gone. */
   boolean submitTaskWindow(String session, String taskId);
+
+  /** Presses one key in the task's window; false when it is gone. */
+  boolean pressTaskWindow(String session, String taskId, Key key);
 
   /**
    * Closes every window a task owns, and answers how many there were; a throw when they cannot be

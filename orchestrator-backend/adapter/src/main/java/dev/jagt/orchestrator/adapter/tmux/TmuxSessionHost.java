@@ -344,6 +344,45 @@ public class TmuxSessionHost implements SessionHost {
     }
   }
 
+  @Override
+  public boolean pressTaskWindow(String session, String taskId, Key key) {
+    synchronized (lock) {
+      var windowId = findWindowId(session, taskId);
+      if (windowId.isEmpty()) {
+        return false;
+      }
+      processRunner
+          .run(null, TIMEOUT, tmux("send-keys", "-t", windowId.get(), keyName(key)))
+          .expectSuccess("tmux send-keys " + key + " " + taskId);
+      reads.changed();
+      return true;
+    }
+  }
+
+  static String keyName(Key key) {
+    return switch (key) {
+      case ESCAPE -> "Escape";
+      case UP -> "Up";
+      case DOWN -> "Down";
+      case LEFT -> "Left";
+      case RIGHT -> "Right";
+      case TAB -> "Tab";
+      case SPACE -> "Space";
+      case ENTER -> "Enter";
+      case CTRL_C -> "C-c";
+      case CTRL_U -> "C-u";
+      case DIGIT_1 -> "1";
+      case DIGIT_2 -> "2";
+      case DIGIT_3 -> "3";
+      case DIGIT_4 -> "4";
+      case DIGIT_5 -> "5";
+      case DIGIT_6 -> "6";
+      case DIGIT_7 -> "7";
+      case DIGIT_8 -> "8";
+      case DIGIT_9 -> "9";
+    };
+  }
+
   private void enter(String windowId, String taskId) {
     processRunner
         .run(null, TIMEOUT, tmux("send-keys", "-t", windowId, "Enter"))

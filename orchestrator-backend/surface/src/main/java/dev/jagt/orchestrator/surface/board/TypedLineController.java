@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
+import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.surface.board.TaskCommandsController.ActionResult;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,19 @@ public class TypedLineController {
       throw new IllegalArgumentException("There is nothing to say");
     }
     return new ActionResult(sessions.say(taskId, line));
+  }
+
+  public record KeyRequest(String key) {}
+
+  @PostMapping("/tasks/key")
+  public ActionResult key(@RequestParam("task") String taskId, @RequestBody KeyRequest request) {
+    SessionHost.Key key;
+    try {
+      key = SessionHost.Key.valueOf(String.valueOf(request.key()));
+    } catch (IllegalArgumentException unknown) {
+      throw new IllegalArgumentException("Not a key a session accepts: " + request.key());
+    }
+    return new ActionResult(sessions.press(taskId, key));
   }
 
   public record Screen(boolean held, String shown) {}

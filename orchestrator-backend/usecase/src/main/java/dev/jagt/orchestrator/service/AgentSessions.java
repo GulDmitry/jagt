@@ -251,6 +251,22 @@ public class AgentSessions implements SessionLines {
     return "Said to the agent.";
   }
 
+  public String press(String taskId, SessionHost.Key key) {
+    String id = stateService.canonicalTaskId(taskId);
+    requireTask(id);
+    String session = agentSession(configService.load(), id);
+    if (hosting.host().taskWindowState(session, id) != SessionHost.WindowState.AGENT_RUNNING
+        || !hosting.host().pressTaskWindow(session, id, key)) {
+      throw new IllegalStateException(
+          "No "
+              + hosting.runtime().displayName()
+              + " session is running for "
+              + id
+              + " — restart the agent, then press the key again.");
+    }
+    return "Pressed " + key + ".";
+  }
+
   /**
    * Work on a round already handed back needs the notes and the brief, not the conversation that
    * wrote them.

@@ -36,6 +36,12 @@ export const sayTo = (taskId, line) => api(`/api/tasks/say?task=${encodeURICompo
   body: JSON.stringify({line}),
 });
 
+export const pressKey = (taskId, key) => api(`/api/tasks/key?task=${encodeURIComponent(taskId)}`, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({key}),
+});
+
 // Every action reloads the board, so by the time such a refusal is read the view is already right — say so, or
 // it reads as jagt refusing something it will keep refusing.
 const STALE_VIEW = ['NO_SUCH_TASK', 'ACTION_NOT_AVAILABLE'];

@@ -18,7 +18,8 @@ import * as seen from './seen.js';
 import * as repliesOpened from './repliesOpened.js';
 import * as selection from './selection.js';
 import * as tabs from './tabs.js';
-import {sayTo} from '../core/api.js';
+import {pressKey, refusal, sayTo} from '../core/api.js';
+import {toast} from './toast.js';
 import {sending} from './submit.js';
 import {said} from './keys.js';
 import {hideStaleTip} from './tips.js';
@@ -104,6 +105,11 @@ export const onClick = ({action}) => {
     if (flagged) {
       flags.toggle(flagged.dataset.flag);
       render();
+      return;
+    }
+    const key = event.target.closest('button[data-press]');
+    if (key) {
+      pressKey(key.dataset.task, key.dataset.press).then(() => tabs.forget(), (e) => toast(refusal(e), true)).then(render);
       return;
     }
     const button = event.target.closest('button[data-action]');

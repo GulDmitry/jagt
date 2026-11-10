@@ -79,6 +79,8 @@ fieldset.field legend { padding: 0; margin-bottom: 4px; }
 .doc table { border-collapse: collapse; }
 .doc th, .doc td { border: 1px solid var(--line); padding: 3px 8px; }
 .doc .mermaid { margin: 8px 0; white-space: pre; font-family: var(--mono); }
+.keys { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+.keys button { min-width: 32px; padding: 2px 6px; font-family: var(--mono); font-size: 12px; }
 .say { display: flex; gap: 8px; margin-top: 8px; }
 .say input { flex: 1; }
 .session p, .round p { margin: 0 0 6px; font-size: 12px; }

@@ -22,8 +22,14 @@ const History = ({task, now}) => html`<section class="history" role="tabpanel" i
   </li>`)}</ol>
 </section>`;
 
+const KEYS = [['ESCAPE', 'Esc'], ['UP', '↑'], ['DOWN', '↓'], ['LEFT', '←'], ['RIGHT', '→'], ['TAB', 'Tab'],
+  ['SPACE', 'Space'], ['ENTER', 'Enter'], ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => [`DIGIT_${n}`, `${n}`]),
+  ['CTRL_C', '^C'], ['CTRL_U', '^U']];
+
 const Session = ({task, shown}) => html`<section class="session" role="tabpanel" id="panel-session" aria-labelledby="tab-session">
   <pre class="screen">${shown === null ? t('reading') : shown.held ? shown.shown : t('pane.no-window')}</pre>
+  <div class="keys" role="group" aria-label=${t('keys.session')}>${KEYS.map(([name, cap]) => html`<button
+    data-press=${name} data-task=${task.id}>${cap}</button>`)}</div>
   <form class="say" data-say=${task.id}>
     <input name="line" aria-label=${t('say.label')} placeholder=${t('say.hint')}
       autocomplete="off" required/>

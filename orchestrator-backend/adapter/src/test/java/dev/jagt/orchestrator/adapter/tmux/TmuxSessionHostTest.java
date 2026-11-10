@@ -24,6 +24,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.port.SessionHost.WindowState;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import java.nio.file.Path;
@@ -1540,5 +1541,108 @@ class TmuxSessionHostTest {
     verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
     assertThat(commands.getAllValues())
         .noneSatisfy(command -> assertThat(command.getLast()).contains("GIT_CEILING_DIRECTORIES"));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "ESCAPE,Escape",
+    "UP,Up",
+    "DOWN,Down",
+    "LEFT,Left",
+    "RIGHT,Right",
+    "TAB,Tab",
+    "SPACE,Space",
+    "ENTER,Enter",
+    "CTRL_C,C-c",
+    "CTRL_U,C-u",
+    "DIGIT_1,1",
+    "DIGIT_2,2",
+    "DIGIT_3,3",
+    "DIGIT_4,4",
+    "DIGIT_5,5",
+    "DIGIT_6,6",
+    "DIGIT_7,7",
+    "DIGIT_8,8",
+    "DIGIT_9,9"
+  })
+  void pressesAKeyByItsNameInTheTasksWindowNeverAsLiteralText(
+      SessionHost.Key key, String tmuxName) {
+    Processes processes = mock(Processes.class);
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "", ""));
+    when(processes.run(
+            isNull(),
+            any(Duration.class),
+            argThat((List<String> command) -> command.contains("list-windows"))))
+        .thenReturn(new Processes.Result(0, "@2 200 1700000500 ABC-1\n", ""));
+    TmuxSessionHost host =
+        new TmuxSessionHost(
+            processes,
+            new TmuxReads(processes, ToolchainProperties.defaults()),
+            new OrchestratorPaths(OrchestratorProperties.defaults()),
+            mock(TerminalDriver.class),
+            mock(AgentRuntime.class));
+
+    boolean pressed = host.pressTaskWindow("jagt", "ABC-1", key);
+
+    assertThat(pressed).isTrue();
+    ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+    verify(processes, atLeastOnce()).run(isNull(), any(Duration.class), commands.capture());
+    assertThat(commands.getAllValues())
+        .anySatisfy(
+            command -> assertThat(command).containsSequence("send-keys", "-t", "@2", tmuxName))
+        .noneSatisfy(command -> assertThat(command).contains("-l"));
+  }
+
+  @Test
+  void listsWindowsAgainWhenAKeyIsPressedWithinTheTick() {
+    Processes processes = mock(Processes.class);
+    when(processes.run(
+            isNull(),
+            any(Duration.class),
+            argThat((List<String> command) -> command.contains("list-windows"))))
+        .thenReturn(new Processes.Result(0, "jagt\t@1 100 1700000000 ABC-1\n", ""));
+    when(processes.run(
+            isNull(),
+            any(Duration.class),
+            argThat((List<String> command) -> command.contains("send-keys"))))
+        .thenReturn(new Processes.Result(0, "", ""));
+    TmuxReads reads = new TmuxReads(processes, ToolchainProperties.defaults());
+    TmuxSessionHost host =
+        new TmuxSessionHost(
+            processes,
+            reads,
+            new OrchestratorPaths(OrchestratorProperties.defaults()),
+            mock(TerminalDriver.class),
+            mock(AgentRuntime.class));
+
+    reads.once(
+        () -> {
+          host.lastWindowActivityMillis("jagt", "ABC-1");
+          host.pressTaskWindow("jagt", "ABC-1", SessionHost.Key.DOWN);
+          host.lastWindowActivityMillis("jagt", "ABC-1");
+        });
+
+    verify(processes, times(2))
+        .run(
+            isNull(),
+            any(Duration.class),
+            argThat((List<String> command) -> command.contains("list-windows")));
+  }
+
+  @Test
+  void pressesNoKeyWhereTheTaskHasNoWindow() {
+    Processes processes = mock(Processes.class);
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(1, "", "no server running on /tmp/tmux-501/default"));
+    TmuxSessionHost host =
+        new TmuxSessionHost(
+            processes,
+            new TmuxReads(processes, ToolchainProperties.defaults()),
+            new OrchestratorPaths(OrchestratorProperties.defaults()),
+            mock(TerminalDriver.class),
+            mock(AgentRuntime.class));
+
+    assertThat(host.pressTaskWindow("jagt", "ABC-1", SessionHost.Key.ESCAPE)).isFalse();
   }
 }
