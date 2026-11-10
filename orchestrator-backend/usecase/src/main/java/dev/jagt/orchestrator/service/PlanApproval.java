@@ -20,8 +20,7 @@ public class PlanApproval {
   private final StateService stateService;
   private final StepRelay relay;
   private final CaseDoor door;
-  private final PlanBaseline baseline;
-  private final ApprovedRepos repos;
+  private final ApprovedPlan plan;
 
   /**
    * Whether the session was told anything new; the gate is open either way, unless no case allowed
@@ -43,8 +42,7 @@ public class PlanApproval {
     if (!door.presses(id, MasterMove.APPROVE_PLAN.id())) {
       return false;
     }
-    boolean placed = repos.place(id);
-    baseline.keep(id);
+    boolean placed = plan.settle(id);
     Standing read = stateService.task(id).map(Standing::of).orElse(Standing.ABSENT);
     if (claim == null) {
       stateService.reduce(id, TaskReducer::planApproved);
@@ -55,7 +53,7 @@ public class PlanApproval {
     if (claim != null && !told) {
       stateService.reduce(id, TaskReducer::planApproved);
     }
-    repos.leave(id);
+    plan.leave(id);
     log.atInfo()
         .setMessage("plan approved")
         .addKeyValue("task", id)

@@ -40,7 +40,7 @@ class MasterReviewJobTest {
 
   private final ConfigService config = mock(ConfigService.class);
   private final MasterPanel panel = mock(MasterPanel.class);
-  private final MasterVerdicts verdicts = mock(MasterVerdicts.class);
+  private final MasterRuling verdicts = mock(MasterRuling.class);
 
   private StateService stateIn(Path root) {
     return new StateService(

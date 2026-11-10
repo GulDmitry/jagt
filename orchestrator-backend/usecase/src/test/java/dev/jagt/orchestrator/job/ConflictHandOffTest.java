@@ -67,30 +67,29 @@ class ConflictHandOffTest {
     state.putTask(
         "ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
-    new ConflictHandOff(
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths),
             sessions,
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                new CaseDoor(
-                    new SessionCases(paths),
-                    new MasterCases(paths),
+            new CaseDoor(
+                new SessionCases(paths),
+                new MasterCases(paths),
+                state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                    new TaskStops(
-                        new StopPolicy(
-                            ignored -> Arbiter.Profile.OFF,
-                            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                            new StopAnnouncements(
-                                new Notifications(List.of(), state, Runnable::run),
-                                new StopLog(new JsonMapper(), paths))),
-                        state,
-                        Clock.systemUTC(),
-                        new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(
-                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
-            stall,
-            finish)
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+
+    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
         .handle(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
@@ -106,6 +105,57 @@ class ConflictHandOffTest {
   }
 
   @Test
+  void watchesTheConflictItJustHandedToTheSessionForProgress(@TempDir Path root) throws Exception {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    StateService state = new StateService(new JsonMapper(), paths, reducer);
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    state.putTask(
+        "ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
+
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths),
+            sessions,
+            new CaseDoor(
+                new SessionCases(paths),
+                new MasterCases(paths),
+                state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
+                    state,
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+
+    var conflict =
+        new DeployConflicts.WaitingConflict(
+            Path.of("/src/ABC-42-deploy"),
+            false,
+            new Conflict.Progress(7, 0, "d"),
+            null,
+            false,
+            new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0));
+
+    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
+        .handle("ABC-42", conflict);
+
+    verify(stall).watch("ABC-42", conflict);
+  }
+
+  @Test
   void handsConflictOnlyOnce(@TempDir Path root) {
     OrchestratorPaths paths =
         new OrchestratorPaths(
@@ -115,30 +165,29 @@ class ConflictHandOffTest {
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     when(stall.handed("ABC-42")).thenReturn(true);
 
-    new ConflictHandOff(
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths),
             sessions,
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                new CaseDoor(
-                    new SessionCases(paths),
-                    new MasterCases(paths),
+            new CaseDoor(
+                new SessionCases(paths),
+                new MasterCases(paths),
+                state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                    new TaskStops(
-                        new StopPolicy(
-                            ignored -> Arbiter.Profile.OFF,
-                            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                            new StopAnnouncements(
-                                new Notifications(List.of(), state, Runnable::run),
-                                new StopLog(new JsonMapper(), paths))),
-                        state,
-                        Clock.systemUTC(),
-                        new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(
-                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
-            stall,
-            finish)
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+
+    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
         .handle(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
@@ -170,30 +219,29 @@ class ConflictHandOffTest {
             Standing.ABSENT);
     when(stall.handed("ABC-42")).thenReturn(true);
 
-    new ConflictHandOff(
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths),
             sessions,
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                new CaseDoor(
-                    new SessionCases(paths),
-                    new MasterCases(paths),
+            new CaseDoor(
+                new SessionCases(paths),
+                new MasterCases(paths),
+                state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                    new TaskStops(
-                        new StopPolicy(
-                            ignored -> Arbiter.Profile.OFF,
-                            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                            new StopAnnouncements(
-                                new Notifications(List.of(), state, Runnable::run),
-                                new StopLog(new JsonMapper(), paths))),
-                        state,
-                        Clock.systemUTC(),
-                        new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(
-                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
-            stall,
-            finish)
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+
+    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
         .handle("ABC-42", conflict);
 
     verify(stall).watch("ABC-42", conflict);
@@ -209,30 +257,29 @@ class ConflictHandOffTest {
     StateService state = new StateService(new JsonMapper(), paths, reducer);
     when(stall.handed("ABC-42")).thenReturn(true);
 
-    new ConflictHandOff(
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths),
             sessions,
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                new CaseDoor(
-                    new SessionCases(paths),
-                    new MasterCases(paths),
+            new CaseDoor(
+                new SessionCases(paths),
+                new MasterCases(paths),
+                state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                    new TaskStops(
-                        new StopPolicy(
-                            ignored -> Arbiter.Profile.OFF,
-                            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                            new StopAnnouncements(
-                                new Notifications(List.of(), state, Runnable::run),
-                                new StopLog(new JsonMapper(), paths))),
-                        state,
-                        Clock.systemUTC(),
-                        new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(
-                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
-            stall,
-            finish)
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+
+    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
         .handle(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
@@ -254,30 +301,29 @@ class ConflictHandOffTest {
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
     StateService state = new StateService(new JsonMapper(), paths, reducer);
-    new ConflictHandOff(
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths),
             sessions,
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                new CaseDoor(
-                    new SessionCases(paths),
-                    new MasterCases(paths),
+            new CaseDoor(
+                new SessionCases(paths),
+                new MasterCases(paths),
+                state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                    new TaskStops(
-                        new StopPolicy(
-                            ignored -> Arbiter.Profile.OFF,
-                            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                            new StopAnnouncements(
-                                new Notifications(List.of(), state, Runnable::run),
-                                new StopLog(new JsonMapper(), paths))),
-                        state,
-                        Clock.systemUTC(),
-                        new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(
-                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
-            stall,
-            finish)
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+
+    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
         .handle(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
@@ -306,30 +352,29 @@ class ConflictHandOffTest {
     state.putTask(
         "ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
-    new ConflictHandOff(
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths),
             sessions,
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                new CaseDoor(
-                    new SessionCases(paths),
-                    new MasterCases(paths),
+            new CaseDoor(
+                new SessionCases(paths),
+                new MasterCases(paths),
+                state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                    new TaskStops(
-                        new StopPolicy(
-                            ignored -> Arbiter.Profile.OFF,
-                            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                            new StopAnnouncements(
-                                new Notifications(List.of(), state, Runnable::run),
-                                new StopLog(new JsonMapper(), paths))),
-                        state,
-                        Clock.systemUTC(),
-                        new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(
-                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
-            stall,
-            finish)
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+
+    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
         .handle(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
@@ -364,30 +409,29 @@ class ConflictHandOffTest {
     state.putTask(
         "ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
 
-    new ConflictHandOff(
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths),
             sessions,
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                new CaseDoor(
-                    new SessionCases(paths),
-                    new MasterCases(paths),
+            new CaseDoor(
+                new SessionCases(paths),
+                new MasterCases(paths),
+                state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                    new TaskStops(
-                        new StopPolicy(
-                            ignored -> Arbiter.Profile.OFF,
-                            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                            new StopAnnouncements(
-                                new Notifications(List.of(), state, Runnable::run),
-                                new StopLog(new JsonMapper(), paths))),
-                        state,
-                        Clock.systemUTC(),
-                        new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(
-                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
-            stall,
-            finish)
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+
+    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
         .handle(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
@@ -416,30 +460,29 @@ class ConflictHandOffTest {
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
     state.putTask("ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOYED).build());
 
-    new ConflictHandOff(
+    StepRelay relay =
+        new StepRelay(
+            new SessionBrief(paths),
             sessions,
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                new CaseDoor(
-                    new SessionCases(paths),
-                    new MasterCases(paths),
+            new CaseDoor(
+                new SessionCases(paths),
+                new MasterCases(paths),
+                state,
+                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
+                new TaskStops(
+                    new StopPolicy(
+                        ignored -> Arbiter.Profile.OFF,
+                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                        new StopAnnouncements(
+                            new Notifications(List.of(), state, Runnable::run),
+                            new StopLog(new JsonMapper(), paths))),
                     state,
-                    new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                    new TaskStops(
-                        new StopPolicy(
-                            ignored -> Arbiter.Profile.OFF,
-                            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                            new StopAnnouncements(
-                                new Notifications(List.of(), state, Runnable::run),
-                                new StopLog(new JsonMapper(), paths))),
-                        state,
-                        Clock.systemUTC(),
-                        new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(
-                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
-            stall,
-            finish)
+                    Clock.systemUTC(),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            new TaskTurns(
+                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+
+    new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish)
         .handle(
             "ABC-42",
             new DeployConflicts.WaitingConflict(

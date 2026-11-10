@@ -10,7 +10,6 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.port.LineChange;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -27,7 +26,7 @@ class PlanApprovalLeavesTest {
 
   private final StepRelay relay = mock(StepRelay.class);
   private final CaseDoor door = mock(CaseDoor.class);
-  private final UnaffectedRepos unaffected = mock(UnaffectedRepos.class);
+  private final ApprovedPlan plan = mock(ApprovedPlan.class);
 
   @Test
   void anApprovedPlanTakesItsUnaffectedRepositoriesOutOfTheTask(@TempDir Path root) {
@@ -45,14 +44,11 @@ class PlanApprovalLeavesTest {
             .planGate(PlanGate.REQUIRED)
             .build());
     when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
-    PlanBaseline baseline =
-        new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none());
 
-    new PlanApproval(
-            state, relay, door, baseline, new ApprovedRepos(mock(PlanPlacement.class), unaffected))
+    new PlanApproval(state, relay, door, plan)
         .approve("ABC-1", "The human read plan.md");
 
-    verify(unaffected).leave("ABC-1");
+    verify(plan).leave("ABC-1");
   }
 
   @Test
@@ -71,13 +67,10 @@ class PlanApprovalLeavesTest {
             .planGate(PlanGate.REQUIRED)
             .build());
     when(door.presses("ABC-1", "approve-plan")).thenReturn(false);
-    PlanBaseline baseline =
-        new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none());
 
-    new PlanApproval(
-            state, relay, door, baseline, new ApprovedRepos(mock(PlanPlacement.class), unaffected))
+    new PlanApproval(state, relay, door, plan)
         .approve("ABC-1", "The human read plan.md");
 
-    verify(unaffected, never()).leave("ABC-1");
+    verify(plan, never()).leave("ABC-1");
   }
 }

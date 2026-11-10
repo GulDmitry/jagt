@@ -251,7 +251,8 @@ class TaskRetirementTest {
     final KeptTaskFiles kept =
         new KeptTaskFiles(
             new KeptTicketTexts(paths),
-            new PlanBaseline(paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()));
+            new PlanBaseline(
+                paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()));
     java.nio.file.Files.createDirectories(paths.ticketTexts());
     java.nio.file.Files.writeString(
         paths.ticketTexts().resolve("ABC-1.md"), "Widget layout is off");

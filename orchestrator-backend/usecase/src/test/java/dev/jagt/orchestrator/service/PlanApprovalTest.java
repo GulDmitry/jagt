@@ -30,7 +30,7 @@ class PlanApprovalTest {
 
   private final StepRelay relay = mock(StepRelay.class);
   private final CaseDoor door = mock(CaseDoor.class);
-  private final PlanBaseline baseline = mock(PlanBaseline.class);
+  private final ApprovedPlan plan = mock(ApprovedPlan.class);
 
   @Test
   void opensThePlanGateAndTellsTheSessionToStartOnThePlan(@TempDir Path root) {
@@ -52,12 +52,12 @@ class PlanApprovalTest {
         .thenReturn(true);
 
     boolean told =
-        new PlanApproval(state, relay, door, baseline, mock(ApprovedRepos.class))
+        new PlanApproval(state, relay, door, plan)
             .approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isTrue();
     assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
-    verify(baseline).keep("ABC-1");
+    verify(plan).settle("ABC-1");
     verify(relay)
         .relay(
             "ABC-1",
@@ -86,7 +86,7 @@ class PlanApprovalTest {
         .thenReturn(false);
 
     boolean told =
-        new PlanApproval(state, relay, door, baseline, mock(ApprovedRepos.class))
+        new PlanApproval(state, relay, door, plan)
             .approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isFalse();
@@ -110,12 +110,12 @@ class PlanApprovalTest {
     when(door.presses("ABC-1", "approve-plan")).thenReturn(false);
 
     boolean told =
-        new PlanApproval(state, relay, door, baseline, mock(ApprovedRepos.class))
+        new PlanApproval(state, relay, door, plan)
             .approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isFalse();
     assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
-    verify(baseline, never()).keep(anyString());
+    verify(plan, never()).settle(anyString());
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
   }
 }

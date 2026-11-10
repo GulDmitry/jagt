@@ -28,7 +28,7 @@ public class MasterReviewJob implements Job {
   private final ConfigService configService;
   private final MasterPanel panel;
   private final MasterReview reviews;
-  private final MasterVerdicts verdicts;
+  private final MasterRuling verdicts;
 
   @Override
   public String id() {

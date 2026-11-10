@@ -17,7 +17,6 @@ import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.port.LineChange;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
@@ -48,20 +47,14 @@ class PlanApprovalPlacementTest {
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
             .planGate(PlanGate.REQUIRED)
             .build());
-    PlanPlacement placement = mock(PlanPlacement.class);
-    when(placement.place("ABC-1")).thenReturn(true);
+    ApprovedPlan plan = mock(ApprovedPlan.class);
+    when(plan.settle("ABC-1")).thenReturn(true);
     when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
     when(relay.relayUnder(eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(Standing.class)))
         .thenReturn(true);
 
     boolean told =
-        new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(placement, mock(UnaffectedRepos.class)))
+        new PlanApproval(state, relay, door, plan)
             .approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isTrue();
@@ -81,8 +74,8 @@ class PlanApprovalPlacementTest {
             .planGate(PlanGate.REQUIRED)
             .build();
     state.putTask("ABC-1", planned);
-    PlanPlacement placement = mock(PlanPlacement.class);
-    when(placement.place("ABC-1")).thenReturn(true);
+    ApprovedPlan plan = mock(ApprovedPlan.class);
+    when(plan.settle("ABC-1")).thenReturn(true);
     when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
     when(relay.relayUnder(
             eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(StepRelay.Claim.class)))
@@ -92,13 +85,7 @@ class PlanApprovalPlacementTest {
             Standing.of(planned), opens -> FlowReports.Claimed.LANDED, opened -> true);
 
     boolean told =
-        new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(placement, mock(UnaffectedRepos.class)))
+        new PlanApproval(state, relay, door, plan)
             .approve("ABC-1", "The Master read plan.md", claim);
 
     assertThat(told).isTrue();
@@ -119,19 +106,13 @@ class PlanApprovalPlacementTest {
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
             .planGate(PlanGate.REQUIRED)
             .build());
-    PlanPlacement placement = mock(PlanPlacement.class);
-    when(placement.place("ABC-1")).thenThrow(new Unplaceable(List.of("billing"), List.of()));
+    ApprovedPlan plan = mock(ApprovedPlan.class);
+    when(plan.settle("ABC-1")).thenThrow(new Unplaceable(List.of("billing"), List.of()));
     when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
 
     assertThatThrownBy(
             () ->
-                new PlanApproval(
-                        state,
-                        relay,
-                        door,
-                        new PlanBaseline(
-                            paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                        new ApprovedRepos(placement, mock(UnaffectedRepos.class)))
+                new PlanApproval(state, relay, door, plan)
                     .approve("ABC-1", "The human read plan.md"))
         .isInstanceOf(Unplaceable.class);
 
@@ -152,20 +133,14 @@ class PlanApprovalPlacementTest {
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
             .planGate(PlanGate.REQUIRED)
             .build());
-    PlanPlacement placement = mock(PlanPlacement.class);
-    when(placement.place("ABC-1")).thenReturn(true);
+    ApprovedPlan plan = mock(ApprovedPlan.class);
+    when(plan.settle("ABC-1")).thenReturn(true);
     when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
     when(relay.relayUnder(eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(Standing.class)))
         .thenReturn(false);
 
     boolean told =
-        new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(placement, mock(UnaffectedRepos.class)))
+        new PlanApproval(state, relay, door, plan)
             .approve("ABC-1", "The human read plan.md");
 
     assertThat(told).isFalse();
@@ -184,8 +159,8 @@ class PlanApprovalPlacementTest {
             .planGate(PlanGate.REQUIRED)
             .build();
     state.putTask("ABC-1", planned);
-    PlanPlacement placement = mock(PlanPlacement.class);
-    when(placement.place("ABC-1")).thenReturn(true);
+    ApprovedPlan plan = mock(ApprovedPlan.class);
+    when(plan.settle("ABC-1")).thenReturn(true);
     when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
     when(relay.relayUnder(
             eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(StepRelay.Claim.class)))
@@ -195,13 +170,7 @@ class PlanApprovalPlacementTest {
             Standing.of(planned), opens -> FlowReports.Claimed.LANDED, opened -> true);
 
     boolean told =
-        new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(placement, mock(UnaffectedRepos.class)))
+        new PlanApproval(state, relay, door, plan)
             .approve("ABC-1", "The Master read plan.md", claim);
 
     assertThat(told).isFalse();

@@ -23,13 +23,11 @@ import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.MissLog;
-import dev.jagt.orchestrator.service.NoTracker;
 import dev.jagt.orchestrator.service.OriginContext;
-import dev.jagt.orchestrator.service.ResumeRegistration;
+import dev.jagt.orchestrator.service.ResumeInstructions;
 import dev.jagt.orchestrator.service.RoleSettings;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
@@ -37,10 +35,8 @@ import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
 import dev.jagt.orchestrator.service.StopPolicy;
 import dev.jagt.orchestrator.service.SubAgentBriefing;
-import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TaskTurns;
-import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.service.TicketScenarios;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.task.ActionOrigin;
@@ -48,6 +44,7 @@ import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.Remote;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -131,17 +128,15 @@ class SessionBriefContractTest {
                 Clock.systemUTC(),
                 new FlowRules(new TaskChart(Composition.builtIn()))));
 
-    new ConflictHandOff(
+    new ConflictHandover(
             sessions,
             new StepRelay(
                 new SessionBrief(paths),
                 sessions,
                 door,
                 new TaskTurns(
-                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))),
-            mock(ConflictStall.class),
-            mock(ConflictFinish.class))
-        .handle(
+                    state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))))
+        .hand(
             "ABC-42",
             new DeployConflicts.WaitingConflict(
                 Path.of("/repo/ABC-42-deploy"),
@@ -306,16 +301,10 @@ class SessionBriefContractTest {
                 ConfigService.ConfigFile.AutoplanConfig.defaults(),
                 ConfigService.ConfigFile.VisualizeConfig.defaults(),
                 ConfigService.ConfigFile.DiagnoseConfig.defaults());
-    TaskProvisioning provisioning = mock(TaskProvisioning.class);
-    when(provisioning.remoteOf("web")).thenReturn(dev.jagt.orchestrator.task.Remote.ORIGIN);
+    String instructions =
+        ResumeInstructions.of("widget-fix", "https://host/mr/7", "origin/main", Remote.ORIGIN);
 
-    new ResumeRegistration(
-            provisioning, mock(AgentStatusReports.class), mock(TicketReader.class), new NoTracker())
-        .register("widget-fix", "web", "https://host/mr/7", "Widget", "origin/main");
-
-    ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-    verify(provisioning).initializeTask(created.capture());
-    assertThat(created.getValue().instructions())
+    assertThat(instructions)
         .contains("`git rebase --continue`", "`git push --force-with-lease origin widget-fix`")
         .doesNotContain("cherry-pick", "--amend");
     assertThat(brief).contains("`push --force-with-lease`", "push only to `widget-fix`");

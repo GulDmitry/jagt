@@ -28,34 +28,21 @@ import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.LineChange;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
-import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.ApprovedRepos;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.GitWorktrees;
 import dev.jagt.orchestrator.service.MissLog;
-import dev.jagt.orchestrator.service.NewTaskWorktrees;
 import dev.jagt.orchestrator.service.OriginContext;
-import dev.jagt.orchestrator.service.PlanApproval;
-import dev.jagt.orchestrator.service.PlanBaseline;
-import dev.jagt.orchestrator.service.PlanPlacement;
-import dev.jagt.orchestrator.service.RetiredWorktrees;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.StopAnnouncements;
 import dev.jagt.orchestrator.service.StopLog;
 import dev.jagt.orchestrator.service.StopPolicy;
-import dev.jagt.orchestrator.service.TaskArtifacts;
 import dev.jagt.orchestrator.service.TaskMovedOn;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TaskTurns;
-import dev.jagt.orchestrator.service.UnaffectedRepos;
 import dev.jagt.orchestrator.service.WorktreeChanges;
-import dev.jagt.orchestrator.service.WorktreeSetup;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import dev.jagt.orchestrator.service.master.MasterReview;
@@ -63,7 +50,6 @@ import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.Step;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -136,19 +122,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     verdicts.act(
         "ABC-1",
@@ -224,19 +204,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
     MasterReview.Verdict verdict =
         new MasterReview.Verdict(
             kind,
@@ -303,19 +277,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     assertThatThrownBy(
             () ->
@@ -371,19 +339,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
     when(sessions.writeTaskContext(eq("ABC-1"), anyString()))
         .thenThrow(new IllegalStateException("no window"));
 
@@ -461,19 +423,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
     when(sessions.writeTaskContext(eq("ABC-1"), anyString()))
         .thenAnswer(
             told -> {
@@ -563,19 +519,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     assertThatThrownBy(
             () ->
@@ -602,82 +552,6 @@ class MasterVerdictsTest {
         .isInstanceOf(TaskMovedOn.class);
 
     verify(decisions, never()).returned(any(), anyLong(), any());
-  }
-
-  @Test
-  void relaysNothingOfPlanTheHumanMovedWhileTheMasterRead(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.copy(
-        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
-    TaskState read = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
-    state.putTask("ABC-1", read);
-    state.updateTask(
-        "ABC-1",
-        live ->
-            live.withStatus(TaskStatus.IN_PROGRESS, null, 6_000)
-                .withTurn(new Turn("plan", 6, "d", 6_000, Map.of(), List.of())));
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            door,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-    MasterVerdicts verdicts =
-        new MasterVerdicts(
-            relay,
-            ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
-
-    assertThatThrownBy(
-            () ->
-                verdicts.act(
-                    "ABC-1",
-                    read,
-                    new MasterReview.Verdict(
-                        MasterReview.Kind.READY, List.of(), List.of(), List.of(), 0, ""),
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null)))
-        .isInstanceOf(TaskMovedOn.class);
-
-    verify(sessions, never()).writeTaskContext(anyString(), anyString());
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
   }
 
   @Test
@@ -725,19 +599,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
     when(sessions.writeTaskContext(eq("ABC-1"), anyString()))
         .thenAnswer(
             told ->
@@ -811,19 +679,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     boolean moved =
         verdicts.act(
@@ -891,19 +753,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     verdicts.act(
         "ABC-1",
@@ -970,19 +826,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     verdicts.act(
         "ABC-1",
@@ -1048,19 +898,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     boolean moved =
         verdicts.answered(
@@ -1117,19 +961,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     boolean told = verdicts.stopReturned("ABC-1", task, "fix the fixture, not the test");
 
@@ -1183,19 +1021,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     verdicts.answered(
         "ABC-42", task, "keep both imports?", new MasterPanel.Decision("keep both imports", ""));
@@ -1249,19 +1081,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     verdicts.answered(
         "ABC-1",
@@ -1319,19 +1145,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     verdicts.act(
         "ABC-1",
@@ -1410,19 +1230,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     verdicts.act(
         "ABC-1",
@@ -1525,19 +1339,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     verdicts.act(
         "ABC-1",
@@ -1611,19 +1419,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
     verdicts.act(
         "ABC-1",
         state.task("ABC-1").orElseThrow(),
@@ -1755,19 +1557,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
     state.updateTask(
         "ABC-1",
         handedBack ->
@@ -1919,19 +1715,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
     state.updateTask(
         "ABC-1",
         handedBack ->
@@ -2083,19 +1873,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     verdicts.act(
         "ABC-1",
@@ -2172,19 +1956,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     boolean moved =
         verdicts.act(
@@ -2244,19 +2022,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     boolean moved =
         verdicts.act(
@@ -2315,19 +2087,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     boolean moved =
         verdicts.act(
@@ -2339,323 +2105,6 @@ class MasterVerdictsTest {
 
     assertThat(moved).isFalse();
     verify(ship, never()).ship(anyString(), any());
-  }
-
-  @Test
-  void startsTheSessionOnPlanTheMasterFoundHolds(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.copy(
-        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
-    TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
-    state.putTask("ABC-1", planned);
-    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            door,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-    MasterVerdicts verdicts =
-        new MasterVerdicts(
-            relay,
-            ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
-
-    boolean moved =
-        verdicts.act(
-            "ABC-1",
-            planned,
-            new MasterReview.Verdict(
-                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-            acting);
-
-    assertThat(moved).isTrue();
-    assertThat(state.task("ABC-1").orElseThrow())
-        .returns(TaskStatus.IN_PROGRESS, TaskState::status)
-        .returns("master: the plan holds", TaskState::message);
-    verify(ship, never()).ship(anyString(), any());
-  }
-
-  @Test
-  void returnsToTheSessionPlanNamingProjectJagtLacksInsteadOfAskingTheHuman(@TempDir Path root)
-      throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.copy(
-        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    Files.writeString(
-        root.resolve("jagt.yml"),
-        "orchestrator:\n  projects:\n    api:\n      path: /srv/api\n  master:\n    mode: judge\n");
-    Files.writeString(root.resolve("plan.md"), "## Repositories\n- [changed] billing\n");
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
-    TaskState planned =
-        TaskState.builder(List.of(TaskRepo.of(null, root.toString())), TaskStatus.PLAN_PENDING)
-            .alias("a1")
-            .build();
-    state.putTask("ABC-1", planned);
-    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            door,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-    ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
-    PlanPlacement placement =
-        new PlanPlacement(
-            state,
-            new TaskArtifacts(state),
-            config,
-            new NewTaskWorktrees(
-                config, state, mock(GitWorktrees.class), mock(WorktreeSetup.class)),
-            mock(RetiredWorktrees.class));
-    MasterVerdicts verdicts =
-        new MasterVerdicts(
-            relay,
-            ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                new ApprovedRepos(placement, mock(UnaffectedRepos.class))));
-
-    boolean moved =
-        verdicts.act(
-            "ABC-1",
-            planned,
-            new MasterReview.Verdict(
-                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-            acting);
-
-    assertThat(moved).isTrue();
-    assertThat(state.task("ABC-1").orElseThrow())
-        .returns(AgentReport.PLAIN, TaskState::report)
-        .returns(true, TaskState::unplaced);
-    verify(sessions)
-        .writeTaskContext(
-            eq("ABC-1"), contains("billing, which jagt cannot place; registered: api"));
-  }
-
-  @Test
-  void opensTheGateOfAnAutoplannedTaskWhenTheMasterFindsThePlanHolds(@TempDir Path root)
-      throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.copy(
-        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
-    TaskState planned =
-        TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
-            .planGate(PlanGate.CLOSED)
-            .build();
-    state.putTask("ABC-1", planned);
-    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            door,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-    MasterVerdicts verdicts =
-        new MasterVerdicts(
-            relay,
-            ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
-
-    verdicts.act(
-        "ABC-1",
-        planned,
-        new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-        acting);
-
-    assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
-  }
-
-  @Test
-  void leavesPlanAskedForInPlanModeForTheHumanThoughTheMasterMayApprovePlans(@TempDir Path root)
-      throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.copy(
-        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
-    TaskState planned =
-        TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
-            .planGate(PlanGate.REQUIRED)
-            .build();
-    state.putTask("ABC-1", planned);
-    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            door,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-    MasterVerdicts verdicts =
-        new MasterVerdicts(
-            relay,
-            ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
-
-    boolean moved =
-        verdicts.act(
-            "ABC-1",
-            planned,
-            new MasterReview.Verdict(
-                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-            acting);
-
-    assertThat(moved).isFalse();
-    assertThat(state.task("ABC-1").orElseThrow())
-        .returns(TaskStatus.PLAN_PENDING, TaskState::status)
-        .returns(PlanGate.REQUIRED, TaskState::planGate);
   }
 
   @Test
@@ -2705,19 +2154,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     verdicts.act(
         "ABC-1",
@@ -2735,167 +2178,6 @@ class MasterVerdictsTest {
         acting);
 
     assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.REQUIRED);
-  }
-
-  @Test
-  void leavesPlanThatHoldsForTheHumanWhoKeptThatStep(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.copy(
-        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
-    TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
-    state.putTask("ABC-1", planned);
-    var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null);
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            door,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-    MasterVerdicts verdicts =
-        new MasterVerdicts(
-            relay,
-            ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
-
-    boolean moved =
-        verdicts.act(
-            "ABC-1",
-            planned,
-            new MasterReview.Verdict(
-                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-            kept);
-
-    assertThat(moved).isFalse();
-    verify(sessions, never()).writeTaskContext(anyString(), anyString());
-  }
-
-  @Test
-  void answersThePlansQuestionWithTheDecisionBeforeStartingTheSession(@TempDir Path root)
-      throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.copy(
-        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
-    TaskState planned =
-        TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
-            .message("admins only or every user?")
-            .report(AgentReport.QUESTION)
-            .build();
-    state.putTask("ABC-1", planned);
-    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            door,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-    MasterVerdicts verdicts =
-        new MasterVerdicts(
-            relay,
-            ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
-
-    verdicts.act(
-        "ABC-1",
-        planned,
-        new MasterReview.Verdict(
-            MasterReview.Kind.READY,
-            List.of(),
-            List.of(
-                new MasterReview.Said(
-                    "planner",
-                    new Finding(
-                        "",
-                        "the endpoint is for admins only, as the ticket says",
-                        "decided",
-                        "noise",
-                        "",
-                        "scope"))),
-            List.of(),
-            1,
-            ""),
-        acting);
-
-    verify(sessions).writeTaskContext(eq("ABC-1"), contains("answered your question"));
-    verify(sessions)
-        .writeTaskContext(
-            eq("ABC-1"), contains("the endpoint is for admins only, as the ticket says"));
-    verify(sessions).writeTaskContext(eq("ABC-1"), contains("the plan holds."));
   }
 
   @Test
@@ -2944,19 +2226,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     verdicts.act(
         "ABC-1",
@@ -3032,19 +2308,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     boolean moved =
         verdicts.act(
@@ -3112,19 +2382,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
     OriginContext.as(
         ActionOrigin.MASTER,
         () ->
@@ -3195,19 +2459,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     verdicts.answered(
         "ABC-1", task, "keep v2?", new MasterPanel.Decision("keep v2\nbeside v3", ""));
@@ -3261,19 +2519,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
     OriginContext.as(
         ActionOrigin.MASTER,
         () ->
@@ -3338,19 +2590,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     verdicts.answered(
         "ABC-1",
@@ -3407,99 +2653,15 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     assertThat(verdicts.answersOverThisTree(task)).isEqualTo(3);
-  }
-
-  @ParameterizedTest
-  @CsvSource({"NOT_READY,REVIEW_PENDING", "QUESTION,REVIEW_PENDING", "READY,PLAN_PENDING"})
-  void movesNothingOfTaskThatIsGoneFromTheState(
-      MasterReview.Kind kind, TaskStatus status, @TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.copy(
-        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
-    TaskState task = TaskState.builder("proj", root.toString(), status).alias("a1").build();
-    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            door,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-    MasterVerdicts verdicts =
-        new MasterVerdicts(
-            relay,
-            ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
-
-    boolean moved =
-        verdicts.act(
-            "ABC-1",
-            task,
-            new MasterReview.Verdict(
-                kind,
-                List.of(
-                    new MasterReview.Said(
-                        "developer",
-                        new Finding("Foo.java", "wrong", "", "blocking", "", "behaviour"))),
-                List.of(),
-                List.of(),
-                1,
-                ""),
-            acting);
-
-    assertThat(moved).isFalse();
   }
 
   @Test
@@ -3545,19 +2707,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     boolean moved =
         verdicts.answered(
@@ -3611,19 +2767,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     boolean moved =
         verdicts.act(
@@ -3634,76 +2784,6 @@ class MasterVerdictsTest {
             acting);
 
     assertThat(moved).isFalse();
-  }
-
-  @Test
-  void startsNothingOnPlanTheSessionWasAlreadyToldHolds(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.copy(
-        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer);
-    TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
-    state.putTask("ABC-1", planned);
-    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
-                        new StopLog(new JsonMapper(), paths))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            door,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-    MasterVerdicts verdicts =
-        new MasterVerdicts(
-            relay,
-            ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
-
-    boolean moved =
-        verdicts.act(
-            "ABC-1",
-            planned,
-            new MasterReview.Verdict(
-                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
-            acting);
-
-    assertThat(moved).isFalse();
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);
   }
 
   @Test
@@ -3752,19 +2832,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
     verdicts.act(
         "ABC-1",
         state.task("ABC-1").orElseThrow(),
@@ -3890,19 +2964,13 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
     verdicts.act(
         "ABC-1",
         state.task("ABC-1").orElseThrow(),
@@ -3964,9 +3032,10 @@ class MasterVerdictsTest {
     assertThat(state.task("ABC-1").orElseThrow().stopped()).isFalse();
   }
 
-  @Test
-  void startsNoSessionOnPlanWhereNoMasterCaseAllowsTheApproval(@TempDir Path root)
-      throws Exception {
+  @ParameterizedTest
+  @CsvSource({"NOT_READY,REVIEW_PENDING", "QUESTION,REVIEW_PENDING"})
+  void movesNothingOfTaskThatIsGoneFromTheState(
+      MasterReview.Kind kind, TaskStatus status, @TempDir Path root) throws Exception {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -3975,10 +3044,12 @@ class MasterVerdictsTest {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
     StateService state = new StateService(new JsonMapper(), paths, reducer);
-    TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
-    state.putTask("ABC-1", planned);
-    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
+    TaskState task = TaskState.builder("proj", root.toString(), status).alias("a1").build();
+    var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
     CaseDoor door =
         new CaseDoor(
             new SessionCases(paths),
@@ -4006,29 +3077,30 @@ class MasterVerdictsTest {
         new MasterVerdicts(
             relay,
             ship,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            decisions,
-            new PlanApproval(
-                state,
-                relay,
-                door,
-                new PlanBaseline(
-                    paths, new TaskArtifacts(state), (earlier, later) -> LineChange.none()),
-                mock(ApprovedRepos.class)));
+            new MasterClaims(
+                new FlowReports(
+                    state,
+                    Clock.systemUTC(),
+                    new Checkers(new TaskChart(Composition.builtIn())),
+                    new FlowRules(new TaskChart(Composition.builtIn())))),
+            decisions);
 
     boolean moved =
         verdicts.act(
             "ABC-1",
-            planned,
+            task,
             new MasterReview.Verdict(
-                MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, ""),
+                kind,
+                List.of(
+                    new MasterReview.Said(
+                        "developer",
+                        new Finding("Foo.java", "wrong", "", "blocking", "", "behaviour"))),
+                List.of(),
+                List.of(),
+                1,
+                ""),
             acting);
 
     assertThat(moved).isFalse();
-    assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);
   }
 }
