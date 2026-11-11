@@ -141,10 +141,10 @@ class JudgeModeFlowTest {
     E2eWorkspace.git(flow.worktree(), "add", "-A");
     E2eWorkspace.git(flow.worktree(), "commit", "-m", TASK + " fix the widget");
     E2eWorkspace.git(flow.worktree(), "push", "-u", "origin", TASK);
-    flow.agentReports(
-        "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + flow.request() + "\"");
     when(assistants.codeHost().readReview(flow.request()))
         .thenReturn(new Answer<>(Optional.of(reviewFacts().build()), TokenUsage.NONE));
+    flow.agentReports(
+        "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + flow.request() + "\"");
     flow.act("sweep");
     assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEWED);
     flow.awaitRun("master-deploy");

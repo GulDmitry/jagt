@@ -167,10 +167,10 @@ final class FlowHarness {
     E2eWorkspace.git(worktree(), "add", "widget.txt");
     E2eWorkspace.git(worktree(), "commit", "-m", task + " fix the widget");
     E2eWorkspace.git(worktree(), "push", "-u", "origin", task);
-    agentReports(
-        "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + request() + "\"");
     when(context.getBean(Assistants.class).codeHost().readReview(request()))
         .thenReturn(new Answer<>(Optional.of(reviewFacts().build()), TokenUsage.NONE));
+    agentReports(
+        "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + request() + "\"");
   }
 
   void reachesDeployConflict() throws Exception {
