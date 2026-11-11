@@ -11,13 +11,24 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ApprovedPlan;
+import dev.jagt.orchestrator.service.CaseDoor;
+import dev.jagt.orchestrator.service.CaseDoorFixture;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.PlanApproval;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskMovedOn;
+import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.Unplaceable;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
@@ -30,6 +41,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,23 +62,43 @@ class MasterPlanVerdictsTest {
   private final ConfigService.ConfigFile.MasterConfig keepingPlan =
       new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null);
   private final MasterReview.Verdict planHolds =
-      new MasterReview.Verdict(
-          MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, "");
+      new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, "");
   private StateService state;
+  private StepRelay relay;
+  private MasterClaims claims;
+  private CaseDoor door;
   private MasterPlanVerdicts verdicts;
   private TaskState plainPlan;
 
   @BeforeEach
   void setUp() throws Exception {
-    MasterVerdictsFixture fixture = new MasterVerdictsFixture(root, sessions);
-    state = fixture.state;
+    CaseDoorFixture doors = new CaseDoorFixture(root, Clock.systemUTC(), Arbiter.Profile.OFF);
+    state = doors.state;
+    door = doors.door;
+    Checkers checkers = new Checkers(new TaskChart(Composition.builtIn()));
+    relay =
+        new StepRelay(
+            new SessionBrief(doors.paths),
+            sessions,
+            doors.door,
+            new TaskTurns(state, Clock.systemUTC(), checkers));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    claims =
+        new MasterClaims(
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                checkers,
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     plainPlan = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
     verdicts =
         new MasterPlanVerdicts(
-            fixture.relay,
-            fixture.claims,
-            decisions,
-            new PlanApproval(state, fixture.relay, fixture.door, plan));
+            relay, claims, decisions, new PlanApproval(state, relay, door, plan));
   }
 
   @Test
@@ -97,12 +129,7 @@ class MasterPlanVerdictsTest {
   void startsTheSessionOnPlanTheMasterFoundHolds() throws Exception {
     state.putTask("ABC-1", plainPlan);
 
-    boolean moved =
-        verdicts.holds(
-            "ABC-1",
-            plainPlan,
-            planHolds,
-            acting);
+    boolean moved = verdicts.holds("ABC-1", plainPlan, planHolds, acting);
 
     assertThat(moved).isTrue();
     assertThat(state.task("ABC-1").orElseThrow())
@@ -119,12 +146,7 @@ class MasterPlanVerdictsTest {
     state.putTask("ABC-1", planned);
     when(plan.settle("ABC-1")).thenThrow(new Unplaceable(List.of("billing"), List.of("api")));
 
-    boolean moved =
-        verdicts.holds(
-            "ABC-1",
-            planned,
-            planHolds,
-            acting);
+    boolean moved = verdicts.holds("ABC-1", planned, planHolds, acting);
 
     assertThat(moved).isTrue();
     assertThat(state.task("ABC-1").orElseThrow())
@@ -136,38 +158,27 @@ class MasterPlanVerdictsTest {
   }
 
   @Test
-  void opensTheGateOfAnAutoplannedTaskWhenTheMasterFindsThePlanHolds()
-      throws Exception {
+  void opensTheGateOfAnAutoplannedTaskWhenTheMasterFindsThePlanHolds() throws Exception {
     TaskState planned =
         TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
             .planGate(PlanGate.CLOSED)
             .build();
     state.putTask("ABC-1", planned);
 
-    verdicts.holds(
-        "ABC-1",
-        planned,
-        planHolds,
-        acting);
+    verdicts.holds("ABC-1", planned, planHolds, acting);
 
     assertThat(state.task("ABC-1").orElseThrow().planGate()).isEqualTo(PlanGate.OPEN);
   }
 
   @Test
-  void leavesPlanAskedForInPlanModeForTheHumanThoughTheMasterMayApprovePlans()
-      throws Exception {
+  void leavesPlanAskedForInPlanModeForTheHumanThoughTheMasterMayApprovePlans() throws Exception {
     TaskState planned =
         TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
             .planGate(PlanGate.REQUIRED)
             .build();
     state.putTask("ABC-1", planned);
 
-    boolean moved =
-        verdicts.holds(
-            "ABC-1",
-            planned,
-            planHolds,
-            acting);
+    boolean moved = verdicts.holds("ABC-1", planned, planHolds, acting);
 
     assertThat(moved).isFalse();
     assertThat(state.task("ABC-1").orElseThrow())
@@ -179,20 +190,14 @@ class MasterPlanVerdictsTest {
   void leavesPlanThatHoldsForTheHumanWhoKeptThatStep() throws Exception {
     state.putTask("ABC-1", plainPlan);
 
-    boolean moved =
-        verdicts.holds(
-            "ABC-1",
-            plainPlan,
-            planHolds,
-            keepingPlan);
+    boolean moved = verdicts.holds("ABC-1", plainPlan, planHolds, keepingPlan);
 
     assertThat(moved).isFalse();
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
   }
 
   @Test
-  void answersThePlansQuestionWithTheDecisionBeforeStartingTheSession()
-      throws Exception {
+  void answersThePlansQuestionWithTheDecisionBeforeStartingTheSession() throws Exception {
     TaskState planned =
         TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
             .message("admins only or every user?")
@@ -232,12 +237,7 @@ class MasterPlanVerdictsTest {
   void startsNothingOnPlanTheSessionWasAlreadyToldHolds() throws Exception {
     state.putTask("ABC-1", plainPlan);
 
-    boolean moved =
-        verdicts.holds(
-            "ABC-1",
-            plainPlan,
-            planHolds,
-            actingWithoutKeepList);
+    boolean moved = verdicts.holds("ABC-1", plainPlan, planHolds, actingWithoutKeepList);
 
     assertThat(moved).isFalse();
     assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);
@@ -248,12 +248,7 @@ class MasterPlanVerdictsTest {
     Files.delete(root.resolve("roles/master/cases.md.dist"));
     state.putTask("ABC-1", plainPlan);
 
-    boolean moved =
-        verdicts.holds(
-            "ABC-1",
-            plainPlan,
-            planHolds,
-            acting);
+    boolean moved = verdicts.holds("ABC-1", plainPlan, planHolds, acting);
 
     assertThat(moved).isFalse();
     assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.PLAN_PENDING);

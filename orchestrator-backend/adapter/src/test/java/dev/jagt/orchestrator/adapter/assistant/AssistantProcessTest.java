@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import static dev.jagt.orchestrator.adapter.assistant.AssistantProcessFixtures.openedThenCooledDown;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -14,10 +13,14 @@ import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.AssistantUnavailable;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.service.ReachLedger;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class AssistantProcessTest {
@@ -75,7 +78,7 @@ class AssistantProcessTest {
           new AssistantBreaker(
               AssistantProperties.empty().withBreakerFailures(3),
               Clock.systemUTC(),
-              new dev.jagt.orchestrator.service.ReachLedger()));
+              new ReachLedger()));
 
   @Test
   void startsNoProcessOnceThreeProviderFailuresInRowOpenedIt() {
@@ -101,38 +104,57 @@ class AssistantProcessTest {
     verify(runner, times(6)).run(any(Path.class), any(Duration.class), any());
   }
 
-  @Test
-  void letsTheNextReadProbeAgainWhenTheProbeThrewBeforeAnswering() {
-    Clock clock = mock(Clock.class);
-    AssistantProcess probing = openedThenCooledDown(runner, clock, OVERLOADED);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenThrow(new IllegalStateException("timed out"));
-    assertThatThrownBy(() -> probing.run(CWD, TIMEOUT, List.of("claude")))
-        .isInstanceOf(IllegalStateException.class);
-    when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(LIMIT);
+  @Nested
+  class OnceTheCooldownHasPassed {
 
-    assertThatCode(() -> probing.run(CWD, TIMEOUT, List.of("claude"))).doesNotThrowAnyException();
-  }
+    private final Clock clock = mock(Clock.class);
+    private final AssistantProcess probing =
+        new AssistantProcess(
+            runner,
+            new AssistantBreaker(
+                AssistantProperties.empty()
+                    .withBreakerFailures(3)
+                    .withBreakerCooldown(Duration.ofMinutes(5)),
+                clock,
+                new ReachLedger()));
 
-  @Test
-  void letsTheNextReadProbeAgainWhenTheProbeSaidNothingAboutTheProvider() {
-    Clock clock = mock(Clock.class);
-    AssistantProcess probing = openedThenCooledDown(runner, clock, OVERLOADED);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(new Processes.Result(1, "", "budget"));
-    probing.run(CWD, TIMEOUT, List.of("claude"));
+    @BeforeEach
+    void opened() {
+      when(clock.instant()).thenReturn(Instant.ofEpochMilli(0L));
+      when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(OVERLOADED);
+      probing.run(CWD, TIMEOUT, List.of("claude"));
+      probing.run(CWD, TIMEOUT, List.of("claude"));
+      probing.run(CWD, TIMEOUT, List.of("claude"));
+      when(clock.instant()).thenReturn(Instant.ofEpochMilli(300_001L));
+    }
 
-    assertThatCode(() -> probing.run(CWD, TIMEOUT, List.of("claude"))).doesNotThrowAnyException();
-  }
+    @Test
+    void letsTheNextReadProbeAgainWhenTheProbeThrewBeforeAnswering() {
+      when(runner.run(any(Path.class), any(Duration.class), any()))
+          .thenThrow(new IllegalStateException("timed out"));
+      assertThatThrownBy(() -> probing.run(CWD, TIMEOUT, List.of("claude")))
+          .isInstanceOf(IllegalStateException.class);
+      when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(LIMIT);
 
-  @Test
-  void closesTheBreakerWhenTheProbeGotAnAnswer() {
-    Clock clock = mock(Clock.class);
-    AssistantProcess probing = openedThenCooledDown(runner, clock, OVERLOADED);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(new Processes.Result(0, "{\"type\":\"result\",\"is_error\":false}", ""));
-    probing.run(CWD, TIMEOUT, List.of("claude"));
+      assertThatCode(() -> probing.run(CWD, TIMEOUT, List.of("claude"))).doesNotThrowAnyException();
+    }
 
-    assertThatCode(() -> probing.run(CWD, TIMEOUT, List.of("claude"))).doesNotThrowAnyException();
+    @Test
+    void letsTheNextReadProbeAgainWhenTheProbeSaidNothingAboutTheProvider() {
+      when(runner.run(any(Path.class), any(Duration.class), any()))
+          .thenReturn(new Processes.Result(1, "", "budget"));
+      probing.run(CWD, TIMEOUT, List.of("claude"));
+
+      assertThatCode(() -> probing.run(CWD, TIMEOUT, List.of("claude"))).doesNotThrowAnyException();
+    }
+
+    @Test
+    void closesTheBreakerWhenTheProbeGotAnAnswer() {
+      when(runner.run(any(Path.class), any(Duration.class), any()))
+          .thenReturn(new Processes.Result(0, "{\"type\":\"result\",\"is_error\":false}", ""));
+      probing.run(CWD, TIMEOUT, List.of("claude"));
+
+      assertThatCode(() -> probing.run(CWD, TIMEOUT, List.of("claude"))).doesNotThrowAnyException();
+    }
   }
 }

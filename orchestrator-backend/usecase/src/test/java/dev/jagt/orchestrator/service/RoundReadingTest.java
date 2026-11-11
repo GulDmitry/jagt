@@ -1,13 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import static dev.jagt.orchestrator.service.ReviewReadFixtures.answer;
-import static dev.jagt.orchestrator.service.ReviewReadFixtures.api;
-import static dev.jagt.orchestrator.service.ReviewReadFixtures.polling;
-import static dev.jagt.orchestrator.service.ReviewReadFixtures.pollingOneRepository;
-import static dev.jagt.orchestrator.service.ReviewReadFixtures.quiet;
-import static dev.jagt.orchestrator.service.ReviewReadFixtures.request;
-import static dev.jagt.orchestrator.service.ReviewReadFixtures.unreadable;
-import static dev.jagt.orchestrator.service.ReviewReadFixtures.web;
+import static dev.jagt.orchestrator.service.TestReviewAnswerBuilder.reviewAnswer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -30,6 +23,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class RoundReadingTest {
 
+  private static final Answer<ReviewFacts> UNREADABLE =
+      new Answer<>(Optional.empty(), TokenUsage.NONE);
+
+  private final TaskRepo api = new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api");
+  private final TaskRepo web =
+      new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web");
+  private final TaskState bothRepos =
+      TaskState.builder(List.of(api, web), TaskStatus.CI_POLLING).alias("a1").build();
+  private final TaskState oneRepository =
+      TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+          .alias("a1")
+          .mrUrl("http://mr/1")
+          .build();
   private final StateService stateService = mock(StateService.class);
   private final ReviewRound reviewReader = mock(ReviewRound.class);
   private final MergedRequests mergedRequests = mock(MergedRequests.class);
@@ -58,7 +64,11 @@ class RoundReadingTest {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
-                polling(api(), new TaskRepo("web", "/web-wt", "git@host:g/web.git", null))));
+                TaskState.builder(
+                        List.of(api, new TaskRepo("web", "/web-wt", "git@host:g/web.git", null)),
+                        TaskStatus.CI_POLLING)
+                    .alias("a1")
+                    .build()));
     when(mergedRequests.owingRequest(any())).thenReturn(List.of("web"));
 
     var read = reading.read("ABC-1");
@@ -77,9 +87,15 @@ class RoundReadingTest {
   @Test
   void waitsOnNoRequestFromRepositoryWithNoCodeHostWhateverRoundCameAfterItsPush() {
     when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(polling(api(), new TaskRepo("web", "/web-wt", null, null))));
+        .thenReturn(
+            Optional.of(
+                TaskState.builder(
+                        List.of(api, new TaskRepo("web", "/web-wt", null, null)),
+                        TaskStatus.CI_POLLING)
+                    .alias("a1")
+                    .build()));
     when(mergedRequests.owingRequest(any())).thenReturn(List.of());
-    when(reviewReader.read("ABC-1", "api", "http://mr/api")).thenReturn(unreadable());
+    when(reviewReader.read("ABC-1", "api", "http://mr/api")).thenReturn(UNREADABLE);
 
     var read = reading.read("ABC-1");
 
@@ -93,8 +109,8 @@ class RoundReadingTest {
 
   @Test
   void reportsAnUnreadableReviewInsteadOfTreatingItAsClean() {
-    when(stateService.task("ABC-1")).thenReturn(Optional.of(pollingOneRepository()));
-    when(reviewReader.read("ABC-1", "proj", "http://mr/1")).thenReturn(unreadable());
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(oneRepository));
+    when(reviewReader.read("ABC-1", "proj", "http://mr/1")).thenReturn(UNREADABLE);
 
     var read = reading.read("ABC-1");
 
@@ -108,7 +124,7 @@ class RoundReadingTest {
 
   @Test
   void namesWhatStoppedAnUnreadableReviewOnOneLine() {
-    when(stateService.task("ABC-1")).thenReturn(Optional.of(pollingOneRepository()));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(oneRepository));
     when(reviewReader.read("ABC-1", "proj", "http://mr/1"))
         .thenReturn(
             new Answer<>(
@@ -130,11 +146,10 @@ class RoundReadingTest {
 
   @Test
   void failsTheWholeSweepWhenOneRepositoriesRequestCannotBeRead() {
-    when(stateService.task("ABC-1")).thenReturn(Optional.of(polling(api(), web())));
-    when(reviewReader.read("ABC-1", "api", "http://mr/api")).thenReturn(
-        answer(true, "success"));
-    when(reviewReader.read("ABC-1", "web", "http://mr/web")).thenReturn(
-        unreadable());
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(bothRepos));
+    when(reviewReader.read("ABC-1", "api", "http://mr/api"))
+        .thenReturn(reviewAnswer().withApproved(true).build());
+    when(reviewReader.read("ABC-1", "web", "http://mr/web")).thenReturn(UNREADABLE);
 
     var read = reading.read("ABC-1");
 
@@ -148,15 +163,15 @@ class RoundReadingTest {
 
   @Test
   void keepsThreadWaitingOnTheReviewerInOneOfSeveralRepositories() {
-    when(stateService.task("ABC-1")).thenReturn(Optional.of(polling(api(), web())));
-    when(reviewReader.read("ABC-1", "api", "http://mr/api")).thenReturn(
-        answer(false, "success"));
-    when(reviewReader.read("ABC-1", "web", "http://mr/web")).thenReturn(
-        answer(
-            request(false),
-            new ReviewFacts.Pipeline("success", "", ""),
-            new ReviewFacts.Discussion(
-                List.of(), List.of("mia: Why?\nagent: Because."), List.of())));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(bothRepos));
+    when(reviewReader.read("ABC-1", "api", "http://mr/api")).thenReturn(reviewAnswer().build());
+    when(reviewReader.read("ABC-1", "web", "http://mr/web"))
+        .thenReturn(
+            reviewAnswer()
+                .withDiscussion(
+                    new ReviewFacts.Discussion(
+                        List.of(), List.of("mia: Why?\nagent: Because."), List.of()))
+                .build());
 
     var read = reading.read("ABC-1");
 
@@ -170,11 +185,10 @@ class RoundReadingTest {
 
   @Test
   void holdsTaskBackWhileOneOfItsRepositoriesIsStillBuilding() {
-    when(stateService.task("ABC-1")).thenReturn(Optional.of(polling(api(), web())));
-    when(reviewReader.read("ABC-1", "api", "http://mr/api")).thenReturn(
-        answer(false, "success"));
-    when(reviewReader.read("ABC-1", "web", "http://mr/web")).thenReturn(
-        answer(false, "running"));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(bothRepos));
+    when(reviewReader.read("ABC-1", "api", "http://mr/api")).thenReturn(reviewAnswer().build());
+    when(reviewReader.read("ABC-1", "web", "http://mr/web"))
+        .thenReturn(reviewAnswer().withStatus("running").build());
 
     var read = reading.read("ABC-1");
 
@@ -186,11 +200,10 @@ class RoundReadingTest {
 
   @Test
   void isApprovedOnlyWhenEveryRepositoryIs() {
-    when(stateService.task("ABC-1")).thenReturn(Optional.of(polling(api(), web())));
-    when(reviewReader.read("ABC-1", "api", "http://mr/api")).thenReturn(
-        answer(true, "success"));
-    when(reviewReader.read("ABC-1", "web", "http://mr/web")).thenReturn(
-        answer(false, "success"));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(bothRepos));
+    when(reviewReader.read("ABC-1", "api", "http://mr/api"))
+        .thenReturn(reviewAnswer().withApproved(true).build());
+    when(reviewReader.read("ABC-1", "web", "http://mr/web")).thenReturn(reviewAnswer().build());
 
     var read = reading.read("ABC-1");
 
@@ -202,19 +215,21 @@ class RoundReadingTest {
 
   @Test
   void namesTheRepositoryEachThreadCameFrom() {
-    when(stateService.task("ABC-1")).thenReturn(Optional.of(polling(api(), web())));
-    when(reviewReader.read("ABC-1", "api", "http://mr/api")).thenReturn(
-        answer(
-            request(false),
-            new ReviewFacts.Pipeline("success", "", ""),
-            new ReviewFacts.Discussion(
-                List.of("http://mr/api#note_1\nbot: tighten this"), List.of(), List.of())));
-    when(reviewReader.read("ABC-1", "web", "http://mr/web")).thenReturn(
-        answer(
-            request(false),
-            new ReviewFacts.Pipeline("success", "", ""),
-            new ReviewFacts.Discussion(
-                List.of("http://mr/web#note_2\nbot: rename that"), List.of(), List.of())));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(bothRepos));
+    when(reviewReader.read("ABC-1", "api", "http://mr/api"))
+        .thenReturn(
+            reviewAnswer()
+                .withDiscussion(
+                    new ReviewFacts.Discussion(
+                        List.of("http://mr/api#note_1\nbot: tighten this"), List.of(), List.of()))
+                .build());
+    when(reviewReader.read("ABC-1", "web", "http://mr/web"))
+        .thenReturn(
+            reviewAnswer()
+                .withDiscussion(
+                    new ReviewFacts.Discussion(
+                        List.of("http://mr/web#note_2\nbot: rename that"), List.of(), List.of()))
+                .build());
 
     var read = reading.read("ABC-1");
 
@@ -230,11 +245,11 @@ class RoundReadingTest {
 
   @Test
   void quotesTheLogOfTheRepositoryThatFailedRatherThanOfTheGreenOne() {
-    when(stateService.task("ABC-1")).thenReturn(Optional.of(polling(api(), web())));
-    when(reviewReader.read("ABC-1", "api", "http://mr/api")).thenReturn(
-        answer(false, "success"));
-    when(reviewReader.read("ABC-1", "web", "http://mr/web")).thenReturn(
-        answer(false, "failed", "lint: unused import Widget", ""));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(bothRepos));
+    when(reviewReader.read("ABC-1", "api", "http://mr/api")).thenReturn(reviewAnswer().build());
+    when(reviewReader.read("ABC-1", "web", "http://mr/web"))
+        .thenReturn(
+            reviewAnswer().withStatus("failed").withFailure("lint: unused import Widget").build());
 
     var read = reading.read("ABC-1");
 
@@ -248,11 +263,15 @@ class RoundReadingTest {
 
   @Test
   void carriesTheProjectWhosePipelineTheRoundsChecksAre() {
-    when(stateService.task("ABC-1")).thenReturn(Optional.of(polling(api(), web())));
-    when(reviewReader.read("ABC-1", "api", "http://mr/api")).thenReturn(
-        answer(false, "success"));
-    when(reviewReader.read("ABC-1", "web", "http://mr/web")).thenReturn(
-        answer(false, "failed", "lint", "http://pipe/web"));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(bothRepos));
+    when(reviewReader.read("ABC-1", "api", "http://mr/api")).thenReturn(reviewAnswer().build());
+    when(reviewReader.read("ABC-1", "web", "http://mr/web"))
+        .thenReturn(
+            reviewAnswer()
+                .withStatus("failed")
+                .withFailure("lint")
+                .withUrl("http://pipe/web")
+                .build());
 
     var read = reading.read("ABC-1");
 
@@ -268,21 +287,17 @@ class RoundReadingTest {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
-                polling(
-                    TaskRepo.of("api", "/wt-api").withMrUrl("http://mr/1"),
-                    TaskRepo.of("web", "/wt-web").withMrUrl("http://mr/2"))));
+                TaskState.builder(
+                        List.of(
+                            TaskRepo.of("api", "/wt-api").withMrUrl("http://mr/1"),
+                            TaskRepo.of("web", "/wt-web").withMrUrl("http://mr/2")),
+                        TaskStatus.CI_POLLING)
+                    .alias("a1")
+                    .build()));
     when(reviewReader.read("ABC-1", "api", "http://mr/1"))
-        .thenReturn(
-            answer(
-                new ReviewFacts.Request(true, false, false, false, apiOpenedAt),
-                new ReviewFacts.Pipeline("running", "", ""),
-                quiet()));
+        .thenReturn(reviewAnswer().withOpenedAt(apiOpenedAt).withStatus("running").build());
     when(reviewReader.read("ABC-1", "web", "http://mr/2"))
-        .thenReturn(
-            answer(
-                new ReviewFacts.Request(true, false, false, false, 1_700_000_000_000L),
-                new ReviewFacts.Pipeline("running", "", ""),
-                quiet()));
+        .thenReturn(reviewAnswer().withOpenedAt(1_700_000_000_000L).withStatus("running").build());
 
     var read = reading.read("ABC-1");
 
@@ -294,7 +309,7 @@ class RoundReadingTest {
 
   @Test
   void readsTheOneRequestOfSingleRepositoryTaskAsItsRound() {
-    when(stateService.task("ABC-1")).thenReturn(Optional.of(pollingOneRepository()));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(oneRepository));
     ReviewFacts facts =
         new ReviewFacts(
             new ReviewFacts.Request(true, true, false, false, 7),
@@ -316,13 +331,9 @@ class RoundReadingTest {
 
   @Test
   void refusesRoundWhoseRequestTheHostSaysDoesNotExist() {
-    when(stateService.task("ABC-1")).thenReturn(Optional.of(pollingOneRepository()));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(oneRepository));
     when(reviewReader.read("ABC-1", "proj", "http://mr/1"))
-        .thenReturn(
-            answer(
-                new ReviewFacts.Request(false, false, false, false, 0),
-                new ReviewFacts.Pipeline("", "", ""),
-                quiet()));
+        .thenReturn(reviewAnswer().withExists(false).withStatus("").build());
 
     var read = reading.read("ABC-1");
 
@@ -339,13 +350,9 @@ class RoundReadingTest {
 
   @Test
   void callsRequestClosedOnTheHostGoneAndNamesIt() {
-    when(stateService.task("ABC-1")).thenReturn(Optional.of(pollingOneRepository()));
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(oneRepository));
     when(reviewReader.read("ABC-1", "proj", "http://mr/1"))
-        .thenReturn(
-            answer(
-                new ReviewFacts.Request(true, false, false, true, 0),
-                new ReviewFacts.Pipeline("none", "", ""),
-                quiet()));
+        .thenReturn(reviewAnswer().withClosed(true).withStatus("none").build());
 
     var read = reading.read("ABC-1");
 
@@ -361,15 +368,12 @@ class RoundReadingTest {
 
   @Test
   void judgesTheRemainingRepositoriesWhereOneRequestWasClosedAndLeftTheTask() {
-    when(stateService.task("ABC-42")).thenReturn(Optional.of(polling(api(), web())));
-    when(reviewReader.read("ABC-42", "api", "http://mr/api")).thenReturn(
-        answer(true, "success"));
-    when(reviewReader.read("ABC-42", "web", "http://mr/web")).thenReturn(
-        answer(
-            new ReviewFacts.Request(true, false, false, true, 0),
-            new ReviewFacts.Pipeline("none", "", ""),
-            quiet()));
-    when(mergedRequests.hostSaidClosed("ABC-42", web())).thenReturn(true);
+    when(stateService.task("ABC-42")).thenReturn(Optional.of(bothRepos));
+    when(reviewReader.read("ABC-42", "api", "http://mr/api"))
+        .thenReturn(reviewAnswer().withApproved(true).build());
+    when(reviewReader.read("ABC-42", "web", "http://mr/web"))
+        .thenReturn(reviewAnswer().withClosed(true).withStatus("none").build());
+    when(mergedRequests.hostSaidClosed("ABC-42", web)).thenReturn(true);
 
     var read = reading.read("ABC-42");
 
@@ -385,13 +389,9 @@ class RoundReadingTest {
 
   @Test
   void callsRequestTheHostSaysDoesNotExistGoneWhateverElseTheTaskHolds() {
-    when(stateService.task("ABC-42")).thenReturn(Optional.of(polling(api(), web())));
+    when(stateService.task("ABC-42")).thenReturn(Optional.of(bothRepos));
     when(reviewReader.read("ABC-42", "api", "http://mr/api"))
-        .thenReturn(
-            answer(
-                new ReviewFacts.Request(false, false, false, false, 0),
-                new ReviewFacts.Pipeline("", "", ""),
-                quiet()));
+        .thenReturn(reviewAnswer().withExists(false).withStatus("").build());
 
     var read = reading.read("ABC-42");
 
@@ -405,17 +405,18 @@ class RoundReadingTest {
   }
 
   @Test
-  void
-      refusesRoundWithNoRequestLeftWhereTheClosedOnesWereTheOnlyRequestsAndAnotherRepoHasNone() {
+  void refusesRoundWithNoRequestLeftWhereTheClosedOnesWereTheOnlyRequestsAndAnotherRepoHasNone() {
     when(stateService.task("ABC-42"))
-        .thenReturn(Optional.of(polling(api(), new TaskRepo("docs", "/docs-wt", null, null))));
-    when(reviewReader.read("ABC-42", "api", "http://mr/api"))
         .thenReturn(
-            answer(
-                new ReviewFacts.Request(true, false, false, true, 0),
-                new ReviewFacts.Pipeline("none", "", ""),
-                quiet()));
-    when(mergedRequests.hostSaidClosed("ABC-42", api())).thenReturn(true);
+            Optional.of(
+                TaskState.builder(
+                        List.of(api, new TaskRepo("docs", "/docs-wt", null, null)),
+                        TaskStatus.CI_POLLING)
+                    .alias("a1")
+                    .build()));
+    when(reviewReader.read("ABC-42", "api", "http://mr/api"))
+        .thenReturn(reviewAnswer().withClosed(true).withStatus("none").build());
+    when(mergedRequests.hostSaidClosed("ABC-42", api)).thenReturn(true);
 
     var read = reading.read("ABC-42");
 

@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestReviewAnswerBuilder.reviewAnswer;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
@@ -11,56 +13,101 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.service.ReviewSweepService.SweepResult;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class RoundRelayTest {
 
+  @TempDir Path root;
+
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final Clock clock = Clock.fixed(Instant.ofEpochMilli(1_000_000), ZoneOffset.UTC);
+  private final TaskStops relayingStops = mock(TaskStops.class);
+  private CaseDoorFixture doors;
+  private SessionBrief brief;
+  private StepRelay steps;
+
+  @BeforeEach
+  void setUp() throws IOException {
+    doors = new CaseDoorFixture(root, clock, Arbiter.Profile.OFF);
+    brief = new SessionBrief(doors.paths);
+    steps =
+        new StepRelay(
+            brief,
+            sessions,
+            doors.door,
+            new TaskTurns(doors.state, clock, new Checkers(new TaskChart(Composition.builtIn()))));
+    Files.createDirectories(root.resolve("roles/session"));
+    when(relayingStops.round(anyString(), any(), anyString(), anyString()))
+        .thenReturn(TaskStops.Relay.RELAY);
+    when(relayingStops.sinceLast(anyString(), any())).thenReturn("");
+  }
 
   @Test
-  void relaysNoRoundIdenticalToTheLastOneWhenAnotherInstructionOverwroteTheContextFileBetween(
-      @TempDir Path root) throws Exception {
-    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "cases.md.dist");
-    fixture.doors.state.putTask(
-        "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+  void relaysNoRoundIdenticalToTheLastOneWhenAnotherInstructionOverwroteTheContextFileBetween()
+      throws Exception {
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    RoundRelay relay = new RoundRelay(doors.stops, steps, doors.door, brief);
+    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     ReviewFacts round =
-        RoundRelayFixture.facts("running", "", List.of("https://host/mr/1#note_1\nbot: rename x"));
-    fixture.relay.relay("ABC-42", "https://host/mr/1", round, "running", "");
+        reviewAnswer()
+            .withStatus("running")
+            .withDiscussion(
+                new ReviewFacts.Discussion(
+                    List.of("https://host/mr/1#note_1\nbot: rename x"), List.of(), List.of()))
+            .build()
+            .facts()
+            .orElseThrow();
+    relay.relay("ABC-42", "https://host/mr/1", round, "running", "");
 
-    SweepResult again = fixture.relay.relay("ABC-42", "https://host/mr/1", round, "running", "");
+    SweepResult again = relay.relay("ABC-42", "https://host/mr/1", round, "running", "");
 
     assertThat(again.kind()).isEqualTo(SweepResult.Kind.UNCHANGED);
     verify(sessions, times(1)).relayFresh(eq("ABC-42"), anyString());
   }
 
   @Test
-  void relaysNothingWhileTheAgentsQuestionStandsAndTheChecksAreRed(@TempDir Path root)
-      throws Exception {
-    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "cases.md.dist");
-    fixture.doors.state.putTask(
+  void relaysNothingWhileTheAgentsQuestionStandsAndTheChecksAreRed() throws Exception {
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    RoundRelay relay = new RoundRelay(doors.stops, steps, doors.door, brief);
+    doors.state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .report(AgentReport.QUESTION)
             .build());
 
     SweepResult result =
-        fixture.relay.relay(
+        relay.relay(
             "ABC-42",
             "https://host/mr/1",
-            RoundRelayFixture.facts("failed", "unit-tests\nCartTest failed", List.of()),
+            reviewAnswer()
+                .withStatus("failed")
+                .withFailure("unit-tests\nCartTest failed")
+                .withDiscussion(new ReviewFacts.Discussion(List.of(), List.of(), List.of()))
+                .build()
+                .facts()
+                .orElseThrow(),
             "failed",
             "");
 
@@ -70,19 +117,28 @@ class RoundRelayTest {
   }
 
   @Test
-  void relaysNothingIntoTaskJagtStopped(@TempDir Path root) throws Exception {
-    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "cases.md.dist");
-    fixture.doors.state.putTask(
+  void relaysNothingIntoTaskJagtStopped() throws Exception {
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    RoundRelay relay = new RoundRelay(doors.stops, steps, doors.door, brief);
+    doors.state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1L, "5 ships"))
             .build());
 
     SweepResult result =
-        fixture.relay.relay(
+        relay.relay(
             "ABC-42",
             "https://host/mr/1",
-            RoundRelayFixture.facts("running", "", List.of("https://host/mr/1#note_9\nlee: why?")),
+            reviewAnswer()
+                .withStatus("running")
+                .withDiscussion(
+                    new ReviewFacts.Discussion(
+                        List.of("https://host/mr/1#note_9\nlee: why?"), List.of(), List.of()))
+                .build()
+                .facts()
+                .orElseThrow(),
             "running",
             "");
 
@@ -91,60 +147,77 @@ class RoundRelayTest {
   }
 
   @Test
-  void relaysTheThreadsAsDraftsAndCountsThem(@TempDir Path root) throws Exception {
-    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "brief.md.dist");
+  void relaysTheThreadsAsDraftsAndCountsThem() throws Exception {
+    Files.copy(
+        Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
+    RoundRelay relay = new RoundRelay(relayingStops, steps, doors.door, brief);
 
     SweepResult result =
-        fixture
-            .over(RoundRelayFixture.relayingStops())
-            .relay(
-                "ABC-42",
-                "http://mr/api, http://mr/web",
-                RoundRelayFixture.facts(
-                    "success",
-                    "",
-                    List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2")),
-                "success",
-                "");
+        relay.relay(
+            "ABC-42",
+            "http://mr/api, http://mr/web",
+            reviewAnswer()
+                .withStatus("success")
+                .withDiscussion(
+                    new ReviewFacts.Discussion(
+                        List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2"),
+                        List.of(),
+                        List.of()))
+                .build()
+                .facts()
+                .orElseThrow(),
+            "success",
+            "");
 
     assertThat(result.message()).contains("2 thread(s) relayed");
     verify(sessions).relayFresh(eq("ABC-42"), contains("review_replies.md"));
   }
 
   @Test
-  void relaysTheThreadsWithoutTheChecksWhileTheAgentsQuestionAboutThemStands(@TempDir Path root)
-      throws Exception {
-    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "brief.md.dist");
-    TaskStops stops = RoundRelayFixture.relayingStops();
-    when(stops.asking("ABC-42")).thenReturn(true);
+  void relaysTheThreadsWithoutTheChecksWhileTheAgentsQuestionAboutThemStands() throws Exception {
+    Files.copy(
+        Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
+    RoundRelay relay = new RoundRelay(relayingStops, steps, doors.door, brief);
+    when(relayingStops.asking("ABC-42")).thenReturn(true);
 
-    fixture
-        .over(stops)
-        .relay(
-            "ABC-42",
-            "http://mr/api, http://mr/web",
-            RoundRelayFixture.facts(
-                "failed",
-                "unit-tests\nCartTest failed",
-                List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2")),
-            "failed",
-            "");
+    relay.relay(
+        "ABC-42",
+        "http://mr/api, http://mr/web",
+        reviewAnswer()
+            .withStatus("failed")
+            .withFailure("unit-tests\nCartTest failed")
+            .withDiscussion(
+                new ReviewFacts.Discussion(
+                    List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2"),
+                    List.of(),
+                    List.of()))
+            .build()
+            .facts()
+            .orElseThrow(),
+        "failed",
+        "");
 
     verify(sessions)
         .relayFresh(
             eq("ABC-42"),
-            argThat(brief -> brief.contains("review_replies.md") && !brief.contains("Checks:")));
+            argThat(sent -> sent.contains("review_replies.md") && !sent.contains("Checks:")));
   }
 
   @Test
-  void reportsRoundUnchangedWhileTheSessionHoldsTheTurnItOpened(@TempDir Path root)
-      throws Exception {
-    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "cases.md.dist");
-    fixture.doors.state.putTask(
-        "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-    RoundRelay relay = fixture.over(RoundRelayFixture.relayingStops());
+  void reportsRoundUnchangedWhileTheSessionHoldsTheTurnItOpened() throws Exception {
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    RoundRelay relay = new RoundRelay(relayingStops, steps, doors.door, brief);
+    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     ReviewFacts round =
-        RoundRelayFixture.facts("success", "", List.of("reviewer (a.java:3): drop the cache"));
+        reviewAnswer()
+            .withStatus("success")
+            .withDiscussion(
+                new ReviewFacts.Discussion(
+                    List.of("reviewer (a.java:3): drop the cache"), List.of(), List.of()))
+            .build()
+            .facts()
+            .orElseThrow();
     relay.relay("ABC-42", "http://mr/1", round, "success", "");
 
     SweepResult again = relay.relay("ABC-42", "http://mr/1", round, "success", "");
@@ -154,21 +227,26 @@ class RoundRelayTest {
   }
 
   @Test
-  void relaysNoRoundWhereNoCaseSendsItsStepsAtTheTasksStatus(@TempDir Path root) throws Exception {
-    RoundRelayFixture fixture = new RoundRelayFixture(root, sessions, clock, "cases.md.dist");
-    fixture.doors.state.putTask(
-        "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
+  void relaysNoRoundWhereNoCaseSendsItsStepsAtTheTasksStatus() throws Exception {
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    RoundRelay relay = new RoundRelay(mock(TaskStops.class), steps, doors.door, brief);
+    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
 
     SweepResult result =
-        fixture
-            .over(mock(TaskStops.class))
-            .relay(
-                "ABC-42",
-                "https://host/mr/1",
-                RoundRelayFixture.facts(
-                    "running", "", List.of("https://host/mr/1#note_9\nlee: why?")),
-                "running",
-                "");
+        relay.relay(
+            "ABC-42",
+            "https://host/mr/1",
+            reviewAnswer()
+                .withStatus("running")
+                .withDiscussion(
+                    new ReviewFacts.Discussion(
+                        List.of("https://host/mr/1#note_9\nlee: why?"), List.of(), List.of()))
+                .build()
+                .facts()
+                .orElseThrow(),
+            "running",
+            "");
 
     assertThat(result.kind()).isEqualTo(SweepResult.Kind.REFUSED);
     verify(sessions, never()).relayFresh(anyString(), anyString());

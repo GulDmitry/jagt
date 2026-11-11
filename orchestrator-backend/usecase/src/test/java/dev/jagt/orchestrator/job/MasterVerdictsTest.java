@@ -14,14 +14,23 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.CaseDoorFixture;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskMovedOn;
+import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
@@ -36,6 +45,7 @@ import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -185,8 +195,7 @@ class MasterVerdictsTest {
           4,
           "");
   private final MasterReview.Verdict ready =
-      new MasterReview.Verdict(
-          MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, "");
+      new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), List.of(), List.of(), 1, "");
   private final MasterReview.Said unguardedDelay =
       new MasterReview.Said(
           "acceptance",
@@ -201,19 +210,38 @@ class MasterVerdictsTest {
       new MasterReview.Verdict(
           MasterReview.Kind.NOT_READY, List.of(unguardedDelay), List.of(), List.of(), 7, "");
   private TaskState reviewPending;
-  private MasterVerdictsFixture fixture;
+  private MasterClaims claims;
   private StateService state;
   private StepRelay relay;
   private MasterVerdicts verdicts;
 
   @BeforeEach
   void setUp() throws Exception {
-    fixture = new MasterVerdictsFixture(root, sessions);
-    state = fixture.state;
+    CaseDoorFixture doors = new CaseDoorFixture(root, Clock.systemUTC(), Arbiter.Profile.OFF);
+    state = doors.state;
+    Checkers checkers = new Checkers(new TaskChart(Composition.builtIn()));
+    relay =
+        new StepRelay(
+            new SessionBrief(doors.paths),
+            sessions,
+            doors.door,
+            new TaskTurns(state, Clock.systemUTC(), checkers));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    Files.createDirectories(root.resolve("roles/master"));
+    Files.copy(
+        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
+    claims =
+        new MasterClaims(
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                checkers,
+                new FlowRules(new TaskChart(Composition.builtIn()))));
     reviewPending =
         TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-    relay = fixture.relay;
-    verdicts = new MasterVerdicts(relay, ship, fixture.claims, decisions);
+    verdicts = new MasterVerdicts(relay, ship, claims, decisions);
   }
 
   @Test
@@ -259,8 +287,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void dropsTheAnswerToQuestionTheSessionMovedOnFromWhileTheMasterRead()
-      throws Exception {
+  void dropsTheAnswerToQuestionTheSessionMovedOnFromWhileTheMasterRead() throws Exception {
     state.putTask("ABC-1", reviewPending);
     state.updateTask("ABC-1", live -> live.withTurn(live.turnOrNone().closed(2_000)));
 
@@ -284,12 +311,7 @@ class MasterVerdictsTest {
         .thenThrow(new IllegalStateException("no window"));
 
     assertThatThrownBy(
-            () ->
-                verdicts.act(
-                    "ABC-1",
-                    reviewPending,
-                    guardInvertedBeforeAnyRound,
-                    acting))
+            () -> verdicts.act("ABC-1", reviewPending, guardInvertedBeforeAnyRound, acting))
         .isInstanceOf(IllegalStateException.class);
 
     assertThat(state.task("ABC-1").orElseThrow())
@@ -313,12 +335,7 @@ class MasterVerdictsTest {
             });
 
     assertThatThrownBy(
-            () ->
-                verdicts.act(
-                    "ABC-1",
-                    reviewPending,
-                    guardInvertedBeforeAnyRound,
-                    acting))
+            () -> verdicts.act("ABC-1", reviewPending, guardInvertedBeforeAnyRound, acting))
         .isInstanceOf(IllegalStateException.class);
 
     assertThat(state.task("ABC-1").orElseThrow())
@@ -336,12 +353,7 @@ class MasterVerdictsTest {
                 .withTurn(new Turn("ship", 6, "d", 6_000, Map.of(), List.of())));
 
     assertThatThrownBy(
-            () ->
-                verdicts.act(
-                    "ABC-1",
-                    reviewPending,
-                    guardInvertedBeforeAnyRound,
-                    acting))
+            () -> verdicts.act("ABC-1", reviewPending, guardInvertedBeforeAnyRound, acting))
         .isInstanceOf(TaskMovedOn.class);
 
     verify(decisions, never()).returned(any(), anyLong(), any());
@@ -411,8 +423,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void tellsTheSessionTheInstructionOfStopTheMasterLiftedAndLeavesItAtWork()
-      throws Exception {
+  void tellsTheSessionTheInstructionOfStopTheMasterLiftedAndLeavesItAtWork() throws Exception {
     state.putTask("ABC-1", reviewPending);
 
     boolean told = verdicts.stopReturned("ABC-1", reviewPending, "fix the fixture, not the test");
@@ -423,8 +434,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void keepsTheDeployConflictHandOffStandingUnderTheAnswerToQuestion()
-      throws Exception {
+  void keepsTheDeployConflictHandOffStandingUnderTheAnswerToQuestion() throws Exception {
     TaskState task =
         TaskState.builder("proj", root.toString(), TaskStatus.DEPLOY_CONFLICT).alias("a1").build();
     state.putTask("ABC-42", task);
@@ -437,8 +447,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void keepsTheSessionOfStageCheckAnsweredAgainOverTheSameTree()
-      throws Exception {
+  void keepsTheSessionOfStageCheckAnsweredAgainOverTheSameTree() throws Exception {
     state.putTask("ABC-1", reviewPending);
 
     verdicts.answered(
@@ -452,8 +461,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void settlesWhatNotReadyRoundSentBackSoTheNextRoundDoesNotReopenIt()
-      throws Exception {
+  void settlesWhatNotReadyRoundSentBackSoTheNextRoundDoesNotReopenIt() throws Exception {
     state.putTask("ABC-1", reviewPending);
 
     verdicts.act("ABC-1", reviewPending, guardInverted, acting);
@@ -478,8 +486,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void returnsSecondRoundOfRepeatsToTheSessionInsteadOfAskingAnyone()
-      throws Exception {
+  void returnsSecondRoundOfRepeatsToTheSessionInsteadOfAskingAnyone() throws Exception {
     state.putTask("ABC-1", reviewPending);
     decisions.returned(reviewPending, 3, List.of(unguardedDelay));
     decisions.returned(reviewPending, 5, List.of(unguardedDelay));
@@ -492,22 +499,20 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void stopsTheTaskOnFourthRoundRunningThatOnlyRepeatsTheFirst()
-      throws Exception {
+  void stopsTheTaskOnFourthRoundRunningThatOnlyRepeatsTheFirst() throws Exception {
     state.putTask("ABC-1", reviewPending);
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayNeverPinned, acting);
-    fixture.handBackFixed(1);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayStillNeverPinned, acting);
-    fixture.handBackFixed(2);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), noTestPinsDelay, acting);
-    fixture.handBackFixed(3);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 3));
 
     boolean moved =
-        verdicts.act(
-            "ABC-1",
-            state.task("ABC-1").orElseThrow(),
-            delayNeverPinnedAgain,
-            acting);
+        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayNeverPinnedAgain, acting);
 
     assertThat(moved).isFalse();
     assertThat(state.task("ABC-1").orElseThrow())
@@ -516,54 +521,91 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void relaysFourthReturnWhereEachSessionReportItAnsweredWasReworked()
-      throws Exception {
+  void relaysFourthReturnWhereEachSessionReportItAnsweredWasReworked() throws Exception {
     state.putTask("ABC-1", reviewPending);
-    fixture.handBackPlan(1, 1);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 1)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 1"));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayNeverPinned, acting);
-    fixture.handBackPlan(2, 2);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 2)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 2"));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayStillNeverPinned, acting);
-    fixture.handBackPlan(3, 3);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 3)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 3"));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), noTestPinsDelay, acting);
-    fixture.handBackPlan(4, 4);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 4)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 4"));
 
     boolean moved =
-        verdicts.act(
-            "ABC-1",
-            state.task("ABC-1").orElseThrow(),
-            delayNeverPinnedAgain,
-            acting);
+        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayNeverPinnedAgain, acting);
 
     assertThat(moved).isEqualTo(true);
     assertThat(state.task("ABC-1").orElseThrow().stop()).isNull();
   }
 
   @Test
-  void stopsTheTaskOnFourthReturnWhereTheSessionReportedTheSameEachTime()
-      throws Exception {
+  void stopsTheTaskOnFourthReturnWhereTheSessionReportedTheSameEachTime() throws Exception {
     state.putTask("ABC-1", reviewPending);
-    fixture.handBackPlan(1, 1);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 1)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 1"));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayNeverPinned, acting);
-    fixture.handBackPlan(2, 1);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 2)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 1"));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayStillNeverPinned, acting);
-    fixture.handBackPlan(3, 1);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 3)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 1"));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), noTestPinsDelay, acting);
-    fixture.handBackPlan(4, 1);
+    state.updateTask(
+        "ABC-1",
+        handedBack ->
+            handedBack
+                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 4)
+                .withLastChangeOrigin(ActionOrigin.MCP)
+                .withLastChangeWhy("plan 1"));
 
     boolean moved =
-        verdicts.act(
-            "ABC-1",
-            state.task("ABC-1").orElseThrow(),
-            delayNeverPinnedAgain,
-            acting);
+        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayNeverPinnedAgain, acting);
 
     assertThat(moved).isEqualTo(false);
     assertThat(state.task("ABC-1").orElseThrow().stop()).isNotNull();
   }
 
   @Test
-  void settlesNoRequestForEvidenceSoTheSessionsAnswerCanStillChangeIt()
-      throws Exception {
+  void settlesNoRequestForEvidenceSoTheSessionsAnswerCanStillChangeIt() throws Exception {
     state.putTask("ABC-1", reviewPending);
 
     verdicts.act(
@@ -596,8 +638,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void shipsReadyRoundOnlyWhereHumanSaidTheReviewerStandsInForThem()
-      throws Exception {
+  void shipsReadyRoundOnlyWhereHumanSaidTheReviewerStandsInForThem() throws Exception {
     state.putTask("ABC-1", reviewPending);
     when(ship.ship("ABC-1", reviewPending)).thenReturn(true);
 
@@ -692,8 +733,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void putsTheReviewersQuestionToTheHumanThroughTheSessionThatWaitsOnTheAnswer()
-      throws Exception {
+  void putsTheReviewersQuestionToTheHumanThroughTheSessionThatWaitsOnTheAnswer() throws Exception {
     state.putTask("ABC-1", reviewPending);
 
     boolean moved =
@@ -758,8 +798,7 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void answersNothingAndRecordsNothingWhenTheSessionAlreadyHoldsThatAnswer()
-      throws Exception {
+  void answersNothingAndRecordsNothingWhenTheSessionAlreadyHoldsThatAnswer() throws Exception {
     state.putTask("ABC-1", reviewPending);
     OriginContext.as(
         ActionOrigin.MASTER,
@@ -823,22 +862,20 @@ class MasterVerdictsTest {
   }
 
   @Test
-  void stopsTheTaskInsteadOfReturningFourthRoundOfFreshFindingsRunning()
-      throws Exception {
+  void stopsTheTaskInsteadOfReturningFourthRoundOfFreshFindingsRunning() throws Exception {
     state.putTask("ABC-1", reviewPending);
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), cartGuardInverted, acting);
-    fixture.handBackFixed(1);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), orderGuardInverted, acting);
-    fixture.handBackFixed(2);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), paymentGuardInverted, acting);
-    fixture.handBackFixed(3);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 3));
 
     boolean moved =
-        verdicts.act(
-            "ABC-1",
-            state.task("ABC-1").orElseThrow(),
-            invoiceGuardInverted,
-            acting);
+        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), invoiceGuardInverted, acting);
 
     assertThat(moved).isFalse();
     assertThat(state.task("ABC-1").orElseThrow())
@@ -850,16 +887,14 @@ class MasterVerdictsTest {
   void returnsThirdRoundOfFreshFindingsRunning() throws Exception {
     state.putTask("ABC-1", reviewPending);
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), cartGuardInverted, acting);
-    fixture.handBackFixed(1);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), orderGuardInverted, acting);
-    fixture.handBackFixed(2);
+    state.updateTask(
+        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
 
     boolean moved =
-        verdicts.act(
-            "ABC-1",
-            state.task("ABC-1").orElseThrow(),
-            paymentGuardInverted,
-            acting);
+        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), paymentGuardInverted, acting);
 
     assertThat(moved).isTrue();
     assertThat(state.task("ABC-1").orElseThrow().stopped()).isFalse();

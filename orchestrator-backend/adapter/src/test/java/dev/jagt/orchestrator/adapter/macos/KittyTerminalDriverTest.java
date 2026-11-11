@@ -1,10 +1,6 @@
 package dev.jagt.orchestrator.adapter.macos;
 
-import static dev.jagt.orchestrator.adapter.macos.KittyFixtures.answeringEveryCommand;
-import static dev.jagt.orchestrator.adapter.macos.KittyFixtures.driver;
-import static dev.jagt.orchestrator.adapter.macos.KittyFixtures.plainDriver;
-import static dev.jagt.orchestrator.adapter.macos.KittyFixtures.secondCommandOf;
-import static dev.jagt.orchestrator.adapter.macos.KittyFixtures.viewerDriver;
+import static dev.jagt.orchestrator.adapter.macos.TestKittyTerminalDriverBuilder.kittyDriver;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -14,30 +10,41 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.adapter.KittyOptions;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 
 class KittyTerminalDriverTest {
 
+  private final ProcessRunner runner = mock(ProcessRunner.class);
+  private final OsaScript osaScript = mock(OsaScript.class);
+  private final ArgumentCaptor<List<String>> commands = ArgumentCaptor.captor();
+  private final Clock clock = Clock.systemUTC();
+  private final KittyTerminalDriver driver = kittyDriver().build(runner, osaScript, clock);
+  private final KittyTerminalDriver viewer =
+      kittyDriver()
+          .withProperties(OrchestratorProperties.defaults().withOpenTerminalWindow(true))
+          .build(runner, osaScript, clock);
+
   @Test
   void notesNothingAboutClosedViewerWhereItsKillToolIsOnPath() {
-    var driver = plainDriver();
 
     assertThat(driver.notes()).isEmpty();
   }
 
   @Test
   void bindsCyrillicPasteAndCopySoPastingWorksOnTheRussianLayout() {
-    var driver = plainDriver();
 
     assertThat(driver.platformOptions())
         .containsSequence("-o", "map=cmd+м paste_from_clipboard")
@@ -46,7 +53,6 @@ class KittyTerminalDriverTest {
 
   @Test
   void keepsTheLatinDefaultsInsteadOfRemappingPasteWhichWouldDropKittysAsciiFallback() {
-    var driver = plainDriver();
 
     assertThat(driver.platformOptions())
         .doesNotContain("map=cmd+v paste_from_clipboard", "map=cmd+c copy_to_clipboard");
@@ -54,29 +60,17 @@ class KittyTerminalDriverTest {
 
   @Test
   void raisesTheAppWithAppleScriptBecauseKittyCannotPutItselfInFrontOnCocoa() {
-    OsaScript osaScript = mock(OsaScript.class);
-
-    new KittyTerminalDriver(
-            mock(ProcessRunner.class),
-            OrchestratorProperties.defaults(),
-            osaScript,
-            new KittyOptions("kitty", ""),
-            Clock.systemUTC())
-        .bringToFront();
+    driver.bringToFront();
 
     verify(osaScript).run("tell application \"kitty\" to activate");
   }
 
   @Test
   void opensNothingWhereTheHumanTurnedTheWindowOff() {
-    ProcessRunner runner = mock(ProcessRunner.class);
     var driver =
-        new KittyTerminalDriver(
-            runner,
-            OrchestratorProperties.defaults().withOpenTerminalWindow(false),
-            mock(OsaScript.class),
-            new KittyOptions("kitty", ""),
-            Clock.systemUTC());
+        kittyDriver()
+            .withProperties(OrchestratorProperties.defaults().withOpenTerminalWindow(false))
+            .build(runner, osaScript, clock);
 
     driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
@@ -85,86 +79,80 @@ class KittyTerminalDriverTest {
 
   @Test
   void startsTheViewerInstanceWhereNoneAnswers() {
-    ProcessRunner runner = answeringEveryCommand(1);
-    var driver = viewerDriver(runner);
+    when(runner.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(1, "", ""));
 
-    driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
+    viewer.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
 
-    assertThat(secondCommandOf(runner))
+    verify(runner, times(2)).run(isNull(), any(Duration.class), commands.capture());
+    assertThat(commands.getAllValues().get(1))
         .startsWith("/k/kitty", "--detach")
         .containsSequence("--", "tmux", "attach", "-t", "agents");
   }
 
   @Test
   void firstViewerRunsTheAttachCommandItIsGiven() {
-    ProcessRunner runner = answeringEveryCommand(1);
-    var driver = viewerDriver(runner);
+    when(runner.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(1, "", ""));
 
-    driver.openViewer(
+    viewer.openViewer(
         List.of("tmux", "-L", "jagt-sock", "attach", "-t", "agents"),
         "agents",
         Path.of("/work/tree"));
 
-    assertThat(secondCommandOf(runner))
+    verify(runner, times(2)).run(isNull(), any(Duration.class), commands.capture());
+    assertThat(commands.getAllValues().get(1))
         .containsSequence("--", "tmux", "-L", "jagt-sock", "attach", "-t", "agents");
   }
 
   @Test
   void extraTabRunsTheAttachCommandItIsGiven() {
-    ProcessRunner runner = answeringEveryCommand(0);
-    var driver = viewerDriver(runner);
+    when(runner.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "", ""));
 
-    driver.openViewer(
+    viewer.openViewer(
         List.of("tmux", "-L", "jagt-sock", "attach", "-t", "agents"),
         "agents tab",
         Path.of("/work/tree"));
 
-    assertThat(secondCommandOf(runner))
+    verify(runner, times(2)).run(isNull(), any(Duration.class), commands.capture());
+    assertThat(commands.getAllValues().get(1))
         .containsSequence("--", "tmux", "-L", "jagt-sock", "attach", "-t", "agents");
   }
 
   @Test
   void opensTabInTheViewerInstanceThatAnswers() {
-    ProcessRunner runner = answeringEveryCommand(0);
-    var driver = viewerDriver(runner);
+    when(runner.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "", ""));
 
-    driver.openViewer(
+    viewer.openViewer(
         List.of("tmux", "attach", "-t", "agents"), "agents tab", Path.of("/work/tree"));
 
-    assertThat(secondCommandOf(runner))
+    verify(runner, times(2)).run(isNull(), any(Duration.class), commands.capture());
+    assertThat(commands.getAllValues().get(1))
         .startsWith("/k/kitty", "@", "--to")
         .containsSequence(
             "launch", "--type=tab", "--tab-title", "agents tab", "--cwd", "/work/tree")
         .containsSequence("--", "tmux", "attach", "-t", "agents");
   }
 
-  @Test
-  void opensNoSecondViewerWhileTheFirstIsStillAttaching() {
-    ProcessRunner runner = answeringEveryCommand(0);
-    var driver = viewerDriver(runner);
+  @ParameterizedTest(name = "a second viewer for {0} brings the commands to {1}")
+  @CsvSource({"agents,2", "others,4"})
+  void opensNoSecondViewerForTheSessionStillAttachingButOneForAnotherAtOnce(
+      String second, int total) {
+    when(runner.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "", ""));
 
-    driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
-    driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
+    viewer.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
+    viewer.openViewer(List.of("tmux", "attach", "-t", second), second, Path.of("/work/tree"));
 
-    verify(runner, times(2)).run(isNull(), any(Duration.class), anyList());
-  }
-
-  @Test
-  void opensViewerForAnotherSessionAtOnce() {
-    ProcessRunner runner = answeringEveryCommand(0);
-    var driver = viewerDriver(runner);
-
-    driver.openViewer(List.of("tmux", "attach", "-t", "agents"), "agents", Path.of("/work/tree"));
-    driver.openViewer(List.of("tmux", "attach", "-t", "others"), "others", Path.of("/work/tree"));
-
-    verify(runner, times(4)).run(isNull(), any(Duration.class), anyList());
+    verify(runner, times(total)).run(isNull(), any(Duration.class), anyList());
   }
 
   @Test
   void revealsNothingWhereNoViewerAnswers() {
-    ProcessRunner runner = answeringEveryCommand(1);
-    OsaScript osaScript = mock(OsaScript.class);
-    var driver = driver(runner, osaScript);
+    when(runner.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(1, "", ""));
 
     var revealed = driver.reveal("agents");
 
@@ -174,27 +162,25 @@ class KittyTerminalDriverTest {
 
   @Test
   void focusesTheViewerWindowAndRaisesTheAppWhereViewerAnswers() {
-    ProcessRunner runner = answeringEveryCommand(0);
-    OsaScript osaScript = mock(OsaScript.class);
-    var driver = driver(runner, osaScript);
+    when(runner.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "", ""));
 
     var revealed = driver.reveal("agents");
 
     assertThat(revealed).isEqualTo(TerminalDriver.Revealed.WINDOW);
-    assertThat(secondCommandOf(runner)).containsSequence("focus-window", "--match", "cmdline:tmux");
+    verify(runner, times(2)).run(isNull(), any(Duration.class), commands.capture());
+    assertThat(commands.getAllValues().get(1))
+        .containsSequence("focus-window", "--match", "cmdline:tmux");
     verify(osaScript).run("tell application \"kitty\" to activate");
   }
 
   @Test
   void closesTheViewerByTheSocketOnlyItsInstanceHolds() {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    var driver = driver(runner, mock(OsaScript.class));
 
     driver.closeViewerWindow("agents");
 
-    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-    verify(runner).run(isNull(), any(Duration.class), command.capture());
-    assertThat(command.getValue())
+    verify(runner).run(isNull(), any(Duration.class), commands.capture());
+    assertThat(commands.getValue())
         .startsWith("pkill", "-f")
         .last()
         .asString()
