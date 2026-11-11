@@ -34,6 +34,7 @@ Accepted 2026-11-11.
 - Inlining `ShippedRoot.configure`: it copies one Spring root's properties into every context test; it stays.
 - Builders in place of `GitRepos`: its scripted git scenarios are a fake of a repository; it stays.
 - Inlining `BoardPageContext`'s page actions: they drive the board's page for every board test; they stay.
+- Inlining `FlowHarness`'s waits, driver actions and world setup: they drive jagt for every e2e test; they stay.
 
 ## Reopen when
 
