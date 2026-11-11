@@ -31,6 +31,8 @@ Accepted 2026-11-11.
 - Instancio: random filling builds states the flow never reaches; fixed-value builders need no library.
 - Builder classes with `@AllArgsConstructor`: 0107 rejects it, and a record carries `@With` alone.
 - Shared holders that wire services or read results: the first pass's shape.
+- Inlining `ShippedRoot.configure`: it copies one Spring root's properties into every context test; it stays.
+- Builders in place of `GitRepos`: its scripted git scenarios are a fake of a repository; it stays.
 
 ## Reopen when
 
