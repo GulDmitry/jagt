@@ -119,6 +119,21 @@ class ClaudeCredentialsTest {
   }
 
   @Test
+  void readsTheCredentialsFileUnderTheConfiguredDirectoryWhenOneIsSet(
+      @TempDir Path home, @TempDir Path configDir) throws Exception {
+    Files.writeString(
+        configDir.resolve(".credentials.json"),
+        "{\"claudeAiOauth\": {\"accessToken\": \"tok-configured\"}}");
+    Host host = mock(Host.class);
+    when(host.home()).thenReturn(home);
+    when(host.env("CLAUDE_CONFIG_DIR")).thenReturn(Optional.of(configDir.toString()));
+
+    var credential = new ClaudeCredentials(Optional.empty(), host).read(NOW);
+
+    assertThat(credential).isEqualTo(new OauthCredential.Token("tok-configured", ""));
+  }
+
+  @Test
   void answersFailedNamingTheErrorWhenTheCredentialsFileCannotBeRead(@TempDir Path home)
       throws Exception {
     Files.createDirectories(home.resolve(".claude/.credentials.json"));

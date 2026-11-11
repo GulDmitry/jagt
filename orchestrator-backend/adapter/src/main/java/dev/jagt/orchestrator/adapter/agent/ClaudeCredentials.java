@@ -30,7 +30,9 @@ public class ClaudeCredentials {
 
   public ClaudeCredentials(Optional<ClaudeKeychain> keychain, Host host) {
     this.keychain = keychain;
-    this.file = host.home().resolve(".claude").resolve(".credentials.json");
+    this.file =
+        ClaudeConfigDir.of(host.env(ClaudeConfigDir.VARIABLE), host.home().resolve(".claude"))
+            .resolve(".credentials.json");
   }
 
   OauthCredential read(Instant now) {

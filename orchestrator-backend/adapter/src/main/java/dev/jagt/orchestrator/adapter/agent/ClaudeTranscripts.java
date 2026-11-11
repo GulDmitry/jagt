@@ -36,10 +36,9 @@ final class ClaudeTranscripts {
    * answer.
    */
   static Path projectsDir() {
-    String configured = System.getenv("CLAUDE_CONFIG_DIR");
-    return (configured == null || configured.isBlank()
-            ? Path.of(System.getProperty("user.home"), ".claude")
-            : Path.of(configured))
+    return ClaudeConfigDir.of(
+            Optional.ofNullable(System.getenv(ClaudeConfigDir.VARIABLE)),
+            Path.of(System.getProperty("user.home"), ".claude"))
         .resolve("projects");
   }
 

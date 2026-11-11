@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Optional;
 import java.util.function.BinaryOperator;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -43,10 +44,9 @@ final class ClaudeTrust {
    * answer.
    */
   static Path configFile() {
-    String configured = System.getenv("CLAUDE_CONFIG_DIR");
-    return (configured == null || configured.isBlank()
-            ? Path.of(System.getProperty("user.home"))
-            : Path.of(configured))
+    return ClaudeConfigDir.of(
+            Optional.ofNullable(System.getenv(ClaudeConfigDir.VARIABLE)),
+            Path.of(System.getProperty("user.home")))
         .resolve(".claude.json");
   }
 
