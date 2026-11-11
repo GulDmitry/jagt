@@ -10,22 +10,23 @@ changed against `HEAD`, each survivor judged before the commit
 [0151](../decisions/0151-mutants-are-judged-locally-only.md)). **A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`**
 ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
 
-**A test is held stricter than main**: every check main keeps, plus no duplication and no helper method
+**A test is held stricter than main**: every check main keeps, plus no duplication, no helper method and no helper class
 ([0162](../decisions/0162-a-check-holds-for-all-code.md)); main changes daily, its tests are what stays.
 **Every fixed bug gets a regression unit test**, verified RED by reverting the fix. Its `docs/cases.md` row and
 `Defect-family:` trailer make defects countable per family. **A new test's run is predicted first**, outcome and message; a surprise is a
 stop to understand, never a blind retry. **Every new install requirement goes in `docs/installation.md`**. **Leave no trace**: a suite
 booting the app passes `--orchestrator.open-terminal-window=false`, uses a throwaway tmux session plus `ORCHESTRATOR_ROOT`, then removes
 the worktrees and branches; every `Test` task runs on a tmux server of its own (`TMUX_TMPDIR`, killed after the task), so no test reaches
-the human's. A test reading the repository's own files may keep **file-scanning** helpers (`TextBudgetTest.mainSources`,
-`ConfigReferenceTest.javaFilesUnder` …). A shared **fake** of a production seam (`ScriptedProcesses`) is allowed, a shared builder is not.
+the human's. Shared test code is a **file scanner** for a rule test (`TextBudgetTest.mainSources`), a **fake** of a production seam
+(`ScriptedProcesses`) or a **test builder** ([0163](../decisions/0163-a-test-shares-a-builder-a-fake-or-a-scanner.md)): `Test<Thing>Builder`, a record
+with `@With`, `a<Thing>()` setting fixed valid defaults, `build()` calling production's constructor or builder; no branch, loop, mock, assertion,
+clock or random value; one of outside state (a git repo) may write.
 
 ### Every test pins a business case
 
 - A test pins what a spec scenario, a ticket or a contract promises: a serialised answer's shape is one.
 - Code that only forwards or holds — a getter, a controller calling a service — gets no test; the business case through it covers it.
-- Editing a test's assertion or expected value, or deleting it, needs a reason in the commit message.
-- The reason: its scenario changed in the same commit, or it asserted what nothing promised; never a red run, the code's to fix.
+- Editing or deleting an assertion or expected value names its reason in the commit: a changed scenario or a promise nobody made, never a red run.
 - **A move is pinned by where it lands**: a report a unit sends is asserted once as the status it lands on,
   through the real `AgentStatusReports` over a real `StateService`; a mocked door pins only that it was called.
 - **A reader of a vendor CLI's screen is pinned on a screen captured from the installed version**, never a hand-written
@@ -35,7 +36,7 @@ the human's. A test reading the repository's own files may keep **file-scanning*
 
 ### One constructor, the one production calls
 
-- **Every constructor in `main` is called from `main`** (`ProductionConstructorTest`), but a record's canonical one,
+- **Main calls every constructor and member in `main`** (`ProductionConstructorTest`), but a record's canonical one,
   a bean's or failure analyzer's only one, a private one.
 - A test **mocks a collaborator, never a constructor**: a clock, a pool, a path, a limit or a host fact that varies is a collaborator, supplied by
   `RuntimeWiring`, `OrchestratorPaths` or `port/Host`; a limit that never varies is a constant, and the test writes the volume that reaches it.
@@ -59,8 +60,7 @@ the human's. A test reading the repository's own files may keep **file-scanning*
 
 ### The board is tested in a browser
 
-- `boardTest` drives the real page, on a random port, in headless Chromium. Only it
-  proves the grid's order, a card's buttons, the SSE repaint and the palette's verdict.
+- `boardTest` drives the real page in headless Chromium on a random port: only it proves grid order, a card's buttons, the SSE repaint, the palette.
 - **Run it after any change to `static/`**, asserting through the **server** (seed `StateService`, stub a command), never by evaluating page JS. Its
   `@MockitoBean`s stub whole-app seams, never a class's collaborators: `CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`, `AgentSessions`,
   `EditorDriver`, a `ReviewRepliesReport` spy; e2e's stub only ports.

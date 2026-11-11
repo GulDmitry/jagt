@@ -84,10 +84,13 @@ or local setup; such names live only in git-ignored files. **A check holds for a
   A holder's inputs are its arguments; a collaborator arrives through the constructor.
   Start work is an `@EventListener` or a `Job`, never `@PostConstruct`
   (`StaticStateTest`, `LifecycleHooksTest`, [0160](docs/decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md)).
-- **No duplicated block of 75 tokens or more in main** (`DuplicationTest`): extract the one holder, never raise the number.
+- **No duplicated block of 75 tokens or more** (`DuplicationTest`): one holder in main, a builder or parameterized case
+  in tests. Never raise the number.
 - **Checkstyle's default counts gate all code**: 7 parameters, 8 record components; a suppression needs its reason, zero is the target
   ([0143](docs/decisions/0143-checkstyle-gates-parameter-and-component-counts.md)).
 - **A test wiring over 5 mocks means the class does too much** (`MockCeilingTest`): fix the class, never the fixture.
+- **A test shares a `Test<Thing>Builder`, a fake or a file scanner, nothing else**: no helper method or class, no logic in a builder
+  ([0163](docs/decisions/0163-a-test-shares-a-builder-a-fake-or-a-scanner.md)).
 - **A test builds a class through the constructor production uses**: never a second constructor, an overload or a
   seam in `main` that only tests call (`ProductionConstructorTest`).
 - **English and UTC only, set in `main`**: no code reads the machine's locale, zone or clock (`EnglishAndUtcTest`, `BoardAssetsTest`).

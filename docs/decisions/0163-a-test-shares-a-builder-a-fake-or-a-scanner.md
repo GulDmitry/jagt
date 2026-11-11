@@ -1,0 +1,38 @@
+# 0163 — A test shares a builder, a fake or a scanner
+
+[← decisions](README.md) · rule: [`testing`](../rules/testing.md) · amends [0162](0162-a-check-holds-for-all-code.md)
+
+## Status
+
+Accepted 2026-11-11.
+
+## Context
+
+- 0162 put the duplication gate on tests; the first deduplication pass moved repeated setup into shared holder
+  classes that built data, wired services, read results and asserted, all mixed.
+- A shared step that acts or asserts hides the test's story; repeated object setup is the one repetition a test
+  cannot state inline without copying it.
+
+## Decision
+
+- Shared test code is one of three: a test builder, a fake of a production seam, a rule test's file scanner.
+  No helper method and no other shared class.
+- A test builder is `Test<Thing>Builder` in the test root: a record with Lombok `@With`, a static `a<Thing>()`
+  setting fixed valid defaults, one `build()` calling a production constructor or builder.
+- A builder holds no logic: no branch, loop, mock, `verify`, assertion, clock or random value.
+- A builder of outside state (a git repository on disk) may write in `build()`.
+- A record whose production `defaults()` and `@With` serve production needs no builder; a `defaults()` only
+  tests call moves into one.
+- Main holds no constructor or member that only tests call; `ProductionConstructorTest` widens to members.
+- A service too long to wire is not built by a builder: its collaborator count is fixed in main.
+
+## Rejected
+
+- Instancio: random filling builds states the flow never reaches; fixed-value builders need no library.
+- Builder classes with `@AllArgsConstructor`: 0107 rejects it, and a record carries `@With` alone.
+- Shared holders that wire services or read results: the first pass's shape.
+
+## Reopen when
+
+- A builder needs more record components than Checkstyle's ceiling allows.
+- A duplication that no builder, fake or parameterized test removes.

@@ -7,6 +7,7 @@
 ## Status
 
 Accepted 2026-11-10.
+Amended by [0163](0163-a-test-shares-a-builder-a-fake-or-a-scanner.md): a test shares a builder, a fake or a scanner, nothing else.
 
 ## Context
 
