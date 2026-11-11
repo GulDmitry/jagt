@@ -88,6 +88,54 @@ class CaseBookTest {
   }
 
   @Test
+  void loadsNoCaseOfShippedCheckerNotInstalledNorRequiresItsStep() {
+    CaseBook book =
+        CaseBook.parse(
+            "roles/session/cases.md",
+            """
+            ## acceptance-round-by-acceptance
+
+            step: acceptance-round
+            at: DEPLOYED
+            by: acceptance
+            replies: IN_PROGRESS; plain
+            Acceptance sends its rows back.
+            """);
+
+    assertThat(
+            book.problems(
+                Set.of("acceptance-round"),
+                "roles/session/cases.md",
+                List.of(),
+                Set.of("acceptance")))
+        .isEmpty();
+  }
+
+  @Test
+  void refusesByNamingNoShippedCheckerWhereOthersAreNotInstalled() {
+    CaseBook book =
+        CaseBook.parse(
+            "roles/session/cases.md",
+            """
+            ## acceptance-round-by-acceptnce
+
+            step: acceptance-round
+            at: DEPLOYED
+            by: acceptnce
+            replies: IN_PROGRESS; plain
+            A typo.
+            """);
+
+    assertThat(
+            book.problems(
+                Set.of("acceptance-round"),
+                "roles/session/cases.md",
+                List.of(),
+                Set.of("acceptance")))
+        .hasSize(1);
+  }
+
+  @Test
   void readsAnyButAsEveryStatusOutsideTheList() {
     CaseBook book =
         CaseBook.parse(

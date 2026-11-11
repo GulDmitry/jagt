@@ -22,7 +22,10 @@ public class CaseCheck implements StartupCheck {
   @Override
   public List<Problem> problems() {
     return Stream.concat(
-            cases.book().problems(brief.steps(), SessionCases.FILE, checkers.installed()).stream(),
+            cases
+                .book()
+                .problems(brief.steps(), SessionCases.FILE, checkers.installed(), Checkers.SHIPPED)
+                .stream(),
             brief.unreadable().stream())
         .toList();
   }

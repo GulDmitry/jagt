@@ -46,7 +46,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
     private final String unnamed;
   }
 
-  /** Who sets a step off: one of jagt's fixed parties, or an installed checker named by its id. */
+  /** Who sets a step off: one of jagt's fixed parties, or a checker named by its id. */
   public sealed interface By {
 
     By JAGT = Fixed.JAGT;
@@ -213,6 +213,27 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
         .reduce(Replies::plus);
   }
 
+  /**
+   * As {@link #problems(Set, String, List)}, but a case set off by a {@code shipped} checker that
+   * is not installed is not loaded, nor is its step then required.
+   */
+  public List<Problem> problems(
+      Set<String> named, String file, List<String> checkers, Set<String> shipped) {
+    List<Case> dormant =
+        cases.stream()
+            .filter(
+                c ->
+                    c.by() instanceof By.Role role
+                        && shipped.contains(role.id())
+                        && !checkers.contains(role.id()))
+            .toList();
+    CaseBook loaded =
+        new CaseBook(shape, cases.stream().filter(c -> !dormant.contains(c)).toList(), faults);
+    Set<String> required = new HashSet<>(named);
+    dormant.stream().map(Case::step).forEach(required::remove);
+    return loaded.problems(required, file, checkers);
+  }
+
   /** What keeps this book from matching {@code named}, both ways, beside what it could not read. */
   public List<Problem> problems(Set<String> named, String file, List<String> checkers) {
     List<Problem> problems = new ArrayList<>(faults);
@@ -226,7 +247,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
                         c.id(),
                         "has by: '"
                             + c.by().id()
-                            + "', which is not jagt, master, human or an installed checker")));
+                            + "', which is not jagt, master, human or a checker jagt ships")));
     cases.stream()
         .filter(c -> !named.contains(c.step()))
         .forEach(
@@ -290,7 +311,7 @@ public record CaseBook(Shape shape, List<Case> cases, List<Problem> faults) {
                   + keys.getOrDefault("by", "")
                   + "', which is not "
                   + (shape == Shape.STEPS
-                      ? "jagt, master, human or an installed checker"
+                      ? "jagt, master, human or a checker jagt ships"
                       : "master")));
     }
     Optional<Replies> replies =

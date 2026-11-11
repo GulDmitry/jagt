@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.Problem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -117,6 +118,25 @@ class CaseCheckTest {
                     new SessionCases(paths),
                     new SessionBrief(paths),
                     new Checkers(new TaskChart(Composition.builtIn())))
+                .problems())
+        .isEmpty();
+  }
+
+  @Test
+  void passesTheShippedCasesWhereNoCheckerIsInstalled(@TempDir Path root) throws Exception {
+    final OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
+    Files.copy(
+        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+
+    assertThat(
+            new CaseCheck(
+                    new SessionCases(paths),
+                    new SessionBrief(paths),
+                    new Checkers(new TaskChart(Composition.of(List.of()))))
                 .problems())
         .isEmpty();
   }

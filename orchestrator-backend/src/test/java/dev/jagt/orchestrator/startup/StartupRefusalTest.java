@@ -17,10 +17,11 @@ class StartupRefusalTest {
   void anIncompleteInstallationStopsTheStartInsteadOfServingBoardThatCannotWork(@TempDir Path root)
       throws Exception {
     Files.writeString(root.resolve("mcp_client.js"), "// bridge");
-    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
-        Path.of("../roles/acceptance/role.yml.dist"),
-        root.resolve("roles/acceptance/role.yml.dist"));
+        Path.of("../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
+    Files.copy(
+        Path.of("../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
 
     assertThatThrownBy(

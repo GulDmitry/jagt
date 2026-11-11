@@ -32,7 +32,11 @@ public class AcceptanceCaseCheck implements StartupCheck {
       return List.of();
     }
     return Stream.concat(
-            files.book().problems(files.steps(), files.casesFile(), checkers.installed()).stream(),
+            files
+                .book()
+                .problems(
+                    files.steps(), files.casesFile(), checkers.installed(), Checkers.SHIPPED)
+                .stream(),
             files.unreadable().stream())
         .toList();
   }
