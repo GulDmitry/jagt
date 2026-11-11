@@ -106,9 +106,7 @@ final class FlowHarness {
     awaitTask(reached -> reached.status() == TaskStatus.IN_PROGRESS);
   }
 
-  void shipsTheRoundTheMasterShipped() throws Exception {
-    awaitRun("master-review");
-    awaitTask(reached -> reached.status() == TaskStatus.SHIPPING);
+  void pushesTheRoundAndReportsItsRequest() throws Exception {
     E2eWorkspace.git(worktree(), "add", "widget.txt");
     E2eWorkspace.git(worktree(), "commit", "-m", task + " fix the widget");
     E2eWorkspace.git(worktree(), "push", "-u", "origin", task);

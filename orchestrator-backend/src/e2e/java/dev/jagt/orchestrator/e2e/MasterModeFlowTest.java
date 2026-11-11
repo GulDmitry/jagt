@@ -187,39 +187,173 @@ class MasterModeFlowTest {
           .containsExactly(ActionOrigin.MASTER);
     }
 
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("dev.jagt.orchestrator.e2e.MasterModeCase#deploys")
-    void deploysGreenRequestAsTheModeAllows(MasterModeCase master) throws Exception {
-      E2eWorkspace.writeConfig(flow.configFile(), flow.repo(), master);
-      flow.judges(judgement().build());
-      flow.agentReports("REVIEW_PENDING", "widget fixed", "");
-      flow.shipsTheRoundTheMasterShipped();
+    @Nested
+    class ShippedByTheMaster {
 
-      flow.act("sweep");
-      flow.awaitRun("master-deploy");
+      @BeforeEach
+      void theMasterShippedTheRoundAndItsRequestIsUp() throws Exception {
+        E2eWorkspace.writeConfig(
+            flow.configFile(), flow.repo(), MasterModeCase.deploys().findFirst().orElseThrow());
+        flow.judges(judgement().build());
+        flow.agentReports("REVIEW_PENDING", "widget fixed", "");
+        flow.awaitRun("master-review");
+        flow.awaitTask(reached -> reached.status() == TaskStatus.SHIPPING);
+        flow.pushesTheRoundAndReportsItsRequest();
+      }
 
-      assertThat(flow.awaitTask(task -> task.status() == master.expected()).status())
-          .isEqualTo(master.expected());
-    }
+      @ParameterizedTest(name = "{0}")
+      @MethodSource("dev.jagt.orchestrator.e2e.MasterModeCase#deploys")
+      void deploysGreenRequestAsTheModeAllows(MasterModeCase master) throws Exception {
+        E2eWorkspace.writeConfig(flow.configFile(), flow.repo(), master);
 
-    @Test
-    void asksTheSessionToCheckTheDeployOnceItsPipelineIsGreen() throws Exception {
-      E2eWorkspace.writeConfig(
-          flow.configFile(), flow.repo(), MasterModeCase.deploys().findFirst().orElseThrow());
-      flow.judges(judgement().build());
-      flow.agentReports("REVIEW_PENDING", "widget fixed", "");
-      flow.shipsTheRoundTheMasterShipped();
-      flow.act("sweep");
-      flow.awaitRun("master-deploy");
-      flow.awaitTask(task -> task.status() == TaskStatus.DEPLOYED);
-      String deployed =
-          E2eWorkspace.git(flow.origin(), "rev-parse", "dev").substring(0, 8);
+        flow.act("sweep");
+        flow.awaitRun("master-deploy");
 
-      flow.awaitRun("deploy-check");
+        assertThat(flow.awaitTask(task -> task.status() == master.expected()).status())
+            .isEqualTo(master.expected());
+      }
 
-      flow.awaitTold("Make sure it is deployed and works");
-      assertThat(flow.taskContext())
-          .contains(TASK + " is deployed:\n- proj: " + deployed + " on dev");
+      @Test
+      void asksTheSessionToCheckTheDeployOnceItsPipelineIsGreen() throws Exception {
+        flow.act("sweep");
+        flow.awaitRun("master-deploy");
+        flow.awaitTask(task -> task.status() == TaskStatus.DEPLOYED);
+        String deployed =
+            E2eWorkspace.git(flow.origin(), "rev-parse", "dev").substring(0, 8);
+
+        flow.awaitRun("deploy-check");
+
+        flow.awaitTold("Make sure it is deployed and works");
+        assertThat(flow.taskContext())
+            .contains(TASK + " is deployed:\n- proj: " + deployed + " on dev");
+      }
+
+      @Nested
+      class AtDeployConflict {
+
+        @BeforeEach
+        void theSessionWasHandedTheConflict() throws Exception {
+          E2eWorkspace.commitOnDeployBranch(flow.repo(), "widget.txt", "someone else's line\n");
+          flow.act("sweep");
+          flow.awaitRun("master-deploy");
+          flow.awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
+          flow.awaitRun("deploy-conflict");
+          flow.awaitTold("did not deploy");
+        }
+
+        @Test
+        void handsDeployConflictToTheSessionAndFinishesTheDeployOnceItIsResolved()
+            throws Exception {
+          Path resolveIn = GitDeploy.deployWorktreePath(flow.repo(), TASK);
+          assertThat(
+                  Files.readString(flow.worktree().resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE))
+                      .lines())
+              .anySatisfy(line -> assertThat(line).contains("Also yours", resolveIn.toString()));
+          Files.writeString(resolveIn.resolve("widget.txt"), "both sides, resolved\n");
+          E2eWorkspace.git(resolveIn, "add", "widget.txt");
+          flow.awaitRun("deploy-conflict");
+
+          assertThat(flow.awaitTask(task -> task.status() == TaskStatus.DEPLOYED).status())
+              .isEqualTo(TaskStatus.DEPLOYED);
+          assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
+              .contains("Merge branch '" + TASK + "' into dev");
+        }
+
+        @Test
+        void answersQuestionAtDeployConflictUnderTheHandOffItLeavesStanding() throws Exception {
+          flow.judges(
+              judgement()
+                  .withFindings(
+                      List.of(new Finding("", "keep both lines", "decided", "advice", "", "")))
+                  .build());
+
+          flow.mcp(
+              """
+              {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+               "params": {"name": "update_agent_status",
+                          "arguments": {"status": "IN_PROGRESS", "message": "keep both lines?", "why": "a conflict needs a call",
+                                        "outcome": "question"}}}\
+              """);
+          flow.awaitRun("master-answer");
+
+          flow.awaitTold("keep both lines");
+          assertThat(flow.taskContext())
+              .contains("did not deploy");
+          assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+        }
+
+        @Nested
+        class Stalled {
+
+          @BeforeEach
+          void theConflictStallsAfterOneMinute() throws Exception {
+            E2eWorkspace.stallConflictsAfterMinutes(flow.configFile(), 1);
+          }
+
+          @Test
+          void asksTheMasterFirstWhenConflictStallsAndRelaysItsAnswerToTheSession()
+              throws Exception {
+            flow.judges(
+                judgement()
+                    .withFindings(
+                        List.of(new Finding("", "keep both lines", "decided", "advice", "", "")))
+                    .build());
+
+            Instant later = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
+            doReturn(later).when(clock).instant();
+            doReturn(later.toEpochMilli()).when(clock).millis();
+            flow.awaitRun("deploy-conflict");
+            flow.awaitRun("master-answer");
+
+            flow.awaitTold("keep both lines");
+            assertThat(flow.task().currentConflict().filter(Conflict::askedTheMaster)).isPresent();
+            assertThat(flow.task().currentConflict().map(Conflict::told).isPresent()).isFalse();
+            verify(userNotifier, never()).notify(contains("deploy conflict stalled"), any(), any());
+            assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+          }
+
+          @Test
+          void leavesStalledConflictToTheHumanWhenTheMastersAnswerIsUnusable() throws Exception {
+            Instant later = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
+            doReturn(later).when(clock).instant();
+            doReturn(later.toEpochMilli()).when(clock).millis();
+            flow.awaitRun("deploy-conflict");
+
+            flow.awaitRun("master-answer");
+
+            flow.awaitTask(task -> !task.masterOrNone().unanswered().isEmpty());
+            assertThat(flow.task().masterOrNone().unanswered())
+                .isEqualTo(flow.task().askedDigest());
+            assertThat(flow.task().message()).startsWith("The deploy conflict stalled");
+            assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+          }
+
+          @Test
+          void tellsTheHumanOnceConflictStallsAgainAfterTheMasterWasAskedAndPressesNothing()
+              throws Exception {
+            Instant later = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
+            doReturn(later).when(clock).instant();
+            doReturn(later.toEpochMilli()).when(clock).millis();
+            flow.awaitRun("deploy-conflict");
+            flow.awaitTask(
+                task -> task.currentConflict().filter(Conflict::askedTheMaster).isPresent());
+
+            Instant muchLater = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(4));
+            doReturn(muchLater).when(clock).instant();
+            doReturn(muchLater.toEpochMilli()).when(clock).millis();
+            flow.awaitRun("deploy-conflict");
+
+            assertThat(flow.task().currentConflict().filter(conflict -> conflict.told() != null))
+                .isPresent();
+
+            verify(userNotifier, timeout(10_000).times(1))
+                .notify(contains("deploy conflict stalled"), any(), any());
+            assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+            assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
+                .contains("Someone else changed widget.txt");
+          }
+        }
+      }
     }
   }
 
@@ -292,136 +426,6 @@ class MasterModeFlowTest {
           .singleElement()
           .asString()
           .contains("which jagt stopped because it suspects a loop");
-    }
-  }
-
-  @Nested
-  class AtDeployConflict {
-
-    @BeforeEach
-    void theSessionWasHandedTheConflict() throws Exception {
-      E2eWorkspace.writeConfig(
-          flow.configFile(), flow.repo(), MasterModeCase.deploys().findFirst().orElseThrow());
-      flow.judges(judgement().build());
-      provisioning.initializeTask(newTask().build());
-      Files.writeString(flow.worktree().resolve("widget.txt"), "fixed\n");
-      Files.writeString(flow.worktree().resolve("task_notes.md"), "widget fixed\n");
-      flow.agentReports("REVIEW_PENDING", "widget fixed", "");
-      flow.shipsTheRoundTheMasterShipped();
-      E2eWorkspace.commitOnDeployBranch(flow.repo(), "widget.txt", "someone else's line\n");
-      flow.act("sweep");
-      flow.awaitRun("master-deploy");
-      flow.awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
-      flow.awaitRun("deploy-conflict");
-      flow.awaitTold("did not deploy");
-    }
-
-    @Test
-    void handsDeployConflictToTheSessionAndFinishesTheDeployOnceItIsResolved() throws Exception {
-      Path resolveIn = GitDeploy.deployWorktreePath(flow.repo(), TASK);
-      assertThat(
-              Files.readString(flow.worktree().resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)).lines())
-          .anySatisfy(line -> assertThat(line).contains("Also yours", resolveIn.toString()));
-      Files.writeString(resolveIn.resolve("widget.txt"), "both sides, resolved\n");
-      E2eWorkspace.git(resolveIn, "add", "widget.txt");
-      flow.awaitRun("deploy-conflict");
-
-      assertThat(flow.awaitTask(task -> task.status() == TaskStatus.DEPLOYED).status())
-          .isEqualTo(TaskStatus.DEPLOYED);
-      assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
-          .contains("Merge branch '" + TASK + "' into dev");
-    }
-
-    @Test
-    void answersQuestionAtDeployConflictUnderTheHandOffItLeavesStanding() throws Exception {
-      flow.judges(
-          judgement()
-              .withFindings(
-                  List.of(new Finding("", "keep both lines", "decided", "advice", "", "")))
-              .build());
-
-      flow.mcp(
-          """
-          {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
-           "params": {"name": "update_agent_status",
-                      "arguments": {"status": "IN_PROGRESS", "message": "keep both lines?", "why": "a conflict needs a call",
-                                    "outcome": "question"}}}\
-          """);
-      flow.awaitRun("master-answer");
-
-      flow.awaitTold("keep both lines");
-      assertThat(flow.taskContext())
-          .contains("did not deploy");
-      assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-    }
-
-    @Nested
-    class Stalled {
-
-      @BeforeEach
-      void theConflictStallsAfterOneMinute() throws Exception {
-        E2eWorkspace.stallConflictsAfterMinutes(flow.configFile(), 1);
-      }
-
-      @Test
-      void asksTheMasterFirstWhenConflictStallsAndRelaysItsAnswerToTheSession() throws Exception {
-        flow.judges(
-            judgement()
-                .withFindings(
-                    List.of(new Finding("", "keep both lines", "decided", "advice", "", "")))
-                .build());
-
-        Instant later = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
-        doReturn(later).when(clock).instant();
-        doReturn(later.toEpochMilli()).when(clock).millis();
-        flow.awaitRun("deploy-conflict");
-        flow.awaitRun("master-answer");
-
-        flow.awaitTold("keep both lines");
-        assertThat(flow.task().currentConflict().filter(Conflict::askedTheMaster)).isPresent();
-        assertThat(flow.task().currentConflict().map(Conflict::told).isPresent()).isFalse();
-        verify(userNotifier, never()).notify(contains("deploy conflict stalled"), any(), any());
-        assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-      }
-
-      @Test
-      void leavesStalledConflictToTheHumanWhenTheMastersAnswerIsUnusable() throws Exception {
-        Instant later = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
-        doReturn(later).when(clock).instant();
-        doReturn(later.toEpochMilli()).when(clock).millis();
-        flow.awaitRun("deploy-conflict");
-
-        flow.awaitRun("master-answer");
-
-        flow.awaitTask(task -> !task.masterOrNone().unanswered().isEmpty());
-        assertThat(flow.task().masterOrNone().unanswered()).isEqualTo(flow.task().askedDigest());
-        assertThat(flow.task().message()).startsWith("The deploy conflict stalled");
-        assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-      }
-
-      @Test
-      void tellsTheHumanOnceConflictStallsAgainAfterTheMasterWasAskedAndPressesNothing()
-          throws Exception {
-        Instant later = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(2));
-        doReturn(later).when(clock).instant();
-        doReturn(later.toEpochMilli()).when(clock).millis();
-        flow.awaitRun("deploy-conflict");
-        flow.awaitTask(task -> task.currentConflict().filter(Conflict::askedTheMaster).isPresent());
-
-        Instant muchLater = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(4));
-        doReturn(muchLater).when(clock).instant();
-        doReturn(muchLater.toEpochMilli()).when(clock).millis();
-        flow.awaitRun("deploy-conflict");
-
-        assertThat(flow.task().currentConflict().filter(conflict -> conflict.told() != null))
-            .isPresent();
-
-        verify(userNotifier, timeout(10_000).times(1))
-            .notify(contains("deploy conflict stalled"), any(), any());
-        assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-        assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
-            .contains("Someone else changed widget.txt");
-      }
     }
   }
 }

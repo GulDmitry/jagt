@@ -2,15 +2,12 @@ package dev.jagt.orchestrator.e2e;
 
 import static dev.jagt.orchestrator.e2e.TestJudgementBuilder.judgement;
 import static dev.jagt.orchestrator.e2e.TestNewTaskBuilder.newTask;
-import static dev.jagt.orchestrator.e2e.TestReviewFactsBuilder.reviewFacts;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.service.Assistants;
@@ -18,11 +15,9 @@ import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskStatus;
-import dev.jagt.orchestrator.task.TokenUsage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -158,13 +153,7 @@ class JudgeModeFlowTest {
       flow.awaitReview();
 
       assertThat(flow.act("ship")).contains("relayed to the agent");
-      E2eWorkspace.git(flow.worktree(), "add", "-A");
-      E2eWorkspace.git(flow.worktree(), "commit", "-m", TASK + " fix the widget");
-      E2eWorkspace.git(flow.worktree(), "push", "-u", "origin", TASK);
-      when(assistants.codeHost().readReview(flow.request()))
-          .thenReturn(new Answer<>(Optional.of(reviewFacts().build()), TokenUsage.NONE));
-      flow.agentReports(
-          "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + flow.request() + "\"");
+      flow.pushesTheRoundAndReportsItsRequest();
       flow.act("sweep");
       assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEWED);
       flow.awaitRun("master-deploy");
