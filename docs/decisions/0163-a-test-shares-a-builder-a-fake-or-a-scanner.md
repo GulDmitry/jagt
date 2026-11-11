@@ -33,6 +33,7 @@ Accepted 2026-11-11.
 - Shared holders that wire services or read results: the first pass's shape.
 - Inlining `ShippedRoot.configure`: it copies one Spring root's properties into every context test; it stays.
 - Builders in place of `GitRepos`: its scripted git scenarios are a fake of a repository; it stays.
+- Inlining `BoardPageContext`'s page actions: they drive the board's page for every board test; they stay.
 
 ## Reopen when
 
