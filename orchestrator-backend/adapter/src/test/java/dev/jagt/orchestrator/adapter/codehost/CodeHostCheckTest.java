@@ -1,8 +1,6 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
-import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.project;
-import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.serving;
-import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.shopOn;
+import static dev.jagt.orchestrator.adapter.codehost.TestShopProjectBuilder.shopProject;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -26,7 +24,10 @@ class CodeHostCheckTest {
 
   @Test
   void refusesCodeHostNoDriverAnswersForNamingTheKey() {
-    serving(configService, shopOn("bitbucket"));
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withProjects(Map.of("shop", shopProject().withKind("bitbucket").build())));
 
     assertThat(check.problems())
         .extracting(Problem::key)
@@ -39,7 +40,12 @@ class CodeHostCheckTest {
         .thenReturn(
             ConfigFile.defaults()
                 .withProjects(
-                    Map.of("shop", project("command", List.of("no-such-ci-program", "{sha}")))));
+                    Map.of(
+                        "shop",
+                        shopProject()
+                            .withKind("command")
+                            .withPipelineCommand(List.of("no-such-ci-program", "{sha}"))
+                            .build())));
 
     assertThat(check.problems())
         .extracting(Problem::key)
@@ -48,7 +54,10 @@ class CodeHostCheckTest {
 
   @Test
   void asksNothingOfProjectThatChoosesNone() {
-    serving(configService, shopOn("none"));
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withProjects(Map.of("shop", shopProject().withKind("none").build())));
 
     assertThat(check.problems()).isEmpty();
   }

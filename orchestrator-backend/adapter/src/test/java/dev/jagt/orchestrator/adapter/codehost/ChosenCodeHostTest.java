@@ -1,11 +1,9 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
-import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.answerEveryRun;
-import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.project;
-import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.serving;
-import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.shopOn;
+import static dev.jagt.orchestrator.adapter.codehost.TestShopProjectBuilder.shopProject;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -22,7 +20,12 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 class ChosenCodeHostTest {
@@ -47,73 +50,23 @@ class ChosenCodeHostTest {
     return Path.of(command.getValue().getFirst()).getFileName().toString();
   }
 
-  @Test
-  void theCodeHostIsGitHubWhereNoKeyNamesOne() {
-    serving(configService, shopOn(null));
-    answerEveryRun(processes, new Processes.Result(0, "[]", ""));
-
-    pipelines.onCommit("shop", REMOTE, "0123abc");
-
-    assertThat(firstWordOfTheCommandRun()).isEqualTo("gh");
-  }
-
-  @Test
-  void branchIsReadThroughTheDriverTheKeyChooses() {
-    serving(configService, shopOn("gitlab"));
-    answerEveryRun(processes, new Processes.Result(0, "[]", ""));
-
-    Answer<CommitPipeline> answer = pipelines.onBranchSince("shop", REMOTE, "dev", "0123abc");
-
-    assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
-    assertThat(answer.facts()).contains(new CommitPipeline("none", ""));
-  }
-
-  @Test
-  void hostWithoutGitlabInItsNameIsReadThroughGlabWhereTheKeyChoosesIt() {
-    serving(configService, shopOn("gitlab"));
-    answerEveryRun(processes, new Processes.Result(0, "[]", ""));
-
-    pipelines.onCommit("shop", REMOTE, "0123abc");
-
-    assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
-  }
-
-  @Test
-  void hostNamedAfterGithubIsReadThroughGlabWhereTheKeyChoosesIt() {
-    serving(configService, shopOn("gitlab"));
-    answerEveryRun(processes, new Processes.Result(0, "[]", ""));
-
-    pipelines.onCommit("shop", "https://github.corp.invalid/shop/web.git", "0123abc");
-
-    assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
-  }
-
-  @Test
-  void theOrchestratorsKeyAppliesToProjectThatNamesNone() {
+  @ParameterizedTest
+  @CsvSource(
+      nullValues = "NONE",
+      value = {"NONE, NONE, gh", "gitlab, NONE, glab", "gitlab, github, gh"})
+  void theDriverIsChosenByTheProjectsKeyThenTheOrchestratorsThenGitHub(
+      String orchestratorKey, String projectKey, String program) {
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
-                .withCodeHost("gitlab")
-                .withProjects(Map.of("shop", project(null, List.of()))));
-    answerEveryRun(processes, new Processes.Result(0, "[]", ""));
+                .withCodeHost(orchestratorKey)
+                .withProjects(Map.of("shop", shopProject().withKind(projectKey).build())));
+    when(processes.run(any(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "[]", ""));
 
     pipelines.onCommit("shop", REMOTE, "0123abc");
 
-    assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
-  }
-
-  @Test
-  void theProjectsKeyWinsOverTheOrchestrators() {
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withCodeHost("gitlab")
-                .withProjects(Map.of("shop", project("github", List.of()))));
-    answerEveryRun(processes, new Processes.Result(0, "[]", ""));
-
-    pipelines.onCommit("shop", REMOTE, "0123abc");
-
-    assertThat(firstWordOfTheCommandRun()).isEqualTo("gh");
+    assertThat(firstWordOfTheCommandRun()).isEqualTo(program);
   }
 
   @Test
@@ -122,8 +75,14 @@ class ChosenCodeHostTest {
         .thenReturn(
             ConfigFile.defaults()
                 .withProjects(
-                    Map.of("shop", project("command", List.of("/bin/ci-state", "{sha}")))));
-    answerEveryRun(processes, new Processes.Result(0, "success", ""));
+                    Map.of(
+                        "shop",
+                        shopProject()
+                            .withKind("command")
+                            .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
+                            .build())));
+    when(processes.run(any(), any(Duration.class), anyList())).thenReturn(
+        new Processes.Result(0, "success", ""));
 
     Answer<CommitPipeline> answer = pipelines.onCommit("shop", REMOTE, "0123abc");
 
@@ -132,7 +91,10 @@ class ChosenCodeHostTest {
 
   @Test
   void projectChoosingNoneSettlesWithoutReadingAnything() {
-    serving(configService, shopOn("none"));
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withProjects(Map.of("shop", shopProject().withKind("none").build())));
 
     Answer<CommitPipeline> answer = pipelines.onCommit("shop", REMOTE, "0123abc");
 
@@ -142,7 +104,10 @@ class ChosenCodeHostTest {
 
   @Test
   void kindNoDriverAnswersForIsUnreadNamingTheKey() {
-    serving(configService, shopOn("bitbucket"));
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withProjects(Map.of("shop", shopProject().withKind("bitbucket").build())));
 
     Answer<CommitPipeline> answer = pipelines.onCommit("shop", REMOTE, "0123abc");
 
@@ -170,21 +135,11 @@ class ChosenCodeHostTest {
   }
 
   @Test
-  void requestIsClosedThroughTheDriverTheKeyChooses() {
-    serving(configService, shopOn("gitlab"));
-    answerEveryRun(processes, new Processes.Result(0, "", "Closed"));
-
-    Answer<String> answer =
-        pipelines.closeRequest(
-            "shop", REMOTE, "https://git.example.invalid/shop/web/-/merge_requests/7");
-
-    assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
-    assertThat(answer.facts()).isPresent();
-  }
-
-  @Test
   void noRequestIsClosedWhereTheRemoteIsLocalPath() {
-    serving(configService, shopOn("github"));
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withProjects(Map.of("shop", shopProject().withKind("github").build())));
 
     Answer<String> answer =
         pipelines.closeRequest(
@@ -196,7 +151,10 @@ class ChosenCodeHostTest {
 
   @Test
   void noRequestIsClosedOnHostOtherThanTheRemotesWhateverItsPath() {
-    serving(configService, shopOn("github"));
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withProjects(Map.of("shop", shopProject().withKind("github").build())));
 
     Answer<String> answer =
         pipelines.closeRequest("shop", REMOTE, "https://other.example.invalid/shop/web/pull/9");
@@ -207,12 +165,62 @@ class ChosenCodeHostTest {
 
   @Test
   void theNotesAreReadThroughTheDriverTheProjectChose() {
-    serving(configService, shopOn("none"));
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withProjects(Map.of("shop", shopProject().withKind("none").build())));
 
     Answer<List<String>> answer =
         pipelines.unresolvedNotes(
             "shop", "https://git.example.invalid/shop/web/-/merge_requests/7");
 
     assertThat(answer.facts()).contains(List.of());
+  }
+
+  @Nested
+  class ShopOnGitlab {
+
+    @BeforeEach
+    void chooseGitlab() {
+      when(configService.load())
+          .thenReturn(
+              ConfigFile.defaults()
+                  .withProjects(Map.of("shop", shopProject().withKind("gitlab").build())));
+      when(processes.run(any(), any(Duration.class), anyList()))
+          .thenReturn(new Processes.Result(0, "[]", ""));
+    }
+
+    @Test
+    void branchIsReadThroughTheDriverTheKeyChooses() {
+      Answer<CommitPipeline> answer = pipelines.onBranchSince("shop", REMOTE, "dev", "0123abc");
+
+      assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
+      assertThat(answer.facts()).contains(new CommitPipeline("none", ""));
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = {
+          "https://git.example.invalid/shop/web.git",
+          "https://github.corp.invalid/shop/web.git"
+        })
+    void commitIsReadThroughGlabWhateverTheHostIsNamedWhereTheKeyChoosesIt(String remote) {
+      pipelines.onCommit("shop", remote, "0123abc");
+
+      assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
+    }
+
+    @Test
+    void requestIsClosedThroughTheDriverTheKeyChooses() {
+      when(processes.run(any(), any(Duration.class), anyList()))
+          .thenReturn(new Processes.Result(0, "", "Closed"));
+
+      Answer<String> answer =
+          pipelines.closeRequest(
+              "shop", REMOTE, "https://git.example.invalid/shop/web/-/merge_requests/7");
+
+      assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
+      assertThat(answer.facts()).isPresent();
+    }
   }
 }

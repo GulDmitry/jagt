@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import static dev.jagt.orchestrator.adapter.assistant.OpenCodeReads.gate;
+import static dev.jagt.orchestrator.adapter.assistant.TestOpenCodeGateBuilder.openCodeGate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CheckerReader;
+import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.ReadScopes;
 import dev.jagt.orchestrator.service.UsageTracker;
@@ -35,7 +36,8 @@ class OpenCodeCheckerReaderTest {
 
   private final Processes processes = mock(Processes.class);
   private final ReadScopes scopes = new ReadScopes();
-  private final OpenCodeGate gate = gate(state, scopes);
+  private final OpenCodeGate gate =
+      openCodeGate().withState(state).build(mock(McpHealth.class), scopes);
   private final OpenCodeCheckerReader reader =
       new OpenCodeCheckerReader(
           new HeadlessOpenCode(

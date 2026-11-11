@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import static dev.jagt.orchestrator.adapter.agent.ClaudeRuntimes.writeBrief;
 import static dev.jagt.orchestrator.adapter.agent.TestCodexRuntimeBuilder.codexRuntime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -19,7 +18,10 @@ class CodexAgentRuntimeTest {
 
   @Test
   void launchesTheCodexCliAgainstTheWorktreesOwnCodexHome(@TempDir Path root) throws Exception {
-    writeBrief(root, "## start\n\nRead AGENTS.md and work\n");
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(
+        root.resolve("roles/session/brief.md"),
+        "## start\n\nRead AGENTS.md and work\n");
     var runtime = codexRuntime().withBriefRoot(root.toString()).build();
 
     assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false))
@@ -28,7 +30,8 @@ class CodexAgentRuntimeTest {
 
   @Test
   void tellsCodexTheModelItIsGivenAndNoneWhenBlank(@TempDir Path root) throws Exception {
-    writeBrief(root, "## start\n\ngo\n");
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
     var runtime = codexRuntime().withBriefRoot(root.toString()).build();
 
     assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false, " gpt-5 ", "go"))
@@ -40,7 +43,8 @@ class CodexAgentRuntimeTest {
   @Test
   void runsReadOnlyInPlanModeSoTheAgentCannotTouchFilesBeforeTheHumanApproves(@TempDir Path root)
       throws Exception {
-    writeBrief(root, "## start\n\ngo\n");
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
     var runtime = codexRuntime().withBriefRoot(root.toString()).build();
 
     assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), true))

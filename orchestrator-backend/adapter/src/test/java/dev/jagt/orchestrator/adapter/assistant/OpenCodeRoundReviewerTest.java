@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import static dev.jagt.orchestrator.adapter.assistant.OpenCodeReads.gate;
+import static dev.jagt.orchestrator.adapter.assistant.TestOpenCodeGateBuilder.openCodeGate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
 import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.service.ReadScopes;
@@ -27,7 +28,8 @@ class OpenCodeRoundReviewerTest {
 
   private final Processes processes = mock(Processes.class);
   private final ReadScopes scopes = new ReadScopes();
-  private final OpenCodeGate gate = gate(state, scopes);
+  private final OpenCodeGate gate =
+      openCodeGate().withState(state).build(mock(McpHealth.class), scopes);
   private final OpenCodeRoundReviewer reviewer =
       new OpenCodeRoundReviewer(
           new HeadlessOpenCode(

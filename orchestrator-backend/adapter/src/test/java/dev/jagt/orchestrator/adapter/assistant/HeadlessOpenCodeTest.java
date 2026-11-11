@@ -1,9 +1,7 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import static dev.jagt.orchestrator.adapter.assistant.OpenCodeReads.answeringAfterHearing;
-import static dev.jagt.orchestrator.adapter.assistant.OpenCodeReads.countingCommits;
-import static dev.jagt.orchestrator.adapter.assistant.OpenCodeReads.gate;
-import static dev.jagt.orchestrator.adapter.assistant.OpenCodeReads.withoutShell;
+import static dev.jagt.orchestrator.adapter.assistant.TestOpenCodeGateBuilder.openCodeGate;
+import static dev.jagt.orchestrator.adapter.assistant.TestOpenCodeReadBuilder.openCodeRead;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
+import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.ReadScopes;
 import dev.jagt.orchestrator.service.UsageTracker;
@@ -36,18 +35,17 @@ class HeadlessOpenCodeTest {
       "{\"type\":\"object\",\"required\":[\"commits\"],"
           + "\"properties\":{\"commits\":{\"type\":\"integer\"}}}";
 
+  private static final OpenCodeProperties OPENCODE =
+      new OpenCodeProperties("opencode", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of());
+
   @TempDir static Path state;
 
   private final Processes processes = mock(Processes.class);
   private final UsageTracker usage = mock(UsageTracker.class);
   private final ReadScopes scopes = new ReadScopes();
-  private final OpenCodeGate gate = gate(state, scopes);
-  private final HeadlessOpenCode headless =
-      new HeadlessOpenCode(
-          processes,
-          new OpenCodeProperties("opencode", "http://127.0.0.1:8080/v1", "qwen-4b", Map.of()),
-          usage,
-          gate);
+  private final OpenCodeGate gate =
+      openCodeGate().withState(state).build(mock(McpHealth.class), scopes);
+  private final HeadlessOpenCode headless = new HeadlessOpenCode(processes, OPENCODE, usage, gate);
 
   @Test
   void runsStandaloneOnItsOwnConfigWithTheProjectsConfigDisabledAndTheSchemaInThePrompt(
@@ -55,7 +53,7 @@ class HeadlessOpenCodeTest {
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
         .thenReturn(new Processes.Result(0, "", ""));
 
-    headless.run(countingCommits(worktree, SCHEMA));
+    headless.run(openCodeRead().withCwd(worktree).withSchema(SCHEMA).build());
 
     ArgumentCaptor<Map<String, String>> env = ArgumentCaptor.captor();
     ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
@@ -77,15 +75,19 @@ class HeadlessOpenCodeTest {
   @Test
   void mapsTheFencedObjectOfTheLastTextToTheStructuredOutputAndBooksEveryStep(
       @TempDir Path worktree) throws IOException {
-    answeringAfterHearing(
-        processes,
-        scopes,
-        "Bash",
-        "git log",
-        new Processes.Result(
-            0, Files.readString(Path.of("src/test/resources/opencode/run.jsonl")), ""));
+    HeadlessOpenCode hearing =
+        new HeadlessOpenCode(
+            new FakeHearingProcesses(
+                scopes,
+                "Bash",
+                "git log",
+                new Processes.Result(
+                    0, Files.readString(Path.of("src/test/resources/opencode/run.jsonl")), "")),
+            OPENCODE,
+            usage,
+            gate);
 
-    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
+    HeadlessReply reply = hearing.run(openCodeRead().withCwd(worktree).withSchema(SCHEMA).build());
 
     assertThat(
             Objects.requireNonNull(reply.envelope())
@@ -104,7 +106,7 @@ class HeadlessOpenCodeTest {
             new Processes.Result(
                 0, "{\"type\":\"text\",\"part\":{\"text\":\"I could not tell.\"}}", ""));
 
-    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
+    HeadlessReply reply = headless.run(openCodeRead().withCwd(worktree).withSchema(SCHEMA).build());
 
     assertThat(reply.envelope()).isNotNull();
     assertThat(Objects.requireNonNull(reply.envelope()).has("structured_output")).isFalse();
@@ -120,7 +122,7 @@ class HeadlessOpenCodeTest {
                     + "\":1,\"cache\":{\"read\":0,\"write\":0}}}}",
                 "model not found"));
 
-    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
+    HeadlessReply reply = headless.run(openCodeRead().withCwd(worktree).withSchema(SCHEMA).build());
 
     assertThat(reply.envelope()).isNull();
     assertThat(reply.cause()).isEqualTo("exit 1");
@@ -142,7 +144,7 @@ class HeadlessOpenCodeTest {
               return new Processes.Result(0, "", "");
             });
 
-    headless.run(countingCommits(worktree, SCHEMA));
+    headless.run(openCodeRead().withCwd(worktree).withSchema(SCHEMA).build());
 
     assertThat(held).isTrue();
     assertThat(scopes.ask(fence.get())).isEmpty();
@@ -156,7 +158,7 @@ class HeadlessOpenCodeTest {
             new Processes.Result(
                 0, Files.readString(Path.of("src/test/resources/opencode/run.jsonl")), ""));
 
-    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
+    HeadlessReply reply = headless.run(openCodeRead().withCwd(worktree).withSchema(SCHEMA).build());
 
     assertThat(reply.envelope()).isNull();
     assertThat(reply.cause()).isEqualTo("unfenced: no call reached the read gate");
@@ -171,7 +173,7 @@ class HeadlessOpenCodeTest {
                 "{\"type\":\"text\",\"part\":{\"text\":\"```json\\n{\\\"commits\\\":2}\\n```\"}}",
                 ""));
 
-    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
+    HeadlessReply reply = headless.run(openCodeRead().withCwd(worktree).withSchema(SCHEMA).build());
 
     assertThat(
             Objects.requireNonNull(reply.envelope())
@@ -196,7 +198,7 @@ class HeadlessOpenCodeTest {
                     + "```\"}}",
                 ""));
 
-    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
+    HeadlessReply reply = headless.run(openCodeRead().withCwd(worktree).withSchema(SCHEMA).build());
 
     assertThat(
             Objects.requireNonNull(reply.envelope())
@@ -213,10 +215,21 @@ class HeadlessOpenCodeTest {
             + "\"input\":{\"filePath\":\""
             + worktree.resolve("review_replies.md")
             + "\"}}}}\n";
-    answeringAfterHearing(
-        processes, scopes, "Read", "review_replies.md", new Processes.Result(0, ran, ""));
+    HeadlessOpenCode hearing =
+        new HeadlessOpenCode(
+            new FakeHearingProcesses(
+                scopes, "Read", "review_replies.md", new Processes.Result(0, ran, "")),
+            OPENCODE,
+            usage,
+            gate);
 
-    HeadlessReply reply = headless.run(withoutShell(worktree, SCHEMA));
+    HeadlessReply reply = hearing.run(openCodeRead()
+            .withCwd(worktree)
+            .withSchema(SCHEMA)
+            .withShell(List.of())
+            .withRefuseRead(List.of("**/review_replies.md"))
+            .withGit(false)
+            .build());
 
     assertThat(reply.envelope()).isNull();
     assertThat(reply.cause()).startsWith("out of scope: read ");
@@ -227,7 +240,7 @@ class HeadlessOpenCodeTest {
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
         .thenThrow(new IllegalStateException("Command timed out"));
 
-    HeadlessReply reply = headless.run(countingCommits(worktree, SCHEMA));
+    HeadlessReply reply = headless.run(openCodeRead().withCwd(worktree).withSchema(SCHEMA).build());
 
     assertThat(reply.envelope()).isNull();
     assertThat(reply.cause()).startsWith("did not return");
@@ -239,7 +252,8 @@ class HeadlessOpenCodeTest {
     when(processes.run(any(Path.class), any(Duration.class), any(Map.class), any(List.class)))
         .thenThrow(new Processes.Stopped(List.of("opencode")));
 
-    assertThatThrownBy(() -> headless.run(countingCommits(worktree, SCHEMA)))
+    assertThatThrownBy(
+            () -> headless.run(openCodeRead().withCwd(worktree).withSchema(SCHEMA).build()))
         .isInstanceOf(Processes.Stopped.class);
   }
 }

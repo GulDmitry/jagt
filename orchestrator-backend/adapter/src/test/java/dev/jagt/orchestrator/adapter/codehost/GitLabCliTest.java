@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
-import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.bareRepoHost;
-import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.twoCommandsOf;
+import static dev.jagt.orchestrator.adapter.codehost.TestHostSettingsBuilder.hostSettings;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -30,7 +29,7 @@ class GitLabCliTest {
   private final Processes processes = mock(Processes.class);
   private final ReachLedger reach = new ReachLedger();
   private final GitLabCli gitlab = new GitLabCli(processes, reach);
-  private final HostSettings host = bareRepoHost();
+  private final HostSettings host = hostSettings().withRepository(Path.of("/repo")).build();
 
   @Test
   void pipelineIsRetriedThroughItsRetryEndpoint() {
@@ -151,7 +150,9 @@ class GitLabCliTest {
     Answer<CommitPipeline> answer =
         gitlab.onBranchSince(host, "https://git.example.invalid/shop/web.git", "dev", "0123abc");
 
-    List<List<String>> command = twoCommandsOf(processes);
+    ArgumentCaptor<List<String>> captured = ArgumentCaptor.captor();
+    verify(processes, times(2)).run(isNull(), any(Duration.class), captured.capture());
+    List<List<String>> command = captured.getAllValues();
     assertThat(command.get(0))
         .contains("projects/shop%2Fweb/pipelines?ref=dev&scope=finished&per_page=1");
     assertThat(command.get(1))
@@ -344,7 +345,9 @@ class GitLabCliTest {
     Answer<List<String>> answer =
         gitlab.unresolvedNotes(host, "https://git.example.invalid/shop/web/-/merge_requests/9");
 
-    List<List<String>> command = twoCommandsOf(processes);
+    ArgumentCaptor<List<String>> captured = ArgumentCaptor.captor();
+    verify(processes, times(2)).run(isNull(), any(Duration.class), captured.capture());
+    List<List<String>> command = captured.getAllValues();
     assertThat(command.get(1))
         .containsSubsequence(
             "api",

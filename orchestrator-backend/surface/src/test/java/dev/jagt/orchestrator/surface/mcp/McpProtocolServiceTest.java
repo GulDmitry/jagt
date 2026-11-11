@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.StreamSupport;
@@ -51,7 +53,7 @@ class McpProtocolServiceTest {
 
   @Test
   void recordsCallPresentingOnlyTheMasterTokenAsTheRootsOwn(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     AtomicReference<ActionOrigin> seen = new AtomicReference<>();
     McpTools moving =
         tools ->
@@ -81,7 +83,7 @@ class McpProtocolServiceTest {
 
   @Test
   void offersSessionOnlyTheStatusesItMayReport(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpProtocolService protocol =
         new McpProtocolService(
             mapper,
@@ -119,7 +121,7 @@ class McpProtocolServiceTest {
 
   @Test
   void rejectsToolCallWhenRequiredArgumentIsMissing(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpProtocolService protocol =
         new McpProtocolService(
             mapper,
@@ -147,8 +149,9 @@ class McpProtocolServiceTest {
 
   @Test
   void answersParseErrorWithJsonRpcCode32700(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
-    McpProtocolService protocol = McpMvc.plain(mapper, state);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
     JsonNode error = protocol.parseError("unexpected character");
 
@@ -159,7 +162,8 @@ class McpProtocolServiceTest {
   void namesTheFailureKindWhenTheCauseCarriesNoMessage() {
     StateService state = mock(StateService.class);
     when(state.findByWorktree(any())).thenThrow(new IllegalStateException());
-    McpProtocolService protocol = McpMvc.plain(mapper, state);
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
     JsonNode error =
         protocol
@@ -176,7 +180,7 @@ class McpProtocolServiceTest {
 
   @Test
   void namesTheFailureKindWhenToolThrowsWithoutMessage(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpTools failing = new ThrowingMcpTools(new IllegalStateException());
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
@@ -203,7 +207,7 @@ class McpProtocolServiceTest {
     Logger protocolLog = (Logger) LoggerFactory.getLogger(McpProtocolService.class);
     protocolLog.addAppender(log);
     protocolLog.setLevel(Level.DEBUG);
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS)
@@ -244,7 +248,7 @@ class McpProtocolServiceTest {
     log.start();
     Logger protocolLog = (Logger) LoggerFactory.getLogger(McpProtocolService.class);
     protocolLog.addAppender(log);
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpTools refusing =
         new ThrowingMcpTools(new IllegalArgumentException("CI_POLLING cannot be reported"));
     McpProtocolService protocol =
@@ -266,7 +270,7 @@ class McpProtocolServiceTest {
 
   @Test
   void tellsTheAgentFailedCallIsNotWorthRepeating(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpTools failing =
         new ThrowingMcpTools(new IllegalStateException("branch ABC-1 is checked out elsewhere"));
     McpProtocolService protocol =
@@ -292,7 +296,7 @@ class McpProtocolServiceTest {
 
   @Test
   void tellsTheAgentTransientFailureIsWorthRepeating(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpTools failing =
         new ThrowingMcpTools(new UncheckedIOException(new IOException("state.json locked")));
     McpProtocolService protocol =
@@ -316,7 +320,7 @@ class McpProtocolServiceTest {
 
   @Test
   void answersWhatToolReturnedAsTheTextOfItsResult(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpTools echoing = new AnsweringMcpTools("echo", Effect.CHANGES, "answers", "all done");
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(echoing));
@@ -337,8 +341,9 @@ class McpProtocolServiceTest {
 
   @Test
   void answersAnInitializeWithTheProtocolVersionTheClientAsked(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
-    McpProtocolService protocol = McpMvc.plain(mapper, state);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
     JsonNode result =
         protocol
@@ -357,8 +362,9 @@ class McpProtocolServiceTest {
 
   @Test
   void answersMethodItDoesNotKnowWithMethodNotFound(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
-    McpProtocolService protocol = McpMvc.plain(mapper, state);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
     JsonNode error =
         protocol
@@ -375,8 +381,9 @@ class McpProtocolServiceTest {
 
   @Test
   void refusesAnUnknownCallersNotificationWithAnErrorCarryingNoId(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
-    McpProtocolService protocol = McpMvc.plain(mapper, state);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
     JsonNode response =
         protocol
@@ -395,11 +402,17 @@ class McpProtocolServiceTest {
   @ValueSource(booleans = {false, true})
   void listsTaskNoToolThatWritesSharedBranchWhetherOrNotItPresentsTheMastersToken(
       boolean master, @TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     state.putTask(
         "ABC-1",
-        McpMvc.taskAt(root));
-    McpProtocolService protocol = McpMvc.deploying(mapper, state);
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .alias("a1")
+            .build());
+    McpProtocolService protocol = new McpProtocolService(
+            mapper,
+            state,
+            Clock.systemUTC(),
+            List.of(new DeployTools(mock(CommandService.class))));
 
     JsonNode listed =
         protocol
@@ -415,8 +428,14 @@ class McpProtocolServiceTest {
   }
 
   @Test
-  void listsTheMasterTheToolsThatWriteSharedBranch(@TempDir Path root) {
-    McpProtocolService protocol = McpMvc.deployingOver(mapper, root);
+  void listsTheMasterTheToolsThatWriteSharedBranchAsChangingSomething(@TempDir Path root) {
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            state,
+            Clock.systemUTC(),
+            List.of(new DeployTools(mock(CommandService.class))));
 
     JsonNode listed =
         protocol
@@ -431,34 +450,19 @@ class McpProtocolServiceTest {
     assertThat(listed)
         .extracting(tool -> tool.path("name").asString())
         .containsExactly("deploy_task", "revert_task");
-  }
-
-  @Test
-  void marksTaskThatWritesSharedBranchAsChangingSomething(@TempDir Path root) {
-    McpProtocolService protocol = McpMvc.deployingOver(mapper, root);
-
-    JsonNode listed =
-        protocol
-            .handle(
-                mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}"),
-                null,
-                true)
-            .orElseThrow()
-            .path("result")
-            .path("tools");
-
     assertThat(listed)
-        .filteredOn(tool -> tool.path("name").asString().equals("deploy_task"))
         .extracting(tool -> tool.path("annotations").path("readOnlyHint").asBoolean(true))
-        .containsExactly(false);
+        .containsExactly(false, false);
   }
 
   @Test
   void marksEveryToolTaskSeesReadOnlySoReadOnlyClientLetsItReport(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     state.putTask(
         "ABC-1",
-        McpMvc.taskAt(root));
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .alias("a1")
+            .build());
     CallerScope scope = new CallerScope(state);
     McpProtocolService protocol =
         new McpProtocolService(
@@ -494,11 +498,15 @@ class McpProtocolServiceTest {
 
   @Test
   void countsAnyRequestFromWorktreeAsKeepAlive(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     state.putTask(
         "ABC-1",
-        McpMvc.taskAt(root, 1000));
-    McpProtocolService protocol = McpMvc.plain(mapper, state);
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .lastActiveTimestamp(1000)
+            .alias("a1")
+            .build());
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
     protocol.handle(
         mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"),
@@ -512,11 +520,15 @@ class McpProtocolServiceTest {
   @CsvSource({"1000, 100000", "95000, 0"})
   void signsTheSessionCalledOnlyWhenTheKeepAliveWrites(
       long lastActive, long signedAt, @TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     state.putTask(
         "ABC-1",
-        McpMvc.taskAt(root, lastActive));
-    McpProtocolService protocol = McpMvc.frozenAt100s(mapper, state);
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .lastActiveTimestamp(lastActive)
+            .alias("a1")
+            .build());
+    McpProtocolService protocol = new McpProtocolService(
+            mapper, state, Clock.fixed(Instant.ofEpochMilli(100_000), ZoneOffset.UTC), List.of());
 
     protocol.handle(
         mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"),
@@ -528,12 +540,16 @@ class McpProtocolServiceTest {
 
   @Test
   void skipsKeepAliveRewriteWhenAgentWasActiveSecondsAgo(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     long freshTimestamp = System.currentTimeMillis();
     state.putTask(
         "ABC-1",
-        McpMvc.taskAt(root, freshTimestamp));
-    McpProtocolService protocol = McpMvc.plain(mapper, state);
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .lastActiveTimestamp(freshTimestamp)
+            .alias("a1")
+            .build());
+    McpProtocolService protocol =
+        new McpProtocolService(mapper, state, Clock.systemUTC(), List.of());
 
     protocol.handle(
         mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"),
@@ -545,11 +561,15 @@ class McpProtocolServiceTest {
 
   @Test
   void skipsKeepAliveRewriteWhenAgentWasActiveExactlyTheThrottleAgo(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     state.putTask(
         "ABC-1",
-        McpMvc.taskAt(root, 85_000));
-    McpProtocolService protocol = McpMvc.frozenAt100s(mapper, state);
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .lastActiveTimestamp(85_000)
+            .alias("a1")
+            .build());
+    McpProtocolService protocol = new McpProtocolService(
+            mapper, state, Clock.fixed(Instant.ofEpochMilli(100_000), ZoneOffset.UTC), List.of());
 
     protocol.handle(
         mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"),
@@ -561,10 +581,13 @@ class McpProtocolServiceTest {
 
   @Test
   void answersAnUnknownToolWithTheToolsThisCallerHas(@TempDir Path root) {
-    StateService state = McpMvc.stateIn(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     state.putTask(
         "ABC-1",
-        McpMvc.taskAt(root, System.currentTimeMillis()));
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .lastActiveTimestamp(System.currentTimeMillis())
+            .alias("a1")
+            .build());
     CallerScope scope = new CallerScope(state);
     McpProtocolService protocol =
         new McpProtocolService(
@@ -602,7 +625,13 @@ class McpProtocolServiceTest {
   @NullSource
   @ValueSource(strings = "/no/task/here")
   void refusesCallerThatIsNeitherTaskNorTheMaster(String cwd, @TempDir Path root) {
-    McpProtocolService protocol = McpMvc.deployingOver(mapper, root);
+    StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
+    McpProtocolService protocol =
+        new McpProtocolService(
+            mapper,
+            state,
+            Clock.systemUTC(),
+            List.of(new DeployTools(mock(CommandService.class))));
 
     JsonNode response =
         protocol

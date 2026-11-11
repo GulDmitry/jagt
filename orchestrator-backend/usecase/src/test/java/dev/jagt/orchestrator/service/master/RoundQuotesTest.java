@@ -1,13 +1,18 @@
 package dev.jagt.orchestrator.service.master;
 
-import static dev.jagt.orchestrator.service.master.RoundQuotesFixture.ready;
+import static dev.jagt.orchestrator.service.master.TestMasterReviewBuilder.masterReview;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.MasterPhase;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.StateService;
@@ -17,182 +22,204 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import tools.jackson.databind.json.JsonMapper;
 
 class RoundQuotesTest {
 
   private final RoundFacts facts = mock(RoundFacts.class);
-  private final MasterReview reviews = new MasterReview(mock(StateService.class));
-  private final RoundQuotes quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+
+  @TempDir Path worktree;
+
+  private StateService state;
+  private MasterReview reviews;
+  private RoundQuotes quotes;
+  private TaskState pending;
+
+  @BeforeEach
+  void setUp() {
+    state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(worktree.toString())
+                    .withStateFile(worktree.resolve("state.json").toString())),
+            new TaskReducer(new TaskChart(Composition.builtIn())),
+            event -> {});
+    reviews = new MasterReview(state);
+    quotes = new RoundQuotes(facts, mock(MasterDecisions.class), reviews);
+    pending =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
+            .alias("a1")
+            .lastActiveTimestamp(5_000)
+            .build();
+  }
 
   @Test
-  void keepsReadyVerdictWhenOnlyTheBaseMovedUnderTheTasksOwnDiff(@TempDir Path worktree) {
-    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
-    TaskState task = fixture.store(fixture.pending(), ready("abc123", "PLAIN", "in1"));
+  void keepsReadyVerdictWhenOnlyTheBaseMovedUnderTheTasksOwnDiff() {
+    state.putTask("a1", pending);
+    reviews.write("a1", pending, masterReview().build(), "");
+    TaskState task = state.task("a1").orElseThrow();
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
 
-    boolean carried = fixture.quotes.carried("a1", task, "in1");
+    boolean carried = quotes.carried("a1", task, "in1");
 
     assertThat(carried).isTrue();
-    task = fixture.state.task("a1").orElseThrow();
+    task = state.task("a1").orElseThrow();
     assertThat(MasterPhase.of(task)).isEqualTo(MasterPhase.READ);
   }
 
   @Test
-  void readsTheRoundAnewWhenTheTasksOwnDiffChanged(@TempDir Path worktree) {
-    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
-    TaskState task = fixture.store(fixture.pending(), ready("abc123", "PLAIN", "in1"));
+  void readsTheRoundAnewWhenTheTasksOwnDiffChanged() {
+    state.putTask("a1", pending);
+    reviews.write("a1", pending, masterReview().build(), "");
+    TaskState task = state.task("a1").orElseThrow();
     when(facts.ownDiff(any())).thenReturn(Optional.of("def456"));
 
-    boolean carried = fixture.quotes.carried("a1", task, "in1");
+    boolean carried = quotes.carried("a1", task, "in1");
 
     assertThat(carried).isFalse();
     assertThat(MasterPhase.of(task)).isEqualTo(MasterPhase.STANDS_IN);
   }
 
   @Test
-  void keepsNotReadyVerdictWhenTheSessionHandedBackTheSameOwnDiffAndKind(@TempDir Path worktree) {
-    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
-    TaskState task =
-        fixture.store(
-            TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-                .alias("a1")
-                .report(AgentReport.NO_CHANGES)
-                .lastActiveTimestamp(5_000)
-                .build(),
-            new MasterReview.Review(
-                1_000,
-                "abc123",
-                "NO_CHANGES",
-                "in1",
-                List.of(
-                    new MasterReview.Read(
-                        "acceptance",
-                        new Judgement(
-                            "",
-                            "not ready",
-                            List.of(
-                                new Finding("Foo.java", "drops v2", "", "wrong", "", "missing")),
-                            "",
-                            List.of(),
-                            "")))));
+  void keepsNotReadyVerdictWhenTheSessionHandedBackTheSameOwnDiffAndKind() {
+    TaskState handedBack =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
+            .alias("a1")
+            .report(AgentReport.NO_CHANGES)
+            .lastActiveTimestamp(5_000)
+            .build();
+    state.putTask("a1", handedBack);
+    reviews.write(
+        "a1",
+        handedBack,
+        new MasterReview.Review(
+            1_000,
+            "abc123",
+            "NO_CHANGES",
+            "in1",
+            List.of(
+                new MasterReview.Read(
+                    "acceptance",
+                    new Judgement(
+                        "",
+                        "not ready",
+                        List.of(new Finding("Foo.java", "drops v2", "", "wrong", "", "missing")),
+                        "",
+                        List.of(),
+                        "")))),
+        "");
+    TaskState task = state.task("a1").orElseThrow();
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
 
-    boolean carried = fixture.quotes.carried("a1", task, "in1");
+    boolean carried = quotes.carried("a1", task, "in1");
 
     assertThat(carried).isTrue();
-    task = fixture.state.task("a1").orElseThrow();
-    assertThat(fixture.reviews.of(task).orElseThrow().kind())
-        .isEqualTo(MasterReview.Kind.NOT_READY);
+    task = state.task("a1").orElseThrow();
+    assertThat(reviews.of(task).orElseThrow().kind()).isEqualTo(MasterReview.Kind.NOT_READY);
   }
 
   @Test
-  void readsTheRoundAnewWhenTheHandBackIsOfAnotherKind(@TempDir Path worktree) {
-    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
-    TaskState task =
-        fixture.store(
-            TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-                .alias("a1")
-                .report(AgentReport.NO_CHANGES)
-                .lastActiveTimestamp(5_000)
-                .build(),
-            ready("abc123", "PLAIN", "in1"));
+  void readsTheRoundAnewWhenTheHandBackIsOfAnotherKind() {
+    TaskState handedBack =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
+            .alias("a1")
+            .report(AgentReport.NO_CHANGES)
+            .lastActiveTimestamp(5_000)
+            .build();
+    state.putTask("a1", handedBack);
+    reviews.write("a1", handedBack, masterReview().build(), "");
+    TaskState task = state.task("a1").orElseThrow();
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
 
-    boolean carried = fixture.quotes.carried("a1", task, "in1");
+    boolean carried = quotes.carried("a1", task, "in1");
 
     assertThat(carried).isFalse();
   }
 
   @Test
-  void readsTheRoundAnewWhereTheVerdictWasStoredBeforeItKeptTheReportKind(@TempDir Path worktree) {
-    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
-    TaskState task = fixture.store(fixture.pending(), ready("abc123", null, "in1"));
+  void readsTheRoundAnewWhereTheVerdictWasStoredBeforeItKeptTheReportKind() {
+    state.putTask("a1", pending);
+    reviews.write("a1", pending, masterReview().withKind(null).build(), "");
+    TaskState task = state.task("a1").orElseThrow();
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
 
-    boolean carried = fixture.quotes.carried("a1", task, "in1");
+    boolean carried = quotes.carried("a1", task, "in1");
 
     assertThat(carried).isFalse();
   }
 
   @Test
-  void readsTheRoundAnewWhenTheHumanSaidSomethingNewOverTheSameDiffAndKind(@TempDir Path worktree) {
-    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
-    TaskState task = fixture.pending();
+  void readsTheRoundAnewWhenTheHumanSaidSomethingNewOverTheSameDiffAndKind() {
     when(facts.ask(eq("ABC-1"), any())).thenReturn("Summary");
     when(facts.notes(any())).thenReturn("");
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
     when(facts.humanSaid(any())).thenReturn(Optional.of(List.of("keep v2")));
-    String read = fixture.quotes.inputs("ABC-1", task).orElseThrow();
-    task = fixture.store(task, ready("abc123", "PLAIN", read));
+    String read = quotes.inputs("ABC-1", pending).orElseThrow();
+    state.putTask("a1", pending);
+    reviews.write("a1", pending, masterReview().withInputs(read).build(), "");
+    TaskState task = state.task("a1").orElseThrow();
     when(facts.humanSaid(any())).thenReturn(Optional.of(List.of("keep v2", "drop v1")));
 
-    boolean carried =
-        fixture.quotes.carried("a1", task, fixture.quotes.inputs("ABC-1", task).orElseThrow());
+    boolean carried = quotes.carried("a1", task, quotes.inputs("ABC-1", task).orElseThrow());
 
     assertThat(carried).isFalse();
   }
 
   @Test
-  void readsTheRoundAnewWhenTheSessionsNotesChangedOverTheSameDiffAndKind(@TempDir Path worktree) {
-    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
-    TaskState task = fixture.pending();
+  void readsTheRoundAnewWhenTheSessionsNotesChangedOverTheSameDiffAndKind() {
     when(facts.ask(eq("ABC-1"), any())).thenReturn("Summary");
     when(facts.humanSaid(any())).thenReturn(Optional.of(List.of()));
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
     when(facts.notes(any())).thenReturn("");
-    String read = fixture.quotes.inputs("ABC-1", task).orElseThrow();
-    task = fixture.store(task, ready("abc123", "PLAIN", read));
+    String read = quotes.inputs("ABC-1", pending).orElseThrow();
+    state.putTask("a1", pending);
+    reviews.write("a1", pending, masterReview().withInputs(read).build(), "");
+    TaskState task = state.task("a1").orElseThrow();
     when(facts.notes(any())).thenReturn("disputed: the guard is right");
 
-    boolean carried =
-        fixture.quotes.carried("a1", task, fixture.quotes.inputs("ABC-1", task).orElseThrow());
+    boolean carried = quotes.carried("a1", task, quotes.inputs("ABC-1", task).orElseThrow());
 
     assertThat(carried).isFalse();
   }
 
-  @Test
-  void keepsVerdictWhenRestartForgotTheTicketOverTheSameRound(@TempDir Path worktree) {
-    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
-    when(facts.ticket("ABC-1")).thenReturn(Optional.of("Summary: accept v3 calls"));
-    TaskState task = fixture.storeQuietRead(fixture.pending());
-    when(facts.ticket("ABC-1")).thenReturn(Optional.empty());
+  @ParameterizedTest
+  @CsvSource(
+      nullValues = "NONE",
+      value = {
+        "Summary: accept v3 calls, NONE, true",
+        "accept v3 calls, accept v4 calls, false",
+        "NONE, accept v3 calls, false"
+      })
+  void keepsVerdictOnlyWhileTheTicketItReadIsUnchangedOrRestartForgotIt(
+      String ticketRead, String ticketNow, boolean expected) {
+    when(facts.ticket("ABC-1")).thenReturn(Optional.ofNullable(ticketRead));
+    when(facts.request(any())).thenReturn("Summary");
+    when(facts.notes(any())).thenReturn("");
+    when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
+    when(facts.humanSaid(any())).thenReturn(Optional.of(List.of()));
+    state.putTask("a1", pending);
+    reviews.write(
+        "a1",
+        pending,
+        masterReview().withInputs(quotes.inputs("ABC-1", pending).orElseThrow()).build(),
+        "");
+    TaskState task = state.task("a1").orElseThrow();
+    when(facts.ticket("ABC-1")).thenReturn(Optional.ofNullable(ticketNow));
 
-    boolean carried =
-        fixture.quotes.carried("a1", task, fixture.quotes.inputs("ABC-1", task).orElseThrow());
+    boolean carried = quotes.carried("a1", task, quotes.inputs("ABC-1", task).orElseThrow());
 
-    assertThat(carried).isTrue();
+    assertThat(carried).isEqualTo(expected);
   }
 
   @Test
-  void readsTheRoundAnewWhenTheTicketItReadChanged(@TempDir Path worktree) {
-    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
-    when(facts.ticket("ABC-1")).thenReturn(Optional.of("accept v3 calls"));
-    TaskState task = fixture.storeQuietRead(fixture.pending());
-    when(facts.ticket("ABC-1")).thenReturn(Optional.of("accept v4 calls"));
-
-    boolean carried =
-        fixture.quotes.carried("a1", task, fixture.quotes.inputs("ABC-1", task).orElseThrow());
-
-    assertThat(carried).isFalse();
-  }
-
-  @Test
-  void readsTheRoundAnewOnceTheTicketIsReadWhereTheVerdictHadNone(@TempDir Path worktree) {
-    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
-    when(facts.ticket("ABC-1")).thenReturn(Optional.empty());
-    TaskState task = fixture.storeQuietRead(fixture.pending());
-    when(facts.ticket("ABC-1")).thenReturn(Optional.of("accept v3 calls"));
-
-    boolean carried =
-        fixture.quotes.carried("a1", task, fixture.quotes.inputs("ABC-1", task).orElseThrow());
-
-    assertThat(carried).isFalse();
-  }
-
-  @Test
-  void callsTheFirstReadOfRoundFirst(@TempDir Path worktree) {
+  void callsTheFirstReadOfRoundFirst() {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -205,24 +232,26 @@ class RoundQuotesTest {
   }
 
   @Test
-  void callsRereadOfTheSameInputsRetryAndChangedDiffChange(@TempDir Path worktree) {
-    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
-    TaskState task =
-        fixture.store(
-            fixture.pending(),
-            new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of()));
+  void callsRereadOfTheSameInputsRetryAndChangedDiffChange() {
+    state.putTask("a1", pending);
+    reviews.write(
+        "a1",
+        pending,
+        new MasterReview.Review(1_000, "abc123", "PLAIN", "in1", List.of()),
+        "");
+    TaskState task = state.task("a1").orElseThrow();
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
-    String sameInputs = fixture.quotes.trigger(task, "in1");
+    String sameInputs = quotes.trigger(task, "in1");
     when(facts.ownDiff(any())).thenReturn(Optional.of("def456"));
 
-    String changedDiff = fixture.quotes.trigger(task, "in1");
+    String changedDiff = quotes.trigger(task, "in1");
 
     assertThat(sameInputs).isEqualTo("retry");
     assertThat(changedDiff).isEqualTo("changed");
   }
 
   @Test
-  void fingerprintsRoundByItsOwnDiffAndInputs(@TempDir Path worktree) {
+  void fingerprintsRoundByItsOwnDiffAndInputs() {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
     when(facts.ownDiff(any())).thenReturn(Optional.of("abc123"));
@@ -236,7 +265,7 @@ class RoundQuotesTest {
   }
 
   @Test
-  void fingerprintsPlanByItsFileAndInputs(@TempDir Path worktree) {
+  void fingerprintsPlanByItsFileAndInputs() {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
     when(facts.plan(any())).thenReturn("step 1");
@@ -250,13 +279,17 @@ class RoundQuotesTest {
   }
 
   @Test
-  void quotesTheTicketTheDiffTheDecisionsTheHumanAndTheNotesOfTheRound(@TempDir Path worktree) {
-    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
+  void quotesTheTicketTheDiffTheDecisionsTheHumanAndTheNotesOfTheRound() {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+    MasterDecisions decisions = mock(MasterDecisions.class);
+    when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2")));
+    when(facts.ask("ABC-1", task)).thenReturn("Summary: accept v3 calls");
+    when(facts.diff(task)).thenReturn("+int x;\n");
+    when(facts.notes(task)).thenReturn("disputed: the guard is right");
+    when(decisions.of(task)).thenReturn("- asked: keep v2? — decided: keep it");
 
-    var read =
-        fixture.quotingRound(task, "- asked: keep v2? — decided: keep it").round("ABC-1", task);
+    var read = new RoundQuotes(facts, decisions, reviews).round("ABC-1", task);
 
     assertThat(read)
         .contains(
@@ -269,12 +302,16 @@ class RoundQuotesTest {
   }
 
   @Test
-  void quotesPlanRoundWithNoDiff(@TempDir Path worktree) {
-    RoundQuotesFixture fixture = new RoundQuotesFixture(worktree, facts);
+  void quotesPlanRoundWithNoDiff() {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+    MasterDecisions decisions = mock(MasterDecisions.class);
+    when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2")));
+    when(facts.ask("ABC-1", task)).thenReturn("Summary: accept v3 calls");
+    when(facts.notes(task)).thenReturn("disputed: the guard is right");
+    when(decisions.of(task)).thenReturn("");
 
-    var read = fixture.quotingRound(task, "").plan("ABC-1", task);
+    var read = new RoundQuotes(facts, decisions, reviews).plan("ABC-1", task);
 
     assertThat(read)
         .contains(
@@ -287,7 +324,7 @@ class RoundQuotesTest {
   }
 
   @Test
-  void quotesQuestionRoundWithOnlyTheDecisionsAndWhatTheHumanSaid(@TempDir Path worktree) {
+  void quotesQuestionRoundWithOnlyTheDecisionsAndWhatTheHumanSaid() {
     MasterDecisions decisions = mock(MasterDecisions.class);
     TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.IN_PROGRESS).build();
     when(facts.humanSaid(task)).thenReturn(Optional.of(List.of("keep v2")));
@@ -300,7 +337,7 @@ class RoundQuotesTest {
   }
 
   @Test
-  void quotesNoRoundWhereWhatTheHumanTypedCouldNotBeRead(@TempDir Path worktree) {
+  void quotesNoRoundWhereWhatTheHumanTypedCouldNotBeRead() {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
     when(facts.humanSaid(task)).thenReturn(Optional.empty());
@@ -311,7 +348,7 @@ class RoundQuotesTest {
   }
 
   @Test
-  void passesOnTheChangedPathsTheOwnDiffAndThePlanAsTheFactsReadThem(@TempDir Path worktree) {
+  void passesOnTheChangedPathsTheOwnDiffAndThePlanAsTheFactsReadThem() {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
     when(facts.paths(task)).thenReturn(Optional.of(List.of("A.java")));

@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
-import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.notingHost;
-import static dev.jagt.orchestrator.adapter.codehost.HostFixtures.settings;
+import static dev.jagt.orchestrator.adapter.codehost.TestHostSettingsBuilder.hostSettings;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -28,13 +27,10 @@ class CommandPipelineTest {
   private final ReachLedger reach = new ReachLedger();
   private final CommandPipeline command = new CommandPipeline(processes, reach);
   private final HostSettings host =
-      settings(
-          "orchestrator.projects.shop.codeHost",
-          List.of("/bin/ci-state", "{sha}"),
-          List.of("/bin/ci-rerun", "{pipeline}"),
-          List.of(),
-          List.of(),
-          List.of());
+      hostSettings().withKey("orchestrator.projects.shop.codeHost")
+            .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
+            .withRetryCommand(List.of("/bin/ci-rerun", "{pipeline}"))
+            .build();
 
   @Test
   void theStatePrintedForTheCommitIsTheCommitsPipeline() {
@@ -85,13 +81,10 @@ class CommandPipelineTest {
   @Test
   void commandExitingSeventySevenIsSignedOutAndTheProjectsLoginCommandIsTheFix() {
     HostSettings withLogin =
-        settings(
-            "orchestrator.codeHost",
-            List.of("/bin/ci-state", "{sha}"),
-            List.of(),
-            List.of("ci-login", "--web"),
-            List.of(),
-            List.of());
+        hostSettings().withKey("orchestrator.codeHost")
+            .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
+            .withLoginCommand(List.of("ci-login", "--web"))
+            .build();
     when(processes.run(any(Path.class), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(77, "", ""));
 
@@ -114,13 +107,9 @@ class CommandPipelineTest {
   @Test
   void commandNotInstalledIsLostReachWithNoCommandToFixIt() {
     HostSettings uninstalled =
-        settings(
-            "orchestrator.codeHost",
-            List.of("no-such-ci-program", "{sha}"),
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of());
+        hostSettings().withKey("orchestrator.codeHost")
+            .withPipelineCommand(List.of("no-such-ci-program", "{sha}"))
+            .build();
     when(processes.run(any(Path.class), any(Duration.class), anyList()))
         .thenThrow(new IllegalStateException("Failed to start command"));
 
@@ -145,7 +134,8 @@ class CommandPipelineTest {
   @Test
   void projectWithoutPipelineCommandIsUnreadWithoutRunningAnything() {
     HostSettings bare =
-        settings("orchestrator.codeHost", List.of(), List.of(), List.of(), List.of(), List.of());
+        hostSettings().withKey("orchestrator.codeHost")
+            .build();
 
     Answer<CommitPipeline> answer = command.onCommit(bare, "git@anywhere:shop/web.git", "0123abc");
 
@@ -170,13 +160,9 @@ class CommandPipelineTest {
   @Test
   void withoutRetryCommandNothingIsReRun() {
     HostSettings noRetry =
-        settings(
-            "orchestrator.codeHost",
-            List.of("/bin/ci-state", "{sha}"),
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of());
+        hostSettings().withKey("orchestrator.codeHost")
+            .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
+            .build();
 
     Answer<String> answer = command.retryFailed(noRetry, "https://ci.example.invalid/runs/9");
 
@@ -186,13 +172,9 @@ class CommandPipelineTest {
   @Test
   void startupRefusesCommandWhoseProgramIsNowhereNamingTheKey() {
     HostSettings missing =
-        settings(
-            "orchestrator.codeHost",
-            List.of("no-such-ci-program", "{sha}"),
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of());
+        hostSettings().withKey("orchestrator.codeHost")
+            .withPipelineCommand(List.of("no-such-ci-program", "{sha}"))
+            .build();
 
     assertThat(command.problems(missing))
         .extracting(Problem::key)
@@ -202,7 +184,8 @@ class CommandPipelineTest {
   @Test
   void startupRefusesCommandHostWithoutPipelineCommand() {
     HostSettings bare =
-        settings("orchestrator.codeHost", List.of(), List.of(), List.of(), List.of(), List.of());
+        hostSettings().withKey("orchestrator.codeHost")
+            .build();
 
     assertThat(command.problems(bare))
         .extracting(Problem::key)
@@ -212,13 +195,10 @@ class CommandPipelineTest {
   @Test
   void theCloseCommandGetsTheRequestAddress() {
     HostSettings closing =
-        settings(
-            "orchestrator.codeHost",
-            List.of("/bin/ci-state", "{sha}"),
-            List.of(),
-            List.of(),
-            List.of("/bin/ci-close", "{request}"),
-            List.of());
+        hostSettings().withKey("orchestrator.codeHost")
+            .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
+            .withCloseCommand(List.of("/bin/ci-close", "{request}"))
+            .build();
     when(processes.run(any(Path.class), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "ok", ""));
 
@@ -250,7 +230,10 @@ class CommandPipelineTest {
 
   @Test
   void theNotesCommandPrintsTheRequestsNoteIdsOnePerLine() {
-    HostSettings noting = notingHost();
+    HostSettings noting = hostSettings()
+            .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
+            .withNotesCommand(List.of("/bin/ci-notes", "{request}"))
+            .build();
     when(processes.run(any(Path.class), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "n-7\n\n n-9 \n", ""));
 
@@ -266,7 +249,10 @@ class CommandPipelineTest {
 
   @Test
   void failingNotesCommandLeavesTheNoteIdsUnknownNamingTheKey() {
-    HostSettings noting = notingHost();
+    HostSettings noting = hostSettings()
+            .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
+            .withNotesCommand(List.of("/bin/ci-notes", "{request}"))
+            .build();
     when(processes.run(any(Path.class), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(2, "", "rate limited"));
 
