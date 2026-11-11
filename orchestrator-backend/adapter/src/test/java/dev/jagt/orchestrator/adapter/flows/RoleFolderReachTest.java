@@ -1,13 +1,14 @@
 package dev.jagt.orchestrator.adapter.flows;
 
-import static dev.jagt.orchestrator.adapter.flows.AcceptanceFolders.ENABLED;
-import static dev.jagt.orchestrator.adapter.flows.AcceptanceFolders.folder;
-import static dev.jagt.orchestrator.adapter.flows.AcceptanceFolders.readOver;
+import static dev.jagt.orchestrator.adapter.flows.TestAcceptanceRoleSettingsBuilder.acceptanceRoleSettings;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.ReachLost;
+import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.ReachLedger;
+import dev.jagt.orchestrator.service.RoleSettings;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -17,6 +18,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 class RoleFolderReachTest {
+
+  private final AgentRuntime agentRuntime = mock(AgentRuntime.class);
+  private final ActStops actStops = mock(ActStops.class);
 
   @ParameterizedTest
   @CsvSource(
@@ -32,10 +36,11 @@ class RoleFolderReachTest {
       })
   void anEnabledRoleWhoseFolderCannotRunCheckIsOneMarkOnTheBoardsHead(
       String written, String said, @TempDir Path root) throws Exception {
-    OrchestratorPaths paths = folder(root, ENABLED);
+    RoleSettings settings = acceptanceRoleSettings().withRoot(root).build(agentRuntime, actStops);
     Files.writeString(root.resolve("roles/acceptance/role.yml"), written + "\n");
 
-    ReachLedger reach = readOver(paths);
+    ReachLedger reach = new ReachLedger();
+    new RoleFolderReach(settings, reach).run();
 
     assertThat(reach.standing())
         .singleElement()
@@ -49,7 +54,9 @@ class RoleFolderReachTest {
   @Test
   void theMarkEndsOnTheFirstReadAfterTheFolderNamesAnEnvironment(@TempDir Path root)
       throws Exception {
-    ReachLedger reach = readOver(folder(root, ENABLED));
+    RoleSettings settings = acceptanceRoleSettings().withRoot(root).build(agentRuntime, actStops);
+    ReachLedger reach = new ReachLedger();
+    new RoleFolderReach(settings, reach).run();
     Files.writeString(
         root.resolve("roles/acceptance/role.yml"), "environments: [{url: https://a.test}]\n");
 
@@ -60,19 +67,26 @@ class RoleFolderReachTest {
 
   @Test
   void folderNamingAnEnvironmentAndAnMcpServerRaisesNoMark(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths = folder(root, ENABLED);
+    RoleSettings settings = acceptanceRoleSettings().withRoot(root).build(agentRuntime, actStops);
     Files.writeString(
         root.resolve("roles/acceptance/role.yml"),
         "{environments: [{url: a}], tools: {mcp: [mcp__logs]}}\n");
 
-    ReachLedger reach = readOver(paths);
+    ReachLedger reach = new ReachLedger();
+    new RoleFolderReach(settings, reach).run();
 
     assertThat(reach.standing()).isEmpty();
   }
 
   @Test
   void roleTurnedOffRaisesNoMarkWhateverItsFolderLacks(@TempDir Path root) throws Exception {
-    ReachLedger reach = readOver(folder(root, "orchestrator:\n  projects: {}\n"));
+    RoleSettings settings =
+        acceptanceRoleSettings()
+            .withRoot(root)
+            .withJagtYml("orchestrator:\n  projects: {}\n")
+            .build(agentRuntime, actStops);
+    ReachLedger reach = new ReachLedger();
+    new RoleFolderReach(settings, reach).run();
 
     assertThat(reach.standing()).isEmpty();
   }

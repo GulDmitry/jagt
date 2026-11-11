@@ -1,9 +1,5 @@
 package dev.jagt.orchestrator.adapter;
 
-import static dev.jagt.orchestrator.adapter.OpenSpecs.ARCHIVE;
-import static dev.jagt.orchestrator.adapter.OpenSpecs.VALID;
-import static dev.jagt.orchestrator.adapter.OpenSpecs.openChangeAnsweringEveryCommand;
-import static dev.jagt.orchestrator.adapter.OpenSpecs.openChangeValidatedAs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,7 +26,33 @@ import org.junit.jupiter.api.io.TempDir;
 
 class OpenSpecTest {
 
+  private static final List<String> VALIDATE =
+      List.of(
+          "/bin/openspec",
+          "validate",
+          "abc-42",
+          "--type",
+          "change",
+          "--strict",
+          "--no-interactive",
+          "--json");
+
+  private static final List<String> ARCHIVE =
+      List.of("/bin/openspec", "archive", "abc-42", "-y");
+
+  private static final Processes.Result VALID =
+      new Processes.Result(0, "{\"items\":[{\"valid\":true,\"issues\":[]}]}", "");
+
+  private static final Processes.Result INVALID =
+      new Processes.Result(
+          1,
+          """
+          {"items":[{"valid":false,"issues":[{"level":"ERROR","path":"file","message":"Change must have at least one delta"}]}]}
+          """,
+          "");
+
   private final Host host = mock(Host.class);
+  private final Processes processes = mock(Processes.class);
 
   @Test
   void owesNothingWhereTheRepositoryKeepsNoSpecs(@TempDir Path worktree) {
@@ -60,16 +82,10 @@ class OpenSpecTest {
 
   @Test
   void relaysWhatTheValidatorSaidAboutAnInvalidChange(@TempDir Path worktree) throws IOException {
-    Processes processes =
-        openChangeValidatedAs(
-            host,
-            worktree,
-            new Processes.Result(
-                1,
-                """
-                {"items":[{"valid":false,"issues":[{"level":"ERROR","path":"file","message":"Change must have at least one delta"}]}]}
-                """,
-                ""));
+    when(host.resolve("openspec")).thenReturn("/bin/openspec");
+    Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
+    when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
+        .thenReturn(INVALID);
 
     assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42"))
         .get()
@@ -79,11 +95,10 @@ class OpenSpecTest {
 
   @Test
   void refusesHandBackWhoseDeltaArchiveWouldRefuse(@TempDir Path worktree) throws IOException {
-    Processes processes =
-        openChangeValidatedAs(
-            host,
-            worktree,
-            new Processes.Result(
+    when(host.resolve("openspec")).thenReturn("/bin/openspec");
+    Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
+    when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
+        .thenReturn(new Processes.Result(
                 0,
                 """
                 {"items":[{"valid":true,"issues":[{"level":"INFO","path":"board/spec.md",
@@ -100,8 +115,10 @@ class OpenSpecTest {
   @Test
   void refusesWithTheRawOutputWhereTheValidatorAnswersNoJson(@TempDir Path worktree)
       throws IOException {
-    Processes processes =
-        openChangeValidatedAs(host, worktree, new Processes.Result(1, "", "unknown option"));
+    when(host.resolve("openspec")).thenReturn("/bin/openspec");
+    Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
+    when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
+        .thenReturn(new Processes.Result(1, "", "unknown option"));
 
     assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42"))
         .get()
@@ -112,10 +129,10 @@ class OpenSpecTest {
   @Test
   void refusesWithTheRawOutputWhereTheValidatorFailsWithoutNamingAnIssue(@TempDir Path worktree)
       throws IOException {
-    Processes processes =
-        openChangeValidatedAs(
-            host,
-            worktree,
+    when(host.resolve("openspec")).thenReturn("/bin/openspec");
+    Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
+    when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
+        .thenReturn(
             new Processes.Result(1, "{\"items\":[{\"valid\":false,\"issues\":[]}]}", "crashed"));
 
     assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42"))
@@ -126,16 +143,10 @@ class OpenSpecTest {
 
   @Test
   void refusesToFoldChangeThatDoesNotValidate(@TempDir Path worktree) throws IOException {
-    Processes processes =
-        openChangeValidatedAs(
-            host,
-            worktree,
-            new Processes.Result(
-                1,
-                """
-                {"items":[{"valid":false,"issues":[{"level":"ERROR","path":"file","message":"Change must have at least one delta"}]}]}
-                """,
-                ""));
+    when(host.resolve("openspec")).thenReturn("/bin/openspec");
+    Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
+    when(processes.run(eq(worktree), any(Duration.class), anyMap(), eq(VALIDATE)))
+        .thenReturn(INVALID);
 
     assertThatThrownBy(() -> new OpenSpec(processes, host).fold(worktree, "ABC-42"))
         .isInstanceOf(IllegalStateException.class)
@@ -145,7 +156,9 @@ class OpenSpecTest {
 
   @Test
   void foldsValidChangeWithTelemetryOff(@TempDir Path worktree) throws IOException {
-    Processes processes = openChangeAnsweringEveryCommand(host, worktree, "/bin/openspec", VALID);
+    Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
+    when(processes.run(eq(worktree), any(Duration.class), anyMap(), any())).thenReturn(VALID);
+    when(host.resolve("openspec")).thenReturn("/bin/openspec");
 
     new OpenSpec(processes, host).fold(worktree, "ABC-42");
 
@@ -159,8 +172,10 @@ class OpenSpecTest {
 
   @Test
   void findsNodeBesideTheCliWhenJagtsPathLacksIt(@TempDir Path worktree) throws IOException {
-    Processes processes =
-        openChangeAnsweringEveryCommand(host, worktree, "/opt/homebrew/bin/openspec", VALID);
+    when(host.resolve("openspec")).thenReturn("/opt/homebrew/bin/openspec");
+    Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
+    when(processes.run(eq(worktree), any(Duration.class), anyMap(), any()))
+        .thenReturn(VALID);
 
     new OpenSpec(processes, host).fold(worktree, "ABC-42");
 
@@ -175,8 +190,10 @@ class OpenSpecTest {
   @Test
   void keepsJagtsOwnPathAfterTheClisDirectory(@TempDir Path worktree) throws IOException {
     when(host.env("PATH")).thenReturn(Optional.of("/usr/bin"));
-    Processes processes =
-        openChangeAnsweringEveryCommand(host, worktree, "/opt/homebrew/bin/openspec", VALID);
+    when(host.resolve("openspec")).thenReturn("/opt/homebrew/bin/openspec");
+    Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
+    when(processes.run(eq(worktree), any(Duration.class), anyMap(), any()))
+        .thenReturn(VALID);
 
     new OpenSpec(processes, host).fold(worktree, "ABC-42");
 
@@ -229,15 +246,9 @@ class OpenSpecTest {
       throws IOException {
     when(host.resolve("openspec")).thenReturn("/bin/openspec");
     Files.createDirectories(worktree.resolve("openspec/changes/abc-42-2"));
-    Processes processes = mock(Processes.class);
     when(processes.run(eq(worktree), any(Duration.class), anyMap(), any()))
         .thenReturn(
-            new Processes.Result(
-                1,
-                """
-                {"items":[{"valid":false,"issues":[{"level":"ERROR","path":"file","message":"Change must have at least one delta"}]}]}
-                """,
-                ""));
+            INVALID);
 
     assertThat(new OpenSpec(processes, host).owed(worktree, "ABC-42"))
         .get()
