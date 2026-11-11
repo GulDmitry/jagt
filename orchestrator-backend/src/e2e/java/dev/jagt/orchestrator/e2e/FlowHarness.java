@@ -1,11 +1,9 @@
 package dev.jagt.orchestrator.e2e;
 
-import static dev.jagt.orchestrator.e2e.TestJudgementBuilder.judgement;
 import static dev.jagt.orchestrator.e2e.TestReviewFactsBuilder.reviewFacts;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.when;
 
@@ -17,8 +15,6 @@ import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.TaskProvisioning;
-import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -28,10 +24,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -78,10 +71,6 @@ final class FlowHarness {
     return context.getBean(OrchestratorPaths.class).configFile();
   }
 
-  void writeConfig(MasterModeCase master) throws Exception {
-    E2eWorkspace.writeConfig(configFile(), repo(), master);
-  }
-
   void awaitRun(String job) {
     E2eWorkspace.awaitFullRunStartedAfterNow(context.getBean(Jobs.class), job);
   }
@@ -112,50 +101,6 @@ final class FlowHarness {
         .isEmpty();
   }
 
-  void initializeTask() {
-    context
-        .getBean(TaskProvisioning.class)
-        .initializeTask(
-            NewTask.builder(task, "proj")
-                .instructions("Fix the widget")
-                .title("Widget layout is off")
-                .build());
-  }
-
-  void handBackTheFirstRound() throws Exception {
-    initializeTask();
-    Files.writeString(worktree().resolve("widget.txt"), "fixed\n");
-    Files.writeString(worktree().resolve("task_notes.md"), "widget fixed\n");
-    agentReports("REVIEW_PENDING", "widget fixed", "");
-  }
-
-  void startsTaskAcrossBothRepositories() throws Exception {
-    E2eWorkspace.writeConfig(
-        configFile(),
-        new LinkedHashMap<>(Map.of("proj", repo(), "web", workspace.resolve("web"))),
-        "shared",
-        false);
-    context
-        .getBean(TaskProvisioning.class)
-        .initializeTask(
-            NewTask.builder(task, "proj")
-                .alsoIn(List.of("web"))
-                .instructions("Move both sides of the contract")
-                .title("Widget layout is off")
-                .build());
-    Files.writeString(worktree().resolve("widget.txt"), "api side\n");
-    Files.writeString(workspace.resolve(task + "-web").resolve("widget.txt"), "web side\n");
-  }
-
-  void handBackOwingVerification() throws Exception {
-    judges(judgement().build());
-    initializeTask();
-    Files.writeString(worktree().resolve("widget.txt"), "fixed\n");
-    Files.writeString(worktree().resolve("task_notes.md"), "widget fixed\n");
-    agentReports("REVIEW_PENDING", "VERIFYING", "widget fixed", "");
-    awaitRun("verify");
-  }
-
   void awaitVerificationSentBack() {
     awaitTold("jagt ran this project's verification command and it failed");
     awaitTask(reached -> reached.status() == TaskStatus.IN_PROGRESS);
@@ -171,25 +116,6 @@ final class FlowHarness {
         .thenReturn(new Answer<>(Optional.of(reviewFacts().build()), TokenUsage.NONE));
     agentReports(
         "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + request() + "\"");
-  }
-
-  void reachesDeployConflict() throws Exception {
-    judges(judgement().build());
-    handBackTheFirstRound();
-    shipsTheRoundTheMasterShipped();
-    E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
-    act("sweep");
-    awaitRun("master-deploy");
-    awaitTask(reached -> reached.status() == TaskStatus.DEPLOY_CONFLICT);
-    awaitRun("deploy-conflict");
-    awaitTold("did not deploy");
-  }
-
-  void conflictStallsFor(Clock clock, int minutes) {
-    Instant later = Instant.now(Clock.systemUTC()).plus(Duration.ofMinutes(minutes));
-    doReturn(later).when(clock).instant();
-    doReturn(later.toEpochMilli()).when(clock).millis();
-    awaitRun("deploy-conflict");
   }
 
   void leaveNothingBehind() {

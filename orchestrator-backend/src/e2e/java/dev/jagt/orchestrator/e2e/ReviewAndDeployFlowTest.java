@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.e2e;
 
+import static dev.jagt.orchestrator.e2e.TestNewTaskBuilder.newTask;
 import static dev.jagt.orchestrator.e2e.TestReviewFactsBuilder.reviewFacts;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -42,6 +43,7 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -226,45 +228,6 @@ class ReviewAndDeployFlowTest {
   }
 
   @Test
-  void stopsAtTheRepositoryThatConflictsAndFinishesItOnTheNextDeploy() throws Exception {
-    flow.startsTaskAcrossBothRepositories();
-    agentHandsBack("both sides done");
-    flow.act("ship");
-    agentCommitsAndPushes(flow.worktree(), TASK + " " + TITLE);
-    agentCommitsAndPushes(webWorktree(), TASK + " " + TITLE);
-    agentReportsRequests(Map.of("proj", flow.request(), "web", webRequest()));
-    reads(
-        new ReviewFacts(
-            new ReviewFacts.Request(true, true, false, false, 0),
-            new ReviewFacts.Pipeline("success", "", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())));
-    flow.act("sweep");
-    E2eWorkspace.commitOnDeployBranch(webRepo(), "widget.txt", "someone else's line\n");
-
-    String conflicted = flow.act("deploy");
-
-    assertThat(conflicted)
-        .contains(
-            "CONFLICT merging web into dev",
-            "Live on the deploy branch: proj",
-            "NOT deployed: web");
-    assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-    assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
-        .contains("Merge branch '" + TASK + "' into dev");
-    assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", "dev"))
-        .doesNotContain("Merge branch '" + TASK + "' into dev");
-
-    Path resolveIn = GitDeploy.deployWorktreePath(webRepo(), TASK);
-    Files.writeString(resolveIn.resolve("widget.txt"), "both sides, resolved\n");
-    E2eWorkspace.git(resolveIn, "add", "widget.txt");
-
-    assertThat(flow.act("deploy")).contains("DEPLOYED");
-    assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", "dev"))
-        .contains("Merge branch '" + TASK + "' into dev");
-    assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOYED);
-  }
-
-  @Test
   void opensNoRequestInTheRepositoryTheTaskNeverChanged() throws Exception {
     E2eWorkspace.writeConfig(
         paths.configFile(),
@@ -290,50 +253,111 @@ class ReviewAndDeployFlowTest {
         .doesNotContain("web: " + webWorktree());
   }
 
-  @Test
-  void oneSessionShipsAndDeploysEveryRepositoryTheTaskSpansAndTakesThemBackOutInReverse()
-      throws Exception {
-    flow.startsTaskAcrossBothRepositories();
-    agentHandsBack("both sides done");
+  @Nested
+  class AcrossBothRepositories {
 
-    String shipped = flow.act("ship");
+    @BeforeEach
+    void theTaskSpansBothRepositories() throws Exception {
+      E2eWorkspace.writeConfig(
+          paths.configFile(),
+          new LinkedHashMap<>(Map.of("proj", flow.repo(), "web", webRepo())),
+          "shared",
+          false);
+      provisioning.initializeTask(
+          newTask()
+              .withTask(TASK)
+              .withProjects(List.of("proj", "web"))
+              .withInstructions("Move both sides of the contract")
+              .build());
+      Files.writeString(flow.worktree().resolve("widget.txt"), "api side\n");
+      Files.writeString(webWorktree().resolve("widget.txt"), "web side\n");
+    }
 
-    assertThat(shipped).contains("relayed to the agent", "requests");
-    assertThat(Files.readString(flow.worktree().resolve("task_context.md")))
-        .contains(
-            "proj: " + flow.worktree() + ", merges into main",
-            "web: " + webWorktree() + ", merges into main",
-            "reviewRequests={\"proj\": \"<its url>\", \"web\": \"<its url>\"}");
-    agentCommitsAndPushes(flow.worktree(), TASK + " " + TITLE);
-    agentCommitsAndPushes(webWorktree(), TASK + " " + TITLE);
-    agentReportsRequests(Map.of("proj", flow.request(), "web", webRequest()));
-    assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", TASK))
-        .contains(TASK + " " + TITLE);
-    assertThat(flow.task().repos())
-        .extracting(dev.jagt.orchestrator.task.TaskRepo::mrUrl)
-        .containsExactly(flow.request(), webRequest());
-    assertThat(flow.task().history())
-        .extracting(StatusChange::status)
-        .containsExactly(
-            TaskStatus.NEW, TaskStatus.REVIEW_PENDING, TaskStatus.SHIPPING, TaskStatus.CI_POLLING);
+    @Test
+    void stopsAtTheRepositoryThatConflictsAndFinishesItOnTheNextDeploy() throws Exception {
+      agentHandsBack("both sides done");
+      flow.act("ship");
+      agentCommitsAndPushes(flow.worktree(), TASK + " " + TITLE);
+      agentCommitsAndPushes(webWorktree(), TASK + " " + TITLE);
+      agentReportsRequests(Map.of("proj", flow.request(), "web", webRequest()));
+      reads(
+          new ReviewFacts(
+              new ReviewFacts.Request(true, true, false, false, 0),
+              new ReviewFacts.Pipeline("success", "", ""),
+              new ReviewFacts.Discussion(List.of(), List.of(), List.of())));
+      flow.act("sweep");
+      E2eWorkspace.commitOnDeployBranch(webRepo(), "widget.txt", "someone else's line\n");
 
-    reads(
-        new ReviewFacts(
-            new ReviewFacts.Request(true, true, false, false, 0),
-            new ReviewFacts.Pipeline("success", "", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())));
-    flow.act("sweep");
-    assertThat(flow.task().status()).isEqualTo(TaskStatus.APPROVED);
+      String conflicted = flow.act("deploy");
 
-    assertThat(flow.act("deploy")).contains("proj into dev", "web into dev", "DEPLOYED");
-    assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
-        .contains("Merge branch '" + TASK + "' into dev");
-    assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", "dev"))
-        .contains("Merge branch '" + TASK + "' into dev");
+      assertThat(conflicted)
+          .contains(
+              "CONFLICT merging web into dev",
+              "Live on the deploy branch: proj",
+              "NOT deployed: web");
+      assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+      assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
+          .contains("Merge branch '" + TASK + "' into dev");
+      assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", "dev"))
+          .doesNotContain("Merge branch '" + TASK + "' into dev");
 
-    assertThat(flow.act("revert")).contains("reverted web on dev", "proj on dev", "REVERTED");
-    assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", "dev"))
-        .contains("Revert \"Merge branch '" + TASK + "' into dev\"");
+      Path resolveIn = GitDeploy.deployWorktreePath(webRepo(), TASK);
+      Files.writeString(resolveIn.resolve("widget.txt"), "both sides, resolved\n");
+      E2eWorkspace.git(resolveIn, "add", "widget.txt");
+
+      assertThat(flow.act("deploy")).contains("DEPLOYED");
+      assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", "dev"))
+          .contains("Merge branch '" + TASK + "' into dev");
+      assertThat(flow.task().status()).isEqualTo(TaskStatus.DEPLOYED);
+    }
+
+    @Test
+    void oneSessionShipsAndDeploysEveryRepositoryTheTaskSpansAndTakesThemBackOutInReverse()
+        throws Exception {
+      agentHandsBack("both sides done");
+
+      String shipped = flow.act("ship");
+
+      assertThat(shipped).contains("relayed to the agent", "requests");
+      assertThat(Files.readString(flow.worktree().resolve("task_context.md")))
+          .contains(
+              "proj: " + flow.worktree() + ", merges into main",
+              "web: " + webWorktree() + ", merges into main",
+              "reviewRequests={\"proj\": \"<its url>\", \"web\": \"<its url>\"}");
+      agentCommitsAndPushes(flow.worktree(), TASK + " " + TITLE);
+      agentCommitsAndPushes(webWorktree(), TASK + " " + TITLE);
+      agentReportsRequests(Map.of("proj", flow.request(), "web", webRequest()));
+      assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", TASK))
+          .contains(TASK + " " + TITLE);
+      assertThat(flow.task().repos())
+          .extracting(dev.jagt.orchestrator.task.TaskRepo::mrUrl)
+          .containsExactly(flow.request(), webRequest());
+      assertThat(flow.task().history())
+          .extracting(StatusChange::status)
+          .containsExactly(
+              TaskStatus.NEW,
+              TaskStatus.REVIEW_PENDING,
+              TaskStatus.SHIPPING,
+              TaskStatus.CI_POLLING);
+
+      reads(
+          new ReviewFacts(
+              new ReviewFacts.Request(true, true, false, false, 0),
+              new ReviewFacts.Pipeline("success", "", ""),
+              new ReviewFacts.Discussion(List.of(), List.of(), List.of())));
+      flow.act("sweep");
+      assertThat(flow.task().status()).isEqualTo(TaskStatus.APPROVED);
+
+      assertThat(flow.act("deploy")).contains("proj into dev", "web into dev", "DEPLOYED");
+      assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
+          .contains("Merge branch '" + TASK + "' into dev");
+      assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", "dev"))
+          .contains("Merge branch '" + TASK + "' into dev");
+
+      assertThat(flow.act("revert")).contains("reverted web on dev", "proj on dev", "REVERTED");
+      assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", "dev"))
+          .contains("Revert \"Merge branch '" + TASK + "' into dev\"");
+    }
   }
 
   @Test

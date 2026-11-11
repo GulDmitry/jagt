@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.e2e;
 
 import static dev.jagt.orchestrator.e2e.TestJudgementBuilder.judgement;
+import static dev.jagt.orchestrator.e2e.TestNewTaskBuilder.newTask;
 import static dev.jagt.orchestrator.e2e.TestReviewFactsBuilder.reviewFacts;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -13,18 +14,22 @@ import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.service.Assistants;
+import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationContext;
@@ -48,9 +53,13 @@ class JudgeModeFlowTest {
   private Assistants assistants;
 
   @MockitoBean private McpHealth mcp;
+  private final TaskProvisioning provisioning;
   private final FlowHarness flow;
 
-  JudgeModeFlowTest(ApplicationContext context, @LocalServerPort int port) {
+  @Autowired
+  JudgeModeFlowTest(
+      TaskProvisioning provisioning, ApplicationContext context, @LocalServerPort int port) {
+    this.provisioning = provisioning;
     this.flow = new FlowHarness(context, workspace, TASK, port);
   }
 
@@ -70,58 +79,8 @@ class JudgeModeFlowTest {
   }
 
   @Test
-  void readsReadyRoundAndLeavesEveryPressToTheHuman() throws Exception {
-    flow.judges(judgement().build());
-
-    flow.handBackTheFirstRound();
-
-    assertThat(flow.awaitReview()).contains("VERDICT: ready");
-    flow.awaitRun("master-review");
-    assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
-    assertThat(flow.task().history())
-        .extracting(StatusChange::status)
-        .doesNotContain(TaskStatus.SHIPPING);
-  }
-
-  @Test
-  void sendsNotReadyRoundBackToTheSessionThatWroteIt() throws Exception {
-    flow.judges(
-        judgement()
-            .withVerdict("not ready")
-            .withFindings(
-                List.of(
-                    new Finding(
-                        "widget.txt",
-                        "the guard is inverted",
-                        "inverted guard",
-                        "blocking",
-                        "",
-                        "")))
-            .build());
-
-    flow.handBackTheFirstRound();
-
-    flow.awaitTold("the guard is inverted");
-    assertThat(flow.awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS).status())
-        .isEqualTo(TaskStatus.IN_PROGRESS);
-  }
-
-  @Test
-  void putsTheReviewersQuestionToTheHumanRatherThanAnsweringIt() throws Exception {
-    flow.judges(judgement().withVerdict("question").withQuestion("keep v2 beside v3?").build());
-
-    flow.handBackTheFirstRound();
-
-    assertThat(
-            flow.awaitTask(
-                    task -> task.message() != null && task.message().contains("keep v2 beside v3?"))
-                .report())
-        .isEqualTo(AgentReport.QUESTION);
-  }
-
-  @Test
   void leavesTheSessionsOwnQuestionForTheHuman() throws Exception {
-    flow.initializeTask();
+    provisioning.initializeTask(newTask().build());
 
     flow.agentReports("IN_PROGRESS", "keep v2?", ", \"outcome\": \"question\"");
     flow.awaitRun("master-answer");
@@ -131,25 +90,87 @@ class JudgeModeFlowTest {
     verify(assistants.reviewer(), never()).review(any());
   }
 
-  @Test
-  void shipsAndDeploysOnlyWhenTheHumanPresses() throws Exception {
-    flow.judges(judgement().build());
-    flow.handBackTheFirstRound();
-    flow.awaitReview();
+  @Nested
+  class WithTheWidgetFixed {
 
-    assertThat(flow.act("ship")).contains("relayed to the agent");
-    E2eWorkspace.git(flow.worktree(), "add", "-A");
-    E2eWorkspace.git(flow.worktree(), "commit", "-m", TASK + " fix the widget");
-    E2eWorkspace.git(flow.worktree(), "push", "-u", "origin", TASK);
-    when(assistants.codeHost().readReview(flow.request()))
-        .thenReturn(new Answer<>(Optional.of(reviewFacts().build()), TokenUsage.NONE));
-    flow.agentReports(
-        "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + flow.request() + "\"");
-    flow.act("sweep");
-    assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEWED);
-    flow.awaitRun("master-deploy");
-    assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEWED);
+    @BeforeEach
+    void theTaskHoldsItsFirstRound() throws Exception {
+      provisioning.initializeTask(newTask().build());
+      Files.writeString(flow.worktree().resolve("widget.txt"), "fixed\n");
+      Files.writeString(flow.worktree().resolve("task_notes.md"), "widget fixed\n");
+    }
 
-    assertThat(flow.act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");
+    @Test
+    void readsReadyRoundAndLeavesEveryPressToTheHuman() throws Exception {
+      flow.judges(judgement().build());
+
+      flow.agentReports("REVIEW_PENDING", "widget fixed", "");
+
+      assertThat(flow.awaitReview()).contains("VERDICT: ready");
+      flow.awaitRun("master-review");
+      assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+      assertThat(flow.task().history())
+          .extracting(StatusChange::status)
+          .doesNotContain(TaskStatus.SHIPPING);
+    }
+
+    @Test
+    void sendsNotReadyRoundBackToTheSessionThatWroteIt() throws Exception {
+      flow.judges(
+          judgement()
+              .withVerdict("not ready")
+              .withFindings(
+                  List.of(
+                      new Finding(
+                          "widget.txt",
+                          "the guard is inverted",
+                          "inverted guard",
+                          "blocking",
+                          "",
+                          "")))
+              .build());
+
+      flow.agentReports("REVIEW_PENDING", "widget fixed", "");
+
+      flow.awaitTold("the guard is inverted");
+      assertThat(flow.awaitTask(task -> task.status() == TaskStatus.IN_PROGRESS).status())
+          .isEqualTo(TaskStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void putsTheReviewersQuestionToTheHumanRatherThanAnsweringIt() throws Exception {
+      flow.judges(judgement().withVerdict("question").withQuestion("keep v2 beside v3?").build());
+
+      flow.agentReports("REVIEW_PENDING", "widget fixed", "");
+
+      assertThat(
+              flow.awaitTask(
+                      task ->
+                          task.message() != null && task.message().contains("keep v2 beside v3?"))
+                  .report())
+          .isEqualTo(AgentReport.QUESTION);
+    }
+
+    @Test
+    void shipsAndDeploysOnlyWhenTheHumanPresses() throws Exception {
+      flow.judges(judgement().build());
+      flow.agentReports("REVIEW_PENDING", "widget fixed", "");
+      flow.awaitReview();
+
+      assertThat(flow.act("ship")).contains("relayed to the agent");
+      E2eWorkspace.git(flow.worktree(), "add", "-A");
+      E2eWorkspace.git(flow.worktree(), "commit", "-m", TASK + " fix the widget");
+      E2eWorkspace.git(flow.worktree(), "push", "-u", "origin", TASK);
+      when(assistants.codeHost().readReview(flow.request()))
+          .thenReturn(new Answer<>(Optional.of(reviewFacts().build()), TokenUsage.NONE));
+      flow.agentReports(
+          "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + flow.request() + "\"");
+      flow.act("sweep");
+      assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEWED);
+      flow.awaitRun("master-deploy");
+      assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEWED);
+
+      assertThat(flow.act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");
+    }
   }
 }
