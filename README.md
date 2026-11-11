@@ -1,7 +1,7 @@
 <h1 align="center">jagt</h1>
 
 <p align="center">
-  <b>One ticket → one agent session → one Git worktree.<br>You approve every push.</b>
+  <b>One ticket → one agent session → one Git worktree.<br>Nothing reaches a shared branch until you, or an agent you allow, deploy it.</b>
 </p>
 
 <p align="center">
