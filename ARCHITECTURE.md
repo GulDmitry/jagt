@@ -212,7 +212,9 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
   legal ones only, `FlowRules.allowed(...)`), and `FlowEngine` refuses an illegal one with a sentence.
 - **The surface holds no list** — the usual way to break that is building a button in `static/components/Card.js`.
 - An action the table never mentions is offered by nobody, so `startup/FlowCheck` refuses to start.
-- A capability gets a folder once it owns work (`capability/ship/`); the rest are flat.
+- **The tree shows layers, then features, then kinds**: a new kind of thing is named here before its first class; three
+  classes of one kind or feature get their own sub-package (`capability/ship/`); nothing is split ahead of that, and no
+  package holds a single class.
 - `do` and `resume` are named literally only in tier 2: `PaletteContext`'s prompt maps a line onto them,
   `NaturalLanguageDispatch` runs them.
 
