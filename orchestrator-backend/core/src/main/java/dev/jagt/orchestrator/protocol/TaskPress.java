@@ -5,9 +5,10 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import java.util.Arrays;
 import java.util.List;
 
-/** One verb of the board pressed on one task, with the project some verbs take. */
+/** One verb of the board pressed on one task, with the project or the line some verbs take. */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record TaskPress(String taskId, String verb, String project) implements Message {
+public record TaskPress(String taskId, String verb, String project, String line)
+    implements Message {
 
   private static final List<String> VERBS =
       Arrays.stream(TaskAction.values()).map(TaskAction::id).toList();
@@ -18,14 +19,15 @@ public record TaskPress(String taskId, String verb, String project) implements M
         .choiceRequired("verb", VERBS, null)
         .text(
             "project",
-            "The project an `add-repo` or `remove-repo` names, or the line `run` types; otherwise"
-                + " left out.");
+            "The project an `add-repo` or `remove-repo` names; otherwise left out.")
+        .text("line", "The one line `run` types into the session; otherwise left out.");
   }
 
   public TaskPress {
     taskId = taskId == null || taskId.isBlank() ? null : taskId;
     verb = verb == null || verb.isBlank() ? null : verb.strip();
     project = project == null || project.isBlank() ? null : project.strip();
+    line = line == null || line.isBlank() ? null : line.strip();
   }
 
   @Override

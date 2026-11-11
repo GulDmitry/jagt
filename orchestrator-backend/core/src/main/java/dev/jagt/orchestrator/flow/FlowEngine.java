@@ -32,6 +32,16 @@ public class FlowEngine {
    * cannot be taken.
    */
   public String run(String taskIdOrAlias, TaskAction action, @Nullable String project) {
+    return runWith(taskIdOrAlias, action, project, null);
+  }
+
+  /** As above, on the line a verb that takes one types; never a project. */
+  public String runLine(String taskIdOrAlias, TaskAction action, String line) {
+    return runWith(taskIdOrAlias, action, null, line);
+  }
+
+  private String runWith(
+      String taskIdOrAlias, TaskAction action, @Nullable String project, @Nullable String line) {
     String taskId = tasks.canonicalTaskId(taskIdOrAlias);
     TaskState task = tasks.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskIdOrAlias));
     Facts read = facts(task, taskId);
@@ -70,15 +80,22 @@ public class FlowEngine {
     if (project != null) {
       named(taskId, task, action, project, capability);
     }
-    return apply(taskId, task.status(), action, wrapped(taskId, action, capability, project));
+    if (line != null) {
+      if (!action.takesLine()) {
+        throw Refusal.byState(action.id() + " takes no line");
+      }
+      capability.vetLine(line);
+    }
+    return apply(
+        taskId, task.status(), action, wrapped(taskId, action, capability, project, line));
   }
 
   private void named(
       String taskId, TaskState task, TaskAction action, String project, TaskCapability capability) {
-    if (!action.takesProject() && !action.takesLine()) {
+    if (!action.takesProject()) {
       throw Refusal.byState(action.id() + " takes no project");
     }
-    if (!action.takesLine() && rules.next(task.status(), action, Outcome.Kind.RELAYED).isEmpty()) {
+    if (rules.next(task.status(), action, Outcome.Kind.RELAYED).isEmpty()) {
       throw new Refusal(
           Refusal.Code.ACTION_NOT_AVAILABLE,
           action.label()
@@ -96,9 +113,17 @@ public class FlowEngine {
    * innermost.
    */
   private Outcome wrapped(
-      String taskId, TaskAction action, TaskCapability capability, @Nullable String project) {
+      String taskId,
+      TaskAction action,
+      TaskCapability capability,
+      @Nullable String project,
+      @Nullable String line) {
     Supplier<Outcome> work =
-        project == null ? () -> capability.run(taskId) : () -> capability.run(taskId, project);
+        line != null
+            ? () -> capability.runLine(taskId, line)
+            : project == null
+                ? () -> capability.run(taskId)
+                : () -> capability.run(taskId, project);
     for (CapabilityInterceptor interceptor : capabilities.around(action).reversed()) {
       Supplier<Outcome> inner = work;
       work = () -> interceptor.around(taskId, inner);

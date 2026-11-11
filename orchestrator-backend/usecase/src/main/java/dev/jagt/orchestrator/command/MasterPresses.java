@@ -22,12 +22,20 @@ public class MasterPresses {
   private final GlobalCommands globals;
   private final ConfigService configService;
 
-  public String press(String taskIdOrAlias, String verb, @Nullable String project) {
+  public String press(
+      String taskIdOrAlias, String verb, @Nullable String project, @Nullable String line) {
     TaskAction action =
         TaskAction.byId(verb)
             .orElseThrow(() -> new Refusal(Refusal.Code.STATE, "No verb " + verb + " on a task."));
+    if (project != null && line != null) {
+      throw Refusal.byState("Name a project or a line, never both.");
+    }
     return OriginContext.as(
-        ActionOrigin.MASTER, () -> commands.execute(taskIdOrAlias, action, project));
+        ActionOrigin.MASTER,
+        () ->
+            line == null
+                ? commands.execute(taskIdOrAlias, action, project)
+                : commands.executeLine(taskIdOrAlias, action, line));
   }
 
   public String run(String verb, String tail) {

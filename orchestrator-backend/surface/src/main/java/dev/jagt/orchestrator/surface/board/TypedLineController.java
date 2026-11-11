@@ -43,7 +43,7 @@ public class TypedLineController {
     if (line.isBlank()) {
       throw new IllegalArgumentException("There is nothing to run");
     }
-    return new ActionResult(commands.execute(taskId, TaskAction.RUN, line));
+    return new ActionResult(commands.executeLine(taskId, TaskAction.RUN, line));
   }
 
   public record KeyRequest(String key) {}

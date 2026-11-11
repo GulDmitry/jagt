@@ -62,7 +62,7 @@ class MasterVerbsTest {
   @ParameterizedTest
   @EnumSource(TaskAction.class)
   void theMasterPressesEveryVerbTheBoardOffers(TaskAction action) {
-    presses.press("ABC-42", action.id(), null);
+    presses.press("ABC-42", action.id(), null, null);
 
     verify(commands).execute("ABC-42", action, null);
   }

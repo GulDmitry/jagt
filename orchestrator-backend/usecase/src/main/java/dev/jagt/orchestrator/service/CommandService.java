@@ -24,12 +24,22 @@ public class CommandService {
 
   /** As above, with the project a human typed after the ticket, or null. */
   public String execute(String taskIdOrAlias, TaskAction action, @Nullable String project) {
-    if (!door.presses(taskIdOrAlias, action)) {
-      return action.id()
-          + " "
-          + taskIdOrAlias
-          + ": no master case allows it at this status; see misses.jsonl";
-    }
-    return flow.run(taskIdOrAlias, action, project);
+    return door.presses(taskIdOrAlias, action)
+        ? flow.run(taskIdOrAlias, action, project)
+        : declined(taskIdOrAlias, action);
+  }
+
+  /** As {@link #execute(String, TaskAction)}, with the line a verb that takes one types. */
+  public String executeLine(String taskIdOrAlias, TaskAction action, String line) {
+    return door.presses(taskIdOrAlias, action)
+        ? flow.runLine(taskIdOrAlias, action, line)
+        : declined(taskIdOrAlias, action);
+  }
+
+  private static String declined(String taskIdOrAlias, TaskAction action) {
+    return action.id()
+        + " "
+        + taskIdOrAlias
+        + ": no master case allows it at this status; see misses.jsonl";
   }
 }

@@ -51,6 +51,23 @@ class CommandServiceTest {
   }
 
   @Test
+  void handsTheLineHumanTypedToTheFlowApartFromAnyProject() {
+    when(door.presses("ABC-1", TaskAction.RUN)).thenReturn(true);
+    when(flow.runLine("ABC-1", TaskAction.RUN, "ls -la")).thenReturn("ran ls -la");
+
+    assertThat(commands.executeLine("ABC-1", TaskAction.RUN, "ls -la")).isEqualTo("ran ls -la");
+  }
+
+  @Test
+  void leavesTheLineUnrunWhereNoMasterCaseAllowsIt() {
+    when(door.presses("ABC-1", TaskAction.RUN)).thenReturn(false);
+
+    assertThat(commands.executeLine("ABC-1", TaskAction.RUN, "ls -la"))
+        .contains("no master case allows it");
+    verify(flow, never()).runLine("ABC-1", TaskAction.RUN, "ls -la");
+  }
+
+  @Test
   void passesAnAliasDownUntouchedSoOnlyOnePlaceResolvesIt() {
     when(door.presses("a1", TaskAction.FOCUS)).thenReturn(true);
 

@@ -29,7 +29,7 @@ public class PressTools implements McpTools {
                 + " refused where the verb is not legal now or the human's `mine` keeps it."),
         TaskPress.class,
         (said, caller) -> MessageContext.NONE,
-        (said, caller) -> presses.press(said.taskId(), said.verb(), said.project()));
+        (said, caller) -> presses.press(said.taskId(), said.verb(), said.project(), said.line()));
 
     tools.tool(
         "run_command",

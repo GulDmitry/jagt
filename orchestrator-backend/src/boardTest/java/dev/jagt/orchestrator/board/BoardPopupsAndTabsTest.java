@@ -187,7 +187,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   @Test
   void theSessionTabRunsTheLineThroughTheRunVerbInsteadOfSayingIt() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
-    when(commands.execute("ABC-1", TaskAction.RUN, "ls -la"))
+    when(commands.executeLine("ABC-1", TaskAction.RUN, "ls -la"))
         .thenReturn("Run in the agent's window.");
     Page page = openBoard();
 
@@ -196,7 +196,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     page.locator("#pane .say button[data-run]").click();
 
     assertThat(page.locator("#toasts .toast")).hasText("Run in the agent's window.");
-    verify(commands).execute("ABC-1", TaskAction.RUN, "ls -la");
+    verify(commands).executeLine("ABC-1", TaskAction.RUN, "ls -la");
     verify(sessions, org.mockito.Mockito.never()).say("ABC-1", "ls -la");
   }
 

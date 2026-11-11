@@ -455,7 +455,7 @@ class McpToolScopeTest {
   @Test
   void letsTheMasterPressVerbOnTaskWithTheProjectItNames() {
     MasterPresses presses = mock(MasterPresses.class);
-    when(presses.press("ABC-1", "remove-repo", "api")).thenReturn("removed api from ABC-1");
+    when(presses.press("ABC-1", "remove-repo", "api", null)).thenReturn("removed api from ABC-1");
     Registered registered = new Registered();
     new PressTools(presses).declare(registered);
     ToolHandler handler = registered.handlers.get("press_task");

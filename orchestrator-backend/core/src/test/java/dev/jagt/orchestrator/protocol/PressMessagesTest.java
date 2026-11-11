@@ -8,37 +8,45 @@ class PressMessagesTest {
 
   @Test
   void acceptsVerbOnTask() {
-    assertThat(new TaskPress("ABC-42", "done", "").violations(MessageContext.NONE)).isEmpty();
+    assertThat(new TaskPress("ABC-42", "done", "", "").violations(MessageContext.NONE)).isEmpty();
   }
 
   @Test
   void asksForTheTaskWhereTheVerbIsPressedOnNone() {
-    assertThat(new TaskPress(" ", "done", "").violations(MessageContext.NONE))
+    assertThat(new TaskPress(" ", "done", "", "").violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("taskId");
   }
 
   @Test
   void refusesVerbNoTaskActionNames() {
-    assertThat(new TaskPress("ABC-42", "explode", "").violations(MessageContext.NONE))
+    assertThat(new TaskPress("ABC-42", "explode", "", "").violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("verb");
   }
 
   @Test
   void asksForTheVerbWhereNoneIsGiven() {
-    assertThat(new TaskPress("ABC-42", "", "").violations(MessageContext.NONE))
+    assertThat(new TaskPress("ABC-42", "", "", "").violations(MessageContext.NONE))
         .extracting(Violation::field)
         .containsExactly("verb");
   }
 
   @Test
   void stripsTheVerbAndTheProjectAndKeepsNoneBlank() {
-    TaskPress said = new TaskPress("ABC-42", " remove-repo ", " api ");
+    TaskPress said = new TaskPress("ABC-42", " remove-repo ", " api ", "");
 
     assertThat(said.verb()).isEqualTo("remove-repo");
     assertThat(said.project()).isEqualTo("api");
-    assertThat(new TaskPress("ABC-42", "done", " ").project()).isNull();
+    assertThat(new TaskPress("ABC-42", "done", " ", "").project()).isNull();
+  }
+
+  @Test
+  void carriesTheLineApartFromTheProject() {
+    TaskPress said = new TaskPress("ABC-42", "run", "", " ls -la ");
+
+    assertThat(said.line()).isEqualTo("ls -la");
+    assertThat(said.project()).isNull();
   }
 
   @Test

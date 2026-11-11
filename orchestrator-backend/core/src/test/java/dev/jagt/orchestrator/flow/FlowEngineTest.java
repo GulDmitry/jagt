@@ -38,6 +38,14 @@ class FlowEngineTest {
   private final TaskState reviewPending =
       TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
 
+  private final FlowEngine lineEngine =
+      new FlowEngine(
+          stateService,
+          new Capabilities(List.of(new LineCapability()), List.of()),
+          facts,
+          Clock.systemUTC(),
+          rules);
+
   private record FixedCapability(TaskAction action, Outcome outcome) implements TaskCapability {
 
     @Override
@@ -90,6 +98,39 @@ class FlowEngineTest {
     }
   }
 
+  private record LineCapability() implements TaskCapability {
+
+    @Override
+    public TaskAction action() {
+      return TaskAction.RUN;
+    }
+
+    @Override
+    public Outcome run(String taskId) {
+      throw new AssertionError("run needs a line");
+    }
+
+    @Override
+    public Outcome run(String taskId, String project) {
+      throw new AssertionError("a project is never a line");
+    }
+
+    @Override
+    public void vet(String project) {}
+
+    @Override
+    public void vetLine(String line) {
+      if (line.isBlank()) {
+        throw Refusal.byState("run takes one line of text");
+      }
+    }
+
+    @Override
+    public Outcome runLine(String taskId, String line) {
+      return Outcome.relayed("ran " + line, null);
+    }
+  }
+
   private record NeverRunCapability(TaskAction action) implements TaskCapability {
 
     @Override
@@ -118,6 +159,47 @@ class FlowEngineTest {
                 assertThat(refusal)
                     .hasMessageContaining("No task ABC-1")
                     .hasMessageContaining("may have been closed"));
+  }
+
+  @Test
+  void handsTheTypedLineToTheVerbThatTakesOne() {
+    when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+    when(stateService.task("ABC-1"))
+        .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()));
+    assertThat(lineEngine.runLine("ABC-1", TaskAction.RUN, "ls -la")).isEqualTo("ran ls -la");
+  }
+
+  @Test
+  void refusesLineTheVerbVetsAwayBeforeAnythingRuns() {
+    when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+    when(stateService.task("ABC-1"))
+        .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()));
+
+    assertThatThrownBy(() -> lineEngine.runLine("ABC-1", TaskAction.RUN, " "))
+        .isInstanceOf(Refusal.class)
+        .hasMessageContaining("one line of text");
+  }
+
+  @Test
+  void refusesProjectNamedForVerbThatTakesLine() {
+    when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+    when(stateService.task("ABC-1"))
+        .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()));
+    assertThatThrownBy(() -> lineEngine.run("ABC-1", TaskAction.RUN, "ls -la"))
+        .isInstanceOf(Refusal.class)
+        .hasMessageContaining("run takes no project");
+  }
+
+  @Test
+  void refusesLineTypedForVerbThatTakesNone() {
+    when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+    when(stateService.task("ABC-1")).thenReturn(Optional.of(reviewPending));
+    FlowEngine engine =
+        new FlowEngine(stateService, neverRunShip, facts, Clock.systemUTC(), rules);
+
+    assertThatThrownBy(() -> engine.runLine("ABC-1", TaskAction.SHIP, "ls -la"))
+        .isInstanceOf(Refusal.class)
+        .hasMessageContaining("ship takes no line");
   }
 
   @Test

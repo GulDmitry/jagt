@@ -57,17 +57,34 @@ class MasterPressesTest {
             });
     MasterPresses presses = new MasterPresses(commands, new GlobalCommands(List.of()), config);
 
-    String answered = presses.press("ABC-42", "remove-repo", "api");
+    String answered = presses.press("ABC-42", "remove-repo", "api", null);
 
     assertThat(answered).isEqualTo("removed api");
     assertThat(seen.get()).isEqualTo(ActionOrigin.MASTER);
   }
 
   @Test
+  void pressesRunLineAsItsOwnArgumentNeverAsProject() {
+    when(commands.executeLine("ABC-42", TaskAction.RUN, "ls -la")).thenReturn("ran");
+    MasterPresses presses = new MasterPresses(commands, new GlobalCommands(List.of()), config);
+
+    assertThat(presses.press("ABC-42", "run", null, "ls -la")).isEqualTo("ran");
+  }
+
+  @Test
+  void refusesPressNamingBothProjectAndLine() {
+    MasterPresses presses = new MasterPresses(commands, new GlobalCommands(List.of()), config);
+
+    assertThatThrownBy(() -> presses.press("ABC-42", "run", "api", "ls -la"))
+        .isInstanceOfSatisfying(
+            Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE));
+  }
+
+  @Test
   void refusesVerbNoTaskActionNames() {
     MasterPresses presses = new MasterPresses(commands, new GlobalCommands(List.of()), config);
 
-    assertThatThrownBy(() -> presses.press("ABC-42", "explode", null))
+    assertThatThrownBy(() -> presses.press("ABC-42", "explode", null, null))
         .isInstanceOfSatisfying(
             Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE));
   }

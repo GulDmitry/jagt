@@ -27,6 +27,16 @@ public interface TaskCapability {
     throw Refusal.byState(action().id() + " takes no project");
   }
 
+  /** The work on the line a human typed, once vetted. */
+  default Outcome runLine(String taskId, String line) {
+    throw Refusal.byState(action().id() + " takes no line");
+  }
+
+  /** Throws a {@link Refusal} when the line cannot be taken, before anything is written. */
+  default void vetLine(String line) {
+    throw Refusal.byState(action().id() + " takes no line");
+  }
+
   /**
    * Throws a {@link Refusal} when the project a human named cannot be taken, before anything is
    * written.

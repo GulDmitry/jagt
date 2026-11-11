@@ -27,7 +27,7 @@ public class RunCapability implements TaskCapability {
   }
 
   @Override
-  public void vet(String line) {
+  public void vetLine(String line) {
     if (line.isBlank() || line.chars().anyMatch(Character::isISOControl)) {
       throw Refusal.byState("run takes one line of text, nothing else");
     }
@@ -39,7 +39,7 @@ public class RunCapability implements TaskCapability {
   }
 
   @Override
-  public Outcome run(String taskId, String line) {
+  public Outcome runLine(String taskId, String line) {
     return Outcome.relayed(sessions.run(taskId, line), null);
   }
 }

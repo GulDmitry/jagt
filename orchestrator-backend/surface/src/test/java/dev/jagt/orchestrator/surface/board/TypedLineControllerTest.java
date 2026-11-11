@@ -43,7 +43,8 @@ class TypedLineControllerTest {
 
   @Test
   void runsTheLineThroughTheRunVerbsGate() {
-    when(commands.execute("a1", TaskAction.RUN, "ls -la")).thenReturn("Run in the agent's window.");
+    when(commands.executeLine("a1", TaskAction.RUN, "ls -la"))
+        .thenReturn("Run in the agent's window.");
 
     assertThat(api.run("a1", new TypedLineController.LineRequest(" ls -la ")).message())
         .isEqualTo("Run in the agent's window.");
