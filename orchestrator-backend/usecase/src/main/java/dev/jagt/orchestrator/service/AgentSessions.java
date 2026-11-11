@@ -227,21 +227,7 @@ public class AgentSessions implements SessionLines {
     if (cold(task, config) && !promptOpen(session, id)) {
       return relayUnderCold(id, line);
     }
-    if (hosting.host().taskWindowState(session, id) != SessionHost.WindowState.AGENT_RUNNING
-        || !hosting.host().nudgeTaskWindow(session, id, line)) {
-      throw new IllegalStateException(
-          "No "
-              + hosting.runtime().displayName()
-              + " session is running for "
-              + id
-              + " — restart the agent, then say it again.");
-    }
-    undelivered(session, id, line)
-        .ifPresent(
-            cause -> {
-              throw new IllegalStateException(
-                  "The line was typed into " + id + "'s window, but " + cause + ".");
-            });
+    typed(session, id, line);
     log.atInfo()
         .setMessage("line said to agent")
         .addKeyValue("task", id)
@@ -249,6 +235,46 @@ public class AgentSessions implements SessionLines {
         .addKeyValue("said", OneLine.clipped(line))
         .log();
     return "Said to the agent.";
+  }
+
+  /** A cold session is typed into too: a shell line never reaches the model. */
+  public String run(String taskId, String line) {
+    String id = stateService.canonicalTaskId(taskId);
+    TaskState task = requireTask(id);
+    String escape =
+        hosting
+            .runtime()
+            .shellEscape()
+            .orElseThrow(
+                () ->
+                    Refusal.byState(
+                        hosting.runtime().displayName() + " has no shell escape to run a line"));
+    typed(agentSession(configService.load(), id), id, escape + line);
+    log.atInfo()
+        .setMessage("line run in agent")
+        .addKeyValue("task", id)
+        .addKeyValue("alias", task.alias())
+        .addKeyValue("chars", line.length())
+        .log();
+    return "Run in the agent's window.";
+  }
+
+  private void typed(String session, String id, String text) {
+    if (hosting.host().taskWindowState(session, id) != SessionHost.WindowState.AGENT_RUNNING
+        || !hosting.host().nudgeTaskWindow(session, id, text)) {
+      throw new IllegalStateException(
+          "No "
+              + hosting.runtime().displayName()
+              + " session is running for "
+              + id
+              + " — restart the agent, then say it again.");
+    }
+    undelivered(session, id, text)
+        .ifPresent(
+            cause -> {
+              throw new IllegalStateException(
+                  "The line was typed into " + id + "'s window, but " + cause + ".");
+            });
   }
 
   public String press(String taskId, SessionHost.Key key) {

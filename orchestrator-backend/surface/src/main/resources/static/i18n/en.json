@@ -92,6 +92,7 @@
   "say.hint": "tell this session — no, answer 2 differently",
   "keys.session": "keys for the session",
   "say.send": "Send",
+  "say.run": "Run",
   "said.label": "the session is working",
   "said.tip": "the session is working; this repaints when it answers",
   "report.silent": "nothing said back yet — this repaints when it is",

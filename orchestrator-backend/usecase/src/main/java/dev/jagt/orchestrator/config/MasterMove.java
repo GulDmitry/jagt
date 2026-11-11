@@ -20,6 +20,7 @@ public enum MasterMove {
   ESCALATE("escalate", false),
   REVERT("revert", false),
   HAND_OFF("hand-off", false),
+  RUN("run", false),
   TRUST("trust", false),
   PAUSE("pause", false),
   DONE("done", false),

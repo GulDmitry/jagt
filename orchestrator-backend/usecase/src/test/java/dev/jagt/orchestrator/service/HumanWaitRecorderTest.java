@@ -65,6 +65,7 @@ class HumanWaitRecorderTest {
                     config,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.fixed(Instant.ofEpochMilli(5_000), ZoneOffset.UTC),
                 new Checkers(new TaskChart(Composition.builtIn()))));
@@ -117,6 +118,7 @@ class HumanWaitRecorderTest {
                     config,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC),
                 new Checkers(new TaskChart(Composition.builtIn()))));
@@ -153,6 +155,7 @@ class HumanWaitRecorderTest {
                 new Rounds(
                     config,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC),

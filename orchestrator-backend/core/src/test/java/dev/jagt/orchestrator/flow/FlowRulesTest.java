@@ -37,6 +37,19 @@ class FlowRulesTest {
     assertThat(rules.allows(status, TaskAction.SCENARIOS, ready)).isEqualTo(offered);
   }
 
+  @ParameterizedTest
+  @CsvSource({"NEW,false", "PLAN_PENDING,true", "IN_PROGRESS,true", "DEPLOYED,true", "DONE,false"})
+  void offersRunOnStartedTaskWhereCliHasShellEscape(TaskStatus status, boolean offered) {
+    Facts escaped = Facts.defaults().withReach(Facts.Reach.defaults().withShellEscape(true));
+
+    assertThat(rules.allows(status, TaskAction.RUN, escaped)).isEqualTo(offered);
+  }
+
+  @Test
+  void offersNoRunWhereTheCliHasNoShellEscape() {
+    assertThat(rules.allows(TaskStatus.IN_PROGRESS, TaskAction.RUN, Facts.defaults())).isFalse();
+  }
+
   @Test
   void offersNoScenariosWhereAcceptanceIsOffOrHoldsNoWorkspace() {
     assertThat(rules.allows(TaskStatus.IN_PROGRESS, TaskAction.SCENARIOS, Facts.defaults()))

@@ -34,6 +34,8 @@ const Session = ({task, shown}) => html`<section class="session" role="tabpanel"
     <input name="line" aria-label=${t('say.label')} placeholder=${t('say.hint')}
       autocomplete="off" required/>
     <button type="submit">${t('say.send')}</button>
+    ${(task.actions || []).some((action) => action.id === 'run')
+      ? html`<button type="submit" data-run="">${t('say.run')}</button>` : ''}
   </form>
 </section>`;
 

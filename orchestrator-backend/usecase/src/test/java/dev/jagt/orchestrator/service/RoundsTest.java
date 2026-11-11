@@ -24,6 +24,7 @@ class RoundsTest {
           configService,
           ignored -> false,
           () -> false,
+          () -> false,
           new Checkers(new TaskChart(Composition.builtIn())));
 
   @Test
@@ -110,6 +111,7 @@ class RoundsTest {
         new Rounds(
                 configService,
                 standing -> Objects.equals(standing, task),
+                () -> false,
                 () -> false,
                 new Checkers(new TaskChart(Composition.builtIn())))
             .of(task, ConfigService.ConfigFile.defaults());

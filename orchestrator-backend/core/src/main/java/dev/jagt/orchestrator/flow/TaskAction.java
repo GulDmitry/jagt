@@ -98,6 +98,13 @@ public enum TaskAction {
       "scenarios",
       "Scenarios",
       "open an interactive acceptance session on this ticket, before its deploy"),
+  RUN(
+      66,
+      Group.SESSION,
+      "run",
+      "Run",
+      "type a shell line into the session behind its CLI's shell escape",
+      "run <ticket>"),
   FOCUS(70, Group.TOOL, "focus", "Focus", "open the agent's terminal window"),
   IDE(
       50,
@@ -121,11 +128,13 @@ public enum TaskAction {
 
   /**
    * Which half of a card an action belongs to: FLOW moves the task along its life, closing it
-   * included; TOOL only looks at what is already there, or starts the same agent again.
+   * included; TOOL only looks at what is already there, or starts the same agent again; SESSION is
+   * drawn on the Session tab, never on a card.
    */
   public enum Group {
     FLOW("flow"),
-    TOOL("tool");
+    TOOL("tool"),
+    SESSION("session");
 
     private final String id;
 
@@ -143,6 +152,9 @@ public enum TaskAction {
    * them.
    */
   private static final Set<TaskAction> READ_ONLY = EnumSet.of(FOCUS, IDE, DIFF);
+
+  /** Verbs whose one argument is a line a session is typed, never a project. */
+  private static final Set<TaskAction> TAKES_A_LINE = EnumSet.of(RUN);
 
   private static final Set<TaskAction> NAMES_A_PROJECT = EnumSet.of(ADD_REPO, REMOVE_REPO, REVERT);
 
@@ -216,6 +228,11 @@ public enum TaskAction {
   /** Whether a human may type a project after the ticket. */
   public boolean takesProject() {
     return NAMES_A_PROJECT.contains(this);
+  }
+
+  /** Whether the one argument after the ticket is a line typed into the session. */
+  public boolean takesLine() {
+    return TAKES_A_LINE.contains(this);
   }
 
   /** Whether this verb is only ever typed: a card offers no button for it. */

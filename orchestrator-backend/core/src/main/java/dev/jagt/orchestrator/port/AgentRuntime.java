@@ -267,4 +267,12 @@ public interface AgentRuntime {
   default String toldTheHuman(String line) {
     return "";
   }
+
+  /**
+   * What typed first in this CLI's input makes the rest run as a shell line; EMPTY where it has no
+   * such escape.
+   */
+  default Optional<String> shellEscape() {
+    return Optional.empty();
+  }
 }

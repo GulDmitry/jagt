@@ -36,7 +36,13 @@ export const sayTo = (taskId, line) => api(`/api/tasks/say?task=${encodeURICompo
   body: JSON.stringify({line}),
 });
 
-export const pressKey = (taskId, key) => api(`/api/tasks/key?task=${encodeURIComponent(taskId)}`, {
+export const runTo = (taskId, line) => api(`/api/tasks/run?task=${encodeURIComponent(taskId)}`, {
+  method: 'POST',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({line}),
+});
+
+export const pressKey =(taskId, key) => api(`/api/tasks/key?task=${encodeURIComponent(taskId)}`, {
   method: 'POST',
   headers: {'Content-Type': 'application/json'},
   body: JSON.stringify({key}),

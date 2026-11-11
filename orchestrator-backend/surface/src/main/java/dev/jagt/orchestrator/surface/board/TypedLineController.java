@@ -1,7 +1,9 @@
 package dev.jagt.orchestrator.surface.board;
 
+import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.surface.board.TaskCommandsController.ActionResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,6 +24,7 @@ public class TypedLineController {
 
   private final NaturalLanguageDispatch naturalLanguage;
   private final AgentSessions sessions;
+  private final CommandService commands;
 
   /** A line typed where a round is read: it goes into the session, never over the brief on disk. */
   @PostMapping("/tasks/say")
@@ -31,6 +34,16 @@ public class TypedLineController {
       throw new IllegalArgumentException("There is nothing to say");
     }
     return new ActionResult(sessions.say(taskId, line));
+  }
+
+  /** The line travels in the body, never the URL, and goes through the verb's own gate. */
+  @PostMapping("/tasks/run")
+  public ActionResult run(@RequestParam("task") String taskId, @RequestBody LineRequest request) {
+    String line = request.line() == null ? "" : request.line().strip();
+    if (line.isBlank()) {
+      throw new IllegalArgumentException("There is nothing to run");
+    }
+    return new ActionResult(commands.execute(taskId, TaskAction.RUN, line));
   }
 
   public record KeyRequest(String key) {}

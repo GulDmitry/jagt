@@ -6,8 +6,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.CommandService;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,7 +19,9 @@ class TypedLineControllerTest {
 
   private final NaturalLanguageDispatch naturalLanguage = mock(NaturalLanguageDispatch.class);
   private final AgentSessions sessions = mock(AgentSessions.class);
-  private final TypedLineController api = new TypedLineController(naturalLanguage, sessions);
+  private final CommandService commands = mock(CommandService.class);
+  private final TypedLineController api =
+      new TypedLineController(naturalLanguage, sessions, commands);
 
   @Test
   void saysLineToTheSessionOfTheTaskTheReportIsAbout() {
@@ -35,6 +39,21 @@ class TypedLineControllerTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("nothing to say");
     verifyNoInteractions(sessions);
+  }
+
+  @Test
+  void runsTheLineThroughTheRunVerbsGate() {
+    when(commands.execute("a1", TaskAction.RUN, "ls -la")).thenReturn("Run in the agent's window.");
+
+    assertThat(api.run("a1", new TypedLineController.LineRequest(" ls -la ")).message())
+        .isEqualTo("Run in the agent's window.");
+  }
+
+  @Test
+  void refusesAnEmptyRunRatherThanTypingTheEscapeAlone() {
+    assertThatThrownBy(() -> api.run("a1", new TypedLineController.LineRequest("  ")))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(commands);
   }
 
   @Test

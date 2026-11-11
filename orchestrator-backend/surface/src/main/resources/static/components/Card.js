@@ -15,7 +15,7 @@ const verbClass = (action) => [action.primary && !action.apart && 'primary', act
 // Which groups exist, and which comes first, stays the projection's answer; a verb drawn apart ends its row.
 const rows = (task) => {
   const grouped = [];
-  for (const action of task.actions || []) {
+  for (const action of (task.actions || []).filter((each) => each.group !== 'session')) {
     if (grouped.at(-1)?.group !== action.group) grouped.push({group: action.group, items: []});
     grouped.at(-1).items.push({action});
   }

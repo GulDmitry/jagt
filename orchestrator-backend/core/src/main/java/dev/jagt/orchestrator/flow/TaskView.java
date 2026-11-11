@@ -313,7 +313,7 @@ public record TaskView(
     boolean draftedReplies = round.draftedReplies();
     Stop stop = Stop.of(task.stop());
     Facts projected =
-        Facts.projected(task).withReach(Facts.Reach.defaults().withScenarios(round.scenarios()));
+        Facts.projected(task).withReach(round.reach());
     AutoReviewWatch watch = autoReview == null ? AutoReviewWatch.none() : autoReview;
     Move move =
         Move.forTask(

@@ -47,6 +47,7 @@ class TaskViewsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC(),
                 new FlowRules(new TaskChart(Composition.builtIn())))
@@ -71,6 +72,7 @@ class TaskViewsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC(),
@@ -100,6 +102,7 @@ class TaskViewsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC(),
                 new FlowRules(new TaskChart(Composition.builtIn())))
@@ -127,6 +130,7 @@ class TaskViewsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC(),
@@ -160,6 +164,7 @@ class TaskViewsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC(),
                 new FlowRules(new TaskChart(Composition.builtIn())))
@@ -184,6 +189,7 @@ class TaskViewsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC(),
@@ -211,6 +217,7 @@ class TaskViewsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC(),
@@ -242,6 +249,7 @@ class TaskViewsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC(),
                 new FlowRules(new TaskChart(Composition.builtIn())))
@@ -268,6 +276,7 @@ class TaskViewsTest {
                     configService,
                     ignored -> false,
                     () -> true,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC(),
                 new FlowRules(new TaskChart(Composition.builtIn())))
@@ -288,6 +297,7 @@ class TaskViewsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC(),
@@ -317,6 +327,7 @@ class TaskViewsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 Clock.systemUTC(),

@@ -45,6 +45,11 @@ class AgentRuntimeTest {
   }
 
   @Test
+  void hasNoShellEscapeWhereTheRuntimeNamesNone() {
+    assertThat(new Minimal().shellEscape()).isEmpty();
+  }
+
+  @Test
   void revivesSessionByStartingFreshOneWhereTheRuntimeKeepsNothingToReEnter() {
     assertThat(new Minimal().reviveCommand(Path.of("/wt"))).isEqualTo("run in /wt");
   }

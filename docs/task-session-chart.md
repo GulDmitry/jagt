@@ -106,4 +106,5 @@ stateDiagram-v2
     %% derived shipped without request
     %% derived revert conflict
     %% derived scenarios ready
+    %% derived shell escape
 ```

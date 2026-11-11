@@ -51,6 +51,12 @@ class TaskActionTest {
     assertThat(action.typed()).isEqualTo(typed);
   }
 
+  @ParameterizedTest
+  @CsvSource({"RUN,true", "ADD_REPO,false", "SHIP,false"})
+  void letsHumanTypeLineOnlyForRun(TaskAction action, boolean takesLine) {
+    assertThat(action.takesLine()).isEqualTo(takesLine);
+  }
+
   @Test
   void sortsTheMostUsedVerbsLowest() {
     assertThat(TaskAction.SWEEP.rank()).isLessThan(TaskAction.SHIP.rank());

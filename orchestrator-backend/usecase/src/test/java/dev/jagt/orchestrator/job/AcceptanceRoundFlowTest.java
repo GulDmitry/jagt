@@ -128,6 +128,7 @@ class AcceptanceRoundFlowTest {
                     config,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 config),
             config);
@@ -225,6 +226,7 @@ class AcceptanceRoundFlowTest {
                 new Rounds(
                     config,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 config),

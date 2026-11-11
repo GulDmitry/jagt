@@ -2,11 +2,13 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.MasterPhase;
 import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.port.RequestlessShip;
 import dev.jagt.orchestrator.port.ScenarioReach;
+import dev.jagt.orchestrator.port.ShellEscapeReach;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -19,6 +21,7 @@ public class Rounds implements PhaseProfiles {
   private final ConfigService configService;
   private final RequestlessShip requestless;
   private final ScenarioReach scenarios;
+  private final ShellEscapeReach shellEscape;
   private final Checkers checkers;
 
   public RoundState of(TaskState task) {
@@ -39,7 +42,10 @@ public class Rounds implements PhaseProfiles {
         .withMasterReading(FlowRules.readByTheMaster(task.status()) && master.running())
         .withCheckers(checkers.of(task))
         .withRequestless(requestless.stands(task))
-        .withScenarios(scenarios.ready());
+        .withReach(
+            Facts.Reach.defaults()
+                .withScenarios(scenarios.ready())
+                .withShellEscape(shellEscape.ready()));
   }
 
   @Override

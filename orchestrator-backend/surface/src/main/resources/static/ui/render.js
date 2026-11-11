@@ -18,7 +18,7 @@ import * as seen from './seen.js';
 import * as repliesOpened from './repliesOpened.js';
 import * as selection from './selection.js';
 import * as tabs from './tabs.js';
-import {pressKey, refusal, sayTo} from '../core/api.js';
+import {pressKey, refusal, runTo, sayTo} from '../core/api.js';
 import {toast} from './toast.js';
 import {sending} from './submit.js';
 import {said} from './keys.js';
@@ -123,7 +123,8 @@ board.addEventListener('submit', (event) => {
   event.preventDefault();
   const line = form.elements.line.value.trim();
   if (!line) return;
-  sending(form, {waiting: 'sending…', send: () => sayTo(form.dataset.say, line), done: () => {
+  const send = event.submitter?.hasAttribute('data-run') ? runTo : sayTo;
+  sending(form, {waiting: 'sending…', send: () => send(form.dataset.say, line), done: () => {
     form.reset();
     tabs.forget();
     render();

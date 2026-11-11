@@ -75,10 +75,10 @@ public class FlowEngine {
 
   private void named(
       String taskId, TaskState task, TaskAction action, String project, TaskCapability capability) {
-    if (!action.takesProject()) {
+    if (!action.takesProject() && !action.takesLine()) {
       throw Refusal.byState(action.id() + " takes no project");
     }
-    if (rules.next(task.status(), action, Outcome.Kind.RELAYED).isEmpty()) {
+    if (!action.takesLine() && rules.next(task.status(), action, Outcome.Kind.RELAYED).isEmpty()) {
       throw new Refusal(
           Refusal.Code.ACTION_NOT_AVAILABLE,
           action.label()
@@ -153,6 +153,8 @@ public class FlowEngine {
                 capabilities
                     .of(TaskAction.SCENARIOS)
                     .map(TaskCapability::offered)
-                    .orElse(false)));
+                    .orElse(false))
+            .withShellEscape(
+                capabilities.of(TaskAction.RUN).map(TaskCapability::offered).orElse(false)));
   }
 }

@@ -92,6 +92,7 @@
   "say.hint": "napisz do tej sesji — nie, odpowiedz inaczej na 2",
   "keys.session": "klawisze dla sesji",
   "say.send": "Wyślij",
+  "say.run": "Uruchom",
   "said.label": "sesja pracuje",
   "said.tip": "sesja pracuje; widok odświeży się, gdy odpowie",
   "report.silent": "jeszcze brak odpowiedzi — widok odświeży się, gdy się pojawi",

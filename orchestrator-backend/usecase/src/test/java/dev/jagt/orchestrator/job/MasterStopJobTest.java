@@ -89,6 +89,7 @@ class MasterStopJobTest {
                 config,
                 ignored -> false,
                 () -> false,
+                () -> false,
                 new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
@@ -113,6 +114,7 @@ class MasterStopJobTest {
             new Rounds(
                 config,
                 ignored -> false,
+                () -> false,
                 () -> false,
                 new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
@@ -141,6 +143,7 @@ class MasterStopJobTest {
                 config,
                 ignored -> false,
                 () -> false,
+                () -> false,
                 new Checkers(new TaskChart(Composition.builtIn()))));
 
     job.runOn(state.tasks());
@@ -168,6 +171,7 @@ class MasterStopJobTest {
             new Rounds(
                 config,
                 ignored -> false,
+                () -> false,
                 () -> false,
                 new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
@@ -200,6 +204,7 @@ class MasterStopJobTest {
                 config,
                 ignored -> false,
                 () -> false,
+                () -> false,
                 new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
@@ -225,6 +230,7 @@ class MasterStopJobTest {
                 config,
                 ignored -> false,
                 () -> false,
+                () -> false,
                 new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
@@ -249,6 +255,7 @@ class MasterStopJobTest {
             new Rounds(
                 config,
                 ignored -> false,
+                () -> false,
                 () -> false,
                 new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
@@ -276,6 +283,7 @@ class MasterStopJobTest {
             new Rounds(
                 config,
                 ignored -> false,
+                () -> false,
                 () -> false,
                 new Checkers(new TaskChart(Composition.builtIn()))));
 
@@ -319,6 +327,7 @@ class MasterStopJobTest {
                 config,
                 ignored -> false,
                 () -> false,
+                () -> false,
                 new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
 
@@ -345,6 +354,7 @@ class MasterStopJobTest {
             new Rounds(
                 config,
                 ignored -> false,
+                () -> false,
                 () -> false,
                 new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());
@@ -378,6 +388,7 @@ class MasterStopJobTest {
             new Rounds(
                 config,
                 ignored -> false,
+                () -> false,
                 () -> false,
                 new Checkers(new TaskChart(Composition.builtIn()))))
         .runOn(state.tasks());

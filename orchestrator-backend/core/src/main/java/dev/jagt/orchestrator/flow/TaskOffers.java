@@ -74,6 +74,8 @@ final class TaskOffers {
   private static final RegionId<Fact> SCENARIOS_READY =
       new RegionId<>("scenarios ready", Fact.class);
 
+  private static final RegionId<Fact> SHELL_ESCAPE = new RegionId<>("shell escape", Fact.class);
+
   private record Need(RegionId<Fact> region, Fact is) {}
 
   private record Offer(TaskAction action, Set<TaskStatus> from, List<Need> needs) {}
@@ -100,6 +102,8 @@ final class TaskOffers {
 
   static final Set<TaskStatus> HAND_OFF_FROM = difference(ANY, EnumSet.of(NEW, PLAN_PENDING, DONE));
 
+  private static final Set<TaskStatus> RUN_FROM = difference(ANY, EnumSet.of(NEW, DONE));
+
   static final Set<TaskStatus> REMOVE_REPO_FROM =
       difference(ANY, EnumSet.of(NEW, DEPLOY_CONFLICT, DONE));
 
@@ -122,6 +126,7 @@ final class TaskOffers {
           offer(TaskAction.ADD_REPO, OPEN, yes(REPO_REQUESTED)),
           offer(TaskAction.REMOVE_REPO, REMOVE_REPO_FROM, yes(SEVERAL_REPOS)),
           offer(TaskAction.HAND_OFF, HAND_OFF_FROM),
+          offer(TaskAction.RUN, RUN_FROM, yes(SHELL_ESCAPE)),
           offer(TaskAction.SWEEP, ANY, yes(REVIEW_REQUEST)),
           offer(
               TaskAction.DEPLOY, EnumSet.of(DEPLOY_CONFLICT), no(GIT_CHANGED), no(REVERT_CONFLICT)),
@@ -172,6 +177,7 @@ final class TaskOffers {
         facts -> Fact.of(facts.facts().delivery().shippedWithoutRequest()));
     chart.derived(REVERT_CONFLICT, facts -> Fact.of(facts.facts().delivery().revertConflict()));
     chart.derived(SCENARIOS_READY, facts -> Fact.of(facts.facts().reach().scenarios()));
+    chart.derived(SHELL_ESCAPE, facts -> Fact.of(facts.facts().reach().shellEscape()));
     for (Offer offer : OFFERS) {
       chart
           .onMatching(

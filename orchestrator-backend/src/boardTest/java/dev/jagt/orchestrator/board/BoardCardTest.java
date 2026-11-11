@@ -399,7 +399,7 @@ class BoardCardTest extends BoardPageContext {
         .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
     assertThat(page.locator("#pane .say input"))
         .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
-    assertThat(page.locator("#pane .say button"))
+    assertThat(page.locator("#pane .say button").last())
         .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
   }
 

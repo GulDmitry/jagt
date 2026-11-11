@@ -93,6 +93,13 @@ at: any but NEW, PLAN_PENDING, DONE
 by: master
 The Master says a task's git case to its session: the branch, the shas and the command to run.
 
+## run
+
+move: run
+at: any but NEW, DONE
+by: master
+The Master runs a shell line in a task's session, typed behind the CLI's shell escape.
+
 ## remove-repo
 
 move: remove-repo

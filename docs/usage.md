@@ -55,6 +55,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 | `deploy <ticket>` | merge the task branch into `deployBranch` and push |
 | `revert <ticket> [merge]` | undo that deploy with a revert commit; where none is recorded, name one of the merges it lists |
 | `hand-off <ticket>` | say the task's git case (rejected deploy push, diverged branch, waiting conflict) to its session, with the shas and the command |
+| `run <ticket>` | the Session tab's Run button: type the line behind the CLI's shell escape, where the CLI has one |
 | `scenarios <ticket>` | where acceptance is on and holds a workspace, before its deploy: an interactive acceptance session in the workspace, the ticket and any open question loaded |
 | `respawn <ticket>` | restart a dead agent session |
 | `add-repo <ticket> [project]` | attach the repository a session asked for, or the project you name: its worktree is cut and the session told |

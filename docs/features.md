@@ -35,7 +35,7 @@
 - **One row per task, the open one beside the list** — A row shows status, age and checks; pick one and its detail opens beside the list.
   [row](../openspec/specs/board-workspace/spec.md#requirement-a-task-is-one-row) ·
   [open](../openspec/specs/board-workspace/spec.md#requirement-one-task-is-open-beside-the-list)
-- **Session, Artifacts and Diff tabs** — Read the session's screen and answer it; read a task's plan and notes rendered, and its diff per repository.
+- **Session, Artifacts and Diff tabs** — Read the session's screen, answer it or run a shell line in it; read the plan, notes and diff per repository.
   [spec](../openspec/specs/board-workspace/spec.md#requirement-the-open-task-has-five-tabs) · [diff](../openspec/specs/board-diff/spec.md)
 - **Plan changes since approval** — The Artifacts tab marks plan lines new or rewritten since your last approval, and strikes removed ones.
   [spec](../openspec/specs/board/spec.md#requirement-a-plan-shows-what-changed-since-its-last-approval)

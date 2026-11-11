@@ -101,6 +101,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -137,6 +138,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -189,6 +191,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -226,6 +229,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -267,6 +271,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -312,6 +317,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -350,6 +356,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -396,6 +403,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -438,6 +446,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -475,6 +484,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -523,6 +533,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -578,6 +589,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -635,6 +647,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -685,6 +698,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -739,6 +753,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -784,6 +799,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -838,6 +854,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -891,6 +908,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -936,6 +954,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -980,6 +999,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -1020,6 +1040,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -1065,6 +1086,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -1101,6 +1123,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -1144,6 +1167,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -1181,6 +1205,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -1220,6 +1245,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -1262,6 +1288,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -1302,6 +1329,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -1348,6 +1376,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -1387,6 +1416,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -1432,6 +1462,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -1475,6 +1506,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -1516,6 +1548,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -1559,6 +1592,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -1606,6 +1640,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -1655,6 +1690,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -1693,6 +1729,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -1737,6 +1774,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -1777,6 +1815,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -1825,6 +1864,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -1865,6 +1905,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -1908,6 +1949,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -1948,6 +1990,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -2016,6 +2059,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -2062,6 +2106,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -2110,6 +2155,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -2157,6 +2203,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -2198,6 +2245,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -2250,6 +2298,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -2305,6 +2354,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -2356,6 +2406,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -2394,6 +2445,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -2438,6 +2490,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -2476,6 +2529,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -2522,6 +2576,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -2576,6 +2631,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -2628,6 +2684,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -2669,6 +2726,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -2704,6 +2762,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -2744,6 +2803,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -2778,6 +2838,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
@@ -2815,6 +2876,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -2849,6 +2911,7 @@ class AgentStatusReportsTest {
                     configService,
                     ignored -> false,
                     () -> false,
+                    () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),
             configService);
@@ -2882,6 +2945,7 @@ class AgentStatusReportsTest {
                 new Rounds(
                     configService,
                     ignored -> false,
+                    () -> false,
                     () -> false,
                     new Checkers(new TaskChart(Composition.builtIn()))),
                 configService),

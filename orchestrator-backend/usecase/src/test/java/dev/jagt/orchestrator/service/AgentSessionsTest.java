@@ -1932,4 +1932,108 @@ class AgentSessionsTest {
 
     assertThat(logged).isFalse();
   }
+
+  @Test
+  void typesLineBehindTheShellEscapeIntoTheRunningSession() {
+    state.putTask(
+        "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+    when(tmux.sessionName(null)).thenReturn("jagt");
+    when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+    when(agentRuntime.shellEscape()).thenReturn(Optional.of("!"));
+    when(tmux.nudgeTaskWindow("jagt", "ABC-1", "!ls -la")).thenReturn(true);
+    when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> "));
+    AgentSessions sessions =
+        new AgentSessions(
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)),
+            new FlowRules(new TaskChart(Composition.builtIn())));
+
+    String answer = sessions.run("ABC-1", "ls -la");
+
+    assertThat(answer).isEqualTo("Run in the agent's window.");
+    verify(tmux).nudgeTaskWindow("jagt", "ABC-1", "!ls -la");
+  }
+
+  @Test
+  void typesLineBehindTheShellEscapeIntoColdSessionInsteadOfRelayingItAsWords() {
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+            .build()
+            .withSession(Session.defaults().withMovedAt(5_000)));
+    when(tmux.sessionName(null)).thenReturn("jagt");
+    when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+    when(agentRuntime.pastCacheLifetime(5_000L, java.time.Duration.ofHours(1))).thenReturn(true);
+    when(agentRuntime.shellEscape()).thenReturn(Optional.of("!"));
+    when(tmux.nudgeTaskWindow("jagt", "ABC-1", "!ls")).thenReturn(true);
+    when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> "));
+    AgentSessions sessions =
+        new AgentSessions(
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)),
+            new FlowRules(new TaskChart(Composition.builtIn())));
+
+    sessions.run("ABC-1", "ls");
+
+    verify(tmux).nudgeTaskWindow("jagt", "ABC-1", "!ls");
+    verify(tmux, never())
+        .openTaskWindow(
+            anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
+    assertThat(root.resolve("task_context.md")).doesNotExist();
+  }
+
+  @Test
+  void refusesToRunLineWhereTheRuntimeHasNoShellEscape() {
+    state.putTask(
+        "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+    when(agentRuntime.shellEscape()).thenReturn(Optional.empty());
+    AgentSessions sessions =
+        new AgentSessions(
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)),
+            new FlowRules(new TaskChart(Composition.builtIn())));
+
+    assertThatThrownBy(() -> sessions.run("ABC-1", "ls")).isInstanceOf(Refusal.class);
+    verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
+  }
+
+  @Test
+  @ResourceLock(Resources.GLOBAL)
+  void logsThatLineRanAndItsLengthNeverTheLine() {
+    state.putTask(
+        "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+    when(tmux.sessionName(null)).thenReturn("jagt");
+    when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+    when(agentRuntime.shellEscape()).thenReturn(Optional.of("!"));
+    when(tmux.nudgeTaskWindow("jagt", "ABC-1", "!echo hunter2")).thenReturn(true);
+    when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> "));
+    AgentSessions sessions =
+        new AgentSessions(
+            config,
+            state,
+            new SessionHosting(tmux, agentRuntime, new CarriedBlock(changes, agentRuntime)),
+            new FlowRules(new TaskChart(Composition.builtIn())));
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    Logger sessionsLog = (Logger) LoggerFactory.getLogger(AgentSessions.class);
+    sessionsLog.addAppender(log);
+
+    sessions.run("ABC-1", "echo hunter2");
+
+    assertThat(List.copyOf(log.list))
+        .filteredOn(event -> "line run in agent".equals(event.getMessage()))
+        .singleElement()
+        .satisfies(
+            event -> {
+              assertThat(event.getKeyValuePairs())
+                  .extracting(pair -> pair.key + "=" + pair.value)
+                  .contains("chars=12");
+              assertThat(event.getFormattedMessage() + event.getKeyValuePairs())
+                  .doesNotContain("hunter2");
+            });
+    sessionsLog.detachAppender(log);
+  }
 }

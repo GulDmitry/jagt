@@ -463,6 +463,11 @@ class ClaudeAgentRuntimeTest {
     assertThat(answer.path("systemMessage").asString("")).isEqualTo("with the \"Master\"");
   }
 
+  @Test
+  void typesShellLineBehindBang() {
+    assertThat(claudeRuntime().build(Clock.systemUTC()).shellEscape()).contains("!");
+  }
+
   @ParameterizedTest
   @CsvSource(
       delimiter = '|',

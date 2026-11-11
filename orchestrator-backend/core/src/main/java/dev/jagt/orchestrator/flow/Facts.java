@@ -57,10 +57,10 @@ public record Facts(Delivery delivery, Hold hold, Workspace workspace, Reach rea
 
   /** What the configuration lets jagt offer, whatever the task is. */
   @With
-  public record Reach(boolean scenarios) {
+  public record Reach(boolean scenarios, boolean shellEscape) {
 
     public static Reach defaults() {
-      return new Reach(false);
+      return new Reach(false, false);
     }
   }
 

@@ -69,6 +69,7 @@ final class BoardFixtures {
                 config,
                 ignored -> false,
                 () -> false,
+                () -> false,
                 new Checkers(new TaskChart(Composition.builtIn()))),
             Clock.systemUTC(),
             new FlowRules(new TaskChart(Composition.builtIn()))));

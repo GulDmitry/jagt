@@ -476,6 +476,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     return "{\"systemMessage\": " + quoted(line) + "}";
   }
 
+  @Override
+  public Optional<String> shellEscape() {
+    return Optional.of("!");
+  }
+
   /**
    * The sandbox binds the shell alone; Claude's edit tools ask outside the working directory
    * without a rule.
