@@ -2,13 +2,18 @@ package dev.jagt.orchestrator.task;
 
 import java.util.List;
 import java.util.Map;
+import lombok.With;
 
-final class ReachedTasks {
+@With
+public record TestFinishedTaskBuilder(
+    String id, TaskStatus status, long statusAt, long finishedAt, FinishedTask.Spend spend) {
 
-  private ReachedTasks() {}
+  public static TestFinishedTaskBuilder finishedTask() {
+    return new TestFinishedTaskBuilder(
+        "ABC-1", TaskStatus.DEPLOYED, 5L, 10L, new FinishedTask.Spend(0, 4.0, null, null));
+  }
 
-  static FinishedTask reaching(
-      String id, TaskStatus status, long statusAt, long finishedAt, FinishedTask.Spend spend) {
+  public FinishedTask build() {
     return new FinishedTask(
         new FinishedTask.Identity(id, null, null, List.of(), null),
         finishedAt,

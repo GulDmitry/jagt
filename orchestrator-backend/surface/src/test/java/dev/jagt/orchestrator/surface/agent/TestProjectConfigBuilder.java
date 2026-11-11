@@ -2,12 +2,16 @@ package dev.jagt.orchestrator.surface.agent;
 
 import dev.jagt.orchestrator.task.ProjectConfig;
 import java.util.List;
+import lombok.With;
 
-final class ProjectFixtures {
+@With
+public record TestProjectConfigBuilder(String base, String deploy, String remote) {
 
-  private ProjectFixtures() {}
+  public static TestProjectConfigBuilder projectConfig() {
+    return new TestProjectConfigBuilder("main", "dev", "origin");
+  }
 
-  static ProjectConfig sharingBranchesThrough(String base, String deploy, String remote) {
+  public ProjectConfig build() {
     return new ProjectConfig(
         new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
         new ProjectConfig.Branches(base, deploy, remote),

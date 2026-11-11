@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.agent;
 
+import static dev.jagt.orchestrator.surface.agent.TestProjectConfigBuilder.projectConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -312,7 +313,7 @@ class AgentToolGateControllerTest {
   @Test
   void namesTheProjectsOwnRemoteInTheHintOfRefusedPush() {
     when(configService.project("proj"))
-        .thenReturn(ProjectFixtures.sharingBranchesThrough("upstream/main", "dev", "upstream"));
+        .thenReturn(projectConfig().withBase("upstream/main").withRemote("upstream").build());
     when(stateService.findByWorktree("/wt/ABC-1-proj"))
         .thenReturn(Optional.of(Map.entry("ABC-1", inProgress)));
 

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.task;
 
+import static dev.jagt.orchestrator.task.TestFinishedTaskBuilder.finishedTask;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
@@ -12,21 +13,31 @@ class CostPerAcceptedTaskTest {
   @Test
   void countsWhatFailedAndStoppedTaskCostButOnlyShippedTaskAsAccepted() {
     var shipped =
-        ReachedTasks.reaching(
-            "ABC-1", TaskStatus.DEPLOYED, 50L, 100L, new FinishedTask.Spend(0, 2.0, null, null));
+        finishedTask().withId("ABC-1")
+            .withStatusAt(50L)
+            .withFinishedAt(100L)
+            .withSpend(new FinishedTask.Spend(0, 2.0, null, null))
+            .build();
     var failed =
-        ReachedTasks.reaching(
-            "ABC-2", TaskStatus.NEW, 50L, 100L, new FinishedTask.Spend(0, 3.0, null, null));
+        finishedTask().withId("ABC-2")
+            .withStatus(TaskStatus.NEW)
+            .withStatusAt(50L)
+            .withFinishedAt(100L)
+            .withSpend(new FinishedTask.Spend(0, 3.0, null, null))
+            .build();
     var unread =
-        ReachedTasks.reaching(
-            "ABC-3", TaskStatus.NEW, 50L, 100L, new FinishedTask.Spend(0, null, null, null));
+        finishedTask().withId("ABC-3")
+            .withStatus(TaskStatus.NEW)
+            .withStatusAt(50L)
+            .withFinishedAt(100L)
+            .withSpend(new FinishedTask.Spend(0, null, null, null))
+            .build();
     var lastWeek =
-        ReachedTasks.reaching(
-            "ABC-4",
-            TaskStatus.DEPLOYED,
-            50L,
-            WEEK + 100L,
-            new FinishedTask.Spend(0, 9.0, null, null));
+        finishedTask().withId("ABC-4")
+            .withStatusAt(50L)
+            .withFinishedAt(WEEK + 100L)
+            .withSpend(new FinishedTask.Spend(0, 9.0, null, null))
+            .build();
 
     assertThat(CostPerAcceptedTask.over(List.of(shipped, failed, unread, lastWeek), 0L))
         .isEqualTo(new CostPerAcceptedTask(1, 3, 5.0, true));
@@ -35,18 +46,18 @@ class CostPerAcceptedTaskTest {
   @Test
   void weekRunsFromItsFirstInstantUpToButNotIncludingTheNextWeeksFirst() {
     var first =
-        ReachedTasks.reaching(
-            "ABC-1", TaskStatus.DEPLOYED, 5L, 10L, new FinishedTask.Spend(0, 4.0, null, null));
+        finishedTask().withId("ABC-1")
+            .build();
     var second =
-        ReachedTasks.reaching(
-            "ABC-3", TaskStatus.DEPLOYED, 5L, 11L, new FinishedTask.Spend(0, 2.0, null, null));
+        finishedTask().withId("ABC-3")
+            .withFinishedAt(11L)
+            .withSpend(new FinishedTask.Spend(0, 2.0, null, null))
+            .build();
     var next =
-        ReachedTasks.reaching(
-            "ABC-2",
-            TaskStatus.DEPLOYED,
-            5L,
-            10L + WEEK,
-            new FinishedTask.Spend(0, 8.0, null, null));
+        finishedTask().withId("ABC-2")
+            .withFinishedAt(10L + WEEK)
+            .withSpend(new FinishedTask.Spend(0, 8.0, null, null))
+            .build();
 
     assertThat(CostPerAcceptedTask.over(List.of(first, second, next), 10L).perAccepted())
         .contains(3.0);
@@ -55,15 +66,12 @@ class CostPerAcceptedTaskTest {
   @Test
   void isAnExactNumberOnlyWhereEveryCostIsKnownAndPriced() {
     var known =
-        ReachedTasks.reaching(
-            "ABC-1", TaskStatus.DEPLOYED, 5L, 10L, new FinishedTask.Spend(0, 4.0, null, null));
+        finishedTask().withId("ABC-1")
+            .build();
     var unpriced =
-        ReachedTasks.reaching(
-            "ABC-2",
-            TaskStatus.DEPLOYED,
-            5L,
-            10L,
-            new FinishedTask.Spend(0, 1.0, null, TokenUsage.ofUnpricedCall(10, 0, 10)));
+        finishedTask().withId("ABC-2")
+            .withSpend(new FinishedTask.Spend(0, 1.0, null, TokenUsage.ofUnpricedCall(10, 0, 10)))
+            .build();
 
     assertThat(CostPerAcceptedTask.over(List.of(known), 0L).lowerBound()).isFalse();
     assertThat(CostPerAcceptedTask.over(List.of(known, unpriced), 0L).lowerBound()).isTrue();
@@ -72,8 +80,12 @@ class CostPerAcceptedTaskTest {
   @Test
   void namesNoNumberWhereNothingShippedInTheWeek() {
     var failed =
-        ReachedTasks.reaching(
-            "ABC-2", TaskStatus.NEW, 50L, 100L, new FinishedTask.Spend(0, 3.0, null, null));
+        finishedTask().withId("ABC-2")
+            .withStatus(TaskStatus.NEW)
+            .withStatusAt(50L)
+            .withFinishedAt(100L)
+            .withSpend(new FinishedTask.Spend(0, 3.0, null, null))
+            .build();
 
     assertThat(CostPerAcceptedTask.over(List.of(failed), 0L).perAccepted()).isEmpty();
     assertThat(CostPerAcceptedTask.over(List.of(), 0L).perAccepted()).isEmpty();
