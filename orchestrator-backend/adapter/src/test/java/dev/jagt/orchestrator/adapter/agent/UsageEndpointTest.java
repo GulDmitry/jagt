@@ -1,7 +1,5 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import static dev.jagt.orchestrator.adapter.agent.UsageFixtures.endpointAtNoon;
-import static dev.jagt.orchestrator.adapter.agent.UsageFixtures.usageUriOf;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -9,6 +7,10 @@ import com.sun.net.httpserver.HttpServer;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -22,6 +24,11 @@ import org.junit.jupiter.params.provider.CsvSource;
 @ResourceLock("loopback-ports")
 @Execution(ExecutionMode.SAME_THREAD)
 class UsageEndpointTest {
+
+  private final UsageEndpoint endpoint =
+      new UsageEndpoint(
+          HttpClient.newHttpClient(),
+          Clock.fixed(Instant.parse("2026-10-10T12:00:00Z"), ZoneOffset.UTC));
 
   @Test
   void holdsTheNextCallBackForAsLongAsA429AskedWithoutSendingIt() throws Exception {
@@ -38,8 +45,7 @@ class UsageEndpointTest {
         });
     server.start();
     try {
-      var endpoint = endpointAtNoon();
-      URI uri = usageUriOf(server);
+      URI uri = URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/usage");
       endpoint.get(uri, Map.of());
 
       var second = endpoint.get(uri, Map.of());
@@ -70,8 +76,7 @@ class UsageEndpointTest {
         });
     server.start();
     try {
-      var endpoint = endpointAtNoon();
-      URI uri = usageUriOf(server);
+      URI uri = URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/usage");
 
       var reply = endpoint.get(uri, Map.of("Authorization", "Bearer tok-abc"));
 
@@ -100,8 +105,7 @@ class UsageEndpointTest {
         });
     server.start();
     try {
-      var endpoint = endpointAtNoon();
-      URI uri = usageUriOf(server);
+      URI uri = URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/usage");
 
       var reply = endpoint.get(uri, Map.of());
 
@@ -124,8 +128,7 @@ class UsageEndpointTest {
         });
     server.start();
     try {
-      var endpoint = endpointAtNoon();
-      URI uri = usageUriOf(server);
+      URI uri = URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/usage");
 
       var first = endpoint.get(uri, Map.of());
 
@@ -142,7 +145,6 @@ class UsageEndpointTest {
     try (var socket = new java.net.ServerSocket(0, 0, InetAddress.getLoopbackAddress())) {
       closedPort = socket.getLocalPort();
     }
-    var endpoint = endpointAtNoon();
 
     var reply = endpoint.get(URI.create("http://127.0.0.1:" + closedPort + "/usage"), Map.of());
 
@@ -154,7 +156,6 @@ class UsageEndpointTest {
 
   @Test
   void refusesWithoutSendingAndKeepsTheInterruptWhereTheCallerWasInterrupted() {
-    var endpoint = endpointAtNoon();
 
     Thread.currentThread().interrupt();
     var reply = endpoint.get(URI.create("http://127.0.0.1:9/usage"), Map.of());

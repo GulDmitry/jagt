@@ -1,9 +1,7 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import static dev.jagt.orchestrator.adapter.assistant.ModelServers.listing;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.sun.net.httpserver.HttpServer;
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
 import dev.jagt.orchestrator.config.LocalModelProperties;
 import dev.jagt.orchestrator.port.ReachLost;
@@ -19,20 +17,20 @@ import org.junit.jupiter.api.Test;
 
 class LocalModelReachTest {
 
-  private @Nullable HttpServer server;
+  private @Nullable FakeModelServer server;
 
   @AfterEach
   void stop() {
     if (server != null) {
-      server.stop(0);
+      server.stop();
     }
   }
 
   @Test
   void anEndpointServingAnotherModelIsLostReach() throws IOException {
     AtomicReference<String> body = new AtomicReference<>("{\"data\":[{\"id\":\"other\"}]}");
-    server = listing(body);
-    String endpoint = "http://127.0.0.1:" + server.getAddress().getPort() + "/v1/";
+    server = new FakeModelServer(body);
+    String endpoint = "http://127.0.0.1:" + server.port() + "/v1/";
     ReachLedger reach = new ReachLedger();
 
     new LocalModelReach(
@@ -49,8 +47,8 @@ class LocalModelReachTest {
   @Test
   void theLostMarkEndsWhenTheModelIsListedAgain() throws IOException {
     AtomicReference<String> body = new AtomicReference<>("{\"data\":[{\"id\":\"other\"}]}");
-    server = listing(body);
-    String endpoint = "http://127.0.0.1:" + server.getAddress().getPort() + "/v1";
+    server = new FakeModelServer(body);
+    String endpoint = "http://127.0.0.1:" + server.port() + "/v1";
     ReachLedger reach = new ReachLedger();
     LocalModelReach job =
         new LocalModelReach(
@@ -69,9 +67,9 @@ class LocalModelReachTest {
   @Test
   void anUnreachableAssistantEndpointIsLostReach() throws IOException {
     AtomicReference<String> body = new AtomicReference<>("{}");
-    server = listing(body);
-    String endpoint = "http://127.0.0.1:" + server.getAddress().getPort() + "/v1";
-    server.stop(0);
+    server = new FakeModelServer(body);
+    String endpoint = "http://127.0.0.1:" + server.port() + "/v1";
+    server.stop();
     ReachLedger reach = new ReachLedger();
 
     new LocalModelReach(

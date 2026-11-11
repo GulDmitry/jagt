@@ -7,12 +7,12 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicReference;
 
-final class ModelServers {
+final class FakeModelServer {
 
-  private ModelServers() {}
+  private final HttpServer server;
 
-  static HttpServer listing(AtomicReference<String> body) throws IOException {
-    HttpServer server =
+  FakeModelServer(AtomicReference<String> body) throws IOException {
+    server =
         HttpServer.create(
             new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 0), 0);
     server.createContext(
@@ -24,6 +24,13 @@ final class ModelServers {
           exchange.close();
         });
     server.start();
-    return server;
+  }
+
+  int port() {
+    return server.getAddress().getPort();
+  }
+
+  void stop() {
+    server.stop(0);
   }
 }

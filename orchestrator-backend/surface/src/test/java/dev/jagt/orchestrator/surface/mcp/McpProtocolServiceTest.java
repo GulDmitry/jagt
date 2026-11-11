@@ -177,7 +177,7 @@ class McpProtocolServiceTest {
   @Test
   void namesTheFailureKindWhenToolThrowsWithoutMessage(@TempDir Path root) {
     StateService state = McpMvc.stateIn(mapper, root);
-    McpTools failing = FixtureTools.throwing(new IllegalStateException());
+    McpTools failing = new ThrowingMcpTools(new IllegalStateException());
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
 
@@ -209,7 +209,7 @@ class McpProtocolServiceTest {
         TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS)
             .build()
             .withTurn(Turn.none().relayed("ship", "d1", "", 0)));
-    McpTools noting = FixtureTools.answering("note", Effect.REPORTS, "notes", "noted");
+    McpTools noting = new AnsweringMcpTools("note", Effect.REPORTS, "notes", "noted");
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(noting));
 
@@ -246,7 +246,7 @@ class McpProtocolServiceTest {
     protocolLog.addAppender(log);
     StateService state = McpMvc.stateIn(mapper, root);
     McpTools refusing =
-        FixtureTools.throwing(new IllegalArgumentException("CI_POLLING cannot be reported"));
+        new ThrowingMcpTools(new IllegalArgumentException("CI_POLLING cannot be reported"));
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(refusing));
 
@@ -268,7 +268,7 @@ class McpProtocolServiceTest {
   void tellsTheAgentFailedCallIsNotWorthRepeating(@TempDir Path root) {
     StateService state = McpMvc.stateIn(mapper, root);
     McpTools failing =
-        FixtureTools.throwing(new IllegalStateException("branch ABC-1 is checked out elsewhere"));
+        new ThrowingMcpTools(new IllegalStateException("branch ABC-1 is checked out elsewhere"));
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
 
@@ -294,7 +294,7 @@ class McpProtocolServiceTest {
   void tellsTheAgentTransientFailureIsWorthRepeating(@TempDir Path root) {
     StateService state = McpMvc.stateIn(mapper, root);
     McpTools failing =
-        FixtureTools.throwing(new UncheckedIOException(new IOException("state.json locked")));
+        new ThrowingMcpTools(new UncheckedIOException(new IOException("state.json locked")));
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(failing));
 
@@ -317,7 +317,7 @@ class McpProtocolServiceTest {
   @Test
   void answersWhatToolReturnedAsTheTextOfItsResult(@TempDir Path root) {
     StateService state = McpMvc.stateIn(mapper, root);
-    McpTools echoing = FixtureTools.answering("echo", Effect.CHANGES, "answers", "all done");
+    McpTools echoing = new AnsweringMcpTools("echo", Effect.CHANGES, "answers", "all done");
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(echoing));
 

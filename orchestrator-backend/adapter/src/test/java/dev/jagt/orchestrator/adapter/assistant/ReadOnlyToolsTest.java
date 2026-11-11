@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import static dev.jagt.orchestrator.adapter.assistant.ReadTools.allowedOnPinnedGitlab;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -19,6 +18,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class ReadOnlyToolsTest {
+
+  private final List<String> allowed =
+      new ReadOnlyTools(
+              mock(McpHealth.class),
+              AssistantProperties.empty()
+                  .withMcpConfig("{\"mcpServers\":{\"gitlab\":{\"command\":\"x\"}}}"),
+              new ReadScopes(),
+              mock(HookEndpoint.class))
+          .allowed(AssistantCallKind.MR_READ);
 
   @Test
   void allowsOnlyTheReadShapedToolsOfEveryServerTheHumanLists() {
@@ -46,7 +54,6 @@ class ReadOnlyToolsTest {
         "mcp__gitlab__issue_notes"
       })
   void allowsReadNamedByTheDiscussionsOrNotesItReturns(String tool) {
-    List<String> allowed = allowedOnPinnedGitlab();
 
     assertThat(allowed)
         .anyMatch(
@@ -65,7 +72,6 @@ class ReadOnlyToolsTest {
         "mcp__gitlab__list_pipeline_jobs"
       })
   void allowsReadThatAsksWhoIsSignedInOrWhichToolsTheHostHas(String tool) {
-    List<String> allowed = allowedOnPinnedGitlab();
 
     assertThat(allowed)
         .anyMatch(
@@ -85,7 +91,6 @@ class ReadOnlyToolsTest {
         "mcp__gitlab__post_note"
       })
   void neverAllowsWriteOfTheServerWhoseReadsAreAllowed(String tool) {
-    List<String> allowed = allowedOnPinnedGitlab();
 
     assertThat(allowed)
         .noneMatch(
@@ -113,7 +118,6 @@ class ReadOnlyToolsTest {
 
   @Test
   void allowsTheReadsOfTheDeclaredServersWhenTheServersArePinned() {
-    List<String> allowed = allowedOnPinnedGitlab();
 
     assertThat(allowed).contains("mcp__gitlab__list*");
   }
