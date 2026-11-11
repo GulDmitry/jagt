@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.Step;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -94,5 +95,10 @@ public class OpenCodeAgentRuntime extends AbstractAgentRuntime implements Startu
     write(
         worktree.path().resolve(CONFIG_FILE),
         JSON.writerWithDefaultPrettyPrinter().writeValueAsString(root));
+  }
+
+  @Override
+  public Optional<String> shellEscape() {
+    return Optional.of("!");
   }
 }

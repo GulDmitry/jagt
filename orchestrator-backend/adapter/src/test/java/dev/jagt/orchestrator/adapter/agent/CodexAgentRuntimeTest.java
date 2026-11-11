@@ -223,4 +223,9 @@ class CodexAgentRuntimeTest {
 
     assertThat(runtime.sessionLogOf(worktree)).contains(rollout);
   }
+
+  @Test
+  void offersBangAsItsShellEscape() {
+    assertThat(codexRuntime().build().shellEscape()).contains("!");
+  }
 }

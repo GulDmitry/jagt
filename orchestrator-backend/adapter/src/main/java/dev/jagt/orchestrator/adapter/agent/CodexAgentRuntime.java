@@ -135,4 +135,9 @@ public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCh
                 mcpUrl)
         + writable;
   }
+
+  @Override
+  public Optional<String> shellEscape() {
+    return Optional.of("!");
+  }
 }

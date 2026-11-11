@@ -191,4 +191,11 @@ class OpenCodeAgentRuntimeTest {
 
     assertThat(runtime.displayName()).isEqualTo("OpenCode");
   }
+
+  @Test
+  void offersBangAsItsShellEscape() {
+    var runtime = openCodeRuntime().build(mock(ConfigService.class));
+
+    assertThat(runtime.shellEscape()).contains("!");
+  }
 }
