@@ -41,7 +41,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestInstancePostProcessor;
+import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
+import org.junit.jupiter.api.extension.TestInstancePreConstructCallback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,10 +68,11 @@ abstract class AcceptanceVerdictEvalTest {
   private final AtomicInteger runs = new AtomicInteger();
   private static final AcceptanceScoreboard SCOREBOARD = AcceptanceScoreboard.empty();
 
-  static final class ClaimsItsShard implements TestInstancePostProcessor {
+  static final class ClaimsItsShard implements TestInstancePreConstructCallback {
     @Override
-    public void postProcessTestInstance(Object instance, ExtensionContext context) {
-      AcceptanceEvalWorkspace.claim(context.getRequiredTestClass());
+    public void preConstructTestInstance(
+        TestInstanceFactoryContext factory, ExtensionContext context) {
+      AcceptanceEvalWorkspace.claim(factory.getTestClass());
     }
   }
 

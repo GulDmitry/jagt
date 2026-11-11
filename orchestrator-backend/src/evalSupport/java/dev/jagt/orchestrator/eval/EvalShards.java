@@ -40,7 +40,7 @@ public final class EvalShards {
   public synchronized int claimed() {
     if (held == null) {
       throw new IllegalStateException(
-          "No shard is claimed yet: the shard class claims its own in beforeAll.");
+          "No shard is claimed yet: the shard class claims its own before it is constructed.");
     }
     return held.index();
   }

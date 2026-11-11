@@ -73,12 +73,13 @@ abstract class MasterVerdictEvalTest {
   private final AtomicInteger runs = new AtomicInteger();
 
   static final class ClaimsItsShard
-      implements org.junit.jupiter.api.extension.TestInstancePostProcessor {
+      implements org.junit.jupiter.api.extension.TestInstancePreConstructCallback {
     @Override
-    public void postProcessTestInstance(
-        Object instance, org.junit.jupiter.api.extension.ExtensionContext context)
+    public void preConstructTestInstance(
+        org.junit.jupiter.api.extension.TestInstanceFactoryContext factory,
+        org.junit.jupiter.api.extension.ExtensionContext context)
         throws Exception {
-      MasterEvalWorkspace.claim(context.getRequiredTestClass());
+      MasterEvalWorkspace.claim(factory.getTestClass());
     }
   }
 
