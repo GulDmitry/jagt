@@ -19,7 +19,7 @@ booting the app passes `--orchestrator.open-terminal-window=false`, uses a throw
 the worktrees and branches; every `Test` task runs on a tmux server of its own (`TMUX_TMPDIR`, killed after the task), so no test reaches
 the human's. Shared test code is a **file scanner** for a rule test (`TextBudgetTest.mainSources`), a **fake** of a production seam
 (`ScriptedProcesses`) or a **test builder** ([0163](../decisions/0163-a-test-shares-a-builder-a-fake-or-a-scanner.md)): `Test<Thing>Builder`, a record
-with `@With`, `a<Thing>()` setting fixed valid defaults, `build()` calling production's constructor or builder; no branch, loop, mock, assertion,
+with `@With`, `<thing>()` setting fixed valid defaults, `build()` calling production's constructor or builder; no branch, loop, mock, assertion,
 clock or random value; one of outside state (a git repo) may write.
 
 ### Every test pins a business case

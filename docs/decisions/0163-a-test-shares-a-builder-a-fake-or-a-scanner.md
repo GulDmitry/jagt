@@ -17,7 +17,7 @@ Accepted 2026-11-11.
 
 - Shared test code is one of three: a test builder, a fake of a production seam, a rule test's file scanner.
   No helper method and no other shared class.
-- A test builder is `Test<Thing>Builder` in the test root: a record with Lombok `@With`, a static `a<Thing>()`
+- A test builder is `Test<Thing>Builder` in the test root: a public record with Lombok `@With`, a static `<thing>()`
   setting fixed valid defaults, one `build()` calling a production constructor or builder.
 - A builder holds no logic: no branch, loop, mock, `verify`, assertion, clock or random value.
 - A builder of outside state (a git repository on disk) may write in `build()`.
