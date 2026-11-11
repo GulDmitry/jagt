@@ -109,7 +109,7 @@ class DocLinksTest {
 
   private static List<Path> documents() {
     return Stream.concat(
-            Stream.of("..", "../docs", "../docs/rules", "../.claude/rules")
+            Stream.of("..", "../docs", "../docs/features", "../docs/rules", "../.claude/rules")
                 .flatMap(directory -> markdownIn(Path.of(directory)).stream()),
             specs().stream())
         .toList();

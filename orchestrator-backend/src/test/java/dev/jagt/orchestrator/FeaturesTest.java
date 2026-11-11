@@ -9,18 +9,23 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class FeaturesTest {
 
-  private static final Path FEATURES = Path.of("../docs/features.md");
+  private static final List<Path> FEATURES =
+      Stream.concat(
+              Stream.of(Path.of("../docs/features.md")),
+              DocFiles.markdownIn(Path.of("../docs/features")).stream())
+          .toList();
 
   @Test
   void everySpecIsLinkedAndEveryLinkedSpecExists() {
     List<String> linked =
         Pattern.compile("openspec/specs/([^/)#]+)/spec\\.md")
-            .matcher(read(FEATURES))
+            .matcher(FEATURES.stream().map(FeaturesTest::read).collect(Collectors.joining("\n")))
             .results()
             .map(match -> match.group(1))
             .distinct()
@@ -35,7 +40,7 @@ class FeaturesTest {
     String dist = read(Path.of("../jagt.yml.dist"));
     List<String> keys =
         Pattern.compile("Key: `([^`]+)`")
-            .matcher(read(FEATURES))
+            .matcher(FEATURES.stream().map(FeaturesTest::read).collect(Collectors.joining("\n")))
             .results()
             .map(match -> match.group(1))
             .toList();

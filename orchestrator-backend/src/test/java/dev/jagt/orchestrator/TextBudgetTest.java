@@ -152,6 +152,7 @@ class TextBudgetTest {
                 Path.of("../README.md"),
                 Path.of("../docs/decisions/README.md")),
             markdownIn(Path.of("../docs")),
+            markdownIn(Path.of("../docs/features")),
             specs())
         .flatMap(List::stream)
         .toList();

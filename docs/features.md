@@ -35,10 +35,7 @@
 - **One row per task, the open one beside the list** — A row shows status, age and checks; pick one and its detail opens beside the list.
   [row](../openspec/specs/board-workspace/spec.md#requirement-a-task-is-one-row) ·
   [open](../openspec/specs/board-workspace/spec.md#requirement-one-task-is-open-beside-the-list)
-- **Session, Artifacts and Diff tabs** — Read the session's screen, answer it or run a shell line in it; read the plan, notes and diff per repository.
-  [spec](../openspec/specs/board-workspace/spec.md#requirement-the-open-task-has-five-tabs) · [diff](../openspec/specs/board-diff/spec.md)
-- **Plan changes since approval** — The Artifacts tab marks plan lines new or rewritten since your last approval, and strikes removed ones.
-  [spec](../openspec/specs/board/spec.md#requirement-a-plan-shows-what-changed-since-its-last-approval)
+- **The open task's tabs** — Session, Artifacts and Diff, and the shell line the Session tab runs: [their own page](features/board.md).
 - **Add a project, run a job now** — Add, change or drop a project, labels and human paths too, from the board or `project`; any job runs now.
   [add, edit, remove](../openspec/specs/project-setup/spec.md) · [run](../openspec/specs/board-workspace/spec.md#requirement-every-job-can-run-now)
 - **Project hover in the new-task form** — Hovering a project shows its `jagt.yml` entry and remote; Start with no project needs `plan first`.
