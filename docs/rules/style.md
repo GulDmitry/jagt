@@ -81,6 +81,8 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
   `TaskState.builder(project, worktree, status)`.
 - **What may be null is `@Nullable`**, all else not: NullAway fails the build
   ([0034](../decisions/0034-null-is-declared-and-the-compiler-checks-it.md)).
+- **Code speaks the Java the build targets**: record and switch patterns, `instanceof` patterns, switch expressions,
+  a single expression where a stream or `Optional` says it; a toolchain bump applies its new forms tree-wide.
 - On every code + test change: tests written to `docs/rules/testing.md`, the production code refactored until they
   are light. Deliver only light, green **and** reviewed.
 
