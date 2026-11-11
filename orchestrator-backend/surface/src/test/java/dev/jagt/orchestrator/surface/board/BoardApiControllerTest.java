@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
+import static dev.jagt.orchestrator.surface.board.TestTaskViewsSnapshotBuilder.taskViewsSnapshot;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -16,14 +17,17 @@ import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.ReachLedger;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -38,6 +42,7 @@ class BoardApiControllerTest {
   }
 
   private final TaskViews taskViews = mock(TaskViews.class);
+  private final TaskScheduler scheduler = mock(TaskScheduler.class);
   private final BoardApiController api =
       new BoardApiController(
           taskViews,
@@ -46,7 +51,10 @@ class BoardApiControllerTest {
               List.of(
                   new Declared("stats", "what the calls cost", true, 100),
                   new Declared("do", "start a task", false, 40))),
-          BoardFixtures.headerOf(List.of(), new ReachLedger()));
+          new HeaderState(
+              new Jobs(List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
+              new ReachLedger(),
+              Clock.systemUTC()));
 
   @Test
   void servesEveryVerbThePaletteMustBeAbleToCompleteAndValidate() {
@@ -109,8 +117,7 @@ class BoardApiControllerTest {
   @Test
   void reportsTheProjectsAlongsideTheTasks() {
     when(taskViews.snapshot())
-        .thenReturn(
-            BoardFixtures.snapshotOf(List.of(), false, List.of("demo")));
+        .thenReturn(taskViewsSnapshot().withProjects(List.of("demo")).build());
 
     var board = api.tasks();
 
@@ -119,9 +126,7 @@ class BoardApiControllerTest {
 
   @Test
   void servesTheBoardAsOneFlatObject() {
-    when(taskViews.snapshot())
-        .thenReturn(
-            BoardFixtures.snapshotOf(List.of(), false, List.of()));
+    when(taskViews.snapshot()).thenReturn(taskViewsSnapshot().build());
 
     var json = new JsonMapper().readTree(new JsonMapper().writeValueAsString(api.tasks()));
 
@@ -150,15 +155,16 @@ class BoardApiControllerTest {
             List.of("glab", "auth", "login"),
             "glab not logged in to git.example.invalid");
     reach.lost(lost);
-    when(taskViews.snapshot())
-        .thenReturn(
-            BoardFixtures.snapshotOf(List.of(), false, List.of()));
+    when(taskViews.snapshot()).thenReturn(taskViewsSnapshot().build());
     BoardApiController board =
         new BoardApiController(
             taskViews,
             mock(TaskEventStream.class),
             new GlobalCommands(List.of()),
-            BoardFixtures.headerOf(List.of(), reach));
+            new HeaderState(
+                new Jobs(List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                reach,
+                Clock.systemUTC()));
 
     assertThat(board.tasks().header().reach()).containsExactly(lost);
   }
@@ -172,7 +178,10 @@ class BoardApiControllerTest {
             taskViews,
             mock(TaskEventStream.class),
             new GlobalCommands(List.of()),
-            BoardFixtures.headerOf(List.of(poll), new ReachLedger()));
+            new HeaderState(
+                new Jobs(List.of(poll), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                new ReachLedger(),
+                Clock.systemUTC()));
 
     assertThat(board.jobs()).extracting(Jobs.Status::id).containsExactly("poll-reviews");
   }
@@ -181,15 +190,16 @@ class BoardApiControllerTest {
   void tellsTheBoardHowManyJobsTheBackendRuns() {
     Job poll = mock(Job.class);
     when(poll.id()).thenReturn("poll-reviews");
-    when(taskViews.snapshot())
-        .thenReturn(
-            BoardFixtures.snapshotOf(List.of(), false, List.of()));
+    when(taskViews.snapshot()).thenReturn(taskViewsSnapshot().build());
     BoardApiController board =
         new BoardApiController(
             taskViews,
             mock(TaskEventStream.class),
             new GlobalCommands(List.of()),
-            BoardFixtures.headerOf(List.of(poll), new ReachLedger()));
+            new HeaderState(
+                new Jobs(List.of(poll), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                new ReachLedger(),
+                Clock.systemUTC()));
 
     assertThat(board.tasks().header().jobs().count()).isEqualTo(1);
   }
@@ -204,16 +214,17 @@ class BoardApiControllerTest {
             taskViews,
             stream,
             new GlobalCommands(List.of()),
-            BoardFixtures.headerOf(List.of(), new ReachLedger()));
+            new HeaderState(
+                new Jobs(List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                new ReachLedger(),
+                Clock.systemUTC()));
 
     assertThat(board.events()).isSameAs(browser);
   }
 
   @Test
   void saysWhetherTheUnattendedPollRunsAtAllEvenWithNoTasks() {
-    when(taskViews.snapshot())
-        .thenReturn(
-            BoardFixtures.snapshotOf(List.of(), true, List.of()));
+    when(taskViews.snapshot()).thenReturn(taskViewsSnapshot().withAutoReview(true).build());
 
     var board = api.tasks();
 
@@ -260,7 +271,10 @@ class BoardApiControllerTest {
             taskViews,
             mock(TaskEventStream.class),
             new GlobalCommands(List.of(drafts)),
-            BoardFixtures.headerOf(List.of(), new ReachLedger()));
+            new HeaderState(
+                new Jobs(List.of(), scheduler, Clock.systemUTC(), mock(StateService.class)),
+                new ReachLedger(),
+                Clock.systemUTC()));
     TaskView drafted =
         TaskView.of(
             new FlowRules(new TaskChart(Composition.builtIn())),
@@ -279,7 +293,10 @@ class BoardApiControllerTest {
             Map.of());
     when(taskViews.snapshot())
         .thenReturn(
-            BoardFixtures.snapshotOf(List.of(drafted, quiet), false, List.of("demo")));
+            taskViewsSnapshot()
+                .withTasks(List.of(drafted, quiet))
+                .withProjects(List.of("demo"))
+                .build());
 
     var offers = board.tasks().offers();
 

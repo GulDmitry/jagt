@@ -1,20 +1,15 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import static dev.jagt.orchestrator.adapter.assistant.CheckerRuns.acceptanceRun;
-import static dev.jagt.orchestrator.adapter.assistant.CheckerRuns.declineRun;
-import static dev.jagt.orchestrator.adapter.assistant.CheckerRuns.run;
-import static dev.jagt.orchestrator.adapter.assistant.CheckerRuns.workspaceReach;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.claude;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.commandOf;
+import static dev.jagt.orchestrator.adapter.assistant.TestCheckerRunBuilder.checkerRun;
+import static dev.jagt.orchestrator.adapter.assistant.TestHeadlessClaudeBuilder.headlessClaude;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.RoleDefinitions;
@@ -27,7 +22,6 @@ import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -35,27 +29,39 @@ import org.junit.jupiter.api.io.TempDir;
 
 class HeadlessClaudeCheckerReaderTest {
 
-  private final ProcessRunner runner = mock(ProcessRunner.class);
+  private final FakeProcesses runner =
+      new FakeProcesses()
+          .answering(
+              new Processes.Result(
+                  0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
   private final ReadOnlyTools reads = mock(ReadOnlyTools.class);
   private final UsageTracker usage = mock(UsageTracker.class);
   private final HeadlessClaudeCheckerReader reader =
       new HeadlessClaudeCheckerReader(
-          claude(runner, usage, reads),
+          headlessClaude().build(runner, usage, reads),
           ClaudeProperties.defaults(),
           AssistantProperties.empty(),
           List.of(RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))));
+
+  private final String answerSchema =
+      RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
+          .replies()
+          .answer()
+          .json();
+  private final String declineSchema =
+      RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"))
+          .replies()
+          .decline()
+          .json();
 
   @TempDir Path worktree;
 
   @Test
   void holdsNoWriteToolAndCurlOnlyAsQuietGetSoNothingItReadsCanChangeTheEnvironmentOrTheTree() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
-    reader.read(acceptanceRun(worktree));
+    reader.read(checkerRun().withWorktree(worktree).withSchema(answerSchema).build());
 
-    List<String> argv = commandOf(runner);
+    List<String> argv = runner.command();
     assertThat(argv.get(argv.indexOf("--tools") + 1)).isEqualTo("Read,Grep,Glob,Bash,WebFetch");
     assertThat(argv.subList(argv.indexOf("--allowedTools"), argv.size()))
         .contains("WebFetch", "Bash(curl -sS:*)", "Bash(git log:*)")
@@ -69,17 +75,17 @@ class HeadlessClaudeCheckerReaderTest {
 
   @Test
   void letsWebFetchReachOnlyTheEnvironmentsTheRunNames() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
     reader.read(
-        acceptanceRun(
-            worktree,
-            new CheckerReader.Reach(
-                List.of("https://dev.example.test", "https://dev.example.test/version"),
-                List.of(),
-                Optional.empty())));
+        checkerRun()
+            .withWorktree(worktree)
+            .withSchema(answerSchema)
+            .withReach(
+                new CheckerReader.Reach(
+                    List.of("https://dev.example.test", "https://dev.example.test/version"),
+                    List.of(),
+                    Optional.empty()))
+            .build());
 
     verify(reads)
         .fence(
@@ -95,13 +101,13 @@ class HeadlessClaudeCheckerReaderTest {
 
   @Test
   void letsTheReadReachTheFlowsRepositoryBesideItsWorktree(@TempDir Path flows) {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
     reader.read(
-        acceptanceRun(
-            worktree, new CheckerReader.Reach(List.of(), List.of(flows), Optional.empty())));
+        checkerRun()
+            .withWorktree(worktree)
+            .withSchema(answerSchema)
+            .withReach(new CheckerReader.Reach(List.of(), List.of(flows), Optional.empty()))
+            .build());
 
     verify(reads)
         .fence(
@@ -117,15 +123,14 @@ class HeadlessClaudeCheckerReaderTest {
 
   @Test
   void writesAcceptanceReportFromTheRowsTheModelAnswered() throws IOException {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(
-                0,
-                "{\"structured_output\":{\"failure\":\"\",\"rows\":[{\"criterion\":\"page opens\","
-                    + "\"status\":\"met\",\"evidence\":\"GET answered 200\"}]}}",
-                ""));
+    runner.answering(
+        new Processes.Result(
+            0,
+            "{\"structured_output\":{\"failure\":\"\",\"rows\":[{\"criterion\":\"page opens\","
+                + "\"status\":\"met\",\"evidence\":\"GET answered 200\"}]}}",
+            ""));
 
-    var answer = reader.read(acceptanceRun(worktree));
+    var answer = reader.read(checkerRun().withWorktree(worktree).withSchema(answerSchema).build());
 
     assertThat(Files.readString(worktree.resolve("acceptance-report.md")))
         .contains("abc123", "page opens", "GET answered 200");
@@ -136,23 +141,28 @@ class HeadlessClaudeCheckerReaderTest {
 
   @Test
   void readsTheDisputeAcceptanceFilledAgainstSessionsDecline() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(
-                0,
-                "{\"structured_output\":{\"failure\":\"\",\"dispute\":\"GET /list is unsorted\"}}",
-                ""));
+    runner.answering(
+        new Processes.Result(
+            0,
+            "{\"structured_output\":{\"failure\":\"\",\"dispute\":\"GET /list is unsorted\"}}",
+            ""));
 
-    AcceptanceDecline decline = reader.reconsider(declineRun(worktree)).facts().orElseThrow();
+    AcceptanceDecline decline =
+        reader
+            .reconsider(
+                checkerRun()
+                    .withPrompt("decide")
+                    .withWorktree(worktree)
+                    .withSchema(declineSchema)
+                    .build())
+            .facts()
+            .orElseThrow();
 
     assertThat(decline).isEqualTo(new AcceptanceDecline("abc123", "", "GET /list is unsorted"));
   }
 
   @Test
   void passesTheSharedPromptAndTheModelAndPinsNoMcpServerWhereNoneIsListed() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
     reader.read(
         new CheckerReader.Run(
@@ -168,7 +178,7 @@ class HeadlessClaudeCheckerReaderTest {
                 .json(),
             "acceptance"));
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .containsSequence("--append-system-prompt", "be brief")
         .containsSequence("--model", "opus")
@@ -177,12 +187,9 @@ class HeadlessClaudeCheckerReaderTest {
 
   @Test
   void givesBrowserServerTheRoleNamesItsReadsNavigationAndLooksAndNoClick() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
     HeadlessClaudeCheckerReader browsing =
         new HeadlessClaudeCheckerReader(
-            claude(runner, usage, reads),
+            headlessClaude().build(runner, usage, reads),
             ClaudeProperties.defaults(),
             AssistantProperties.empty(),
             List.of(
@@ -200,9 +207,9 @@ class HeadlessClaudeCheckerReaderTest {
                       - required: failure
                     """)));
 
-    browsing.read(run(worktree, "{}", "acceptance"));
+    browsing.read(checkerRun().withWorktree(worktree).build());
 
-    List<String> argv = commandOf(runner);
+    List<String> argv = runner.command();
     assertThat(argv).doesNotContain("--strict-mcp-config");
     assertThat(argv.subList(argv.indexOf("--allowedTools"), argv.size()))
         .contains(
@@ -218,35 +225,35 @@ class HeadlessClaudeCheckerReaderTest {
 
   @Test
   void passesNeitherSharedPromptNorModelWhereTheRunNamesNone() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
-    reader.read(acceptanceRun(worktree));
+    reader.read(checkerRun().withWorktree(worktree).withSchema(answerSchema).build());
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command).doesNotContain("--append-system-prompt", "--model");
   }
 
   @Test
   void refusesRunOfRoleNoInstalledDefinitionNames() {
-    var run = run(worktree, "{}", "nope");
+    var run = checkerRun().withWorktree(worktree).withRole("nope").build();
 
     assertThatThrownBy(() -> reader.read(run)).isInstanceOf(IllegalStateException.class);
   }
 
   @Test
   void carriesTheFlowsWithTheirCriteriaAndTheEnvironmentTheCheckNamed() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(
-                0,
-                "{\"structured_output\":{\"failure\":\"\",\"rows\":[],"
-                    + "\"flows\":[{\"id\":\"AC-1\",\"criterion\":\"C1\"},"
-                    + "{\"id\":\"AC-2\",\"criterion\":\"\"}],\"environment\":\"https://alpha.test\"}}",
-                ""));
+    runner.answering(
+        new Processes.Result(
+            0,
+            "{\"structured_output\":{\"failure\":\"\",\"rows\":[],"
+                + "\"flows\":[{\"id\":\"AC-1\",\"criterion\":\"C1\"},"
+                + "{\"id\":\"AC-2\",\"criterion\":\"\"}],\"environment\":\"https://alpha.test\"}}",
+            ""));
 
-    var verdict = reader.read(acceptanceRun(worktree)).facts().orElseThrow();
+    var verdict =
+        reader
+            .read(checkerRun().withWorktree(worktree).withSchema(answerSchema).build())
+            .facts()
+            .orElseThrow();
 
     assertThat(verdict.flows().named())
         .containsExactly(
@@ -257,33 +264,50 @@ class HeadlessClaudeCheckerReaderTest {
 
   @Test
   void failsTheVerdictNamingTheCauseWhenTheCheckAnsweredNoEnvelope() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(new Processes.Result(1, "", "boom"));
+    runner.answering(new Processes.Result(1, "", "boom"));
 
-    var verdict = reader.read(acceptanceRun(worktree)).facts().orElseThrow();
+    var verdict =
+        reader
+            .read(checkerRun().withWorktree(worktree).withSchema(answerSchema).build())
+            .facts()
+            .orElseThrow();
 
     assertThat(verdict.failure()).startsWith("the check failed");
   }
 
   @Test
   void failsTheDeclineNamingTheCauseWhenTheCheckAnsweredNoEnvelope() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(new Processes.Result(1, "", "boom"));
+    runner.answering(new Processes.Result(1, "", "boom"));
 
-    AcceptanceDecline decline = reader.reconsider(declineRun(worktree)).facts().orElseThrow();
+    AcceptanceDecline decline =
+        reader
+            .reconsider(
+                checkerRun()
+                    .withPrompt("decide")
+                    .withWorktree(worktree)
+                    .withSchema(declineSchema)
+                    .build())
+            .facts()
+            .orElseThrow();
 
     assertThat(decline.failure()).startsWith("the check failed");
   }
 
   @Test
   void withWorkspaceTheRunWritesOnlyThereUnderDontAsk(@TempDir Path workspace) {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
-    reader.read(acceptanceRun(worktree, workspaceReach(workspace)));
+    reader.read(
+        checkerRun()
+            .withWorktree(worktree)
+            .withSchema(answerSchema)
+            .withReach(
+                new CheckerReader.Reach(
+                    List.of(),
+                    List.of(workspace),
+                    Optional.of(new CheckerReader.Workspace(workspace, List.of()))))
+            .build());
 
-    List<String> argv = commandOf(runner);
+    List<String> argv = runner.command();
     assertThat(argv.get(argv.indexOf("--permission-mode") + 1)).isEqualTo("dontAsk");
     assertThat(argv.subList(argv.indexOf("--allowedTools"), argv.size()))
         .contains("Write(/" + workspace + "/**)", "Edit(/" + workspace + "/**)")
@@ -295,12 +319,18 @@ class HeadlessClaudeCheckerReaderTest {
 
   @Test
   void theRunStartsInTheWorkspaceWhenOneIsHeld(@TempDir Path workspace) {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(0, "{\"structured_output\":{\"failure\":\"\",\"rows\":[]}}", ""));
 
-    reader.read(acceptanceRun(worktree, workspaceReach(workspace)));
+    reader.read(
+        checkerRun()
+            .withWorktree(worktree)
+            .withSchema(answerSchema)
+            .withReach(
+                new CheckerReader.Reach(
+                    List.of(),
+                    List.of(workspace),
+                    Optional.of(new CheckerReader.Workspace(workspace, List.of()))))
+            .build());
 
-    verify(runner).run(eq(workspace), any(Duration.class), any());
+    assertThat(runner.directories()).containsExactly(workspace);
   }
 }

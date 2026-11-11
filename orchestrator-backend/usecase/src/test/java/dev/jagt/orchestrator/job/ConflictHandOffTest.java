@@ -1,6 +1,10 @@
 package dev.jagt.orchestrator.job;
 
 import static dev.jagt.orchestrator.job.TestWaitingConflictBuilder.waitingConflict;
+import static dev.jagt.orchestrator.service.TestCaseDoorBuilder.caseDoor;
+import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
+import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
@@ -11,14 +15,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.CaseDoorFixture;
+import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskTurns;
@@ -46,13 +50,20 @@ class ConflictHandOffTest {
 
   @BeforeEach
   void setUp() {
-    CaseDoorFixture fixture = new CaseDoorFixture(root, Clock.systemUTC(), Arbiter.Profile.OFF);
-    state = fixture.state;
+    OrchestratorPaths paths = orchestratorPaths().withRoot(root).build();
+    state = stateService().withRoot(root).build();
+    CaseDoor door =
+        caseDoor()
+            .withRoot(root)
+            .build(
+                state,
+                taskStops().withRoot(root).build(state, Clock.systemUTC()),
+                Clock.systemUTC());
     StepRelay relay =
         new StepRelay(
-            new SessionBrief(fixture.paths),
+            new SessionBrief(paths),
             sessions,
-            fixture.door,
+            door,
             new TaskTurns(
                 state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
     handOff = new ConflictHandOff(relay, new ConflictHandover(sessions, relay), stall, finish);
@@ -142,7 +153,8 @@ class ConflictHandOffTest {
           waitingConflict()
               .withProgress(new Conflict.Progress(0, 0, "d"))
               .withFailure(
-                  "red pipeline on the deploy commit: proj 01234567 https://git.example.invalid/p/7")
+                  "red pipeline on the deploy commit: proj 01234567"
+                      + " https://git.example.invalid/p/7")
               .withStanding(new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))
               .build());
 
@@ -181,7 +193,8 @@ class ConflictHandOffTest {
           waitingConflict()
               .withProgress(new Conflict.Progress(0, 0, "d"))
               .withFailure(
-                  "red pipeline on the deploy commit: proj 01234567 https://git.example.invalid/p/7")
+                  "red pipeline on the deploy commit: proj 01234567"
+                      + " https://git.example.invalid/p/7")
               .withStanding(new Standing(TaskStatus.DEPLOY_CONFLICT, "NONE", 0, 0))
               .build());
 

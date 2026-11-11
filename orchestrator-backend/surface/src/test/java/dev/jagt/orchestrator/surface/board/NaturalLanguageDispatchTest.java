@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.surface.board;
 
+import static dev.jagt.orchestrator.surface.board.TestPaletteContextBuilder.paletteContext;
+import static dev.jagt.orchestrator.surface.board.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
@@ -14,16 +16,20 @@ import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommandAssistant;
 import dev.jagt.orchestrator.port.CommandAssistant.CommandProposal;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,15 +39,33 @@ class NaturalLanguageDispatchTest {
 
   private final CommandService commands = mock(CommandService.class);
   private final TaskLauncher launcher = mock(TaskLauncher.class);
+  private final ConfigService config = mock(ConfigService.class);
+
+  @TempDir Path root;
+
+  private StateService state;
+  private PaletteContext palette;
+
+  @BeforeEach
+  void setUp() {
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    state = stateService().withRoot(root).build();
+    state.putTask(
+        "ABC-1",
+        TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+            .alias("a1")
+            .title("Widget layout is off")
+            .build());
+    palette = paletteContext().build(state, config);
+  }
 
   @Test
-  void answersWithTheCurrentVerbWhenTheProposalEchoedTheSpellingItWasRenamedFrom(
-      @TempDir Path root) {
-    StateService state = BoardFixtures.emptyState(root);
+  void answersWithTheCurrentVerbWhenTheProposalEchoedTheSpellingItWasRenamedFrom() {
     CommandAssistant assistant =
-        BoardFixtures.proposing("review", "a1", "", "the human said review");
+        new FakeProposingCommandAssistant(
+            new CommandProposal("review", "a1", "", "the human said review"));
     NaturalLanguageDispatch dispatch =
-        BoardFixtures.dispatching(assistant, state, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
     when(commands.execute("ABC-1", TaskAction.SWEEP)).thenReturn("sweep ABC-1: checks success");
 
     String result = dispatch.interpret("what does the review say on a1");
@@ -50,12 +74,12 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void runsTheMappedActionThroughTheSameGateButtonUsesAndSaysWhatItUnderstood(@TempDir Path root) {
-    StateService state = BoardFixtures.emptyState(root);
+  void runsTheMappedActionThroughTheSameGateButtonUsesAndSaysWhatItUnderstood() {
     CommandAssistant assistant =
-        BoardFixtures.proposing("ship", "a1", "", "the only task about layout");
+        new FakeProposingCommandAssistant(
+            new CommandProposal("ship", "a1", "", "the only task about layout"));
     NaturalLanguageDispatch dispatch =
-        BoardFixtures.dispatching(assistant, state, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
     when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: pushed");
 
     String result = dispatch.interpret("push the layout one for review");
@@ -64,11 +88,12 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void keepsTheInterpretationVisibleWhenTheGateRefusesWhatWasUnderstood(@TempDir Path root) {
-    StateService state = BoardFixtures.emptyState(root);
-    CommandAssistant assistant = BoardFixtures.proposing("deploy", "a1", "", "asked to release it");
+  void keepsTheInterpretationVisibleWhenTheGateRefusesWhatWasUnderstood() {
+    CommandAssistant assistant =
+        new FakeProposingCommandAssistant(
+            new CommandProposal("deploy", "a1", "", "asked to release it"));
     NaturalLanguageDispatch dispatch =
-        BoardFixtures.dispatching(assistant, state, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
     when(commands.execute("ABC-1", TaskAction.DEPLOY))
         .thenThrow(
             new Refusal(
@@ -86,14 +111,13 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void refusesTaskTheModelInventedInsteadOfActingOnSomethingNear(@TempDir Path root) {
-    StateService state = BoardFixtures.emptyState(root);
+  void refusesTaskTheModelInventedInsteadOfActingOnSomethingNear() {
     CommandAssistant assistant =
         (text, tasks) ->
             new Answer<>(
                 Optional.of(new CommandProposal("ship", "ABC-99", "", "guessed")), TokenUsage.NONE);
     NaturalLanguageDispatch dispatch =
-        BoardFixtures.dispatching(assistant, state, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
 
     String result = dispatch.interpret("ship the other one");
 
@@ -102,13 +126,12 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void refusesVerbThatIsNotInTheGrammar(@TempDir Path root) {
-    StateService state = BoardFixtures.emptyState(root);
+  void refusesVerbThatIsNotInTheGrammar() {
     CommandAssistant assistant =
         (text, tasks) ->
             new Answer<>(Optional.of(new CommandProposal("rm-rf", "a1", "", "")), TokenUsage.NONE);
     NaturalLanguageDispatch dispatch =
-        BoardFixtures.dispatching(assistant, state, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
 
     String result = dispatch.interpret("nuke it");
 
@@ -117,11 +140,12 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void reportsTheAmbiguityWhenTheModelCouldNotChooseRatherThanPickingOne(@TempDir Path root) {
-    StateService state = BoardFixtures.emptyState(root);
-    CommandAssistant assistant = BoardFixtures.proposing("none", "", "", "two tasks mention login");
+  void reportsTheAmbiguityWhenTheModelCouldNotChooseRatherThanPickingOne() {
+    CommandAssistant assistant =
+        new FakeProposingCommandAssistant(
+            new CommandProposal("none", "", "", "two tasks mention login"));
     NaturalLanguageDispatch dispatch =
-        BoardFixtures.dispatching(assistant, state, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
 
     String result = dispatch.interpret("ship the login one");
 
@@ -130,11 +154,11 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void startsNewTaskWhenTheRequestIsDoAndCarriesTheTicketThrough(@TempDir Path root) {
-    StateService state = BoardFixtures.emptyState(root);
-    CommandAssistant assistant = BoardFixtures.proposing("do", "", "ABC-42", "a new ticket");
+  void startsNewTaskWhenTheRequestIsDoAndCarriesTheTicketThrough() {
+    CommandAssistant assistant =
+        new FakeProposingCommandAssistant(new CommandProposal("do", "", "ABC-42", "a new ticket"));
     NaturalLanguageDispatch dispatch =
-        BoardFixtures.dispatching(assistant, state, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
     when(launcher.launch(LaunchRequest.of("ABC-42")))
         .thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
 
@@ -144,12 +168,11 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void opensTaskAsThePalettes(@TempDir Path root) {
-    StateService state = BoardFixtures.emptyState(root);
-    CommandAssistant assistant = BoardFixtures.proposing("do", "", "ABC-42", "a new ticket");
+  void opensTaskAsThePalettes() {
+    CommandAssistant assistant =
+        new FakeProposingCommandAssistant(new CommandProposal("do", "", "ABC-42", "a new ticket"));
     NaturalLanguageDispatch dispatch =
-        new NaturalLanguageDispatch(
-            assistant, BoardFixtures.paletteOver(state), commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
     AtomicReference<ActionOrigin> openedBy = new AtomicReference<>();
     when(launcher.launch(LaunchRequest.of("ABC-42")))
         .thenAnswer(
@@ -164,12 +187,12 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void resumesReviewRequestWhenTheRequestIsUrlToOne(@TempDir Path root) {
-    StateService state = BoardFixtures.emptyState(root);
+  void resumesReviewRequestWhenTheRequestIsUrlToOne() {
     CommandAssistant assistant =
-        BoardFixtures.proposing("resume", "", "https://host/mr/42", "an existing merge request");
+        new FakeProposingCommandAssistant(
+            new CommandProposal("resume", "", "https://host/mr/42", "an existing merge request"));
     NaturalLanguageDispatch dispatch =
-        BoardFixtures.dispatching(assistant, state, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
     when(launcher.resume("https://host/mr/42"))
         .thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1"));
 
@@ -178,22 +201,24 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void refusesToResumeWithoutUrlBecauseThereIsNothingToTakeOver(@TempDir Path root) {
-    StateService state = BoardFixtures.emptyState(root);
-    CommandAssistant assistant = BoardFixtures.proposing("resume", "", "ABC-1", "no url given");
+  void refusesToResumeWithoutUrlBecauseThereIsNothingToTakeOver() {
+    CommandAssistant assistant =
+        new FakeProposingCommandAssistant(
+            new CommandProposal("resume", "", "ABC-1", "no url given"));
     NaturalLanguageDispatch dispatch =
-        BoardFixtures.dispatching(assistant, state, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
 
     assertThat(dispatch.interpret("resume that thing")).contains("no review-request URL was named");
     verifyNoInteractions(launcher);
   }
 
   @Test
-  void asksForTheTicketWhenDoArrivesWithoutOne(@TempDir Path root) {
-    StateService state = BoardFixtures.emptyState(root);
-    CommandAssistant assistant = BoardFixtures.proposing("do", "", "", "no ticket in the request");
+  void asksForTheTicketWhenDoArrivesWithoutOne() {
+    CommandAssistant assistant =
+        new FakeProposingCommandAssistant(
+            new CommandProposal("do", "", "", "no ticket in the request"));
     NaturalLanguageDispatch dispatch =
-        BoardFixtures.dispatching(assistant, state, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
 
     String result = dispatch.interpret("start a new task");
 
@@ -202,11 +227,10 @@ class NaturalLanguageDispatchTest {
   }
 
   @Test
-  void saysSoWhenTheAssistantIsUnavailableInsteadOfFailingSilently(@TempDir Path root) {
-    StateService state = BoardFixtures.emptyState(root);
+  void saysSoWhenTheAssistantIsUnavailableInsteadOfFailingSilently() {
     CommandAssistant assistant = (text, tasks) -> Answer.unavailable();
     NaturalLanguageDispatch dispatch =
-        BoardFixtures.dispatching(assistant, state, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
 
     assertThat(dispatch.interpret("do something")).contains("Could not reach the assistant");
     verifyNoInteractions(commands, launcher);
@@ -225,12 +249,10 @@ class NaturalLanguageDispatchTest {
         "prune|jagt has no `prune`: cleaning up a merged branch is that one task's business, and"
             + " yours to do with git."
       })
-  void answersInputThatNeedsNoModelWithoutSpendingCall(
-      String typed, String answer, @TempDir Path root) {
-    StateService state = BoardFixtures.emptyState(root);
+  void answersInputThatNeedsNoModelWithoutSpendingCall(String typed, String answer) {
     CommandAssistant assistant = (text, tasks) -> fail("the model was asked");
     NaturalLanguageDispatch dispatch =
-        BoardFixtures.dispatching(assistant, state, commands, launcher);
+        new NaturalLanguageDispatch(assistant, palette, commands, launcher);
 
     assertThat(dispatch.interpret(typed)).isEqualTo(answer);
     verifyNoInteractions(commands, launcher);

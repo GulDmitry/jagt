@@ -1,30 +1,24 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.claude;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.commandOf;
+import static dev.jagt.orchestrator.adapter.assistant.TestHeadlessClaudeBuilder.headlessClaude;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.config.LocalModelProperties;
 import dev.jagt.orchestrator.port.CommandAssistant;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.UsageTracker;
-import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class HeadlessClaudeCommandAssistantTest {
 
-  private final ProcessRunner runner = mock(ProcessRunner.class);
+  private final FakeProcesses runner = new FakeProcesses();
   private final HeadlessClaudeCommandAssistant assistant =
       new HeadlessClaudeCommandAssistant(
           new ToolLessRead(
-              claude(runner),
+              headlessClaude().build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class)),
               new OpenAiCompatibleModel(LocalModelProperties.off(), mock(UsageTracker.class)),
               LocalModelProperties.off()));
   private final CommandAssistant.Menu menu =
@@ -36,7 +30,7 @@ class HeadlessClaudeCommandAssistantTest {
     var answer = assistant.mapCommand("  ", menu);
 
     assertThat(answer.facts()).isEmpty();
-    verifyNoInteractions(runner);
+    assertThat(runner.issued()).isEmpty();
   }
 
   @Test
@@ -44,18 +38,17 @@ class HeadlessClaudeCommandAssistantTest {
     var answer = assistant.mapCommand(null, menu);
 
     assertThat(answer.facts()).isEmpty();
-    verifyNoInteractions(runner);
+    assertThat(runner.issued()).isEmpty();
   }
 
   @Test
   void proposesTheCommandTheTaskTheTicketAndTheReasonTheAnswerNames() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(
-                0,
-                "{\"structured_output\":{\"command\":\"ship\",\"task\":\"ABC-5\",\"ticket\":\"\","
-                    + "\"reason\":\"asked to send it out\"}}",
-                ""));
+    runner.answering(
+        new Processes.Result(
+            0,
+            "{\"structured_output\":{\"command\":\"ship\",\"task\":\"ABC-5\",\"ticket\":\"\","
+                + "\"reason\":\"asked to send it out\"}}",
+            ""));
 
     var answer = assistant.mapCommand("send ABC-5 out for review", menu);
 
@@ -66,12 +59,11 @@ class HeadlessClaudeCommandAssistantTest {
 
   @Test
   void putsTheRequestAndTheMenuInThePrompt() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"command\":\"none\"}}", ""));
+    runner.answering(new Processes.Result(0, "{\"structured_output\":{\"command\":\"none\"}}", ""));
 
     assistant.mapCommand("send ABC-5 out for review", menu);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .anySatisfy(
             argument ->

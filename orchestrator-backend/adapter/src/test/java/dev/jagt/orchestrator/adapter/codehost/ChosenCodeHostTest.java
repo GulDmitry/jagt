@@ -35,6 +35,7 @@ class ChosenCodeHostTest {
   private final ConfigService configService = mock(ConfigService.class);
   private final Processes processes = mock(Processes.class);
   private final ReachLedger reach = new ReachLedger();
+  private final ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
   private final ChosenCodeHost pipelines =
       new ChosenCodeHost(
           configService,
@@ -43,12 +44,6 @@ class ChosenCodeHostTest {
               new GitLabCli(processes, reach),
               new CommandPipeline(processes, reach),
               new NoCodeHost()));
-
-  private String firstWordOfTheCommandRun() {
-    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-    verify(processes).run(any(), any(Duration.class), command.capture());
-    return Path.of(command.getValue().getFirst()).getFileName().toString();
-  }
 
   @ParameterizedTest
   @CsvSource(
@@ -66,7 +61,8 @@ class ChosenCodeHostTest {
 
     pipelines.onCommit("shop", REMOTE, "0123abc");
 
-    assertThat(firstWordOfTheCommandRun()).isEqualTo(program);
+    verify(processes).run(any(), any(Duration.class), command.capture());
+    assertThat(Path.of(command.getValue().getFirst()).getFileName()).hasToString(program);
   }
 
   @Test
@@ -81,8 +77,8 @@ class ChosenCodeHostTest {
                             .withKind("command")
                             .withPipelineCommand(List.of("/bin/ci-state", "{sha}"))
                             .build())));
-    when(processes.run(any(), any(Duration.class), anyList())).thenReturn(
-        new Processes.Result(0, "success", ""));
+    when(processes.run(any(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "success", ""));
 
     Answer<CommitPipeline> answer = pipelines.onCommit("shop", REMOTE, "0123abc");
 
@@ -194,7 +190,8 @@ class ChosenCodeHostTest {
     void branchIsReadThroughTheDriverTheKeyChooses() {
       Answer<CommitPipeline> answer = pipelines.onBranchSince("shop", REMOTE, "dev", "0123abc");
 
-      assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
+      verify(processes).run(any(), any(Duration.class), command.capture());
+      assertThat(Path.of(command.getValue().getFirst()).getFileName()).hasToString("glab");
       assertThat(answer.facts()).contains(new CommitPipeline("none", ""));
     }
 
@@ -207,7 +204,8 @@ class ChosenCodeHostTest {
     void commitIsReadThroughGlabWhateverTheHostIsNamedWhereTheKeyChoosesIt(String remote) {
       pipelines.onCommit("shop", remote, "0123abc");
 
-      assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
+      verify(processes).run(any(), any(Duration.class), command.capture());
+      assertThat(Path.of(command.getValue().getFirst()).getFileName()).hasToString("glab");
     }
 
     @Test
@@ -219,7 +217,8 @@ class ChosenCodeHostTest {
           pipelines.closeRequest(
               "shop", REMOTE, "https://git.example.invalid/shop/web/-/merge_requests/7");
 
-      assertThat(firstWordOfTheCommandRun()).isEqualTo("glab");
+      verify(processes).run(any(), any(Duration.class), command.capture());
+      assertThat(Path.of(command.getValue().getFirst()).getFileName()).hasToString("glab");
       assertThat(answer.facts()).isPresent();
     }
   }

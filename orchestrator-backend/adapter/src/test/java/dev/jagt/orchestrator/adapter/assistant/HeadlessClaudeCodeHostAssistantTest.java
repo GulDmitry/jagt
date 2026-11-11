@@ -1,15 +1,12 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.answering;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.answeringNoFacts;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.claude;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.commandOf;
+import static dev.jagt.orchestrator.adapter.assistant.TestHeadlessClaudeBuilder.headlessClaude;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyNoInteractions;
 
-import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.service.UsageTracker;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,14 +15,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class HeadlessClaudeCodeHostAssistantTest {
 
+  private final FakeProcesses runner =
+      new FakeProcesses()
+          .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+  private final HeadlessClaudeCodeHostAssistant assistant =
+      new HeadlessClaudeCodeHostAssistant(
+          headlessClaude().build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
   @Test
   void constrainsThePipelineToFiveWordsSoMergeableRequestCannotComeBackFailed() {
-    ProcessRunner runner = answeringNoFacts();
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
 
     assistant.readReview("https://host/mr/9");
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .anyMatch(
             argument ->
@@ -36,12 +38,10 @@ class HeadlessClaudeCodeHostAssistantTest {
 
   @Test
   void asksForTheHostsPipelineListSoFailedRunCannotComeBackAsNoPipeline() {
-    ProcessRunner runner = answeringNoFacts();
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
 
     assistant.readReview("https://host/mr/9");
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .anyMatch(
             argument ->
@@ -51,12 +51,10 @@ class HeadlessClaudeCodeHostAssistantTest {
 
   @Test
   void readsTheJobThatFailedInsideTriggeredPipelineRatherThanTheTriggerItself() {
-    ProcessRunner runner = answeringNoFacts();
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
 
     assistant.readReview("https://host/mr/9");
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .anyMatch(
             argument ->
@@ -66,12 +64,10 @@ class HeadlessClaudeCodeHostAssistantTest {
 
   @Test
   void keepsRedRunReadableWhenTheFailingJobsLogIsNot() {
-    ProcessRunner runner = answeringNoFacts();
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
 
     assistant.readReview("https://host/mr/9");
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .anyMatch(
             argument ->
@@ -82,12 +78,10 @@ class HeadlessClaudeCodeHostAssistantTest {
 
   @Test
   void asksForEveryNoteOfThreadSoReplyToReplyIsNotReadAsAnAnsweredComment() {
-    ProcessRunner runner = answeringNoFacts();
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
 
     assistant.readReview("https://host/mr/9");
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .anyMatch(
             argument ->
@@ -101,16 +95,14 @@ class HeadlessClaudeCodeHostAssistantTest {
 
   @Test
   void readsThreadsNotesOutOfTheEnvelopeAsOneRelayableBlock() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\"success\",\"openedAt\":\"\",\"threads\":[\"https://host/mr/9#note_1\\n"
-                    + "bot: quote the pattern\\n"
-                    + "dev: the rule IS a pattern\\n"
-                    + "bot: then bound the input\"]}}",
-                ""));
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0,
+            "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\"success\",\"openedAt\":\"\",\"threads\":[\"https://host/mr/9#note_1\\n"
+                + "bot: quote the pattern\\n"
+                + "dev: the rule IS a pattern\\n"
+                + "bot: then bound the input\"]}}",
+            ""));
 
     var facts = assistant.readReview("https://host/mr/9").facts();
 
@@ -123,15 +115,13 @@ class HeadlessClaudeCodeHostAssistantTest {
 
   @Test
   void readsTheHostsWordThatTheRequestWasClosedUnmerged() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\""
-                    + "none\","
-                    + "\"closed\":true,\"merged\":false,\"openedAt\":\"\",\"threads\":[]}}",
-                ""));
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0,
+            "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\""
+                + "none\","
+                + "\"closed\":true,\"merged\":false,\"openedAt\":\"\",\"threads\":[]}}",
+            ""));
 
     var facts = assistant.readReview("https://host/mr/9").facts();
 
@@ -141,17 +131,15 @@ class HeadlessClaudeCodeHostAssistantTest {
 
   @Test
   void keepsAnOverlongThreadsNewestNotesRatherThanItsOpeningComment() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\""
-                    + "success\",\"openedAt\":\"\",\"threads\":[\"bot:"
-                    + " "
-                    + "x".repeat(3000)
-                    + "\\ndev: it is bound\\nbot: then bound the input\"]}}",
-                ""));
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0,
+            "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":"
+                + "\"success\",\"openedAt\":\"\",\"threads\":[\"bot:"
+                + " "
+                + "x".repeat(3000)
+                + "\\ndev: it is bound\\nbot: then bound the input\"]}}",
+            ""));
 
     var facts = assistant.readReview("https://host/mr/9").facts();
 
@@ -165,17 +153,15 @@ class HeadlessClaudeCodeHostAssistantTest {
 
   @Test
   void datesTheRequestFromTheHostsOwnTimestampRatherThanLeavingItBrandNew() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":false,
-                 "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success",\
-                "openedAt":"2026-08-01T09:15:00Z","threads":[]}}\
-                """,
-                ""));
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0,
+            """
+            {"type":"result","is_error":false,
+             "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success",\
+            "openedAt":"2026-08-01T09:15:00Z","threads":[]}}\
+            """,
+            ""));
 
     var facts = assistant.readReview("https://host/mr/9").facts();
 
@@ -185,18 +171,16 @@ class HeadlessClaudeCodeHostAssistantTest {
 
   @Test
   void leavesThreadTheAgentAnsweredLastToTheReviewer() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":false,
-                 "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success","openedAt":"",\
-                "signedInAs":"lee","threads":["https://host/mr/9#note_1\\nmia: Why is this loop not bounded?\\n\
-                lee: The page size bounds it, see Paging.java"]}}\
-                """,
-                ""));
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0,
+            """
+            {"type":"result","is_error":false,
+             "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success","openedAt":"",\
+            "signedInAs":"lee","threads":["https://host/mr/9#note_1\\nmia: Why is this loop not bounded?\\n\
+            lee: The page size bounds it, see Paging.java"]}}\
+            """,
+            ""));
 
     var facts = assistant.readReview("https://host/mr/9").facts();
 
@@ -213,18 +197,16 @@ class HeadlessClaudeCodeHostAssistantTest {
 
   @Test
   void leavesTheNoteIdsModelWritesUnreadBecauseTheHostGivesThem() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":false,
-                 "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success","openedAt":"",\
-                "signedInAs":"lee","newestNotes":["note_2","note_5"],\
-                "threads":["https://host/mr/9#note_1\\nmia: Why?","https://host/mr/9#note_4\\nmia: And?"]}}\
-                """,
-                ""));
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0,
+            """
+            {"type":"result","is_error":false,
+             "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success","openedAt":"",\
+            "signedInAs":"lee","newestNotes":["note_2","note_5"],\
+            "threads":["https://host/mr/9#note_1\\nmia: Why?","https://host/mr/9#note_4\\nmia: And?"]}}\
+            """,
+            ""));
 
     var facts = assistant.readReview("https://host/mr/9").facts();
 
@@ -234,18 +216,16 @@ class HeadlessClaudeCodeHostAssistantTest {
 
   @Test
   void cutsFailureLogTooLongToRelayIntoWorktreeFile() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":false,
-                 "structured_output":{"exists":true,"approved":false,"pipelineStatus":"failed",\
-                "pipelineFailure":"LOG","openedAt":"","threads":[]}}\
-                """
-                    .replace("LOG", "x".repeat(5000)),
-                ""));
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0,
+            """
+            {"type":"result","is_error":false,
+             "structured_output":{"exists":true,"approved":false,"pipelineStatus":"failed",\
+            "pipelineFailure":"LOG","openedAt":"","threads":[]}}\
+            """
+                .replace("LOG", "x".repeat(5000)),
+            ""));
 
     var facts = assistant.readReview("https://host/mr/9").facts();
 
@@ -255,18 +235,16 @@ class HeadlessClaudeCodeHostAssistantTest {
 
   @Test
   void relaysFailureLogOfExactlyTheLimitWhole() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":false,
-                 "structured_output":{"exists":true,"approved":false,"pipelineStatus":"failed",\
-                "pipelineFailure":"LOG","openedAt":"","threads":[]}}\
-                """
-                    .replace("LOG", "x".repeat(2000)),
-                ""));
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0,
+            """
+            {"type":"result","is_error":false,
+             "structured_output":{"exists":true,"approved":false,"pipelineStatus":"failed",\
+            "pipelineFailure":"LOG","openedAt":"","threads":[]}}\
+            """
+                .replace("LOG", "x".repeat(2000)),
+            ""));
 
     var facts = assistant.readReview("https://host/mr/9").facts();
 
@@ -276,16 +254,14 @@ class HeadlessClaudeCodeHostAssistantTest {
 
   @Test
   void relaysThreadOfExactlyTheLimitWhole() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\"success\","
-                    + "\"openedAt\":\"\",\"threads\":[\""
-                    + "x".repeat(2000)
-                    + "\"]}}",
-                ""));
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0,
+            "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\"success\","
+                + "\"openedAt\":\"\",\"threads\":[\""
+                + "x".repeat(2000)
+                + "\"]}}",
+            ""));
 
     var facts = assistant.readReview("https://host/mr/9").facts();
 
@@ -297,34 +273,28 @@ class HeadlessClaudeCodeHostAssistantTest {
   @NullSource
   @ValueSource(strings = {"ABC-42", "ftp://host/mr/9"})
   void readsNoMergeRequestFromAnythingButWebAddress(String mrUrl) {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
 
     assertThat(assistant.readMergeRequest(mrUrl).facts()).isEmpty();
-    verifyNoInteractions(runner);
+    assertThat(runner.issued()).isEmpty();
   }
 
   @ParameterizedTest
   @NullSource
   @ValueSource(strings = {"ABC-42", "ftp://host/mr/9"})
   void sweepsNoReviewFromAnythingButWebAddress(String mrUrl) {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
 
     assertThat(assistant.readReview(mrUrl).facts()).isEmpty();
-    verifyNoInteractions(runner);
+    assertThat(runner.issued()).isEmpty();
   }
 
   @Test
   void readsTheBranchesAndTheTitleOfMergeRequest() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                "{\"structured_output\":{\"exists\":true,\"sourceBranch\":\"ABC-42-fix\","
-                    + "\"targetBranch\":\"main\",\"title\":\"Fix the widget\"}}",
-                ""));
-    var assistant = new HeadlessClaudeCodeHostAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0,
+            "{\"structured_output\":{\"exists\":true,\"sourceBranch\":\"ABC-42-fix\","
+                + "\"targetBranch\":\"main\",\"title\":\"Fix the widget\"}}",
+            ""));
 
     var facts = assistant.readMergeRequest("https://host/mr/9").facts();
 

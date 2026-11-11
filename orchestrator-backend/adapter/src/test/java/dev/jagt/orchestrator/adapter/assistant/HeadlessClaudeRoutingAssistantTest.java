@@ -1,31 +1,29 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.answeringOutput;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.claude;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.commandOf;
+import static dev.jagt.orchestrator.adapter.assistant.TestHeadlessClaudeBuilder.headlessClaude;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
-import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.RoutingAnswer;
 import dev.jagt.orchestrator.task.RoutingQuestion;
 import dev.jagt.orchestrator.task.RulePair;
 import dev.jagt.orchestrator.task.TicketFacts;
-import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class HeadlessClaudeRoutingAssistantTest {
 
-  private final ProcessRunner runner =
-      answeringOutput("{\"structured_output\":{\"project\":\"ledger\"}}");
+  private final FakeProcesses runner =
+      new FakeProcesses()
+          .answering(
+              new Processes.Result(0, "{\"structured_output\":{\"project\":\"ledger\"}}", ""));
   private final HeadlessClaudeRoutingAssistant assistant =
-      new HeadlessClaudeRoutingAssistant(claude(runner));
+      new HeadlessClaudeRoutingAssistant(
+          headlessClaude().build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
   @Test
   void asksNothingWhereTheQuestionNamesNoRepository() {
@@ -34,7 +32,7 @@ class HeadlessClaudeRoutingAssistantTest {
             RoutingQuestion.defaults().withItem(TicketFacts.defaults().withKey("ABC-42")));
 
     assertThat(answer.facts()).isEmpty();
-    verifyNoInteractions(runner);
+    assertThat(runner.issued()).isEmpty();
   }
 
   @Test
@@ -42,17 +40,14 @@ class HeadlessClaudeRoutingAssistantTest {
     var answer = assistant.routeProject(null);
 
     assertThat(answer.facts()).isEmpty();
-    verifyNoInteractions(runner);
+    assertThat(runner.issued()).isEmpty();
   }
 
   @Test
   void readsTheRepositoryAndTheRuleOutOfTheStructuredAnswer() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(
-                0,
-                "{\"structured_output\":{\"project\":\"ledger\",\"rule\":\" invoice sums \"}}",
-                ""));
+    runner.answering(
+        new Processes.Result(
+            0, "{\"structured_output\":{\"project\":\"ledger\",\"rule\":\" invoice sums \"}}", ""));
 
     var answer =
         assistant.routeProject(
@@ -72,7 +67,7 @@ class HeadlessClaudeRoutingAssistantTest {
             .withRules(List.of("VAT goes to ledger"))
             .withPrecedents(List.of("ABC-7 was done in ledger")));
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .anySatisfy(
             argument ->
@@ -97,7 +92,7 @@ class HeadlessClaudeRoutingAssistantTest {
             .withItem(TicketFacts.defaults().withKey("ABC-42").withTitle("VAT is wrong"))
             .withProjects(Map.of("ledger", "invoicing")));
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .noneMatch(
             argument ->
@@ -110,7 +105,7 @@ class HeadlessClaudeRoutingAssistantTest {
     var answer = assistant.staleRule("ABC-42", "ledger", List.of());
 
     assertThat(answer.facts()).isEmpty();
-    verifyNoInteractions(runner);
+    assertThat(runner.issued()).isEmpty();
   }
 
   @Test
@@ -118,20 +113,18 @@ class HeadlessClaudeRoutingAssistantTest {
     var answer = assistant.staleRule(null, "ledger", List.of("VAT goes to ledger"));
 
     assertThat(answer.facts()).isEmpty();
-    verifyNoInteractions(runner);
+    assertThat(runner.issued()).isEmpty();
   }
 
   @Test
   void namesTheWrittenRuleTheHandPlacementContradicted() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(
-                0, "{\"structured_output\":{\"rule\":\"VAT goes to ledger\"}}", ""));
+    runner.answering(
+        new Processes.Result(0, "{\"structured_output\":{\"rule\":\"VAT goes to ledger\"}}", ""));
 
     var answer = assistant.staleRule("ABC-42", "shop", List.of("VAT goes to ledger"));
 
     assertThat(answer.facts()).contains("VAT goes to ledger");
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .anySatisfy(
             argument ->
@@ -146,18 +139,17 @@ class HeadlessClaudeRoutingAssistantTest {
     var answer = assistant.sameRules(List.of("VAT goes to ledger"));
 
     assertThat(answer.facts()).isEmpty();
-    verifyNoInteractions(runner);
+    assertThat(runner.issued()).isEmpty();
   }
 
   @Test
   void namesTheKeptWordingAndTheDuplicateOfTwinRules() {
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(
-            new Processes.Result(
-                0,
-                "{\"structured_output\":{\"kept\":\"VAT goes to ledger\",\"duplicate\":\"VAT sums"
-                    + " to ledger\"}}",
-                ""));
+    runner.answering(
+        new Processes.Result(
+            0,
+            "{\"structured_output\":{\"kept\":\"VAT goes to ledger\",\"duplicate\":\"VAT sums"
+                + " to ledger\"}}",
+            ""));
 
     var answer = assistant.sameRules(List.of("VAT goes to ledger", "VAT sums to ledger"));
 

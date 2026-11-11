@@ -14,7 +14,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.command.GlobalCommands;
+import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.StateEvents.StateWritten;
+import dev.jagt.orchestrator.service.ReachLedger;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskViews;
 import jakarta.servlet.AsyncEvent;
 import java.io.IOException;
@@ -241,7 +244,14 @@ class TaskEventStreamTest {
                     mock(TaskViews.class),
                     beatingStream,
                     new GlobalCommands(List.of()),
-                    BoardFixtures.quietHeader()))
+                    new HeaderState(
+                        new Jobs(
+                            List.of(),
+                            mock(TaskScheduler.class),
+                            Clock.systemUTC(),
+                            mock(StateService.class)),
+                        new ReachLedger(),
+                        Clock.systemUTC())))
             .build()
             .perform(MockMvcRequestBuilders.get("/api/events").accept("text/event-stream"))
             .andReturn();

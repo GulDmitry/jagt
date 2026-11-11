@@ -1,6 +1,10 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestCaseDoorBuilder.caseDoor;
+import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
 import static dev.jagt.orchestrator.service.TestReviewAnswerBuilder.reviewAnswer;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
+import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -13,8 +17,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -42,20 +46,26 @@ class RoundRelayTest {
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final Clock clock = Clock.fixed(Instant.ofEpochMilli(1_000_000), ZoneOffset.UTC);
   private final TaskStops relayingStops = mock(TaskStops.class);
-  private CaseDoorFixture doors;
+  private OrchestratorPaths paths;
+  private StateService state;
+  private TaskStops stops;
+  private CaseDoor door;
   private SessionBrief brief;
   private StepRelay steps;
 
   @BeforeEach
   void setUp() throws IOException {
-    doors = new CaseDoorFixture(root, clock, Arbiter.Profile.OFF);
-    brief = new SessionBrief(doors.paths);
+    paths = orchestratorPaths().withRoot(root).build();
+    state = stateService().withRoot(root).build();
+    stops = taskStops().withRoot(root).build(state, clock);
+    door = caseDoor().withRoot(root).build(state, stops, clock);
+    brief = new SessionBrief(paths);
     steps =
         new StepRelay(
             brief,
             sessions,
-            doors.door,
-            new TaskTurns(doors.state, clock, new Checkers(new TaskChart(Composition.builtIn()))));
+            door,
+            new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn()))));
     Files.createDirectories(root.resolve("roles/session"));
     when(relayingStops.round(anyString(), any(), anyString(), anyString()))
         .thenReturn(TaskStops.Relay.RELAY);
@@ -67,8 +77,8 @@ class RoundRelayTest {
       throws Exception {
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    RoundRelay relay = new RoundRelay(doors.stops, steps, doors.door, brief);
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+    RoundRelay relay = new RoundRelay(stops, steps, door, brief);
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     ReviewFacts round =
         reviewAnswer()
             .withStatus("running")
@@ -90,8 +100,8 @@ class RoundRelayTest {
   void relaysNothingWhileTheAgentsQuestionStandsAndTheChecksAreRed() throws Exception {
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    RoundRelay relay = new RoundRelay(doors.stops, steps, doors.door, brief);
-    doors.state.putTask(
+    RoundRelay relay = new RoundRelay(stops, steps, door, brief);
+    state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .report(AgentReport.QUESTION)
@@ -120,8 +130,8 @@ class RoundRelayTest {
   void relaysNothingIntoTaskJagtStopped() throws Exception {
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    RoundRelay relay = new RoundRelay(doors.stops, steps, doors.door, brief);
-    doors.state.putTask(
+    RoundRelay relay = new RoundRelay(stops, steps, door, brief);
+    state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .stop(new TaskStop(TaskStop.Trigger.SHIPS, 1L, "5 ships"))
@@ -150,7 +160,7 @@ class RoundRelayTest {
   void relaysTheThreadsAsDraftsAndCountsThem() throws Exception {
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    RoundRelay relay = new RoundRelay(relayingStops, steps, doors.door, brief);
+    RoundRelay relay = new RoundRelay(relayingStops, steps, door, brief);
 
     SweepResult result =
         relay.relay(
@@ -177,7 +187,7 @@ class RoundRelayTest {
   void relaysTheThreadsWithoutTheChecksWhileTheAgentsQuestionAboutThemStands() throws Exception {
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    RoundRelay relay = new RoundRelay(relayingStops, steps, doors.door, brief);
+    RoundRelay relay = new RoundRelay(relayingStops, steps, door, brief);
     when(relayingStops.asking("ABC-42")).thenReturn(true);
 
     relay.relay(
@@ -207,8 +217,8 @@ class RoundRelayTest {
   void reportsRoundUnchangedWhileTheSessionHoldsTheTurnItOpened() throws Exception {
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    RoundRelay relay = new RoundRelay(relayingStops, steps, doors.door, brief);
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+    RoundRelay relay = new RoundRelay(relayingStops, steps, door, brief);
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     ReviewFacts round =
         reviewAnswer()
             .withStatus("success")
@@ -230,8 +240,8 @@ class RoundRelayTest {
   void relaysNoRoundWhereNoCaseSendsItsStepsAtTheTasksStatus() throws Exception {
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    RoundRelay relay = new RoundRelay(mock(TaskStops.class), steps, doors.door, brief);
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
+    RoundRelay relay = new RoundRelay(mock(TaskStops.class), steps, door, brief);
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DONE).build());
 
     SweepResult result =
         relay.relay(

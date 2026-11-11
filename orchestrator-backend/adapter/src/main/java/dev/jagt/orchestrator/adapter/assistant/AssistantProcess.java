@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -16,7 +15,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 class AssistantProcess {
 
-  private final ProcessRunner runner;
+  private final Processes runner;
   private final AssistantBreaker breaker;
 
   Processes.Result run(Path cwd, Duration timeout, List<String> command) {

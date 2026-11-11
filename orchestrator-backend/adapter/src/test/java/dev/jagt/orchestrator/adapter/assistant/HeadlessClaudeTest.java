@@ -1,16 +1,10 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.answering;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.answeringNoFacts;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.attached;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.claude;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.commandOf;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.loggedFields;
+import static dev.jagt.orchestrator.adapter.assistant.TestHeadlessClaudeBuilder.headlessClaude;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -18,7 +12,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.protocol.MergeRequestRead;
@@ -30,36 +24,45 @@ import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
-import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 class HeadlessClaudeTest {
 
+  private final FakeProcesses runner =
+      new FakeProcesses()
+          .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+  private final HeadlessClaude claude =
+      headlessClaude().build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class));
+
   @Test
   void readThatNamesWhatStoppedItComesBackUnreadableInsteadOfAsMissingRequest() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"structured_output":{"exists":false,"failure":"no GitLab MCP tool in this session",\
-                "sourceBranch":"","targetBranch":"","title":""}}\
-                """,
-                ""));
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    0,
+                    """
+                    {"structured_output":{"exists":false,"failure":"no GitLab MCP tool in this session",\
+                    "sourceBranch":"","targetBranch":"","title":""}}\
+                    """,
+                    ""));
 
     var answer =
-        claude(runner)
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
             .read(
                 "Read https://git.example.com/g/p/-/merge_requests/7.",
                 MergeRequestRead.SCHEMA.json(),
@@ -72,17 +75,19 @@ class HeadlessClaudeTest {
 
   @Test
   void readAnErrorEndedWithNoResultNamesWhatEndedIt() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":true,"subtype":"error_during_execution","result":""}\
-                """,
-                ""));
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    0,
+                    """
+                    {"type":"result","is_error":true,"subtype":"error_during_execution","result":""}\
+                    """,
+                    ""));
 
     var answer =
-        claude(runner)
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
             .read(
                 "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -91,10 +96,7 @@ class HeadlessClaudeTest {
 
   @Test
   void readWhoseCommandStoppedWithJagtIsNoFailure() {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenThrow(new Processes.Stopped(List.of("claude")));
-    var claude = claude(runner);
+    runner.failing(new Processes.Stopped(List.of("claude")));
 
     org.assertj.core.api.Assertions.assertThatThrownBy(
             () ->
@@ -108,10 +110,11 @@ class HeadlessClaudeTest {
 
   @Test
   void readRefusedByTheBreakerFailsAsUnavailableNotAsDidNotReturn() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                1,
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    1,
 """
 {"duration_api_ms":0,"stop_reason":"stop_sequence",\
 "session_id":"d638fd9d-2a7c-449d-8e68-a64542931b9c","total_cost_usd":0,\
@@ -131,14 +134,11 @@ class HeadlessClaudeTest {
  check your inference gateway (127.0.0.1:18529).","type":"result","duration_ms":733,\
 "uuid":"02368b97-942b-4e63-9855-74344bfb179e","queued_turn_count":0,"result_index":0}\
 """,
-                ""));
+                    ""));
     var claude =
-        claude(
-            runner,
-            AssistantProperties.empty().withBreakerFailures(1),
-            AssistantProperties.empty(),
-            mock(UsageTracker.class),
-            mock(ReadOnlyTools.class));
+        headlessClaude()
+            .withBreaker(AssistantProperties.empty().withBreakerFailures(1))
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class));
     claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
     org.assertj.core.api.Assertions.assertThatThrownBy(
@@ -153,12 +153,15 @@ class HeadlessClaudeTest {
 
   @Test
   void discardsAnAnswerWhoseRunNoCallOfReachedTheReadGate() {
-    ProcessRunner runner = answeringNoFacts();
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
     ReadOnlyTools reads = mock(ReadOnlyTools.class);
     when(reads.lift(any())).thenReturn(Optional.of("no call reached the read gate"));
 
     var answer =
-        claude(runner, reads)
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), reads)
             .read(
                 "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -167,14 +170,16 @@ class HeadlessClaudeTest {
 
   @Test
   void callsOnlyTheAllowedReadsAndRefusesWhateverElseWouldPrompt() {
-    ProcessRunner runner = answeringNoFacts();
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
     ReadOnlyTools reads = mock(ReadOnlyTools.class);
     when(reads.allowed(AssistantCallKind.TICKET_READ)).thenReturn(List.of("mcp__acme__get*"));
-    var claude = claude(runner, reads);
+    var claude = headlessClaude().build(runner, mock(UsageTracker.class), reads);
 
     claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .containsSequence("--permission-mode", "dontAsk")
         .endsWith("--allowedTools", "mcp__acme__get*")
@@ -183,23 +188,19 @@ class HeadlessClaudeTest {
 
   @Test
   void loadsNoBuiltInToolSoTicketCannotAskTheReadForShell() {
-    ProcessRunner runner = answeringNoFacts();
-    var claude = claude(runner);
 
     claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command).containsSequence("--tools", "");
   }
 
   @Test
   void refusesEveryMcpToolNamedAsWriteSoTicketCannotAskTheReadToChangeTheHost() {
-    ProcessRunner runner = answeringNoFacts();
-    var claude = claude(runner);
 
     claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .contains(
             "mcp__*__create*",
@@ -213,17 +214,20 @@ class HeadlessClaudeTest {
 
   @Test
   void loadsOnlyTheDeclaredMcpServersInsteadOfWhateverTheHumanHasInstalled() {
-    ProcessRunner runner = answeringNoFacts();
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
     var claude =
-        claude(
-            runner,
-            AssistantProperties.empty()
-                .withMcpConfig(
-                    "{\"mcpServers\":{\"a\":{\"command\":\"x\"},\"b\":{\"command\":\"y\"}}}"));
+        headlessClaude()
+            .withProperties(
+                AssistantProperties.empty()
+                    .withMcpConfig(
+                        "{\"mcpServers\":{\"a\":{\"command\":\"x\"},\"b\":{\"command\":\"y\"}}}"))
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
     claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .containsSequence(
             "--mcp-config",
@@ -234,53 +238,57 @@ class HeadlessClaudeTest {
 
   @Test
   void inheritsTheHumansOwnMcpServersWhenTheInstallDeclaresNone() {
-    ProcessRunner runner = answeringNoFacts();
-    var claude = claude(runner);
 
     claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command).containsSequence("--setting-sources", "user,project,local");
     assertThat(command).doesNotContain("--strict-mcp-config");
   }
 
   @Test
   void runsTheConfiguredModelInsteadOfWhateverTheHumansDefaultCostsToday() {
-    ProcessRunner runner = answeringNoFacts();
-    var claude = claude(runner, AssistantProperties.empty().withModel("haiku"));
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+    var claude =
+        headlessClaude()
+            .withProperties(AssistantProperties.empty().withModel("haiku"))
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
     claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command).containsSequence("--model", "haiku");
   }
 
   @Test
   void inheritsTheHumansOwnModelWhenNoneIsConfigured() {
-    ProcessRunner runner = answeringNoFacts();
-    var claude = claude(runner, AssistantProperties.empty().withModel(""));
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+    var claude =
+        headlessClaude()
+            .withProperties(AssistantProperties.empty().withModel(""))
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
     claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command).doesNotContain("--model");
   }
 
   @Test
   void asksForTheJsonEnvelopeSoEveryCallCarriesItsOwnCost() {
-    ProcessRunner runner = answeringNoFacts();
-    var claude = claude(runner);
 
     claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command).containsSequence("--output-format", "json");
   }
 
   @Test
   void keepsTheWorktreeOutOfTheSystemPromptSoEveryReadSharesOneCache() {
-    ProcessRunner runner = answeringNoFacts();
-    var claude = claude(runner);
 
     claude.read(
         "Read https://host/mr/9.",
@@ -288,17 +296,15 @@ class HeadlessClaudeTest {
         "https://host/mr/9",
         AssistantCallKind.REVIEW_SWEEP);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command).contains("--exclude-dynamic-system-prompt-sections");
   }
 
   @Test
   void tellsTheRetryWhyTheFirstReplyWasRefused() {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(new Processes.Result(0, "{\"result\":\"The request is open.\"}", ""))
-        .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-    var claude = claude(runner);
+    runner.answeringInTurn(
+        new Processes.Result(0, "{\"result\":\"The request is open.\"}", ""),
+        new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
 
     claude.read(
         "Read https://host/mr/9.",
@@ -306,9 +312,8 @@ class HeadlessClaudeTest {
         "https://host/mr/9",
         AssistantCallKind.REVIEW_SWEEP);
 
-    ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-    verify(runner, times(2)).run(any(Path.class), any(Duration.class), command.capture());
-    assertThat(command.getAllValues().get(1))
+    assertThat(runner.issued()).hasSize(2);
+    assertThat(runner.issued().get(1))
         .contains(
             "Read https://host/mr/9.\n\n"
                 + "Your last reply was prose without the StructuredOutput call: answer through"
@@ -317,8 +322,6 @@ class HeadlessClaudeTest {
 
   @Test
   void leavesNoTranscriptBehindSinceNothingResumesOneShot() {
-    ProcessRunner runner = answeringNoFacts();
-    var claude = claude(runner);
 
     claude.read(
         "Read https://host/mr/9.",
@@ -326,14 +329,12 @@ class HeadlessClaudeTest {
         "https://host/mr/9",
         AssistantCallKind.REVIEW_SWEEP);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command).contains("--no-session-persistence");
   }
 
   @Test
   void cachesForMinutesSinceNoLaterReadComesBackWithinTheHour() {
-    ProcessRunner runner = answeringNoFacts();
-    var claude = claude(runner);
 
     claude.read(
         "Read https://host/mr/9.",
@@ -341,31 +342,27 @@ class HeadlessClaudeTest {
         "https://host/mr/9",
         AssistantCallKind.REVIEW_SWEEP);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command).startsWith("env", "FORCE_PROMPT_CACHING_5M=1");
   }
 
   @Test
   void capsTheCliRetriesSoAnOutageEndsInsideTheTimeoutWithItsOwnError() {
-    ProcessRunner runner = answeringNoFacts();
-    var claude = claude(runner);
 
     claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command).contains("CLAUDE_CODE_MAX_RETRIES=2");
   }
 
   @Test
   void readsNoFactsFromAnAnswerCarryingOnlyTheSchemasGenericFields() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                "{\"type\":\"result\",\"is_error\":false,\"result\":\"{\\\"title\\\":\\\"Late"
-                    + " invoice mail\\\",\\\"url\\\":\\\"\\\"}\"}",
-                ""));
-    var claude = claude(runner);
+    runner.answering(
+        new Processes.Result(
+            0,
+            "{\"type\":\"result\",\"is_error\":false,\"result\":\"{\\\"title\\\":\\\"Late"
+                + " invoice mail\\\",\\\"url\\\":\\\"\\\"}\"}",
+            ""));
 
     var answer =
         claude.read(
@@ -376,17 +373,15 @@ class HeadlessClaudeTest {
 
   @Test
   void fallsBackToTheResultStringWhenTheEnvelopeCarriesNoParsedOutput() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":false,
-                 "result":"{\\"exists\\":true,\\"key\\":\\"ABC-7\\",\\"title\\":\\"Late invoice mail\\",\
-                \\"trackerProject\\":\\"ABC\\",\\"labels\\":[],\\"url\\":\\"\\"}"}\
-                """,
-                ""));
-    var claude = claude(runner);
+    runner.answering(
+        new Processes.Result(
+            0,
+            """
+            {"type":"result","is_error":false,
+             "result":"{\\"exists\\":true,\\"key\\":\\"ABC-7\\",\\"title\\":\\"Late invoice mail\\",\
+            \\"trackerProject\\":\\"ABC\\",\\"labels\\":[],\\"url\\":\\"\\"}"}\
+            """,
+            ""));
 
     var facts =
         claude
@@ -398,18 +393,20 @@ class HeadlessClaudeTest {
 
   @Test
   void readsTheSchemasObjectModelFencedInsideItsProse() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":false,
-                 "result":"The search returned no matching issues.\\n\\n```json\\n{\\"failure\\": \\"\\", \\"keys\\": []}\\n```"}\
-                """,
-                ""));
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    0,
+                    """
+                    {"type":"result","is_error":false,
+                     "result":"The search returned no matching issues.\\n\\n```json\\n{\\"failure\\": \\"\\", \\"keys\\": []}\\n```"}\
+                    """,
+                    ""));
 
     var facts =
-        claude(runner)
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
             .read(
                 "Find assignee = me.",
                 TicketSearch.SCHEMA.json(),
@@ -424,18 +421,22 @@ class HeadlessClaudeTest {
   @ResourceLock(Resources.GLOBAL)
   void namesTheModelsOwnWordsWhenItAnsweredPastTheSchema() {
     Logger assistantLog = (Logger) LoggerFactory.getLogger(SchemaAnswer.class);
-    ListAppender<ILoggingEvent> log = attached(assistantLog);
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":false,
-                 "result":"I need the GitLab MCP server logged in before I can read this request."}\
-                """,
-                ""));
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    assistantLog.addAppender(log);
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    0,
+                    """
+                    {"type":"result","is_error":false,
+                     "result":"I need the GitLab MCP server logged in before I can read this request."}\
+                    """,
+                    ""));
 
-    claude(runner)
+    headlessClaude()
+        .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
         .read(
             "Read https://host/mr/9.",
             ReviewRead.SCHEMA.json(),
@@ -452,24 +453,26 @@ class HeadlessClaudeTest {
 
   @Test
   void asksOnceMoreWhenTheModelClaimedTheSchemaToolButTheEnvelopeCarriesNoObject() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":false,
-                 "result":"I have already called the StructuredOutput tool with project abc."}\
-                """,
-                ""),
-            new Processes.Result(
-                0,
-                """
-                {"structured_output":{"failure":"","project":"abc","reason":"named","rule":""}}\
-                """,
-                ""));
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answeringInTurn(
+                new Processes.Result(
+                    0,
+                    """
+                    {"type":"result","is_error":false,
+                     "result":"I have already called the StructuredOutput tool with project abc."}\
+                    """,
+                    ""),
+                new Processes.Result(
+                    0,
+                    """
+                    {"structured_output":{"failure":"","project":"abc","reason":"named","rule":""}}\
+                    """,
+                    ""));
 
     var answer =
-        claude(runner)
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
             .read(
                 "Place ABC-42.",
                 ProjectRead.schemaFor(Set.of("abc", "xyz")).json(),
@@ -481,18 +484,20 @@ class HeadlessClaudeTest {
 
   @Test
   void readsNoFactsFromAnAnswerNamingNoneOfTheSchemasFields() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":false,
-                 "result":"{\\"error\\":\\"the GitLab MCP server is not authenticated\\"}"}\
-                """,
-                ""));
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    0,
+                    """
+                    {"type":"result","is_error":false,
+                     "result":"{\\"error\\":\\"the GitLab MCP server is not authenticated\\"}"}\
+                    """,
+                    ""));
 
     var answer =
-        claude(runner)
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
             .read(
                 "Read https://host/mr/9.",
                 MergeRequestRead.SCHEMA.json(),
@@ -504,17 +509,19 @@ class HeadlessClaudeTest {
 
   @Test
   void readsNoFactsFromAnAnswerThatIsJsonButNotTheSchemasObject() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":false,"result":"\\"no such merge request\\""}\
-                """,
-                ""));
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    0,
+                    """
+                    {"type":"result","is_error":false,"result":"\\"no such merge request\\""}\
+                    """,
+                    ""));
 
     var answer =
-        claude(runner)
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
             .read(
                 "Read https://host/mr/9.",
                 MergeRequestRead.SCHEMA.json(),
@@ -526,18 +533,16 @@ class HeadlessClaudeTest {
 
   @Test
   void reportsTheCostOfCallTheModelAnsweredWithAnError() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":true,"total_cost_usd":0.12,
-                 "usage":{"input_tokens":5,"cache_creation_input_tokens":25000,\
-                "cache_read_input_tokens":0,"output_tokens":40},
-                 "result":"the tracker MCP is not available"}\
-                """,
-                ""));
-    var claude = claude(runner);
+    runner.answering(
+        new Processes.Result(
+            0,
+            """
+            {"type":"result","is_error":true,"total_cost_usd":0.12,
+             "usage":{"input_tokens":5,"cache_creation_input_tokens":25000,\
+            "cache_read_input_tokens":0,"output_tokens":40},
+             "result":"the tracker MCP is not available"}\
+            """,
+            ""));
 
     var answer =
         claude.read(
@@ -552,18 +557,20 @@ class HeadlessClaudeTest {
 
   @Test
   void booksCallUnderItsKindEvenWhenItsReadCameBackUnreadable() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"total_cost_usd":0.06,"usage":{"input_tokens":31000,"output_tokens":40},
-                 "structured_output":{"exists":false,"failure":"no tracker MCP tool"}}\
-                """,
-                ""));
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    0,
+                    """
+                    {"total_cost_usd":0.06,"usage":{"input_tokens":31000,"output_tokens":40},
+                     "structured_output":{"exists":false,"failure":"no tracker MCP tool"}}\
+                    """,
+                    ""));
     UsageTracker usage = mock(UsageTracker.class);
 
-    claude(runner, usage)
+    headlessClaude()
+        .build(runner, usage, mock(ReadOnlyTools.class))
         .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
     verify(usage).record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(31_000, 0, 40, 0.06));
@@ -595,41 +602,60 @@ class HeadlessClaudeTest {
     assertThat(HeadlessClaude.usageOf(envelope)).isEqualTo(TokenUsage.NONE);
   }
 
-  @Test
+  @ParameterizedTest
+  @MethodSource("readCalls")
   @ResourceLock(Resources.GLOBAL)
-  void countsTheCallsOfReadByToolRatherThanPrintingWhatEachRead() {
-    ProcessRunner runner = answeringNoFacts();
+  void logsTheCallsOfReadByToolRatherThanPrintingWhatEachRead(List<String> calls, String expected) {
     ReadOnlyTools reads = mock(ReadOnlyTools.class);
-    when(reads.calls(any()))
-        .thenReturn(
+    when(reads.calls(any())).thenReturn(calls);
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    ((Logger) LoggerFactory.getLogger(HeadlessClaude.class)).addAppender(log);
+
+    headlessClaude()
+        .build(runner, mock(UsageTracker.class), reads)
+        .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+    assertThat(log.list)
+        .filteredOn(event -> "assistant read".equals(event.getMessage()))
+        .flatExtracting(
+            event ->
+                event.getKeyValuePairs().stream().map(pair -> pair.key + "=" + pair.value).toList())
+        .contains("ref=ABC-42", expected);
+  }
+
+  private static Stream<Arguments> readCalls() {
+    return Stream.of(
+        Arguments.of(
             List.of(
                 "Bash {command=ls src}",
                 "Read {file_path=src/Foo.java}",
-                "Bash {command=git diff --stat}"));
-    ListAppender<ILoggingEvent> log =
-        attached((Logger) LoggerFactory.getLogger(HeadlessClaude.class));
-
-    claude(runner, reads)
-        .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
-
-    assertThat(loggedFields(log, "assistant read"))
-        .contains("ref=ABC-42", "calls={Bash=2, Read=1}");
+                "Bash {command=git diff --stat}"),
+            "calls={Bash=2, Read=1}"),
+        Arguments.of(
+            List.of(
+                "mcp__acme__get_issue {issueIdOrKey=ABC-42}",
+                "StructuredOutput {text=# ABC-42 the whole ticket}"),
+            "calls={mcp__acme__get_issue=1}"));
   }
 
   @Test
   @ResourceLock(Resources.GLOBAL)
   void warnsRatherThanErrsWhenTheReadWasDeniedCallAndAnsweredAnyway() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                "{\"structured_output\":{\"exists\":false},\"permission_denials\":[{\"tool_name"
-                    + "\":\"Bash\"}]}",
-                ""));
-    ListAppender<ILoggingEvent> log =
-        attached((Logger) LoggerFactory.getLogger(HeadlessClaude.class));
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    0,
+                    "{\"structured_output\":{\"exists\":false},\"permission_denials\":[{\"tool_name"
+                        + "\":\"Bash\"}]}",
+                    ""));
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    ((Logger) LoggerFactory.getLogger(HeadlessClaude.class)).addAppender(log);
 
-    claude(runner)
+    headlessClaude()
+        .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
         .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
     assertThat(List.copyOf(log.list))
@@ -639,32 +665,16 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
-  void leavesTheAnswerOutOfTheCallsItLogsBecauseItIsNoSource() {
-    ProcessRunner runner = answeringNoFacts();
-    ReadOnlyTools reads = mock(ReadOnlyTools.class);
-    when(reads.calls(any()))
-        .thenReturn(
-            List.of(
-                "mcp__acme__get_issue {issueIdOrKey=ABC-42}",
-                "StructuredOutput {text=# ABC-42 the whole ticket}"));
-    ListAppender<ILoggingEvent> log =
-        attached((Logger) LoggerFactory.getLogger(HeadlessClaude.class));
-
-    claude(runner, reads)
-        .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
-
-    assertThat(loggedFields(log, "assistant read")).contains("calls={mcp__acme__get_issue=1}");
-  }
-
-  @Test
   void holdsReadToItsOwnReadsAndItsAnswerUntilItReturns() {
-    ProcessRunner runner = answeringNoFacts();
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
     ReadOnlyTools reads = mock(ReadOnlyTools.class);
     when(reads.allowed(AssistantCallKind.TICKET_READ)).thenReturn(List.of("mcp__acme__get*"));
     when(reads.fence(any(), any())).thenReturn(List.of("--settings", "{\"hooks\":{}}"));
 
-    claude(runner, reads)
+    headlessClaude()
+        .build(runner, mock(UsageTracker.class), reads)
         .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
     ArgumentCaptor<String> fence = ArgumentCaptor.captor();
@@ -673,7 +683,7 @@ class HeadlessClaudeTest {
             fence.capture(),
             eq(new ReadScope(List.of(), List.of("mcp__acme__get*", "StructuredOutput"), false)));
     verify(reads).lift(fence.getValue());
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command).containsSequence("--settings", "{\"hooks\":{}}");
   }
 
@@ -700,29 +710,35 @@ class HeadlessClaudeTest {
 
   @Test
   void holdsEveryCallToTheConfiguredSpendCeiling() {
-    ProcessRunner runner = answeringNoFacts();
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
 
-    claude(runner, AssistantProperties.empty().withMaxCostUsd(1.5))
+    headlessClaude()
+        .withProperties(AssistantProperties.empty().withMaxCostUsd(1.5))
+        .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
         .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command).containsSequence("--max-budget-usd", "1.50");
   }
 
   @Test
   void callThatReachesTheSpendCeilingFailsNamingItInsteadOfAnsweringEmpty() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                1,
-                """
-                {"type":"result","subtype":"error_max_budget_usd","is_error":true,\
-                "errors":["Reached maximum budget ($0.70)"],"total_cost_usd":0.71}\
-                """,
-                ""));
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    1,
+                    """
+                    {"type":"result","subtype":"error_max_budget_usd","is_error":true,\
+                    "errors":["Reached maximum budget ($0.70)"],"total_cost_usd":0.71}\
+                    """,
+                    ""));
 
     var answer =
-        claude(runner)
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
             .read(
                 "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -732,10 +748,12 @@ class HeadlessClaudeTest {
 
   @Test
   void callThatExitsWithoutAnEnvelopeFailsNamingItsCauseInsteadOfAnsweringEmpty() {
-    ProcessRunner runner = answering(new Processes.Result(2, "", "claude: not logged in"));
+    FakeProcesses runner =
+        new FakeProcesses().answering(new Processes.Result(2, "", "claude: not logged in"));
 
     var answer =
-        claude(runner)
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
             .read(
                 "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -745,12 +763,12 @@ class HeadlessClaudeTest {
 
   @Test
   void callThatNeverReturnedFailsNamingWhyAndBooksNoCost() {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenThrow(new IllegalStateException("Command timed out after PT2M"));
+    FakeProcesses runner =
+        new FakeProcesses().failing(new IllegalStateException("Command timed out after PT2M"));
 
     var answer =
-        claude(runner)
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
             .read(
                 "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -763,15 +781,17 @@ class HeadlessClaudeTest {
   @CsvSource({"true,false,true", "false,true,true", "false,false,false"})
   void saysRetriedReadWasRefusedWhenEitherAttemptWasRefusedAtTheGate(
       boolean first, boolean second, boolean expected) {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    when(runner.run(any(Path.class), any(Duration.class), any()))
-        .thenReturn(new Processes.Result(0, "{\"result\":\"The request is open.\"}", ""))
-        .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answeringInTurn(
+                new Processes.Result(0, "{\"result\":\"The request is open.\"}", ""),
+                new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
     ReadOnlyTools reads = mock(ReadOnlyTools.class);
     when(reads.refused(any())).thenReturn(first, second);
 
     var answer =
-        claude(runner, reads)
+        headlessClaude()
+            .build(runner, mock(UsageTracker.class), reads)
             .read(
                 "Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -781,11 +801,16 @@ class HeadlessClaudeTest {
   @Test
   @ResourceLock(Resources.GLOBAL)
   void warnsWhereCallReportedNoUsageSoItsCostIsKnownToBeUnaccounted() {
-    ProcessRunner runner = answeringNoFacts();
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
     Logger assistantLog = (Logger) LoggerFactory.getLogger(HeadlessClaude.class);
-    ListAppender<ILoggingEvent> log = attached(assistantLog);
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    assistantLog.addAppender(log);
 
-    claude(runner)
+    headlessClaude()
+        .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
         .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
     assertThat(List.copyOf(log.list))

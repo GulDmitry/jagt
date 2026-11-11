@@ -1,15 +1,11 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.answering;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.answeringNoFacts;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.claude;
-import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeFixtures.commandOf;
+import static dev.jagt.orchestrator.adapter.assistant.TestHeadlessClaudeBuilder.headlessClaude;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
-import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
@@ -22,15 +18,20 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class HeadlessClaudeTrackerAssistantTest {
 
+  private final FakeProcesses runner =
+      new FakeProcesses()
+          .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+  private final HeadlessClaudeTrackerAssistant assistant =
+      new HeadlessClaudeTrackerAssistant(
+          headlessClaude().build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class)));
+
   @Test
   void takesTheSiteIdFromTheHostsOwnListingSoSearchIsNotSentToSiteNobodyGranted() {
-    ProcessRunner runner =
-        answering(new Processes.Result(0, "{\"structured_output\":{\"keys\":[]}}", ""));
-    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
+    runner.answering(new Processes.Result(0, "{\"structured_output\":{\"keys\":[]}}", ""));
 
     assistant.findCandidates("assignee = currentUser()");
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .anyMatch(
             argument ->
@@ -41,19 +42,17 @@ class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void readsTheTicketOutOfTheEnvelopesStructuredOutput() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"type":"result","is_error":false,"total_cost_usd":0.05,
-                 "usage":{"input_tokens":10,"cache_creation_input_tokens":24000,\
-                "cache_read_input_tokens":0,"output_tokens":170},
-                 "structured_output":{"exists":true,"key":"ABC-42","title":"Widget layout is off",\
-                "trackerProject":"ABC","labels":["backend"],"url":"https://tracker/ABC-42"}}\
-                """,
-                ""));
-    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0,
+            """
+            {"type":"result","is_error":false,"total_cost_usd":0.05,
+             "usage":{"input_tokens":10,"cache_creation_input_tokens":24000,\
+            "cache_read_input_tokens":0,"output_tokens":170},
+             "structured_output":{"exists":true,"key":"ABC-42","title":"Widget layout is off",\
+            "trackerProject":"ABC","labels":["backend"],"url":"https://tracker/ABC-42"}}\
+            """,
+            ""));
 
     var facts = assistant.readTicket("ABC-42").facts();
 
@@ -66,16 +65,14 @@ class HeadlessClaudeTrackerAssistantTest {
   @ParameterizedTest
   @ValueSource(strings = {"True", "TRUE", "tRuE"})
   void readsTheItemAsExistingWhenTheModelWritesTrueAsText(String written) {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                "{\"result\":\"{\\\"exists\\\":\\\""
-                    + written
-                    + "\\\",\\\"failure\\\":\\\"\\\","
-                    + "\\\"key\\\":\\\"ABC-42\\\",\\\"title\\\":\\\"Widget\\\"}\"}",
-                ""));
-    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0,
+            "{\"result\":\"{\\\"exists\\\":\\\""
+                + written
+                + "\\\",\\\"failure\\\":\\\"\\\","
+                + "\\\"key\\\":\\\"ABC-42\\\",\\\"title\\\":\\\"Widget\\\"}\"}",
+            ""));
 
     var facts = assistant.readTicket("ABC-42").facts();
 
@@ -85,14 +82,12 @@ class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void refusesTheAnswerAsUnusableWhenTheModelWritesBooleanAsMaybe() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                "{\"structured_output\":{\"exists\":\"maybe\",\"failure\":\"\",\"key\":\"ABC-42"
-                    + "\"}}",
-                ""));
-    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0,
+            "{\"structured_output\":{\"exists\":\"maybe\",\"failure\":\"\",\"key\":\"ABC-42"
+                + "\"}}",
+            ""));
 
     var facts = assistant.readTicket("ABC-42").facts();
 
@@ -101,11 +96,9 @@ class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void listsTheKeysTheSearchAnsweredWithoutBlanksOrPadding() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0, "{\"structured_output\":{\"keys\":[\" ABC-1 \",\"\",\"ABC-2\"]}}", ""));
-    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
+    runner.answering(
+        new Processes.Result(
+            0, "{\"structured_output\":{\"keys\":[\" ABC-1 \",\"\",\"ABC-2\"]}}", ""));
 
     var keys = assistant.findCandidates("assignee = currentUser()").facts();
 
@@ -114,12 +107,10 @@ class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void tellsTheNextAnswerWhatTheLastOneGotWrong() {
-    ProcessRunner runner = answeringNoFacts();
-    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     assistant.readTicket("ABC-42", List.of("the url was empty", "the key was lowercase"));
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command)
         .anyMatch(
             argument ->
@@ -136,12 +127,10 @@ class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void addsNoCorrectionToFirstAnswer() {
-    ProcessRunner runner = answeringNoFacts();
-    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     assistant.readTicket("ABC-42", List.of());
 
-    List<String> command = commandOf(runner);
+    List<String> command = runner.command();
     assertThat(command).noneMatch(argument -> argument.contains("Your last answer was refused"));
   }
 
@@ -149,33 +138,26 @@ class HeadlessClaudeTrackerAssistantTest {
   @NullSource
   @ValueSource(strings = {"", "  "})
   void readsNoTicketWithoutReference(String ref) {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     assertThat(assistant.readTicket(ref, List.of()).facts()).isEmpty();
     assertThat(assistant.readTicketText(ref).facts()).isEmpty();
-    verifyNoInteractions(runner);
+    assertThat(runner.issued()).isEmpty();
   }
 
   @ParameterizedTest
   @NullSource
   @ValueSource(strings = {"", "  "})
   void searchesNoTrackerWithoutQuery(String query) {
-    ProcessRunner runner = mock(ProcessRunner.class);
-    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
 
     assertThat(assistant.findCandidates(query).facts()).isEmpty();
-    verifyNoInteractions(runner);
+    assertThat(runner.issued()).isEmpty();
   }
 
   @Test
   void copiesTheTicketTextOutStrippedAndAnswersNothingForAnEmptyOne() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0, "{\"structured_output\":{\"text\":\"  # Summary\\nbody  \"}}", ""),
-            new Processes.Result(0, "{\"structured_output\":{\"text\":\"  \"}}", ""));
-    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner));
+    runner.answeringInTurn(
+        new Processes.Result(0, "{\"structured_output\":{\"text\":\"  # Summary\\nbody  \"}}", ""),
+        new Processes.Result(0, "{\"structured_output\":{\"text\":\"  \"}}", ""));
 
     var copied = assistant.readTicketText("ABC-42").facts();
     var empty = assistant.readTicketText("ABC-42").facts();
@@ -186,17 +168,20 @@ class HeadlessClaudeTrackerAssistantTest {
 
   @Test
   void booksTheTicketTextCopyAsTicketTextCallNotMasterReview() {
-    ProcessRunner runner =
-        answering(
-            new Processes.Result(
-                0,
-                """
-                {"total_cost_usd":0.06,"usage":{"input_tokens":31000,"output_tokens":40},
-                 "structured_output":{"text":"# Summary"}}\
-                """,
-                ""));
+    FakeProcesses runner =
+        new FakeProcesses()
+            .answering(
+                new Processes.Result(
+                    0,
+                    """
+                    {"total_cost_usd":0.06,"usage":{"input_tokens":31000,"output_tokens":40},
+                     "structured_output":{"text":"# Summary"}}\
+                    """,
+                    ""));
     UsageTracker usage = mock(UsageTracker.class);
-    var assistant = new HeadlessClaudeTrackerAssistant(claude(runner, usage));
+    var assistant =
+        new HeadlessClaudeTrackerAssistant(
+            headlessClaude().build(runner, usage, mock(ReadOnlyTools.class)));
 
     assistant.readTicketText("ABC-42");
 

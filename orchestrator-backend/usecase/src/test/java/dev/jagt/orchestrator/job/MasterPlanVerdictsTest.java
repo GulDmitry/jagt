@@ -1,5 +1,9 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.service.TestCaseDoorBuilder.caseDoor;
+import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
+import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -11,8 +15,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
@@ -22,7 +26,6 @@ import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ApprovedPlan;
 import dev.jagt.orchestrator.service.CaseDoor;
-import dev.jagt.orchestrator.service.CaseDoorFixture;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.PlanApproval;
 import dev.jagt.orchestrator.service.StateService;
@@ -72,15 +75,21 @@ class MasterPlanVerdictsTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    CaseDoorFixture doors = new CaseDoorFixture(root, Clock.systemUTC(), Arbiter.Profile.OFF);
-    state = doors.state;
-    door = doors.door;
+    OrchestratorPaths paths = orchestratorPaths().withRoot(root).build();
+    state = stateService().withRoot(root).build();
+    door =
+        caseDoor()
+            .withRoot(root)
+            .build(
+                state,
+                taskStops().withRoot(root).build(state, Clock.systemUTC()),
+                Clock.systemUTC());
     Checkers checkers = new Checkers(new TaskChart(Composition.builtIn()));
     relay =
         new StepRelay(
-            new SessionBrief(doors.paths),
+            new SessionBrief(paths),
             sessions,
-            doors.door,
+            door,
             new TaskTurns(state, Clock.systemUTC(), checkers));
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(

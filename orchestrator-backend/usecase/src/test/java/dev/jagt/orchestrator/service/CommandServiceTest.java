@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestCaseDoorBuilder.caseDoor;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
+import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
@@ -93,12 +96,15 @@ class CommandServiceTest {
 
   @Test
   void refusesTheMasterVerbItsHumanKeepsInMine(@TempDir Path root) {
-    CaseDoorFixture fixture =
-        new CaseDoorFixture(
-            root, Clock.systemUTC(), new Arbiter.Profile(MasterMode.ACT, Set.of("done")));
-    fixture.state.putTask(
-        "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    CommandService guarded = new CommandService(flow, fixture.door);
+    StateService state = stateService().withRoot(root).build();
+    TaskStops stops =
+        taskStops()
+            .withRoot(root)
+            .withProfile(new Arbiter.Profile(MasterMode.ACT, Set.of("done")))
+            .build(state, Clock.systemUTC());
+    CaseDoor door = caseDoor().withRoot(root).build(state, stops, Clock.systemUTC());
+    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+    CommandService guarded = new CommandService(flow, door);
 
     assertThatThrownBy(
             () ->
@@ -110,11 +116,6 @@ class CommandServiceTest {
 
   @Test
   void refusesRecordsAndStopsMasterPressNoMasterCaseAllows(@TempDir Path root) throws Exception {
-    CaseDoorFixture fixture =
-        new CaseDoorFixture(
-            root,
-            Clock.fixed(Instant.ofEpochMilli(1000), ZoneOffset.UTC),
-            Arbiter.Profile.OFF);
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(
         root.resolve("roles/master/cases.md"),
@@ -126,8 +127,14 @@ class CommandServiceTest {
         by: master
         Green and approved, the Master deploys it.
         """);
-    fixture.state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
-    CommandService guarded = new CommandService(flow, fixture.door);
+    Clock clock = Clock.fixed(Instant.ofEpochMilli(1000), ZoneOffset.UTC);
+    StateService state = stateService().withRoot(root).build();
+    CaseDoor door =
+        caseDoor()
+            .withRoot(root)
+            .build(state, taskStops().withRoot(root).build(state, clock), clock);
+    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
+    CommandService guarded = new CommandService(flow, door);
 
     OriginContext.as(ActionOrigin.MASTER, () -> guarded.execute("ABC-1", TaskAction.DEPLOY));
 
@@ -136,7 +143,7 @@ class CommandServiceTest {
         .isEqualTo(
             "{\"at\":1000,\"task\":\"ABC-1\",\"step\":\"deploy\",\"status\":\"REVIEWED\",\"by\""
                 + ":\"master\"}\n");
-    assertThat(fixture.state.task("ABC-1").orElseThrow().stop())
+    assertThat(state.task("ABC-1").orElseThrow().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
         .containsExactly(TaskStop.Trigger.MISS, "no master case allows deploy at REVIEWED");
   }

@@ -1,5 +1,9 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestCaseDoorBuilder.caseDoor;
+import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
+import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -11,8 +15,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
@@ -68,17 +72,24 @@ class StepRelayTest {
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final Clock fixed = Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC);
   private final CaseDoor door = mock(CaseDoor.class);
-  private CaseDoorFixture doors;
+  private OrchestratorPaths paths;
+  private StateService state;
+  private CaseDoor openDoor;
   private TaskTurns turns;
   private StepRelay relay;
   private StepRelay admittingRelay;
 
   @BeforeEach
   void setUp() throws IOException {
-    doors = new CaseDoorFixture(root, fixed, Arbiter.Profile.OFF);
-    turns = new TaskTurns(doors.state, fixed, new Checkers(new TaskChart(Composition.builtIn())));
-    relay = new StepRelay(new SessionBrief(doors.paths), sessions, doors.door, turns);
-    admittingRelay = new StepRelay(new SessionBrief(doors.paths), sessions, door, turns);
+    paths = orchestratorPaths().withRoot(root).build();
+    state = stateService().withRoot(root).build();
+    openDoor =
+        caseDoor()
+            .withRoot(root)
+            .build(state, taskStops().withRoot(root).build(state, fixed), fixed);
+    turns = new TaskTurns(state, fixed, new Checkers(new TaskChart(Composition.builtIn())));
+    relay = new StepRelay(new SessionBrief(paths), sessions, openDoor, turns);
+    admittingRelay = new StepRelay(new SessionBrief(paths), sessions, door, turns);
     Files.createDirectories(root.resolve("roles/session"));
   }
 
@@ -163,8 +174,8 @@ class StepRelayTest {
   void relaysNothingWhenTheTurnMovedOnSinceTheTaskWasRead(String kind, Entry entry) {
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
-    final Standing read = Standing.of(doors.state.task("ABC-42").orElseThrow());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    final Standing read = Standing.of(state.task("ABC-42").orElseThrow());
     final StepRelay.Claim claim =
         new StepRelay.Claim(read, opens -> FlowReports.Claimed.LANDED, opened -> true);
     turns.opened("ABC-42", "answered", "the human answered", TaskStatus.DEPLOYED);
@@ -227,7 +238,7 @@ class StepRelayTest {
   void relaysStepOnceWhileTheSessionHoldsTheTurnItOpened() {
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     admittingRelay.relay(
         "ABC-42", Step.DEPLOY, "ABC-42 is deployed", admittingRelay.standing("ABC-42"));
 
@@ -243,7 +254,7 @@ class StepRelayTest {
   void sendsStepOnceWhenJagtDiesWhileTellingTheSession() {
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     when(sessions.writeTaskContext("ABC-42", "ABC-42 is deployed"))
         .thenThrow(new Error("jagt died"));
     assertThatThrownBy(
@@ -264,7 +275,7 @@ class StepRelayTest {
   void sendsStepAgainWhenTellingTheSessionFailed() {
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     when(sessions.writeTaskContext("ABC-42", "ABC-42 is deployed"))
         .thenThrow(new IllegalStateException("window closed"))
         .thenReturn("written");
@@ -285,7 +296,7 @@ class StepRelayTest {
   void stopsTheTaskForTheHumanWhenTellingTheSessionFailed() {
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     when(sessions.writeTaskContext("ABC-42", "ABC-42 is deployed"))
         .thenThrow(new IllegalStateException("window closed"));
 
@@ -301,7 +312,7 @@ class StepRelayTest {
   @Test
   void relaysStepCaseSendsAtTheTasksStatus() throws Exception {
     Files.writeString(root.resolve("roles/session/cases.md"), DEPLOY_CASE);
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
 
@@ -311,7 +322,7 @@ class StepRelayTest {
   @Test
   void sendsNothingAndRecordsMissWhereNoCaseSendsTheStepAtTheTasksStatus() throws Exception {
     Files.writeString(root.resolve("roles/session/cases.md"), DEPLOY_CASE);
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
 
     boolean told =
         relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
@@ -328,7 +339,7 @@ class StepRelayTest {
   void sendsNothingAndRecordsMissWhereTheStepWasSetOffBySomeoneItsCaseDoesNotName()
       throws Exception {
     Files.writeString(root.resolve("roles/session/cases.md"), DEPLOY_CASE);
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     boolean told =
         OriginContext.as(
@@ -347,7 +358,7 @@ class StepRelayTest {
   @Test
   void relaysStepSessionsOwnCallSetsOffAsJagtsAnswerToIt() throws Exception {
     Files.writeString(root.resolve("roles/session/cases.md"), DEPLOY_CASE);
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     boolean told =
         OriginContext.as(
@@ -361,11 +372,11 @@ class StepRelayTest {
   @Test
   void stopsTheTaskForTheHumanWhereNoCaseSendsTheStepAtItsStatus() throws Exception {
     Files.writeString(root.resolve("roles/session/cases.md"), DEPLOY_CASE);
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
 
     relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", relay.standing("ABC-42"));
 
-    assertThat(doors.state.task("ABC-42").orElseThrow().stop())
+    assertThat(state.task("ABC-42").orElseThrow().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
         .containsExactly(
             TaskStop.Trigger.MISS, "no case sends deploy at IN_PROGRESS, set off by jagt");
@@ -374,7 +385,7 @@ class StepRelayTest {
   @Test
   void stopsTheTaskInsteadOfSendingFourthRedVerificationRunning() throws Exception {
     Files.writeString(root.resolve("roles/session/cases.md"), VERIFY_CASE);
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in OrderTest", relay.standing("ABC-42"));
     relay.relayRound(
@@ -386,7 +397,7 @@ class StepRelayTest {
 
     assertThat(told).isFalse();
     verify(sessions, times(3)).writeTaskContext(anyString(), anyString());
-    assertThat(doors.state.task("ABC-42").orElseThrow().stop())
+    assertThat(state.task("ABC-42").orElseThrow().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
         .containsExactly(
             TaskStop.Trigger.ROUNDS, "verify sent 3 rounds running in 24h; the next one was not");
@@ -394,7 +405,7 @@ class StepRelayTest {
 
   @Test
   void stopsTheTaskInsteadOfSendingFourthReviewRoundRunning() {
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     List<Step> steps = List.of(Step.ROUND_THREADS, Step.ROUND_THREADS_DONE);
     relay.relayComposed(
         "ABC-42",
@@ -425,7 +436,7 @@ class StepRelayTest {
 
     assertThat(told).isFalse();
     verify(sessions, times(3)).relayFresh(anyString(), anyString());
-    assertThat(doors.state.task("ABC-42").orElseThrow().stop())
+    assertThat(state.task("ABC-42").orElseThrow().stop())
         .extracting(TaskStop::trigger, TaskStop::evidence)
         .containsExactly(
             TaskStop.Trigger.ROUNDS,
@@ -435,7 +446,7 @@ class StepRelayTest {
   @Test
   void sendsThirdRedVerificationRunning() throws Exception {
     Files.writeString(root.resolve("roles/session/cases.md"), VERIFY_CASE);
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
     relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in OrderTest", relay.standing("ABC-42"));
 
@@ -444,7 +455,7 @@ class StepRelayTest {
             "ABC-42", Step.VERIFY, "BUILD FAILED in PaymentTest", relay.standing("ABC-42"));
 
     assertThat(told).isTrue();
-    assertThat(doors.state.task("ABC-42").orElseThrow().stopped()).isFalse();
+    assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
   }
 
   @Test
@@ -460,7 +471,7 @@ class StepRelayTest {
         replies: any; plain
         The Master answers.
         """);
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
 
     boolean told =
         OriginContext.as(
@@ -477,7 +488,7 @@ class StepRelayTest {
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
     Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     boolean told =
         admittingRelay.write(
@@ -485,7 +496,7 @@ class StepRelayTest {
 
     assertThat(told).isEqualTo(true);
     verify(sessions).writeTaskContext("ABC-42", "ABC-42 is deployed");
-    assertThat(doors.state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(true);
+    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(true);
   }
 
   @Test
@@ -493,7 +504,7 @@ class StepRelayTest {
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(false, TaskStatus.REVIEWED));
     Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     boolean told =
         admittingRelay.write(
@@ -501,7 +512,7 @@ class StepRelayTest {
 
     assertThat(told).isEqualTo(false);
     verify(sessions, never()).writeTaskContext(anyString(), anyString());
-    assertThat(doors.state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
+    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
   }
 
   @Test
@@ -509,7 +520,7 @@ class StepRelayTest {
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
     Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     boolean told =
         admittingRelay.say(
@@ -517,7 +528,7 @@ class StepRelayTest {
 
     assertThat(told).isEqualTo(true);
     verify(sessions).say("ABC-42", "ABC-42 is deployed");
-    assertThat(doors.state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(true);
+    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(true);
   }
 
   @Test
@@ -525,7 +536,7 @@ class StepRelayTest {
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(false, TaskStatus.REVIEWED));
     Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     boolean told =
         admittingRelay.say(
@@ -533,7 +544,7 @@ class StepRelayTest {
 
     assertThat(told).isEqualTo(false);
     verify(sessions, never()).say(anyString(), anyString());
-    assertThat(doors.state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
+    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
   }
 
   @Test
@@ -541,7 +552,7 @@ class StepRelayTest {
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
     Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     boolean told =
         admittingRelay.relayUnder(
@@ -549,7 +560,7 @@ class StepRelayTest {
 
     assertThat(told).isEqualTo(true);
     verify(sessions).relayUnder("ABC-42", "ABC-42 is deployed", true);
-    assertThat(doors.state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(true);
+    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(true);
   }
 
   @Test
@@ -557,7 +568,7 @@ class StepRelayTest {
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(false, TaskStatus.REVIEWED));
     Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n");
-    doors.state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     boolean told =
         admittingRelay.relayUnder(
@@ -565,6 +576,6 @@ class StepRelayTest {
 
     assertThat(told).isEqualTo(false);
     verify(sessions, never()).relayUnder(anyString(), anyString(), anyBoolean());
-    assertThat(doors.state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
+    assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
   }
 }
