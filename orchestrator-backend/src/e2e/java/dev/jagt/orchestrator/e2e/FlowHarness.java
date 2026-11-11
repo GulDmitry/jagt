@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.e2e;
 
+import static dev.jagt.orchestrator.e2e.TestJudgementBuilder.judgement;
+import static dev.jagt.orchestrator.e2e.TestReviewFactsBuilder.reviewFacts;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -12,13 +14,11 @@ import dev.jagt.orchestrator.config.ToolchainProperties;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.RoundReviewer;
-import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -72,18 +72,6 @@ final class FlowHarness {
     }
     E2eWorkspace.createRepositoryWithOrigin(
         workspace.resolve("origin.git"), workspace.resolve("proj"));
-  }
-
-  static void readsGreenReview(Assistants assistants, String request) {
-    when(assistants.codeHost().readReview(request))
-        .thenReturn(
-            new Answer<>(
-                Optional.of(
-                    new ReviewFacts(
-                        new ReviewFacts.Request(true, false, false, false, 0),
-                        new ReviewFacts.Pipeline("success", "", ""),
-                        new ReviewFacts.Discussion(List.of(), List.of(), List.of()))),
-                TokenUsage.NONE));
   }
 
   Path configFile() {
@@ -160,7 +148,7 @@ final class FlowHarness {
   }
 
   void handBackOwingVerification() throws Exception {
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    judges(judgement().build());
     initializeTask();
     Files.writeString(worktree().resolve("widget.txt"), "fixed\n");
     Files.writeString(worktree().resolve("task_notes.md"), "widget fixed\n");
@@ -181,11 +169,12 @@ final class FlowHarness {
     E2eWorkspace.git(worktree(), "push", "-u", "origin", task);
     agentReports(
         "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + request() + "\"");
-    readsGreenReview(context.getBean(Assistants.class), request());
+    when(context.getBean(Assistants.class).codeHost().readReview(request()))
+        .thenReturn(new Answer<>(Optional.of(reviewFacts().build()), TokenUsage.NONE));
   }
 
   void reachesDeployConflict() throws Exception {
-    judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    judges(judgement().build());
     handBackTheFirstRound();
     shipsTheRoundTheMasterShipped();
     E2eWorkspace.commitOnDeployBranch(repo(), "widget.txt", "someone else's line\n");
@@ -194,17 +183,6 @@ final class FlowHarness {
     awaitTask(reached -> reached.status() == TaskStatus.DEPLOY_CONFLICT);
     awaitRun("deploy-conflict");
     awaitTold("did not deploy");
-  }
-
-  void judgesReadyWithAdvice(String advice) {
-    judges(
-        new Judgement(
-            "",
-            "ready",
-            List.of(new Finding("", advice, "decided", "advice", "", "")),
-            "",
-            List.of(),
-            ""));
   }
 
   void conflictStallsFor(Clock clock, int minutes) {

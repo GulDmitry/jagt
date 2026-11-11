@@ -87,6 +87,8 @@ dependencies {
     boardTestImplementation 'com.microsoft.playwright:playwright:1.64.0'
     boardTestCompileOnly "org.projectlombok:lombok:${lombokVersion}"
     boardTestAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    e2eCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    e2eAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
 
 tasks.register('playwrightChromium', JavaExec) {

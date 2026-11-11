@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.e2e;
 
+import static dev.jagt.orchestrator.e2e.TestReviewFactsBuilder.reviewFacts;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -442,7 +443,8 @@ class ReviewAndDeployFlowTest {
       assertThat(actionsOfTheTask()).doesNotContain("ship");
 
       String followUp = flow.request().replace("/merge_requests/1", "/merge_requests/2");
-      FlowHarness.readsGreenReview(assistants, followUp);
+      when(assistants.codeHost().readReview(followUp))
+          .thenReturn(new Answer<>(Optional.of(reviewFacts().build()), TokenUsage.NONE));
       agentReports("IN_PROGRESS", "more work after the merge");
       Files.writeString(flow.worktree().resolve("widget.txt"), "follow-up\n");
       agentCommitsAndPushes(flow.worktree(), TASK + " follow-up");

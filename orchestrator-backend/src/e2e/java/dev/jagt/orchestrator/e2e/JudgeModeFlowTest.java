@@ -1,20 +1,25 @@
 package dev.jagt.orchestrator.e2e;
 
+import static dev.jagt.orchestrator.e2e.TestJudgementBuilder.judgement;
+import static dev.jagt.orchestrator.e2e.TestReviewFactsBuilder.reviewFacts;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.TokenUsage;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,7 +71,7 @@ class JudgeModeFlowTest {
 
   @Test
   void readsReadyRoundAndLeavesEveryPressToTheHuman() throws Exception {
-    flow.judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    flow.judges(judgement().build());
 
     flow.handBackTheFirstRound();
 
@@ -81,15 +86,18 @@ class JudgeModeFlowTest {
   @Test
   void sendsNotReadyRoundBackToTheSessionThatWroteIt() throws Exception {
     flow.judges(
-        new Judgement(
-            "",
-            "not ready",
-            List.of(
-                new Finding(
-                    "widget.txt", "the guard is inverted", "inverted guard", "blocking", "", "")),
-            "",
-            List.of(),
-            ""));
+        judgement()
+            .withVerdict("not ready")
+            .withFindings(
+                List.of(
+                    new Finding(
+                        "widget.txt",
+                        "the guard is inverted",
+                        "inverted guard",
+                        "blocking",
+                        "",
+                        "")))
+            .build());
 
     flow.handBackTheFirstRound();
 
@@ -100,7 +108,7 @@ class JudgeModeFlowTest {
 
   @Test
   void putsTheReviewersQuestionToTheHumanRatherThanAnsweringIt() throws Exception {
-    flow.judges(new Judgement("", "question", List.of(), "keep v2 beside v3?", List.of(), ""));
+    flow.judges(judgement().withVerdict("question").withQuestion("keep v2 beside v3?").build());
 
     flow.handBackTheFirstRound();
 
@@ -125,7 +133,7 @@ class JudgeModeFlowTest {
 
   @Test
   void shipsAndDeploysOnlyWhenTheHumanPresses() throws Exception {
-    flow.judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    flow.judges(judgement().build());
     flow.handBackTheFirstRound();
     flow.awaitReview();
 
@@ -135,7 +143,8 @@ class JudgeModeFlowTest {
     E2eWorkspace.git(flow.worktree(), "push", "-u", "origin", TASK);
     flow.agentReports(
         "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + flow.request() + "\"");
-    FlowHarness.readsGreenReview(assistants, flow.request());
+    when(assistants.codeHost().readReview(flow.request()))
+        .thenReturn(new Answer<>(Optional.of(reviewFacts().build()), TokenUsage.NONE));
     flow.act("sweep");
     assertThat(flow.task().status()).isEqualTo(TaskStatus.REVIEWED);
     flow.awaitRun("master-deploy");

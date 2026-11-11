@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.e2e;
 
+import static dev.jagt.orchestrator.e2e.TestJudgementBuilder.judgement;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -10,7 +11,7 @@ import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.McpHealth;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
+import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.GitDeploy;
@@ -82,7 +83,7 @@ class MasterModeFlowTest {
   @MethodSource("dev.jagt.orchestrator.e2e.MasterModeCase#rounds")
   void readsAndPressesRoundAsTheModeAllows(MasterModeCase master) throws Exception {
     flow.writeConfig(master);
-    flow.judges(new Judgement("", master.verdict(), List.of(), "", List.of(), ""));
+    flow.judges(judgement().withVerdict(master.verdict()).build());
 
     flow.handBackTheFirstRound();
 
@@ -95,7 +96,7 @@ class MasterModeFlowTest {
   @Test
   void stampsTheShipItPressesAsTheMastersOwn() throws Exception {
     flow.writeConfig(MasterModeCase.rounds().findFirst().orElseThrow());
-    flow.judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    flow.judges(judgement().build());
 
     flow.handBackTheFirstRound();
 
@@ -109,7 +110,7 @@ class MasterModeFlowTest {
   @MethodSource("dev.jagt.orchestrator.e2e.MasterModeCase#plans")
   void readsAndStartsPlanAsTheModeAllows(MasterModeCase master) throws Exception {
     flow.writeConfig(master);
-    flow.judges(new Judgement("", master.verdict(), List.of(), "", List.of(), ""));
+    flow.judges(judgement().withVerdict(master.verdict()).build());
     flow.initializeTask();
     Files.writeString(
         flow.worktree().resolve("plan.md"),
@@ -127,7 +128,11 @@ class MasterModeFlowTest {
   @MethodSource("dev.jagt.orchestrator.e2e.MasterModeCase#questions")
   void answersSessionsQuestionAsTheModeAllows(MasterModeCase master) throws Exception {
     flow.writeConfig(master);
-    flow.judgesReadyWithAdvice("keep v2 beside v3");
+    flow.judges(
+        judgement()
+            .withFindings(
+                List.of(new Finding("", "keep v2 beside v3", "decided", "advice", "", "")))
+            .build());
     flow.initializeTask();
 
     flow.agentReports("IN_PROGRESS", "keep v2?", ", \"outcome\": \"question\"");
@@ -142,7 +147,7 @@ class MasterModeFlowTest {
   @MethodSource("dev.jagt.orchestrator.e2e.MasterModeCase#deploys")
   void deploysGreenRequestAsTheModeAllows(MasterModeCase master) throws Exception {
     flow.writeConfig(master);
-    flow.judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    flow.judges(judgement().build());
     flow.handBackTheFirstRound();
     flow.shipsTheRoundTheMasterShipped();
 
@@ -176,7 +181,11 @@ class MasterModeFlowTest {
   void answersQuestionAtDeployConflictUnderTheHandOffItLeavesStanding() throws Exception {
     flow.writeConfig(MasterModeCase.deploys().findFirst().orElseThrow());
     flow.reachesDeployConflict();
-    flow.judgesReadyWithAdvice("keep both lines");
+    flow.judges(
+        judgement()
+            .withFindings(
+                List.of(new Finding("", "keep both lines", "decided", "advice", "", "")))
+            .build());
 
     flow.mcp(
         """
@@ -259,7 +268,11 @@ class MasterModeFlowTest {
     flow.writeConfig(MasterModeCase.deploys().findFirst().orElseThrow());
     E2eWorkspace.stallConflictsAfterMinutes(flow.configFile(), 1);
     flow.reachesDeployConflict();
-    flow.judgesReadyWithAdvice("keep both lines");
+    flow.judges(
+        judgement()
+            .withFindings(
+                List.of(new Finding("", "keep both lines", "decided", "advice", "", "")))
+            .build());
 
     flow.conflictStallsFor(clock, 2);
     flow.awaitRun("master-answer");
@@ -310,7 +323,7 @@ class MasterModeFlowTest {
   @Test
   void asksTheSessionToCheckTheDeployOnceItsPipelineIsGreen() throws Exception {
     flow.writeConfig(MasterModeCase.deploys().findFirst().orElseThrow());
-    flow.judges(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    flow.judges(judgement().build());
     flow.handBackTheFirstRound();
     flow.shipsTheRoundTheMasterShipped();
     flow.act("sweep");
@@ -329,7 +342,11 @@ class MasterModeFlowTest {
   @Test
   void leavesPermissionTheSessionAsksForToTheHuman() throws Exception {
     flow.writeConfig(MasterModeCase.questions().findFirst().orElseThrow());
-    flow.judgesReadyWithAdvice("go ahead");
+    flow.judges(
+        judgement()
+            .withFindings(
+                List.of(new Finding("", "go ahead", "decided", "advice", "", "")))
+            .build());
     flow.initializeTask();
 
     flow.agentReports(
