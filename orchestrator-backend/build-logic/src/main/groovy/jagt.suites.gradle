@@ -85,6 +85,8 @@ dependencies {
     // a Mac and a runner execute the same thing. The shared libraries it links against come from
     // scripts/linux-test-deps.sh.
     boardTestImplementation 'com.microsoft.playwright:playwright:1.64.0'
+    boardTestCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    boardTestAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
 
 tasks.register('playwrightChromium', JavaExec) {

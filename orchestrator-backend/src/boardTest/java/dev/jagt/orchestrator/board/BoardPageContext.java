@@ -1,16 +1,13 @@
 package dev.jagt.orchestrator.board;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
-import static org.mockito.Mockito.when;
 
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.Route;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.command.ReviewRepliesReport;
-import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.SessionHost;
@@ -20,7 +17,6 @@ import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.surface.board.NaturalLanguageDispatch;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskState.TaskStateBuilder;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -28,11 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -161,12 +153,6 @@ abstract class BoardPageContext {
         .lastActiveTimestamp(System.currentTimeMillis());
   }
 
-  Path draftReplies(String key, String text) throws IOException {
-    Path worktree = Files.createDirectories(root.resolve(key + "-alpha"));
-    Files.writeString(worktree.resolve("review_replies.md"), text);
-    return worktree;
-  }
-
   void putReviewTask(String key) {
     state.putTask(
         key,
@@ -179,19 +165,9 @@ abstract class BoardPageContext {
     page.locator("#ask").press("Enter");
   }
 
-  List<Route> holdTheRepliesAnswerAndOpenStats(Page page) {
-    List<Route> held = new CopyOnWriteArrayList<>();
-    page.route(Pattern.compile("/api/commands/replies\\?about=a7$"), held::add);
-    page.waitForRequest(
-        Pattern.compile("/api/commands/replies\\?about=a7$"), () -> ask(page, "replies a7"));
-    page.locator("#reports-toggle").click();
-    page.locator("#show-stats").click();
-    assertThat(page.locator("#report-title")).containsText("stats");
-    return held;
-  }
-
   Locator button(Page page, String name) {
-    return page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName(name).setExact(true));
+    return page.getByRole(
+        AriaRole.BUTTON, new Page.GetByRoleOptions().setName(name).setExact(true));
   }
 
   CompletableFuture<String> dismissedDialogMessage(Page page) {
@@ -202,32 +178,6 @@ abstract class BoardPageContext {
           dialog.dismiss();
         });
     return asked;
-  }
-
-  CountDownLatch startSweepingTheFirstTask() {
-    state.putTask(
-        "ABC-1",
-        alphaTask("ABC-1", TaskStatus.CI_POLLING).mrUrl("https://host.example/mr/7").build());
-    CountDownLatch sweeping = new CountDownLatch(1);
-    when(commands.execute("ABC-1", TaskAction.SWEEP, null))
-        .thenAnswer(
-            invocation -> {
-              sweeping.await(10, TimeUnit.SECONDS);
-              return "sweep ABC-1: checks success";
-            });
-    return sweeping;
-  }
-
-  TaskStateBuilder alphaAndBetaTask() {
-    return TaskState.builder(
-            List.of(
-                TaskRepo.of("alpha", root.resolve("ABC-1-alpha").toString())
-                    .withMrUrl("https://host.example/alpha/mr/7"),
-                TaskRepo.of("beta", root.resolve("ABC-1-beta").toString())
-                    .withMrUrl("https://host.example/beta/mr/7")),
-            TaskStatus.CI_POLLING)
-        .alias("a1")
-        .lastActiveTimestamp(System.currentTimeMillis());
   }
 
   Page openLiveBoard() {

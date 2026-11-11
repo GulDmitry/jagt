@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.board;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static dev.jagt.orchestrator.board.TestAlphaAndBetaTaskBuilder.alphaAndBetaTask;
 
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
@@ -150,7 +151,9 @@ class BoardCardTest extends BoardPageContext {
   void taskSpanningRepositoriesNamesEachOnceWithItsRequestOnTheName() {
     state.putTask(
         "ABC-1",
-        alphaAndBetaTask()
+        alphaAndBetaTask(root)
+            .withLastActiveTimestamp(System.currentTimeMillis())
+            .build()
             .pipelineStatus("failed")
             .approved(true)
             .build());
@@ -801,7 +804,9 @@ class BoardCardTest extends BoardPageContext {
   void taskSpanningRepositoriesWearsOneTickForAllOfThem() {
     state.putTask(
         "ABC-1",
-        alphaAndBetaTask()
+        alphaAndBetaTask(root)
+            .withLastActiveTimestamp(System.currentTimeMillis())
+            .build()
             .pipelineStatus("failed")
             .approved(true)
             .build());

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.board;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static dev.jagt.orchestrator.board.TestReplyDraftBuilder.replyDraft;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -19,6 +20,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -108,7 +111,7 @@ class BoardActionsTest extends BoardPageContext {
 
   @Test
   void deployingAsksAboutTheBranchesAndAdvisesNothingAboutTheRound() throws Exception {
-    draftReplies("ABC-1", "## thread 1\nagreed, fixed\n");
+    replyDraft(root).withKey("ABC-1").withText("## thread 1\nagreed, fixed\n").build();
     state.putTask(
         "ABC-1",
         alphaTask("ABC-1", TaskStatus.REVIEW_PENDING)
@@ -142,58 +145,76 @@ class BoardActionsTest extends BoardPageContext {
     assertThat(page.locator("#toasts .toast.error")).containsText("The board is up to date now.");
   }
 
-  @Test
-  void moveInFlightLocksTheButtonsThatWriteAndLeavesTheLookOnlyOnesClickable() throws Exception {
-    CountDownLatch sweeping = startSweepingTheFirstTask();
+  @Nested
+  class WhileMoveIsInFlight {
 
-    Page page = openLiveBoard();
-    button(page, "Check review").click();
+    CountDownLatch sweeping;
 
-    try {
-      assertThat(button(page, "Focus")).isEnabled();
-      assertThat(button(page, "Open IDE")).isEnabled();
-      assertThat(button(page, "Diff")).isEnabled();
-      assertThat(button(page, "Ship")).isDisabled();
-      assertThat(button(page, "Restart agent")).isDisabled();
-    } finally {
-      sweeping.countDown();
+    @BeforeEach
+    void startSweepingTheFirstTask() {
+      state.putTask(
+          "ABC-1",
+          alphaTask("ABC-1", TaskStatus.CI_POLLING)
+              .mrUrl("https://host.example/mr/7")
+              .build());
+      sweeping = new CountDownLatch(1);
+      when(commands.execute("ABC-1", TaskAction.SWEEP, null))
+          .thenAnswer(
+              invocation -> {
+                sweeping.await(10, TimeUnit.SECONDS);
+                return "sweep ABC-1: checks success";
+              });
     }
-  }
 
-  @Test
-  void lookOnlyClickThatFinishesLeavesTheLockOfTheMoveStillRunning() throws Exception {
-    CountDownLatch sweeping = startSweepingTheFirstTask();
-    when(commands.execute("ABC-1", TaskAction.DIFF, null)).thenReturn("Opened the diff for ABC-1.");
+    @Test
+    void moveInFlightLocksTheButtonsThatWriteAndLeavesTheLookOnlyOnesClickable() throws Exception {
+      Page page = openLiveBoard();
+      button(page, "Check review").click();
 
-    Page page = openLiveBoard();
-    button(page, "Check review").click();
-
-    try {
-      page.waitForResponse(
-          response ->
-              response.url().endsWith("/api/tasks") && "GET".equals(response.request().method()),
-          () -> button(page, "Diff").click());
-
-      assertThat(button(page, "Ship")).isDisabled();
-    } finally {
-      sweeping.countDown();
+      try {
+        assertThat(button(page, "Focus")).isEnabled();
+        assertThat(button(page, "Open IDE")).isEnabled();
+        assertThat(button(page, "Diff")).isEnabled();
+        assertThat(button(page, "Ship")).isDisabled();
+        assertThat(button(page, "Restart agent")).isDisabled();
+      } finally {
+        sweeping.countDown();
+      }
     }
-  }
 
-  @Test
-  void typedMoveIsRefusedWhileAnotherOneIsStillRunningOnTheSameTask() throws Exception {
-    CountDownLatch sweeping = startSweepingTheFirstTask();
+    @Test
+    void lookOnlyClickThatFinishesLeavesTheLockOfTheMoveStillRunning() throws Exception {
+      when(commands.execute("ABC-1", TaskAction.DIFF, null))
+          .thenReturn("Opened the diff for ABC-1.");
 
-    Page page = openLiveBoard();
-    button(page, "Check review").click();
+      Page page = openLiveBoard();
+      button(page, "Check review").click();
 
-    try {
-      ask(page, "ship a1");
+      try {
+        page.waitForResponse(
+            response ->
+                response.url().endsWith("/api/tasks") && "GET".equals(response.request().method()),
+            () -> button(page, "Diff").click());
 
-      assertThat(page.locator("#toasts .toast.error")).containsText("already running sweep");
-      verify(commands, never()).execute("ABC-1", TaskAction.SHIP, null);
-    } finally {
-      sweeping.countDown();
+        assertThat(button(page, "Ship")).isDisabled();
+      } finally {
+        sweeping.countDown();
+      }
+    }
+
+    @Test
+    void typedMoveIsRefusedWhileAnotherOneIsStillRunningOnTheSameTask() throws Exception {
+      Page page = openLiveBoard();
+      button(page, "Check review").click();
+
+      try {
+        ask(page, "ship a1");
+
+        assertThat(page.locator("#toasts .toast.error")).containsText("already running sweep");
+        verify(commands, never()).execute("ABC-1", TaskAction.SHIP, null);
+      } finally {
+        sweeping.countDown();
+      }
     }
   }
 

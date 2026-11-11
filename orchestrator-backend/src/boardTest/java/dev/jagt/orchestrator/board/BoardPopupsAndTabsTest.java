@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.board;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static dev.jagt.orchestrator.board.TestReplyDraftBuilder.replyDraft;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -202,7 +203,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
 
   @Test
   void theReviewRoundTabReadsTheDraftedRepliesOrSaysThereAreNone() throws Exception {
-    draftReplies("ABC-2", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-2").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-2");
     state.putTask("ABC-3", alphaTask("ABC-3", TaskStatus.IN_PROGRESS).build());
     Page page = openBoard();
@@ -535,7 +536,7 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
     page.locator("#pane .tabs button[data-tab=round]").click();
     assertThat(page.locator("#pane .round")).containsText("Nothing is drafted for this round.");
 
-    draftReplies("ABC-4", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-4").withText("## thread 1\nFIXED - Renamed it.\n").build();
     page.locator("#new-task").click();
     page.locator("#ref").fill("ABC-9");
     page.locator("#project input[value=alpha]").check();

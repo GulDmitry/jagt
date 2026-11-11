@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.board;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static dev.jagt.orchestrator.board.TestReplyDraftBuilder.replyDraft;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,7 +20,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -54,7 +58,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void draftedRepliesLiveOnTheirTabAndTheCardCarriesNoRepliesButton() throws IOException {
-    draftReplies("ABC-20", "## thread 1\nagreed, fixed\n");
+    replyDraft(root).withKey("ABC-20").withText("## thread 1\nagreed, fixed\n").build();
     putReviewTask("ABC-20");
 
     Page page = openLiveBoard();
@@ -66,7 +70,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void noRepliesButtonShowsOnTheCardWhileTheVerbsAreStillArriving() throws IOException {
-    draftReplies("ABC-19", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-19").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-19");
     List<Route> verbs = new java.util.ArrayList<>();
     Page page = session.newPage();
@@ -80,7 +84,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void lineSaidAtAnOpenRoundReachesTheSessionOfTheTaskItIsAbout() throws IOException {
-    draftReplies("ABC-5", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-5").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-5");
     when(sessions.say("a5", "no, answer 1 differently")).thenReturn("Said to the agent.");
 
@@ -106,8 +110,8 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void lineTypedAtOneRoundIsNotCarriedIntoTheNextOneOpened() throws IOException {
-    draftReplies("ABC-13", "## thread 1\nFIXED - Renamed it.\n");
-    draftReplies("ABC-14", "## thread 1\nFIXED - Pinned the count.\n");
+    replyDraft(root).withKey("ABC-13").withText("## thread 1\nFIXED - Renamed it.\n").build();
+    replyDraft(root).withKey("ABC-14").withText("## thread 1\nFIXED - Pinned the count.\n").build();
     putReviewTask("ABC-13");
     state.putTask(
         "ABC-14",
@@ -126,7 +130,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void whatTheWaitingRingMeansIsReadableOverTheDialogItPulsesIn() throws IOException {
-    draftReplies("ABC-15", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-15").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-15");
     when(sessions.say("a15", "no, answer 1 differently")).thenReturn("Said to the agent.");
 
@@ -141,7 +145,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void anOpenRoundNobodyHasAnsweredYetShowsNothingWaiting() throws IOException {
-    draftReplies("ABC-11", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-11").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-11");
 
     Page page = openLiveBoard();
@@ -163,12 +167,15 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void anOpenRoundIsReadAgainWhenTheAgentAnswersUnderIt() throws IOException {
-    draftReplies("ABC-9", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-9").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-9");
 
     Page page = openLiveBoard();
     ask(page, "replies a9");
-    draftReplies("ABC-9", "## thread 1\nNO CHANGE - The name is the one the caller uses.\n");
+    replyDraft(root)
+        .withKey("ABC-9")
+        .withText("## thread 1\nNO CHANGE - The name is the one the caller uses.\n")
+        .build();
     state.putTask(
         "ABC-9",
         state
@@ -181,7 +188,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void roundRewrittenWhileItsReportWasStillBeingReadShowsWhatTheFileSaysNow() throws IOException {
-    draftReplies("ABC-10", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-10").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-10");
     Page page = openLiveBoard();
     page.route(
@@ -189,9 +196,10 @@ class BoardReportsTest extends BoardPageContext {
         route -> {
           APIResponse read = route.fetch();
           try {
-            draftReplies(
-                "ABC-10",
-                "## thread 1\nNO CHANGE - The name is the one the caller uses.\n");
+            replyDraft(root)
+                .withKey("ABC-10")
+                .withText("## thread 1\nNO CHANGE - The name is the one the caller uses.\n")
+                .build();
           } catch (IOException cannotStageTheRewrite) {
             throw new UncheckedIOException(cannotStageTheRewrite);
           }
@@ -227,7 +235,7 @@ class BoardReportsTest extends BoardPageContext {
   @Test
   void reportThatCouldNotBeReadSaysTheSentenceOfTheRefusalRatherThanItsWireShape()
       throws IOException {
-    draftReplies("ABC-16", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-16").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-16");
     doThrow(new IllegalStateException("the round file is not readable"))
         .when(replies)
@@ -241,7 +249,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void reportAboutTaskThatIsGoneSaysTheBoardIsUpToDateNow() throws IOException {
-    draftReplies("ABC-18", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-18").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-18");
     doThrow(Refusal.noSuchTask("a18")).when(replies).render("a18");
     Page page = openLiveBoard();
@@ -253,7 +261,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void roundReadAgainTwiceShowsTheLaterReadWhenTheEarlierOneAnswersLast() throws IOException {
-    draftReplies("ABC-19", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-19").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-19");
     Page page = openLiveBoard();
     ask(page, "replies a19");
@@ -266,7 +274,7 @@ class BoardReportsTest extends BoardPageContext {
           read.add(route.fetch());
           held.add(route);
         });
-    draftReplies("ABC-19", "## thread 1\nFIXED - The older read.\n");
+    replyDraft(root).withKey("ABC-19").withText("## thread 1\nFIXED - The older read.\n").build();
     page.waitForRequest(
         "**/api/commands/replies**",
         () ->
@@ -278,7 +286,7 @@ class BoardReportsTest extends BoardPageContext {
                     .withStatus(TaskStatus.REVIEW_PENDING, "older", System.currentTimeMillis())));
     page.waitForCondition(() -> !held.isEmpty());
     int olderReads = held.size();
-    draftReplies("ABC-19", "## thread 1\nFIXED - The newer read.\n");
+    replyDraft(root).withKey("ABC-19").withText("## thread 1\nFIXED - The newer read.\n").build();
     page.waitForRequest(
         "**/api/commands/replies**",
         () ->
@@ -302,7 +310,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void reportAboutOneTaskIsTitledByBothTheNamesItAnswersTo() throws IOException {
-    draftReplies("ABC-7", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-7").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-7");
 
     Page page = openLiveBoard();
@@ -313,7 +321,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void reportTypedBeforeTheBoardArrivedIsStillTitledByBothNamesOfItsTask() throws IOException {
-    draftReplies("ABC-21", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-21").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-21");
     List<Route> board = new java.util.concurrent.CopyOnWriteArrayList<>();
     Page page = session.newPage();
@@ -330,7 +338,7 @@ class BoardReportsTest extends BoardPageContext {
 
   @Test
   void reportIsNamedToScreenReaderByItsTitle() throws IOException {
-    draftReplies("ABC-7", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-7").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-7");
 
     Page page = openLiveBoard();
@@ -342,47 +350,61 @@ class BoardReportsTest extends BoardPageContext {
         .isVisible();
   }
 
-  @Test
-  void reportOpenedEarlierThatFailsAfterLaterOneOpenedRaisesNoError() throws IOException {
-    draftReplies("ABC-7", "## thread 1\nFIXED - The first round.\n");
-    putReviewTask("ABC-7");
-    Page page = openLiveBoard();
-    List<Route> held = holdTheRepliesAnswerAndOpenStats(page);
+  @Nested
+  class WhileTheStatsReportIsOpenAndTheRepliesAnswerIsHeld {
 
-    page.waitForRequestFinished(
-        new Page.WaitForRequestFinishedOptions()
-            .setPredicate(request -> request.url().endsWith("about=a7")),
-        () ->
-            held.get(0)
-                .fulfill(
-                    new Route.FulfillOptions().setStatus(500).setBody("{\"error\":\"too late\"}")));
-    page.evaluate(
-        "() => new Promise(done => setTimeout(() => requestAnimationFrame(() => done(true))))");
+    Page page;
+    List<Route> held;
 
-    assertThat(page.locator("#toasts .toast.error")).hasCount(0);
-  }
+    @BeforeEach
+    void openStatsOverHeldRepliesAnswer() throws IOException {
+      replyDraft(root).withKey("ABC-7").withText("## thread 1\nFIXED - The first round.\n").build();
+      putReviewTask("ABC-7");
+      page = openLiveBoard();
+      held = new CopyOnWriteArrayList<>();
+      page.route(Pattern.compile("/api/commands/replies\\?about=a7$"), held::add);
+      page.waitForRequest(
+          Pattern.compile("/api/commands/replies\\?about=a7$"),
+          () -> ask(page, "replies a7"));
+      page.locator("#reports-toggle").click();
+      page.locator("#show-stats").click();
+      assertThat(page.locator("#report-title")).containsText("stats");
+    }
 
-  @Test
-  void reportOpenedLastStaysOnScreenWhenAnEarlierOneAnswersAfterIt() throws IOException {
-    draftReplies("ABC-7", "## thread 1\nFIXED - The first round.\n");
-    putReviewTask("ABC-7");
-    Page page = openLiveBoard();
-    List<Route> held = holdTheRepliesAnswerAndOpenStats(page);
+    @Test
+    void reportOpenedEarlierThatFailsAfterLaterOneOpenedRaisesNoError() {
+      page.waitForRequestFinished(
+          new Page.WaitForRequestFinishedOptions()
+              .setPredicate(request -> request.url().endsWith("about=a7")),
+          () ->
+              held.get(0)
+                  .fulfill(
+                      new Route.FulfillOptions()
+                          .setStatus(500)
+                          .setBody("{\"error\":\"too late\"}")));
+      page.evaluate(
+          "() => new Promise(done => setTimeout(() => requestAnimationFrame(() => done(true))))");
 
-    page.waitForRequestFinished(
-        new Page.WaitForRequestFinishedOptions()
-            .setPredicate(request -> request.url().endsWith("about=a7")),
-        () -> held.get(0).resume());
-    page.evaluate(
-        "() => new Promise(done => setTimeout(() => requestAnimationFrame(() => done(true))))");
+      assertThat(page.locator("#toasts .toast.error")).hasCount(0);
+    }
 
-    org.assertj.core.api.Assertions.assertThat(page.locator("#report-body").textContent())
-        .doesNotContain("The first round.");
+    @Test
+    void reportOpenedLastStaysOnScreenWhenAnEarlierOneAnswersAfterIt() {
+      page.waitForRequestFinished(
+          new Page.WaitForRequestFinishedOptions()
+              .setPredicate(request -> request.url().endsWith("about=a7")),
+          () -> held.get(0).resume());
+      page.evaluate(
+          "() => new Promise(done => setTimeout(() => requestAnimationFrame(() => done(true))))");
+
+      org.assertj.core.api.Assertions.assertThat(page.locator("#report-body").textContent())
+          .doesNotContain("The first round.");
+    }
   }
 
   @Test
   void typedReportNarrowsToTheTaskItNamesInsteadOfAnsweringForAllOfThem() throws IOException {
-    draftReplies("ABC-2", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-2").withText("## thread 1\nFIXED - Renamed it.\n").build();
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.REVIEW_PENDING).build());
     state.putTask("ABC-2", alphaTask("ABC-2", TaskStatus.REVIEW_PENDING).build());
 

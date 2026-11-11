@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.board;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static dev.jagt.orchestrator.board.TestReplyDraftBuilder.replyDraft;
 import static org.mockito.Mockito.when;
 
 import com.microsoft.playwright.APIResponse;
@@ -249,7 +250,7 @@ class BoardConnectionTest extends BoardPageContext {
   @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
   void roundOpenWhenTheBackendGoesAwayTakesNoLineForItsSession(
       @Autowired TaskEventStream events, @Autowired ApplicationContext context) throws IOException {
-    draftReplies("ABC-18", "## thread 1\nFIXED - Renamed it.\n");
+    replyDraft(root).withKey("ABC-18").withText("## thread 1\nFIXED - Renamed it.\n").build();
     putReviewTask("ABC-18");
     Page page = openLiveBoard();
     ask(page, "replies a18");
