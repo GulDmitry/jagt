@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.port.AcceptanceRunner;
 import dev.jagt.orchestrator.port.AcceptanceRunner.FlowResult;
@@ -35,6 +36,21 @@ class CheckerFlowsTest {
 
   private final AcceptanceRunner runner = mock(AcceptanceRunner.class);
   private final ConfigService config = mock(ConfigService.class);
+  private final AcceptanceVerdict behindLogin =
+      new AcceptanceVerdict(
+          "abc",
+          "",
+          List.of(
+              new AcceptanceVerdict.Row(
+                  "C1", AcceptanceVerdict.Status.UNPROVABLE, "behind a login")),
+          "How do I sign in?",
+          "",
+          AcceptanceVerdict.Flows.none());
+  private final AcceptanceVerdict.Flows openPageNamingC1 =
+      new AcceptanceVerdict.Flows(
+          List.of(new AcceptanceVerdict.Flows.Flow("open-page", "C1")), STAGE);
+  private final RoleDefinition acceptanceRole =
+      RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"));
   private CheckerFlows flows;
 
   @BeforeEach
@@ -42,9 +58,9 @@ class CheckerFlowsTest {
     flows =
         new CheckerFlows(
             runner,
-            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+            acceptanceRole,
             new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+                acceptanceRole,
                 config,
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults().withRoot(root.toString()))));
@@ -135,23 +151,7 @@ class CheckerFlowsTest {
     when(runner.run(worktree, List.of("open-page"), STAGE))
         .thenReturn(
             List.of(FlowResult.defaults().withFlow("open-page").withVerdict(Verdict.PASSED)));
-    AcceptanceVerdict read =
-        new AcceptanceVerdict(
-            "abc",
-            "",
-            List.of(
-                new AcceptanceVerdict.Row(
-                    "C1", AcceptanceVerdict.Status.UNPROVABLE, "behind a login")),
-            "How do I sign in?",
-            "",
-            AcceptanceVerdict.Flows.none());
-
-    AcceptanceVerdict result =
-        flows.run(
-            read,
-            worktree,
-            new AcceptanceVerdict.Flows(
-                List.of(new AcceptanceVerdict.Flows.Flow("open-page", "C1")), STAGE));
+    AcceptanceVerdict result = flows.run(behindLogin, worktree, openPageNamingC1);
 
     assertThat(result.rows())
         .containsExactly(
@@ -180,12 +180,7 @@ class CheckerFlowsTest {
             "",
             AcceptanceVerdict.Flows.none());
 
-    AcceptanceVerdict result =
-        flows.run(
-            read,
-            worktree,
-            new AcceptanceVerdict.Flows(
-                List.of(new AcceptanceVerdict.Flows.Flow("open-page", "C1")), STAGE));
+    AcceptanceVerdict result = flows.run(read, worktree, openPageNamingC1);
 
     assertThat(result.rows())
         .containsExactly(
@@ -204,23 +199,7 @@ class CheckerFlowsTest {
                     .withFlow("open-page")
                     .withVerdict(Verdict.UNPROVABLE)
                     .withReason("no JSON report")));
-    AcceptanceVerdict read =
-        new AcceptanceVerdict(
-            "abc",
-            "",
-            List.of(
-                new AcceptanceVerdict.Row(
-                    "C1", AcceptanceVerdict.Status.UNPROVABLE, "behind a login")),
-            "How do I sign in?",
-            "",
-            AcceptanceVerdict.Flows.none());
-
-    AcceptanceVerdict result =
-        flows.run(
-            read,
-            worktree,
-            new AcceptanceVerdict.Flows(
-                List.of(new AcceptanceVerdict.Flows.Flow("open-page", "C1")), STAGE));
+    AcceptanceVerdict result = flows.run(behindLogin, worktree, openPageNamingC1);
 
     assertThat(result.rows())
         .containsExactly(

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -9,12 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.MasterPhase;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -29,27 +25,29 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class MasterReviewJobTest {
-
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ConfigService config = mock(ConfigService.class);
   private final MasterPanel panel = mock(MasterPanel.class);
   private final MasterRuling verdicts = mock(MasterRuling.class);
+  private final MasterReview.Read acceptanceReady =
+      new MasterReview.Read(
+          "acceptance", new Judgement("", "ready", List.of(), "", List.of(), ""));
+  @TempDir Path root;
+  private StateService state;
+  private MasterReview reviews;
+  private MasterReviewJob job;
 
-  private StateService stateIn(Path root) {
-    return new StateService(
-        new JsonMapper(),
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString())),
-                reducer, event -> {});
+  @BeforeEach
+  void masterReviewJobOverStateOnDisk() {
+    state = stateService().withRoot(root).build();
+    reviews = new MasterReview(state);
+    job = new MasterReviewJob(state, config, panel, reviews, verdicts);
   }
 
   private ConfigService.ConfigFile.MasterConfig master(String mode) {
@@ -60,20 +58,18 @@ class MasterReviewJobTest {
   }
 
   @Test
-  void readsNoRoundWhileTheMasterIsOff(@TempDir Path root) {
-    StateService state = stateIn(root);
+  void readsNoRoundWhileTheMasterIsOff() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
     master("off");
 
-    new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
+    job.run();
 
     verify(panel, never()).review(anyString(), any(), any());
   }
 
   @Test
-  void handsRoundThatCameBackAndNobodyJudgedToTheMastersPanel(@TempDir Path root) {
-    StateService state = stateIn(root);
+  void handsRoundThatCameBackAndNobodyJudgedToTheMastersPanel() {
     TaskState back =
         TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
             .lastActiveTimestamp(2_000L)
@@ -81,125 +77,87 @@ class MasterReviewJobTest {
     state.putTask("ABC-1", back);
     ConfigService.ConfigFile.MasterConfig master = master("judge");
 
-    new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
+    job.run();
 
     verify(panel).review("ABC-1", back, master);
   }
 
   @Test
-  void handsPlanToThePlanReadingPanelNotTheRoundReadingOne(@TempDir Path root) {
-    StateService state = stateIn(root);
+  void handsPlanToThePlanReadingPanelNotTheRoundReadingOne() {
     TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
     state.putTask("ABC-1", planned);
     ConfigService.ConfigFile.MasterConfig master = master("judge");
 
-    new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
+    job.run();
 
     verify(panel).plan("ABC-1", planned, master);
     verify(panel, never()).review(anyString(), any(), any());
   }
 
   @Test
-  void readsNothingOfTaskTheSessionStillWorksOn(@TempDir Path root) {
-    StateService state = stateIn(root);
+  void readsNothingOfTaskTheSessionStillWorksOn() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     master("judge");
 
-    new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
+    job.run();
 
     verify(panel, never()).review(anyString(), any(), any());
     verify(panel, never()).plan(anyString(), any(), any());
   }
 
-  @Test
-  void actsOnTheVerdictWrittenAboutTheRoundInsteadOfAskingAgain(@TempDir Path root) {
-    StateService state = stateIn(root);
-    TaskState back =
-        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
-            .build()
-            .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-    state.putTask("ABC-1", back);
-    new MasterReview(state)
-        .write(
-            "ABC-1",
-            back,
-            new MasterReview.Review(
-                5,
-                "",
-                "",
-                "",
-                List.of(
-                    new MasterReview.Read(
-                        "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
-            "");
-    back = state.task("ABC-1").orElseThrow();
-    ConfigService.ConfigFile.MasterConfig master = master("act");
+  @Nested
+  class WhereTheRoundCameBackNotReady {
 
-    new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
+    private TaskState back;
 
-    verify(verdicts).act(eq("ABC-1"), eq(back), any(MasterReview.Verdict.class), eq(master));
-    verify(panel, never()).review(anyString(), any(), any());
-  }
+    @BeforeEach
+    void theRoundIsOnTheBoard() {
+      back =
+          TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
+              .build()
+              .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+      state.putTask("ABC-1", back);
+    }
 
-  @Test
-  void keepsTheTickGoingWhenVerdictFindsTheTaskMovedOn(@TempDir Path root) {
-    StateService state = stateIn(root);
-    TaskState back =
-        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
-            .build()
-            .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-    state.putTask("ABC-1", back);
-    new MasterReview(state)
-        .write(
-            "ABC-1",
-            back,
-            new MasterReview.Review(
-                5,
-                "",
-                "",
-                "",
-                List.of(
-                    new MasterReview.Read(
-                        "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
-            "");
-    back = state.task("ABC-1").orElseThrow();
-    master("judge");
-    when(verdicts.act(anyString(), any(), any(), any())).thenThrow(new TaskMovedOn("ABC-1"));
+    @Test
+    void actsOnTheVerdictWrittenAboutTheRoundInsteadOfAskingAgain() {
+      reviews.write(
+          "ABC-1", back, new MasterReview.Review(5, "", "", "", List.of(acceptanceReady)), "");
+      TaskState written = state.task("ABC-1").orElseThrow();
+      ConfigService.ConfigFile.MasterConfig master = master("act");
 
-    new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
+      job.run();
 
-    verify(verdicts).act(eq("ABC-1"), eq(back), any(MasterReview.Verdict.class), any());
-  }
+      verify(verdicts).act(eq("ABC-1"), eq(written), any(MasterReview.Verdict.class), eq(master));
+      verify(panel, never()).review(anyString(), any(), any());
+    }
 
-  @Test
-  void asksAgainWhenTheOnlyVerdictWasAskedAboutAnEarlierHandBack(@TempDir Path root) {
-    StateService state = stateIn(root);
-    TaskState back =
-        TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
-            .build()
-            .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-    state.putTask("ABC-1", back);
-    new MasterReview(state)
-        .write(
-            "ABC-1",
-            back,
-            new MasterReview.Review(
-                3,
-                "",
-                "",
-                "",
-                List.of(
-                    new MasterReview.Read(
-                        "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
-            "");
-    back = state.task("ABC-1").orElseThrow();
-    ConfigService.ConfigFile.MasterConfig master = master("act");
+    @Test
+    void keepsTheTickGoingWhenVerdictFindsTheTaskMovedOn() {
+      master("judge");
+      when(verdicts.act(anyString(), any(), any(), any())).thenThrow(new TaskMovedOn("ABC-1"));
+      reviews.write(
+          "ABC-1", back, new MasterReview.Review(5, "", "", "", List.of(acceptanceReady)), "");
+      TaskState written = state.task("ABC-1").orElseThrow();
 
-    new MasterReviewJob(state, config, panel, new MasterReview(state), verdicts).run();
+      job.run();
 
-    verify(verdicts, never()).act(anyString(), any(), any(), any());
-    verify(panel).review("ABC-1", back, master);
+      verify(verdicts).act(eq("ABC-1"), eq(written), any(MasterReview.Verdict.class), any());
+    }
+
+    @Test
+    void asksAgainWhenTheOnlyVerdictWasAskedAboutAnEarlierHandBack() {
+      reviews.write(
+          "ABC-1", back, new MasterReview.Review(3, "", "", "", List.of(acceptanceReady)), "");
+      TaskState written = state.task("ABC-1").orElseThrow();
+      ConfigService.ConfigFile.MasterConfig master = master("act");
+
+      job.run();
+
+      verify(verdicts, never()).act(anyString(), any(), any(), any());
+      verify(panel).review("ABC-1", written, master);
+    }
   }
 
   @Test
@@ -239,9 +197,7 @@ class MasterReviewJobTest {
   }
 
   @Test
-  void settlesTheMastersSealAgainstTheVerdictFileOnEveryTick(@TempDir Path root) throws Exception {
-    StateService state = stateIn(root);
-    MasterReview reviews = new MasterReview(state);
+  void settlesTheMastersSealAgainstTheVerdictFileOnEveryTick() throws Exception {
     TaskState sealed =
         TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
             .lastActiveTimestamp(2_000L)
@@ -252,7 +208,7 @@ class MasterReviewJobTest {
     Files.delete(root.resolve(".jagt").resolve("master-review.json"));
     master("judge");
 
-    new MasterReviewJob(state, config, panel, reviews, verdicts).run();
+    job.run();
 
     assertThat(MasterPhase.of(state.task("ABC-1").orElseThrow())).isEqualTo(MasterPhase.STANDS_IN);
   }

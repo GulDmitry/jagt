@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.task.TokenUsage;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class InfraRetryJobTest {
@@ -30,17 +31,22 @@ class InfraRetryJobTest {
       InfraRetry.armed(
           1_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3);
 
-  @Test
-  void reRunsPipelineWhoseFailedJobsStillDiedOnInfrastructure() {
+  private final Answer<List<FailedJob>> diedOnInfrastructure =
+      new Answer<>(
+          Optional.of(List.of(new FailedJob("1", "unit-tests", "runner_system_failure", true))),
+          TokenUsage.NONE);
+
+  @BeforeEach
+  void retryDueForTaskStillWaitingOnItsRedChecks() {
     when(retries.due()).thenReturn(Map.of("ABC-42", armed));
     when(retries.stillWaiting("ABC-42")).thenReturn(true);
     when(stops.moveDue("ABC-42")).thenReturn(true);
+  }
+
+  @Test
+  void reRunsPipelineWhoseFailedJobsStillDiedOnInfrastructure() {
     when(pipelines.failedJobs("shop", "https://host.invalid/p/1"))
-        .thenReturn(
-            new Answer<>(
-                Optional.of(
-                    List.of(new FailedJob("1", "unit-tests", "runner_system_failure", true))),
-                TokenUsage.NONE));
+        .thenReturn(diedOnInfrastructure);
     when(pipelines.retryFailed("shop", "https://host.invalid/p/1"))
         .thenReturn(new Answer<>(Optional.of("pending"), TokenUsage.NONE));
 
@@ -51,7 +57,6 @@ class InfraRetryJobTest {
 
   @Test
   void dropsTheRetryWhenHumanAlreadyMovedTheChecksOnFromRed() {
-    when(retries.due()).thenReturn(Map.of("ABC-42", armed));
     when(retries.stillWaiting("ABC-42")).thenReturn(false);
 
     job.run();
@@ -62,7 +67,6 @@ class InfraRetryJobTest {
 
   @Test
   void dropsTheRetryOfTaskThatWasClosed() {
-    when(retries.due()).thenReturn(Map.of("ABC-42", armed));
     when(retries.stillWaiting("ABC-42")).thenReturn(false);
 
     job.run();
@@ -73,8 +77,6 @@ class InfraRetryJobTest {
 
   @Test
   void dropsTheRetryOfStoppedTask() {
-    when(retries.due()).thenReturn(Map.of("ABC-42", armed));
-    when(retries.stillWaiting("ABC-42")).thenReturn(true);
     when(stops.moveDue("ABC-42")).thenReturn(false);
 
     job.run();
@@ -84,9 +86,6 @@ class InfraRetryJobTest {
 
   @Test
   void dropsTheRetryWhenTheHostNowSaysTheCodeFailed() {
-    when(retries.due()).thenReturn(Map.of("ABC-42", armed));
-    when(retries.stillWaiting("ABC-42")).thenReturn(true);
-    when(stops.moveDue("ABC-42")).thenReturn(true);
     when(pipelines.failedJobs("shop", "https://host.invalid/p/1"))
         .thenReturn(
             new Answer<>(
@@ -101,9 +100,6 @@ class InfraRetryJobTest {
 
   @Test
   void staysArmedAndStopsNoTaskWhileJagtCannotReachTheHost() {
-    when(retries.due()).thenReturn(Map.of("ABC-42", armed));
-    when(retries.stillWaiting("ABC-42")).thenReturn(true);
-    when(stops.moveDue("ABC-42")).thenReturn(true);
     when(pipelines.failedJobs("shop", "https://host.invalid/p/1"))
         .thenReturn(
             Answer.unreached(
@@ -121,15 +117,8 @@ class InfraRetryJobTest {
 
   @Test
   void stopsTheTaskWithTheHostsOwnWordsWhenItRefusesTheRetry() {
-    when(retries.due()).thenReturn(Map.of("ABC-42", armed));
-    when(retries.stillWaiting("ABC-42")).thenReturn(true);
-    when(stops.moveDue("ABC-42")).thenReturn(true);
     when(pipelines.failedJobs("shop", "https://host.invalid/p/1"))
-        .thenReturn(
-            new Answer<>(
-                Optional.of(
-                    List.of(new FailedJob("1", "unit-tests", "runner_system_failure", true))),
-                TokenUsage.NONE));
+        .thenReturn(diedOnInfrastructure);
     when(pipelines.retryFailed("shop", "https://host.invalid/p/1"))
         .thenReturn(Answer.failed(TokenUsage.NONE, "glab exited 1: 403 Forbidden"));
 

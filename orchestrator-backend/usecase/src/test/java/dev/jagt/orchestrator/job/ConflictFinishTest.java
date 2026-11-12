@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -10,8 +11,6 @@ import static org.mockito.Mockito.when;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -27,12 +26,13 @@ import dev.jagt.orchestrator.task.TaskStop;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import org.slf4j.LoggerFactory;
-import tools.jackson.databind.json.JsonMapper;
 
 class ConflictFinishTest {
 
@@ -41,10 +41,16 @@ class ConflictFinishTest {
 
   private final CommandService commands = mock(CommandService.class);
   private final TaskStops stops = mock(TaskStops.class);
+  @TempDir Path root;
+  private StateService state;
+
+  @BeforeEach
+  void stateOnDisk() {
+    state = stateService().withRoot(root).build();
+  }
 
   @Test
-  void pressesTheDeployTheHumanStarted(@TempDir Path root) {
-    StateService state = state(root);
+  void pressesTheDeployTheHumanStarted() {
     state.putTask(
         "ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
     when(stops.moveDue("ABC-42")).thenReturn(true);
@@ -56,8 +62,7 @@ class ConflictFinishTest {
   }
 
   @Test
-  void pressesNothingWhereTheTaskMadeTooManyUnattendedMovesInTheHour(@TempDir Path root) {
-    StateService state = state(root);
+  void pressesNothingWhereTheTaskMadeTooManyUnattendedMovesInTheHour() {
     state.putTask(
         "ABC-42", TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build());
     when(stops.moveDue("ABC-42")).thenReturn(false);
@@ -68,68 +73,59 @@ class ConflictFinishTest {
     verify(commands, never()).execute("ABC-42", TaskAction.DEPLOY);
   }
 
-  @Test
-  @ResourceLock(Resources.GLOBAL)
-  void pressesNothingAndSaysOnceWhileJagtHoldsResolvedConflictStopped(@TempDir Path root) {
-    StateService state = state(root);
-    TaskState stopped =
-        TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT)
-            .stop(new TaskStop(TaskStop.Trigger.UNCHANGED_FAILURE, 5, "same failure"))
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            stopped, new DeployStep.Opened(List.of(Deployment.Target.of("proj", "dev"))), 1);
-    state.putTask(
-        "ABC-42",
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("proj", Deployment.Cause.MERGE), 1));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(ConflictFinish.class)).addAppender(log);
-    ConflictFinish finish = new ConflictFinish(commands, stops, state, Clock.systemUTC());
+  @Nested
+  class WhileJagtHoldsResolvedConflictStopped {
 
-    finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
-    finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
-    finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
+    private final ListAppender<ILoggingEvent> log = new ListAppender<>();
 
-    verify(commands, never()).execute("ABC-42", TaskAction.DEPLOY);
-    assertThat(List.copyOf(log.list))
-        .extracting(ILoggingEvent::getMessage)
-        .containsExactly("conflict resolved held by stop");
+    @BeforeEach
+    void theConflictIsResolvedWhileTheTaskIsStopped() {
+      TaskState stopped =
+          TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT)
+              .stop(new TaskStop(TaskStop.Trigger.UNCHANGED_FAILURE, 5, "same failure"))
+              .build();
+      TaskState opened =
+          reducer.deployStepped(
+              stopped, new DeployStep.Opened(List.of(Deployment.Target.of("proj", "dev"))), 1);
+      state.putTask(
+          "ABC-42",
+          reducer.deployStepped(
+              opened, new DeployStep.Conflicted("proj", Deployment.Cause.MERGE), 1));
+      log.start();
+      ((Logger) LoggerFactory.getLogger(ConflictFinish.class)).addAppender(log);
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void pressesNothingAndSaysOnceWhileJagtHoldsResolvedConflictStopped() {
+      ConflictFinish finish = new ConflictFinish(commands, stops, state, Clock.systemUTC());
+
+      finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
+      finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
+      finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
+
+      verify(commands, never()).execute("ABC-42", TaskAction.DEPLOY);
+      assertThat(List.copyOf(log.list))
+          .extracting(ILoggingEvent::getMessage)
+          .containsExactly("conflict resolved held by stop");
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void saysOnceAcrossRestartWhileJagtHoldsResolvedConflictStopped() {
+      new ConflictFinish(commands, stops, state, Clock.systemUTC())
+          .press("ABC-42", Path.of("/src/ABC-42-deploy"));
+      new ConflictFinish(commands, stops, state, Clock.systemUTC())
+          .press("ABC-42", Path.of("/src/ABC-42-deploy"));
+
+      assertThat(List.copyOf(log.list))
+          .extracting(ILoggingEvent::getMessage)
+          .containsExactly("conflict resolved held by stop");
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
-  void saysOnceAcrossRestartWhileJagtHoldsResolvedConflictStopped(@TempDir Path root) {
-    StateService state = state(root);
-    TaskState stopped =
-        TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT)
-            .stop(new TaskStop(TaskStop.Trigger.UNCHANGED_FAILURE, 5, "same failure"))
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            stopped, new DeployStep.Opened(List.of(Deployment.Target.of("proj", "dev"))), 1);
-    state.putTask(
-        "ABC-42",
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("proj", Deployment.Cause.MERGE), 1));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(ConflictFinish.class)).addAppender(log);
-
-    new ConflictFinish(commands, stops, state, Clock.systemUTC())
-        .press("ABC-42", Path.of("/src/ABC-42-deploy"));
-    new ConflictFinish(commands, stops, state, Clock.systemUTC())
-        .press("ABC-42", Path.of("/src/ABC-42-deploy"));
-
-    assertThat(List.copyOf(log.list))
-        .extracting(ILoggingEvent::getMessage)
-        .containsExactly("conflict resolved held by stop");
-  }
-
-  @Test
-  void finishesTheDeployOnTheTickAfterTheHumanLifts(@TempDir Path root) {
-    StateService state = state(root);
+  void finishesTheDeployOnTheTickAfterTheHumanLifts() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT)
@@ -145,20 +141,8 @@ class ConflictFinishTest {
     verify(commands, times(1)).execute("ABC-42", TaskAction.DEPLOY);
   }
 
-  private static StateService state(Path root) {
-    return new StateService(
-        new JsonMapper(),
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString())),
-                reducer, event -> {});
-  }
-
   @Test
-  void pressesTheRevertTheHumanStartedWhereTheConflictIsRevertsAndNotTheDeploy(
-      @TempDir Path root) {
-    StateService state = state(root);
+  void pressesTheRevertTheHumanStartedWhereTheConflictIsRevertsAndNotTheDeploy() {
     TaskState conflicted =
         TaskState.builder("proj", "/src/ABC-42", TaskStatus.DEPLOY_CONFLICT).build();
     TaskState opened =

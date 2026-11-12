@@ -13,71 +13,62 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class HumanPathsTest {
 
   private final ConfigService configService = mock(ConfigService.class);
   private final WorktreeChanges changes = mock(WorktreeChanges.class);
+  private final TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
 
-  @Test
-  void namesTheFirstChangedPathTheProjectKeepsForTheHuman() {
-    TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
-    when(configService.project("demo"))
-        .thenReturn(
-            new ProjectConfig(
-                new ProjectConfig.Repository("/repo", List.of(), null, List.of("**/auth/**")),
-                new ProjectConfig.Branches("origin/main", "dev", null),
-                new ProjectConfig.CodeHost(
-                    null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                new ProjectConfig.Verify(List.of(), null)));
-    when(changes.paths(task))
-        .thenReturn(Optional.of(Map.of("demo", List.of("README.md", "src/auth/Login.java"))));
+  @Nested
+  class WhereTheProjectKeepsPaths {
 
-    Optional<String> touched = new HumanPaths(configService, changes).touched(task);
+    @BeforeEach
+    void theProjectKeepsAuthPathsForTheHuman() {
+      when(configService.project("demo"))
+          .thenReturn(
+              new ProjectConfig(
+                  new ProjectConfig.Repository("/repo", List.of(), null, List.of("**/auth/**")),
+                  new ProjectConfig.Branches("origin/main", "dev", null),
+                  new ProjectConfig.CodeHost(
+                      null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
+                  new ProjectConfig.Verify(List.of(), null)));
+    }
 
-    assertThat(touched).contains("demo/src/auth/Login.java");
-  }
+    @Test
+    void namesTheFirstChangedPathTheProjectKeepsForTheHuman() {
+      when(changes.paths(task))
+          .thenReturn(Optional.of(Map.of("demo", List.of("README.md", "src/auth/Login.java"))));
 
-  @Test
-  void namesNothingWhereNoChangedPathIsKept() {
-    TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
-    when(configService.project("demo"))
-        .thenReturn(
-            new ProjectConfig(
-                new ProjectConfig.Repository("/repo", List.of(), null, List.of("**/auth/**")),
-                new ProjectConfig.Branches("origin/main", "dev", null),
-                new ProjectConfig.CodeHost(
-                    null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                new ProjectConfig.Verify(List.of(), null)));
-    when(changes.paths(task)).thenReturn(Optional.of(Map.of("demo", List.of("README.md"))));
+      Optional<String> touched = new HumanPaths(configService, changes).touched(task);
 
-    Optional<String> touched = new HumanPaths(configService, changes).touched(task);
+      assertThat(touched).contains("demo/src/auth/Login.java");
+    }
 
-    assertThat(touched).isEmpty();
-  }
+    @Test
+    void namesNothingWhereNoChangedPathIsKept() {
+      when(changes.paths(task)).thenReturn(Optional.of(Map.of("demo", List.of("README.md"))));
 
-  @Test
-  void keepsTheStepWithTheHumanWhereTheChangedPathsCouldNotBeRead() {
-    TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
-    when(configService.project("demo"))
-        .thenReturn(
-            new ProjectConfig(
-                new ProjectConfig.Repository("/repo", List.of(), null, List.of("**/auth/**")),
-                new ProjectConfig.Branches("origin/main", "dev", null),
-                new ProjectConfig.CodeHost(
-                    null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                new ProjectConfig.Verify(List.of(), null)));
-    when(changes.paths(task)).thenReturn(Optional.empty());
+      Optional<String> touched = new HumanPaths(configService, changes).touched(task);
 
-    Optional<String> touched = new HumanPaths(configService, changes).touched(task);
+      assertThat(touched).isEmpty();
+    }
 
-    assertThat(touched).contains(HumanPaths.UNREAD);
+    @Test
+    void keepsTheStepWithTheHumanWhereTheChangedPathsCouldNotBeRead() {
+      when(changes.paths(task)).thenReturn(Optional.empty());
+
+      Optional<String> touched = new HumanPaths(configService, changes).touched(task);
+
+      assertThat(touched).contains(HumanPaths.UNREAD);
+    }
   }
 
   @Test
   void readsNoPathWhereTheProjectKeepsNone() {
-    TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     when(configService.project("demo"))
         .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
 
@@ -89,7 +80,6 @@ class HumanPathsTest {
 
   @Test
   void keepsTheStepWithTheHumanWhereTheTaskNamesProjectNobodyConfigured() {
-    TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     when(configService.project("demo")).thenThrow(new IllegalArgumentException("no project demo"));
 
     Optional<String> touched = new HumanPaths(configService, changes).touched(task);

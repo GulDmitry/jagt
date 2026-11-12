@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -9,15 +10,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.ConflictEnding;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.Conflict;
@@ -32,25 +30,34 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class DeployConflictJobTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  @TempDir Path root;
+  private final TaskState conflicted =
+      TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
+          .build()
+          .withDeployment(
+              new Deployment(1, List.of(Deployment.Target.of("proj", "dev")), 0, null)
+                  .withTarget(
+                      "proj",
+                      target -> target.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))));
+  private final ConflictRead request = mock(ConflictRead.class);
+  private final ConflictRead staged = mock(ConflictRead.class);
+  private StateService state;
+
+  @BeforeEach
+  void stateAndTwoReadsEndingTheirOwnConflicts() {
+    state = stateService().withRoot(root).build();
+    when(request.ending()).thenReturn(ConflictEnding.REQUEST_CLOSED);
+    when(staged.ending()).thenReturn(ConflictEnding.STAGED_FIX);
+  }
 
   @Test
-  void redPipelineConflictEndsAndTheTaskIsDeployedAgainWhenLaterPipelineOnTheDeployBranchIsGreen(
-      @TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void redPipelineConflictEndsAndTheTaskIsDeployedAgainWhenLaterPipelineOnTheDeployBranchIsGreen() {
     ConfigService config = mock(ConfigService.class);
     DeployPipelines pipelines = mock(DeployPipelines.class);
     state.putTask(
@@ -94,27 +101,7 @@ class DeployConflictJobTest {
   }
 
   @Test
-  void readsTheHostOnceMinuteAndTheWorktreeEveryPass(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState conflicted =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .build()
-            .withDeployment(
-                new Deployment(1, List.of(Deployment.Target.of("proj", "dev")), 0, null)
-                    .withTarget(
-                        "proj",
-                        target -> target.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))));
-    ConflictRead request = mock(ConflictRead.class);
-    ConflictRead staged = mock(ConflictRead.class);
-    when(request.ending()).thenReturn(ConflictEnding.REQUEST_CLOSED);
-    when(staged.ending()).thenReturn(ConflictEnding.STAGED_FIX);
+  void readsTheHostOnceMinuteAndTheWorktreeEveryPass() {
     DeployConflictJob job =
         new DeployConflictJob(
             List.of(request, staged),
@@ -129,28 +116,7 @@ class DeployConflictJobTest {
   }
 
   @Test
-  void taskConflictingAgainRightAfterItsConflictEndedReadsTheHostInTheFirstPass(
-      @TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState conflicted =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .build()
-            .withDeployment(
-                new Deployment(1, List.of(Deployment.Target.of("proj", "dev")), 0, null)
-                    .withTarget(
-                        "proj",
-                        target -> target.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))));
-    ConflictRead request = mock(ConflictRead.class);
-    ConflictRead staged = mock(ConflictRead.class);
-    when(request.ending()).thenReturn(ConflictEnding.REQUEST_CLOSED);
-    when(staged.ending()).thenReturn(ConflictEnding.STAGED_FIX);
+  void taskConflictingAgainRightAfterItsConflictEndedReadsTheHostInTheFirstPass() {
     DeployConflictJob job =
         new DeployConflictJob(
             List.of(request, staged),
@@ -165,28 +131,8 @@ class DeployConflictJobTest {
   }
 
   @Test
-  void readThatEndedTheConflictLeavesTheReadsAfterItUnread(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    final TaskState conflicted =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .build()
-            .withDeployment(
-                new Deployment(1, List.of(Deployment.Target.of("proj", "dev")), 0, null)
-                    .withTarget(
-                        "proj",
-                        target -> target.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))));
+  void readThatEndedTheConflictLeavesTheReadsAfterItUnread() {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
-    ConflictRead request = mock(ConflictRead.class);
-    ConflictRead staged = mock(ConflictRead.class);
-    when(request.ending()).thenReturn(ConflictEnding.REQUEST_CLOSED);
-    when(staged.ending()).thenReturn(ConflictEnding.STAGED_FIX);
     when(request.read("ABC-42", conflicted)).thenReturn(true);
 
     new DeployConflictJob(List.of(request, staged), state, Clock.systemUTC())
@@ -196,29 +142,9 @@ class DeployConflictJobTest {
   }
 
   @Test
-  void readThatLeftTheConflictStandingHandsTheNextReadTheTaskAsItNowIs(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState conflicted =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .build()
-            .withDeployment(
-                new Deployment(1, List.of(Deployment.Target.of("proj", "dev")), 0, null)
-                    .withTarget(
-                        "proj",
-                        target -> target.withConflict(Conflict.of(Deployment.Cause.MERGE, 1))));
+  void readThatLeftTheConflictStandingHandsTheNextReadTheTaskAsItNowIs() {
     TaskState told = conflicted.withLastChangeWhy("its request was called gone");
     state.putTask("ABC-42", told);
-    ConflictRead request = mock(ConflictRead.class);
-    ConflictRead staged = mock(ConflictRead.class);
-    when(request.ending()).thenReturn(ConflictEnding.REQUEST_CLOSED);
-    when(staged.ending()).thenReturn(ConflictEnding.STAGED_FIX);
     when(request.read("ABC-42", conflicted)).thenReturn(true);
 
     new DeployConflictJob(List.of(request, staged), state, Clock.systemUTC())

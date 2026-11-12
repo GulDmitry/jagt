@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TrackerCloseTest {
@@ -24,19 +25,24 @@ class TrackerCloseTest {
   private final TrackerWorkflow workflow = mock(TrackerWorkflow.class);
   private final WorktreeChanges changes = mock(WorktreeChanges.class);
   private final TrackerClose close = new TrackerClose(tickets, workflow, changes);
+  private final TaskState task =
+      TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
+  private final TicketFacts item =
+      TicketFacts.defaults()
+          .withExists(true)
+          .withKey("ABC-42")
+          .withTitle("Widget")
+          .withUrl("https://tracker/ABC-42")
+          .withTrackerStatus("Ready for Stage");
+
+  @BeforeEach
+  void anItemInTheClosingStageTheWorkflowClosesOn() {
+    when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
+    when(workflow.closesWork(item)).thenReturn(true);
+  }
 
   @Test
   void closesTaskWhoseItemLandedAndWhoseWorktreeHoldsNothingUncommitted() {
-    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
-    TicketFacts item =
-        TicketFacts.defaults()
-            .withExists(true)
-            .withKey("ABC-42")
-            .withTitle("Widget")
-            .withUrl("https://tracker/ABC-42")
-            .withTrackerStatus("Ready for Stage");
-    when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
-    when(workflow.closesWork(item)).thenReturn(true);
     when(changes.uncommitted(task)).thenReturn(Optional.of(false));
 
     assertThat(close.closes("ABC-42", task)).isTrue();
@@ -44,16 +50,6 @@ class TrackerCloseTest {
 
   @Test
   void refusesToCloseOverWorkNobodyHasCommitted() {
-    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
-    TicketFacts item =
-        TicketFacts.defaults()
-            .withExists(true)
-            .withKey("ABC-42")
-            .withTitle("Widget")
-            .withUrl("https://tracker/ABC-42")
-            .withTrackerStatus("Ready for Stage");
-    when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
-    when(workflow.closesWork(item)).thenReturn(true);
     when(changes.uncommitted(task)).thenReturn(Optional.of(true));
 
     assertThat(close.closes("ABC-42", task)).isFalse();
@@ -61,16 +57,6 @@ class TrackerCloseTest {
 
   @Test
   void refusesToCloseWhenGitCouldNotSayWhatTheWorktreeHolds() {
-    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
-    TicketFacts item =
-        TicketFacts.defaults()
-            .withExists(true)
-            .withKey("ABC-42")
-            .withTitle("Widget")
-            .withUrl("https://tracker/ABC-42")
-            .withTrackerStatus("Ready for Stage");
-    when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
-    when(workflow.closesWork(item)).thenReturn(true);
     when(changes.uncommitted(task)).thenReturn(Optional.empty());
 
     assertThat(close.closes("ABC-42", task)).isFalse();
@@ -78,7 +64,6 @@ class TrackerCloseTest {
 
   @Test
   void refusesToCloseOnStageNobodyCouldRead() {
-    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
     when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
 
     assertThat(close.closes("ABC-42", task)).isFalse();
@@ -87,7 +72,6 @@ class TrackerCloseTest {
 
   @Test
   void chargesTheTokensTheTrackerReadCost() {
-    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
     TokenUsage spent = new TokenUsage(2, 120, 0, 30, 0);
     when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.empty(), spent));
 
@@ -98,16 +82,9 @@ class TrackerCloseTest {
 
   @Test
   void leavesTaskOpenWhoseItemHasNotReachedTheClosingStage() {
-    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
-    TicketFacts item =
-        TicketFacts.defaults()
-            .withExists(true)
-            .withKey("ABC-42")
-            .withTitle("Widget")
-            .withUrl("https://tracker/ABC-42")
-            .withTrackerStatus("In Progress");
-    when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
-    when(workflow.closesWork(item)).thenReturn(false);
+    TicketFacts waiting = item.withTrackerStatus("In Progress");
+    when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(waiting), TokenUsage.NONE));
+    when(workflow.closesWork(waiting)).thenReturn(false);
 
     assertThat(close.closes("ABC-42", task)).isFalse();
     verify(changes, never()).uncommitted(any());

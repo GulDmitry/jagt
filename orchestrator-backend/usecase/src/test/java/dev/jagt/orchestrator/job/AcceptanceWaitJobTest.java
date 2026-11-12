@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -28,13 +29,15 @@ class AcceptanceWaitJobTest {
       ConfigFile.defaults()
           .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));
 
-  @Test
-  void holdsTheCheckWhileTheEnvironmentDoesNotAnswerItsProbeHoweverLongItWaits(@TempDir Path root)
-      throws IOException {
-    ConfigService config = mock(ConfigService.class);
-    EnvironmentProbe probe = mock(EnvironmentProbe.class);
+  @TempDir Path root;
+  private final ConfigService config = mock(ConfigService.class);
+  private final EnvironmentProbe probe = mock(EnvironmentProbe.class);
+  private CheckerRecords records;
+  private CheckerWaitJob job;
+
+  @BeforeEach
+  void anAcceptanceRoleWatchingOneEnvironment() throws IOException {
     when(config.load()).thenReturn(ON);
-    when(probe.answers("https://stage.example.com/health")).thenReturn(false);
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     Files.createDirectories(root.resolve("roles/acceptance"));
@@ -42,74 +45,45 @@ class AcceptanceWaitJobTest {
         root.resolve("roles/acceptance/role.yml"),
         "environments: [{url: \"https://stage.example.com\","
             + " landed: \"https://stage.example.com/health\"}]\n");
-    CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
-    records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.WAITING);
-
-    new CheckerWaitJob(
+    records = new CheckerRecords(paths, Clock.systemUTC());
+    job =
+        new CheckerWaitJob(
             new RoleSettings(
                 RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
                 config,
                 paths),
             records,
-            probe)
+            probe);
+  }
+
+  @Test
+  void holdsTheCheckWhileTheEnvironmentDoesNotAnswerItsProbeHoweverLongItWaits() {
+    when(probe.answers("https://stage.example.com/health")).thenReturn(false);
+    records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.WAITING);
+
+    job
         .run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     assertThat(records.settled("ABC-42", "digest")).isTrue();
   }
 
   @Test
-  void runsTheCheckAgainOnceTheEnvironmentAnswersItsLandedProbe(@TempDir Path root)
-      throws IOException {
-    ConfigService config = mock(ConfigService.class);
-    EnvironmentProbe probe = mock(EnvironmentProbe.class);
-    when(config.load()).thenReturn(ON);
+  void runsTheCheckAgainOnceTheEnvironmentAnswersItsLandedProbe() {
     when(probe.answers("https://stage.example.com/health")).thenReturn(true);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.writeString(
-        root.resolve("roles/acceptance/role.yml"),
-        "environments: [{url: \"https://stage.example.com\","
-            + " landed: \"https://stage.example.com/health\"}]\n");
-    CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.WAITING);
 
-    new CheckerWaitJob(
-            new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                config,
-                paths),
-            records,
-            probe)
+    job
         .run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     assertThat(records.settled("ABC-42", "digest")).isFalse();
   }
 
   @Test
-  void keepsFinishedChecksRecordWhateverTheEnvironmentAnswers(@TempDir Path root)
-      throws IOException {
-    ConfigService config = mock(ConfigService.class);
-    EnvironmentProbe probe = mock(EnvironmentProbe.class);
-    when(config.load()).thenReturn(ON);
+  void keepsFinishedChecksRecordWhateverTheEnvironmentAnswers() {
     when(probe.answers("https://stage.example.com/health")).thenReturn(true);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.writeString(
-        root.resolve("roles/acceptance/role.yml"),
-        "environments: [{url: \"https://stage.example.com\","
-            + " landed: \"https://stage.example.com/health\"}]\n");
-    CheckerRecords records = new CheckerRecords(paths, Clock.systemUTC());
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.PASSED);
 
-    new CheckerWaitJob(
-            new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                config,
-                paths),
-            records,
-            probe)
+    job
         .run("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
     assertThat(records.settled("ABC-42", "digest")).isTrue();

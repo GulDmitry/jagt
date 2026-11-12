@@ -11,28 +11,37 @@ import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class AcceptancePromptsTest {
 
-  @Test
-  void runMayFetchEachEnvironmentUrlAndItsLandedProbeAndNothingElse(@TempDir Path root) {
-    RoleOptions acceptance =
-        RoleOptions.defaults()
-            .withEnvironments(
-                List.of(
-                    new RoleOptions.Environment(
-                        "https://dev.example.test", "https://dev.example.test/version"),
-                    new RoleOptions.Environment("https://stage.example.test", "")));
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+  @TempDir Path root;
+  private final RoleOptions devAndStage =
+      RoleOptions.defaults()
+          .withEnvironments(
+              List.of(
+                  new RoleOptions.Environment(
+                      "https://dev.example.test", "https://dev.example.test/version"),
+                  new RoleOptions.Environment("https://stage.example.test", "")));
+  private CheckerPrompts prompts;
 
-    CheckerReader.Run run =
+  @BeforeEach
+  void promptsOverTheAcceptanceRole() {
+    prompts =
         new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance"))
-            .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
+            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+            new RoleFiles(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+                "acceptance"));
+  }
+
+  @Test
+  void runMayFetchEachEnvironmentUrlAndItsLandedProbeAndNothingElse() {
+    CheckerReader.Run run =
+        prompts
+            .accept("ABC-42", "/wt", "abc123", devAndStage, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.reach().urls())
         .containsExactly(
@@ -42,22 +51,10 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void theRunIsToldEachEnvironmentAndWhatProvesItsChangeUp(@TempDir Path root) {
-    RoleOptions acceptance =
-        RoleOptions.defaults()
-            .withEnvironments(
-                List.of(
-                    new RoleOptions.Environment(
-                        "https://dev.example.test", "https://dev.example.test/version"),
-                    new RoleOptions.Environment("https://stage.example.test", "")));
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-
+  void theRunIsToldEachEnvironmentAndWhatProvesItsChangeUp() {
     CheckerReader.Run run =
-        new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance"))
-            .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
+        prompts
+            .accept("ABC-42", "/wt", "abc123", devAndStage, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt())
         .contains(
@@ -67,14 +64,10 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void runMayReadTheFlowsRepositoryItIsToldToName(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+  void runMayReadTheFlowsRepositoryItIsToldToName() {
 
     CheckerReader.Run run =
-        new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance"))
+        prompts
             .accept(
                 "ABC-42",
                 "/wt",
@@ -90,14 +83,7 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void theRunIsToldTheDeployWasPushedAndNeverThatItLanded(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    CheckerPrompts prompts =
-        new CheckerPrompts(
-            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-            new RoleFiles(paths, "acceptance"));
-
+  void theRunIsToldTheDeployWasPushedAndNeverThatItLanded() {
     CheckerReader.Run accepted =
         prompts.accept("ABC-42", "/wt", "abc123", RoleOptions.defaults(), AcceptanceVerdict.ACCEPT);
     CheckerReader.Run declined =
@@ -113,17 +99,13 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void theRunIsToldWhereTheFlowsLiveWhenDriverIsSet(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+  void theRunIsToldWhereTheFlowsLiveWhenDriverIsSet() {
     RoleOptions acceptance =
         RoleOptions.defaults()
             .withFlows(RoleOptions.Flows.defaults().withDriver("playwright").withPath("/flows"));
 
     CheckerReader.Run run =
-        new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance"))
+        prompts
             .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt())
@@ -133,17 +115,13 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void runWithNoWorkspaceIsToldJagtRunsTheFlowsItNames(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+  void runWithNoWorkspaceIsToldJagtRunsTheFlowsItNames() {
     RoleOptions acceptance =
         RoleOptions.defaults()
             .withFlows(RoleOptions.Flows.defaults().withDriver("playwright").withPath("/flows"));
 
     CheckerReader.Run run =
-        new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance"))
+        prompts
             .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt())
@@ -152,23 +130,19 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void theRunIsToldOfNoFlowsWhileTheDriverIsNone(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+  void theRunIsToldOfNoFlowsWhileTheDriverIsNone() {
     RoleOptions acceptance =
         RoleOptions.defaults().withFlows(RoleOptions.Flows.defaults().withPath("/flows"));
 
     CheckerReader.Run run =
-        new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance"))
+        prompts
             .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt()).doesNotContain("Flows:");
   }
 
   @Test
-  void workspaceIsCreatedAndHoldsTheFlowsCommandOncePerEnvironment(@TempDir Path root) {
+  void workspaceIsCreatedAndHoldsTheFlowsCommandOncePerEnvironment() {
     Path workspace = root.resolve("ws");
     RoleOptions acceptance =
         RoleOptions.defaults()
@@ -181,13 +155,9 @@ class AcceptancePromptsTest {
                     .withDriver("playwright")
                     .withCommand(List.of("npx", "test")))
             .withWorkspace(workspace.toString());
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
     CheckerReader.Run run =
-        new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance"))
+        prompts
             .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
     assertThat(workspace).isDirectory();
@@ -199,19 +169,15 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void workspaceIsNamedWithTheFlowsCommandAsTheReadMustRunIt(@TempDir Path root) {
+  void workspaceIsNamedWithTheFlowsCommandAsTheReadMustRunIt() {
     RoleOptions acceptance =
         RoleOptions.defaults()
             .withEnvironments(List.of(new RoleOptions.Environment("https://dev.example.test", "")))
             .withFlows(RoleOptions.Flows.defaults().withCommand(List.of("npx", "test")))
             .withWorkspace(root.resolve("ws").toString());
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
     CheckerReader.Run run =
-        new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance"))
+        prompts
             .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt())
@@ -222,15 +188,11 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void theGitReadIsPointedAtTheWorktreeNotTheWorkspace(@TempDir Path root) {
+  void theGitReadIsPointedAtTheWorktreeNotTheWorkspace() {
     RoleOptions acceptance = RoleOptions.defaults().withWorkspace(root.resolve("ws").toString());
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
 
     CheckerReader.Run run =
-        new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance"))
+        prompts
             .accept("ABC-42", "/wt", "abc123", acceptance, AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt())
@@ -240,14 +202,10 @@ class AcceptancePromptsTest {
   }
 
   @Test
-  void noWorkspaceLineWhereNoWorkspaceIsHeld(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+  void noWorkspaceLineWhereNoWorkspaceIsHeld() {
 
     CheckerReader.Run run =
-        new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance"))
+        prompts
             .accept("ABC-42", "/wt", "abc123", RoleOptions.defaults(), AcceptanceVerdict.ACCEPT);
 
     assertThat(run.prompt()).doesNotContain("Workspace:");

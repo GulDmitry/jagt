@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -8,8 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -28,133 +27,81 @@ import dev.jagt.orchestrator.task.TokenUsage;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import tools.jackson.databind.json.JsonMapper;
 
 class RequestClosedReadTest {
 
   private static final TaskReducer reducer =
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
+  @TempDir Path root;
   private final ReviewReader reader = mock(ReviewReader.class);
   private final MergedRequests merged = mock(MergedRequests.class);
   private final Notifications notifications = mock(Notifications.class);
+  private final TaskRepo alpha =
+      new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha");
+  private final TaskRepo beta =
+      new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta");
+  private final TaskState opened =
+      reducer.deployStepped(
+          TaskState.builder(List.of(alpha, beta), TaskStatus.DEPLOY_CONFLICT).build(),
+          new DeployStep.Opened(
+              List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
+          1_000);
+  private final TaskState betaMerge =
+      reducer.deployStepped(
+          opened, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_100);
+  private final Answer<ReviewFacts> requestClosed =
+      new Answer<>(
+          Optional.of(
+              new ReviewFacts(
+                  new ReviewFacts.Request(true, false, false, true, 0),
+                  new ReviewFacts.Pipeline("none", "", ""),
+                  new ReviewFacts.Discussion(List.of(), List.of(), List.of()))),
+          TokenUsage.NONE);
+  private StateService state;
+  private RequestClosedRead read;
 
-  private StateService stateOf(Path root) {
-    return new StateService(
-        new JsonMapper(),
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString())),
-                reducer, event -> {});
+  @BeforeEach
+  void readOverStateOnDisk() {
+    state = stateService().withRoot(root).build();
+    read = new RequestClosedRead(reader, merged, state, notifications);
   }
 
   @Test
-  void takesTheConflictedRepositoryOutOfTheTaskWhereTheHostClosedItsRequest(@TempDir Path root) {
-    TaskRepo beta = new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta");
-    TaskState task =
-        TaskState.builder(
-                List.of(
-                    new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
-                    beta),
-                TaskStatus.DEPLOY_CONFLICT)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            task,
-            new DeployStep.Opened(
-                List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
-            1_000);
+  void takesTheConflictedRepositoryOutOfTheTaskWhereTheHostClosedItsRequest() {
     TaskState red =
         reducer.deployStepped(
             opened, new DeployStep.Conflicted("beta", Deployment.Cause.RED_PIPELINE), 1_100);
-    when(reader.read("ABC-42", "http://mr/beta"))
-        .thenReturn(
-            new Answer<>(
-                Optional.of(
-                    new ReviewFacts(
-                        new ReviewFacts.Request(true, false, false, true, 0),
-                        new ReviewFacts.Pipeline("none", "", ""),
-                        new ReviewFacts.Discussion(List.of(), List.of(), List.of()))),
-                TokenUsage.NONE));
+    when(reader.read("ABC-42", "http://mr/beta")).thenReturn(requestClosed);
     when(merged.hostSaidClosed("ABC-42", beta)).thenReturn(true);
 
-    new RequestClosedRead(reader, merged, stateOf(root), notifications).read("ABC-42", red);
+    read.read("ABC-42", red);
 
     verify(merged).hostSaidClosed("ABC-42", beta);
     verifyNoInteractions(notifications);
   }
 
   @Test
-  void takesTheRepositoryTheMergeConflictedOnOutOfTheTaskWhereTheHostClosedItsRequest(
-      @TempDir Path root) {
-    TaskRepo beta = new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta");
-    TaskState task =
-        TaskState.builder(
-                List.of(
-                    new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
-                    beta),
-                TaskStatus.DEPLOY_CONFLICT)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            task,
-            new DeployStep.Opened(
-                List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
-            1_000);
-    TaskState conflicted =
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_100);
-    when(reader.read("ABC-42", "http://mr/beta"))
-        .thenReturn(
-            new Answer<>(
-                Optional.of(
-                    new ReviewFacts(
-                        new ReviewFacts.Request(true, false, false, true, 0),
-                        new ReviewFacts.Pipeline("none", "", ""),
-                        new ReviewFacts.Discussion(List.of(), List.of(), List.of()))),
-                TokenUsage.NONE));
+  void takesTheRepositoryTheMergeConflictedOnOutOfTheTaskWhereTheHostClosedItsRequest() {
+    when(reader.read("ABC-42", "http://mr/beta")).thenReturn(requestClosed);
 
-    new RequestClosedRead(reader, merged, stateOf(root), notifications).read("ABC-42", conflicted);
+    read.read("ABC-42", betaMerge);
 
     verify(merged).hostSaidClosed("ABC-42", beta);
   }
 
   @Test
-  void callsTheRequestOfTheConflictedPrimaryRepositoryGoneOnceAndReadsItNoMore(
-      @TempDir Path root) {
-    StateService state = stateOf(root);
-    TaskState task =
-        TaskState.builder(
-                List.of(
-                    new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha"),
-                    new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta")),
-                TaskStatus.DEPLOY_CONFLICT)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            task,
-            new DeployStep.Opened(
-                List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
-            1_000);
+  void callsTheRequestOfTheConflictedPrimaryRepositoryGoneOnceAndReadsItNoMore() {
     TaskState red =
         reducer.deployStepped(
             opened, new DeployStep.Conflicted("alpha", Deployment.Cause.RED_PIPELINE), 1_100);
     state.putTask("ABC-42", red);
-    when(reader.read("ABC-42", "http://mr/alpha"))
-        .thenReturn(
-            new Answer<>(
-                Optional.of(
-                    new ReviewFacts(
-                        new ReviewFacts.Request(true, false, false, true, 0),
-                        new ReviewFacts.Pipeline("none", "", ""),
-                        new ReviewFacts.Discussion(List.of(), List.of(), List.of()))),
-                TokenUsage.NONE));
-    RequestClosedRead read = new RequestClosedRead(reader, merged, state, notifications);
+    when(reader.read("ABC-42", "http://mr/alpha")).thenReturn(requestClosed);
 
     read.read("ABC-42", state.task("ABC-42").orElseThrow());
     read.read("ABC-42", state.task("ABC-42").orElseThrow());
@@ -165,23 +112,7 @@ class RequestClosedReadTest {
 
   @ParameterizedTest
   @CsvSource({"true,true", "false,false"})
-  void saysTheTaskChangedOnlyWhereTheHostClosedTheRequest(
-      boolean closed, boolean changed, @TempDir Path root) {
-    TaskRepo beta = new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta");
-    TaskState opened =
-        reducer.deployStepped(
-            TaskState.builder(
-                    List.of(
-                        new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/a"),
-                        beta),
-                    TaskStatus.DEPLOY_CONFLICT)
-                .build(),
-            new DeployStep.Opened(
-                List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
-            1_000);
-    TaskState conflicted =
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_100);
+  void saysTheTaskChangedOnlyWhereTheHostClosedTheRequest(boolean closed, boolean changed) {
     when(reader.read("ABC-42", "http://mr/beta"))
         .thenReturn(
             new Answer<>(
@@ -193,34 +124,16 @@ class RequestClosedReadTest {
                 TokenUsage.NONE));
     when(merged.hostSaidClosed("ABC-42", beta)).thenReturn(true);
 
-    boolean said =
-        new RequestClosedRead(reader, merged, stateOf(root), notifications)
-            .read("ABC-42", conflicted);
+    boolean said = read.read("ABC-42", betaMerge);
 
     assertThat(said).isEqualTo(changed);
   }
 
   @Test
-  void saysNothingChangedWhereTheRequestCouldNotBeRead(@TempDir Path root) {
-    TaskState opened =
-        reducer.deployStepped(
-            TaskState.builder(
-                    List.of(
-                        new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/a"),
-                        new TaskRepo("beta", "/beta-wt", "git@host:g/beta.git", "http://mr/beta")),
-                    TaskStatus.DEPLOY_CONFLICT)
-                .build(),
-            new DeployStep.Opened(
-                List.of(Deployment.Target.of("alpha", "dev"), Deployment.Target.of("beta", "dev"))),
-            1_000);
-    TaskState conflicted =
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("beta", Deployment.Cause.MERGE), 1_100);
+  void saysNothingChangedWhereTheRequestCouldNotBeRead() {
     when(reader.read("ABC-42", "http://mr/beta")).thenThrow(new IllegalStateException("down"));
 
-    boolean said =
-        new RequestClosedRead(reader, merged, stateOf(root), notifications)
-            .read("ABC-42", conflicted);
+    boolean said = read.read("ABC-42", betaMerge);
 
     assertThat(said).isFalse();
   }

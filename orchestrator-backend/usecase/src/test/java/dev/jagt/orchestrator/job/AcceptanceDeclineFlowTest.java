@@ -1,17 +1,15 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskStops;
@@ -24,49 +22,47 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class AcceptanceDeclineFlowTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  @TempDir Path root;
+  private StateService state;
+  private CheckerOutcomes outcomes;
 
-  private static TaskState deployed() {
-    return TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-        .alias("a1")
-        .build()
-        .withDeployment(
-            new Deployment(
-                1,
-                List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                1,
-                "digest"));
+  @BeforeEach
+  void deployedTaskAndOutcomesOverIt() {
+    state = stateService().withRoot(root).build();
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+            .alias("a1")
+            .build()
+            .withDeployment(
+                new Deployment(
+                    1,
+                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
+                    1,
+                    "digest")));
+    outcomes =
+        new CheckerOutcomes(
+            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+            mock(StepRelay.class),
+            new FlowReports(
+                state,
+                Clock.systemUTC(),
+                new Checkers(new TaskChart(Composition.builtIn())),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
+            mock(TaskStops.class),
+            state);
   }
 
   @Test
-  void endsTheCheckDeclinedAndAsksNobodyWhereAcceptanceHasNoDispute(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask("ABC-42", deployed());
-
+  void endsTheCheckDeclinedAndAsksNobodyWhereAcceptanceHasNoDispute() {
     AcceptanceEnding ending =
-        new CheckerOutcomes(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                mock(StepRelay.class),
-                new FlowReports(
-                    state,
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn())),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                mock(TaskStops.class),
-                state)
+        outcomes
             .declined("ABC-42", new AcceptanceDecline("proj@0123456789abcdef", "", ""), false);
 
     assertThat(ending).isEqualTo(AcceptanceEnding.DECLINED);
@@ -74,28 +70,9 @@ class AcceptanceDeclineFlowTest {
   }
 
   @Test
-  void putsFirstDisputeAsQuestionWhichTheMasterInActAnswersBeforeTheHuman(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask("ABC-42", deployed());
-
+  void putsFirstDisputeAsQuestionWhichTheMasterInActAnswersBeforeTheHuman() {
     AcceptanceEnding ending =
-        new CheckerOutcomes(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                mock(StepRelay.class),
-                new FlowReports(
-                    state,
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn())),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                mock(TaskStops.class),
-                state)
+        outcomes
             .declined(
                 "ABC-42",
                 new AcceptanceDecline("proj@0123456789abcdef", "", "GET /list still unsorted"),
@@ -109,28 +86,9 @@ class AcceptanceDeclineFlowTest {
   }
 
   @Test
-  void putsSecondDisputeWhereOnlyTheHumanAnswersIt(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask("ABC-42", deployed());
-
+  void putsSecondDisputeWhereOnlyTheHumanAnswersIt() {
     AcceptanceEnding ending =
-        new CheckerOutcomes(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                mock(StepRelay.class),
-                new FlowReports(
-                    state,
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn())),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                mock(TaskStops.class),
-                state)
+        outcomes
             .declined(
                 "ABC-42",
                 new AcceptanceDecline(
@@ -142,28 +100,9 @@ class AcceptanceDeclineFlowTest {
   }
 
   @Test
-  void dropsDisputeOnShaThatIsNoLongerTheDeployTip(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask("ABC-42", deployed());
-
+  void dropsDisputeOnShaThatIsNoLongerTheDeployTip() {
     AcceptanceEnding ending =
-        new CheckerOutcomes(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                mock(StepRelay.class),
-                new FlowReports(
-                    state,
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn())),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                mock(TaskStops.class),
-                state)
+        outcomes
             .declined("ABC-42", new AcceptanceDecline("proj@fedcba9876543210", "", "x"), false);
 
     assertThat(ending).isEqualTo(AcceptanceEnding.DROPPED);

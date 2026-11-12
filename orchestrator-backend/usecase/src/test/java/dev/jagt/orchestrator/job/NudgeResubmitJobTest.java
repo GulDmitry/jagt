@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -7,12 +8,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskTurns;
@@ -21,29 +19,28 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import java.nio.file.Path;
 import java.time.Clock;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class NudgeResubmitJobTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  @TempDir Path root;
+  private final AgentSessions sessions = mock(AgentSessions.class);
+  private StateService state;
+  private TaskTurns turns;
+
+  @BeforeEach
+  void stateAndTurnsOverIt() {
+    state = stateService().withRoot(root).build();
+    turns =
+        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+  }
 
   @Test
-  void marksTheTurnWhenItPressesEnterOnNudgeLeftInAnIdleInput(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskTurns turns =
-        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+  void marksTheTurnWhenItPressesEnterOnNudgeLeftInAnIdleInput() {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
-    AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.resubmitUnsentNudge("ABC-42")).thenReturn(true);
 
     new NudgeResubmitJob(sessions, turns).runOn(state.tasks());
@@ -52,20 +49,9 @@ class NudgeResubmitJobTest {
   }
 
   @Test
-  void stopsPressingAfterFewTimesWithinOneTurn(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskTurns turns =
-        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+  void stopsPressingAfterFewTimesWithinOneTurn() {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
-    AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.resubmitUnsentNudge("ABC-42")).thenReturn(true);
     NudgeResubmitJob job = new NudgeResubmitJob(sessions, turns);
 
@@ -77,24 +63,13 @@ class NudgeResubmitJobTest {
   }
 
   @Test
-  void pressesNothingWhileTheTaskStandsStopped(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskTurns turns =
-        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+  void pressesNothingWhileTheTaskStandsStopped() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .stop(new TaskStop(TaskStop.Trigger.PACE, 1, "evidence", null, null))
             .build());
     turns.opened("ABC-42", "round", "digest", TaskStatus.REVIEWED);
-    AgentSessions sessions = mock(AgentSessions.class);
     when(sessions.resubmitUnsentNudge("ABC-42")).thenReturn(true);
 
     new NudgeResubmitJob(sessions, turns).runOn(state.tasks());
@@ -103,23 +78,10 @@ class NudgeResubmitJobTest {
   }
 
   @Test
-  void readsNoWindowOfTaskWhoseTurnTheSessionDoesNotHold(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void readsNoWindowOfTaskWhoseTurnTheSessionDoesNotHold() {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    AgentSessions sessions = mock(AgentSessions.class);
 
-    new NudgeResubmitJob(
-            sessions,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+    new NudgeResubmitJob(sessions, turns).runOn(state.tasks());
 
     verify(sessions, never()).resubmitUnsentNudge("ABC-42");
   }
