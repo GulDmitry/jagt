@@ -68,6 +68,14 @@ A task session on OpenCode was not tried: a session asks more of the model than 
 
 The stand runs the 9B for the ticket rewrite only: one mutation scenario passed in 3 min 16 s with swap flat.
 
+## Speed, not yet measured here
+
+Reported 2026-11-12 for another engine on an 8 GB discrete GPU:
+
+- Speculative decoding gave 1.3–1.6×, best on code and repeated text; llama.cpp's is `--spec-type`, an `ngram-*` type needing no draft model.
+- A cached shared prefix cut time to first token from 13.3 s to 6.1 s; llama-server caches prompts by default, `--cache-reuse N` reuses chunks.
+- Moving experts or the KV cache between VRAM, RAM and SSD needs a discrete GPU; unified memory gains nothing from it.
+
 ## OpenCode notes
 
 Measured 2026-11-05, opencode 2.2.5, for a machine whose model passes the role evals:
