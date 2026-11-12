@@ -54,7 +54,7 @@ clock or random value; one of outside state (a git repo) may write.
   anything competing for a **machine-wide** resource declares it (`@ResourceLock("loopback-ports")` +
   `@Execution(SAME_THREAD)`). Only this suite is parallel; it runs in English and UTC, as production does.
 - **A test that asserts on a log line takes `@ResourceLock(Resources.GLOBAL)`**: else its appender captures a
-  concurrent test's events and the `Logger` cast races SLF4J's start-up.
+  concurrent test's events and the `Logger` cast races SLF4J's start-up (`LogCaptureTest`).
 - **A flaky test is a defect, fixed when first seen**: a red a rerun turns green is never waved through. Its cause is
   found before the next commit (a race gets a fix and a `docs/cases.md` row); never a longer wait, a retry or `@Disabled`.
 

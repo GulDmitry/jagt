@@ -22,6 +22,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
@@ -91,6 +93,7 @@ class ChargedReviewsTest {
   }
 
   @Test
+  @ResourceLock(Resources.GLOBAL)
   void logsEachChargedCallWithItsKind() {
     RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
     when(assistants.reviewer().review(round)).thenReturn(Answer.unavailable());

@@ -18,6 +18,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.slf4j.LoggerFactory;
 
 class ScenarioWindowsTest {
@@ -95,6 +97,7 @@ class ScenarioWindowsTest {
   }
 
   @Test
+  @ResourceLock(Resources.GLOBAL)
   void logsGoneOnceWhereTheWindowClosesAfterRunning() {
     opened("p0");
 
@@ -110,6 +113,7 @@ class ScenarioWindowsTest {
   }
 
   @Test
+  @ResourceLock(Resources.GLOBAL)
   void logsFinishedWithWhatTheAgentPrintedWhereItLeavesItsShellAfterRunning() {
     opened("p1");
     when(hosts.exitTail("jagt", "acceptance-p1")).thenReturn(Optional.of("Goodbye"));
@@ -123,6 +127,7 @@ class ScenarioWindowsTest {
   }
 
   @Test
+  @ResourceLock(Resources.GLOBAL)
   void namesNoCauseWhereTheAgentPrintedNothingOnItsWayOut() {
     opened("p2");
     when(hosts.exitTail("jagt", "acceptance-p2")).thenReturn(Optional.of("  "));
@@ -136,6 +141,7 @@ class ScenarioWindowsTest {
   }
 
   @Test
+  @ResourceLock(Resources.GLOBAL)
   void logsFailedWhereTheAgentLeavesItsShellWithoutEverRunning() {
     opened("p3");
 
@@ -146,6 +152,7 @@ class ScenarioWindowsTest {
   }
 
   @Test
+  @ResourceLock(Resources.GLOBAL)
   void logsNothingWhereTheWindowIsNotYetThereToRead() {
     opened("p4");
 

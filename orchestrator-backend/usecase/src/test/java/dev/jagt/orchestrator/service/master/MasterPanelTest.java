@@ -39,6 +39,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
@@ -1332,6 +1334,7 @@ class MasterPanelTest {
   }
 
   @Test
+  @ResourceLock(Resources.GLOBAL)
   void namesWhyAndOverWhatRoundWasReadInTheLog(@TempDir Path worktree) {
     final ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
@@ -1364,6 +1367,7 @@ class MasterPanelTest {
   }
 
   @Test
+  @ResourceLock(Resources.GLOBAL)
   void namesPlanReadAsSuchInTheLog(@TempDir Path worktree) {
     final ChargedReviews reviews = mock(ChargedReviews.class);
     MasterBriefs briefs = mock(MasterBriefs.class);
