@@ -17,6 +17,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class IdeDiffTest {
@@ -25,14 +26,18 @@ class IdeDiffTest {
   private final ConfigService config = mock(ConfigService.class);
   private final DiffCheckouts diffs = mock(DiffCheckouts.class);
 
+  @BeforeEach
+  void checkoutsOfBaseAndCleanWorktree() {
+    when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
+    when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any()))
+        .thenReturn(Path.of("/tmp/clean"));
+  }
+
   @Test
   void showsTheChangeAgainstTheBaseBranchWhenTheHumanAsksForDiff() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(config.project("proj"))
         .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
-    when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
-    when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any()))
-        .thenReturn(Path.of("/tmp/clean"));
 
     String opened = new IdeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
 
@@ -45,12 +50,9 @@ class IdeDiffTest {
 
   @Test
   void diffsAgainstWhatTheRequestTargetsRatherThanWhereDeployLands() {
-    final TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
+    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
     when(config.project("proj"))
         .thenReturn(new ProjectConfig("/repo", "origin/release/stage", "dev", List.of()));
-    when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
-    when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any()))
-        .thenReturn(Path.of("/tmp/clean"));
 
     new IdeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
 
@@ -68,9 +70,6 @@ class IdeDiffTest {
         .thenReturn(new ProjectConfig("/api-repo", "origin/main", "dev", List.of()));
     when(config.project("web"))
         .thenReturn(new ProjectConfig("/web-repo", "origin/next", "dev", List.of()));
-    when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
-    when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any()))
-        .thenReturn(Path.of("/tmp/clean"));
 
     String opened = new IdeDiff(new DiffBases(config), diffs, editor).open("ABC-1", task);
 

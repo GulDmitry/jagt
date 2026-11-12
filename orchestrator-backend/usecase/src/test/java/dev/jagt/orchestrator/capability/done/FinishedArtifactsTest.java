@@ -1,14 +1,14 @@
 package dev.jagt.orchestrator.capability.done;
 
+import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -25,29 +25,55 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 class FinishedArtifactsTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  @TempDir Path root;
+
+  private OrchestratorPaths paths;
+  private StateService state;
+  private ConfigService config;
+  private Path worktree;
+  private TaskState task;
+  private FinishedArtifacts artifacts;
+
+  @BeforeEach
+  void finishedTaskWithAnEmptyWorktree() throws Exception {
+    paths = orchestratorPaths().withRoot(root).build();
+    state = stateService().withRoot(root).build();
+    config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
+    worktree = root.resolve("ABC-42-proj");
+    Files.createDirectories(worktree);
+    task =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
+            .alias("a1")
+            .title("a thing")
+            .build();
+    state.putTask("ABC-42", task);
+    artifacts =
+        new FinishedArtifacts(
+            state,
+            paths,
+            Clock.fixed(Instant.parse("2026-10-28T10:15:30Z"), ZoneOffset.UTC),
+            config,
+            new JsonMapper());
+  }
 
   @Test
-  void keepsTheDocumentsAndTheRecordOfFinishedTaskWhereHumanCanStillReadThem(@TempDir Path root)
-      throws Exception {
+  void keepsTheDocumentsAndTheRecordOfFinishedTaskWhereHumanCanStillReadThem() throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    Path worktree = root.resolve("ABC-42-proj");
-    Files.createDirectories(worktree);
     Files.writeString(worktree.resolve("plan.md"), "the plan");
     Files.writeString(worktree.resolve("review_replies.md"), "the replies");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    TaskState task =
+    TaskState spent =
         TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
             .alias("a1")
             .title("a thing")
@@ -55,21 +81,9 @@ class FinishedArtifactsTest {
             .agentSpend(
                 new AgentSpend(TokenUsage.ofCall(30, 5, 20, 2.0), Map.of("/logs/a.jsonl", 9L)))
             .build();
-    state.putTask("ABC-42", task);
-    ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
+    state.putTask("ABC-42", spent);
 
-    new FinishedArtifacts(
-            state,
-            paths,
-            Clock.fixed(Instant.parse("2026-10-28T10:15:30Z"), ZoneOffset.UTC),
-            config,
-            new JsonMapper())
-        .keep(FinishedTask.of("ABC-42", task, 1L));
+    artifacts.keep(FinishedTask.of("ABC-42", spent, 1L));
 
     Path kept = root.resolve("archive/261028-101530-ABC-42");
     assertThat(kept.resolve("plan.md")).hasContent("the plan");
@@ -83,36 +97,10 @@ class FinishedArtifactsTest {
   }
 
   @Test
-  void keepsTheRecordOfTaskThatLeftNoDocumentBehind(@TempDir Path root) throws Exception {
+  void keepsTheRecordOfTaskThatLeftNoDocumentBehind() throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    Path worktree = root.resolve("ABC-42-proj");
-    Files.createDirectories(worktree);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
-            .alias("a1")
-            .title("a thing")
-            .build();
-    state.putTask("ABC-42", task);
-    ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
 
-    new FinishedArtifacts(
-            state,
-            paths,
-            Clock.fixed(Instant.parse("2026-10-28T10:15:30Z"), ZoneOffset.UTC),
-            config,
-            new JsonMapper())
-        .keep(FinishedTask.of("ABC-42", task, 1L));
+    artifacts.keep(FinishedTask.of("ABC-42", task, 1L));
 
     Path kept = root.resolve("archive/261028-101530-ABC-42");
     assertThat(kept.resolve("finished.json")).exists();
@@ -120,38 +108,11 @@ class FinishedArtifactsTest {
   }
 
   @Test
-  void keepsLineNamingDocumentPastTheSizeLimitInsteadOfTheDocument(@TempDir Path root)
-      throws Exception {
+  void keepsLineNamingDocumentPastTheSizeLimitInsteadOfTheDocument() throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    Path worktree = root.resolve("ABC-42-proj");
-    Files.createDirectories(worktree);
     Files.write(worktree.resolve("plan.md"), new byte[10 * 1024 * 1024 + 1]);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
-            .alias("a1")
-            .title("a thing")
-            .build();
-    state.putTask("ABC-42", task);
-    ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
 
-    new FinishedArtifacts(
-            state,
-            paths,
-            Clock.fixed(Instant.parse("2026-10-28T10:15:30Z"), ZoneOffset.UTC),
-            config,
-            new JsonMapper())
-        .keep(FinishedTask.of("ABC-42", task, 1L));
+    artifacts.keep(FinishedTask.of("ABC-42", task, 1L));
 
     Path kept = root.resolve("archive/261028-101530-ABC-42");
     assertThat(kept.resolve("plan.md")).doesNotExist();
@@ -160,40 +121,14 @@ class FinishedArtifactsTest {
   }
 
   @Test
-  void keepsDocumentExactlyAsLargeAsTheSizeLimit(@TempDir Path root) throws Exception {
-    Path worktree = root.resolve("ABC-42-proj");
-    Files.createDirectories(worktree);
+  void keepsDocumentExactlyAsLargeAsTheSizeLimit() throws Exception {
     try (RandomAccessFile plan = new RandomAccessFile(worktree.resolve("plan.md").toFile(), "rw")) {
       plan.setLength(10L * 1024 * 1024);
     }
     Files.writeString(
         root.resolve("jagt.yml"), "orchestrator:\n  archive:\n    maxMegabytes: 50\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
-            .alias("a1")
-            .title("a thing")
-            .build();
-    state.putTask("ABC-42", task);
-    ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
 
-    new FinishedArtifacts(
-            state,
-            paths,
-            Clock.fixed(Instant.parse("2026-10-28T10:15:30Z"), ZoneOffset.UTC),
-            config,
-            new JsonMapper())
-        .keep(FinishedTask.of("ABC-42", task, 1L));
+    artifacts.keep(FinishedTask.of("ABC-42", task, 1L));
 
     Path kept = root.resolve("archive/261028-101530-ABC-42");
     assertThat(kept.resolve("plan.md")).hasSize(10L * 1024 * 1024);
@@ -201,28 +136,8 @@ class FinishedArtifactsTest {
   }
 
   @Test
-  void keepsEverySnapshotOfTaskDoneTwiceTheSameDay(@TempDir Path root) throws Exception {
+  void keepsEverySnapshotOfTaskDoneTwiceTheSameDay() throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    Path worktree = root.resolve("ABC-42-proj");
-    Files.createDirectories(worktree);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
-            .alias("a1")
-            .title("a thing")
-            .build();
-    state.putTask("ABC-42", task);
-    ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
     Files.writeString(worktree.resolve("plan.md"), "the first plan");
     new FinishedArtifacts(
             state,
@@ -246,79 +161,26 @@ class FinishedArtifactsTest {
   }
 
   @Test
-  void dropsTheOldestSnapshotAndKeepsTheNewestOncePastTheByteBudget(@TempDir Path root)
-      throws Exception {
+  void dropsTheOldestSnapshotAndKeepsTheNewestOncePastTheByteBudget() throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  archive:\n    maxMegabytes: 1\n");
     Files.createDirectories(root.resolve("archive/260101-000000-ABC-1"));
     Files.write(root.resolve("archive/260101-000000-ABC-1/plan.md"), new byte[700 * 1024]);
-    Path worktree = root.resolve("ABC-42-proj");
-    Files.createDirectories(worktree);
     Files.write(worktree.resolve("plan.md"), new byte[700 * 1024]);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
-            .alias("a1")
-            .title("a thing")
-            .build();
-    state.putTask("ABC-42", task);
-    ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
 
-    new FinishedArtifacts(
-            state,
-            paths,
-            Clock.fixed(Instant.parse("2026-10-28T10:15:30Z"), ZoneOffset.UTC),
-            config,
-            new JsonMapper())
-        .keep(FinishedTask.of("ABC-42", task, 1L));
+    artifacts.keep(FinishedTask.of("ABC-42", task, 1L));
 
     assertThat(root.resolve("archive/260101-000000-ABC-1")).doesNotExist();
     assertThat(root.resolve("archive/261028-101530-ABC-42/plan.md")).exists();
   }
 
   @Test
-  void dropsAnOlderZipBeforeAnySnapshotOncePastTheByteBudget(@TempDir Path root) throws Exception {
+  void dropsAnOlderZipBeforeAnySnapshotOncePastTheByteBudget() throws Exception {
     Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  archive:\n    maxMegabytes: 1\n");
     Files.createDirectories(root.resolve("archive/260101-000000-ABC-1"));
     Files.write(root.resolve("archive/260101-000000-ABC-1/plan.md"), new byte[400 * 1024]);
     Files.write(root.resolve("archive/archive-20250101-0000.zip"), new byte[700 * 1024]);
-    Path worktree = root.resolve("ABC-42-proj");
-    Files.createDirectories(worktree);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
-            .alias("a1")
-            .title("a thing")
-            .build();
-    state.putTask("ABC-42", task);
-    ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
 
-    new FinishedArtifacts(
-            state,
-            paths,
-            Clock.fixed(Instant.parse("2026-10-28T10:15:30Z"), ZoneOffset.UTC),
-            config,
-            new JsonMapper())
-        .keep(FinishedTask.of("ABC-42", task, 1L));
+    artifacts.keep(FinishedTask.of("ABC-42", task, 1L));
 
     assertThat(root.resolve("archive/archive-20250101-0000.zip")).doesNotExist();
     assertThat(root.resolve("archive/260101-000000-ABC-1/plan.md")).exists();

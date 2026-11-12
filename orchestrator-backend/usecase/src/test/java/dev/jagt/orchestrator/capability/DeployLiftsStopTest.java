@@ -1,23 +1,12 @@
 package dev.jagt.orchestrator.capability;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
+import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Arbiter;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.StopAnnouncements;
-import dev.jagt.orchestrator.service.StopLog;
-import dev.jagt.orchestrator.service.StopPolicy;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.Master;
@@ -28,40 +17,31 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import tools.jackson.databind.json.JsonMapper;
 
 class DeployLiftsStopTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  @TempDir Path root;
 
-  private final Clock clock = Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC);
+  final Clock clock = Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC);
+  StateService state;
+  TaskStops stops;
+
+  @BeforeEach
+  void stopsOverStateInTheTempRoot() {
+    state = stateService().withRoot(root).build();
+    stops = taskStops().withRoot(root).build(state, clock);
+  }
 
   @ParameterizedTest
   @EnumSource(
       value = ActionOrigin.class,
       names = {"BOARD", "PALETTE"})
-  void deployedTaskIsCheckedAgainWhenHumanDeployedItPastStop(
-      ActionOrigin human, @TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
+  void deployedTaskIsCheckedAgainWhenHumanDeployedItPastStop(ActionOrigin human) {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
-    TaskStops stops =
-        new TaskStops(
-            new StopPolicy(
-                ignored -> Arbiter.Profile.OFF,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
-            state,
-            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "ships without a new note");
     DeployLiftsStop lifter = new DeployLiftsStop(stops);
 
@@ -85,23 +65,8 @@ class DeployLiftsStopTest {
   @EnumSource(
       value = ActionOrigin.class,
       names = {"MASTER", "JAGT", "MCP", "AUTO_REVIEW", "TRACKER"})
-  void deployedTaskKeepsItsStopWhenNoHumanDeployedIt(ActionOrigin other, @TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
+  void deployedTaskKeepsItsStopWhenNoHumanDeployedIt(ActionOrigin other) {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).build());
-    TaskStops stops =
-        new TaskStops(
-            new StopPolicy(
-                ignored -> Arbiter.Profile.OFF,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
-            state,
-            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     stops.stop("ABC-42", TaskStop.Trigger.SHIPS, "ships without a new note");
     DeployLiftsStop lifter = new DeployLiftsStop(stops);
 
@@ -114,28 +79,12 @@ class DeployLiftsStopTest {
   @EnumSource(
       value = ActionOrigin.class,
       names = {"BOARD", "PALETTE"})
-  void humansDeployRestoresTheMastersLiftWhereNoStopStands(
-      ActionOrigin human, @TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
+  void humansDeployRestoresTheMastersLiftWhereNoStopStands(ActionOrigin human) {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
             .master(Master.defaults().withLiftedStops(1))
             .build());
-    TaskStops stops =
-        new TaskStops(
-            new StopPolicy(
-                ignored -> Arbiter.Profile.OFF,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
-            state,
-            clock, new FlowRules(new TaskChart(Composition.builtIn())));
     DeployLiftsStop lifter = new DeployLiftsStop(stops);
 
     OriginContext.as(human, () -> lifter.around("ABC-42", () -> Outcome.ok("deployed")));

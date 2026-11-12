@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -10,12 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.service.RepoDeparture;
@@ -28,28 +24,25 @@ import dev.jagt.orchestrator.task.TokenUsage;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class RepoRemovalTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  @TempDir Path root;
 
   private final CodeHost host = mock(CodeHost.class);
   private final RepoDeparture departure = mock(RepoDeparture.class);
+  private StateService state;
+
+  @BeforeEach
+  void stateOverTheTempRoot() {
+    state = stateService().withRoot(root).build();
+  }
 
   @Test
-  void closesTheRequestOnItsHostThenTakesTheRepositoryOutOfTheTask(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+  void closesTheRequestOnItsHostThenTakesTheRepositoryOutOfTheTask() {
     TaskRepo web = new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web");
     state.putTask(
         "ABC-42",
@@ -67,15 +60,7 @@ class RepoRemovalTest {
   }
 
   @Test
-  void takesRepositoryWithNoRequestOutWithoutAskingHost(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+  void takesRepositoryWithNoRequestOutWithoutAskingHost() {
     TaskRepo web = TaskRepo.of("web", "/web-wt");
     state.putTask(
         "ABC-42",
@@ -90,15 +75,7 @@ class RepoRemovalTest {
   }
 
   @Test
-  void leavesTheRepositoryOnTheTaskAndNamesTheHostsCauseWhenTheCloseFails(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+  void leavesTheRepositoryOnTheTaskAndNamesTheHostsCauseWhenTheCloseFails() {
     state.putTask(
         "ABC-42",
         TaskState.builder(
@@ -119,15 +96,7 @@ class RepoRemovalTest {
   }
 
   @Test
-  void closesNothingForRequestTheHostMerged(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+  void closesNothingForRequestTheHostMerged() {
     state.putTask(
         "ABC-42",
         TaskState.builder(

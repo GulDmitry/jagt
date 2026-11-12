@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -9,13 +10,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.capability.deploy.GitCaseFacts;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DeployTargets;
@@ -25,33 +21,32 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class HandOffCapabilityTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  @TempDir Path root;
 
-  @Test
-  void saysTheSessionTheCaseOfEachRepositoryItStandsIn(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  ConfigService config = mock(ConfigService.class);
+  AgentSessions sessions = mock(AgentSessions.class);
+  StateService state;
+
+  @BeforeEach
+  void deployedTaskOfProjectProj() {
+    state = stateService().withRoot(root).build();
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
-    ConfigService config = mock(ConfigService.class);
     when(config.project("proj"))
         .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
+  }
+
+  @Test
+  void saysTheSessionTheCaseOfEachRepositoryItStandsIn() {
     GitCaseFacts facts = mock(GitCaseFacts.class);
     when(facts.cases(Path.of("/repo"), "ABC-1", "proj", "dev"))
         .thenReturn(List.of("proj: the deploy worktree waits; run `git merge origin/dev` in it"));
-    AgentSessions sessions = mock(AgentSessions.class);
     HandOffCapability capability =
         new HandOffCapability(state, new DeployTargets(config), facts, sessions);
 
@@ -66,21 +61,7 @@ class HandOffCapabilityTest {
   }
 
   @Test
-  void refusesAndSaysNothingWhereNoRepositoryStandsInGitCase(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask(
-        "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
-    ConfigService config = mock(ConfigService.class);
-    when(config.project("proj"))
-        .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
-    AgentSessions sessions = mock(AgentSessions.class);
+  void refusesAndSaysNothingWhereNoRepositoryStandsInGitCase() {
     HandOffCapability capability =
         new HandOffCapability(state, new DeployTargets(config), mock(GitCaseFacts.class), sessions);
 
