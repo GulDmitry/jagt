@@ -18,27 +18,19 @@ class FinishedCommandTest {
 
   private static final long HOUR = 3_600_000L;
 
+  private final TaskState startedThenDone =
+      TaskState.builder("proj", "/wt", TaskStatus.DONE)
+          .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 0, null)))
+          .build();
+
   @Test
   void givesTheMedianTimeFinishedTaskTook() {
-    TaskState oneHour =
-        TaskState.builder("proj", "/wt", TaskStatus.DONE)
-            .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 0, null)))
-            .build();
-    TaskState twoHours =
-        TaskState.builder("proj", "/wt", TaskStatus.DONE)
-            .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 0, null)))
-            .build();
-    TaskState nineHours =
-        TaskState.builder("proj", "/wt", TaskStatus.DONE)
-            .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 0, null)))
-            .build();
-
     String report =
         FinishedCommand.render(
             List.of(
-                FinishedTask.of("ABC-1", oneHour, HOUR),
-                FinishedTask.of("ABC-2", twoHours, 2 * HOUR),
-                FinishedTask.of("ABC-3", nineHours, 9 * HOUR)));
+                FinishedTask.of("ABC-1", startedThenDone, HOUR),
+                FinishedTask.of("ABC-2", startedThenDone, 2 * HOUR),
+                FinishedTask.of("ABC-3", startedThenDone, 9 * HOUR)));
 
     assertThat(report).contains("median 2h");
   }
@@ -111,20 +103,11 @@ class FinishedCommandTest {
 
   @Test
   void writesMinusForTaskWhoseDurationIsUnknownAndCountsItInNoMedian() {
-    TaskState unknown =
-        TaskState.builder("proj", "/wt", TaskStatus.DONE)
-            .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 0, null)))
-            .build();
-    TaskState twoHours =
-        TaskState.builder("proj", "/wt", TaskStatus.DONE)
-            .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 0, null)))
-            .build();
-
     String report =
         FinishedCommand.render(
             List.of(
-                FinishedTask.of("ABC-1", unknown, 0),
-                FinishedTask.of("ABC-2", twoHours, 2 * HOUR)));
+                FinishedTask.of("ABC-1", startedThenDone, 0),
+                FinishedTask.of("ABC-2", startedThenDone, 2 * HOUR)));
 
     assertThat(report).contains("  ABC-1          -         0 rounds").contains("median 2h");
   }

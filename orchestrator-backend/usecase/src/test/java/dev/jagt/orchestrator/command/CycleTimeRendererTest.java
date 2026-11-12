@@ -9,12 +9,30 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class CycleTimeRendererTest {
 
   private static final long HOUR = 3_600_000L;
   private static final long NOW = 1_700_000_000_000L;
+
+  private final TaskState pollingSince5h =
+      TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+          .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 5 * HOUR, null)))
+          .build();
+  private final TaskState pollingSince3h =
+      TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+          .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 3 * HOUR, null)))
+          .build();
+  private final TaskState pollingSince5hAndAgain4h =
+      TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+          .history(
+              List.of(
+                  new StatusChange(TaskStatus.CI_POLLING, NOW - 5 * HOUR, null),
+                  new StatusChange(TaskStatus.CI_POLLING, NOW - 4 * HOUR, null)))
+          .build();
 
   @Test
   void chargesEachStepToWhoeverOwnedTheStatusItWasSpentIn() {
@@ -84,42 +102,11 @@ class CycleTimeRendererTest {
   }
 
   @Test
-  void marksTheFiguresAsFloorsForTaskWhoseOldestStepsHaveAgedOut() {
-    List<StatusChange> fifty =
-        IntStream.range(0, 50)
-            .mapToObj(
-                step -> new StatusChange(TaskStatus.CI_POLLING, NOW - (50 - step) * HOUR, null))
-            .toList();
-
-    String out =
-        new CycleTimeRenderer()
-            .render(
-                Map.of(
-                    "ABC-1",
-                    TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).history(fifty).build()),
-                NOW);
-
-    assertThat(out.lines().filter(line -> line.startsWith("ABC-1")).findFirst().orElseThrow())
-        .contains("2d+")
-        .endsWith("50+");
-    assertThat(out).contains("aged out of its history");
-  }
-
-  @Test
   void addsTheRoundsUpAcrossTasksAndGivesTheAverageInWords() {
     Map<String, TaskState> tasks =
         Map.of(
-            "ABC-1",
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .history(
-                        List.of(
-                            new StatusChange(TaskStatus.CI_POLLING, NOW - 5 * HOUR, null),
-                            new StatusChange(TaskStatus.CI_POLLING, NOW - 4 * HOUR, null)))
-                    .build(),
-            "ABC-2",
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 3 * HOUR, null)))
-                    .build());
+            "ABC-1", pollingSince5hAndAgain4h,
+            "ABC-2", pollingSince3h);
 
     String out = new CycleTimeRenderer().render(tasks, NOW);
 
@@ -203,14 +190,8 @@ class CycleTimeRendererTest {
   void addsUpCodeHostTimeAcrossTasksAndNamesTheCodeHostAsSlowest() {
     Map<String, TaskState> tasks =
         Map.of(
-            "ABC-1",
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 3 * HOUR, null)))
-                    .build(),
-            "ABC-2",
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 5 * HOUR, null)))
-                    .build());
+            "ABC-1", pollingSince3h,
+            "ABC-2", pollingSince5h);
 
     String out = new CycleTimeRenderer().render(tasks, NOW);
 
@@ -226,10 +207,7 @@ class CycleTimeRendererTest {
   void leavesTaskWithoutHistoryOutOfTheTableAndTheAverage() {
     Map<String, TaskState> tasks =
         Map.of(
-            "ABC-1",
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 3 * HOUR, null)))
-                    .build(),
+            "ABC-1", pollingSince3h,
             "ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).history(List.of()).build());
 
     String out = new CycleTimeRenderer().render(tasks, NOW);
@@ -241,17 +219,8 @@ class CycleTimeRendererTest {
   void totalsTheRoundsOfAllTasksAsPositiveNumber() {
     Map<String, TaskState> tasks =
         Map.of(
-            "ABC-1",
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .history(
-                        List.of(
-                            new StatusChange(TaskStatus.CI_POLLING, NOW - 5 * HOUR, null),
-                            new StatusChange(TaskStatus.CI_POLLING, NOW - 4 * HOUR, null)))
-                    .build(),
-            "ABC-2",
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 3 * HOUR, null)))
-                    .build());
+            "ABC-1", pollingSince5hAndAgain4h,
+            "ABC-2", pollingSince3h);
 
     String out = new CycleTimeRenderer().render(tasks, NOW);
 
@@ -264,38 +233,56 @@ class CycleTimeRendererTest {
   void marksNoFigureAsFloorWhileNoTaskHasLostItsOldestSteps() {
     Map<String, TaskState> tasks =
         Map.of(
-            "ABC-1",
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 5 * HOUR, null)))
-                    .build(),
-            "ABC-2",
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 3 * HOUR, null)))
-                    .build());
+            "ABC-1", pollingSince5h,
+            "ABC-2", pollingSince3h);
 
     String out = new CycleTimeRenderer().render(tasks, NOW);
 
     assertThat(out).doesNotContain("+");
   }
 
-  @Test
-  void marksTheTotalAsFloorWhenOnlyTheSecondTaskLostItsOldestSteps() {
-    List<StatusChange> fifty =
-        IntStream.range(0, 50)
-            .mapToObj(
-                step -> new StatusChange(TaskStatus.CI_POLLING, NOW - (50 - step) * HOUR, null))
-            .toList();
-    Map<String, TaskState> tasks =
-        Map.of(
-            "ABC-1",
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 5 * HOUR, null)))
-                    .build(),
-            "ABC-2",
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).history(fifty).build());
+  @Nested
+  class WhenTheOldestStepsAgedOut {
 
-    String out = new CycleTimeRenderer().render(tasks, NOW);
+    private TaskState pollingFiftyTimes;
 
-    assertThat(out).contains("aged out of its history");
+    @BeforeEach
+    void taskHistoryHoldsFiftySteps() {
+      pollingFiftyTimes =
+          TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+              .history(
+                  IntStream.range(0, 50)
+                      .mapToObj(
+                          step ->
+                              new StatusChange(
+                                  TaskStatus.CI_POLLING, NOW - (50 - step) * HOUR, null))
+                      .toList())
+              .build();
+    }
+
+    @Test
+    void marksTheFiguresAsFloorsForTaskWhoseOldestStepsHaveAgedOut() {
+      String out =
+          new CycleTimeRenderer()
+              .render(
+                  Map.of("ABC-1", pollingFiftyTimes), NOW);
+
+      assertThat(out.lines().filter(line -> line.startsWith("ABC-1")).findFirst().orElseThrow())
+          .contains("2d+")
+          .endsWith("50+");
+      assertThat(out).contains("aged out of its history");
+    }
+
+    @Test
+    void marksTheTotalAsFloorWhenOnlyTheSecondTaskLostItsOldestSteps() {
+      Map<String, TaskState> tasks =
+          Map.of(
+              "ABC-1", pollingSince5h,
+              "ABC-2", pollingFiftyTimes);
+
+      String out = new CycleTimeRenderer().render(tasks, NOW);
+
+      assertThat(out).contains("aged out of its history");
+    }
   }
 }

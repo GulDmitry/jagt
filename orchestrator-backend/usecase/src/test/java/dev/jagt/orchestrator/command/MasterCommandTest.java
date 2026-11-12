@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.task.TokenUsage;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class MasterCommandTest {
@@ -25,20 +26,26 @@ class MasterCommandTest {
   private final OrchestratorPaths paths =
       new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/root"));
   private final MasterBriefs briefs = new MasterBriefs(paths, new SessionBrief(paths));
+  private ConfigService.ConfigFile.MasterConfig master =
+      new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
+  private MasterRecord.Seen seen = new MasterRecord.Seen(0, 0, 0, 0, 0, 0);
+  private MasterCommand command;
+
+  @BeforeEach
+  void masterJudgesAndHasSeenNothing() {
+    when(configService.load())
+        .thenAnswer(call -> ConfigService.ConfigFile.defaults().withMaster(master));
+    when(record.seen()).thenAnswer(call -> seen);
+    command = new MasterCommand(configService, usage, record, briefs);
+  }
 
   @Test
   void offersLessonForTheTaskYouRevertedAfterItPassed() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(1, 1, 0, 0, 1, 0));
+    seen = new MasterRecord.Seen(1, 1, 0, 0, 1, 0);
     when(record.latestDisagreement())
         .thenReturn(Optional.of(new MasterRecord.Disagreement("ABC-42", true)));
 
-    String report =
-        new MasterCommand(configService, mock(UsageTracker.class), record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report)
         .contains(
@@ -48,26 +55,17 @@ class MasterCommandTest {
 
   @Test
   void namesTheBriefItJudgesBy() {
-    ConfigService.ConfigFile.MasterConfig master =
-        new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
-    when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(master));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
 
-    String report = new MasterCommand(configService, usage, record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report).contains("judges by: /root/roles/master/brief.md");
   }
 
   @Test
   void saysHowToTurnItOnWhileTheMasterIsOff() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
+    master = new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null);
 
-    String report = new MasterCommand(configService, usage, record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report)
         .isEqualTo("master: off. To turn it on, set `orchestrator.roles.master.mode` to judge.");
@@ -75,14 +73,8 @@ class MasterCommandTest {
 
   @Test
   void saysJudgingMasterReadsAndPressesNothing() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
 
-    String report = new MasterCommand(configService, usage, record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report)
         .contains("master: judge — it reads and writes what it found; it presses nothing.");
@@ -90,71 +82,46 @@ class MasterCommandTest {
 
   @Test
   void saysAnActingMasterPressesTheButtonYouWould() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
+    master = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
 
-    String report = new MasterCommand(configService, usage, record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report).contains("master: act — it also presses the button you would have.");
   }
 
   @Test
   void namesTheModelTheMasterWasGiven() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, "opus", null, null)));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
+    master = new ConfigService.ConfigFile.MasterConfig("judge", null, "opus", null, null);
 
-    String report = new MasterCommand(configService, usage, record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report).contains("\n  model:     opus");
   }
 
   @Test
   void saysTheModelIsInheritedWhereNoneWasGiven() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
 
-    String report = new MasterCommand(configService, usage, record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report).contains("\n  model:     inherited from the agent CLI");
   }
 
   @Test
   void listsTheStepsYouKeptForYourself() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("ship", "deploy"), null)));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
+    master =
+        new ConfigService.ConfigFile.MasterConfig(
+            "act", null, null, List.of("ship", "deploy"), null);
 
-    String report = new MasterCommand(configService, usage, record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report).contains("\n  yours:     ship, deploy");
   }
 
   @Test
   void saysYouKeptNothingBeyondTheStepsNoMasterHolds() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null)));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
+    master = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(), null);
 
-    String report = new MasterCommand(configService, usage, record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report)
         .contains("\n  yours:     nothing — every step but `sweep`, `revert` and `done`");
@@ -162,28 +129,17 @@ class MasterCommandTest {
 
   @Test
   void staysSilentAboutWhatItJudgedBeforeItJudgedAnything() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
 
-    String report = new MasterCommand(configService, usage, record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report).doesNotContain("judged:");
   }
 
   @Test
   void saysYouDidTheSameWithEveryRoundItJudged() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(3, 2, 1, 0, 0, 0));
+    seen = new MasterRecord.Seen(3, 2, 1, 0, 0, 0);
 
-    String report = new MasterCommand(configService, usage, record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report)
         .contains(
@@ -194,14 +150,9 @@ class MasterCommandTest {
 
   @Test
   void countsHowYouDifferedFromWhatItJudged() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(5, 3, 0, 1, 1, 2));
+    seen = new MasterRecord.Seen(5, 3, 0, 1, 1, 2);
 
-    String report = new MasterCommand(configService, usage, record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report)
         .contains(
@@ -211,35 +162,23 @@ class MasterCommandTest {
 
   @Test
   void totalsWhatTheReviewCostSinceJagtStarted() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
     when(usage.sessionByKind())
         .thenReturn(Map.of(AssistantCallKind.MASTER_REVIEW, new TokenUsage(2, 1000, 0, 500, 1.25)));
 
-    String report = new MasterCommand(configService, usage, record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report).contains("\n  spent:     1.5k tokens, $1.25 since jagt started");
   }
 
   @Test
   void showsWhatTheReviewCostAsLowerBoundWhenAnUnpricedModelAnswered() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
-    when(record.seen()).thenReturn(new MasterRecord.Seen(0, 0, 0, 0, 0, 0));
     when(usage.sessionByKind())
         .thenReturn(
             Map.of(
                 AssistantCallKind.MASTER_REVIEW,
                 TokenUsage.ofCall(1000, 0, 500, 1.25).plus(TokenUsage.ofUnpricedCall(10, 0, 10))));
 
-    String report = new MasterCommand(configService, usage, record, briefs).run("");
+    String report = command.run("");
 
     assertThat(report).contains("tokens, ≥ $1.25 since jagt started");
   }

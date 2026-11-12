@@ -1,16 +1,14 @@
 package dev.jagt.orchestrator.command;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ReviewDrafts;
 import dev.jagt.orchestrator.service.Rounds;
@@ -22,19 +20,40 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class ReviewRepliesReportTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
-
+  @TempDir Path root;
   private final ConfigService config = mock(ConfigService.class);
+  private StateService state;
+  private ReviewRepliesReport report;
+
+  @BeforeEach
+  void reportReadsTheDraftsOfTheTasksInTheState() {
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    state = stateService().withRoot(root).build();
+    report =
+        new ReviewRepliesReport(
+            new TaskViews(
+                state,
+                config,
+                new Rounds(
+                    config,
+                    ignored -> false,
+                    () -> false,
+                    () -> false,
+                    new Checkers(new TaskChart(Composition.builtIn()))),
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
+            state,
+            new ReviewDrafts(config));
+  }
 
   @Test
-  void showsEachCommentWithTheVerdictAndTheReplyThatWillBeSentForIt(@TempDir Path root)
-      throws IOException {
+  void showsEachCommentWithTheVerdictAndTheReplyThatWillBeSentForIt() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(
         worktree.resolve("review_replies.md"),
@@ -47,37 +66,13 @@ class ReviewRepliesReportTest {
         > the canonical row count is wrong
         FIXED - Measured it and pinned the count.
         """);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
             .build());
 
-    String out =
-        new ReviewRepliesReport(
-                new TaskViews(
-                    state,
-                    config,
-                    new Rounds(
-                        config,
-                        ignored -> false,
-                        () -> false,
-                        () -> false,
-                        new Checkers(new TaskChart(Composition.builtIn()))),
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                state,
-                new ReviewDrafts(config))
-            .render("a1");
+    String out = report.render("a1");
 
     assertThat(out)
         .contains(
@@ -88,22 +83,12 @@ class ReviewRepliesReportTest {
   }
 
   @Test
-  void saysSoWhenTheRoundThoseRepliesWereWrittenForIsAlreadyShipped(@TempDir Path root)
-      throws IOException {
+  void saysSoWhenTheRoundThoseRepliesWereWrittenForIsAlreadyShipped() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.setLastModifiedTime(
         Files.writeString(
             worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n"),
         java.nio.file.attribute.FileTime.fromMillis(1_000));
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -111,122 +96,49 @@ class ReviewRepliesReportTest {
             .mrCreatedAt(2_000)
             .build());
 
-    String out =
-        new ReviewRepliesReport(
-                new TaskViews(
-                    state,
-                    config,
-                    new Rounds(
-                        config,
-                        ignored -> false,
-                        () -> false,
-                        () -> false,
-                        new Checkers(new TaskChart(Composition.builtIn()))),
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                state,
-                new ReviewDrafts(config))
-            .render("a1");
+    String out = report.render("a1");
 
     assertThat(out).contains("drafted in a round already shipped", "Renamed it.");
   }
 
   @Test
-  void keepsWhatTheAgentWroteOutsideThePrescribedShape(@TempDir Path root) throws IOException {
+  void keepsWhatTheAgentWroteOutsideThePrescribedShape() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(
         worktree.resolve("review_replies.md"),
         "the bot reviewed a stale diff of that file\n\n## thread 1\nFIXED - Renamed it.\n");
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
             .build());
 
-    String out =
-        new ReviewRepliesReport(
-                new TaskViews(
-                    state,
-                    config,
-                    new Rounds(
-                        config,
-                        ignored -> false,
-                        () -> false,
-                        () -> false,
-                        new Checkers(new TaskChart(Composition.builtIn()))),
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                state,
-                new ReviewDrafts(config))
-            .render("a1");
+    String out = report.render("a1");
 
     assertThat(out).contains("the bot reviewed a stale diff of that file");
   }
 
   @Test
-  void marksBlockWhoseVerdictTheAgentLeftOutRatherThanDroppingIt(@TempDir Path root)
-      throws IOException {
+  void marksBlockWhoseVerdictTheAgentLeftOutRatherThanDroppingIt() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(
         worktree.resolve("review_replies.md"),
         "## thread 1\n> the canonical row count is wrong\nMeasured it two rounds ago.\n");
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
             .build());
 
-    String out =
-        new ReviewRepliesReport(
-                new TaskViews(
-                    state,
-                    config,
-                    new Rounds(
-                        config,
-                        ignored -> false,
-                        () -> false,
-                        () -> false,
-                        new Checkers(new TaskChart(Composition.builtIn()))),
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                state,
-                new ReviewDrafts(config))
-            .render("a1");
+    String out = report.render("a1");
 
     assertThat(out).contains("  1 · no verdict · thread 1", "      Measured it two rounds ago.");
   }
 
   @Test
-  void saysNothingIsPostedUntilTheRoundIsShipped(@TempDir Path root) throws IOException {
+  void saysNothingIsPostedUntilTheRoundIsShipped() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -234,22 +146,7 @@ class ReviewRepliesReportTest {
             .title("Widget layout is off")
             .build());
 
-    String out =
-        new ReviewRepliesReport(
-                new TaskViews(
-                    state,
-                    config,
-                    new Rounds(
-                        config,
-                        ignored -> false,
-                        () -> false,
-                        () -> false,
-                        new Checkers(new TaskChart(Composition.builtIn()))),
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                state,
-                new ReviewDrafts(config))
-            .render("a1");
+    String out = report.render("a1");
 
     assertThat(out)
         .startsWith(
@@ -258,88 +155,31 @@ class ReviewRepliesReportTest {
   }
 
   @Test
-  void saysSoWhenTheNamedTaskHasDraftedNothing(@TempDir Path root) {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void saysSoWhenTheNamedTaskHasDraftedNothing() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("wt").toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
             .build());
 
-    String out =
-        new ReviewRepliesReport(
-                new TaskViews(
-                    state,
-                    config,
-                    new Rounds(
-                        config,
-                        ignored -> false,
-                        () -> false,
-                        () -> false,
-                        new Checkers(new TaskChart(Composition.builtIn()))),
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                state,
-                new ReviewDrafts(config))
-            .render("a1");
+    String out = report.render("a1");
 
     assertThat(out)
         .isEqualTo("a1 has no drafted replies — review_replies.md is not in its worktree.");
   }
 
   @Test
-  void refusesTaskItDoesNotKnow(@TempDir Path root) {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void refusesTaskItDoesNotKnow() {
 
-    String out =
-        new ReviewRepliesReport(
-                new TaskViews(
-                    state,
-                    config,
-                    new Rounds(
-                        config,
-                        ignored -> false,
-                        () -> false,
-                        () -> false,
-                        new Checkers(new TaskChart(Composition.builtIn()))),
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                state,
-                new ReviewDrafts(config))
-            .render("zz");
+    String out = report.render("zz");
 
     assertThat(out).isEqualTo("no task `zz`.");
   }
 
   @Test
-  void namedNoTaskItShowsEveryRoundThatIsHoldingDrafts(@TempDir Path root) throws IOException {
+  void namedNoTaskItShowsEveryRoundThatIsHoldingDrafts() throws IOException {
     Path drafting = Files.createDirectories(root.resolve("wt1"));
     Files.writeString(drafting.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", drafting.toString(), TaskStatus.REVIEW_PENDING)
@@ -351,67 +191,28 @@ class ReviewRepliesReportTest {
             .alias("a2")
             .build());
 
-    String out =
-        new ReviewRepliesReport(
-                new TaskViews(
-                    state,
-                    config,
-                    new Rounds(
-                        config,
-                        ignored -> false,
-                        () -> false,
-                        () -> false,
-                        new Checkers(new TaskChart(Composition.builtIn()))),
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                state,
-                new ReviewDrafts(config))
-            .render("");
+    String out = report.render("");
 
     assertThat(out).contains("review replies drafted for a1").doesNotContain("a2");
   }
 
   @Test
-  void saysWhenNoRoundAnywhereHasDraftedAnything(@TempDir Path root) {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void saysWhenNoRoundAnywhereHasDraftedAnything() {
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", root.resolve("wt").toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
             .build());
 
-    String out =
-        new ReviewRepliesReport(
-                new TaskViews(
-                    state,
-                    config,
-                    new Rounds(
-                        config,
-                        ignored -> false,
-                        () -> false,
-                        () -> false,
-                        new Checkers(new TaskChart(Composition.builtIn()))),
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                state,
-                new ReviewDrafts(config))
-            .render(null);
+    String out = report.render(null);
 
     assertThat(out)
         .isEqualTo("no drafted review replies: no task is carrying a review_replies.md.");
   }
 
   @Test
-  void showsOnlyTheNamedTasksDraftsAndNoBlankLineBetweenTheHeaderAndTheFirstComment(
-      @TempDir Path root) throws IOException {
+  void showsOnlyTheNamedTasksDraftsAndNoBlankLineBetweenTheHeaderAndTheFirstComment()
+      throws IOException {
     Path first = Files.createDirectories(root.resolve("wt1"));
     Path second = Files.createDirectories(root.resolve("wt2"));
     Files.writeString(
@@ -428,15 +229,6 @@ class ReviewRepliesReportTest {
         > second task comment
         FIXED - done in the second.
         """);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", first.toString(), TaskStatus.REVIEW_PENDING)
@@ -448,22 +240,7 @@ class ReviewRepliesReportTest {
             .alias("a2")
             .build());
 
-    String out =
-        new ReviewRepliesReport(
-                new TaskViews(
-                    state,
-                    config,
-                    new Rounds(
-                        config,
-                        ignored -> false,
-                        () -> false,
-                        () -> false,
-                        new Checkers(new TaskChart(Composition.builtIn()))),
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                state,
-                new ReviewDrafts(config))
-            .render("a2");
+    String out = report.render("a2");
 
     assertThat(out)
         .contains("nothing is posted until `ship a2`\n\n  1 · FIXED · src/Two.java:2")
@@ -471,41 +248,16 @@ class ReviewRepliesReportTest {
   }
 
   @Test
-  void saysNoRoundIsHoldingDraftsWhereTheFileHoldsOnlyBlankLines(@TempDir Path root)
-      throws IOException {
+  void saysNoRoundIsHoldingDraftsWhereTheFileHoldsOnlyBlankLines() throws IOException {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(worktree.resolve("review_replies.md"), "  \n\n");
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
             .build());
 
-    String out =
-        new ReviewRepliesReport(
-                new TaskViews(
-                    state,
-                    config,
-                    new Rounds(
-                        config,
-                        ignored -> false,
-                        () -> false,
-                        () -> false,
-                        new Checkers(new TaskChart(Composition.builtIn()))),
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                state,
-                new ReviewDrafts(config))
-            .render("");
+    String out = report.render("");
 
     assertThat(out)
         .isEqualTo("no drafted review replies: no task is carrying a review_replies.md.");

@@ -1,14 +1,11 @@
 package dev.jagt.orchestrator.command;
 
+import static dev.jagt.orchestrator.command.TestFinishedTaskBuilder.finishedTask;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.SubscriptionUsage;
 import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.service.StateService;
@@ -19,7 +16,6 @@ import dev.jagt.orchestrator.task.AgentSpend;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.CostPerAcceptedTask;
 import dev.jagt.orchestrator.task.FinishedTask;
-import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -31,65 +27,46 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import tools.jackson.databind.json.JsonMapper;
 
 class UsageStatsRendererTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
-
   private static final long NOW = 1_000_000_000L;
 
+  @TempDir Path root;
+  private final FinishedTasks finished = mock(FinishedTasks.class);
+  private StateService state;
+  private UsageTracker tracker;
+  private UsageStatsRenderer renderer;
+
+  @BeforeEach
+  void rendererReadsTheTrackerAndNoLimitsWereRead() {
+    state = stateService().withRoot(root).build();
+    tracker = new UsageTracker(state, mock(UsageLedger.class));
+    renderer =
+        new UsageStatsRenderer(
+            tracker,
+            new UsageLimits(Optional.empty()),
+            finished,
+            Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC));
+  }
+
   @Test
-  void statsEndsWithTheLastSevenDaysCostPerAcceptedTaskAsLowerBoundWhereSpendIsUnknown(
-      @TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    FinishedTasks finished = mock(FinishedTasks.class);
+  void statsEndsWithTheLastSevenDaysCostPerAcceptedTaskAsLowerBoundWhereSpendIsUnknown() {
     var shipped =
-        new FinishedTask(
-            new FinishedTask.Identity("ABC-1", null, null, List.of(), null),
-            NOW,
-            new FinishedTask.Spend(0, 4.0, null, null),
-            new FinishedTask.Course(
-                List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)),
-                0,
-                null,
-                Map.of(),
-                List.of(),
-                null),
-            List.of());
+        finishedTask()
+            .withFinishedAt(NOW)
+            .withSpend(new FinishedTask.Spend(0, 4.0, null, null))
+            .build();
     var unread =
-        new FinishedTask(
-            new FinishedTask.Identity("ABC-2", null, null, List.of(), null),
-            NOW - 1,
-            new FinishedTask.Spend(0, null, null, null),
-            new FinishedTask.Course(
-                List.of(new StatusChange(TaskStatus.NEW, 1L, null)),
-                0,
-                null,
-                Map.of(),
-                List.of(),
-                null),
-            List.of());
+        finishedTask().withId("ABC-2").withFinishedAt(NOW - 1).withStatus(TaskStatus.NEW).build();
     when(finished.all()).thenReturn(List.of(shipped, unread));
 
-    String out =
-        new UsageStatsRenderer(
-                new UsageTracker(state, mock(UsageLedger.class)),
-                new UsageLimits(Optional.empty()),
-                finished,
-                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC))
-            .render(state.tasks());
+    String out = renderer.render(state.tasks());
 
     assertThat(out)
         .contains("cost per accepted task, last 7 days: ≥ 4.00 USD (1 shipped of 2 finished)\n");
@@ -108,25 +85,10 @@ class UsageStatsRendererTest {
   }
 
   @Test
-  void showsWhichKindOfCallTheSpendWentOnBiggestFirst(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
+  void showsWhichKindOfCallTheSpendWentOnBiggestFirst() {
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
     tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
-    String out =
-        new UsageStatsRenderer(
-                tracker,
-                new UsageLimits(Optional.empty()),
-                mock(FinishedTasks.class),
-                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC))
-            .render(state.tasks());
+    String out = renderer.render(state.tasks());
 
     assertThat(out).contains("BY CALL");
     assertThat(out.indexOf("review sweep")).isLessThan(out.indexOf("ticket read"));
@@ -134,59 +96,29 @@ class UsageStatsRendererTest {
   }
 
   @Test
-  void ranksTheTasksByWhatTheyConsumed(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void ranksTheTasksByWhatTheyConsumed() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
     state.putTask(
         "ABC-2", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a2").build());
-    UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 100, 0.05));
     tracker.chargeTask("ABC-1", TokenUsage.ofCall(25_000, 0, 100, 0.05));
     tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
     tracker.chargeTask("ABC-2", TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
-    String out =
-        new UsageStatsRenderer(
-                tracker,
-                new UsageLimits(Optional.empty()),
-                mock(FinishedTasks.class),
-                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC))
-            .render(state.tasks());
+    String out = renderer.render(state.tasks());
 
     assertThat(out.indexOf("ABC-2")).isLessThan(out.indexOf("ABC-1"));
     assertThat(out).contains("average per call");
   }
 
   @Test
-  void keepsRetiredTasksSpendInTheSessionTotal(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void keepsRetiredTasksSpendInTheSessionTotal() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
-    UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
     tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(500_000, 0, 1_000, 1.0));
     tracker.chargeTask("ABC-1", TokenUsage.ofCall(500_000, 0, 1_000, 1.0));
     state.removeTask("ABC-1");
-    String out =
-        new UsageStatsRenderer(
-                tracker,
-                new UsageLimits(Optional.empty()),
-                mock(FinishedTasks.class),
-                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC))
-            .render(state.tasks());
+    String out = renderer.render(state.tasks());
 
     assertThat(out).contains("(nothing spent on the current tasks)");
     assertThat(out.lines().filter(l -> l.startsWith("this session")).findFirst().orElseThrow())
@@ -194,23 +126,9 @@ class UsageStatsRendererTest {
   }
 
   @Test
-  void showsNothingSpentBeforeTheFirstCall(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void showsNothingSpentBeforeTheFirstCall() {
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
-    String out =
-        new UsageStatsRenderer(
-                new UsageTracker(state, mock(UsageLedger.class)),
-                new UsageLimits(Optional.empty()),
-                mock(FinishedTasks.class),
-                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC))
-            .render(state.tasks());
+    String out = renderer.render(state.tasks());
 
     assertThat(out).contains("(nothing spent on the current tasks)");
     assertThat(out).doesNotContain("average per call");
@@ -268,16 +186,7 @@ class UsageStatsRendererTest {
   }
 
   @Test
-  void showsColdStartsPerKindAndQuestionMarkWhereNoCacheFieldWasRead(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
+  void showsColdStartsPerKindAndQuestionMarkWhereNoCacheFieldWasRead() {
     tracker.record(
         AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05).asStart());
     tracker.record(
@@ -285,13 +194,7 @@ class UsageStatsRendererTest {
     tracker.record(
         AssistantCallKind.TICKET_READ, TokenUsage.ofCall(900, 24_000, 170, 0.02).asStart());
     tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
-    String out =
-        new UsageStatsRenderer(
-                tracker,
-                new UsageLimits(Optional.empty()),
-                mock(FinishedTasks.class),
-                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC))
-            .render(state.tasks());
+    String out = renderer.render(state.tasks());
 
     assertThat(out.lines().filter(l -> l.startsWith("ticket read")).findFirst().orElseThrow())
         .endsWith("1/3");
@@ -300,15 +203,7 @@ class UsageStatsRendererTest {
   }
 
   @Test
-  void listsTheAgentSessionsBiggestFirstAndTotalsThem(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void listsTheAgentSessionsBiggestFirstAndTotalsThem() {
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -323,13 +218,7 @@ class UsageStatsRendererTest {
             .withAgentSpend(new AgentSpend(TokenUsage.ofCall(900_000, 0, 5_000, 1.80), Map.of())));
     state.putTask(
         "ABC-3", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a3").build());
-    String out =
-        new UsageStatsRenderer(
-                new UsageTracker(state, mock(UsageLedger.class)),
-                new UsageLimits(Optional.empty()),
-                mock(FinishedTasks.class),
-                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC))
-            .render(state.tasks());
+    String out = renderer.render(state.tasks());
 
     assertThat(out).contains("AGENT SESSION", "agents");
     assertThat(out.indexOf("ABC-2")).isLessThan(out.indexOf("ABC-1"));
@@ -337,48 +226,19 @@ class UsageStatsRendererTest {
   }
 
   @Test
-  void showsNoAgentSessionsWhereNoAgentSpentAnything(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void showsNoAgentSessionsWhereNoAgentSpentAnything() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
-    String out =
-        new UsageStatsRenderer(
-                new UsageTracker(state, mock(UsageLedger.class)),
-                new UsageLimits(Optional.empty()),
-                mock(FinishedTasks.class),
-                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC))
-            .render(state.tasks());
+    String out = renderer.render(state.tasks());
 
     assertThat(out).doesNotContain("AGENT SESSION");
   }
 
   @Test
-  void averagesTheSessionsTokensOverItsCalls(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
+  void averagesTheSessionsTokensOverItsCalls() {
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(4_000, 0, 1_000, 0.05));
     tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(4_000, 0, 1_000, 0.05));
-    String out =
-        new UsageStatsRenderer(
-                tracker,
-                new UsageLimits(Optional.empty()),
-                mock(FinishedTasks.class),
-                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC))
-            .render(state.tasks());
+    String out = renderer.render(state.tasks());
 
     assertThat(out).contains("average per call: 5.0k tokens");
   }
@@ -387,54 +247,20 @@ class UsageStatsRendererTest {
   void takesTheMedianCostOfDeployedTasksAndLeavesOutOneWithAnUnreadSpend() {
     List<FinishedTask> finished =
         List.of(
-            new FinishedTask(
-                new FinishedTask.Identity("ABC-1", null, null, List.of(), null),
-                9L,
-                new FinishedTask.Spend(0, 1.0, null, null),
-                new FinishedTask.Course(
-                    List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)),
-                    0,
-                    null,
-                    Map.of(),
-                    List.of(),
-                    null),
-                List.of()),
-            new FinishedTask(
-                new FinishedTask.Identity("ABC-2", null, null, List.of(), null),
-                9L,
-                new FinishedTask.Spend(0, 4.0, null, null),
-                new FinishedTask.Course(
-                    List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)),
-                    0,
-                    null,
-                    Map.of(),
-                    List.of(),
-                    null),
-                List.of()),
-            new FinishedTask(
-                new FinishedTask.Identity("ABC-3", null, null, List.of(), null),
-                9L,
-                new FinishedTask.Spend(0, null, null, null),
-                new FinishedTask.Course(
-                    List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)),
-                    0,
-                    null,
-                    Map.of(),
-                    List.of(),
-                    null),
-                List.of()),
-            new FinishedTask(
-                new FinishedTask.Identity("ABC-4", null, null, List.of(), null),
-                9L,
-                new FinishedTask.Spend(0, 90.0, null, null),
-                new FinishedTask.Course(
-                    List.of(new StatusChange(TaskStatus.CI_POLLING, 1L, null)),
-                    0,
-                    null,
-                    Map.of(),
-                    List.of(),
-                    null),
-                List.of()));
+            finishedTask()
+                .withId("ABC-1")
+                .withSpend(new FinishedTask.Spend(0, 1.0, null, null))
+                .build(),
+            finishedTask()
+                .withId("ABC-2")
+                .withSpend(new FinishedTask.Spend(0, 4.0, null, null))
+                .build(),
+            finishedTask().withId("ABC-3").build(),
+            finishedTask()
+                .withId("ABC-4")
+                .withSpend(new FinishedTask.Spend(0, 90.0, null, null))
+                .withStatus(TaskStatus.CI_POLLING)
+                .build());
 
     assertThat(UsageStatsRenderer.costPerDeployed(finished))
         .isEqualTo(
@@ -443,20 +269,7 @@ class UsageStatsRendererTest {
 
   @Test
   void saysUnknownWhenNoDeployedTaskHasKnownSpend() {
-    List<FinishedTask> finished =
-        List.of(
-            new FinishedTask(
-                new FinishedTask.Identity("ABC-1", null, null, List.of(), null),
-                9L,
-                new FinishedTask.Spend(0, null, null, null),
-                new FinishedTask.Course(
-                    List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)),
-                    0,
-                    null,
-                    Map.of(),
-                    List.of(),
-                    null),
-                List.of()));
+    List<FinishedTask> finished = List.of(finishedTask().build());
 
     assertThat(UsageStatsRenderer.costPerDeployed(finished))
         .isEqualTo(
@@ -467,22 +280,15 @@ class UsageStatsRendererTest {
   void marksTheMedianCostAsLowerBoundWhenDeployedTaskHadAnUnpricedCall() {
     List<FinishedTask> finished =
         List.of(
-            new FinishedTask(
-                new FinishedTask.Identity("ABC-1", null, null, List.of(), null),
-                9L,
-                new FinishedTask.Spend(
-                    0,
-                    2.0,
-                    null,
-                    TokenUsage.ofCall(10, 0, 10, 2.0).plus(TokenUsage.ofUnpricedCall(10, 0, 10))),
-                new FinishedTask.Course(
-                    List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null)),
-                    0,
-                    null,
-                    Map.of(),
-                    List.of(),
-                    null),
-                List.of()));
+            finishedTask()
+                .withSpend(
+                    new FinishedTask.Spend(
+                        0,
+                        2.0,
+                        null,
+                        TokenUsage.ofCall(10, 0, 10, 2.0)
+                            .plus(TokenUsage.ofUnpricedCall(10, 0, 10))))
+                .build());
 
     assertThat(UsageStatsRenderer.costPerDeployed(finished))
         .isEqualTo(
@@ -490,29 +296,14 @@ class UsageStatsRendererTest {
   }
 
   @Test
-  void marksTasksUsdAsLowerBoundWhenItHadAnUnpricedCall(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void marksTasksUsdAsLowerBoundWhenItHadAnUnpricedCall() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
-    UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
     tracker.chargeTask(
         "ABC-1",
         TokenUsage.ofCall(25_000, 0, 100, 0.05).plus(TokenUsage.ofUnpricedCall(10, 0, 10)));
 
-    String out =
-        new UsageStatsRenderer(
-                tracker,
-                new UsageLimits(Optional.empty()),
-                mock(FinishedTasks.class),
-                Clock.fixed(Instant.ofEpochMilli(NOW), ZoneOffset.UTC))
-            .render(state.tasks());
+    String out = renderer.render(state.tasks());
 
     assertThat(out.lines().filter(l -> l.startsWith("ABC-1")).findFirst().orElseThrow())
         .contains("≥0.05");
