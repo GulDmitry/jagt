@@ -55,6 +55,22 @@ class NewTaskWorktreesTest {
   private final WorktreeSetup setup = mock(WorktreeSetup.class);
   private StateService state;
   private NewTaskWorktrees worktrees;
+  private ConfigService.ConfigFile oneProject;
+  private ConfigService.ConfigFile registryMain;
+  private ConfigService.ConfigFile registryRelease;
+  private ConfigService.ConfigFile apiWeb;
+  private ConfigService.ConfigFile apiWebDev;
+  private TaskState attaching;
+  private final NewRepo apiRepo =
+      new NewRepo(
+          "api",
+          new ProjectConfig("/api", "origin/main", null, List.of()),
+          Path.of("/api"),
+          Path.of("/ABC-1-api"),
+          Path.of("/api/.git"),
+          "origin/main",
+          "git@host:api.git",
+          true);
 
   @BeforeEach
   void setUp() {
@@ -66,6 +82,67 @@ class NewTaskWorktreesTest {
         new StateService(
             new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
     worktrees = new NewTaskWorktrees(config, state, git, setup);
+    oneProject =
+        ConfigService.ConfigFile.defaults()
+            .withProjects(
+                Map.of(
+                    "proj",
+                    new ProjectConfig(
+                        root.resolve("repo").toString(), "origin/main", null, List.of())));
+    registryMain =
+        ConfigService.ConfigFile.defaults()
+            .withProjects(
+                new LinkedHashMap<>(
+                    Map.of(
+                        "api",
+                        new ProjectConfig(
+                            root.resolve("api-repo").toString(), "origin/main", null, List.of()),
+                        "registry",
+                        new ProjectConfig(
+                            root.resolve("registry-repo").toString(),
+                            "origin/main",
+                            null,
+                            List.of()))));
+    registryRelease =
+        ConfigService.ConfigFile.defaults()
+            .withProjects(
+                new LinkedHashMap<>(
+                    Map.of(
+                        "api",
+                        new ProjectConfig(
+                            root.resolve("api-repo").toString(), "origin/main", null, List.of()),
+                        "registry",
+                        new ProjectConfig(
+                            root.resolve("registry-repo").toString(),
+                            "origin/release",
+                            null,
+                            List.of()))));
+    apiWeb =
+        ConfigService.ConfigFile.defaults()
+            .withProjects(
+                new LinkedHashMap<>(
+                    Map.of(
+                        "api",
+                        new ProjectConfig(
+                            root.resolve("api-repo").toString(), "origin/main", null, List.of()),
+                        "web",
+                        new ProjectConfig(
+                            root.resolve("web-repo").toString(),
+                            "origin/release",
+                            null,
+                            List.of()))));
+    apiWebDev =
+        ConfigService.ConfigFile.defaults()
+            .withProjects(
+                new LinkedHashMap<>(
+                    Map.of(
+                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
+                        "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
+    attaching =
+        TaskState.builder("api", root.resolve("ABC-7-api").toString(), TaskStatus.IN_PROGRESS)
+            .alias("a1")
+            .repoRequest("registry")
+            .build();
   }
 
   @Test
@@ -135,19 +212,12 @@ class NewTaskWorktreesTest {
 
   @Test
   void refusesBaseBranchGitWouldReadAsAnOptionBeforeTouchingGit() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                Map.of(
-                    "proj",
-                    new ProjectConfig(
-                        root.resolve("repo").toString(), "origin/main", null, List.of())));
 
     assertThatThrownBy(
             () ->
                 worktrees.cut(
                     NewTask.builder("ABC-42", "proj").baseBranch("--upload-pack=touch").build(),
-                    configured,
+                    oneProject,
                     BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("is not a branch name: it starts with '-'");
@@ -156,16 +226,9 @@ class NewTaskWorktreesTest {
 
   @Test
   void cutsOneFlatWorktreeForSlashedBranchTakenOverFromSomeoneElse() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                Map.of(
-                    "proj",
-                    new ProjectConfig(
-                        root.resolve("repo").toString(), "origin/main", null, List.of())));
 
     worktrees.cut(
-        NewTask.builder("feature/ABC-42", "proj").build(), configured, BranchStrategy.FRESH);
+        NewTask.builder("feature/ABC-42", "proj").build(), oneProject, BranchStrategy.FRESH);
 
     verify(git)
         .createWorktree(
@@ -222,15 +285,8 @@ class NewTaskWorktreesTest {
         "T09":{},"T10":{},"T11":{},"T12":{},"T13":{},"T14":{},"T15":{},"T16":{},
         "T17":{},"T18":{},"T19":{},"T20":{},"T21":{},"T22":{},"T23":{}}}\
         """);
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                Map.of(
-                    "proj",
-                    new ProjectConfig(
-                        root.resolve("repo").toString(), "origin/main", null, List.of())));
 
-    worktrees.cut(NewTask.builder("ABC-99", "proj").build(), configured, BranchStrategy.FRESH);
+    worktrees.cut(NewTask.builder("ABC-99", "proj").build(), oneProject, BranchStrategy.FRESH);
 
     verify(git)
         .createWorktree(
@@ -243,19 +299,12 @@ class NewTaskWorktreesTest {
 
   @Test
   void removesFreshWorktreeAndBranchWhenContextSetupFailsAfterCheckout() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                Map.of(
-                    "proj",
-                    new ProjectConfig(
-                        root.resolve("repo").toString(), "origin/main", null, List.of())));
     doThrow(new IllegalStateException("provisioning failed")).when(setup).fill(any(), any(), any());
 
     assertThatThrownBy(
             () ->
                 worktrees.cut(
-                    NewTask.builder("ABC-9", "proj").build(), configured, BranchStrategy.FRESH))
+                    NewTask.builder("ABC-9", "proj").build(), oneProject, BranchStrategy.FRESH))
         .isInstanceOf(IllegalStateException.class);
 
     verify(git).removeWorktree(root.resolve("repo"), root.resolve("ABC-9-proj"), "ABC-9");
@@ -263,19 +312,12 @@ class NewTaskWorktreesTest {
 
   @Test
   void keepsResumedBranchWhenTheUnwindRemovesItsWorktree() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                Map.of(
-                    "proj",
-                    new ProjectConfig(
-                        root.resolve("repo").toString(), "origin/main", null, List.of())));
     doThrow(new IllegalStateException("provisioning failed")).when(setup).fill(any(), any(), any());
 
     assertThatThrownBy(
             () ->
                 worktrees.cut(
-                    NewTask.builder("ABC-4", "proj").build(), configured, BranchStrategy.RESUME))
+                    NewTask.builder("ABC-4", "proj").build(), oneProject, BranchStrategy.RESUME))
         .isInstanceOf(IllegalStateException.class);
 
     verify(git).removeWorktree(root.resolve("repo"), root.resolve("ABC-4-proj"), null);
@@ -283,25 +325,11 @@ class NewTaskWorktreesTest {
 
   @Test
   void cutsOneWorktreePerProjectFromEachProjectsOwnBase() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api",
-                        new ProjectConfig(
-                            root.resolve("api-repo").toString(), "origin/main", null, List.of()),
-                        "web",
-                        new ProjectConfig(
-                            root.resolve("web-repo").toString(),
-                            "origin/release",
-                            null,
-                            List.of()))));
 
     List<NewRepo> repos =
         worktrees.cut(
             NewTask.builder("ABC-7", "api").alsoIn(List.of("web")).build(),
-            configured,
+            apiWeb,
             BranchStrategy.FRESH);
 
     assertThat(repos).extracting(NewRepo::project).containsExactly("api", "web");
@@ -323,20 +351,6 @@ class NewTaskWorktreesTest {
 
   @Test
   void unwindsTheWorktreesItAlreadyCutWhenLaterRepositoryFails() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api",
-                        new ProjectConfig(
-                            root.resolve("api-repo").toString(), "origin/main", null, List.of()),
-                        "web",
-                        new ProjectConfig(
-                            root.resolve("web-repo").toString(),
-                            "origin/release",
-                            null,
-                            List.of()))));
     doNothing()
         .doThrow(new IllegalStateException("second repo failed"))
         .when(setup)
@@ -346,7 +360,7 @@ class NewTaskWorktreesTest {
             () ->
                 worktrees.cut(
                     NewTask.builder("ABC-8", "api").alsoIn(List.of("web")).build(),
-                    configured,
+                    apiWeb,
                     BranchStrategy.FRESH))
         .isInstanceOf(IllegalStateException.class);
 
@@ -378,18 +392,11 @@ class NewTaskWorktreesTest {
 
   @Test
   void cutsTheWorktreeFromTheBranchTheHumanNamed() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                Map.of(
-                    "proj",
-                    new ProjectConfig(
-                        root.resolve("repo").toString(), "origin/main", null, List.of())));
     when(git.remoteBranchExists(any(), eq("feature/parent"))).thenReturn(true);
 
     worktrees.cut(
         NewTask.builder("ABC-3", "proj").baseBranch("origin/feature/parent").build(),
-        configured,
+        oneProject,
         BranchStrategy.FRESH);
 
     verify(git)
@@ -432,20 +439,13 @@ class NewTaskWorktreesTest {
 
   @Test
   void refusesBaseBranchOriginDoesNotHaveBeforeCreatingAnything() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                Map.of(
-                    "proj",
-                    new ProjectConfig(
-                        root.resolve("repo").toString(), "origin/main", null, List.of())));
     when(git.remoteBranchExists(any(), eq("feature/typo"))).thenReturn(false);
 
     assertThatThrownBy(
             () ->
                 worktrees.cut(
                     NewTask.builder("ABC-5", "proj").baseBranch("feature/typo").build(),
-                    configured,
+                    oneProject,
                     BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("does not exist on proj's origin");
@@ -455,20 +455,6 @@ class NewTaskWorktreesTest {
 
   @Test
   void namesTheRepositoryWhoseOriginIsMissingTheBaseBranch() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api",
-                        new ProjectConfig(
-                            root.resolve("api-repo").toString(), "origin/main", null, List.of()),
-                        "web",
-                        new ProjectConfig(
-                            root.resolve("web-repo").toString(),
-                            "origin/release",
-                            null,
-                            List.of()))));
     when(git.remoteBranchExists(root.resolve("api-repo"), "feature/parent")).thenReturn(true);
     when(git.remoteBranchExists(root.resolve("web-repo"), "feature/parent")).thenReturn(false);
 
@@ -479,7 +465,7 @@ class NewTaskWorktreesTest {
                         .alsoIn(List.of("web"))
                         .baseBranch("feature/parent")
                         .build(),
-                    configured,
+                    apiWeb,
                     BranchStrategy.FRESH))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("does not exist on web's origin");
@@ -489,14 +475,7 @@ class NewTaskWorktreesTest {
 
   @Test
   void findsTheProjectHoldingBranchOfTheTaskAmongEveryConfiguredProjectWhenNoneIsNamed() {
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    new LinkedHashMap<>(
-                        Map.of(
-                            "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
-                            "web", new ProjectConfig("/web", "origin/main", "dev", List.of())))));
+    when(config.load()).thenReturn(apiWebDev);
     when(git.branchExists(Path.of("/web"), "ABC-1")).thenReturn(true);
 
     assertThat(worktrees.existingBranchProject("ABC-1", null)).isEqualTo("web");
@@ -504,14 +483,7 @@ class NewTaskWorktreesTest {
 
   @Test
   void asksOnlyTheProjectsItWasGivenWhereTheBranchLivesInAnother() {
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    new LinkedHashMap<>(
-                        Map.of(
-                            "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
-                            "web", new ProjectConfig("/web", "origin/main", "dev", List.of())))));
+    when(config.load()).thenReturn(apiWebDev);
     when(git.branchExists(Path.of("/web"), "ABC-1")).thenReturn(true);
 
     assertThat(worktrees.existingBranchProject("ABC-1", List.of("api"))).isNull();
@@ -570,54 +542,25 @@ class NewTaskWorktreesTest {
 
   @Test
   void trustsWhatGitObeysAroundTheWorktreesJustCut() {
-    NewRepo repo =
-        new NewRepo(
-            "api",
-            new ProjectConfig("/api", "origin/main", null, List.of()),
-            Path.of("/api"),
-            Path.of("/ABC-1-api"),
-            Path.of("/api/.git"),
-            "origin/main",
-            "git@host:api.git",
-            true);
     when(git.gitState(List.of(Path.of("/ABC-1-api"))))
         .thenReturn(Map.of("core.editor in /api/.git/config", "a1"));
 
-    assertThat(worktrees.trust(List.of(repo)))
+    assertThat(worktrees.trust(List.of(apiRepo)))
         .isEqualTo(GitTrust.of(Map.of("core.editor in /api/.git/config", "a1")));
   }
 
   @Test
   void trustsNothingWhereGitStateCannotBeRead() {
-    NewRepo repo =
-        new NewRepo(
-            "api",
-            new ProjectConfig("/api", "origin/main", null, List.of()),
-            Path.of("/api"),
-            Path.of("/ABC-1-api"),
-            Path.of("/api/.git"),
-            "origin/main",
-            "git@host:api.git",
-            true);
     when(git.gitState(any())).thenThrow(new IllegalStateException("git rev-parse failed"));
 
-    assertThat(worktrees.trust(List.of(repo))).isNull();
+    assertThat(worktrees.trust(List.of(apiRepo))).isNull();
   }
 
   @Test
   void removesTheBranchItCreatedAndLeavesTheRepositoryAloneWhenRegistrationFailedAfterTheCut() {
-    NewRepo repo =
-        new NewRepo(
-            "api",
-            new ProjectConfig("/api", "origin/main", null, List.of()),
-            Path.of("/api"),
-            Path.of("/ABC-1-api"),
-            Path.of("/api/.git"),
-            "origin/main",
-            "git@host:api.git",
-            true);
 
-    worktrees.uncut(NewTask.builder("ABC-1", "api").build(), List.of(repo), BranchStrategy.FRESH);
+    worktrees.uncut(
+        NewTask.builder("ABC-1", "api").build(), List.of(apiRepo), BranchStrategy.FRESH);
 
     verify(git).removeWorktree(Path.of("/api"), Path.of("/ABC-1-api"), "ABC-1");
     verify(git, never()).reattach(any(), any());
@@ -625,18 +568,9 @@ class NewTaskWorktreesTest {
 
   @Test
   void keepsTheResumedBranchAndGivesTheRepositoryBackWhenRegistrationFailedAfterTheCut() {
-    NewRepo repo =
-        new NewRepo(
-            "api",
-            new ProjectConfig("/api", "origin/main", null, List.of()),
-            Path.of("/api"),
-            Path.of("/ABC-1-api"),
-            Path.of("/api/.git"),
-            "origin/main",
-            "git@host:api.git",
-            true);
 
-    worktrees.uncut(NewTask.builder("ABC-1", "api").build(), List.of(repo), BranchStrategy.RESUME);
+    worktrees.uncut(
+        NewTask.builder("ABC-1", "api").build(), List.of(apiRepo), BranchStrategy.RESUME);
 
     verify(git).removeWorktree(Path.of("/api"), Path.of("/ABC-1-api"), null);
     verify(git).reattach(Path.of("/api"), "ABC-1");
@@ -644,29 +578,10 @@ class NewTaskWorktreesTest {
 
   @Test
   void cutsTheTaskBranchInTheRequestedProjectFromThatProjectsOwnBase() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api",
-                        new ProjectConfig(
-                            root.resolve("api-repo").toString(), "origin/main", null, List.of()),
-                        "registry",
-                        new ProjectConfig(
-                            root.resolve("registry-repo").toString(),
-                            "origin/release",
-                            null,
-                            List.of()))));
-    when(config.load()).thenReturn(configured);
-    state.putTask(
-        "ABC-7",
-        TaskState.builder("api", root.resolve("ABC-7-api").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .repoRequest("registry")
-            .build());
+    when(config.load()).thenReturn(registryRelease);
+    state.putTask("ABC-7", attaching);
 
-    worktrees.attach("ABC-7", "registry", configured);
+    worktrees.attach("ABC-7", "registry", registryRelease);
 
     verify(git)
         .createWorktree(
@@ -679,29 +594,10 @@ class NewTaskWorktreesTest {
 
   @Test
   void registersTheAttachedRepositoryAfterTheSessionsOwnAndEndsTheRequest() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api",
-                        new ProjectConfig(
-                            root.resolve("api-repo").toString(), "origin/main", null, List.of()),
-                        "registry",
-                        new ProjectConfig(
-                            root.resolve("registry-repo").toString(),
-                            "origin/main",
-                            null,
-                            List.of()))));
-    when(config.load()).thenReturn(configured);
-    state.putTask(
-        "ABC-7",
-        TaskState.builder("api", root.resolve("ABC-7-api").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .repoRequest("registry")
-            .build());
+    when(config.load()).thenReturn(registryMain);
+    state.putTask("ABC-7", attaching);
 
-    worktrees.attach("ABC-7", "registry", configured);
+    worktrees.attach("ABC-7", "registry", registryMain);
 
     TaskState task = state.task("ABC-7").orElseThrow();
     assertThat(task.projects()).containsExactly("api", "registry");
@@ -710,29 +606,10 @@ class NewTaskWorktreesTest {
 
   @Test
   void writesEveryWorktreeAgainForTheSetThatNowIncludesTheNewOne() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api",
-                        new ProjectConfig(
-                            root.resolve("api-repo").toString(), "origin/main", null, List.of()),
-                        "registry",
-                        new ProjectConfig(
-                            root.resolve("registry-repo").toString(),
-                            "origin/main",
-                            null,
-                            List.of()))));
-    when(config.load()).thenReturn(configured);
-    state.putTask(
-        "ABC-7",
-        TaskState.builder("api", root.resolve("ABC-7-api").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .repoRequest("registry")
-            .build());
+    when(config.load()).thenReturn(registryMain);
+    state.putTask("ABC-7", attaching);
 
-    NewRepo added = worktrees.attach("ABC-7", "registry", configured);
+    NewRepo added = worktrees.attach("ABC-7", "registry", registryMain);
 
     verify(setup)
         .attach(
@@ -748,32 +625,13 @@ class NewTaskWorktreesTest {
 
   @Test
   void leavesNothingOfTheNewWorktreeAndKeepsTheRequestWhenWritingItFails() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api",
-                        new ProjectConfig(
-                            root.resolve("api-repo").toString(), "origin/main", null, List.of()),
-                        "registry",
-                        new ProjectConfig(
-                            root.resolve("registry-repo").toString(),
-                            "origin/main",
-                            null,
-                            List.of()))));
-    when(config.load()).thenReturn(configured);
-    state.putTask(
-        "ABC-7",
-        TaskState.builder("api", root.resolve("ABC-7-api").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .repoRequest("registry")
-            .build());
+    when(config.load()).thenReturn(registryMain);
+    state.putTask("ABC-7", attaching);
     doThrow(new IllegalStateException("provisioning failed"))
         .when(setup)
         .attach(any(), any(), any());
 
-    assertThatThrownBy(() -> worktrees.attach("ABC-7", "registry", configured))
+    assertThatThrownBy(() -> worktrees.attach("ABC-7", "registry", registryMain))
         .isInstanceOf(IllegalStateException.class);
 
     verify(git)
@@ -785,31 +643,12 @@ class NewTaskWorktreesTest {
 
   @Test
   void adoptsWorktreeAlreadyStandingOnTheTaskBranchInsteadOfCuttingOne() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api",
-                        new ProjectConfig(
-                            root.resolve("api-repo").toString(), "origin/main", null, List.of()),
-                        "registry",
-                        new ProjectConfig(
-                            root.resolve("registry-repo").toString(),
-                            "origin/release",
-                            null,
-                            List.of()))));
-    when(config.load()).thenReturn(configured);
+    when(config.load()).thenReturn(registryRelease);
     when(git.worktreeOf(root.resolve("registry-repo"), "ABC-7"))
         .thenReturn(Optional.of(root.resolve("cut-by-hand")));
-    state.putTask(
-        "ABC-7",
-        TaskState.builder("api", root.resolve("ABC-7-api").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .repoRequest("registry")
-            .build());
+    state.putTask("ABC-7", attaching);
 
-    worktrees.attach("ABC-7", "registry", configured);
+    worktrees.attach("ABC-7", "registry", registryRelease);
 
     verify(git, never()).createWorktree(any(), any(), any(), any(), any());
     assertThat(state.task("ABC-7").orElseThrow().repos())
@@ -820,34 +659,15 @@ class NewTaskWorktreesTest {
 
   @Test
   void leavesAnAdoptedWorktreeAndItsWorkInPlaceWhenWritingItFails() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api",
-                        new ProjectConfig(
-                            root.resolve("api-repo").toString(), "origin/main", null, List.of()),
-                        "registry",
-                        new ProjectConfig(
-                            root.resolve("registry-repo").toString(),
-                            "origin/release",
-                            null,
-                            List.of()))));
-    when(config.load()).thenReturn(configured);
+    when(config.load()).thenReturn(registryRelease);
     when(git.worktreeOf(root.resolve("registry-repo"), "ABC-7"))
         .thenReturn(Optional.of(root.resolve("cut-by-hand")));
-    state.putTask(
-        "ABC-7",
-        TaskState.builder("api", root.resolve("ABC-7-api").toString(), TaskStatus.IN_PROGRESS)
-            .alias("a1")
-            .repoRequest("registry")
-            .build());
+    state.putTask("ABC-7", attaching);
     doThrow(new IllegalStateException("provisioning failed"))
         .when(setup)
         .attach(any(), any(), any());
 
-    assertThatThrownBy(() -> worktrees.attach("ABC-7", "registry", configured))
+    assertThatThrownBy(() -> worktrees.attach("ABC-7", "registry", registryRelease))
         .isInstanceOf(IllegalStateException.class);
 
     verify(git, never()).removeWorktree(any(), any(), any());
@@ -855,21 +675,7 @@ class NewTaskWorktreesTest {
 
   @Test
   void trustsTheAddedRepositorysGitStateAsItStandsAndKeepsTheRecordOfTheOthers() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api",
-                        new ProjectConfig(
-                            root.resolve("api-repo").toString(), "origin/main", null, List.of()),
-                        "registry",
-                        new ProjectConfig(
-                            root.resolve("registry-repo").toString(),
-                            "origin/main",
-                            null,
-                            List.of()))));
-    when(config.load()).thenReturn(configured);
+    when(config.load()).thenReturn(registryMain);
     when(git.gitState(List.of(root.resolve("ABC-7-registry"))))
         .thenReturn(Map.of("core.bare in registry", "d2"));
     state.putTask(
@@ -880,7 +686,7 @@ class NewTaskWorktreesTest {
             .gitTrust(GitTrust.of(Map.of("core.bare in api", "d1")))
             .build());
 
-    worktrees.attach("ABC-7", "registry", configured);
+    worktrees.attach("ABC-7", "registry", registryMain);
 
     assertThat(Objects.requireNonNull(state.task("ABC-7").orElseThrow().gitTrust()).recorded())
         .isEqualTo(Map.of("core.bare in api", "d1", "core.bare in registry", "d2"));
@@ -934,19 +740,12 @@ class NewTaskWorktreesTest {
 
   @Test
   void cutsWorktreePerRepositoryTheFirstBeingThePrimary() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
-                        "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
-    when(config.load()).thenReturn(configured);
+    when(config.load()).thenReturn(apiWebDev);
 
     List<NewRepo> placed =
         worktrees.place(
             NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(),
-            configured,
+            apiWebDev,
             repos -> {});
 
     assertThat(placed)
@@ -963,20 +762,13 @@ class NewTaskWorktreesTest {
 
   @Test
   void resumesBranchHoldingOwnCommitsAndRecreatesLeftoverOneWhenPlacing() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
-                        "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
-    when(config.load()).thenReturn(configured);
+    when(config.load()).thenReturn(apiWebDev);
     when(git.branchExists(Path.of("/api"), "ABC-9")).thenReturn(true);
     when(git.holdsOwnCommits(Path.of("/api"), "ABC-9", "origin/main")).thenReturn(true);
     when(git.branchExists(Path.of("/web"), "ABC-9")).thenReturn(true);
 
     worktrees.place(
-        NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(), configured, repos -> {});
+        NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(), apiWebDev, repos -> {});
 
     verify(git)
         .createWorktree(
@@ -1013,14 +805,7 @@ class NewTaskWorktreesTest {
 
   @Test
   void cutsNothingWhereTypedBaseBranchIsNotOnProjectsOrigin() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
-                        "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
-    when(config.load()).thenReturn(configured);
+    when(config.load()).thenReturn(apiWebDev);
     when(git.remoteBranchExists(Path.of("/api"), "feature/parent")).thenReturn(true);
 
     assertThatThrownBy(
@@ -1030,7 +815,7 @@ class NewTaskWorktreesTest {
                         .alsoIn(List.of("web"))
                         .baseBranch("feature/parent")
                         .build(),
-                    configured,
+                    apiWebDev,
                     repos -> {}))
         .isInstanceOfSatisfying(
             Unplaceable.class,
@@ -1041,14 +826,7 @@ class NewTaskWorktreesTest {
 
   @Test
   void removesTheFirstWorktreeWhereTheSecondCutFailsWhenPlacing() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
-                        "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
-    when(config.load()).thenReturn(configured);
+    when(config.load()).thenReturn(apiWebDev);
     doThrow(new IllegalStateException("git failed"))
         .when(git)
         .createWorktree(
@@ -1058,7 +836,7 @@ class NewTaskWorktreesTest {
             () ->
                 worktrees.place(
                     NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(),
-                    configured,
+                    apiWebDev,
                     repos -> {}))
         .isInstanceOf(IllegalStateException.class);
 
@@ -1068,20 +846,13 @@ class NewTaskWorktreesTest {
 
   @Test
   void removesEveryWorktreeWhereTheRegistrationFailsWhenPlacing() {
-    ConfigService.ConfigFile configured =
-        ConfigService.ConfigFile.defaults()
-            .withProjects(
-                new LinkedHashMap<>(
-                    Map.of(
-                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
-                        "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
-    when(config.load()).thenReturn(configured);
+    when(config.load()).thenReturn(apiWebDev);
 
     assertThatThrownBy(
             () ->
                 worktrees.place(
                     NewTask.builder("ABC-9", "api").alsoIn(List.of("web")).build(),
-                    configured,
+                    apiWebDev,
                     repos -> {
                       throw new IllegalStateException("state not written");
                     }))

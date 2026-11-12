@@ -22,6 +22,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -45,6 +46,26 @@ class SessionWakesTest {
                     List.of(new SubscriptionUsage.Window("5h", percent, resetsAt)),
                     Optional.empty()));
     return new UsageLimits(Optional.of(usage));
+  }
+
+  @TempDir Path dir;
+
+  private Path file;
+  private StateService state;
+
+  @BeforeEach
+  void startsOneRunningTaskUnderTheTempState() {
+    file = dir.resolve("state.json");
+    state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(dir.toString())
+                    .withStateFile(file.toString())),
+            reducer,
+            event -> {});
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
   }
 
   private static SessionWakes sessionWakes(Path file, Instant now) {
@@ -71,16 +92,7 @@ class SessionWakesTest {
   }
 
   @Test
-  void wakesNothingBeforeTheWindowResets(@TempDir Path dir) {
-    Path file = dir.resolve("state.json");
-    new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {})
-        .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void wakesNothingBeforeTheWindowResets() {
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
 
     List<SessionWakes.Due> due = sessionWakes(file, RESET.minusSeconds(1)).takeDue(taskId -> false);
@@ -89,16 +101,7 @@ class SessionWakesTest {
   }
 
   @Test
-  void wakesTheSessionOnceWhenTheWindowResets(@TempDir Path dir) {
-    Path file = dir.resolve("state.json");
-    new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {})
-        .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void wakesTheSessionOnceWhenTheWindowResets() {
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
     SessionWakes later = sessionWakes(file, RESET);
 
@@ -113,16 +116,7 @@ class SessionWakesTest {
   }
 
   @Test
-  void keepsDueWakePendingWhileTheHumanIsTypingAndSendsItOnceAfter(@TempDir Path dir) {
-    Path file = dir.resolve("state.json");
-    new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {})
-        .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void keepsDueWakePendingWhileTheHumanIsTypingAndSendsItOnceAfter() {
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
     SessionWakes later = sessionWakes(file, RESET);
 
@@ -139,16 +133,7 @@ class SessionWakesTest {
   }
 
   @Test
-  void keepsDueWakePendingWhileTheTaskIsPausedAndSendsItAfterTheLift(@TempDir Path dir) {
-    Path file = dir.resolve("state.json");
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {});
+  void keepsDueWakePendingWhileTheTaskIsPausedAndSendsItAfterTheLift() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -166,16 +151,7 @@ class SessionWakesTest {
   }
 
   @Test
-  void doesNotWakeSessionTwiceAcrossRestart(@TempDir Path dir) {
-    Path file = dir.resolve("state.json");
-    new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {})
-        .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void doesNotWakeSessionTwiceAcrossRestart() {
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
     sessionWakes(file, RESET).takeDue(taskId -> false);
 
@@ -186,16 +162,7 @@ class SessionWakesTest {
   }
 
   @Test
-  void keepsPendingWakeAcrossRestart(@TempDir Path dir) {
-    Path file = dir.resolve("state.json");
-    new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {})
-        .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void keepsPendingWakeAcrossRestart() {
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
 
     List<SessionWakes.Due> afterRestart = sessionWakes(file, RESET).takeDue(taskId -> false);
@@ -207,16 +174,7 @@ class SessionWakesTest {
   }
 
   @Test
-  void armsNoWakeWhenNoWindowIsAtItsLimit(@TempDir Path dir) {
-    Path file = dir.resolve("state.json");
-    new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {})
-        .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void armsNoWakeWhenNoWindowIsAtItsLimit() {
     wakes(reading(99, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
 
     List<SessionWakes.Due> due = sessionWakes(file, RESET).takeDue(taskId -> false);
@@ -225,16 +183,7 @@ class SessionWakesTest {
   }
 
   @Test
-  void armsNoWakeWhenTheFullWindowReportsNoReset(@TempDir Path dir) {
-    Path file = dir.resolve("state.json");
-    new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {})
-        .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void armsNoWakeWhenTheFullWindowReportsNoReset() {
     wakes(reading(100, Optional.empty()), true, file, STOPPED).arm("ABC-42");
 
     List<SessionWakes.Due> due = sessionWakes(file, RESET).takeDue(taskId -> false);
@@ -243,16 +192,7 @@ class SessionWakesTest {
   }
 
   @Test
-  void armsNoWakeWhileTheKeyIsOff(@TempDir Path dir) {
-    Path file = dir.resolve("state.json");
-    new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {})
-        .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void armsNoWakeWhileTheKeyIsOff() {
     wakes(reading(100, Optional.of(RESET)), false, file, STOPPED).arm("ABC-42");
 
     List<SessionWakes.Due> due = sessionWakes(file, RESET).takeDue(taskId -> false);
@@ -261,16 +201,7 @@ class SessionWakesTest {
   }
 
   @Test
-  void dropsTheWakeWhenTheSessionMovesAgain(@TempDir Path dir) {
-    Path file = dir.resolve("state.json");
-    new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {})
-        .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void dropsTheWakeWhenTheSessionMovesAgain() {
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
     SessionWakes later = sessionWakes(file, RESET);
 
@@ -280,16 +211,7 @@ class SessionWakesTest {
   }
 
   @Test
-  void wakesAtTheLaterResetWhenTwoWindowsAreFull(@TempDir Path dir) {
-    Path file = dir.resolve("state.json");
-    new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {})
-        .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void wakesAtTheLaterResetWhenTwoWindowsAreFull() {
     SubscriptionUsage usage =
         () ->
             new SubscriptionUsage.Read(
@@ -307,17 +229,7 @@ class SessionWakesTest {
   }
 
   @Test
-  void dropsWakeOnceAnotherTurnOpenedAfterItWasArmed(@TempDir Path dir) {
-    Path file = dir.resolve("state.json");
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {});
-    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void dropsWakeOnceAnotherTurnOpenedAfterItWasArmed() {
     wakes(reading(100, Optional.of(RESET)), true, file, STOPPED).arm("ABC-42");
     new TaskTurns(state, at(STOPPED), new Checkers(new TaskChart(Composition.builtIn())))
         .opened("ABC-42", "context", "a1b2", TaskStatus.IN_PROGRESS);
@@ -328,16 +240,7 @@ class SessionWakesTest {
   }
 
   @Test
-  void wakesWithTheStepItWasArmedFor(@TempDir Path dir) {
-    Path file = dir.resolve("state.json");
-    new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(dir.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {})
-        .putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void wakesWithTheStepItWasArmedFor() {
     sessionWakes(file, STOPPED).arm("ABC-42", RESET, Step.WAIT_OVER);
 
     List<SessionWakes.Due> due = sessionWakes(file, RESET).takeDue(taskId -> false);

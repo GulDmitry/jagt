@@ -29,6 +29,9 @@ class MergedRequestsTest {
   private final WorktreeInspection inspection = mock(WorktreeInspection.class);
   private final RepoDeparture departure = mock(RepoDeparture.class);
 
+  private final TaskState reviewed =
+      TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("http://mr/1").build();
+
   @TempDir Path root;
 
   private StateService state;
@@ -48,22 +51,18 @@ class MergedRequestsTest {
     requests =
         new MergedRequests(
             state, config, inspection, new WorktreeChanges(config, inspection), departure);
+    when(config.project("proj"))
+        .thenReturn(new ProjectConfig("/srv/proj", "origin/main", "dev", List.of()));
+    when(inspection.mergedIntoTarget(any(), any(), any())).thenReturn(false);
   }
 
   @Test
   void requestReadsNotMergedAgainWhenGitNoLongerFindsItsHeadInTheTarget() {
     state.putTask(
         "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
-            .mrUrl("http://mr/1")
-            .build()
-            .withMerged("proj", true));
-    when(config.project("proj"))
-        .thenReturn(new ProjectConfig("/srv/proj", "origin/main", "dev", List.of()));
-    when(inspection.mergedIntoTarget(any(), any(), any())).thenReturn(false);
+        reviewed.withMerged("proj", true));
 
-    boolean none =
-        requests.refresh("ABC-42");
+    boolean none = requests.refresh("ABC-42");
 
     assertThat(none).isFalse();
     assertThat(state.task("ABC-42").orElseThrow().requestsMerged()).isFalse();
@@ -73,25 +72,16 @@ class MergedRequestsTest {
   void requestStaysMergedWhereTheHostSaidSoAndGitSeesNoMergeCommit() {
     state.putTask(
         "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
-            .mrUrl("http://mr/1")
-            .build()
-            .withMergedByHost("proj"));
-    when(config.project("proj"))
-        .thenReturn(new ProjectConfig("/srv/proj", "origin/main", "dev", List.of()));
-    when(inspection.mergedIntoTarget(any(), any(), any())).thenReturn(false);
+        reviewed.withMergedByHost("proj"));
 
-    boolean none =
-        requests.refresh("ABC-42");
+    boolean none = requests.refresh("ABC-42");
 
     assertThat(none).isTrue();
   }
 
   @Test
   void requestStaysMergedWhereTheHostSaidMergedAndNothingElseIsKnown() {
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("http://mr/1").build());
+    state.putTask("ABC-42", reviewed);
 
     requests.hostSaidMerged("ABC-42", "proj");
 
@@ -102,17 +92,11 @@ class MergedRequestsTest {
   void requestStaysMergedWhenGitCannotBeRead() {
     state.putTask(
         "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
-            .mrUrl("http://mr/1")
-            .build()
-            .withMerged("proj", true));
-    when(config.project("proj"))
-        .thenReturn(new ProjectConfig("/srv/proj", "origin/main", "dev", List.of()));
+        reviewed.withMerged("proj", true));
     when(inspection.mergedIntoTarget(any(), any(), any()))
         .thenThrow(new IllegalStateException("fetch failed"));
 
-    boolean none =
-        requests.refresh("ABC-42");
+    boolean none = requests.refresh("ABC-42");
 
     assertThat(none).isTrue();
   }

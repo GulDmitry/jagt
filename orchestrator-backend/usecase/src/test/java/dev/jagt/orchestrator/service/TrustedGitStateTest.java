@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -32,21 +33,35 @@ class TrustedGitStateTest {
 
   private final GitWorktrees git = mock(GitWorktrees.class);
 
-  @Test
-  void trustsWhatItFindsForTaskWithNothingRecorded(@TempDir Path root) {
-    StateService state =
+  private final TaskState trustingNothing =
+      TaskState.builder("proj", "/wt", TaskStatus.APPROVED).gitTrust(GitTrust.of(Map.of())).build();
+
+  @TempDir Path root;
+
+  private StateService state;
+  private TrustedGitState trusted;
+
+  @BeforeEach
+  void readsTrustOverTheTempState() {
+    state =
         new StateService(
             new JsonMapper(),
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+            reducer,
+            event -> {});
+    trusted = new TrustedGitState(state, git);
+  }
+
+  @Test
+  void trustsWhatItFindsForTaskWithNothingRecorded() {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).build());
     when(git.gitState(List.of(Path.of("/wt"))))
         .thenReturn(Map.of("core.editor in /r/.git/config", "a1"));
 
-    Optional<String> distrust = new TrustedGitState(state, git).distrust("ABC-42");
+    Optional<String> distrust = trusted.distrust("ABC-42");
 
     assertThat(distrust).isEmpty();
     assertThat(state.task("ABC-42").orElseThrow().gitTrust())
@@ -54,24 +69,12 @@ class TrustedGitStateTest {
   }
 
   @Test
-  void parksTheTaskNamingTheKeyAndFileThatChanged(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
-            .gitTrust(GitTrust.of(Map.of()))
-            .build());
+  void parksTheTaskNamingTheKeyAndFileThatChanged() {
+    state.putTask("ABC-42", trustingNothing);
     when(git.gitState(List.of(Path.of("/wt"))))
         .thenReturn(Map.of("core.fsmonitor in /r/.git/config", "a1"));
 
-    Optional<String> distrust = new TrustedGitState(state, git).distrust("ABC-42");
+    Optional<String> distrust = trusted.distrust("ABC-42");
 
     assertThat(distrust)
         .hasValueSatisfying(
@@ -80,24 +83,12 @@ class TrustedGitStateTest {
   }
 
   @Test
-  void namesThreeChangesAndCountsTheRestWhereMoreChanged(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
-            .gitTrust(GitTrust.of(Map.of()))
-            .build());
+  void namesThreeChangesAndCountsTheRestWhereMoreChanged() {
+    state.putTask("ABC-42", trustingNothing);
     when(git.gitState(List.of(Path.of("/wt"))))
         .thenReturn(Map.of("a in /c", "1", "b in /c", "1", "c in /c", "1", "d in /c", "1"));
 
-    Optional<String> distrust = new TrustedGitState(state, git).distrust("ABC-42");
+    Optional<String> distrust = trusted.distrust("ABC-42");
 
     assertThat(distrust)
         .contains(
@@ -106,24 +97,12 @@ class TrustedGitStateTest {
   }
 
   @Test
-  void namesAllThreeChangesWithoutCountWhereExactlyThreeChanged(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
-            .gitTrust(GitTrust.of(Map.of()))
-            .build());
+  void namesAllThreeChangesWithoutCountWhereExactlyThreeChanged() {
+    state.putTask("ABC-42", trustingNothing);
     when(git.gitState(List.of(Path.of("/wt"))))
         .thenReturn(Map.of("a in /c", "1", "b in /c", "1", "c in /c", "1"));
 
-    Optional<String> distrust = new TrustedGitState(state, git).distrust("ABC-42");
+    Optional<String> distrust = trusted.distrust("ABC-42");
 
     assertThat(distrust)
         .contains(
@@ -132,15 +111,7 @@ class TrustedGitStateTest {
   }
 
   @Test
-  void showsWhatAddedAndRemovedEntriesHoldAsReadableDiff(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void showsWhatAddedAndRemovedEntriesHoldAsReadableDiff() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -151,7 +122,7 @@ class TrustedGitStateTest {
     when(git.gitContents(List.of(Path.of("/wt"))))
         .thenReturn(Map.of("core.fsmonitor in /r/.git/config", "/tmp/x"));
 
-    Optional<TaskDiff.RepoDiff> shown = new TrustedGitState(state, git).changes("ABC-42");
+    Optional<TaskDiff.RepoDiff> shown = trusted.changes("ABC-42");
 
     assertThat(shown)
         .hasValueSatisfying(
@@ -166,15 +137,7 @@ class TrustedGitStateTest {
   }
 
   @Test
-  void showsNothingWhereGitObeysWhatWasTrusted(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void showsNothingWhereGitObeysWhatWasTrusted() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -182,154 +145,78 @@ class TrustedGitStateTest {
             .build());
     when(git.gitState(List.of(Path.of("/wt")))).thenReturn(Map.of("a in /c", "1"));
 
-    assertThat(new TrustedGitState(state, git).changes("ABC-42")).isEmpty();
+    assertThat(trusted.changes("ABC-42")).isEmpty();
   }
 
   @Test
-  void cutsWhatItShowsPastTheCapAndFlagsIt(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
-            .gitTrust(GitTrust.of(Map.of()))
-            .build());
+  void cutsWhatItShowsPastTheCapAndFlagsIt() {
+    state.putTask("ABC-42", trustingNothing);
     when(git.gitState(List.of(Path.of("/wt")))).thenReturn(Map.of("a in /c", "1"));
     when(git.gitContents(List.of(Path.of("/wt"))))
         .thenReturn(Map.of("a in /c", "x".repeat(30_000)));
 
-    Optional<TaskDiff.RepoDiff> shown = new TrustedGitState(state, git).changes("ABC-42");
+    Optional<TaskDiff.RepoDiff> shown = trusted.changes("ABC-42");
 
     assertThat(shown).hasValueSatisfying(diff -> assertThat(diff.cut()).isTrue());
     assertThat(shown.orElseThrow().diff()).hasSize(20_000);
   }
 
   @Test
-  void keepsWhatItShowsWholeWhereItIsExactlyTheCap(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
-            .gitTrust(GitTrust.of(Map.of()))
-            .build());
+  void keepsWhatItShowsWholeWhereItIsExactlyTheCap() {
+    state.putTask("ABC-42", trustingNothing);
     when(git.gitState(List.of(Path.of("/wt")))).thenReturn(Map.of("a in /c", "1"));
     when(git.gitContents(List.of(Path.of("/wt"))))
         .thenReturn(Map.of("a in /c", "x".repeat(19_981)));
 
-    Optional<TaskDiff.RepoDiff> shown = new TrustedGitState(state, git).changes("ABC-42");
+    Optional<TaskDiff.RepoDiff> shown = trusted.changes("ABC-42");
 
     assertThat(shown).hasValueSatisfying(diff -> assertThat(diff.cut()).isFalse());
   }
 
   @Test
-  void refusesToShowChangesOfTaskThatDoesNotExist(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void refusesToShowChangesOfTaskThatDoesNotExist() {
 
-    assertThatThrownBy(() -> new TrustedGitState(state, git).changes("ABC-42"))
+    assertThatThrownBy(() -> trusted.changes("ABC-42"))
         .isInstanceOf(Refusal.class);
   }
 
   @Test
-  void readsNoWorktreeForRepoThatHasNone(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void readsNoWorktreeForRepoThatHasNone() {
     state.putTask("ABC-42", TaskState.builder("proj", "", TaskStatus.APPROVED).build());
     when(git.gitState(List.of())).thenReturn(Map.of("core.editor in /r/.git/config", "a1"));
 
-    new TrustedGitState(state, git).trust("ABC-42");
+    trusted.trust("ABC-42");
 
     assertThat(state.task("ABC-42").orElseThrow().gitTrust())
         .isEqualTo(GitTrust.of(Map.of("core.editor in /r/.git/config", "a1")));
   }
 
   @Test
-  void refusesToTrustTaskThatDoesNotExist(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void refusesToTrustTaskThatDoesNotExist() {
 
-    assertThatThrownBy(() -> new TrustedGitState(state, git).trust("ABC-42"))
+    assertThatThrownBy(() -> trusted.trust("ABC-42"))
         .isInstanceOf(Refusal.class);
   }
 
   @Test
-  void distrustsNothingForTaskThatDoesNotExist(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void distrustsNothingForTaskThatDoesNotExist() {
 
-    assertThat(new TrustedGitState(state, git).distrust("ABC-42")).isEmpty();
+    assertThat(trusted.distrust("ABC-42")).isEmpty();
   }
 
   @Test
-  void countsChangeFoundAsTheTasksGitStateRefusal(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
-            .gitTrust(GitTrust.of(Map.of()))
-            .build());
+  void countsChangeFoundAsTheTasksGitStateRefusal() {
+    state.putTask("ABC-42", trustingNothing);
     when(git.gitState(List.of(Path.of("/wt"))))
         .thenReturn(Map.of("core.fsmonitor in /r/.git/config", "a1"));
 
-    new TrustedGitState(state, git).distrust("ABC-42");
+    trusted.distrust("ABC-42");
 
     assertThat(state.task("ABC-42").orElseThrow().refusals()).containsEntry(Guard.GIT_STATE, 1);
   }
 
   @Test
-  void answersThatTheSessionWaitedWhereTheTaskWasParkedAndItsSessionAsked(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void answersThatTheSessionWaitedWhereTheTaskWasParkedAndItsSessionAsked() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -337,72 +224,44 @@ class TrustedGitStateTest {
             .gitTrust(GitTrust.of(Map.of()).withChanged("core.fsmonitor in /r/.git/config added"))
             .build());
 
-    boolean waited = new TrustedGitState(state, git).trust("ABC-42");
+    boolean waited = trusted.trust("ABC-42");
 
     assertThat(waited).isTrue();
   }
 
   @Test
-  void answersThatNoSessionWaitedWhereTheParkedTasksSessionDidNotAsk(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void answersThatNoSessionWaitedWhereTheParkedTasksSessionDidNotAsk() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .gitTrust(GitTrust.of(Map.of()).withChanged("core.fsmonitor in /r/.git/config added"))
             .build());
 
-    boolean waited = new TrustedGitState(state, git).trust("ABC-42");
+    boolean waited = trusted.trust("ABC-42");
 
     assertThat(waited).isFalse();
   }
 
   @Test
-  void keepsParkedTaskParkedWithoutReadingGitAgain(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void keepsParkedTaskParkedWithoutReadingGitAgain() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
             .gitTrust(GitTrust.of(Map.of()).withChanged("core.fsmonitor in /r/.git/config added"))
             .build());
 
-    Optional<String> distrust = new TrustedGitState(state, git).distrust("ABC-42");
+    Optional<String> distrust = trusted.distrust("ABC-42");
 
     assertThat(distrust).contains("core.fsmonitor in /r/.git/config added");
     verifyNoInteractions(git);
   }
 
   @Test
-  void refusesWithoutParkingWhereGitCannotBeRead(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
-            .gitTrust(GitTrust.of(Map.of()))
-            .build());
+  void refusesWithoutParkingWhereGitCannotBeRead() {
+    state.putTask("ABC-42", trustingNothing);
     when(git.gitState(any())).thenThrow(new IllegalStateException("git rev-parse in /wt failed"));
 
-    Optional<String> distrust = new TrustedGitState(state, git).distrust("ABC-42");
+    Optional<String> distrust = trusted.distrust("ABC-42");
 
     assertThat(distrust)
         .contains("git state of ABC-42 could not be read: git rev-parse in /wt failed");
@@ -410,15 +269,7 @@ class TrustedGitStateTest {
   }
 
   @Test
-  void trustAdoptsWhatChangedAndUnparksTheTask(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void trustAdoptsWhatChangedAndUnparksTheTask() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
@@ -427,7 +278,7 @@ class TrustedGitStateTest {
     when(git.gitState(List.of(Path.of("/wt"))))
         .thenReturn(Map.of("core.fsmonitor in /r/.git/config", "a1"));
 
-    new TrustedGitState(state, git).trust("ABC-42");
+    trusted.trust("ABC-42");
 
     assertThat(state.task("ABC-42").orElseThrow().gitTrust())
         .isEqualTo(GitTrust.of(Map.of("core.fsmonitor in /r/.git/config", "a1")));

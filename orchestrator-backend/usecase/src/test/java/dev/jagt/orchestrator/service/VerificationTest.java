@@ -24,19 +24,37 @@ import org.junit.jupiter.api.Test;
 
 class VerificationTest {
 
+  private final ConfigService config = mock(ConfigService.class);
+  private final Processes processes = mock(Processes.class);
+  private final Verification verification =
+      new Verification(
+          config,
+          processes,
+          new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
+          mock(WorktreeChanges.class));
+  private final ConfigService.ConfigFile gradleProject =
+      ConfigService.ConfigFile.defaults()
+          .withProjects(
+              Map.of(
+                  "proj",
+                  TestProjectConfigBuilder.projectConfig()
+                      .withVerifyCommand(List.of("./gradlew", "test"))
+                      .build()));
+  private final ConfigService.ConfigFile npmProject =
+      ConfigService.ConfigFile.defaults()
+          .withProjects(
+              Map.of(
+                  "proj",
+                  TestProjectConfigBuilder.projectConfig()
+                      .withVerifyCommand(List.of("npm", "test"))
+                      .build()));
+
   @Test
   void runsNothingForProjectTheConfigurationNoLongerNames() {
-    ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of()));
-    Processes processes = mock(Processes.class);
 
     Optional<String> failure =
-        new Verification(
-                config,
-                processes,
-                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
-                mock(WorktreeChanges.class))
-            .failure(TaskState.builder("gone", "/wt", TaskStatus.VERIFYING).build());
+        verification.failure(TaskState.builder("gone", "/wt", TaskStatus.VERIFYING).build());
 
     assertThat(failure).isEmpty();
     verifyNoInteractions(processes);
@@ -44,7 +62,6 @@ class VerificationTest {
 
   @Test
   void stopsTheVerifyCommandAfterTheMinutesTheProjectConfigures() {
-    ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -55,73 +72,37 @@ class VerificationTest {
                             .withVerifyCommand(List.of("./gradlew", "test"))
                             .withVerifyMinutes(5)
                             .build())));
-    Processes processes = mock(Processes.class);
     when(processes.run(Path.of("/wt"), Duration.ofMinutes(5), List.of("./gradlew", "test")))
         .thenReturn(new Processes.Result(1, "", "red"));
 
     Optional<String> failure =
-        new Verification(
-                config,
-                processes,
-                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
-                mock(WorktreeChanges.class))
-            .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        verification.failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
     assertThat(failure).isPresent();
   }
 
   @Test
   void stopsTheVerifyCommandAfterTwentyMinutesWhereTheProjectConfiguresNone() {
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of(
-                        "proj",
-                        TestProjectConfigBuilder.projectConfig()
-                            .withVerifyCommand(List.of("./gradlew", "test"))
-                            .build())));
-    Processes processes = mock(Processes.class);
+    when(config.load()).thenReturn(gradleProject);
     when(processes.run(Path.of("/wt"), Duration.ofMinutes(20), List.of("./gradlew", "test")))
         .thenReturn(new Processes.Result(1, "", "red"));
 
     Optional<String> failure =
-        new Verification(
-                config,
-                processes,
-                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
-                mock(WorktreeChanges.class))
-            .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        verification.failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
     assertThat(failure).isPresent();
   }
 
   @Test
   void namesTheProjectTheCommandAndTheExitOfFailedRunWithTheTailOfItsErrors() {
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of(
-                        "proj",
-                        TestProjectConfigBuilder.projectConfig()
-                            .withVerifyCommand(List.of("./gradlew", "test"))
-                            .build())));
-    Processes processes = mock(Processes.class);
+    when(config.load()).thenReturn(gradleProject);
     String errors =
         IntStream.rangeClosed(1, 45).mapToObj(n -> "e" + n).collect(Collectors.joining("\n"));
     when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("./gradlew", "test"))))
         .thenReturn(new Processes.Result(1, "out", errors));
 
     Optional<String> failure =
-        new Verification(
-                config,
-                processes,
-                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
-                mock(WorktreeChanges.class))
-            .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        verification.failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
     assertThat(failure)
         .hasValueSatisfying(
@@ -134,90 +115,44 @@ class VerificationTest {
 
   @Test
   void keepsAnErrorTailOfExactlyFortyLinesWhole() {
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of(
-                        "proj",
-                        TestProjectConfigBuilder.projectConfig()
-                            .withVerifyCommand(List.of("./gradlew", "test"))
-                            .build())));
-    Processes processes = mock(Processes.class);
+    when(config.load()).thenReturn(gradleProject);
     String errors =
         IntStream.rangeClosed(1, 40).mapToObj(n -> "e" + n).collect(Collectors.joining("\n"));
     when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("./gradlew", "test"))))
         .thenReturn(new Processes.Result(1, "", errors));
 
     Optional<String> failure =
-        new Verification(
-                config,
-                processes,
-                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
-                mock(WorktreeChanges.class))
-            .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        verification.failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
     assertThat(failure).hasValueSatisfying(text -> assertThat(text).contains("exited 1\ne1\ne2\n"));
   }
 
   @Test
   void relaysTheStandardOutputOfFailedRunThatSaidNothingOnTheErrorStream() {
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of(
-                        "proj",
-                        TestProjectConfigBuilder.projectConfig()
-                            .withVerifyCommand(List.of("npm", "test"))
-                            .build())));
-    Processes processes = mock(Processes.class);
+    when(config.load()).thenReturn(npmProject);
     when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("npm", "test"))))
         .thenReturn(new Processes.Result(2, "2 tests failed", ""));
 
     Optional<String> failure =
-        new Verification(
-                config,
-                processes,
-                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
-                mock(WorktreeChanges.class))
-            .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        verification.failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
     assertThat(failure).contains("[proj] `npm test` exited 2\n2 tests failed");
   }
 
   @Test
   void reportsNoFailureWhereTheCommandPassed() {
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of(
-                        "proj",
-                        TestProjectConfigBuilder.projectConfig()
-                            .withVerifyCommand(List.of("npm", "test"))
-                            .build())));
-    Processes processes = mock(Processes.class);
+    when(config.load()).thenReturn(npmProject);
     when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("npm", "test"))))
         .thenReturn(new Processes.Result(0, "ok", ""));
 
     Optional<String> failure =
-        new Verification(
-                config,
-                processes,
-                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
-                mock(WorktreeChanges.class))
-            .failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        verification.failure(TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
     assertThat(failure).isEmpty();
   }
 
   @Test
   void reportsOnlyTheFirstOfTwoFailingRepositories() {
-    ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -232,17 +167,11 @@ class VerificationTest {
                                 .withPath("/web")
                                 .withVerifyCommand(List.of("npm", "test"))
                                 .build())));
-    Processes processes = mock(Processes.class);
     when(processes.run(any(), any(), eq(List.of("npm", "test"))))
         .thenReturn(new Processes.Result(1, "", "red"));
 
     Optional<String> failure =
-        new Verification(
-                config,
-                processes,
-                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
-                mock(WorktreeChanges.class))
-            .failure(
+        verification.failure(
                 TaskState.builder(
                         List.of(TaskRepo.of("proj", "/wt"), TaskRepo.of("web", "/wt-web")),
                         TaskStatus.VERIFYING)
@@ -253,15 +182,10 @@ class VerificationTest {
 
   @Test
   void runsNoProbeWhereThePlanDeclaredNone() {
-    Processes processes = mock(Processes.class);
 
     List<Probe> probed =
-        new Verification(
-                mock(ConfigService.class),
-                processes,
-                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
-                mock(WorktreeChanges.class))
-            .probed("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+        verification.probed(
+            "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
 
     assertThat(probed).isEmpty();
     verifyNoInteractions(processes);
@@ -269,19 +193,12 @@ class VerificationTest {
 
   @Test
   void runsTheProbesThePlanDeclaredAndReturnsTheirResults() {
-    ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    Processes processes = mock(Processes.class);
     when(processes.run(any(), any(), anyMap(), eq(List.of("./scripts/check"))))
         .thenReturn(new Processes.Result(0, "", ""));
 
     List<Probe> probed =
-        new Verification(
-                config,
-                processes,
-                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
-                mock(WorktreeChanges.class))
-            .probed(
+        verification.probed(
                 "ABC-42",
                 TaskState.builder("proj", "/wt", TaskStatus.VERIFYING)
                     .probes(
@@ -293,7 +210,6 @@ class VerificationTest {
 
   @Test
   void namesTheProjectsOwnRemoteWhereProbeIsRefusedForPushThatCouldSkipItsCheck() {
-    ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -304,15 +220,9 @@ class VerificationTest {
                             .withBaseBranch("upstream/main")
                             .withRemote("upstream")
                             .build())));
-    Processes processes = mock(Processes.class);
 
     List<Probe> probed =
-        new Verification(
-                config,
-                processes,
-                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
-                mock(WorktreeChanges.class))
-            .probed(
+        verification.probed(
                 "ABC-42",
                 TaskState.builder("proj", "/wt", TaskStatus.VERIFYING)
                     .probes(
@@ -332,21 +242,14 @@ class VerificationTest {
 
   @Test
   void runsProbeNamingTheSecondRepositoryInThatWorktreeAndOthersInThePrimaryOne() {
-    ConfigService config = mock(ConfigService.class);
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    Processes processes = mock(Processes.class);
     when(processes.run(eq(Path.of("/wt-front")), any(), anyMap(), eq(List.of("npm", "test"))))
         .thenReturn(new Processes.Result(0, "", ""));
     when(processes.run(eq(Path.of("/wt")), any(), anyMap(), eq(List.of("./scripts/check"))))
         .thenReturn(new Processes.Result(1, "", ""));
 
     List<Probe> probed =
-        new Verification(
-                config,
-                processes,
-                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
-                mock(WorktreeChanges.class))
-            .probed(
+        verification.probed(
                 "ABC-42",
                 TaskState.builder(
                         List.of(TaskRepo.of("proj", "/wt"), TaskRepo.of("front", "/wt-front")),
@@ -362,7 +265,6 @@ class VerificationTest {
 
   @Test
   void namesTheNamedRepositorysOwnRemoteWhereItsProbeIsRefused() {
-    ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -374,15 +276,9 @@ class VerificationTest {
                             .withBaseBranch("upstream/main")
                             .withRemote("upstream")
                             .build())));
-    Processes processes = mock(Processes.class);
 
     List<Probe> probed =
-        new Verification(
-                config,
-                processes,
-                new AcceptanceProbing(processes, new ToolGate(List.of()), 8290),
-                mock(WorktreeChanges.class))
-            .probed(
+        verification.probed(
                 "ABC-42",
                 TaskState.builder(
                         List.of(TaskRepo.of("proj", "/wt"), TaskRepo.of("front", "/wt-front")),
