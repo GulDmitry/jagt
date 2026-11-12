@@ -50,11 +50,11 @@ clock or random value; one of outside state (a git repo) may write.
   The agent CLI is **not** resolved: it runs under the human's PATH in its tmux window.
 - `editor-command` / `editor-diff-command` are **lists**: only the launcher is resolved, the arguments stay the
   human's; a launcher found nowhere fails naming the config **key**.
-- JUnit parallel, methods **and** classes: no `@BeforeAll`, no mutable statics, every file under a `@TempDir`;
-  anything competing for a **machine-wide** resource declares it (`@ResourceLock("loopback-ports")` +
-  `@Execution(SAME_THREAD)`). Only this suite is parallel; it runs in English and UTC, as production does.
-- **A test that asserts on a log line takes `@ResourceLock(Resources.GLOBAL)`**: else its appender captures a
-  concurrent test's events and the `Logger` cast races SLF4J's start-up (`LogCaptureTest`).
+- JUnit parallel, methods **and** classes, every test isolated by construction: no `@BeforeAll`, no mutable statics,
+  every file under a `@TempDir`, a port bound to 0, a log read only through its own test's capture.
+- **No `@ResourceLock`, `@Isolated` or `@Execution(SAME_THREAD)`**: what tests share is faked or stubbed, and a test that
+  cannot run in parallel is rewritten or deleted. An extraordinary reason, written at the site, is the only exception.
+  Only this suite is parallel; it runs in English and UTC, as production does.
 - **A flaky test is a defect, fixed when first seen**: a red a rerun turns green is never waved through. Its cause is
   found before the next commit (a race gets a fix and a `docs/cases.md` row); never a longer wait, a retry or `@Disabled`.
 
