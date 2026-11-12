@@ -487,12 +487,10 @@ class TaskProvisioningTest {
   void namesTheRemoteProjectSharesItsBranchesThrough() {
     when(config.project("proj"))
         .thenReturn(
-            new ProjectConfig(
-                new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
-                new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
-                new ProjectConfig.CodeHost(
-                    null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                new ProjectConfig.Verify(List.of(), null)));
+            TestProjectConfigBuilder.projectConfig()
+                .withBaseBranch("upstream/main")
+                .withRemote("upstream")
+                .build());
 
     assertThat(provisioning.remoteOf("proj")).isEqualTo(new Remote("upstream"));
   }

@@ -29,6 +29,36 @@ class InfraRetriesTest {
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final Instant NOW = Instant.parse("2026-10-29T10:00:00Z");
+  private static final InfraRetry SENT_FIRST =
+      new InfraRetry(
+          1_000,
+          "shop",
+          "https://host.invalid/p/1",
+          "unit-tests",
+          "runner_system_failure",
+          true,
+          1,
+          3);
+  private static final InfraRetry SENT_SECOND =
+      new InfraRetry(
+          2_000,
+          "shop",
+          "https://host.invalid/p/1",
+          "unit-tests",
+          "runner_system_failure",
+          true,
+          1,
+          3);
+  private static final InfraRetry SENT_THIRD =
+      new InfraRetry(
+          3_000,
+          "shop",
+          "https://host.invalid/p/1",
+          "unit-tests",
+          "runner_system_failure",
+          true,
+          1,
+          3);
 
   private static StateService state(Path dir) {
     return new StateService(
@@ -109,24 +139,8 @@ class InfraRetriesTest {
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .infraRetries(
                 List.of(
-                    new InfraRetry(
-                        1_000,
-                        "shop",
-                        "https://host.invalid/p/1",
-                        "unit-tests",
-                        "runner_system_failure",
-                        true,
-                        1,
-                        3),
-                    new InfraRetry(
-                        2_000,
-                        "shop",
-                        "https://host.invalid/p/1",
-                        "unit-tests",
-                        "runner_system_failure",
-                        true,
-                        1,
-                        3)))
+                    SENT_FIRST,
+                    SENT_SECOND))
             .build());
 
     Optional<InfraRetry> armed =
@@ -149,33 +163,9 @@ class InfraRetriesTest {
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
             .infraRetries(
                 List.of(
-                    new InfraRetry(
-                        1_000,
-                        "shop",
-                        "https://host.invalid/p/1",
-                        "unit-tests",
-                        "runner_system_failure",
-                        true,
-                        1,
-                        3),
-                    new InfraRetry(
-                        2_000,
-                        "shop",
-                        "https://host.invalid/p/1",
-                        "unit-tests",
-                        "runner_system_failure",
-                        true,
-                        1,
-                        3),
-                    new InfraRetry(
-                        3_000,
-                        "shop",
-                        "https://host.invalid/p/1",
-                        "unit-tests",
-                        "runner_system_failure",
-                        true,
-                        1,
-                        3)))
+                    SENT_FIRST,
+                    SENT_SECOND,
+                    SENT_THIRD))
             .build());
 
     Optional<InfraRetry> armed =

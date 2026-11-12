@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -28,16 +29,29 @@ class MergedRequestsTest {
   private final WorktreeInspection inspection = mock(WorktreeInspection.class);
   private final RepoDeparture departure = mock(RepoDeparture.class);
 
-  @Test
-  void requestReadsNotMergedAgainWhenGitNoLongerFindsItsHeadInTheTarget(@TempDir Path root) {
-    StateService state =
+  @TempDir Path root;
+
+  private StateService state;
+  private MergedRequests requests;
+
+  @BeforeEach
+  void readsMergedRequestsOverTheTempState() {
+    state =
         new StateService(
             new JsonMapper(),
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+            reducer,
+            event -> {});
+    requests =
+        new MergedRequests(
+            state, config, inspection, new WorktreeChanges(config, inspection), departure);
+  }
+
+  @Test
+  void requestReadsNotMergedAgainWhenGitNoLongerFindsItsHeadInTheTarget() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
@@ -49,24 +63,14 @@ class MergedRequestsTest {
     when(inspection.mergedIntoTarget(any(), any(), any())).thenReturn(false);
 
     boolean none =
-        new MergedRequests(
-                state, config, inspection, new WorktreeChanges(config, inspection), departure)
-            .refresh("ABC-42");
+        requests.refresh("ABC-42");
 
     assertThat(none).isFalse();
     assertThat(state.task("ABC-42").orElseThrow().requestsMerged()).isFalse();
   }
 
   @Test
-  void requestStaysMergedWhereTheHostSaidSoAndGitSeesNoMergeCommit(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void requestStaysMergedWhereTheHostSaidSoAndGitSeesNoMergeCommit() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
@@ -78,44 +82,24 @@ class MergedRequestsTest {
     when(inspection.mergedIntoTarget(any(), any(), any())).thenReturn(false);
 
     boolean none =
-        new MergedRequests(
-                state, config, inspection, new WorktreeChanges(config, inspection), departure)
-            .refresh("ABC-42");
+        requests.refresh("ABC-42");
 
     assertThat(none).isTrue();
   }
 
   @Test
-  void requestStaysMergedWhereTheHostSaidMergedAndNothingElseIsKnown(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void requestStaysMergedWhereTheHostSaidMergedAndNothingElseIsKnown() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("http://mr/1").build());
 
-    new MergedRequests(
-            state, config, inspection, new WorktreeChanges(config, inspection), departure)
-        .hostSaidMerged("ABC-42", "proj");
+    requests.hostSaidMerged("ABC-42", "proj");
 
     assertThat(state.task("ABC-42").orElseThrow().requestsMerged()).isTrue();
   }
 
   @Test
-  void requestStaysMergedWhenGitCannotBeRead(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void requestStaysMergedWhenGitCannotBeRead() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
@@ -128,15 +112,13 @@ class MergedRequestsTest {
         .thenThrow(new IllegalStateException("fetch failed"));
 
     boolean none =
-        new MergedRequests(
-                state, config, inspection, new WorktreeChanges(config, inspection), departure)
-            .refresh("ABC-42");
+        requests.refresh("ABC-42");
 
     assertThat(none).isTrue();
   }
 
   @Test
-  void owesRequestToHostedRepositoryWithNoneAndNotToOneWithNoCodeHost(@TempDir Path root) {
+  void owesRequestToHostedRepositoryWithNoneAndNotToOneWithNoCodeHost() {
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -144,28 +126,12 @@ class MergedRequestsTest {
                     java.util.Map.of(
                         "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
                         "web",
-                            new ProjectConfig(
-                                new ProjectConfig.Repository("/web", List.of(), null, List.of()),
-                                new ProjectConfig.Branches("main", "dev", null),
-                                new ProjectConfig.CodeHost(
-                                    "none", null, List.of(), List.of(), List.of(), List.of(),
-                                    List.of()),
-                                new ProjectConfig.Verify(List.of(), null)),
+                            TestProjectConfigBuilder.projectConfig()
+                                .withPath("/web")
+                                .withBaseBranch("main")
+                                .withCodeHost("none")
+                                .build(),
                         "docs", new ProjectConfig("/docs", "origin/main", "dev", List.of()))));
-    MergedRequests requests =
-        new MergedRequests(
-            new StateService(
-                new JsonMapper(),
-                new OrchestratorPaths(
-                    OrchestratorProperties.defaults()
-                        .withRoot(root.toString())
-                        .withStateFile(root.resolve("state.json").toString())),
-                reducer, event -> {}),
-            config,
-            inspection,
-            new WorktreeChanges(config, inspection),
-            departure);
-
     List<String> owing =
         requests.owingRequest(
             List.of(
@@ -177,45 +143,24 @@ class MergedRequestsTest {
   }
 
   @Test
-  void repositoryWhoseRequestTheHostClosedLeavesTheTaskWhereTheDepartureTakesIt(
-      @TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void repositoryWhoseRequestTheHostClosedLeavesTheTaskWhereTheDepartureTakesIt() {
     TaskRepo web = new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web");
     when(departure.leave("ABC-42", web, "its request was closed on the host")).thenReturn(true);
 
     boolean left =
-        new MergedRequests(
-                state, config, inspection, new WorktreeChanges(config, inspection), departure)
-            .hostSaidClosed("ABC-42", web);
+        requests.hostSaidClosed("ABC-42", web);
 
     assertThat(left).isTrue();
   }
 
   @Test
-  void repositoryTheDepartureKeepsStaysWhoseRequestTheHostClosed(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void repositoryTheDepartureKeepsStaysWhoseRequestTheHostClosed() {
     TaskRepo primary = new TaskRepo("api", "/api-wt", "git@host:g/api.git", "http://mr/api");
     when(departure.leave("ABC-42", primary, "its request was closed on the host"))
         .thenReturn(false);
 
     boolean left =
-        new MergedRequests(
-                state, config, inspection, new WorktreeChanges(config, inspection), departure)
-            .hostSaidClosed("ABC-42", primary);
+        requests.hostSaidClosed("ABC-42", primary);
 
     assertThat(left).isFalse();
   }

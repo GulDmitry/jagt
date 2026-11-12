@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.task.Probe;
-import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -52,12 +51,10 @@ class VerificationTest {
                 .withProjects(
                     Map.of(
                         "proj",
-                        new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
-                            new ProjectConfig.Branches("origin/main", "dev", null),
-                            new ProjectConfig.CodeHost(
-                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                            new ProjectConfig.Verify(List.of("./gradlew", "test"), 5)))));
+                        TestProjectConfigBuilder.projectConfig()
+                            .withVerifyCommand(List.of("./gradlew", "test"))
+                            .withVerifyMinutes(5)
+                            .build())));
     Processes processes = mock(Processes.class);
     when(processes.run(Path.of("/wt"), Duration.ofMinutes(5), List.of("./gradlew", "test")))
         .thenReturn(new Processes.Result(1, "", "red"));
@@ -82,12 +79,9 @@ class VerificationTest {
                 .withProjects(
                     Map.of(
                         "proj",
-                        new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
-                            new ProjectConfig.Branches("origin/main", "dev", null),
-                            new ProjectConfig.CodeHost(
-                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                            new ProjectConfig.Verify(List.of("./gradlew", "test"), null)))));
+                        TestProjectConfigBuilder.projectConfig()
+                            .withVerifyCommand(List.of("./gradlew", "test"))
+                            .build())));
     Processes processes = mock(Processes.class);
     when(processes.run(Path.of("/wt"), Duration.ofMinutes(20), List.of("./gradlew", "test")))
         .thenReturn(new Processes.Result(1, "", "red"));
@@ -112,12 +106,9 @@ class VerificationTest {
                 .withProjects(
                     Map.of(
                         "proj",
-                        new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
-                            new ProjectConfig.Branches("origin/main", "dev", null),
-                            new ProjectConfig.CodeHost(
-                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                            new ProjectConfig.Verify(List.of("./gradlew", "test"), null)))));
+                        TestProjectConfigBuilder.projectConfig()
+                            .withVerifyCommand(List.of("./gradlew", "test"))
+                            .build())));
     Processes processes = mock(Processes.class);
     String errors =
         IntStream.rangeClosed(1, 45).mapToObj(n -> "e" + n).collect(Collectors.joining("\n"));
@@ -150,12 +141,9 @@ class VerificationTest {
                 .withProjects(
                     Map.of(
                         "proj",
-                        new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
-                            new ProjectConfig.Branches("origin/main", "dev", null),
-                            new ProjectConfig.CodeHost(
-                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                            new ProjectConfig.Verify(List.of("./gradlew", "test"), null)))));
+                        TestProjectConfigBuilder.projectConfig()
+                            .withVerifyCommand(List.of("./gradlew", "test"))
+                            .build())));
     Processes processes = mock(Processes.class);
     String errors =
         IntStream.rangeClosed(1, 40).mapToObj(n -> "e" + n).collect(Collectors.joining("\n"));
@@ -182,12 +170,9 @@ class VerificationTest {
                 .withProjects(
                     Map.of(
                         "proj",
-                        new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
-                            new ProjectConfig.Branches("origin/main", "dev", null),
-                            new ProjectConfig.CodeHost(
-                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                            new ProjectConfig.Verify(List.of("npm", "test"), null)))));
+                        TestProjectConfigBuilder.projectConfig()
+                            .withVerifyCommand(List.of("npm", "test"))
+                            .build())));
     Processes processes = mock(Processes.class);
     when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("npm", "test"))))
         .thenReturn(new Processes.Result(2, "2 tests failed", ""));
@@ -212,12 +197,9 @@ class VerificationTest {
                 .withProjects(
                     Map.of(
                         "proj",
-                        new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
-                            new ProjectConfig.Branches("origin/main", "dev", null),
-                            new ProjectConfig.CodeHost(
-                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                            new ProjectConfig.Verify(List.of("npm", "test"), null)))));
+                        TestProjectConfigBuilder.projectConfig()
+                            .withVerifyCommand(List.of("npm", "test"))
+                            .build())));
     Processes processes = mock(Processes.class);
     when(processes.run(eq(Path.of("/wt")), any(), eq(List.of("npm", "test"))))
         .thenReturn(new Processes.Result(0, "ok", ""));
@@ -242,21 +224,14 @@ class VerificationTest {
                 .withProjects(
                     Map.of(
                         "proj",
-                            new ProjectConfig(
-                                new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
-                                new ProjectConfig.Branches("origin/main", "dev", null),
-                                new ProjectConfig.CodeHost(
-                                    null, null, List.of(), List.of(), List.of(), List.of(),
-                                    List.of()),
-                                new ProjectConfig.Verify(List.of("npm", "test"), null)),
+                            TestProjectConfigBuilder.projectConfig()
+                                .withVerifyCommand(List.of("npm", "test"))
+                                .build(),
                         "web",
-                            new ProjectConfig(
-                                new ProjectConfig.Repository("/web", List.of(), null, List.of()),
-                                new ProjectConfig.Branches("origin/main", "dev", null),
-                                new ProjectConfig.CodeHost(
-                                    null, null, List.of(), List.of(), List.of(), List.of(),
-                                    List.of()),
-                                new ProjectConfig.Verify(List.of("npm", "test"), null)))));
+                            TestProjectConfigBuilder.projectConfig()
+                                .withPath("/web")
+                                .withVerifyCommand(List.of("npm", "test"))
+                                .build())));
     Processes processes = mock(Processes.class);
     when(processes.run(any(), any(), eq(List.of("npm", "test"))))
         .thenReturn(new Processes.Result(1, "", "red"));
@@ -325,12 +300,10 @@ class VerificationTest {
                 .withProjects(
                     Map.of(
                         "proj",
-                        new ProjectConfig(
-                            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
-                            new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
-                            new ProjectConfig.CodeHost(
-                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                            new ProjectConfig.Verify(List.of(), null)))));
+                        TestProjectConfigBuilder.projectConfig()
+                            .withBaseBranch("upstream/main")
+                            .withRemote("upstream")
+                            .build())));
     Processes processes = mock(Processes.class);
 
     List<Probe> probed =
@@ -396,12 +369,11 @@ class VerificationTest {
                 .withProjects(
                     Map.of(
                         "front",
-                        new ProjectConfig(
-                            new ProjectConfig.Repository("/front", List.of(), null, List.of()),
-                            new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
-                            new ProjectConfig.CodeHost(
-                                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                            new ProjectConfig.Verify(List.of(), null)))));
+                        TestProjectConfigBuilder.projectConfig()
+                            .withPath("/front")
+                            .withBaseBranch("upstream/main")
+                            .withRemote("upstream")
+                            .build())));
     Processes processes = mock(Processes.class);
 
     List<Probe> probed =

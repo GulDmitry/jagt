@@ -12,6 +12,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,9 +21,13 @@ import tools.jackson.databind.json.JsonMapper;
 
 class UsageLedgerTest {
 
-  @Test
-  void sumsDaysCallsOfOneKindIntoOneLine(@TempDir Path root) throws Exception {
-    UsageLedger ledger =
+  @TempDir Path root;
+
+  private UsageLedger ledger;
+
+  @BeforeEach
+  void keepsTheLedgerUnderTheTempRoot() {
+    ledger =
         new UsageLedger(
             new JsonMapper(),
             new OrchestratorPaths(
@@ -30,6 +35,10 @@ class UsageLedgerTest {
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
             Clock.fixed(Instant.parse("2026-10-13T10:00:00Z"), ZoneOffset.UTC));
+  }
+
+  @Test
+  void sumsDaysCallsOfOneKindIntoOneLine() throws Exception {
 
     ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(40_000, 0, 900, 0.30));
     ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(2_000, 50_000, 800, 0.05));
@@ -45,21 +54,13 @@ class UsageLedgerTest {
   }
 
   @Test
-  void foldsDaysPastNinetyIntoTheirMonthSoTheFileStaysBounded(@TempDir Path root) throws Exception {
+  void foldsDaysPastNinetyIntoTheirMonthSoTheFileStaysBounded() throws Exception {
     Files.writeString(
         root.resolve("usage-by-day.jsonl"),
         """
         {"period":"2026-06-02","kind":"ROUTE","usage":{"calls":1,"inputTokens":100,"cachedInputTokens":0,"outputTokens":0,"costUsd":0,"coldStarts":0,"warmStarts":0}}
         {"period":"2026-06-20","kind":"ROUTE","usage":{"calls":2,"inputTokens":300,"cachedInputTokens":0,"outputTokens":0,"costUsd":0,"coldStarts":0,"warmStarts":0}}
         """);
-    UsageLedger ledger =
-        new UsageLedger(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            Clock.fixed(Instant.parse("2026-10-13T10:00:00Z"), ZoneOffset.UTC));
 
     ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(1_000, 0, 10, 0.01));
 
@@ -71,15 +72,7 @@ class UsageLedgerTest {
   }
 
   @Test
-  void keepsTheDearestSingleCallOfTheDay(@TempDir Path root) throws Exception {
-    UsageLedger ledger =
-        new UsageLedger(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            Clock.fixed(Instant.parse("2026-10-13T10:00:00Z"), ZoneOffset.UTC));
+  void keepsTheDearestSingleCallOfTheDay() throws Exception {
 
     ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(40_000, 0, 900, 0.30));
     ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(2_000, 0, 800, 0.05));
@@ -91,20 +84,12 @@ class UsageLedgerTest {
   }
 
   @Test
-  void readsRowWrittenBeforeTheDearestCallWasKept(@TempDir Path root) throws Exception {
+  void readsRowWrittenBeforeTheDearestCallWasKept() throws Exception {
     Files.writeString(
         root.resolve("usage-by-day.jsonl"),
         """
         {"period":"2026-10-13","kind":"ROUTE","usage":{"calls":2,"inputTokens":300,"cachedInputTokens":0,"outputTokens":0,"costUsd":0.5,"coldStarts":0,"warmStarts":0}}
         """);
-    UsageLedger ledger =
-        new UsageLedger(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            Clock.fixed(Instant.parse("2026-10-13T10:00:00Z"), ZoneOffset.UTC));
 
     ledger.add(AssistantCallKind.ROUTE, TokenUsage.ofCall(1_000, 0, 10, 0.07));
 
@@ -126,17 +111,9 @@ class UsageLedgerTest {
   }
 
   @Test
-  void keepsLineItCannotReadRatherThanDroppingIt(@TempDir Path root) throws Exception {
+  void keepsLineItCannotReadRatherThanDroppingIt() throws Exception {
     Files.writeString(
         root.resolve("usage-by-day.jsonl"), "{\"period\":\"2026-09-01\",\"kind\":\"GONE_KIND\"}\n");
-    UsageLedger ledger =
-        new UsageLedger(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            Clock.fixed(Instant.parse("2026-10-13T10:00:00Z"), ZoneOffset.UTC));
 
     ledger.add(AssistantCallKind.ROUTE, TokenUsage.ofCall(1_000, 0, 10, 0.01));
 
@@ -146,16 +123,8 @@ class UsageLedgerTest {
   }
 
   @Test
-  void dropsBlankLineInsteadOfKeepingItAsOneItCannotRead(@TempDir Path root) throws Exception {
+  void dropsBlankLineInsteadOfKeepingItAsOneItCannotRead() throws Exception {
     Files.writeString(root.resolve("usage-by-day.jsonl"), "\n\n");
-    UsageLedger ledger =
-        new UsageLedger(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            Clock.fixed(Instant.parse("2026-10-13T10:00:00Z"), ZoneOffset.UTC));
 
     ledger.add(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(1_000, 0, 10, 0.01));
 
@@ -166,15 +135,7 @@ class UsageLedgerTest {
   }
 
   @Test
-  void keepsTheUnpricedCallsOfDayInItsLine(@TempDir Path root) throws Exception {
-    UsageLedger ledger =
-        new UsageLedger(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            Clock.fixed(Instant.parse("2026-10-13T10:00:00Z"), ZoneOffset.UTC));
+  void keepsTheUnpricedCallsOfDayInItsLine() throws Exception {
 
     ledger.add(AssistantCallKind.ROUTE, TokenUsage.ofUnpricedCall(1_000, 0, 10));
     ledger.add(AssistantCallKind.ROUTE, TokenUsage.ofUnpricedCall(1_000, 0, 10));

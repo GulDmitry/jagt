@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -24,98 +25,70 @@ class TaskRetargetTest {
 
   private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
-  @Test
-  void recordsTheNewBaseOnceOriginHasItAndTheWorktreeStandsOnIt(@TempDir Path root) {
-    StateService state =
+  @TempDir Path root;
+
+  private final GitWorktrees git = mock(GitWorktrees.class);
+  private final ConfigService config = mock(ConfigService.class);
+  private StateService state;
+  private TaskRetarget retarget;
+
+  @BeforeEach
+  void putsInProgressTaskOnOriginProject() {
+    state =
         new StateService(
             new JsonMapper(),
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+            reducer,
+            event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    GitWorktrees git = mock(GitWorktrees.class);
-    ConfigService config = mock(ConfigService.class);
     when(config.project("proj"))
         .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
+    retarget = new TaskRetarget(state, git, config);
+  }
+
+  @Test
+  void recordsTheNewBaseOnceOriginHasItAndTheWorktreeStandsOnIt() {
     when(git.remoteBranchExists(Path.of("/wt"), "ABC-41")).thenReturn(true);
     when(git.standsOn(Path.of("/wt"), "ABC-41")).thenReturn(true);
 
-    new TaskRetarget(state, git, config).retarget("ABC-42", "origin/ABC-41");
+    retarget.retarget("ABC-42", "origin/ABC-41");
 
     assertThat(state.task("ABC-42").orElseThrow().baseBranch()).isEqualTo("ABC-41");
   }
 
   @Test
-  void keepsTheBaseWhenTheWorktreeDoesNotStandOnTheBranchItNames(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    GitWorktrees git = mock(GitWorktrees.class);
-    ConfigService config = mock(ConfigService.class);
-    when(config.project("proj"))
-        .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
+  void keepsTheBaseWhenTheWorktreeDoesNotStandOnTheBranchItNames() {
     when(git.remoteBranchExists(Path.of("/wt"), "ABC-41")).thenReturn(true);
 
-    assertThatThrownBy(() -> new TaskRetarget(state, git, config).retarget("ABC-42", "ABC-41"))
+    assertThatThrownBy(() -> retarget.retarget("ABC-42", "ABC-41"))
         .isInstanceOf(Refusal.class);
     assertThat(state.task("ABC-42").orElseThrow().baseBranch()).isNull();
   }
 
   @Test
-  void keepsTheBaseWhenOriginHasNoSuchBranch(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    GitWorktrees git = mock(GitWorktrees.class);
-    ConfigService config = mock(ConfigService.class);
-    when(config.project("proj"))
-        .thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
+  void keepsTheBaseWhenOriginHasNoSuchBranch() {
     when(git.standsOn(Path.of("/wt"), "ABC-41")).thenReturn(true);
 
-    assertThatThrownBy(() -> new TaskRetarget(state, git, config).retarget("ABC-42", "ABC-41"))
+    assertThatThrownBy(() -> retarget.retarget("ABC-42", "ABC-41"))
         .isInstanceOf(Refusal.class);
     assertThat(state.task("ABC-42").orElseThrow().baseBranch()).isNull();
   }
 
   @Test
-  void takesTheRemoteOfTheProjectOffTheBranchItIsGiven(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    GitWorktrees git = mock(GitWorktrees.class);
-    ConfigService config = mock(ConfigService.class);
+  void takesTheRemoteOfTheProjectOffTheBranchItIsGiven() {
     when(config.project("proj"))
         .thenReturn(
-            new ProjectConfig(
-                new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
-                new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
-                new ProjectConfig.CodeHost(
-                    null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                new ProjectConfig.Verify(List.of(), null)));
+            TestProjectConfigBuilder.projectConfig()
+                .withBaseBranch("upstream/main")
+                .withRemote("upstream")
+                .build());
     when(git.remoteBranchExists(Path.of("/wt"), "ABC-41")).thenReturn(true);
     when(git.standsOn(Path.of("/wt"), "ABC-41")).thenReturn(true);
 
-    new TaskRetarget(state, git, config).retarget("ABC-42", "upstream/ABC-41");
+    retarget.retarget("ABC-42", "upstream/ABC-41");
 
     assertThat(state.task("ABC-42").orElseThrow().baseBranch()).isEqualTo("ABC-41");
   }

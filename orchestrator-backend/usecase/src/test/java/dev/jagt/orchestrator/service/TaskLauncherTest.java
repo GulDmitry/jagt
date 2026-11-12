@@ -28,6 +28,13 @@ class TaskLauncherTest {
   private final TaskLauncher launcher =
       new TaskLauncher(configService, launches, mock(TaskResume.class));
 
+  private final ConfigService.ConfigFile groupA =
+      ConfigService.ConfigFile.defaults()
+          .withProjects(
+              Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of())));
+  private final Answer<TicketFacts> read =
+      new Answer<>(Optional.of(TicketFacts.defaults().withKey("ABC-42")), TokenUsage.NONE);
+
   @Test
   void createsOneTaskAcrossEveryProjectNamedInTheSameTokenTheFirstHoldingTheSession() {
     when(configService.load())
@@ -53,14 +60,8 @@ class TaskLauncherTest {
 
   @Test
   void handsIntakesPaidReadOnWithTheProjectItPlacedTheItemIn() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+    when(configService.load()).thenReturn(groupA);
     LaunchRequest request = LaunchRequest.of("ABC-42").withProject("group-a");
-    Answer<TicketFacts> read =
-        new Answer<>(Optional.of(TicketFacts.defaults().withKey("ABC-42")), TokenUsage.NONE);
 
     launcher.launch(request, read);
 
@@ -94,11 +95,7 @@ class TaskLauncherTest {
 
   @Test
   void makesTaskOfTypedLineThatOpensOnProjectAndNamesNoTicket() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+    when(configService.load()).thenReturn(groupA);
 
     launcher.launchLine("group-a tighten the parser");
 
@@ -126,11 +123,7 @@ class TaskLauncherTest {
 
   @Test
   void answersWhatTheWrittenLaunchAnsweredForRequestCarryingOnlyWords() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+    when(configService.load()).thenReturn(groupA);
     LaunchRequest request =
         LaunchRequest.defaults().withProject("group-a").withNotes("tighten the parser");
     when(launches.written(request, List.of("group-a")))
@@ -142,14 +135,8 @@ class TaskLauncherTest {
 
   @Test
   void answersWhatTheTicketLaunchAnsweredForAnItemIntakeAlreadyRead() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+    when(configService.load()).thenReturn(groupA);
     LaunchRequest request = LaunchRequest.of("ABC-42").withProject("group-a");
-    Answer<TicketFacts> read =
-        new Answer<>(Optional.of(TicketFacts.defaults().withKey("ABC-42")), TokenUsage.NONE);
     when(launches.ticket(request, List.of("group-a"), read))
         .thenReturn(Launched.created("ABC-42", "started"));
 
@@ -158,11 +145,7 @@ class TaskLauncherTest {
 
   @Test
   void answersWhatTheWrittenLaunchAnsweredForTypedLine() {
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+    when(configService.load()).thenReturn(groupA);
     when(launches.written(any(), eq(List.of("group-a"))))
         .thenReturn(Launched.created("tighten-the-parser", "started"));
 

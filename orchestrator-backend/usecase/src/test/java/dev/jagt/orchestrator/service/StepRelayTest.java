@@ -37,6 +37,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -383,27 +384,6 @@ class StepRelayTest {
   }
 
   @Test
-  void stopsTheTaskInsteadOfSendingFourthRedVerificationRunning() throws Exception {
-    Files.writeString(root.resolve("roles/session/cases.md"), VERIFY_CASE);
-    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
-    relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
-    relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in OrderTest", relay.standing("ABC-42"));
-    relay.relayRound(
-        "ABC-42", Step.VERIFY, "BUILD FAILED in CartTest again", relay.standing("ABC-42"));
-
-    boolean told =
-        relay.relayRound(
-            "ABC-42", Step.VERIFY, "BUILD FAILED in PaymentTest", relay.standing("ABC-42"));
-
-    assertThat(told).isFalse();
-    verify(sessions, times(3)).writeTaskContext(anyString(), anyString());
-    assertThat(state.task("ABC-42").orElseThrow().stop())
-        .extracting(TaskStop::trigger, TaskStop::evidence)
-        .containsExactly(
-            TaskStop.Trigger.ROUNDS, "verify sent 3 rounds running in 24h; the next one was not");
-  }
-
-  @Test
   void stopsTheTaskInsteadOfSendingFourthReviewRoundRunning() {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     List<Step> steps = List.of(Step.ROUND_THREADS, Step.ROUND_THREADS_DONE);
@@ -441,21 +421,6 @@ class StepRelayTest {
         .containsExactly(
             TaskStop.Trigger.ROUNDS,
             "round-threads+round-threads-done sent 3 rounds running in 24h; the next one was not");
-  }
-
-  @Test
-  void sendsThirdRedVerificationRunning() throws Exception {
-    Files.writeString(root.resolve("roles/session/cases.md"), VERIFY_CASE);
-    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
-    relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
-    relay.relayRound("ABC-42", Step.VERIFY, "BUILD FAILED in OrderTest", relay.standing("ABC-42"));
-
-    boolean told =
-        relay.relayRound(
-            "ABC-42", Step.VERIFY, "BUILD FAILED in PaymentTest", relay.standing("ABC-42"));
-
-    assertThat(told).isTrue();
-    assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
   }
 
   @Test
@@ -577,5 +542,46 @@ class StepRelayTest {
     assertThat(told).isEqualTo(false);
     verify(sessions, never()).relayUnder(anyString(), anyString(), anyBoolean());
     assertThat(state.task("ABC-42").orElseThrow().turnOrNone().open()).isEqualTo(false);
+  }
+
+  @Nested
+  class AfterTwoRedVerificationRounds {
+
+    @BeforeEach
+    void twoRoundsWereSent() throws Exception {
+      Files.writeString(root.resolve("roles/session/cases.md"), VERIFY_CASE);
+      state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).build());
+      relay.relayRound(
+          "ABC-42", Step.VERIFY, "BUILD FAILED in CartTest", relay.standing("ABC-42"));
+      relay.relayRound(
+          "ABC-42", Step.VERIFY, "BUILD FAILED in OrderTest", relay.standing("ABC-42"));
+    }
+
+    @Test
+    void stopsTheTaskInsteadOfSendingFourthRedVerificationRunning() {
+      relay.relayRound(
+          "ABC-42", Step.VERIFY, "BUILD FAILED in CartTest again", relay.standing("ABC-42"));
+
+      boolean told =
+          relay.relayRound(
+              "ABC-42", Step.VERIFY, "BUILD FAILED in PaymentTest", relay.standing("ABC-42"));
+
+      assertThat(told).isFalse();
+      verify(sessions, times(3)).writeTaskContext(anyString(), anyString());
+      assertThat(state.task("ABC-42").orElseThrow().stop())
+          .extracting(TaskStop::trigger, TaskStop::evidence)
+          .containsExactly(
+              TaskStop.Trigger.ROUNDS, "verify sent 3 rounds running in 24h; the next one was not");
+    }
+
+    @Test
+    void sendsThirdRedVerificationRunning() {
+      boolean told =
+          relay.relayRound(
+              "ABC-42", Step.VERIFY, "BUILD FAILED in PaymentTest", relay.standing("ABC-42"));
+
+      assertThat(told).isTrue();
+      assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
+    }
   }
 }

@@ -45,6 +45,15 @@ class RoundRelayTest {
 
   private final AgentSessions sessions = mock(AgentSessions.class);
   private final Clock clock = Clock.fixed(Instant.ofEpochMilli(1_000_000), ZoneOffset.UTC);
+  private final ReviewFacts noted =
+      reviewAnswer()
+          .withStatus("running")
+          .withDiscussion(
+              new ReviewFacts.Discussion(
+                  List.of("https://host/mr/1#note_9\nlee: why?"), List.of(), List.of()))
+          .build()
+          .facts()
+          .orElseThrow();
   private final TaskStops relayingStops = mock(TaskStops.class);
   private OrchestratorPaths paths;
   private StateService state;
@@ -141,14 +150,7 @@ class RoundRelayTest {
         relay.relay(
             "ABC-42",
             "https://host/mr/1",
-            reviewAnswer()
-                .withStatus("running")
-                .withDiscussion(
-                    new ReviewFacts.Discussion(
-                        List.of("https://host/mr/1#note_9\nlee: why?"), List.of(), List.of()))
-                .build()
-                .facts()
-                .orElseThrow(),
+            noted,
             "running",
             "");
 
@@ -247,14 +249,7 @@ class RoundRelayTest {
         relay.relay(
             "ABC-42",
             "https://host/mr/1",
-            reviewAnswer()
-                .withStatus("running")
-                .withDiscussion(
-                    new ReviewFacts.Discussion(
-                        List.of("https://host/mr/1#note_9\nlee: why?"), List.of(), List.of()))
-                .build()
-                .facts()
-                .orElseThrow(),
+            noted,
             "running",
             "");
 

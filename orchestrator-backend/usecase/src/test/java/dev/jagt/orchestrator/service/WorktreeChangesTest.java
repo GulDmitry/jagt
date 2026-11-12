@@ -378,12 +378,10 @@ class WorktreeChangesTest {
   void readsTheTargetBranchWithoutTheProjectsOwnRemote() {
     TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
     ProjectConfig project =
-        new ProjectConfig(
-            new ProjectConfig.Repository("/repo", List.of(), null, List.of()),
-            new ProjectConfig.Branches("upstream/main", "dev", "upstream"),
-            new ProjectConfig.CodeHost(
-                null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-            new ProjectConfig.Verify(List.of(), null));
+        TestProjectConfigBuilder.projectConfig()
+            .withBaseBranch("upstream/main")
+            .withRemote("upstream")
+            .build();
 
     assertThat(WorktreeChanges.targetBranch(task, project)).isEqualTo("main");
   }

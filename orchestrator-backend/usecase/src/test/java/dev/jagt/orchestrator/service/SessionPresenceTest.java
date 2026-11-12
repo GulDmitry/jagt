@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.time.Clock;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -31,16 +32,25 @@ class SessionPresenceTest {
   private static final TaskReducer reducer =
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
-  @Test
-  void answersLiveFromTheWindowTheReadFound(@TempDir Path root) {
-    OrchestratorProperties properties =
+  @TempDir Path root;
+
+  private OrchestratorProperties properties;
+  private StateService state;
+  private final SessionProbe probe = mock(SessionProbe.class);
+
+  @BeforeEach
+  void putsShippingTask() {
+    properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
             .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer, event -> {});
+    state =
+        new StateService(new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
-    SessionProbe probe = mock(SessionProbe.class);
+  }
+
+  @Test
+  void answersLiveFromTheWindowTheReadFound() {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.RUNNING, 0, 0, 0, 300_000, null));
 
@@ -49,15 +59,7 @@ class SessionPresenceTest {
   }
 
   @Test
-  void answersNotLiveAndRecordsTheEndWhereTheWindowHoldsNoAgent(@TempDir Path root) {
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer, event -> {});
-    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
-    SessionProbe probe = mock(SessionProbe.class);
+  void answersNotLiveAndRecordsTheEndWhereTheWindowHoldsNoAgent() {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(
             new SessionSign.Read(Session.Window.State.DEAD_SHELL, 0, 0, 0, 300_000, "exit 1"));
@@ -71,15 +73,7 @@ class SessionPresenceTest {
   }
 
   @Test
-  void saysItCannotTellWhereTheWindowsCannotBeListed(@TempDir Path root) {
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withStateFile(root.resolve("state.json").toString());
-    StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties),
-        reducer, event -> {});
-    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
-    SessionProbe probe = mock(SessionProbe.class);
+  void saysItCannotTellWhereTheWindowsCannotBeListed() {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenThrow(new SessionHost.WindowsUnreadable("tmux timed out"));
     SessionPresence presence = new SessionPresence(state, probe, properties, Clock.systemUTC());

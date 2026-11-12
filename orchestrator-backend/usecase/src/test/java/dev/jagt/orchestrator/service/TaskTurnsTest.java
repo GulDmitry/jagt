@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -35,10 +37,14 @@ class TaskTurnsTest {
 
   private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
-  @Test
-  @ResourceLock(Resources.GLOBAL)
-  void logsTheStepAndTheTurnEachRelayOpens(@TempDir Path root) {
-    StateService state =
+  @TempDir Path root;
+
+  private StateService state;
+  private TaskTurns turns;
+
+  @BeforeEach
+  void opensTheTurnsOverTheTempState() {
+    state =
         new StateService(
             new JsonMapper(),
             new OrchestratorPaths(
@@ -46,70 +52,60 @@ class TaskTurnsTest {
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
             reducer, event -> {});
-    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(TaskTurns.class)).addAppender(log);
+    turns =
+        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
+  }
 
-    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
-        .opened("ABC-42", "deploy", "a1b2", TaskStatus.DEPLOYED);
+  @Nested
+  @ResourceLock(Resources.GLOBAL)
+  class Logging {
 
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "turn opened".equals(event.getMessage()))
-        .singleElement()
-        .extracting(ILoggingEvent::getKeyValuePairs)
-        .asInstanceOf(InstanceOfAssertFactories.LIST)
-        .contains(
-            new KeyValuePair("task", "ABC-42"),
-            new KeyValuePair("step", "deploy"),
-            new KeyValuePair("turn", 1L));
+    private final ListAppender<ILoggingEvent> log = new ListAppender<>();
+
+    @BeforeEach
+    void listensToTheTurnsLog() {
+      state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
+      log.start();
+      ((Logger) LoggerFactory.getLogger(TaskTurns.class)).addAppender(log);
+    }
+
+    @Test
+    void logsTheStepAndTheTurnEachRelayOpens() {
+      turns.opened("ABC-42", "deploy", "a1b2", TaskStatus.DEPLOYED);
+
+      assertThat(List.copyOf(log.list))
+          .filteredOn(event -> "turn opened".equals(event.getMessage()))
+          .singleElement()
+          .extracting(ILoggingEvent::getKeyValuePairs)
+          .asInstanceOf(InstanceOfAssertFactories.LIST)
+          .contains(
+              new KeyValuePair("task", "ABC-42"),
+              new KeyValuePair("step", "deploy"),
+              new KeyValuePair("turn", 1L));
+    }
+
+    @Test
+    void logsTheStatusTheDoorAdmittedTheStepAtNotTheOneTheTaskHoldsByNow() {
+      turns.opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
+
+      assertThat(List.copyOf(log.list))
+          .filteredOn(event -> "turn opened".equals(event.getMessage()))
+          .singleElement()
+          .extracting(ILoggingEvent::getKeyValuePairs)
+          .asInstanceOf(InstanceOfAssertFactories.LIST)
+          .contains(new KeyValuePair("status", TaskStatus.REVIEWED));
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
-  void logsTheStatusTheDoorAdmittedTheStepAtNotTheOneTheTaskHoldsByNow(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(TaskTurns.class)).addAppender(log);
-
-    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
-        .opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
-
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "turn opened".equals(event.getMessage()))
-        .singleElement()
-        .extracting(ILoggingEvent::getKeyValuePairs)
-        .asInstanceOf(InstanceOfAssertFactories.LIST)
-        .contains(new KeyValuePair("status", TaskStatus.REVIEWED));
-  }
-
-  @Test
-  void doesNotReadRootSessionsMoveAsTheTaskSessionsAnswer(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void doesNotReadRootSessionsMoveAsTheTaskSessionsAnswer() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1, ActionOrigin.ROOT)))
             .build());
 
-    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
-        .opened("ABC-42", "deploy", "a1b2", TaskStatus.IN_PROGRESS);
+    turns.opened("ABC-42", "deploy", "a1b2", TaskStatus.IN_PROGRESS);
 
     assertThat(state.task("ABC-42").orElseThrow().turnOrNone().mark("deploy:answers"))
         .isEqualTo(Turn.digestOf(""));
@@ -185,44 +181,24 @@ class TaskTurnsTest {
   }
 
   @Test
-  void keepsTheShippedTreeOnTheShipAsItsDigest(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void keepsTheShippedTreeOnTheShipAsItsDigest() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.SHIPPING)
             .history(List.of(new StatusChange(TaskStatus.SHIPPING, 1_000, null)))
             .build());
 
-    new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())))
-        .shippedOn("ABC-42", "tree-1;");
+    turns.shippedOn("ABC-42", "tree-1;");
 
     assertThat(state.task("ABC-42").orElseThrow().history().getLast().tree())
         .isEqualTo("23189593ac33d3bc37d365b9805c4c248103ce3d9980acdee9801672208b9a44");
   }
 
   @Test
-  void setsAndClearsMarkOnTheTasksTurn(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void setsAndClearsMarkOnTheTasksTurn() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).message("which cache").build());
-    TaskTurns turns =
-        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
-
     turns.left("ABC-42", "deploy src/Login.java");
     turns.unanswered("ABC-42");
     String left = state.task("ABC-42").orElseThrow().masterOrNone().left();

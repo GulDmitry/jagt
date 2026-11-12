@@ -408,13 +408,12 @@ class NewTaskWorktreesTest {
             .withProjects(
                 Map.of(
                     "proj",
-                    new ProjectConfig(
-                        new ProjectConfig.Repository(
-                            root.resolve("repo").toString(), List.of(), null, List.of()),
-                        new ProjectConfig.Branches("upstream/main", null, "upstream"),
-                        new ProjectConfig.CodeHost(
-                            null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                        new ProjectConfig.Verify(List.of(), null))));
+                    TestProjectConfigBuilder.projectConfig()
+                        .withPath(root.resolve("repo").toString())
+                        .withBaseBranch("upstream/main")
+                        .withDeployBranch(null)
+                        .withRemote("upstream")
+                        .build()));
     when(git.remoteBranchExists(any(), eq("feature/parent"))).thenReturn(true);
 
     worktrees.cut(

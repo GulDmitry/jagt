@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -28,14 +29,18 @@ class PlanApprovalLeavesTest {
   private final CaseDoor door = mock(CaseDoor.class);
   private final ApprovedPlan plan = mock(ApprovedPlan.class);
 
-  @Test
-  void anApprovedPlanTakesItsUnaffectedRepositoriesOutOfTheTask(@TempDir Path root) {
+  @TempDir Path root;
+
+  private StateService state;
+
+  @BeforeEach
+  void putsPlanPendingTaskSpanningTwoRepositories() {
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
+    state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -43,6 +48,10 @@ class PlanApprovalLeavesTest {
                 TaskStatus.PLAN_PENDING)
             .planGate(PlanGate.REQUIRED)
             .build());
+  }
+
+  @Test
+  void anApprovedPlanTakesItsUnaffectedRepositoriesOutOfTheTask() {
     when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
 
     new PlanApproval(state, relay, door, plan)
@@ -52,20 +61,7 @@ class PlanApprovalLeavesTest {
   }
 
   @Test
-  void refusedApprovalTakesNoRepositoryOutOfTheTask(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder(
-                List.of(TaskRepo.of("api", "/wt-api"), TaskRepo.of("web", "/wt-web")),
-                TaskStatus.PLAN_PENDING)
-            .planGate(PlanGate.REQUIRED)
-            .build());
+  void refusedApprovalTakesNoRepositoryOutOfTheTask() {
     when(door.presses("ABC-1", "approve-plan")).thenReturn(false);
 
     new PlanApproval(state, relay, door, plan)

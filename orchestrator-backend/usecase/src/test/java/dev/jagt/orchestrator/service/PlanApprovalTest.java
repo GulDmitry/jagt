@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -32,9 +33,13 @@ class PlanApprovalTest {
   private final CaseDoor door = mock(CaseDoor.class);
   private final ApprovedPlan plan = mock(ApprovedPlan.class);
 
-  @Test
-  void opensThePlanGateAndTellsTheSessionToStartOnThePlan(@TempDir Path root) {
-    StateService state =
+  @TempDir Path root;
+
+  private StateService state;
+
+  @BeforeEach
+  void putsPlanPendingTask() {
+    state =
         new StateService(
             new JsonMapper(),
             new OrchestratorPaths(
@@ -47,6 +52,10 @@ class PlanApprovalTest {
         TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
             .planGate(PlanGate.REQUIRED)
             .build());
+  }
+
+  @Test
+  void opensThePlanGateAndTellsTheSessionToStartOnThePlan() {
     when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
     when(relay.relay(eq("ABC-1"), eq(Step.PLAN), anyString(), any(Standing.class)))
         .thenReturn(true);
@@ -67,20 +76,7 @@ class PlanApprovalTest {
   }
 
   @Test
-  void tellsTheCallerWhereTheSessionWasNotToldTheStartOnThePlan(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
-            .planGate(PlanGate.REQUIRED)
-            .build());
+  void tellsTheCallerWhereTheSessionWasNotToldTheStartOnThePlan() {
     when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
     when(relay.relay(eq("ABC-1"), eq(Step.PLAN), anyString(), any(Standing.class)))
         .thenReturn(false);
@@ -93,21 +89,7 @@ class PlanApprovalTest {
   }
 
   @Test
-  void leavesThePlanGateClosedWhereNoMasterCaseAllowsTheApproval(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
-            .planGate(PlanGate.REQUIRED)
-            .build());
-    when(door.presses("ABC-1", "approve-plan")).thenReturn(false);
+  void leavesThePlanGateClosedWhereNoMasterCaseAllowsTheApproval() {
 
     boolean told =
         new PlanApproval(state, relay, door, plan)

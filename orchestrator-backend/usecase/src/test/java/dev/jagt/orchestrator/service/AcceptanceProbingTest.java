@@ -23,6 +23,10 @@ import org.junit.jupiter.api.io.TempDir;
 class AcceptanceProbingTest {
 
   private final Processes processes = mock(Processes.class);
+  private final AcceptanceProbing probing =
+      new AcceptanceProbing(processes, new ToolGate(List.of()), 8290);
+  private final List<Probe> gradleTest =
+      List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0));
 
   @Test
   void passesCommandEndingWithTheExitItsPlanExpects(@TempDir Path worktree) {
@@ -48,12 +52,7 @@ class AcceptanceProbingTest {
             new Processes.Result(1, "line 1\n" + "noise\n".repeat(30) + "BUILD FAILED", ""));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
-            .probed(
-                "ABC-42",
-                worktree,
-                Remote.ORIGIN,
-                List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0)));
+        probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
 
     assertThat(probed)
         .singleElement()
@@ -122,12 +121,7 @@ class AcceptanceProbingTest {
         .thenThrow(new IllegalStateException("Command timed out after PT5M: ./gradlew test"));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
-            .probed(
-                "ABC-42",
-                worktree,
-                Remote.ORIGIN,
-                List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0)));
+        probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
 
     assertThat(probed)
         .singleElement()
@@ -181,12 +175,7 @@ class AcceptanceProbingTest {
         .thenReturn(new Processes.Result(1, "a" + "b".repeat(2_000), ""));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
-            .probed(
-                "ABC-42",
-                worktree,
-                Remote.ORIGIN,
-                List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0)));
+        probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
 
     assertThat(probed)
         .singleElement()
@@ -200,12 +189,7 @@ class AcceptanceProbingTest {
         .thenReturn(new Processes.Result(1, "", ""));
 
     List<Probe> probed =
-        new AcceptanceProbing(processes, new ToolGate(List.of()), 8290)
-            .probed(
-                "ABC-42",
-                worktree,
-                Remote.ORIGIN,
-                List.of(Probe.specified(Probe.Kind.COMMAND, List.of("./gradlew", "test"), 0)));
+        probing.probed("ABC-42", worktree, Remote.ORIGIN, gradleTest);
 
     assertThat(probed).singleElement().extracting(Probe::excerpt).isEqualTo("exit 1");
   }

@@ -24,6 +24,12 @@ class ReviewReaderTest {
   private final Assistants assistants = mock(Assistants.class, RETURNS_DEEP_STUBS);
   private final McpHealth mcp = mock(McpHealth.class);
   private final UsageTracker usage = mock(UsageTracker.class);
+  private final ReviewReader paid = new ReviewReader(assistants, mcp, usage, RetryPolicy.PAID_READ);
+  private final ReviewReader retrying =
+      new ReviewReader(
+          assistants, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)));
+  private final ReviewFacts.Discussion quiet =
+      new ReviewFacts.Discussion(List.of(), List.of(), List.of());
 
   @Test
   void answersTheRoundWithWhatTheReadCameBackWith() {
@@ -34,19 +40,18 @@ class ReviewReaderTest {
                     new ReviewFacts(
                         new ReviewFacts.Request(true, false, false, false, 0),
                         new ReviewFacts.Pipeline("running", "", ""),
-                        new ReviewFacts.Discussion(List.of(), List.of(), List.of()))),
+                        quiet)),
                 TokenUsage.NONE));
 
     var facts =
-        new ReviewReader(assistants, mcp, usage, RetryPolicy.PAID_READ)
-            .read("ABC-1", "https://other.example.com/g/p/-/merge_requests/7");
+        paid.read("ABC-1", "https://other.example.com/g/p/-/merge_requests/7");
 
     assertThat(facts.facts())
         .contains(
             new ReviewFacts(
                 new ReviewFacts.Request(true, false, false, false, 0),
                 new ReviewFacts.Pipeline("running", "", ""),
-                new ReviewFacts.Discussion(List.of(), List.of(), List.of())));
+                quiet));
   }
 
   @Test
@@ -54,9 +59,7 @@ class ReviewReaderTest {
     when(assistants.codeHost().readReview("https://host/g/p/-/merge_requests/7"))
         .thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
 
-    new ReviewReader(
-            assistants, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
-        .read("ABC-1", "https://host/g/p/-/merge_requests/7");
+    retrying.read("ABC-1", "https://host/g/p/-/merge_requests/7");
 
     verify(assistants.codeHost(), times(3)).readReview("https://host/g/p/-/merge_requests/7");
   }
@@ -70,12 +73,10 @@ class ReviewReaderTest {
                     new ReviewFacts(
                         new ReviewFacts.Request(false, false, false, false, 0),
                         new ReviewFacts.Pipeline("unknown", "", ""),
-                        new ReviewFacts.Discussion(List.of(), List.of(), List.of()))),
+                        quiet)),
                 TokenUsage.NONE));
 
-    new ReviewReader(
-            assistants, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
-        .read("ABC-1", "https://host/g/p/-/merge_requests/7");
+    retrying.read("ABC-1", "https://host/g/p/-/merge_requests/7");
 
     verify(assistants.codeHost(), times(1)).readReview("https://host/g/p/-/merge_requests/7");
   }
@@ -85,9 +86,7 @@ class ReviewReaderTest {
     when(assistants.codeHost().readReview("https://host/g/p/-/merge_requests/7"))
         .thenReturn(new Answer<>(Optional.empty(), TokenUsage.ofCall(10, 0, 1, 0.5)));
 
-    new ReviewReader(
-            assistants, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
-        .read("ABC-1", "https://host/g/p/-/merge_requests/7");
+    retrying.read("ABC-1", "https://host/g/p/-/merge_requests/7");
 
     verify(usage).chargeTask("ABC-1", new TokenUsage(3, 30, 0, 3, 1.5));
   }
@@ -100,8 +99,7 @@ class ReviewReaderTest {
                 Optional.of(new MergeRequestFacts(true, "ABC-1", "main", "t")), TokenUsage.NONE));
 
     var read =
-        new ReviewReader(assistants, mcp, usage, RetryPolicy.PAID_READ)
-            .readRequest("https://other.example.com/g/p/-/merge_requests/7");
+        paid.readRequest("https://other.example.com/g/p/-/merge_requests/7");
 
     assertThat(read.facts()).contains(new MergeRequestFacts(true, "ABC-1", "main", "t"));
   }
@@ -112,8 +110,7 @@ class ReviewReaderTest {
         .thenReturn(
             new Answer<>(Optional.of(new MergeRequestFacts(false, "", "", "")), TokenUsage.NONE));
 
-    new ReviewReader(assistants, mcp, usage, RetryPolicy.PAID_READ)
-        .readRequest("https://other.example.com/g/p/-/merge_requests/7");
+    paid.readRequest("https://other.example.com/g/p/-/merge_requests/7");
 
     verify(mcp).brokenServers();
   }
@@ -126,8 +123,7 @@ class ReviewReaderTest {
                 Optional.of(new MergeRequestFacts(true, "ABC-42", "main", "Excel export")),
                 TokenUsage.NONE));
 
-    new ReviewReader(assistants, mcp, usage, RetryPolicy.PAID_READ)
-        .readRequest("https://other.example.com/g/p/-/merge_requests/7");
+    paid.readRequest("https://other.example.com/g/p/-/merge_requests/7");
 
     verify(mcp, never()).brokenServers();
   }
@@ -141,12 +137,10 @@ class ReviewReaderTest {
                     new ReviewFacts(
                         new ReviewFacts.Request(true, false, false, false, 0),
                         new ReviewFacts.Pipeline("success", "lint failed", ""),
-                        new ReviewFacts.Discussion(List.of(), List.of(), List.of()))),
+                        quiet)),
                 TokenUsage.NONE));
 
-    new ReviewReader(
-            assistants, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
-        .read("ABC-1", "https://host/g/p/-/merge_requests/7");
+    retrying.read("ABC-1", "https://host/g/p/-/merge_requests/7");
 
     verify(assistants.codeHost(), times(3)).readReview("https://host/g/p/-/merge_requests/7");
   }
@@ -158,9 +152,7 @@ class ReviewReaderTest {
             new Answer<>(
                 Optional.of(new MergeRequestFacts(true, "", "main", "t")), TokenUsage.NONE));
 
-    new ReviewReader(
-            assistants, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
-        .readRequest("https://host/g/p/-/merge_requests/7");
+    retrying.readRequest("https://host/g/p/-/merge_requests/7");
 
     verify(assistants.codeHost(), times(3)).readMergeRequest("https://host/g/p/-/merge_requests/7");
   }

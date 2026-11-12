@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
 import java.nio.file.Path;
 import java.util.Objects;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -24,18 +25,28 @@ class UsageTrackerTest {
 
   private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
+  @TempDir Path root;
+
+  private final UsageLedger ledger = mock(UsageLedger.class);
+  private StateService state;
+  private UsageTracker tracker;
+
+  @BeforeEach
+  void tracksUsageOverTheTempState() {
+    state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer,
+            event -> {});
+    tracker = new UsageTracker(state, ledger);
+  }
+
   @Test
-  void splitsTheSessionSpendByWhatEachCallWasFor(@TempDir Path root) {
-    UsageTracker tracker =
-        new UsageTracker(
-            new StateService(
-                new JsonMapper(),
-                new OrchestratorPaths(
-                    OrchestratorProperties.defaults()
-                        .withRoot(root.toString())
-                        .withStateFile(root.resolve("state.json").toString())),
-                reducer, event -> {}),
-            mock(UsageLedger.class));
+  void splitsTheSessionSpendByWhatEachCallWasFor() {
 
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
     tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(30_000, 0, 200, 0.06));
@@ -52,18 +63,7 @@ class UsageTrackerTest {
   }
 
   @Test
-  void booksEveryRecordedCallInTheLedger(@TempDir Path root) {
-    UsageLedger ledger = mock(UsageLedger.class);
-    UsageTracker tracker =
-        new UsageTracker(
-            new StateService(
-                new JsonMapper(),
-                new OrchestratorPaths(
-                    OrchestratorProperties.defaults()
-                        .withRoot(root.toString())
-                        .withStateFile(root.resolve("state.json").toString())),
-                reducer, event -> {}),
-            ledger);
+  void booksEveryRecordedCallInTheLedger() {
     TokenUsage usage = TokenUsage.ofCall(25_000, 0, 170, 0.05);
 
     tracker.record(AssistantCallKind.MR_READ, usage);
@@ -72,18 +72,9 @@ class UsageTrackerTest {
   }
 
   @Test
-  void chargesTheCallToTheTaskThatTriggeredIt(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void chargesTheCallToTheTaskThatTriggeredIt() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
-    UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
 
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
     tracker.chargeTask("ABC-1", TokenUsage.ofCall(25_000, 0, 170, 0.05));
@@ -93,18 +84,9 @@ class UsageTrackerTest {
   }
 
   @Test
-  void accumulatesEveryPollOnTheSameTaskInsteadOfOverwritingTheLastOne(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void accumulatesEveryPollOnTheSameTaskInsteadOfOverwritingTheLastOne() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
-    UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
 
     tracker.chargeTask("ABC-1", TokenUsage.ofCall(25_000, 0, 100, 0.05));
     tracker.chargeTask("ABC-1", TokenUsage.ofCall(26_000, 500, 120, 0.06));
@@ -118,18 +100,9 @@ class UsageTrackerTest {
   }
 
   @Test
-  void chargesAnAliasToTheTaskItStandsFor(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void chargesAnAliasToTheTaskItStandsFor() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
-    UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
 
     tracker.chargeTask("a1", TokenUsage.ofCall(1_000, 0, 10, 0.01));
 
@@ -137,16 +110,7 @@ class UsageTrackerTest {
   }
 
   @Test
-  void keepsTheSessionTotalForCallThatBelongsToNoTask(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
+  void keepsTheSessionTotalForCallThatBelongsToNoTask() {
 
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(24_000, 0, 150, 0.05));
     tracker.chargeTask("", TokenUsage.ofCall(24_000, 0, 150, 0.05));
@@ -156,17 +120,7 @@ class UsageTrackerTest {
   }
 
   @Test
-  void ignoresAnEmptyMeasurementSoUnmeteredCallsDoNotInflateTheCallCount(@TempDir Path root) {
-    UsageTracker tracker =
-        new UsageTracker(
-            new StateService(
-                new JsonMapper(),
-                new OrchestratorPaths(
-                    OrchestratorProperties.defaults()
-                        .withRoot(root.toString())
-                        .withStateFile(root.resolve("state.json").toString())),
-                reducer, event -> {}),
-            mock(UsageLedger.class));
+  void ignoresAnEmptyMeasurementSoUnmeteredCallsDoNotInflateTheCallCount() {
 
     tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.NONE);
 

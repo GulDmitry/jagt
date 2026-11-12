@@ -18,7 +18,6 @@ import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -70,24 +69,7 @@ class PlanPlacementTest {
     Files.createDirectories(root.resolve("ABC-9-api"));
     List<NewRepo> cut =
         List.of(
-            new NewRepo(
-                "api",
-                new ProjectConfig("/api", "origin/main", "dev", List.of()),
-                Path.of("/api"),
-                root.resolve("ABC-9-api"),
-                root.resolve(".git"),
-                "origin/main",
-                "",
-                true),
-            new NewRepo(
-                "web",
-                new ProjectConfig("/web", "origin/main", "dev", List.of()),
-                Path.of("/web"),
-                root.resolve("ABC-9-web"),
-                root.resolve(".git"),
-                "origin/main",
-                "",
-                false));
+            TestNewRepoBuilder.api(root).build(), TestNewRepoBuilder.web(root).build());
     when(worktrees.place(any(), any(), any()))
         .thenAnswer(
             call -> {
@@ -119,17 +101,7 @@ class PlanPlacementTest {
     Path scratch = Files.createDirectories(root.resolve("scratch/ABC-9"));
     Files.writeString(scratch.resolve("plan.md"), "## Repositories\n- [changed] api\n");
     Files.createDirectories(root.resolve("ABC-9-api"));
-    List<NewRepo> cut =
-        List.of(
-            new NewRepo(
-                "api",
-                new ProjectConfig("/api", "origin/main", "dev", List.of()),
-                Path.of("/api"),
-                root.resolve("ABC-9-api"),
-                root.resolve(".git"),
-                "origin/main",
-                "",
-                true));
+    List<NewRepo> cut = List.of(TestNewRepoBuilder.api(root).build());
     when(worktrees.place(any(), any(), any()))
         .thenAnswer(
             call -> {
@@ -155,16 +127,7 @@ class PlanPlacementTest {
     Files.writeString(scratch.resolve("plan.md"), "## Repositories\n- [changed] api\n");
     Files.createDirectories(root.resolve("ABC-9-api"));
     List<NewRepo> cut =
-        List.of(
-            new NewRepo(
-                "api",
-                new ProjectConfig("/api", "origin/main", "dev", List.of()),
-                Path.of("/api"),
-                root.resolve("ABC-9-api"),
-                root.resolve(".git"),
-                "feature/parent",
-                "",
-                true));
+        List.of(TestNewRepoBuilder.api(root).withBaseBranch("feature/parent").build());
     when(worktrees.place(any(), any(), any()))
         .thenAnswer(
             call -> {

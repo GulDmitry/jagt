@@ -11,6 +11,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class RequestProjectTest {
@@ -100,41 +102,39 @@ class RequestProjectTest {
     assertThat(projects.of("https://github.com/group/api/pull/4")).isEqualTo("api");
   }
 
-  @Test
-  void breaksTieBetweenProjectsOfOnePathByTheHostTheRequestIsOn() {
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    new TreeMap<>(
-                        Map.of(
-                            "mirror",
-                                new ProjectConfig("/srv/mirror", "origin/main", "dev", List.of()),
-                            "origin",
-                                new ProjectConfig(
-                                    "/srv/origin", "origin/main", "dev", List.of())))));
-    when(worktrees.remoteUrl(Path.of("/srv/mirror"))).thenReturn("git@mirror.test:group/api.git");
-    when(worktrees.remoteUrl(Path.of("/srv/origin"))).thenReturn("git@host.test:group/api.git");
+  @Nested
+  class ProjectsOfOnePath {
 
-    assertThat(projects.of("https://host.test/group/api/-/merge_requests/4")).isEqualTo("origin");
-  }
+    @BeforeEach
+    void mirrorAndOriginShareOnePath() {
+      when(config.load())
+          .thenReturn(
+              ConfigService.ConfigFile.defaults()
+                  .withProjects(
+                      new TreeMap<>(
+                          Map.of(
+                              "mirror",
+                                  new ProjectConfig(
+                                      "/srv/mirror", "origin/main", "dev", List.of()),
+                              "origin",
+                                  new ProjectConfig(
+                                      "/srv/origin", "origin/main", "dev", List.of())))));
+      when(worktrees.remoteUrl(Path.of("/srv/mirror")))
+          .thenReturn("git@mirror.test:group/api.git");
+      when(worktrees.remoteUrl(Path.of("/srv/origin")))
+          .thenReturn("git@host.test:group/api.git");
+    }
 
-  @Test
-  void namesTheFirstProjectOfOnePathWhenNoneIsOnTheHostTheRequestIsOn() {
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    new TreeMap<>(
-                        Map.of(
-                            "mirror",
-                                new ProjectConfig("/srv/mirror", "origin/main", "dev", List.of()),
-                            "origin",
-                                new ProjectConfig(
-                                    "/srv/origin", "origin/main", "dev", List.of())))));
-    when(worktrees.remoteUrl(Path.of("/srv/mirror"))).thenReturn("git@mirror.test:group/api.git");
-    when(worktrees.remoteUrl(Path.of("/srv/origin"))).thenReturn("git@host.test:group/api.git");
+    @Test
+    void breaksTieBetweenProjectsOfOnePathByTheHostTheRequestIsOn() {
+      assertThat(projects.of("https://host.test/group/api/-/merge_requests/4"))
+          .isEqualTo("origin");
+    }
 
-    assertThat(projects.of("https://web.test/group/api/-/merge_requests/4")).isEqualTo("mirror");
+    @Test
+    void namesTheFirstProjectOfOnePathWhenNoneIsOnTheHostTheRequestIsOn() {
+      assertThat(projects.of("https://web.test/group/api/-/merge_requests/4"))
+          .isEqualTo("mirror");
+    }
   }
 }

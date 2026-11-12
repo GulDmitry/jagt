@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,67 +30,58 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class HandBackTest {
 
-  @Test
-  void owesNoVerificationForProjectTheConfigurationNoLongerNames(@TempDir Path root)
-      throws IOException {
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"),
-            """
-            orchestrator:
-              projects: {}
-            """);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            new ActStops(
-                new MasterBrake(paths)),
-            new Checkers(new TaskChart(Composition.builtIn())));
-    HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
+  @TempDir Path root;
 
-    boolean owed =
-        handBack.verificationOwed(TaskState.builder("gone", "/wt", TaskStatus.IN_PROGRESS).build());
+  private final HandBack planner =
+      new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
 
-    assertThat(owed).isFalse();
-  }
+  @Nested
+  class WhereNoProjectIsConfigured {
 
-  @Test
-  void owesVerificationForTaskCarryingProbesWhereNoProjectCommandIsConfigured(@TempDir Path root)
-      throws IOException {
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"),
-            """
-            orchestrator:
-              projects: {}
-            """);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            new ActStops(
-                new MasterBrake(paths)),
-            new Checkers(new TaskChart(Composition.builtIn())));
-    HandBack handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
+    private HandBack handBack;
 
-    boolean owed =
-        handBack.verificationOwed(
-            TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .probes(List.of(Probe.specified(Probe.Kind.REF, List.of("main"), 0)))
-                .build());
+    @BeforeEach
+    void readsAnEmptyProjectConfiguration() throws IOException {
+      Path configFile =
+          Files.writeString(
+              root.resolve("jagt.yml"),
+              """
+              orchestrator:
+                projects: {}
+              """);
+      OrchestratorPaths paths =
+          new OrchestratorPaths(
+              OrchestratorProperties.defaults()
+                  .withRoot(root.toString())
+                  .withConfigFile(configFile.toString()));
+      ConfigService config =
+          new ConfigService(
+              paths,
+              mock(AgentRuntime.class),
+              new ActStops(new MasterBrake(paths)),
+              new Checkers(new TaskChart(Composition.builtIn())));
+      handBack = new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), config);
+    }
 
-    assertThat(owed).isTrue();
+    @Test
+    void owesNoVerificationForProjectTheConfigurationNoLongerNames() {
+      boolean owed =
+          handBack.verificationOwed(
+              TaskState.builder("gone", "/wt", TaskStatus.IN_PROGRESS).build());
+
+      assertThat(owed).isFalse();
+    }
+
+    @Test
+    void owesVerificationForTaskCarryingProbesWhereNoProjectCommandIsConfigured() {
+      boolean owed =
+          handBack.verificationOwed(
+              TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                  .probes(List.of(Probe.specified(Probe.Kind.REF, List.of("main"), 0)))
+                  .build());
+
+      assertThat(owed).isTrue();
+    }
   }
 
   @ParameterizedTest
@@ -105,55 +98,47 @@ class HandBackTest {
   }
 
   @Test
-  void refusesPlanPutUpWithNoPlanFile(@TempDir Path worktree) {
-    HandBack handBack =
-        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
-
+  void refusesPlanPutUpWithNoPlanFile() {
     PlanProbes.Read read =
-        handBack.planProbes(
-            TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build());
+        planner.planProbes(
+            TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build());
 
     assertThat(read.probes()).isEmpty();
     assertThat(read.violations()).singleElement().asString().contains("## Acceptance criteria");
   }
 
   @Test
-  void refusesPlanFileJagtCannotRead(@TempDir Path worktree) throws IOException {
-    Path plan = Files.writeString(worktree.resolve("plan.md"), "1. tag v1");
+  void refusesPlanFileJagtCannotRead() throws IOException {
+    Path plan = Files.writeString(root.resolve("plan.md"), "1. tag v1");
     assertThat(plan.toFile().setReadable(false)).isTrue();
-    HandBack handBack =
-        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
 
     PlanProbes.Read read =
-        handBack.planProbes(
-            TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build());
+        planner.planProbes(
+            TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build());
 
     assertThat(read.violations()).singleElement().asString().contains("jagt could not read it");
   }
 
   @Test
-  void refusesPlanOfSeveralRepositoryTaskThatNamesNoRepositories(@TempDir Path worktree)
-      throws IOException {
-    Files.writeString(worktree.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n");
-    HandBack handBack =
-        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
+  void refusesPlanOfSeveralRepositoryTaskThatNamesNoRepositories() throws IOException {
+    Files.writeString(root.resolve("plan.md"), "## Acceptance criteria\n- [here] it works\n");
     TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING)
+        TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
             .repos(
                 List.of(
-                    new TaskRepo("api", worktree.toString(), null, null),
-                    new TaskRepo("web", worktree.toString(), null, null)))
+                    new TaskRepo("api", root.toString(), null, null),
+                    new TaskRepo("web", root.toString(), null, null)))
             .build();
 
-    PlanProbes.Read read = handBack.planProbes(task);
+    PlanProbes.Read read = planner.planProbes(task);
 
     assertThat(read.violations()).singleElement().asString().contains("## Repositories");
   }
 
   @Test
-  void refusesProbeNamingRepositoryTheTaskLacks(@TempDir Path worktree) throws IOException {
+  void refusesProbeNamingRepositoryTheTaskLacks() throws IOException {
     Files.writeString(
-        worktree.resolve("plan.md"),
+        root.resolve("plan.md"),
         """
         ## Acceptance criteria
         - [here] it works
@@ -162,12 +147,10 @@ class HandBackTest {
         command repo=front npm test
         ```
         """);
-    HandBack handBack =
-        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
 
     PlanProbes.Read read =
-        handBack.planProbes(
-            TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build());
+        planner.planProbes(
+            TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build());
 
     assertThat(read.violations())
         .singleElement()
@@ -177,9 +160,9 @@ class HandBackTest {
   }
 
   @Test
-  void acceptsProbeNamingRepositoryOfTheTask(@TempDir Path worktree) throws IOException {
+  void acceptsProbeNamingRepositoryOfTheTask() throws IOException {
     Files.writeString(
-        worktree.resolve("plan.md"),
+        root.resolve("plan.md"),
         """
         ## Acceptance criteria
         - [here] it works
@@ -192,26 +175,23 @@ class HandBackTest {
         command repo=front npm test
         ```
         """);
-    HandBack handBack =
-        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
     TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING)
+        TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING)
             .repos(
                 List.of(
-                    new TaskRepo("proj", worktree.toString(), null, null),
-                    new TaskRepo("front", worktree.toString(), null, null)))
+                    new TaskRepo("proj", root.toString(), null, null),
+                    new TaskRepo("front", root.toString(), null, null)))
             .build();
 
-    PlanProbes.Read read = handBack.planProbes(task);
+    PlanProbes.Read read = planner.planProbes(task);
 
     assertThat(read.violations()).isEmpty();
   }
 
   @Test
-  void acceptsProbeNamingChangedRepositoryOfTaskWithNoRepositoryYet(@TempDir Path worktree)
-      throws IOException {
+  void acceptsProbeNamingChangedRepositoryOfTaskWithNoRepositoryYet() throws IOException {
     Files.writeString(
-        worktree.resolve("plan.md"),
+        root.resolve("plan.md"),
         """
         ## Acceptance criteria
         - [here] it works
@@ -223,22 +203,19 @@ class HandBackTest {
         command repo=api npm test
         ```
         """);
-    HandBack handBack =
-        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
     TaskState task =
-        TaskState.builder(List.of(TaskRepo.of(null, worktree.toString())), TaskStatus.PLAN_PENDING)
+        TaskState.builder(List.of(TaskRepo.of(null, root.toString())), TaskStatus.PLAN_PENDING)
             .build();
 
-    PlanProbes.Read read = handBack.planProbes(task);
+    PlanProbes.Read read = planner.planProbes(task);
 
     assertThat(read.violations()).isEmpty();
   }
 
   @Test
-  void refusesProbeNamingNoChangedRepositoryOfTaskWithNoRepositoryYet(@TempDir Path worktree)
-      throws IOException {
+  void refusesProbeNamingNoChangedRepositoryOfTaskWithNoRepositoryYet() throws IOException {
     Files.writeString(
-        worktree.resolve("plan.md"),
+        root.resolve("plan.md"),
         """
         ## Acceptance criteria
         - [here] it works
@@ -250,13 +227,11 @@ class HandBackTest {
         command repo=front npm test
         ```
         """);
-    HandBack handBack =
-        new HandBack(mock(WorktreeChanges.class), mock(Rounds.class), mock(ConfigService.class));
     TaskState task =
-        TaskState.builder(List.of(TaskRepo.of(null, worktree.toString())), TaskStatus.PLAN_PENDING)
+        TaskState.builder(List.of(TaskRepo.of(null, root.toString())), TaskStatus.PLAN_PENDING)
             .build();
 
-    PlanProbes.Read read = handBack.planProbes(task);
+    PlanProbes.Read read = planner.planProbes(task);
 
     assertThat(read.violations())
         .singleElement()

@@ -23,6 +23,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -34,22 +35,36 @@ class PlanApprovalPlacementTest {
   private final StepRelay relay = mock(StepRelay.class);
   private final CaseDoor door = mock(CaseDoor.class);
 
-  @Test
-  void startsFreshSessionInTheNewPrimaryOfTaskItsApprovalPlaced(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
-            .planGate(PlanGate.REQUIRED)
-            .build());
-    ApprovedPlan plan = mock(ApprovedPlan.class);
+  @TempDir Path root;
+
+  private final ApprovedPlan plan = mock(ApprovedPlan.class);
+  private final TaskState planned =
+      TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
+          .planGate(PlanGate.REQUIRED)
+          .build();
+  private final StepRelay.Claim claim =
+      new StepRelay.Claim(
+          Standing.of(planned), opens -> FlowReports.Claimed.LANDED, opened -> true);
+  private StateService state;
+
+  @BeforeEach
+  void putsPlanPendingTaskTheMasterAndTheHumanMayApprove() {
+    state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer,
+            event -> {});
+    state.putTask("ABC-1", planned);
     when(plan.settle("ABC-1")).thenReturn(true);
     when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
+  }
+
+  @Test
+  void startsFreshSessionInTheNewPrimaryOfTaskItsApprovalPlaced() {
     when(relay.relayUnder(eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(Standing.class)))
         .thenReturn(true);
 
@@ -62,28 +77,10 @@ class PlanApprovalPlacementTest {
   }
 
   @Test
-  void startsFreshSessionInTheNewPrimaryWhereTheMasterApprovedAndPlacedTheTask(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    TaskState planned =
-        TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
-            .planGate(PlanGate.REQUIRED)
-            .build();
-    state.putTask("ABC-1", planned);
-    ApprovedPlan plan = mock(ApprovedPlan.class);
-    when(plan.settle("ABC-1")).thenReturn(true);
-    when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
+  void startsFreshSessionInTheNewPrimaryWhereTheMasterApprovedAndPlacedTheTask() {
     when(relay.relayUnder(
             eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(StepRelay.Claim.class)))
         .thenReturn(true);
-    StepRelay.Claim claim =
-        new StepRelay.Claim(
-            Standing.of(planned), opens -> FlowReports.Claimed.LANDED, opened -> true);
-
     boolean told =
         new PlanApproval(state, relay, door, plan)
             .approve("ABC-1", "The Master read plan.md", claim);
@@ -94,21 +91,8 @@ class PlanApprovalPlacementTest {
   }
 
   @Test
-  void leavesTheGateShutAndTellsNoSessionWhereThePlanNamesWhatJagtCannotPlace(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
-            .planGate(PlanGate.REQUIRED)
-            .build());
-    ApprovedPlan plan = mock(ApprovedPlan.class);
+  void leavesTheGateShutAndTellsNoSessionWhereThePlanNamesWhatJagtCannotPlace() {
     when(plan.settle("ABC-1")).thenThrow(new Unplaceable(List.of("billing"), List.of()));
-    when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
 
     assertThatThrownBy(
             () ->
@@ -121,21 +105,7 @@ class PlanApprovalPlacementTest {
   }
 
   @Test
-  void tellsTheCallerWhereTheFreshSessionWasNotToldTheStartOnThePlan(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
-            .planGate(PlanGate.REQUIRED)
-            .build());
-    ApprovedPlan plan = mock(ApprovedPlan.class);
-    when(plan.settle("ABC-1")).thenReturn(true);
-    when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
+  void tellsTheCallerWhereTheFreshSessionWasNotToldTheStartOnThePlan() {
     when(relay.relayUnder(eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(Standing.class)))
         .thenReturn(false);
 
@@ -147,28 +117,10 @@ class PlanApprovalPlacementTest {
   }
 
   @Test
-  void tellsTheMasterWhereTheFreshSessionWasNotToldTheStartOnThePlan(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    TaskState planned =
-        TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING)
-            .planGate(PlanGate.REQUIRED)
-            .build();
-    state.putTask("ABC-1", planned);
-    ApprovedPlan plan = mock(ApprovedPlan.class);
-    when(plan.settle("ABC-1")).thenReturn(true);
-    when(door.presses("ABC-1", "approve-plan")).thenReturn(true);
+  void tellsTheMasterWhereTheFreshSessionWasNotToldTheStartOnThePlan() {
     when(relay.relayUnder(
             eq("ABC-1"), eq(Step.PLAN), anyString(), eq(true), any(StepRelay.Claim.class)))
         .thenReturn(false);
-    StepRelay.Claim claim =
-        new StepRelay.Claim(
-            Standing.of(planned), opens -> FlowReports.Claimed.LANDED, opened -> true);
-
     boolean told =
         new PlanApproval(state, relay, door, plan)
             .approve("ABC-1", "The Master read plan.md", claim);
