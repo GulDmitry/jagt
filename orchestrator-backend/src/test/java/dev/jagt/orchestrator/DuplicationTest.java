@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import net.sourceforge.pmd.cpd.CPDConfiguration;
 import net.sourceforge.pmd.cpd.CPDReport;
@@ -18,15 +19,18 @@ class DuplicationTest {
 
   private static final int MINIMUM_TOKENS = 75;
 
-  private static final List<Path> SKIPPED = List.of(Path.of("usecase/src/test/java"));
+  private static final List<Path> SKIPPED =
+      Stream.of("capability", "command", "job", "service")
+          .map(name -> Path.of("usecase/src/test/java/dev/jagt/orchestrator", name))
+          .toList();
 
   @Test
   void noBlockOfCodeIsCopiedElsewhere() throws IOException {
     CPDConfiguration configuration = new CPDConfiguration();
     configuration.setOnlyRecognizeLanguage(LanguageRegistry.CPD.getLanguageById("java"));
     configuration.setMinimumTileSize(MINIMUM_TOKENS);
-    SourceRoots.ROOTS.stream()
-        .filter(root -> !SKIPPED.contains(root))
+    SourceRoots.javaFiles()
+        .filter(file -> SKIPPED.stream().noneMatch(file::startsWith))
         .forEach(configuration::addInputPath);
     List<String> duplicates = new ArrayList<>();
 

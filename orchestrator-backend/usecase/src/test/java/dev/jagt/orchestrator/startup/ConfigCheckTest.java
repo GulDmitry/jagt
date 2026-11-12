@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -29,8 +30,32 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class ConfigCheckTest {
 
+  @TempDir Path root;
+
+  SessionHost sessions = mock(SessionHost.class);
+  ConfigCheck check;
+
+  @BeforeEach
+  void checkOverTheTempRoot() {
+    OrchestratorProperties properties =
+        OrchestratorProperties.defaults()
+            .withRoot(root.toString())
+            .withConfigFile(root.resolve("jagt.yml").toString())
+            .withStateFile(root.resolve("state.json").toString());
+    check =
+        new ConfigCheck(
+            new ConfigService(
+                new OrchestratorPaths(properties),
+                mock(AgentRuntime.class),
+                mock(ActStops.class),
+                new Checkers(new TaskChart(Composition.builtIn()))),
+            new OrchestratorPaths(properties),
+            sessions,
+            new WorkingDirHost(root));
+  }
+
   @Test
-  void acceptsProjectThatPointsAtRealRepository(@TempDir Path root) throws Exception {
+  void acceptsProjectThatPointsAtRealRepository() throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.writeString(
         root.resolve("jagt.yml"),
@@ -41,43 +66,13 @@ class ConfigCheckTest {
             demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
         """
             .formatted(root.resolve("repo")));
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(root.resolve("jagt.yml").toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    assertThat(
-            new ConfigCheck(
-                    new ConfigService(
-                        new OrchestratorPaths(properties),
-                        mock(AgentRuntime.class),
-                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
-                    new OrchestratorPaths(properties),
-                    mock(SessionHost.class),
-                    new WorkingDirHost(root))
-                .problems())
+    assertThat(check.problems())
         .isEmpty();
   }
 
   @Test
-  void saysWhereTheConfigFileShouldBeWhenThereIsNone(@TempDir Path root) {
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(root.resolve("jagt.yml").toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    assertThat(
-            new ConfigCheck(
-                    new ConfigService(
-                        new OrchestratorPaths(properties),
-                        mock(AgentRuntime.class),
-                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
-                    new OrchestratorPaths(properties),
-                    mock(SessionHost.class),
-                    new WorkingDirHost(root))
-                .problems())
+  void saysWhereTheConfigFileShouldBeWhenThereIsNone() {
+    assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.config-file");
   }
@@ -85,7 +80,7 @@ class ConfigCheckTest {
   @ParameterizedTest
   @MethodSource
   void namesKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt(
-      String key, String expected, @TempDir Path root) throws Exception {
+      String key, String expected) throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.writeString(
         root.resolve("jagt.yml"),
@@ -96,22 +91,7 @@ class ConfigCheckTest {
             demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
         """
             .formatted(key, root.resolve("repo")));
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(root.resolve("jagt.yml").toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    assertThat(
-            new ConfigCheck(
-                    new ConfigService(
-                        new OrchestratorPaths(properties),
-                        mock(AgentRuntime.class),
-                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
-                    new OrchestratorPaths(properties),
-                    mock(SessionHost.class),
-                    new WorkingDirHost(root))
-                .problems())
+    assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly(expected);
   }
@@ -139,7 +119,7 @@ class ConfigCheckTest {
   @ParameterizedTest
   @ValueSource(strings = {"qa: { enabled: true }", "roles: { qa: { enabled: true } }"})
   void refusesTheStartNamingRolesAcceptanceWhereTheRoleIsStillWrittenAsQa(
-      String key, @TempDir Path root) throws Exception {
+      String key) throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.writeString(
         root.resolve("jagt.yml"),
@@ -150,19 +130,6 @@ class ConfigCheckTest {
             demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
         """
             .formatted(key, root.resolve("repo")));
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(root.resolve("jagt.yml").toString())
-            .withStateFile(root.resolve("state.json").toString());
-    ConfigCheck check =
-        new ConfigCheck(
-            new ConfigService(
-                new OrchestratorPaths(properties), mock(AgentRuntime.class), mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
-            new OrchestratorPaths(properties),
-            mock(SessionHost.class),
-            new WorkingDirHost(root));
-
     assertThatThrownBy(new StartupValidation(List.of(check), true)::refuseToRunWithoutWhatItNeeds)
         .isInstanceOf(Misconfigured.class)
         .hasMessageContaining("roles.acceptance");
@@ -170,27 +137,11 @@ class ConfigCheckTest {
 
   @ParameterizedTest
   @MethodSource
-  void namesWhatConfiguredProjectWouldFailOn(String config, String expected, @TempDir Path root)
-      throws Exception {
+  void namesWhatConfiguredProjectWouldFailOn(String config, String expected) throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.createDirectories(root.resolve("plain-dir"));
     Files.writeString(root.resolve("jagt.yml"), config.replace("$ROOT", root.toString()));
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(root.resolve("jagt.yml").toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    assertThat(
-            new ConfigCheck(
-                    new ConfigService(
-                        new OrchestratorPaths(properties),
-                        mock(AgentRuntime.class),
-                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
-                    new OrchestratorPaths(properties),
-                    mock(SessionHost.class),
-                    new WorkingDirHost(root))
-                .problems())
+    assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly(expected);
   }
@@ -244,25 +195,10 @@ class ConfigCheckTest {
   }
 
   @Test
-  void saysTheOldConfigFileIsNoLongerReadWhereNoJagtYmlTookItsPlace(@TempDir Path root)
+  void saysTheOldConfigFileIsNoLongerReadWhereNoJagtYmlTookItsPlace()
       throws Exception {
     Files.writeString(root.resolve("config.json"), "{}");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(root.resolve("jagt.yml").toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    assertThat(
-            new ConfigCheck(
-                    new ConfigService(
-                        new OrchestratorPaths(properties),
-                        mock(AgentRuntime.class),
-                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
-                    new OrchestratorPaths(properties),
-                    mock(SessionHost.class),
-                    new WorkingDirHost(root))
-                .problems())
+    assertThat(check.problems())
         .singleElement()
         .satisfies(
             problem -> {
@@ -272,7 +208,7 @@ class ConfigCheckTest {
   }
 
   @Test
-  void ignoresTheOldConfigFileOnceJagtYmlHoldsTheProjects(@TempDir Path root) throws Exception {
+  void ignoresTheOldConfigFileOnceJagtYmlHoldsTheProjects() throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.writeString(root.resolve("config.json"), "{}");
     Files.writeString(
@@ -283,27 +219,12 @@ class ConfigCheckTest {
             demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
         """
             .formatted(root.resolve("repo")));
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(root.resolve("jagt.yml").toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    assertThat(
-            new ConfigCheck(
-                    new ConfigService(
-                        new OrchestratorPaths(properties),
-                        mock(AgentRuntime.class),
-                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
-                    new OrchestratorPaths(properties),
-                    mock(SessionHost.class),
-                    new WorkingDirHost(root))
-                .problems())
+    assertThat(check.problems())
         .isEmpty();
   }
 
   @Test
-  void refusesViewerSessionNameTheHostCannotAddress(@TempDir Path root) throws Exception {
+  void refusesViewerSessionNameTheHostCannotAddress() throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.writeString(
         root.resolve("jagt.yml"),
@@ -314,51 +235,21 @@ class ConfigCheckTest {
             demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
         """
             .formatted(root.resolve("repo")));
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(root.resolve("jagt.yml").toString())
-            .withStateFile(root.resolve("state.json").toString());
-    SessionHost sessions = mock(SessionHost.class);
     when(sessions.unaddressable("my.session")).thenReturn(Optional.of("holds a dot"));
 
-    assertThat(
-            new ConfigCheck(
-                    new ConfigService(
-                        new OrchestratorPaths(properties),
-                        mock(AgentRuntime.class),
-                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
-                    new OrchestratorPaths(properties),
-                    sessions,
-                    new WorkingDirHost(root))
-                .problems())
+    assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.viewer.tmuxSession");
   }
 
   @Test
-  void refusesConfigDirectoryThatOutranksJagtYmlForEveryKeyItNames(@TempDir Path root)
+  void refusesConfigDirectoryThatOutranksJagtYmlForEveryKeyItNames()
       throws Exception {
     Path shadowing =
         Files.writeString(
             Files.createDirectories(root.resolve("config")).resolve("application.yml"),
             "orchestrator: {}\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(root.resolve("jagt.yml").toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    assertThat(
-            new ConfigCheck(
-                    new ConfigService(
-                        new OrchestratorPaths(properties),
-                        mock(AgentRuntime.class),
-                        mock(ActStops.class), new Checkers(new TaskChart(Composition.builtIn()))),
-                    new OrchestratorPaths(properties),
-                    mock(SessionHost.class),
-                    new WorkingDirHost(root))
-                .problems())
+    assertThat(check.problems())
         .containsExactly(
             new Problem(
                 "config/application.yml",

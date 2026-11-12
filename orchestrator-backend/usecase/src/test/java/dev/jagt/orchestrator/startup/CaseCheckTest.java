@@ -13,16 +13,31 @@ import dev.jagt.orchestrator.port.Problem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class CaseCheckTest {
 
-  @Test
-  void refusesCaseNamingStepTheBriefLacks(@TempDir Path root) throws Exception {
-    final OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+  @TempDir Path root;
+
+  private OrchestratorPaths paths;
+  private CaseCheck check;
+
+  @BeforeEach
+  void checkOverTheTempRoot() throws Exception {
+    paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     Files.createDirectories(root.resolve("roles/session"));
+    check =
+        new CaseCheck(
+            new SessionCases(paths),
+            new SessionBrief(paths),
+            new Checkers(new TaskChart(Composition.builtIn())));
+  }
+
+  @Test
+  void refusesCaseNamingStepTheBriefLacks() throws Exception {
     Files.writeString(root.resolve("roles/session/brief.md"), "## wake\n\ngo on\n");
     Files.writeString(
         root.resolve("roles/session/cases.md"),
@@ -44,12 +59,7 @@ class CaseCheckTest {
         A typo.
         """);
 
-    assertThat(
-            new CaseCheck(
-                    new SessionCases(paths),
-                    new SessionBrief(paths),
-                    new Checkers(new TaskChart(Composition.builtIn())))
-                .problems())
+    assertThat(check.problems())
         .containsExactly(
             new Problem(
                 "roles/session/cases.md",
@@ -58,22 +68,14 @@ class CaseCheckTest {
   }
 
   @Test
-  void refusesBriefStepNoCaseSends(@TempDir Path root) throws Exception {
-    final OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/session"));
+  void refusesBriefStepNoCaseSends() throws Exception {
     Files.writeString(
         root.resolve("roles/session/brief.md"), "## wake\n\ngo on\n\n## deploy\n\ncheck it\n");
     Files.writeString(
         root.resolve("roles/session/cases.md"),
         "## wake\n\nstep: wake\nat: any\nby: jagt\nreplies: any; plain\nA reset.\n");
 
-    assertThat(
-            new CaseCheck(
-                    new SessionCases(paths),
-                    new SessionBrief(paths),
-                    new Checkers(new TaskChart(Composition.builtIn())))
-                .problems())
+    assertThat(check.problems())
         .containsExactly(
             new Problem(
                 "roles/session/cases.md",
@@ -82,106 +84,67 @@ class CaseCheckTest {
   }
 
   @Test
-  void refusesCaseNamingNoStatus(@TempDir Path root) throws Exception {
-    final OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/session"));
+  void refusesCaseNamingNoStatus() throws Exception {
     Files.writeString(root.resolve("roles/session/brief.md"), "## wake\n\ngo on\n");
     Files.writeString(
         root.resolve("roles/session/cases.md"),
         "## wake\n\nstep: wake\nat: WAITING\nby: jagt\nreplies: any; plain\nA reset.\n");
 
-    assertThat(
-            new CaseCheck(
-                    new SessionCases(paths),
-                    new SessionBrief(paths),
-                    new Checkers(new TaskChart(Composition.builtIn())))
-                .problems())
+    assertThat(check.problems())
         .extracting(Problem::text)
         .anySatisfy(
             text ->
                 assertThat(text).startsWith("roles/session/cases.md: case wake has at: 'WAITING'"));
   }
 
-  @Test
-  void passesTheShippedCasesAgainstTheShippedBrief(@TempDir Path root) throws Exception {
-    final OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+  @Nested
+  class WithTheShippedCases {
 
-    assertThat(
-            new CaseCheck(
-                    new SessionCases(paths),
-                    new SessionBrief(paths),
-                    new Checkers(new TaskChart(Composition.builtIn())))
-                .problems())
-        .isEmpty();
-  }
+    @BeforeEach
+    void copyTheShippedCases() throws Exception {
+      Files.copy(
+          Path.of("../../roles/session/brief.md.dist"),
+          root.resolve("roles/session/brief.md.dist"));
+      Files.copy(
+          Path.of("../../roles/session/cases.md.dist"),
+          root.resolve("roles/session/cases.md.dist"));
+    }
 
-  @Test
-  void passesTheShippedCasesWhereNoCheckerIsInstalled(@TempDir Path root) throws Exception {
-    final OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
+    @Test
+    void passesTheShippedCasesAgainstTheShippedBrief() throws Exception {
+      assertThat(check.problems())
+          .isEmpty();
+    }
 
-    assertThat(
-            new CaseCheck(
-                    new SessionCases(paths),
-                    new SessionBrief(paths),
-                    new Checkers(new TaskChart(Composition.of(List.of()))))
-                .problems())
-        .isEmpty();
-  }
+    @Test
+    void passesTheShippedCasesWhereNoCheckerIsInstalled() throws Exception {
+      assertThat(
+              new CaseCheck(
+                      new SessionCases(paths),
+                      new SessionBrief(paths),
+                      new Checkers(new TaskChart(Composition.of(List.of()))))
+                  .problems())
+          .isEmpty();
+    }
 
-  @Test
-  void refusesToStartWhenTheHumansCasesCannotBeRead(@TempDir Path root) throws Exception {
-    final OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/session/cases.md"));
+    @Test
+    void refusesToStartWhenTheHumansCasesCannotBeRead() throws Exception {
+      Files.createDirectories(root.resolve("roles/session/cases.md"));
 
-    assertThat(
-            new CaseCheck(
-                    new SessionCases(paths),
-                    new SessionBrief(paths),
-                    new Checkers(new TaskChart(Composition.builtIn())))
-                .problems())
-        .extracting(Problem::text)
-        .containsExactly(
-            "roles/session/cases.md: cannot be read — java.io.IOException: Is a directory");
-  }
+      assertThat(check.problems())
+          .extracting(Problem::text)
+          .containsExactly(
+              "roles/session/cases.md: cannot be read — java.io.IOException: Is a directory");
+    }
 
-  @Test
-  void refusesToStartWhenTheHumansBriefCannotBeRead(@TempDir Path root) throws Exception {
-    final OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/session/brief.md"));
+    @Test
+    void refusesToStartWhenTheHumansBriefCannotBeRead() throws Exception {
+      Files.createDirectories(root.resolve("roles/session/brief.md"));
 
-    assertThat(
-            new CaseCheck(
-                    new SessionCases(paths),
-                    new SessionBrief(paths),
-                    new Checkers(new TaskChart(Composition.builtIn())))
-                .problems())
-        .extracting(Problem::text)
-        .containsExactly(
-            "roles/session/brief.md: cannot be read — java.io.IOException: Is a directory");
+      assertThat(check.problems())
+          .extracting(Problem::text)
+          .containsExactly(
+              "roles/session/brief.md: cannot be read — java.io.IOException: Is a directory");
+    }
   }
 }
