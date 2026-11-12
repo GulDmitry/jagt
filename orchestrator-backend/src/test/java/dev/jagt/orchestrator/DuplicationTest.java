@@ -20,7 +20,7 @@ class DuplicationTest {
   private static final int MINIMUM_TOKENS = 75;
 
   private static final List<Path> SKIPPED =
-      Stream.of("capability/deploy", "command", "job", "service")
+      Stream.of("command", "job", "service")
           .map(name -> Path.of("usecase/src/test/java/dev/jagt/orchestrator", name))
           .toList();
 
