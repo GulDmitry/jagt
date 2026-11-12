@@ -19,7 +19,7 @@ change:
         static int total(int cents) {
             return (cents + 2) / 5 * 5;
         }
-    >>>>>>> ABC-42
+    >>>>>>> {task}
     }
 question:
   asked: "The deploy conflict stalled: 1 paths unmerged, 0 staged in the deploy worktree, unchanged since 2026-11-04T10:00:00Z"

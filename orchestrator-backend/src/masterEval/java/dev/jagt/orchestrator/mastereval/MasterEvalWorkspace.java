@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 final class MasterEvalWorkspace {
 
@@ -110,7 +111,12 @@ final class MasterEvalWorkspace {
     EvalGit.run(repo, "fetch", "origin");
     Path worktree = repo.getParent().resolve(taskId);
     EvalGit.run(repo, "worktree", "add", "-b", taskId, worktree.toString(), "main");
-    write(worktree, round.change());
+    write(
+        worktree,
+        round.change().entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey, file -> file.getValue().replace("{task}", taskId))));
     Files.writeString(worktree.resolve("task_request.md"), round.instructions());
     if (!round.plan().isBlank()) {
       Files.writeString(worktree.resolve("plan.md"), round.plan());
