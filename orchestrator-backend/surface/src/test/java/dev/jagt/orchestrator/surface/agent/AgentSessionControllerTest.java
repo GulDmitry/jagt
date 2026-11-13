@@ -8,23 +8,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.protocol.SessionHookReport;
 import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.UsageLimitWakes;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
 
 class AgentSessionControllerTest {
 
@@ -123,37 +118,33 @@ class AgentSessionControllerTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void dropsTranscriptPathItCannotBelieveAndSaysSoOnceInTheLog() {
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger controllerLog = (Logger) LoggerFactory.getLogger(AgentSessionController.class);
-    controllerLog.addAppender(log);
     when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
 
-    controller
-        .report(
-            "working",
-            "/wt/ABC-1-proj",
-            new SessionHookReport("/logs/session.jsonl", "compact", null));
-    final int warnedForAbsolute = log.list.size();
-    controller
-        .report(
-            "working",
-            "/wt/ABC-1-proj",
-            new SessionHookReport("relative/session.jsonl", "compact", null));
-    controllerLog.detachAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(AgentSessionController.class)) {
+      controller
+          .report(
+              "working",
+              "/wt/ABC-1-proj",
+              new SessionHookReport("/logs/session.jsonl", "compact", null));
+      final int warnedForAbsolute = log.events().size();
+      controller
+          .report(
+              "working",
+              "/wt/ABC-1-proj",
+              new SessionHookReport("relative/session.jsonl", "compact", null));
 
-    verify(reports)
-        .record(
-            "ABC-1",
-            SessionProbe.State.WORKING,
-            SessionReports.Report.defaults().withStartedBy("compact").withTask(task));
-    assertThat(warnedForAbsolute).isZero();
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "session hook field dropped".equals(event.getMessage()))
-        .extracting(ILoggingEvent::getLevel)
-        .containsExactly(Level.WARN);
+      verify(reports)
+          .record(
+              "ABC-1",
+              SessionProbe.State.WORKING,
+              SessionReports.Report.defaults().withStartedBy("compact").withTask(task));
+      assertThat(warnedForAbsolute).isZero();
+      assertThat(log.events())
+          .filteredOn(event -> "session hook field dropped".equals(event.getMessage()))
+          .extracting(ILoggingEvent::getLevel)
+          .containsExactly(Level.WARN);
+    }
   }
 
   @Test

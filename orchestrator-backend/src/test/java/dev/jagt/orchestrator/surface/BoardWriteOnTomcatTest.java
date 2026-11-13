@@ -12,7 +12,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,7 +28,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "orchestrator.startup-checks=false",
       "orchestrator.usage-limits.enabled=false"
     })
-@ResourceLock("spring-logging")
 class BoardWriteOnTomcatTest {
 
   @MockitoBean private UserNotifier userNotifier;

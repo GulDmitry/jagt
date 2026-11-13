@@ -16,13 +16,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockReset;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
@@ -32,7 +32,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "orchestrator.startup-checks=false",
       "orchestrator.usage-limits.enabled=false"
     })
-@ResourceLock("spring-logging")
 class MasterVerbsTest {
 
   @MockitoBean private UserNotifier userNotifier;
@@ -41,7 +40,8 @@ class MasterVerbsTest {
 
   @TempDir static Path root;
 
-  @MockitoBean private CommandService commands;
+  @MockitoBean(reset = MockReset.NONE)
+  private CommandService commands;
 
   private final MasterPresses presses;
 
@@ -62,9 +62,11 @@ class MasterVerbsTest {
   @ParameterizedTest
   @EnumSource(TaskAction.class)
   void theMasterPressesEveryVerbTheBoardOffers(TaskAction action) {
-    presses.press("ABC-42", action.id(), null, null);
+    String task = "ABC-" + action.id();
 
-    verify(commands).execute("ABC-42", action, null);
+    presses.press(task, action.id(), null, null);
+
+    verify(commands).execute(task, action, null);
   }
 
   @ParameterizedTest

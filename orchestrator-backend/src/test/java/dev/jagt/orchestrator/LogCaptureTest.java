@@ -35,18 +35,10 @@ class LogCaptureTest {
           "dev.jagt.orchestrator.service.ScenarioWindowsTest",
           "dev.jagt.orchestrator.service.SessionTransitionLogTest",
           "dev.jagt.orchestrator.service.TaskTurnsTest",
-          "dev.jagt.orchestrator.surface.agent.AgentSessionControllerTest",
           "dev.jagt.orchestrator.surface.board.AbortedConnectionFilterTest",
-          "dev.jagt.orchestrator.surface.mcp.McpProtocolServiceTest",
           "dev.jagt.orchestrator.surface.ui.BoardBannerTest",
           "dev.jagt.orchestrator.surface.ui.LogFileRollTest",
-          "dev.jagt.orchestrator.eval.EvalQuorumTest",
-          "dev.jagt.orchestrator.GhosttyProfileContextTest",
-          "dev.jagt.orchestrator.LinuxProfileContextTest",
-          "dev.jagt.orchestrator.MasterVerbsTest",
-          "dev.jagt.orchestrator.OrchestratorApplicationTest",
-          "dev.jagt.orchestrator.startup.StartupRefusalTest",
-          "dev.jagt.orchestrator.surface.BoardWriteOnTomcatTest");
+          "dev.jagt.orchestrator.eval.EvalQuorumTest");
 
   @Test
   void noTestHoldsLockOrRunsOnOneThread() {

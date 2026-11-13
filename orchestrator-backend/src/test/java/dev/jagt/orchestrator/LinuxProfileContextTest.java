@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
@@ -28,7 +27,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
       "orchestrator.usage-limits.enabled=false",
       "orchestrator.platform=linux"
     })
-@ResourceLock("spring-logging")
 class LinuxProfileContextTest {
 
   @TempDir static Path root;

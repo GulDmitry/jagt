@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.NoArguments;
@@ -26,6 +25,7 @@ import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -37,8 +37,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
@@ -200,13 +198,7 @@ class McpProtocolServiceTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsSessionsCallWithItsArgumentsAndTheTurnItAnswers(@TempDir Path root) {
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger protocolLog = (Logger) LoggerFactory.getLogger(McpProtocolService.class);
-    protocolLog.addAppender(log);
-    protocolLog.setLevel(Level.DEBUG);
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     state.putTask(
         "ABC-1",
@@ -217,55 +209,52 @@ class McpProtocolServiceTest {
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(noting));
 
-    protocol.handle(
-        mapper.readTree(
-            "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\","
-                + "\"params\":{\"name\":\"note\",\"arguments\":{\"why\":\"pushed\"}}}"),
-        "/wt/ABC-1-proj",
-        false);
+    ((Logger) LoggerFactory.getLogger(McpProtocolService.class)).setLevel(Level.DEBUG);
+    try (FakeLogCapture log = new FakeLogCapture(McpProtocolService.class)) {
+      protocol.handle(
+          mapper.readTree(
+              "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\","
+                  + "\"params\":{\"name\":\"note\",\"arguments\":{\"why\":\"pushed\"}}}"),
+          "/wt/ABC-1-proj",
+          false);
 
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "mcp tool called".equals(event.getMessage()))
-        .singleElement()
-        .satisfies(
-            event ->
-                assertThat(event.getKeyValuePairs())
-                    .extracting(pair -> pair.key + "=" + pair.value)
-                    .containsExactly(
-                        "task=ABC-1",
-                        "tool=note",
-                        "turn=1",
-                        "step=ship",
-                        "arguments={\"why\":\"pushed\"}"));
-    protocolLog.detachAppender(log);
-    protocolLog.setLevel(null);
+      assertThat(log.events())
+          .filteredOn(event -> "mcp tool called".equals(event.getMessage()))
+          .singleElement()
+          .satisfies(
+              event ->
+                  assertThat(event.getKeyValuePairs())
+                      .extracting(pair -> pair.key + "=" + pair.value)
+                      .containsExactly(
+                          "task=ABC-1",
+                          "tool=note",
+                          "turn=1",
+                          "step=ship",
+                          "arguments={\"why\":\"pushed\"}"));
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsRefusedMessageAsInfoBecauseTheCallerAlreadyHasTheAnswer(@TempDir Path root) {
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger protocolLog = (Logger) LoggerFactory.getLogger(McpProtocolService.class);
-    protocolLog.addAppender(log);
     StateService state = TestStateServiceBuilder.stateService().build(mapper, root);
     McpTools refusing =
         new ThrowingMcpTools(new IllegalArgumentException("CI_POLLING cannot be reported"));
     McpProtocolService protocol =
         new McpProtocolService(mapper, state, Clock.systemUTC(), List.of(refusing));
 
-    protocol.handle(
-        mapper.readTree(
-            "{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\","
-                + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"),
-        null,
-        true);
+    try (FakeLogCapture log = new FakeLogCapture(McpProtocolService.class)) {
+      protocol.handle(
+          mapper.readTree(
+              "{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\","
+                  + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"),
+          null,
+          true);
 
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "mcp tool failed".equals(event.getMessage()))
-        .extracting(ILoggingEvent::getLevel)
-        .containsExactly(Level.INFO);
-    protocolLog.detachAppender(log);
+      assertThat(log.events())
+          .filteredOn(event -> "mcp tool failed".equals(event.getMessage()))
+          .extracting(ILoggingEvent::getLevel)
+          .containsExactly(Level.INFO);
+    }
   }
 
   @Test

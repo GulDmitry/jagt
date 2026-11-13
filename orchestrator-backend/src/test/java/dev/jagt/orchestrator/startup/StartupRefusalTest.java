@@ -7,10 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
-@ResourceLock("spring-logging")
 class StartupRefusalTest {
 
   @Test

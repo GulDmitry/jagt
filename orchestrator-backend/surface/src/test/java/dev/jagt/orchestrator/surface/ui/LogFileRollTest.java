@@ -16,8 +16,6 @@ import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import org.springframework.boot.context.logging.LoggingApplicationListener;
@@ -27,8 +25,6 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mock.env.MockEnvironment;
 
 @ExtendWith(OutputCaptureExtension.class)
-@Execution(ExecutionMode.SAME_THREAD)
-@ResourceLock("loopback-ports")
 class LogFileRollTest {
 
   @Test

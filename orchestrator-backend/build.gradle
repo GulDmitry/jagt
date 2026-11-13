@@ -41,3 +41,7 @@ apply plugin: 'jagt.stand'
 apply plugin: 'jagt.evals'
 apply plugin: 'jagt.uncached-suites'
 apply plugin: 'jagt.suite-stats'
+
+tasks.named('test') {
+    systemProperty 'org.springframework.boot.logging.LoggingSystem', 'none'
+}
