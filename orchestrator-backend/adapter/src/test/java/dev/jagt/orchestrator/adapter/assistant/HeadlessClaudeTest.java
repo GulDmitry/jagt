@@ -9,9 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Processes;
@@ -24,19 +22,17 @@ import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 class HeadlessClaudeTest {
@@ -418,37 +414,33 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void namesTheModelsOwnWordsWhenItAnsweredPastTheSchema() {
-    Logger assistantLog = (Logger) LoggerFactory.getLogger(SchemaAnswer.class);
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    assistantLog.addAppender(log);
-    FakeProcesses runner =
-        new FakeProcesses()
-            .answering(
-                new Processes.Result(
-                    0,
-                    """
-                    {"type":"result","is_error":false,
-                     "result":"I need the GitLab MCP server logged in before I can read this request."}\
-                    """,
-                    ""));
+    try (FakeLogCapture log = new FakeLogCapture(SchemaAnswer.class)) {
+      FakeProcesses runner =
+          new FakeProcesses()
+              .answering(
+                  new Processes.Result(
+                      0,
+                      """
+                      {"type":"result","is_error":false,
+                       "result":"I need the GitLab MCP server logged in before I can read this request."}\
+                      """,
+                      ""));
 
-    headlessClaude()
-        .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
-        .read(
-            "Read https://host/mr/9.",
-            ReviewRead.SCHEMA.json(),
-            "https://host/mr/9",
-            AssistantCallKind.REVIEW_SWEEP);
+      headlessClaude()
+          .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
+          .read(
+              "Read https://host/mr/9.",
+              ReviewRead.SCHEMA.json(),
+              "https://host/mr/9",
+              AssistantCallKind.REVIEW_SWEEP);
 
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "assistant answered outside the schema".equals(event.getMessage()))
-        .flatExtracting(ILoggingEvent::getKeyValuePairs)
-        .extracting(pair -> pair.key + "=" + pair.value)
-        .contains("said=I need the GitLab MCP server logged in before I can read this request.");
-    assistantLog.detachAppender(log);
+      assertThat(log.events())
+          .filteredOn(event -> "assistant answered outside the schema".equals(event.getMessage()))
+          .flatExtracting(ILoggingEvent::getKeyValuePairs)
+          .extracting(pair -> pair.key + "=" + pair.value)
+          .contains("said=I need the GitLab MCP server logged in before I can read this request.");
+    }
   }
 
   @Test
@@ -604,24 +596,23 @@ class HeadlessClaudeTest {
 
   @ParameterizedTest
   @MethodSource("readCalls")
-  @ResourceLock(Resources.GLOBAL)
   void logsTheCallsOfReadByToolRatherThanPrintingWhatEachRead(List<String> calls, String expected) {
     ReadOnlyTools reads = mock(ReadOnlyTools.class);
     when(reads.calls(any())).thenReturn(calls);
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(HeadlessClaude.class)).addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(HeadlessClaude.class)) {
+      headlessClaude()
+          .build(runner, mock(UsageTracker.class), reads)
+          .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    headlessClaude()
-        .build(runner, mock(UsageTracker.class), reads)
-        .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
-
-    assertThat(log.list)
-        .filteredOn(event -> "assistant read".equals(event.getMessage()))
-        .flatExtracting(
-            event ->
-                event.getKeyValuePairs().stream().map(pair -> pair.key + "=" + pair.value).toList())
-        .contains("ref=ABC-42", expected);
+      assertThat(log.events())
+          .filteredOn(event -> "assistant read".equals(event.getMessage()))
+          .flatExtracting(
+              event ->
+                  event.getKeyValuePairs().stream()
+                      .map(pair -> pair.key + "=" + pair.value)
+                      .toList())
+          .contains("ref=ABC-42", expected);
+    }
   }
 
   private static Stream<Arguments> readCalls() {
@@ -640,7 +631,6 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void warnsRatherThanErrsWhenTheReadWasDeniedCallAndAnsweredAnyway() {
     FakeProcesses runner =
         new FakeProcesses()
@@ -650,18 +640,16 @@ class HeadlessClaudeTest {
                     "{\"structured_output\":{\"exists\":false},\"permission_denials\":[{\"tool_name"
                         + "\":\"Bash\"}]}",
                     ""));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(HeadlessClaude.class)).addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(HeadlessClaude.class)) {
+      headlessClaude()
+          .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
+          .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    headlessClaude()
-        .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
-        .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
-
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "assistant tool calls denied".equals(event.getMessage()))
-        .extracting(ILoggingEvent::getLevel)
-        .containsExactly(Level.WARN);
+      assertThat(log.events())
+          .filteredOn(event -> "assistant tool calls denied".equals(event.getMessage()))
+          .extracting(ILoggingEvent::getLevel)
+          .containsExactly(Level.WARN);
+    }
   }
 
   @Test
@@ -799,25 +787,20 @@ class HeadlessClaudeTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void warnsWhereCallReportedNoUsageSoItsCostIsKnownToBeUnaccounted() {
     FakeProcesses runner =
         new FakeProcesses()
             .answering(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-    Logger assistantLog = (Logger) LoggerFactory.getLogger(HeadlessClaude.class);
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    assistantLog.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(HeadlessClaude.class)) {
+      headlessClaude()
+          .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
+          .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
-    headlessClaude()
-        .build(runner, mock(UsageTracker.class), mock(ReadOnlyTools.class))
-        .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
-
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "assistant call reported no usage".equals(event.getMessage()))
-        .extracting(ILoggingEvent::getLevel)
-        .containsExactly(Level.WARN);
-    assistantLog.detachAppender(log);
+      assertThat(log.events())
+          .filteredOn(event -> "assistant call reported no usage".equals(event.getMessage()))
+          .extracting(ILoggingEvent::getLevel)
+          .containsExactly(Level.WARN);
+    }
   }
 
   @Test

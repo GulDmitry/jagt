@@ -2,18 +2,13 @@ package dev.jagt.orchestrator.adapter.replay;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
 
 class RecordingTest {
 
@@ -45,23 +40,18 @@ class RecordingTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsOnlyTheFirstDivergenceBecauseLaterOneFollowsFromIt(@TempDir Path root)
       throws Exception {
     Path file = root.resolve("recording.jsonl");
     Files.writeString(file, "\n");
     Recording recording = new Recording(file.toString());
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger recordingLog = (Logger) LoggerFactory.getLogger(Recording.class);
-    recordingLog.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(Recording.class)) {
+      recording.diverge("ABC-1", "ship", "first cause");
+      recording.diverge("ABC-1", "deploy", "second cause");
 
-    recording.diverge("ABC-1", "ship", "first cause");
-    recording.diverge("ABC-1", "deploy", "second cause");
-
-    recordingLog.detachAppender(log);
-    assertThat(log.list).hasSize(1);
-    assertThat(log.list.getFirst().getKeyValuePairs())
-        .anyMatch(pair -> pair.key.equals("cause") && pair.value.equals("first cause"));
+      assertThat(log.events()).hasSize(1);
+      assertThat(log.events().getFirst().getKeyValuePairs())
+          .anyMatch(pair -> pair.key.equals("cause") && pair.value.equals("first cause"));
+    }
   }
 }

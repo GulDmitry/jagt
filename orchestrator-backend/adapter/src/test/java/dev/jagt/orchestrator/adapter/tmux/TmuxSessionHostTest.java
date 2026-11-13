@@ -12,9 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -24,6 +22,7 @@ import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.port.SessionHost.WindowState;
 import dev.jagt.orchestrator.port.TerminalDriver;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
@@ -31,13 +30,10 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.LoggerFactory;
 
 class TmuxSessionHostTest {
 
@@ -647,42 +643,32 @@ class TmuxSessionHostTest {
     "automatic-rename,no such window,tmux window rename failed",
     "escape-time,unknown option,tmux session options failed"
   })
-  @ResourceLock(Resources.GLOBAL)
   void warnsWhereTmuxStepOfOpeningTheWindowFailed(String step, String error, String event) {
     processes.answering(new Processes.Result(1, "", error), step);
-    Logger hostLog = (Logger) LoggerFactory.getLogger(TmuxSessionHost.class);
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    hostLog.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(TmuxSessionHost.class)) {
+      host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
 
-    host.openTaskWindow("jagt", "agents", "ABC-1", null, Path.of("/wt/ABC-1"), false, "");
-
-    assertThat(List.copyOf(log.list))
-        .filteredOn(logged -> event.equals(logged.getMessage()))
-        .extracting(ILoggingEvent::getLevel)
-        .containsExactly(Level.WARN);
-    hostLog.detachAppender(log);
+      assertThat(log.events())
+          .filteredOn(logged -> event.equals(logged.getMessage()))
+          .extracting(ILoggingEvent::getLevel)
+          .containsExactly(Level.WARN);
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void opensNoFeedWindowAndNamesTheCauseWhereTheSessionsWindowsCannotBeListed() {
     FakeProcesses processes = new FakeProcesses().answering(new Processes.Result(0, "", ""));
     processes.answering(new Processes.Result(1, "", "protocol version mismatch"), "list-windows");
     TmuxSessionHost host = tmuxHost().build(processes, terminal, agent);
-    Logger hostLog = (Logger) LoggerFactory.getLogger(TmuxReads.class);
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    hostLog.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(TmuxReads.class)) {
+      host.keepFeedWindow("jagt", "master", Path.of("/logs/master.log"));
 
-    host.keepFeedWindow("jagt", "master", Path.of("/logs/master.log"));
-
-    assertThat(processes.issuedContaining("new-window")).isEmpty();
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "tmux windows unreadable".equals(event.getMessage()))
-        .flatExtracting(ILoggingEvent::getKeyValuePairs)
-        .anySatisfy(pair -> assertThat(pair.value).isEqualTo("protocol version mismatch"));
-    hostLog.detachAppender(log);
+      assertThat(processes.issuedContaining("new-window")).isEmpty();
+      assertThat(log.events())
+          .filteredOn(event -> "tmux windows unreadable".equals(event.getMessage()))
+          .flatExtracting(ILoggingEvent::getKeyValuePairs)
+          .anySatisfy(pair -> assertThat(pair.value).isEqualTo("protocol version mismatch"));
+    }
   }
 
   @Test

@@ -3,20 +3,15 @@ package dev.jagt.orchestrator.adapter.agent;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.SessionLog;
 import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
 
 class ClaudeSessionLogTest {
 
@@ -373,25 +368,23 @@ class ClaudeSessionLogTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void warnsOncePerUnpricedModelNotOncePerTurn(@TempDir Path dir) throws IOException {
-    ListAppender<ILoggingEvent> appender = new ListAppender<>();
-    appender.start();
-    ((Logger) LoggerFactory.getLogger(ClaudeSessionLog.class)).addAppender(appender);
-    Path log = dir.resolve("session.jsonl");
-    Files.writeString(
-        log,
-        """
-        {"type":"assistant","message":{"model":"claude-nova-9","usage":{"input_tokens":100,"output_tokens":10}}}
-        {"type":"assistant","message":{"model":"claude-nova-9","usage":{"input_tokens":100,"output_tokens":10}}}
-        {"type":"assistant","message":{"model":"claude-nova-8","usage":{"input_tokens":100,"output_tokens":10}}}
-        """);
+    try (FakeLogCapture appender = new FakeLogCapture(ClaudeSessionLog.class)) {
+      Path log = dir.resolve("session.jsonl");
+      Files.writeString(
+          log,
+          """
+          {"type":"assistant","message":{"model":"claude-nova-9","usage":{"input_tokens":100,"output_tokens":10}}}
+          {"type":"assistant","message":{"model":"claude-nova-9","usage":{"input_tokens":100,"output_tokens":10}}}
+          {"type":"assistant","message":{"model":"claude-nova-8","usage":{"input_tokens":100,"output_tokens":10}}}
+          """);
 
-    new ClaudeSessionLog().spent(log, 0, Files.size(log));
+      new ClaudeSessionLog().spent(log, 0, Files.size(log));
 
-    assertThat(List.copyOf(appender.list))
-        .extracting(ILoggingEvent::getMessage)
-        .containsExactly("model unpriced", "model unpriced");
+      assertThat(appender.events())
+          .extracting(ILoggingEvent::getMessage)
+          .containsExactly("model unpriced", "model unpriced");
+    }
   }
 
   @Test

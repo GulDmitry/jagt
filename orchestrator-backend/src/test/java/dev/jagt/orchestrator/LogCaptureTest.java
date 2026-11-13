@@ -24,21 +24,10 @@ class LogCaptureTest {
 
   private static final Set<String> SKIPPED =
       Set.of(
-          "dev.jagt.orchestrator.adapter.agent.ClaudeSessionLogTest",
-          "dev.jagt.orchestrator.adapter.agent.ClaudeTrustTest",
-          "dev.jagt.orchestrator.adapter.agent.UsageEndpointTest",
-          "dev.jagt.orchestrator.adapter.assistant.ClaudeMcpHealthProbeTest",
-          "dev.jagt.orchestrator.adapter.assistant.HeadlessClaudeTest",
-          "dev.jagt.orchestrator.adapter.LsofWorktreeProcessesTest",
           "dev.jagt.orchestrator.adapter.ProcessRunnerTest",
-          "dev.jagt.orchestrator.adapter.replay.RecordingTest",
-          "dev.jagt.orchestrator.adapter.replay.ReplayMovesTest",
           "dev.jagt.orchestrator.adapter.replay.ReplaySessionsTest",
-          "dev.jagt.orchestrator.adapter.tmux.TmuxSessionHostTest",
           "dev.jagt.orchestrator.service.AgentSessionsTest",
           "dev.jagt.orchestrator.service.AgentStatusReportsTest",
-          "dev.jagt.orchestrator.service.GitRepos",
-          "dev.jagt.orchestrator.service.GitWorktreesTest",
           "dev.jagt.orchestrator.service.HumanWaitRecorderTest",
           "dev.jagt.orchestrator.service.master.ChargedReviewsTest",
           "dev.jagt.orchestrator.service.master.MasterPanelTest",

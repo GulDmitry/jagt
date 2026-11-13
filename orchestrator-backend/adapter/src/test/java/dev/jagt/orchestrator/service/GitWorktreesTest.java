@@ -11,15 +11,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.WorktreeContainers;
 import dev.jagt.orchestrator.port.WorktreeProcesses;
 import dev.jagt.orchestrator.task.BranchStrategy;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -30,9 +29,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
 
 class GitWorktreesTest {
 
@@ -794,35 +790,33 @@ class GitWorktreesTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void warnsWhereGitCouldNotRemoveTheWorktreeItWasAskedTo() throws Exception {
     Path repo = GitRepos.emptyRepo(runner, dir);
-    ListAppender<ILoggingEvent> log = GitRepos.capture(GitWorktrees.class);
     Path notWorktree = Files.createDirectories(dir.resolve("leftover"));
 
-    git.removeWorktree(repo, notWorktree, null);
+    try (FakeLogCapture log = new FakeLogCapture(GitWorktrees.class)) {
+      git.removeWorktree(repo, notWorktree, null);
 
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "git worktree remove failed".equals(event.getMessage()))
-        .extracting(ILoggingEvent::getLevel)
-        .containsExactly(Level.WARN);
-    ((Logger) LoggerFactory.getLogger(GitWorktrees.class)).detachAppender(log);
+      assertThat(log.events())
+          .filteredOn(event -> "git worktree remove failed".equals(event.getMessage()))
+          .extracting(ILoggingEvent::getLevel)
+          .containsExactly(Level.WARN);
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void warnsWhereGitCouldNotDeleteTheBranchItWasAskedTo() throws Exception {
     Path repo = GitRepos.emptyRepo(runner, dir);
-    ListAppender<ILoggingEvent> log = GitRepos.capture(GitWorktrees.class);
     Path notWorktree = Files.createDirectories(dir.resolve("leftover"));
 
-    git.removeWorktree(repo, notWorktree, "ABC-404");
+    try (FakeLogCapture log = new FakeLogCapture(GitWorktrees.class)) {
+      git.removeWorktree(repo, notWorktree, "ABC-404");
 
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "git branch delete failed".equals(event.getMessage()))
-        .extracting(ILoggingEvent::getLevel)
-        .containsExactly(Level.WARN);
-    ((Logger) LoggerFactory.getLogger(GitWorktrees.class)).detachAppender(log);
+      assertThat(log.events())
+          .filteredOn(event -> "git branch delete failed".equals(event.getMessage()))
+          .extracting(ILoggingEvent::getLevel)
+          .containsExactly(Level.WARN);
+    }
   }
 
   @Test

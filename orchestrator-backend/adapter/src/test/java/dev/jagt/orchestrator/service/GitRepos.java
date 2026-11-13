@@ -1,8 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.task.BranchStrategy;
@@ -15,7 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.slf4j.LoggerFactory;
 
 final class GitRepos {
 
@@ -124,13 +120,6 @@ final class GitRepos {
 
   static void refusePushes(Processes runner, Path repo, Path dir) {
     git(runner, repo, "remote", "set-url", "--push", "origin", dir.resolve("gone.git").toString());
-  }
-
-  static ListAppender<ILoggingEvent> capture(Class<?> type) {
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(type)).addAppender(log);
-    return log;
   }
 
   static void shipRelease(Processes runner, Path repo) throws IOException {

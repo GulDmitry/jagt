@@ -8,20 +8,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
 
 class ClaudeMcpHealthProbeTest {
 
@@ -80,28 +76,23 @@ class ClaudeMcpHealthProbeTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void namesTheLoginDeclaredServerNeedsWhereItCannotJudgeOne() {
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger probeLog = (Logger) LoggerFactory.getLogger(ClaudeMcpHealthProbe.class);
-    probeLog.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(ClaudeMcpHealthProbe.class)) {
+      new ClaudeMcpHealthProbe(
+              mock(ProcessRunner.class),
+              ClaudeProperties.defaults(),
+              AssistantProperties.empty().withMcpConfig("/opt/acme/servers.json"))
+          .brokenServers();
 
-    new ClaudeMcpHealthProbe(
-            mock(ProcessRunner.class),
-            ClaudeProperties.defaults(),
-            AssistantProperties.empty().withMcpConfig("/opt/acme/servers.json"))
-        .brokenServers();
-
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "mcp probe skipped".equals(event.getMessage()))
-        .flatExtracting(ILoggingEvent::getKeyValuePairs)
-        .extracting(pair -> pair.key + "=" + pair.value)
-        .contains(
-            "fix=claude --strict-mcp-config --mcp-config /opt/acme/servers.json"
-                + " --setting-sources user,project,local, then /mcp: a declared server carries its"
-                + " own login");
-    probeLog.detachAppender(log);
+      assertThat(log.events())
+          .filteredOn(event -> "mcp probe skipped".equals(event.getMessage()))
+          .flatExtracting(ILoggingEvent::getKeyValuePairs)
+          .extracting(pair -> pair.key + "=" + pair.value)
+          .contains(
+              "fix=claude --strict-mcp-config --mcp-config /opt/acme/servers.json"
+                  + " --setting-sources user,project,local, then /mcp: a declared server carries"
+                  + " its own login");
+    }
   }
 
   @Test
