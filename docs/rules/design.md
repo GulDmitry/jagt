@@ -2,8 +2,8 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-**The storybook is the board's own `Help` report**: `static/ui/legend.js` renders every mark below as the
-page's own element. Every legend row is a mark, bar a **transient** one inside an open control
+**The storybook is the board's own `Help` report** (AGENTS.md "Interfaces": one legend row per mark): `static/ui/legend.js`.
+Every legend row is a mark, bar a **transient** one inside an open control
 (`#palette-state.ok`/`.bad`, a said line's wait). The COST of adding one: [`board`](../../openspec/specs/board/spec.md).
 
 **`--ok` and `--you` on one card do not
@@ -66,7 +66,7 @@ illegible. A hex outside `:root` is a bug, but the translucent blacks (four shad
 ## Adding one
 
 1. Spend **shape** before colour: one fact per element, one per hover.
-2. Give it a row in `legend.js` rendering the element itself, never a colour in words.
+2. Give it its legend row.
 3. A colour nothing above covers means that meaning already exists under another name.
 
 ## Type, metrics and both themes
@@ -81,6 +81,6 @@ card or toast, `10px` the report dialog. Grid gap 12px, card padding 10px, dialo
 Shadow lifts a thing OFF the page and nothing else (report dialog, log button, toast, tip); its one exception
 is not depth: the 2px `--ok` ring on a primary deploy button.
 
-**No build step, no CDN, no external asset**: every mark is a border, a background or a character in the jar.
+**No build step** (AGENTS.md): every mark is a border, a background or a character in the jar.
 A library is a vendored file the jar serves as published, pinned by `BoardAssetsTest`
 ([0046](../decisions/0046-the-board-renders-preact-components-with-no-build.md)).

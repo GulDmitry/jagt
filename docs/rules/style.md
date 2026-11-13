@@ -8,7 +8,7 @@
 - A comment is deleted on sight when it is narration of what the code does; an argument that a change
   is correct; how the code got this way; a fact whose source of truth is elsewhere.
 - **A situation is a scenario in its spec** (`openspec/specs/`): "the request does not target the base branch → …".
-- The one exception to English is functional: `KittyTerminalDriver`'s ЙЦУКЕН keymap (`map=cmd+м …`).
+- The one exception to English (AGENTS.md) is functional: `KittyTerminalDriver`'s ЙЦУКЕН keymap (`map=cmd+м …`).
 - **A form field explains itself with a placeholder**, never a paragraph beside its button; the `*-state`
   spans are progress and verdict slots and start **empty**.
 - **The same standard is demanded of the agents**, in the `context` step of `roles/session/brief.md.dist`, its `<how_you_write>`;
@@ -22,9 +22,9 @@
 
 ## Every log line has the same grammar
 
-The file log is ECS JSON: **nothing is interpolated into the message** — a constant event, every value its own
-pair: `log.atWarn().setMessage("read failed").addKeyValue("url", url).addKeyValue("cause", failure).log()`.
-Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
+AGENTS.md: every log line is structured. The file log is ECS JSON:
+`log.atWarn().setMessage("read failed").addKeyValue("url", url).addKeyValue("cause", failure).log()`;
+`logging.pattern.console` carries `%kvp`.
 
 - **event**: 2 to 4 lowercase words, subject then state, past tense (`read failed`, `mcp probe skipped`,
   `worktree orphaned`, `process launched`), no punctuation, no values.
@@ -49,21 +49,18 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
 
 ## Code quality
 
-- **The test is the litmus of the production code**: ~5+ objects of setup or high cognitive load: the smell is in the
-  **production code**. Fix the code, never the fixture.
-- **A unit knows what it needs, never who uses it**, a comment included. `RingsTest` fails an inner module
-  naming an outer type, review a caller named as a concept.
-- **No duplicated block of 75 tokens or more in main**, found by PMD's copy-paste detector (`DuplicationTest`): one holder
-  named for what it does; identifiers and literals count, so a copy with other names is still found.
-- **Cognitive complexity 12 per method at most**, PMD's count of Sonar's metric (`CognitiveComplexityTest`,
-  [0053](../decisions/0053-a-method-reads-at-cognitive-complexity-twelve-at-most.md)): over it, extract a named step.
-  The ceiling only falls: `refresh` lowers it once few methods stand above the next step.
-- **Checkstyle's default counts gate main**: 7 parameters, 8 record components
-  ([0143](../decisions/0143-checkstyle-gates-parameter-and-component-counts.md)); over them, nested records or a builder.
-  A suppression carries its reason and estimated cost; zero suppressions is the target.
-- **Static is for pure functions and constants** (`StaticStateTest`, `LifecycleHooksTest`,
-  [0160](../decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md)): a static method reads only its
-  arguments and immutable constants; a static field is final, of an immutable type. A class needing a clock, a file root,
+Each rule below is AGENTS.md "Code" / "First priority"; only its why and details stand here.
+
+- **The test is the litmus of the production code**: ~5+ objects of setup or high cognitive load is a smell in the
+  **production code**.
+- `RingsTest` fails an inner module naming an outer type; review a caller named as a concept.
+- **Duplication** is found by PMD's copy-paste detector: identifiers and literals count, so a copy with other names is still found.
+- **Cognitive complexity** is PMD's count of Sonar's metric ([0053](../decisions/0053-a-method-reads-at-cognitive-complexity-twelve-at-most.md)):
+  over it, extract a named step. The ceiling only falls: `refresh` lowers it once few methods stand above the next step.
+- **Checkstyle counts** ([0143](../decisions/0143-checkstyle-gates-parameter-and-component-counts.md)): over them, nested records or a builder.
+  A suppression carries its reason and estimated cost.
+- **Static state** ([0160](../decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md)): a static method reads only its
+  arguments and immutable constants. A class needing a clock, a file root,
   the composition or a registry is an instance built by its `*Wiring`. `@PostConstruct` validates configuration only;
   no field `@Autowired`, no `static {}` initializer, no `ApplicationContext` lookup. Exempt by name: `TaskAliasLogFilter`,
   `AbortedConnectionFilter` (Logback predates the context). A global is a second constructor nobody sees; a hook only
@@ -71,8 +68,8 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
   `src/test/resources/archunit/`, which only shrinks.
 - Over the ceiling, group by composition and never inheritance, or use a registry of small units
   (`surface/mcp/McpTools`, `Move.actions()`).
-- **English and UTC only**, set in `main` ([0055](../decisions/0055-jagt-speaks-english-and-keeps-utc.md)):
-  `EnglishAndUtcTest` and `BoardAssetsTest` fail a call that reads the machine's or the browser's locale, zone or clock.
+- **English and UTC** ([0055](../decisions/0055-jagt-speaks-english-and-keeps-utc.md)):
+  `BoardAssetsTest` also fails the browser's locale, zone or clock.
 - **Lombok carries the mechanical boilerplate and nothing else**, one set tree-wide, `core/` included
   ([0107](../decisions/0107-one-lombok-set-core-included.md)): `@RequiredArgsConstructor`, `@Slf4j` (not in `core/`),
   `@With`, `@Builder(toBuilder = true)` on records, `@Getter` on a stateful class.
@@ -83,12 +80,11 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
   ([0034](../decisions/0034-null-is-declared-and-the-compiler-checks-it.md)).
 - **Code speaks the Java the build targets**: record and switch patterns, `instanceof` patterns, switch expressions,
   a single expression where a stream or `Optional` says it; a toolchain bump applies its new forms tree-wide.
-- On every code + test change: tests written to `docs/rules/testing.md`, the production code refactored until they
-  are light. Deliver only light, green **and** reviewed.
+- On every code + test change the production code is refactored until its tests are light.
 
 ## Code review is mandatory after every code change, before committing
 
-State the scope and a **level** every time. Stay at `medium` unless the
+AGENTS.md: code review before every commit. State the scope and a **level** every time. Stay at `medium` unless the
 change is genuinely subtle — above it, eight to ten finder subagents plus a verifier each re-read the changed
 files. Re-review if the fixes are non-trivial.
 

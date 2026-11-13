@@ -68,6 +68,8 @@ or local setup; such names live only in git-ignored files. **A check holds for a
 - Never a warning, badge or gate on the deploy confirm: it names the writes and gets out of the way.
 - **Commit every finished piece of work in the turn it went green**: left in the tree, it is not delivered.
   Permission to commit is standing, to push is not.
+- **One feature, one commit**: its steps, fixes and review findings fold into it (`git commit --amend`);
+  an agent branch is squashed on merge.
 - **Code review before every commit**, scoped to what *this* session touched ([`docs/rules/style.md`](docs/rules/style.md)),
   and its mutants on the diff when `main` changed ([`testing`](docs/rules/testing.md)).
   **A rejected finding keeps its why where the next review meets it**: a site comment or a Rejected row.

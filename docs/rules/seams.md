@@ -13,11 +13,10 @@ Linux and macOS, with terminals, notifiers, editors and agent runtimes (any MCP-
   `CodeHost` by `orchestrator.codeHost`, or a project's own (github default, gitlab, command, none, replay), never by `agent.cli`.
 - **A seam selected for the wrong OS is refused at startup, never degraded** (`adapter/PlatformCheck`);
   a notifier reaching nothing logs and returns.
-- **Every third-party service or technology is a seam** ([0130](../decisions/0130-every-third-party-is-a-configured-seam.md)):
-  a port, one driver per vendor, a `jagt.yml` key with a default; never guessed from a name, a URL, a host or a file.
+- **Third-party seams** (AGENTS.md, [0130](../decisions/0130-every-third-party-is-a-configured-seam.md)):
+  one driver per vendor, never guessed from a file either.
 - **A read may run on OpenCode** (`opencode.reads`): the `Chosen…Reader`s pick per role, `HeadlessOpenCode` skips the cloud's breaker.
-- **A driver that cannot reach its party is jagt's failure, not a task's**: one mark on the board's head naming the fix,
-  ended by the next read that succeeds; a card stops only on its own work.
+- **A driver that cannot reach its party** (AGENTS.md: jagt's own reach): the mark names the fix and ends with the next read that succeeds.
 - **The code host is a seam for jagt's own reads** (`codeHost`: `github` default, `gitlab`, `command`, `none`, `replay`), the
   CLI or command holding the credential. A model reads the tracker and the request through the MCP of whoever
   runs it, jagt holding no credential. Its WORKFLOW is one — `TrackerWorkflow` by
@@ -75,10 +74,10 @@ Master's reviewer, the ⌘K palette.
 
 ### An ending says which one
 
-- **A turn, a session, a run or a call ends one of four ways: finished, stopped, failed, gone** — never merged
-  in a state, a surface or a log line ([0052](../decisions/0052-an-ending-says-which-one.md)).
+- AGENTS.md: an ending says which one; a turn, a session, a run or a call, in a state, a surface or a log line
+  ([0052](../decisions/0052-an-ending-says-which-one.md)).
 - A failure is reported at once with **its source's own word** for the cause (`SessionProbe.State.FAILED`).
-- **A seam subscribes to every ending its source emits**, unmatched, and jagt branches on the cause: a hook
+- **A seam hears every ending** unmatched, and jagt branches on the cause: a hook
   matched to the one value a feature needs leaves the rest to silence (`turn-failure`, not a `rate_limit` matcher).
 - An end its source follows at once with a start is no ending (`continuing-end`).
 - **Silence is the last verdict, not an outcome**: the watchdog's threshold is for what emits nothing.

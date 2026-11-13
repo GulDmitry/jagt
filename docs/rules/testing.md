@@ -2,7 +2,7 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-`./gradlew test` is the hermetic gate; **a cached green is not a run**: `--rerun-tasks` at a feature's end and before a release. Other
+`./gradlew test` is the hermetic gate (AGENTS.md "Tests"). Other
 suites live in `src/<name>/java`, none in `check`: `e2eTest` needs git + tmux, `boardTest` Chromium, `linuxDriverTest` Linux binaries + a display
 (`JAGT_IN_CONTAINER`), `promptEval` and `roleEval -Prole=<id>` the CLI and tokens. **Every `test` ends in `pitestDiff`**: mutants on the `main` lines
 changed against `HEAD`, each survivor judged before the commit
@@ -10,23 +10,22 @@ changed against `HEAD`, each survivor judged before the commit
 [0151](../decisions/0151-mutants-are-judged-locally-only.md)). **A suite ends within `suiteCeilingMinutes`, a probe in `-PrunMinutes`**
 ([0139](../decisions/0139-every-suite-ends-within-one-ceiling.md)).
 
-**A test is held stricter than main**: every check main keeps, plus no duplication, no helper method and no helper class
-([0162](../decisions/0162-a-check-holds-for-all-code.md)); main changes daily, its tests are what stays.
-**Every fixed bug gets a regression unit test**, verified RED by reverting the fix. Its `docs/cases.md` row and
-`Defect-family:` trailer make defects countable per family. **A new test's run is predicted first**, outcome and message; a surprise is a
-stop to understand, never a blind retry. **Every new install requirement goes in `docs/installation.md`**. **Leave no trace**: a suite
-booting the app passes `--orchestrator.open-terminal-window=false`, uses a throwaway tmux session plus `ORCHESTRATOR_ROOT`, then removes
+**A test is held stricter than main** ([0162](../decisions/0162-a-check-holds-for-all-code.md)): main changes daily, its tests are what stays.
+A fixed bug's `docs/cases.md` row and `Defect-family:` trailer make defects countable per family.
+**A new test's run is predicted first**, outcome and message; a surprise is a
+stop to understand, never a blind retry. **Every new install requirement goes in `docs/installation.md`**.
+**Leave no trace** (AGENTS.md "Tests"): a suite
+uses a throwaway tmux session plus `ORCHESTRATOR_ROOT`, then removes
 the worktrees and branches; every `Test` task runs on a tmux server of its own (`TMUX_TMPDIR`, killed after the task), so no test reaches
-the human's. Shared test code is a **file scanner** for a rule test (`TextBudgetTest.mainSources`), a **fake** of a production seam
-(`ScriptedProcesses`) or a **test builder** ([0163](../decisions/0163-a-test-shares-a-builder-a-fake-or-a-scanner.md)): `Test<Thing>Builder`, a record
-with `@With`, `<thing>()` setting fixed valid defaults, `build()` calling production's constructor or builder; no branch, loop, mock, assertion,
-clock or random value; one of outside state (a git repo) may write.
+the human's. Shared test code (AGENTS.md "Tests"): `TextBudgetTest.mainSources` is a scanner, `ScriptedProcesses` a fake. A test builder
+([0163](../decisions/0163-a-test-shares-a-builder-a-fake-or-a-scanner.md)) is a record with `@With`,
+`<thing>()` setting fixed valid defaults and `build()` calling production's constructor or builder; it holds no branch, loop,
+mock, assertion, clock or random value; one of outside state (a git repo) may write.
 
 ### Every test pins a business case
 
 - A test pins what a spec scenario, a ticket or a contract promises: a serialised answer's shape is one.
 - Code that only forwards or holds — a getter, a controller calling a service — gets no test; the business case through it covers it.
-- Editing or deleting an assertion or expected value names its reason in the commit: a changed scenario or a promise nobody made, never a red run.
 - **A move is pinned by where it lands**: a report a unit sends is asserted once as the status it lands on,
   through the real `AgentStatusReports` over a real `StateService`; a mocked door pins only that it was called.
 - **A reader of a vendor CLI's screen is pinned on a screen captured from the installed version**, never a hand-written
@@ -36,15 +35,14 @@ clock or random value; one of outside state (a git repo) may write.
 
 ### One constructor, the one production calls
 
-- **Main calls every constructor and member in `main`** (`ProductionConstructorTest`), but a record's canonical one,
-  a bean's or failure analyzer's only one, a private one.
+- **`ProductionConstructorTest`** exempts a record's canonical constructor, a bean's or failure analyzer's only one, a private one.
 - A test **mocks a collaborator, never a constructor**: a clock, a pool, a path, a limit or a host fact that varies is a collaborator, supplied by
   `RuntimeWiring`, `OrchestratorPaths` or `port/Host`; a limit that never varies is a constant, and the test writes the volume that reaches it.
 - Why: a second constructor builds in tests a class production never builds, and it sidesteps `MockCeilingTest`.
 
 ### Bare binary names, and a concurrent unit suite
 
-- An external binary is configured by **bare name**; `adapter/Executables` resolves it against PATH, install directories (Homebrew included), per-user
+- A bare binary name (AGENTS.md): `adapter/Executables` resolves it against PATH, install directories (Homebrew included), per-user
   script dirs, then **inside application bundles**. An absolute default fails every task on Linux; `editor-command` defaults to bare `idea`.
 - **Do not weaken the resolver**: an IDE needs the bundle step (`/Applications/<App>.app/Contents/MacOS/<name>`).
   The agent CLI is **not** resolved: it runs under the human's PATH in its tmux window.
@@ -61,7 +59,7 @@ clock or random value; one of outside state (a git repo) may write.
 ### The board is tested in a browser
 
 - `boardTest` drives the real page in headless Chromium on a random port: only it proves grid order, a card's buttons, the SSE repaint, the palette.
-- **Run it after any change to `static/`**, asserting through the **server** (seed `StateService`, stub a command), never by evaluating page JS. Its
+- Asserting through the **server** (seed `StateService`, stub a command), never by evaluating page JS. Its
   `@MockitoBean`s stub whole-app seams, never a class's collaborators: `CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`, `AgentSessions`,
   `EditorDriver`, a `ReviewRepliesReport` spy; e2e's stub only ports.
 - Browser libraries are one list (`scripts/linux-test-deps.sh`); geometry is an element in a sized viewport, never a screenshot.
