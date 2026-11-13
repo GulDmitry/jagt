@@ -68,11 +68,24 @@ A task session on OpenCode was not tried: a session asks more of the model than 
 
 The stand runs the 9B for the ticket rewrite only: one mutation scenario passed in 3 min 16 s with swap flat.
 
+Measured 2026-11-13 on the same machine with a container VM and one browser open, `-c 16384`, swap counted from the
+model's load (a growth over 512 MB is swap):
+
+| model | file | generate / prompt tok/s | command mapping | role reads, 10-min cap | swap |
+|---|---|---|---|---|---|
+| Gemma 4 26B A4B QAT Q4_0 | 14.4 GB | 32.6 / 103 | 12/15, 95 s | — | +8.5 GB: dropped |
+| Gemma 4 12B QAT Q4_0 | 7.0 GB | 13.0 / 86 | 6/15, 276 s | triage 4 of 7 judged, acceptance 0 of 5 | +1.2 to +4.5 GB: dropped |
+| Qwen3.5-9B Q4_K_M | 5.7 GB | 18.1 / 139 | 12/15, 119 s | triage 0 of 4, acceptance none | flat |
+
+On 32 GiB beside a container VM, a browser and the build, a weight file of about 6 GB stays out of swap.
+`--spec-type ngram-mod` gave the 12B nothing: 1 of 48 drafts accepted.
+
 ## Speed, not yet measured here
 
 Reported 2026-11-12 for another engine on an 8 GB discrete GPU:
 
-- Speculative decoding gave 1.3–1.6×, best on code and repeated text; llama.cpp's is `--spec-type`, an `ngram-*` type needing no draft model.
+- Speculative decoding gave 1.3–1.6×, best on code and repeated text; llama.cpp's is `--spec-type`, an `ngram-*` type
+  needing no draft model. `ngram-mod` gained nothing on a 12B here (above).
 - A cached shared prefix cut time to first token from 13.3 s to 6.1 s; llama-server caches prompts by default, `--cache-reuse N` reuses chunks.
 - Moving experts or the KV cache between VRAM, RAM and SSD needs a discrete GPU; unified memory gains nothing from it.
 
