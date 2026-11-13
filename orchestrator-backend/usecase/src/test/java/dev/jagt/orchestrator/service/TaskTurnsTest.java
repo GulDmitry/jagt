@@ -2,9 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
@@ -19,6 +17,7 @@ import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
@@ -27,9 +26,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
 import org.slf4j.event.KeyValuePair;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -57,43 +53,42 @@ class TaskTurnsTest {
   }
 
   @Nested
-  @ResourceLock(Resources.GLOBAL)
   class Logging {
 
-    private final ListAppender<ILoggingEvent> log = new ListAppender<>();
-
     @BeforeEach
-    void listensToTheTurnsLog() {
+    void holdsTheDeployedTask() {
       state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
-      log.start();
-      ((Logger) LoggerFactory.getLogger(TaskTurns.class)).addAppender(log);
     }
 
     @Test
     void logsTheStepAndTheTurnEachRelayOpens() {
-      turns.opened("ABC-42", "deploy", "a1b2", TaskStatus.DEPLOYED);
+      try (FakeLogCapture log = new FakeLogCapture(TaskTurns.class)) {
+        turns.opened("ABC-42", "deploy", "a1b2", TaskStatus.DEPLOYED);
 
-      assertThat(List.copyOf(log.list))
-          .filteredOn(event -> "turn opened".equals(event.getMessage()))
-          .singleElement()
-          .extracting(ILoggingEvent::getKeyValuePairs)
-          .asInstanceOf(InstanceOfAssertFactories.LIST)
-          .contains(
-              new KeyValuePair("task", "ABC-42"),
-              new KeyValuePair("step", "deploy"),
-              new KeyValuePair("turn", 1L));
+        assertThat(log.events())
+            .filteredOn(event -> "turn opened".equals(event.getMessage()))
+            .singleElement()
+            .extracting(ILoggingEvent::getKeyValuePairs)
+            .asInstanceOf(InstanceOfAssertFactories.LIST)
+            .contains(
+                new KeyValuePair("task", "ABC-42"),
+                new KeyValuePair("step", "deploy"),
+                new KeyValuePair("turn", 1L));
+      }
     }
 
     @Test
     void logsTheStatusTheDoorAdmittedTheStepAtNotTheOneTheTaskHoldsByNow() {
-      turns.opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
+      try (FakeLogCapture log = new FakeLogCapture(TaskTurns.class)) {
+        turns.opened("ABC-42", "deploy", "a1b2", TaskStatus.REVIEWED);
 
-      assertThat(List.copyOf(log.list))
-          .filteredOn(event -> "turn opened".equals(event.getMessage()))
-          .singleElement()
-          .extracting(ILoggingEvent::getKeyValuePairs)
-          .asInstanceOf(InstanceOfAssertFactories.LIST)
-          .contains(new KeyValuePair("status", TaskStatus.REVIEWED));
+        assertThat(log.events())
+            .filteredOn(event -> "turn opened".equals(event.getMessage()))
+            .singleElement()
+            .extracting(ILoggingEvent::getKeyValuePairs)
+            .asInstanceOf(InstanceOfAssertFactories.LIST)
+            .contains(new KeyValuePair("status", TaskStatus.REVIEWED));
+      }
     }
   }
 

@@ -16,9 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
@@ -35,6 +33,7 @@ import dev.jagt.orchestrator.task.PlanGate;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -46,12 +45,9 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 class AgentSessionsTest {
@@ -1052,22 +1048,18 @@ class AgentSessionsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsThatFreshSessionWasStartedBecauseTheRoundWasAlreadyHandedBack() {
     state.putTask("ABC-1", reviewPending);
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger sessionsLog = (Logger) LoggerFactory.getLogger(AgentSessions.class);
-    sessionsLog.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(AgentSessions.class)) {
 
-    sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+      sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "agent session started fresh".equals(event.getMessage()))
-        .flatExtracting(ILoggingEvent::getKeyValuePairs)
-        .extracting(pair -> pair.key + "=" + pair.value)
-        .contains("cause=the round was already handed back");
-    sessionsLog.detachAppender(log);
+      assertThat(log.events())
+          .filteredOn(event -> "agent session started fresh".equals(event.getMessage()))
+          .flatExtracting(ILoggingEvent::getKeyValuePairs)
+          .extracting(pair -> pair.key + "=" + pair.value)
+          .contains("cause=the round was already handed back");
+    }
   }
 
   @Test
@@ -1211,30 +1203,26 @@ class AgentSessionsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void freshStartAnnouncesItsWaitOncePerTask() {
     state.putTask("ABC-1", reviewPending);
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("typed"));
     when(agentRuntime.holdsDraft("typed")).thenReturn(true);
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger sessionsLog = (Logger) LoggerFactory.getLogger(AgentSessions.class);
-    sessionsLog.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(AgentSessions.class)) {
 
-    sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
-    int afterFirst =
-        (int)
-            List.copyOf(log.list).stream()
-                .filter(event -> "fresh start waits".equals(event.getMessage()))
-                .count();
-    sessions.relayFresh("ABC-1", "Review round for http://mr/2.");
+      sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+      int afterFirst =
+          (int)
+              log.events().stream()
+                  .filter(event -> "fresh start waits".equals(event.getMessage()))
+                  .count();
+      sessions.relayFresh("ABC-1", "Review round for http://mr/2.");
 
-    assertThat(afterFirst).isEqualTo(1);
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "fresh start waits".equals(event.getMessage()))
-        .hasSize(1);
-    sessionsLog.detachAppender(log);
+      assertThat(afterFirst).isEqualTo(1);
+      assertThat(log.events())
+          .filteredOn(event -> "fresh start waits".equals(event.getMessage()))
+          .hasSize(1);
+    }
   }
 
   @Test
@@ -1342,31 +1330,27 @@ class AgentSessionsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsThatLineRanAndItsLengthNeverTheLine() {
     state.putTask("ABC-1", inProgress);
     when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(agentRuntime.shellEscape()).thenReturn(Optional.of("!"));
     when(tmux.nudgeTaskWindow("jagt", "ABC-1", "!echo hunter2")).thenReturn(true);
     when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> "));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger sessionsLog = (Logger) LoggerFactory.getLogger(AgentSessions.class);
-    sessionsLog.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(AgentSessions.class)) {
 
-    sessions.run("ABC-1", "echo hunter2");
+      sessions.run("ABC-1", "echo hunter2");
 
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "line run in agent".equals(event.getMessage()))
-        .singleElement()
-        .satisfies(
-            event -> {
-              assertThat(event.getKeyValuePairs())
-                  .extracting(pair -> pair.key + "=" + pair.value)
-                  .contains("chars=12");
-              assertThat(event.getFormattedMessage() + event.getKeyValuePairs())
-                  .doesNotContain("hunter2");
-            });
-    sessionsLog.detachAppender(log);
+      assertThat(log.events())
+          .filteredOn(event -> "line run in agent".equals(event.getMessage()))
+          .singleElement()
+          .satisfies(
+              event -> {
+                assertThat(event.getKeyValuePairs())
+                    .extracting(pair -> pair.key + "=" + pair.value)
+                    .contains("chars=12");
+                assertThat(event.getFormattedMessage() + event.getKeyValuePairs())
+                    .doesNotContain("hunter2");
+              });
+    }
   }
 }

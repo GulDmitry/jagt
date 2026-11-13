@@ -7,10 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
@@ -18,15 +15,13 @@ import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.TrustedGitState;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.LoggerFactory;
 
 class ChargedReviewsTest {
 
@@ -93,22 +88,18 @@ class ChargedReviewsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsEachChargedCallWithItsKind() {
     RoundReviewer.Round round = new RoundReviewer.Round("", "prompt", List.of(), "");
     when(assistants.reviewer().review(round)).thenReturn(Answer.unavailable());
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger logger = (Logger) LoggerFactory.getLogger(ChargedReviews.class);
-    logger.setLevel(Level.INFO);
-    logger.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(ChargedReviews.class)) {
 
-    new ChargedReviews(assistants, usage, trusted, List::of).review("ABC-1", round);
+      new ChargedReviews(assistants, usage, trusted, List::of).review("ABC-1", round);
 
-    assertThat(log.list)
-        .filteredOn(event -> event.getMessage().equals("master call charged"))
-        .flatExtracting(ILoggingEvent::getKeyValuePairs)
-        .extracting(pair -> pair.key + "=" + pair.value)
-        .contains("kind=MASTER_REVIEW");
+      assertThat(log.events())
+          .filteredOn(event -> event.getMessage().equals("master call charged"))
+          .flatExtracting(ILoggingEvent::getKeyValuePairs)
+          .extracting(pair -> pair.key + "=" + pair.value)
+          .contains("kind=MASTER_REVIEW");
+    }
   }
 }

@@ -8,19 +8,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.port.SessionHost;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
 
 class ScenarioWindowsTest {
 
@@ -71,22 +67,16 @@ class ScenarioWindowsTest {
   }
 
   private List<ILoggingEvent> watched(String project, SessionHost.WindowState... states) {
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger windowsLog = (Logger) LoggerFactory.getLogger(ScenarioWindows.class);
-    windowsLog.addAppender(log);
-    try {
+    try (FakeLogCapture log = new FakeLogCapture(ScenarioWindows.class)) {
       for (SessionHost.WindowState state : states) {
         when(hosts.taskWindowState("jagt", "acceptance-" + project)).thenReturn(state);
         windows.watch();
       }
-    } finally {
-      windowsLog.detachAppender(log);
+      return log.events().stream()
+          .filter(e -> e.getMessage().equals("acceptance session ended"))
+          .filter(e -> e.getKeyValuePairs().stream().anyMatch(kv -> project.equals(kv.value)))
+          .toList();
     }
-    return log.list.stream()
-        .filter(e -> e.getMessage().equals("acceptance session ended"))
-        .filter(e -> e.getKeyValuePairs().stream().anyMatch(kv -> project.equals(kv.value)))
-        .toList();
   }
 
   private void opened(String project) {
@@ -97,7 +87,6 @@ class ScenarioWindowsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsGoneOnceWhereTheWindowClosesAfterRunning() {
     opened("p0");
 
@@ -113,7 +102,6 @@ class ScenarioWindowsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsFinishedWithWhatTheAgentPrintedWhereItLeavesItsShellAfterRunning() {
     opened("p1");
     when(hosts.exitTail("jagt", "acceptance-p1")).thenReturn(Optional.of("Goodbye"));
@@ -127,7 +115,6 @@ class ScenarioWindowsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void namesNoCauseWhereTheAgentPrintedNothingOnItsWayOut() {
     opened("p2");
     when(hosts.exitTail("jagt", "acceptance-p2")).thenReturn(Optional.of("  "));
@@ -141,7 +128,6 @@ class ScenarioWindowsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsFailedWhereTheAgentLeavesItsShellWithoutEverRunning() {
     opened("p3");
 
@@ -152,7 +138,6 @@ class ScenarioWindowsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsNothingWhereTheWindowIsNotYetThereToRead() {
     opened("p4");
 

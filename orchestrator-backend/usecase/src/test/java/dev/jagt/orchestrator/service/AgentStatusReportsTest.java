@@ -10,9 +10,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
@@ -32,6 +30,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,11 +43,8 @@ import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.LoggerFactory;
 
 class AgentStatusReportsTest {
 
@@ -150,21 +146,19 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void reportsAnErrorWhenVerdictJagtMeasuredDoesNotLand() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(AgentStatusReports.class)).addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(AgentStatusReports.class)) {
 
-    reports.verified(true, "verified", "ABC-1");
+      reports.verified(true, "verified", "ABC-1");
 
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "verdict not landed".equals(event.getMessage()))
-        .extracting(ILoggingEvent::getLevel)
-        .containsExactly(Level.ERROR);
+      assertThat(log.events())
+          .filteredOn(event -> "verdict not landed".equals(event.getMessage()))
+          .extracting(ILoggingEvent::getLevel)
+          .containsExactly(Level.ERROR);
+    }
   }
 
   @Test
@@ -1028,46 +1022,44 @@ class AgentStatusReportsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsTheMoveReportMadeWhereTheStatusChanged() {
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(AgentStatusReports.class)).addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(AgentStatusReports.class)) {
 
-    reports.report(TaskStatus.IN_PROGRESS, "started", "ABC-1");
+      reports.report(TaskStatus.IN_PROGRESS, "started", "ABC-1");
 
-    assertThat(List.copyOf(log.list))
-        .extracting(ILoggingEvent::getMessage)
-        .containsExactly("agent status changed");
-    assertThat(log.list.getFirst().getKeyValuePairs())
-        .extracting(pair -> pair.key + "=" + pair.value)
-        .contains("status=IN_PROGRESS", "previous=NEW", "said=started");
+      assertThat(log.events())
+          .extracting(ILoggingEvent::getMessage)
+          .containsExactly("agent status changed");
+      assertThat(log.events().getFirst().getKeyValuePairs())
+          .extracting(pair -> pair.key + "=" + pair.value)
+          .contains("status=IN_PROGRESS", "previous=NEW", "said=started");
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsQuestionOnceWhenTheStatusStaysAndNothingWhenItIsRepeatedOrPlain() {
     state.putTask("ABC-1", inProgress);
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(AgentStatusReports.class)).addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(AgentStatusReports.class)) {
 
-    reports.report(new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of()), "ABC-1");
-    reports.report(
-        new AgentStatusMessage("IN_PROGRESS", "which cache", "question", null, Map.of()), "ABC-1");
-    reports.report(
-        new AgentStatusMessage("IN_PROGRESS", "which cache", "question", null, Map.of()), "ABC-1");
+      reports.report(
+          new AgentStatusMessage("IN_PROGRESS", "working", null, null, Map.of()), "ABC-1");
+      reports.report(
+          new AgentStatusMessage("IN_PROGRESS", "which cache", "question", null, Map.of()),
+          "ABC-1");
+      reports.report(
+          new AgentStatusMessage("IN_PROGRESS", "which cache", "question", null, Map.of()),
+          "ABC-1");
 
-    assertThat(List.copyOf(log.list))
-        .extracting(ILoggingEvent::getMessage)
-        .containsExactly("agent asked");
+      assertThat(log.events())
+          .extracting(ILoggingEvent::getMessage)
+          .containsExactly("agent asked");
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsLineHeldOffTheCardButNotQuestionAskedAgainWhileHeld() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1").build());
@@ -1078,21 +1070,20 @@ class AgentStatusReportsTest {
             .report(AgentReport.QUESTION)
             .build());
     when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(AgentStatusReports.class)).addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(AgentStatusReports.class)) {
 
-    reports.report(
-        new AgentStatusMessage("IN_PROGRESS", "back at it", null, null, Map.of()), "ABC-1");
-    reports.report(
-        new AgentStatusMessage("IN_PROGRESS", "which one", "question", null, Map.of()), "ABC-2");
+      reports.report(
+          new AgentStatusMessage("IN_PROGRESS", "back at it", null, null, Map.of()), "ABC-1");
+      reports.report(
+          new AgentStatusMessage("IN_PROGRESS", "which one", "question", null, Map.of()), "ABC-2");
 
-    assertThat(List.copyOf(log.list))
-        .extracting(ILoggingEvent::getMessage)
-        .containsExactly("agent line held off the card");
-    assertThat(log.list.getFirst().getKeyValuePairs())
-        .extracting(pair -> pair.key + "=" + pair.value)
-        .contains("task=ABC-1");
+      assertThat(log.events())
+          .extracting(ILoggingEvent::getMessage)
+          .containsExactly("agent line held off the card");
+      assertThat(log.events().getFirst().getKeyValuePairs())
+          .extracting(pair -> pair.key + "=" + pair.value)
+          .contains("task=ABC-1");
+    }
   }
 
   @Test

@@ -4,13 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -18,16 +17,12 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
 
 class RoleConfigOriginsTest {
 
   private final ConfigService config = mock(ConfigService.class);
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void enabledComesFromJagtYmlAndEnvironmentsFromTheHumanCopy(@TempDir Path root) throws Exception {
     install(root, "environments: [{url: https://stage.example.com}]\n");
     when(config.load())
@@ -44,7 +39,6 @@ class RoleConfigOriginsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void modelComesFromTheHumanCopyWhenJagtYmlWritesNone(@TempDir Path root) throws Exception {
     install(root, "model: haiku\n");
     when(config.load()).thenReturn(ConfigFile.defaults());
@@ -55,7 +49,6 @@ class RoleConfigOriginsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void modelComesFromTheShippedDistWhenNeitherWritesOne(@TempDir Path root) throws Exception {
     install(root, "");
     when(config.load()).thenReturn(ConfigFile.defaults());
@@ -66,7 +59,6 @@ class RoleConfigOriginsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void modelComesFromTheShippedDistWhenTheHumanCopyCannotBeRead(@TempDir Path root)
       throws Exception {
     install(root, "model: [haiku\n");
@@ -78,7 +70,6 @@ class RoleConfigOriginsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void enabledAndEnvironmentsAreDefaultsWhenJagtYmlWritesNone(@TempDir Path root) throws Exception {
     install(root, "");
     when(config.load()).thenReturn(ConfigFile.defaults());
@@ -90,7 +81,6 @@ class RoleConfigOriginsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void everyValueIsDefaultedWhereNoJagtYmlExistsYet(@TempDir Path root) throws Exception {
     install(root, "");
     Files.delete(root.resolve("jagt.yml"));
@@ -116,23 +106,19 @@ class RoleConfigOriginsTest {
     OrchestratorPaths paths =
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     RoleConfigOrigins origins = new RoleConfigOrigins(new InstalledRoles(paths), config, paths);
-    ListAppender<ILoggingEvent> appender = new ListAppender<>();
-    appender.start();
-    Logger logger = (Logger) LoggerFactory.getLogger(RoleConfigOrigins.class);
-    logger.addAppender(appender);
-    try {
+    try (FakeLogCapture appender = new FakeLogCapture(RoleConfigOrigins.class)) {
       origins.logAtStart();
-    } finally {
-      logger.detachAppender(appender);
+
+      List<ILoggingEvent> events = appender.events();
+      assertThat(events).extracting(ILoggingEvent::getMessage).containsOnly("role config");
+      return events.stream()
+          .map(
+              event ->
+                  event.getKeyValuePairs().stream()
+                      .map(pair -> String.valueOf(pair.value))
+                      .reduce((a, b) -> a + " " + b)
+                      .orElse(""))
+          .toList();
     }
-    assertThat(appender.list).extracting(ILoggingEvent::getMessage).containsOnly("role config");
-    return appender.list.stream()
-        .map(
-            event ->
-                event.getKeyValuePairs().stream()
-                    .map(pair -> String.valueOf(pair.value))
-                    .reduce((a, b) -> a + " " + b)
-                    .orElse(""))
-        .toList();
   }
 }

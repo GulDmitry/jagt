@@ -11,9 +11,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
@@ -30,6 +28,7 @@ import dev.jagt.orchestrator.task.Probe;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -40,12 +39,9 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 class MasterPanelTest {
@@ -1193,56 +1189,48 @@ class MasterPanelTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void namesWhyAndOverWhatRoundWasReadInTheLog() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
     when(quotes.inputs("ABC-1", reviewPending)).thenReturn(Optional.of("in1"));
     when(quotes.trigger(reviewPending, "in1")).thenReturn("retry");
     when(quotes.fingerprint(reviewPending, "in1")).thenReturn("fp1");
     when(quotes.round("ABC-1", reviewPending)).thenReturn(Optional.empty());
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger panelLog = (Logger) LoggerFactory.getLogger(MasterPanel.class);
-    panelLog.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(MasterPanel.class)) {
 
-    panel
-        .review(
-            "ABC-1",
-            reviewPending,
-            act);
+      panel
+          .review(
+              "ABC-1",
+              reviewPending,
+              act);
 
-    panelLog.detachAppender(log);
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "master review asked".equals(event.getMessage()))
-        .flatExtracting(ILoggingEvent::getKeyValuePairs)
-        .extracting(pair -> pair.key + "=" + pair.value)
-        .contains("trigger=retry", "fingerprint=fp1");
+      assertThat(log.events())
+          .filteredOn(event -> "master review asked".equals(event.getMessage()))
+          .flatExtracting(ILoggingEvent::getKeyValuePairs)
+          .extracting(pair -> pair.key + "=" + pair.value)
+          .contains("trigger=retry", "fingerprint=fp1");
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void namesPlanReadAsSuchInTheLog() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
     when(quotes.inputs("ABC-1", planPending)).thenReturn(Optional.of("in1"));
     when(quotes.planFingerprint(planPending, "in1")).thenReturn("fp2");
     when(quotes.plan("ABC-1", planPending)).thenReturn(Optional.empty());
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger panelLog = (Logger) LoggerFactory.getLogger(MasterPanel.class);
-    panelLog.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(MasterPanel.class)) {
 
-    panel
-        .plan(
-            "ABC-1",
-            planPending,
-            act);
+      panel
+          .plan(
+              "ABC-1",
+              planPending,
+              act);
 
-    panelLog.detachAppender(log);
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "master review asked".equals(event.getMessage()))
-        .flatExtracting(ILoggingEvent::getKeyValuePairs)
-        .extracting(pair -> pair.key + "=" + pair.value)
-        .contains("trigger=plan", "fingerprint=fp2");
+      assertThat(log.events())
+          .filteredOn(event -> "master review asked".equals(event.getMessage()))
+          .flatExtracting(ILoggingEvent::getKeyValuePairs)
+          .extracting(pair -> pair.key + "=" + pair.value)
+          .contains("trigger=plan", "fingerprint=fp2");
+    }
   }
 
   @Test
