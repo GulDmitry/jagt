@@ -22,7 +22,6 @@ import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.PlanGate;
-import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.Remote;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -63,6 +62,8 @@ class TaskProvisioningTest {
             new JsonMapper(), new OrchestratorPaths(properties), reducer, event -> {});
     provisioning = new TaskProvisioning(config, state, worktrees, sessions, Clock.systemUTC());
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    when(worktrees.cut(any(), any(), any()))
+        .thenReturn(List.of(TestNewRepoBuilder.proj().build()));
   }
 
   @Test
@@ -80,24 +81,17 @@ class TaskProvisioningTest {
     when(worktrees.cut(any(), any(), any()))
         .thenReturn(
             List.of(
-                new NewRepo(
-                    "api",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/api"),
-                    Path.of("/ABC-7-api"),
-                    Path.of("/git"),
-                    "origin/main",
-                    "",
-                    true),
-                new NewRepo(
-                    "web",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/web"),
-                    Path.of("/ABC-7-web"),
-                    Path.of("/git"),
-                    "origin/main",
-                    "",
-                    false)));
+                TestNewRepoBuilder.proj()
+                    .withProject("api")
+                    .withProjectPath(Path.of("/api"))
+                    .withWorktree(Path.of("/ABC-7-api"))
+                    .build(),
+                TestNewRepoBuilder.proj()
+                    .withProject("web")
+                    .withProjectPath(Path.of("/web"))
+                    .withWorktree(Path.of("/ABC-7-web"))
+                    .withPrimary(false)
+                    .build()));
 
     String answer =
         provisioning.initializeTask(NewTask.builder("ABC-7", "api").alsoIn(List.of("web")).build());
@@ -111,15 +105,7 @@ class TaskProvisioningTest {
   void bornTrustingWhatGitObeyedAsItsWorktreesWereCut() {
     List<NewRepo> cut =
         List.of(
-            new NewRepo(
-                "proj",
-                new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                Path.of("/repo"),
-                Path.of("/wt"),
-                Path.of("/git"),
-                "origin/main",
-                "",
-                true));
+            TestNewRepoBuilder.proj().withWorktree(Path.of("/wt")).build());
     when(worktrees.cut(any(), any(), any())).thenReturn(cut);
     when(worktrees.trust(cut))
         .thenReturn(GitTrust.of(Map.of("core.editor in /repo/.git/config", "a1")));
@@ -137,15 +123,7 @@ class TaskProvisioningTest {
     when(worktrees.cut(any(), any(), any()))
         .thenReturn(
             List.of(
-                new NewRepo(
-                    "proj",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/repo"),
-                    Path.of("/two"),
-                    Path.of("/git"),
-                    "origin/main",
-                    "",
-                    true)));
+                TestNewRepoBuilder.proj().withWorktree(Path.of("/two")).build()));
 
     provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
 
@@ -157,15 +135,7 @@ class TaskProvisioningTest {
     when(worktrees.cut(any(), any(), any()))
         .thenReturn(
             List.of(
-                new NewRepo(
-                    "proj",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/repo"),
-                    Path.of("/INF-2-proj"),
-                    Path.of("/git"),
-                    "origin/main",
-                    "",
-                    true)));
+                TestNewRepoBuilder.proj().withWorktree(Path.of("/INF-2-proj")).build()));
 
     provisioning.initializeTask(NewTask.builder("INF-2", "proj").build());
 
@@ -177,15 +147,10 @@ class TaskProvisioningTest {
     when(worktrees.cut(any(), any(), any()))
         .thenReturn(
             List.of(
-                new NewRepo(
-                    "proj",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/repo"),
-                    Path.of("/ABC-3-proj"),
-                    Path.of("/git"),
-                    "feature/parent",
-                    "",
-                    true)));
+                TestNewRepoBuilder.proj()
+                    .withWorktree(Path.of("/ABC-3-proj"))
+                    .withBaseBranch("feature/parent")
+                    .build()));
 
     provisioning.initializeTask(
         NewTask.builder("ABC-3", "proj").baseBranch("origin/feature/parent").build());
@@ -198,15 +163,7 @@ class TaskProvisioningTest {
     when(worktrees.cut(any(), any(), any()))
         .thenReturn(
             List.of(
-                new NewRepo(
-                    "proj",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/repo"),
-                    Path.of("/ABC-4-proj"),
-                    Path.of("/git"),
-                    "origin/main",
-                    "",
-                    true)));
+                TestNewRepoBuilder.proj().withWorktree(Path.of("/ABC-4-proj")).build()));
 
     provisioning.initializeTask(NewTask.builder("ABC-4", "proj").build());
 
@@ -226,25 +183,14 @@ class TaskProvisioningTest {
 
   @Test
   void removesTheCutWorktreesWhenTheTaskCannotBeRegistered() {
-    List<NewRepo> repos =
-        List.of(
-            new NewRepo(
-                "proj",
-                new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                Path.of("/repo"),
-                Path.of("/ABC-1-proj"),
-                Path.of("/git"),
-                "origin/main",
-                "",
-                true));
-    when(worktrees.cut(any(), any(), any())).thenReturn(repos);
     root.toFile().setWritable(false);
     NewTask request = NewTask.builder("ABC-1", "proj").build();
 
     assertThatThrownBy(() -> provisioning.initializeTask(request))
         .isInstanceOf(java.io.UncheckedIOException.class);
 
-    verify(worktrees).uncut(request, repos, BranchStrategy.FRESH);
+    verify(worktrees)
+        .uncut(request, List.of(TestNewRepoBuilder.proj().build()), BranchStrategy.FRESH);
   }
 
   @Test
@@ -257,15 +203,10 @@ class TaskProvisioningTest {
               firstCutting.countDown();
               secondCutting.await(500, TimeUnit.MILLISECONDS);
               return List.of(
-                  new NewRepo(
-                      "proj",
-                      new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                      Path.of("/repo"),
-                      Path.of("/one"),
-                      Path.of("/git"),
-                      "main",
-                      "",
-                      true));
+                  TestNewRepoBuilder.proj()
+                      .withWorktree(Path.of("/one"))
+                      .withBaseBranch("main")
+                      .build());
             })
         .when(worktrees)
         .cut(argThat(task -> task.taskId().equals("ABC-1")), any(), any());
@@ -274,15 +215,10 @@ class TaskProvisioningTest {
               firstRegisteredWhenSecondCut.set(state.task("ABC-1").isPresent());
               secondCutting.countDown();
               return List.of(
-                  new NewRepo(
-                      "proj",
-                      new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                      Path.of("/repo"),
-                      Path.of("/two"),
-                      Path.of("/git"),
-                      "main",
-                      "",
-                      true));
+                  TestNewRepoBuilder.proj()
+                      .withWorktree(Path.of("/two"))
+                      .withBaseBranch("main")
+                      .build());
             })
         .when(worktrees)
         .cut(argThat(task -> task.taskId().equals("ABC-2")), any(), any());
@@ -306,18 +242,6 @@ class TaskProvisioningTest {
 
   @Test
   void tellsTheCallerWhereTheAgentRunsAndWhatItWasCutFrom() {
-    when(worktrees.cut(any(), any(), any()))
-        .thenReturn(
-            List.of(
-                new NewRepo(
-                    "proj",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/repo"),
-                    Path.of("/ABC-1-proj"),
-                    Path.of("/git"),
-                    "origin/main",
-                    "",
-                    true)));
 
     String answer = provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build());
 
@@ -326,18 +250,6 @@ class TaskProvisioningTest {
 
   @Test
   void tellsTheCallerTheTaskWasResumedAndNotCutFromBase() {
-    when(worktrees.cut(any(), any(), any()))
-        .thenReturn(
-            List.of(
-                new NewRepo(
-                    "proj",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/repo"),
-                    Path.of("/ABC-1-proj"),
-                    Path.of("/git"),
-                    "origin/main",
-                    "",
-                    true)));
 
     String answer =
         provisioning.initializeTask(
@@ -348,18 +260,6 @@ class TaskProvisioningTest {
 
   @Test
   void tellsTheCallerToApproveThePlanOnTheBoardOfTaskStartedInPlanMode() {
-    when(worktrees.cut(any(), any(), any()))
-        .thenReturn(
-            List.of(
-                new NewRepo(
-                    "proj",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/repo"),
-                    Path.of("/ABC-1-proj"),
-                    Path.of("/git"),
-                    "origin/main",
-                    "",
-                    true)));
 
     String answer =
         provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("plan").build());
@@ -369,18 +269,6 @@ class TaskProvisioningTest {
 
   @Test
   void requiresThePlanOfTaskStartedInPlanModeWhateverAutoplanSays() {
-    when(worktrees.cut(any(), any(), any()))
-        .thenReturn(
-            List.of(
-                new NewRepo(
-                    "proj",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/repo"),
-                    Path.of("/ABC-1-proj"),
-                    Path.of("/git"),
-                    "origin/main",
-                    "",
-                    true)));
 
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("plan").build());
 
@@ -396,18 +284,6 @@ class TaskProvisioningTest {
                     ConfigService.ConfigFile.AgentConfig.defaults()
                         .withAutoplan(
                             ConfigService.ConfigFile.AutoplanConfig.defaults().withEnabled(true))));
-    when(worktrees.cut(any(), any(), any()))
-        .thenReturn(
-            List.of(
-                new NewRepo(
-                    "proj",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/repo"),
-                    Path.of("/ABC-1-proj"),
-                    Path.of("/git"),
-                    "origin/main",
-                    "",
-                    true)));
 
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
 
@@ -416,18 +292,6 @@ class TaskProvisioningTest {
 
   @Test
   void leavesThePlanGateOpenOfAnAutoModeTaskWhenAutoplanIsOff() {
-    when(worktrees.cut(any(), any(), any()))
-        .thenReturn(
-            List.of(
-                new NewRepo(
-                    "proj",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/repo"),
-                    Path.of("/ABC-1-proj"),
-                    Path.of("/git"),
-                    "origin/main",
-                    "",
-                    true)));
 
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").mode("auto").build());
 
@@ -436,18 +300,6 @@ class TaskProvisioningTest {
 
   @Test
   void keepsTheTaskRegisteredAndSaysSoWhenItsAgentSessionFailsToStart() {
-    when(worktrees.cut(any(), any(), any()))
-        .thenReturn(
-            List.of(
-                new NewRepo(
-                    "proj",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/repo"),
-                    Path.of("/ABC-1-proj"),
-                    Path.of("/git"),
-                    "origin/main",
-                    "",
-                    true)));
     doThrow(new IllegalStateException("no tmux"))
         .when(sessions)
         .startAgent(any(), any(), any(), anyBoolean());
@@ -465,18 +317,6 @@ class TaskProvisioningTest {
   @ParameterizedTest
   @CsvSource(value = {"https://tracker/ABC-1,https://tracker/ABC-1", "'   ',"})
   void registersTheTicketLinkOnlyWhereOneWasGiven(String given, String registered) {
-    when(worktrees.cut(any(), any(), any()))
-        .thenReturn(
-            List.of(
-                new NewRepo(
-                    "proj",
-                    new ProjectConfig("/repo", "origin/main", "main", List.of()),
-                    Path.of("/repo"),
-                    Path.of("/ABC-1-proj"),
-                    Path.of("/git"),
-                    "origin/main",
-                    "",
-                    true)));
 
     provisioning.initializeTask(NewTask.builder("ABC-1", "proj").ticketUrl(given).build());
 

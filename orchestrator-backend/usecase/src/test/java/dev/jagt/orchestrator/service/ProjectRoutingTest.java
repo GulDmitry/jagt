@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -43,6 +44,74 @@ class ProjectRoutingTest {
   private final Assistants assistants = mock(Assistants.class, RETURNS_DEEP_STUBS);
   private final FinishedTasks finished = mock(FinishedTasks.class);
   @TempDir Path root;
+  private final ArgumentCaptor<RoutingQuestion> asked = ArgumentCaptor.captor();
+  private RoutingMemory memory;
+  private ProjectRouting routing;
+  private FinishedTask quoteImportByApi;
+  private FinishedTask guessedByRouter;
+  private FinishedTask quoteImportByRouter;
+  private FinishedTask quoteImportByHuman;
+  private FinishedTask otherByRouter;
+
+  @BeforeEach
+  void setUp() {
+    memory =
+        new RoutingMemory(
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
+            Clock.systemUTC());
+    routing = new ProjectRouting(configService, assistants, finished, memory);
+    quoteImportByApi =
+        FinishedTask.of(
+            "ABC-1",
+            TaskState.builder("api", "/wt", TaskStatus.DONE)
+                .title("Quote import")
+                .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.BOARD)))
+                .build(),
+            2L);
+    guessedByRouter =
+        FinishedTask.of(
+            "ABC-2",
+            TaskState.builder("web", "/wt", TaskStatus.DONE)
+                .title("Guessed one")
+                .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.TRACKER)))
+                .build(),
+            2L);
+    quoteImportByRouter =
+        FinishedTask.of(
+            "ABC-42",
+            TaskState.builder("web", "/wt", TaskStatus.DONE)
+                .title("Quote import")
+                .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.TRACKER)))
+                .build(),
+            2L);
+    quoteImportByHuman =
+        FinishedTask.of(
+            "ABC-42",
+            TaskState.builder("web", "/wt", TaskStatus.DONE)
+                .title("Quote import")
+                .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.BOARD)))
+                .build(),
+            2L);
+    otherByRouter =
+        FinishedTask.of(
+            "ABC-7",
+            TaskState.builder("web", "/wt", TaskStatus.DONE)
+                .title("Other")
+                .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.TRACKER)))
+                .build(),
+            2L);
+    when(configService.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withProjects(
+                    Map.of(
+                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
+                        "web",
+                            new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
+    when(finished.all()).thenReturn(List.of());
+    when(assistants.routing().routeProject(any()))
+        .thenReturn(new Answer<>(Optional.of(new RoutingAnswer("api", "")), TokenUsage.NONE));
+  }
 
   @Test
   void matchesTheProjectWhoseLabelIsAmongTheTicketLabels() {
@@ -63,11 +132,6 @@ class ProjectRoutingTest {
 
   @Test
   void buysNoRoutingCallWhenThereIsNothingToChooseBetween() {
-    RoutingMemory memory =
-        new RoutingMemory(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     when(configService.load())
         .thenReturn(
             ConfigFile.defaults()
@@ -81,20 +145,7 @@ class ProjectRoutingTest {
 
   @Test
   void placesAnItemWhoseLabelsNameOneRepositoryWithoutAskingTheRouter() {
-    RoutingMemory memory =
-        new RoutingMemory(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     TicketFacts item = TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend"));
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withProjects(
-                    Map.of(
-                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
-                        "web",
-                            new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
 
     assertThat(routing.projectFor(item)).isEqualTo(new ProjectRouting.Placed(List.of("api")));
     verify(assistants.routing(), never()).routeProject(any());
@@ -102,21 +153,8 @@ class ProjectRoutingTest {
 
   @Test
   void placesAnItemInEveryRepositoryItsLabelsNameWithoutAskingTheRouter() {
-    RoutingMemory memory =
-        new RoutingMemory(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     TicketFacts item =
         TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend", "frontend"));
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withProjects(
-                    Map.of(
-                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
-                        "web",
-                            new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
 
     assertThat(routing.projectFor(item).projects()).containsExactlyInAnyOrder("api", "web");
     verify(assistants.routing(), never()).routeProject(any());
@@ -124,40 +162,9 @@ class ProjectRoutingTest {
 
   @Test
   void showsTheRouterOnlyThePlacementsSomethingConfirmed() {
-    RoutingMemory memory =
-        new RoutingMemory(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            Clock.systemUTC());
-    final ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withProjects(
-                    Map.of(
-                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
-                        "web",
-                            new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
     when(finished.all())
         .thenReturn(
-            List.of(
-                FinishedTask.of(
-                    "ABC-1",
-                    TaskState.builder("api", "/wt", TaskStatus.DONE)
-                        .title("Quote import")
-                        .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.BOARD)))
-                        .build(),
-                    2L),
-                FinishedTask.of(
-                    "ABC-2",
-                    TaskState.builder("web", "/wt", TaskStatus.DONE)
-                        .title("Guessed one")
-                        .history(
-                            List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.TRACKER)))
-                        .build(),
-                    2L)));
-    when(assistants.routing().routeProject(any()))
-        .thenReturn(new Answer<>(Optional.of(new RoutingAnswer("api", "")), TokenUsage.NONE));
-    ArgumentCaptor<RoutingQuestion> asked = ArgumentCaptor.captor();
+            List.of(quoteImportByApi, guessedByRouter));
 
     routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
 
@@ -167,20 +174,6 @@ class ProjectRoutingTest {
 
   @Test
   void writesDownWhatPlacedAnItemNoLabelCouldPlace() {
-    RoutingMemory memory =
-        new RoutingMemory(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            Clock.systemUTC());
-    final ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withProjects(
-                    Map.of(
-                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
-                        "web",
-                            new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-    when(finished.all()).thenReturn(List.of());
     when(assistants.routing().routeProject(any()))
         .thenReturn(
             new Answer<>(
@@ -194,20 +187,6 @@ class ProjectRoutingTest {
 
   @Test
   void mergesTheWordingsOneRuleWasWrittenInOnceTheMemoryIsFull() throws IOException {
-    RoutingMemory memory =
-        new RoutingMemory(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            Clock.systemUTC());
-    final ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withProjects(
-                    Map.of(
-                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
-                        "web",
-                            new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-    when(finished.all()).thenReturn(List.of());
     when(assistants.routing().routeProject(any()))
         .thenReturn(
             new Answer<>(
@@ -234,23 +213,10 @@ class ProjectRoutingTest {
 
   @Test
   void retiresTheRuleHumanHasJustContradicted() {
-    RoutingMemory memory =
-        new RoutingMemory(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            Clock.systemUTC());
-    final ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     memory.remember("ABC items about quote import", "web");
     when(finished.all())
         .thenReturn(
-            List.of(
-                FinishedTask.of(
-                    "ABC-42",
-                    TaskState.builder("web", "/wt", TaskStatus.DONE)
-                        .title("Quote import")
-                        .history(
-                            List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.TRACKER)))
-                        .build(),
-                    2L)));
+            List.of(quoteImportByRouter));
     when(assistants
             .routing()
             .staleRule("ABC-42", "api", List.of("ABC items about quote import -> web")))
@@ -264,22 +230,10 @@ class ProjectRoutingTest {
 
   @Test
   void asksNothingWhereTheRouterHadNeverPlacedThatItemItself() {
-    RoutingMemory memory =
-        new RoutingMemory(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     memory.remember("ABC items about quote import", "web");
     when(finished.all())
         .thenReturn(
-            List.of(
-                FinishedTask.of(
-                    "ABC-42",
-                    TaskState.builder("web", "/wt", TaskStatus.DONE)
-                        .title("Quote import")
-                        .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.BOARD)))
-                        .build(),
-                    2L)));
+            List.of(quoteImportByHuman));
 
     routing.placedByHand("ABC-42", "api");
 
@@ -289,23 +243,6 @@ class ProjectRoutingTest {
 
   @Test
   void tellsTheRouterWhatEachRepositoryIs() {
-    RoutingMemory memory =
-        new RoutingMemory(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            Clock.systemUTC());
-    final ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withProjects(
-                    Map.of(
-                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
-                        "web",
-                            new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-    when(finished.all()).thenReturn(List.of());
-    when(assistants.routing().routeProject(any()))
-        .thenReturn(new Answer<>(Optional.of(new RoutingAnswer("api", "")), TokenUsage.NONE));
-    ArgumentCaptor<RoutingQuestion> asked = ArgumentCaptor.captor();
 
     routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
 
@@ -316,30 +253,10 @@ class ProjectRoutingTest {
 
   @Test
   void asksNothingWhereOnlyAnotherItemWasPlacedByTheRouter() {
-    RoutingMemory memory =
-        new RoutingMemory(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
     memory.remember("ABC items about quote import", "web");
     when(finished.all())
         .thenReturn(
-            List.of(
-                FinishedTask.of(
-                    "ABC-42",
-                    TaskState.builder("web", "/wt", TaskStatus.DONE)
-                        .title("Quote import")
-                        .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.BOARD)))
-                        .build(),
-                    2L),
-                FinishedTask.of(
-                    "ABC-7",
-                    TaskState.builder("web", "/wt", TaskStatus.DONE)
-                        .title("Other")
-                        .history(
-                            List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.TRACKER)))
-                        .build(),
-                    2L)));
+            List.of(quoteImportByHuman, otherByRouter));
 
     routing.placedByHand("ABC-42", "api");
 
@@ -348,20 +265,6 @@ class ProjectRoutingTest {
 
   @Test
   void leavesTheItemForHumanWhenTheRouterNamedRepositoryJagtDoesNotHave() {
-    RoutingMemory memory =
-        new RoutingMemory(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withProjects(
-                    Map.of(
-                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
-                        "web",
-                            new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-    when(finished.all()).thenReturn(List.of());
     when(assistants.routing().routeProject(any()))
         .thenReturn(new Answer<>(Optional.of(new RoutingAnswer("mobile", "")), TokenUsage.NONE));
 
@@ -371,20 +274,6 @@ class ProjectRoutingTest {
 
   @Test
   void reportsRouterThatAnsweredNothingAsUnreadableRatherThanUndecided() {
-    RoutingMemory memory =
-        new RoutingMemory(
-            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())),
-            Clock.systemUTC());
-    ProjectRouting routing = new ProjectRouting(configService, assistants, finished, memory);
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withProjects(
-                    Map.of(
-                        "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
-                        "web",
-                            new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-    when(finished.all()).thenReturn(List.of());
     when(assistants.routing().routeProject(any())).thenReturn(Answer.unavailable());
 
     assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42")))
