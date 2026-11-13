@@ -45,6 +45,19 @@ class StateFileCompatibilityTest {
   }
 
   @Test
+  void pointsToldOnceSurviveWriteAndRead() {
+    TaskState task =
+        TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS)
+            .told(ToldOnce.none().withPoint("deployed", "abc"))
+            .build();
+    JsonMapper mapper = new JsonMapper();
+
+    TaskState read = mapper.readValue(mapper.writeValueAsString(task), TaskState.class);
+
+    assertThat(read.toldOrNone().saidPoint("deployed", "abc")).isTrue();
+  }
+
+  @Test
   void currentStateFileIsWrittenBackKeyForKey() {
     String json =
         """
@@ -81,7 +94,7 @@ class StateFileCompatibilityTest {
         "checksTip":"tip1",
         "headTip":"tip2",
         "deployment":{"pressedAt":22,"targets":[{"project":"proj","deployBranch":"","fixes":[],"pushedAt":0}],"at":0},
-        "session":{"movedAt":23,"workStartedAt":0,"reportedAt":0,"halt":{"kind":"FAILED","at":24,"cause":"c"},"quietSince":0,"log":"log","stampedAsk":true,"generation":2,"window":{"state":"RUNNING","at":25,"printedAt":26}},
+        "session":{"movedAt":23,"workStartedAt":0,"reportedAt":0,"halt":{"kind":"FAILED","at":24,"cause":"c"},"quietSince":0,"log":"log","askedAt":29,"generation":2,"window":{"state":"RUNNING","at":25,"printedAt":26}},
         "told":{"unreadable":"28","windowElapsed":"27"},
         "waits":[{"since":29,"until":30,"why":"QUESTION"}],
         "roles":{"acceptance":{"reading":"r","passed":"p","roundDigest":"d","roundRows":"rows"}},
@@ -178,7 +191,7 @@ class StateFileCompatibilityTest {
         "checksTip":"tip1",
         "headTip":"tip2",
         "deployment":{"pressedAt":1,"targets":[{"project":"proj","deployBranch":"","merge":"c0ffee","fixes":[],"pushedAt":1}],"at":1},
-        "session":{"movedAt":23,"workStartedAt":0,"reportedAt":0,"halt":{"kind":"FAILED","at":24,"cause":"c"},"quietSince":0,"log":"log","stampedAsk":true,"generation":2,"window":{"state":"RUNNING","at":25,"printedAt":26}},
+        "session":{"movedAt":23,"workStartedAt":0,"reportedAt":0,"halt":{"kind":"FAILED","at":24,"cause":"c"},"quietSince":0,"log":"log","askedAt":1,"generation":2,"window":{"state":"RUNNING","at":25,"printedAt":26}},
         "told":{"unreadable":"28","windowElapsed":"27"},
         "waits":[{"since":29,"until":30,"why":"QUESTION"}],
         "roles":{"acceptance":{"reading":"r","passed":"p","roundDigest":"d","roundRows":"rows"}},
@@ -191,6 +204,20 @@ class StateFileCompatibilityTest {
 
     assertThat(mapper.readTree(mapper.writeValueAsString(task)))
         .isEqualTo(mapper.readTree(current));
+  }
+
+  @Test
+  void sessionAskFlaggedInAnOldFileStillStandsAsAsked() {
+    String old =
+        """
+        {"status":"IN_PROGRESS","lastActiveTimestamp":5,"mrCreatedAt":0,"lastPolledAt":0,
+         "repos":[{"project":"proj","worktreePath":"/wt"}],
+         "session":{"movedAt":5,"workStartedAt":0,"reportedAt":0,"quietSince":0,"stampedAsk":true,"generation":1}}
+        """;
+
+    TaskState task = new JsonMapper().readValue(old, TaskState.class);
+
+    assertThat(task.session().hasStampedAsk()).isTrue();
   }
 
   @Test

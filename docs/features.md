@@ -18,8 +18,9 @@
   [spec](../openspec/specs/attention/spec.md#requirement-attention-tiers)
 - **Badge names the act** — Each badge says which action waits for you, with a sentence in its tooltip.
   [spec](../openspec/specs/attention/spec.md#requirement-the-badge-names-the-act)
-- **Banners and a team channel** — `notifications.desktop` and `notifications.channel` choose the events for a banner or a command's stdin.
-  [spec](../openspec/specs/attention/spec.md#requirement-desktop-banners-are-chosen-per-event)
+- **Notifications routed per point** — `notifications.channels` and `notifications.points` route each point of a task's life (`your-move`, `stopped`,
+  `auto-review`, `conflict-stalled`, `deployed`, …) to a channel, once, with your own text.
+  [spec](../openspec/specs/notification-routing/spec.md#requirement-a-point-is-routed-to-the-channels-jagtyml-lists-told-once-per-key)
 
 ## Board · [spec](../openspec/specs/board/spec.md)
 - **One surface** — Cards, buttons and gates read the same rules. [spec](../openspec/specs/board/spec.md#requirement-one-surface-one-projection)

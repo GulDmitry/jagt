@@ -33,13 +33,13 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | `flow/` | which status allows what, where each outcome leads, whose turn | built — `TaskChart` (an instance `FlowWiring` composes from the roles, as are `TaskReducer`, `Checkers` and `FlowRules`; regions: lifecycle, stop, plan, report, turn, deploy, session, git, repo, request, checks, approval, infra, acceptance, master, plus derived lazy `ask` and `acceptance beneath a read`), `TaskOffers` (derived lazy regions for the task's facts, and one self-loop edge per offered action), `FlowRules`, `FlowEngine`, `FlowReports`, `Turns`, `Move` |
 | `capability/` | one thing that can be done to a task | built — a class per verb |
 | `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs use |
-| `notify/` | something a human must be told | built — the fan-out; the contract is `port/Notification` + `port/Notifier` |
+| `notify/` | something a human must be told | built — a point is routed to channels by `jagt.yml` (`Routes`, `Messages`, `ChannelPosts`, `PointWatch`); the contract is `port/Notification` + `port/ChannelDriver` |
 | `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb |
 | `protocol/` | what crosses into jagt, and what makes it valid | built — every tool, every read, the hooks |
 | check | a rule the code must keep, held for every source set of every project | built — `build-logic`'s conventions apply Checkstyle, Error Prone and NullAway to every source set; a rule test reads `SourceRoots`; main-only only for who in production may act and what a test names as its fixture ([0162](docs/decisions/0162-a-check-holds-for-all-code.md)) |
 | `startup/` | why the assembly must not start | built — `port/StartupCheck`, `StartupValidation` and every check |
-| `roles/<id>/` | a role: its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition, brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion`, the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesTest` |
+| `roles/<id>/` | a role: its `design.md` (use cases as WHEN/THEN, who triggers it, its cost against a session doing the same), agreed before its first code, then its definition (`points` the role raises), brief, cases and eval, composed into the task chart | built — `role.yml` → `RoleDefinition` and `CheckerRegion`, the Master's `MasterRegion`; its classes sit in the package set `RoleModules` declares, `RoleNamesTest` |
 
 `service/` is the rest: work kinds share — git, the state file, config, worktrees, agent sessions —
 because a class two kinds use belongs to neither; the Master's reading is `service/master/`. So does a rule one
@@ -171,7 +171,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `AcceptanceRunner` | `adapter/flows/FlowsRunner` choosing `PlaywrightRunner` by `flows.driver` in the role folder, read per run — scripted flows run as argv, judged from the JSON report |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Reach` | `service/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login`; `adapter/assistant/AssistantBreaker` writes the assistant's outage into it |
-| `Notifier` | `adapter/DesktopNotifier`; `notify/Notifications` fans out to every one |
+| `ChannelDriver` | `adapter/DesktopNotifier`, `adapter/CommandChannel` — one per channel `kind`; `notify/Notifications` routes a point to the channels `jagt.yml` lists |
 | `Processes` | `adapter/ProcessRunner` |
 | `Host` | `adapter/SystemHost` — OS name, home, environment, executables on PATH, the running jar |
 | `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one single-impl seam; `openCommandWindow` runs a command as a window's process |
@@ -205,7 +205,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | replace a built-in verb | another `TaskCapability` for the same action with a higher `priority()` |
 | run something before/after a verb | a `flow/CapabilityInterceptor` for that action — never a new status |
 | add unattended work | one `Job`; `Jobs` schedules it and the `jobs` report lists it |
-| notify somewhere else | one `Notifier` in `adapter/`; `Notifications` finds it and no caller changes |
+| notify somewhere else | one `ChannelDriver` in `adapter/` and a channel of its `kind` in `jagt.yml`; no caller changes |
 | support another host, tracker, agent or OS | one adapter behind its port, plus the `@ConditionalOnProperty` value |
 
 - A new verb reaches the board because the board is generated from `flow/TaskAction`: it renders `Move.actions()` (the

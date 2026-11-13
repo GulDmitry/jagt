@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 class KindsTest {
   private static final Set<String> USE_CASES =
       Set.of("capability", "command", "job", "notify", "startup", "service");
-  private static final Set<String> FACES = Set.of("Jobs", "Notifications");
+  private static final Set<String> FACES = Set.of("Jobs", "Notifications", "PointWatch");
 
   @Test
   void serviceClassOneKindAloneReadsLivesInThatKind() {

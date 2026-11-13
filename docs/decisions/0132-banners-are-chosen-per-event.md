@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-11-03.
+Superseded by [0159](0159-notifications-are-points-routed-by-jagt-yml.md).
 
 ## Context
 

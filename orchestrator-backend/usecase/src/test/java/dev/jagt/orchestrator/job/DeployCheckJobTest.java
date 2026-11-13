@@ -24,7 +24,6 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -108,7 +107,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -175,7 +173,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -234,7 +231,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -299,7 +295,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -368,7 +363,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -425,7 +419,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -484,7 +477,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -549,7 +541,6 @@ class DeployCheckJobTest {
                         ignored -> Arbiter.Profile.OFF,
                         ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), before, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     before,
                     Clock.systemUTC(),
@@ -570,7 +561,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), before, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 before,
                 Clock.systemUTC(),
@@ -598,7 +588,6 @@ class DeployCheckJobTest {
                             ignored -> Arbiter.Profile.OFF,
                             ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                             new StopAnnouncements(
-                                new Notifications(List.of(), restarted, Runnable::run),
                                 new StopLog(new JsonMapper(), paths))),
                         restarted,
                         Clock.systemUTC(),
@@ -618,7 +607,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), restarted, Runnable::run),
                         new StopLog(new JsonMapper(), paths))),
                 restarted,
                 Clock.systemUTC(),
@@ -659,7 +647,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -711,7 +698,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -756,7 +742,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -806,7 +791,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -860,7 +844,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -913,7 +896,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -962,7 +944,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -1030,7 +1011,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -1093,7 +1073,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(
@@ -1153,7 +1132,6 @@ class DeployCheckJobTest {
                     ignored -> Arbiter.Profile.OFF,
                     ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                     new StopAnnouncements(
-                        new Notifications(List.of(), state, Runnable::run),
                         new StopLog(
                             new JsonMapper(),
                             new OrchestratorPaths(

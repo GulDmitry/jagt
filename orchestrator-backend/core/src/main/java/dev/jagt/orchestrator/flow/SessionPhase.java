@@ -59,6 +59,15 @@ public enum SessionPhase {
     };
   }
 
+  /** {@link #silentSince}, but 0 where the wait follows a question the agent itself asked. */
+  public static long silentSinceUnasked(TaskState task) {
+    long since = silentSince(task);
+    Session.Halt halt = task.session().halt();
+    boolean asking =
+        task.report().asks() && (halt == null || halt.kind() == Session.Halt.Kind.IDLE);
+    return asking ? 0 : since;
+  }
+
   public static boolean silent(TaskState task) {
     return silentSince(task) > 0;
   }

@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.ModelTier;
+import dev.jagt.orchestrator.task.RoleRecord;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.StopTriage;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -109,6 +110,11 @@ public final class TaskReducer {
   /** {@code task} with {@code kind} told for {@code key}. */
   public TaskState told(TaskState task, ToldOnce.Kind kind, String key) {
     return task.withTold(task.toldOrNone().with(kind, key));
+  }
+
+  /** {@code task} with {@code point} told for {@code key}. */
+  public TaskState told(TaskState task, Point point, String key) {
+    return task.withTold(task.toldOrNone().withPoint(point.id(), key));
   }
 
   /** {@code task} with each of {@code kinds} told no more. */
@@ -565,6 +571,13 @@ public final class TaskReducer {
         : task.withMrUrls(links.byProject(), now);
   }
 
+  private static TaskState declined(
+      TaskState task, String role, @Nullable String message, boolean event, long now) {
+    TaskState landed = task.withStatus(TaskStatus.DEPLOYED, message, event, now);
+    RoleRecord record = landed.roleOrNone(role);
+    return landed.withRole(role, record.withDeclined(record.roundDigest()));
+  }
+
   private static TaskState apply(
       TaskState task, TaskEffect effect, @Nullable String message, boolean event, long now) {
     return switch (effect) {
@@ -614,6 +627,8 @@ public final class TaskReducer {
       case TaskEffect.SendsCheckerRound sends ->
           task.withRole(
               sends.role(), task.roleOrNone(sends.role()).withRound(sends.digest(), sends.rows()));
+      case TaskEffect.DeclinesRound declines ->
+          declined(task, declines.role(), message, event, now);
       case TaskEffect.SeesHead sees -> task.withHead(sees.tip());
       case TaskEffect.ReadsChecks reads -> task.withChecksRead(reads.hostStatus(), reads.tip());
       case TaskEffect.FailsToReadChecks fails -> task.withChecksUnread(fails.read());

@@ -14,7 +14,6 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.task.Step;
@@ -141,7 +140,7 @@ class ReportEffectsTest {
                 ignored -> Arbiter.Profile.OFF,
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(
-                    mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
+                    new StopLog(new JsonMapper(), paths))),
             state,
             clock,
             new FlowRules(new TaskChart(Composition.builtIn())));
@@ -177,7 +176,7 @@ class ReportEffectsTest {
                 ignored -> Arbiter.Profile.OFF,
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(
-                    mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
+                    new StopLog(new JsonMapper(), paths))),
             state,
             clock,
             new FlowRules(new TaskChart(Composition.builtIn())));
@@ -215,7 +214,7 @@ class ReportEffectsTest {
                 ignored -> Arbiter.Profile.OFF,
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(
-                    mock(Notifications.class), new StopLog(new JsonMapper(), paths))),
+                    new StopLog(new JsonMapper(), paths))),
             state,
             clock,
             new FlowRules(new TaskChart(Composition.builtIn())));

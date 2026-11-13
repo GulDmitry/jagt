@@ -20,7 +20,7 @@ class LegacyQaTest {
     TaskState task = new JsonMapper().readValue(json, TaskState.class);
 
     assertThat(task.roleOrNone("acceptance"))
-        .isEqualTo(new RoleRecord("", "proj@abc", "d1", "- row"));
+        .isEqualTo(new RoleRecord("", "proj@abc", "d1", "- row", ""));
     assertThat(task.turnOrNone().marks()).containsOnlyKeys("press:ship");
   }
 

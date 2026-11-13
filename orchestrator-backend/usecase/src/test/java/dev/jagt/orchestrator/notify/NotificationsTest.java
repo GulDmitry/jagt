@@ -1,14 +1,16 @@
 package dev.jagt.orchestrator.notify;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.flow.Point;
+import dev.jagt.orchestrator.notify.Routes.Routed;
+import dev.jagt.orchestrator.port.ChannelAddress;
+import dev.jagt.orchestrator.port.ChannelMessage;
 import dev.jagt.orchestrator.port.Notification;
-import dev.jagt.orchestrator.port.Notifier;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -18,52 +20,60 @@ import org.junit.jupiter.api.Test;
 
 class NotificationsTest {
 
-  @Test
-  void handsNotificationOnlyToTheChannelsThatWantIt() {
-    Notifier uninterested = mock(Notifier.class);
-    Notifier interested = mock(Notifier.class);
-    when(uninterested.takes(any())).thenReturn(false);
-    when(interested.takes(any())).thenReturn(true);
-    Notification orphans = Notification.housekeeping("2 orphaned worktree(s)", "see the log");
-
-    new Notifications(List.of(uninterested, interested), mock(TaskStore.class), Runnable::run)
-        .send(orphans);
-
-    verify(uninterested, never()).deliver(any());
-    verify(interested).deliver(orphans);
-  }
+  private static final ChannelAddress DESKTOP =
+      new ChannelAddress("desktop", "desktop", "", List.of());
+  private static final ChannelAddress TEAM = new ChannelAddress("team", "teams", "HOOK", List.of());
 
   @Test
-  void stillReachesEveryOtherChannelWhenOneOfThemFails() {
-    Notifier broken = mock(Notifier.class);
-    Notifier working = mock(Notifier.class);
-    when(broken.takes(any())).thenReturn(true);
-    when(working.takes(any())).thenReturn(true);
-    doThrow(new RuntimeException("no notification daemon")).when(broken).deliver(any());
-    Notification alert = Notification.watchdog("ABC-42", "agent unresponsive", "silent for 6 min");
-
-    new Notifications(List.of(broken, working), mock(TaskStore.class), Runnable::run).send(alert);
-
-    verify(working).deliver(alert);
-  }
-
-  @Test
-  void handsChannelsTheTasksAliasWhenTheNotificationIsAboutTask() {
-    Notifier channel = mock(Notifier.class);
+  void postsEachRoutedChannelItsOwnMessage() {
+    Routes routes = mock(Routes.class);
+    Messages messages = mock(Messages.class);
     TaskStore tasks = mock(TaskStore.class);
-    when(channel.takes(any())).thenReturn(true);
-    when(tasks.task("ABC-42"))
-        .thenReturn(
-            Optional.of(
-                TaskState.builder("api", "/wt/ABC-42-api", TaskStatus.IN_PROGRESS)
-                    .alias("p3")
-                    .build()));
+    Notification deployed = Notification.deployed(Point.DEPLOYED.id(), "ABC-42", "landed");
+    Routed onDesktop = new Routed(DESKTOP, "jagt · {title}", "{body}");
+    Routed onTeam = new Routed(TEAM, "", "{task} is live");
+    ChannelMessage banner =
+        new ChannelMessage("deployed", "ABC-42", null, "jagt · deployed", "landed");
+    ChannelMessage chat = new ChannelMessage("deployed", "ABC-42", null, "", "ABC-42 is live");
+    when(tasks.task("ABC-42")).thenReturn(Optional.empty());
+    when(routes.of("deployed")).thenReturn(List.of(onDesktop, onTeam));
+    when(messages.of(onDesktop, deployed, Optional.empty())).thenReturn(banner);
+    when(messages.of(onTeam, deployed, Optional.empty())).thenReturn(chat);
 
-    new Notifications(List.of(channel), tasks, Runnable::run)
-        .send(Notification.watchdog("ABC-42", "agent stopped", "silent for 6 min"));
+    ChannelPosts posts = mock(ChannelPosts.class);
+    new Notifications(routes, messages, posts, tasks).send(deployed);
 
-    verify(channel)
-        .deliver(
-            Notification.watchdog("ABC-42", "agent stopped", "silent for 6 min").withAlias("p3"));
+    verify(posts).post(DESKTOP, banner);
+    verify(posts).post(TEAM, chat);
+  }
+
+  @Test
+  void postsNothingForPointNoRouteNames() {
+    Routes routes = mock(Routes.class);
+    ChannelPosts posts = mock(ChannelPosts.class);
+    when(routes.of("housekeeping")).thenReturn(List.of());
+
+    new Notifications(routes, mock(Messages.class), posts, mock(TaskStore.class))
+        .send(Notification.housekeeping(Point.HOUSEKEEPING.id(), "2 orphans", "see the log"));
+
+    verify(posts, never()).post(any(), any());
+  }
+
+  @Test
+  void fillsTheMessageWithTheTaskItIsAbout() {
+    Routes routes = mock(Routes.class);
+    Messages messages = mock(Messages.class);
+    TaskStore tasks = mock(TaskStore.class);
+    TaskState task =
+        TaskState.builder("api", "/wt/ABC-42-api", TaskStatus.IN_PROGRESS).alias("p3").build();
+    Routed routed = new Routed(DESKTOP, "{alias}", "{body}");
+    Notification stopped =
+        Notification.watchdog(Point.STOPPED.id(), "ABC-42", "agent stopped", "silent for 6 min");
+    when(tasks.task("ABC-42")).thenReturn(Optional.of(task));
+    when(routes.of("stopped")).thenReturn(List.of(routed));
+
+    new Notifications(routes, messages, mock(ChannelPosts.class), tasks).send(stopped);
+
+    verify(messages).of(routed, stopped.withAlias("p3"), Optional.of(task));
   }
 }

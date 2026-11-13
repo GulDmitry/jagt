@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Point;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.port.SubscriptionUsage.Paid;
 import dev.jagt.orchestrator.port.SubscriptionUsage.Snapshot;
@@ -72,6 +73,7 @@ class UsageAlerts {
               level ->
                   due.add(
                       Notification.usage(
+                          Point.USAGE.id(),
                           window.name() + " window at " + level + "%",
                           window
                               .resetsAt()
@@ -87,7 +89,8 @@ class UsageAlerts {
                       period -> {
                         if (!period.equals(firedIn.put(PAID_START, period))) {
                           due.add(
-                              Notification.usage("paid usage started", UsageLimits.spent(paid)));
+                              Notification.usage(
+                                  Point.USAGE.id(), "paid usage started", UsageLimits.spent(paid)));
                         }
                       });
               percentOfLimit(paid)
@@ -96,6 +99,7 @@ class UsageAlerts {
                       level ->
                           due.add(
                               Notification.usage(
+                                  Point.USAGE.id(),
                                   "paid usage at " + level + "% of its limit",
                                   UsageLimits.spent(paid))));
             });

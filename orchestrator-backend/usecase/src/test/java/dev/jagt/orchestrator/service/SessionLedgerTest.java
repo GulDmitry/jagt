@@ -1,11 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -13,8 +8,6 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.SessionSign;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -28,10 +21,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 class SessionLedgerTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
-
-  private final Notifications notifications = mock(Notifications.class);
+  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void writesTheSignOnTheTask(@TempDir Path root) {
@@ -42,11 +32,12 @@ class SessionLedgerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+            reducer,
+            event -> {});
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     Clock clock = Clock.fixed(Instant.ofEpochMilli(7_000), ZoneOffset.UTC);
 
-    new SessionLedger(state, notifications, clock)
+    new SessionLedger(state, clock)
         .record("ABC-1", null, new SessionSign.WorkStarted());
 
     assertThat(state.task("ABC-1").orElseThrow().session().workStartedAt()).isEqualTo(7_000);
@@ -61,10 +52,11 @@ class SessionLedgerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+            reducer,
+            event -> {});
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
 
-    new SessionLedger(state, notifications, Clock.systemUTC())
+    new SessionLedger(state, Clock.systemUTC())
         .record("ABC-1", Path.of("/logs/session.jsonl"), new SessionSign.WorkStarted());
 
     assertThat(state.task("ABC-1").orElseThrow().session().log()).isEqualTo("/logs/session.jsonl");
@@ -79,10 +71,11 @@ class SessionLedgerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+            reducer,
+            event -> {});
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
 
-    new SessionLedger(state, notifications, Clock.systemUTC())
+    new SessionLedger(state, Clock.systemUTC())
         .sign(
             "ABC-1",
             new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK));
@@ -91,8 +84,7 @@ class SessionLedgerTest {
   }
 
   @Test
-  void tellsTheHumanOnceWithTheCauseWhenPromptBlocksTheSessionAndNotAgainOnTheNextRead(
-      @TempDir Path root) {
+  void stampsTheAskWithTheMomentItArrivedAndKeepsTheFirstStamp(@TempDir Path root) {
     StateService state =
         new StateService(
             new JsonMapper(),
@@ -100,40 +92,17 @@ class SessionLedgerTest {
                 OrchestratorProperties.defaults()
                     .withRoot(root.toString())
                     .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+            reducer,
+            event -> {});
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    SessionLedger ledger = new SessionLedger(state, notifications, Clock.systemUTC());
     SessionSign.Asked ask =
         new SessionSign.Asked("waiting on the trust dialog", SessionSign.Asked.Channel.SCREEN);
 
-    ledger.sign("ABC-1", ask);
-    ledger.sign("ABC-1", ask);
+    new SessionLedger(state, Clock.fixed(Instant.ofEpochMilli(7_000), ZoneOffset.UTC))
+        .sign("ABC-1", ask);
+    new SessionLedger(state, Clock.fixed(Instant.ofEpochMilli(9_000), ZoneOffset.UTC))
+        .sign("ABC-1", ask);
 
-    verify(notifications, times(1))
-        .send(Notification.watchdog("ABC-1", "agent needs you", "waiting on the trust dialog"));
-  }
-
-  @Test
-  void tellsNobodyWhenTheSessionAlreadyAskedInItsOwnWords(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .report(AgentReport.QUESTION)
-            .build());
-
-    new SessionLedger(state, notifications, Clock.systemUTC())
-        .sign(
-            "ABC-1",
-            new SessionSign.Asked("needs your permission", SessionSign.Asked.Channel.HOOK));
-
-    verify(notifications, never()).send(any());
+    assertThat(state.task("ABC-1").orElseThrow().session().askedAt()).isEqualTo(7_000);
   }
 }

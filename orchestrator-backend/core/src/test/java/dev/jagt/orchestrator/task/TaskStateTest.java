@@ -964,7 +964,7 @@ class TaskStateTest {
                     new Session.Halt(Session.Halt.Kind.FAILED, 6, "overloaded"),
                     2,
                     "/logs/s.jsonl",
-                    true,
+                    9,
                     new Session.Start(
                         3, new Session.Window(Session.Window.State.RUNNING, 7, 8), null)));
     JsonMapper mapper = new JsonMapper();

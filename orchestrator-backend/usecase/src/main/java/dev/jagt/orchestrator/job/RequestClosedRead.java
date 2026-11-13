@@ -1,8 +1,6 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.ConflictEnding;
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.MergedRequests;
 import dev.jagt.orchestrator.service.ReviewReader;
 import dev.jagt.orchestrator.service.StateService;
@@ -28,7 +26,6 @@ class RequestClosedRead implements ConflictRead {
   private final ReviewReader reviewReader;
   private final MergedRequests mergedRequests;
   private final StateService stateService;
-  private final Notifications notifications;
 
   @Override
   public ConflictEnding ending() {
@@ -63,10 +60,6 @@ class RequestClosedRead implements ConflictRead {
     stateService.reduce(
         taskId,
         (reducer, task) -> reducer.told(task, ToldOnce.Kind.CONFLICT_REQUEST_GONE, request));
-    notifications.send(
-        Notification.fromAgent(
-                taskId, "conflict", "error: no such request: " + request + " (the host says so)")
-            .withEvent(Notification.Event.AUTO_REVIEW));
   }
 
   private boolean readRequest(String taskId, TaskRepo repo) {

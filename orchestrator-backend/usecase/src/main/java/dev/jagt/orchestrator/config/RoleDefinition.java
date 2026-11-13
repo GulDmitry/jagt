@@ -5,8 +5,8 @@ import java.util.List;
 
 /**
  * What makes one checker role the role it is: the id its jobs, records and region carry, its name
- * to a human, when its check opens, which outcomes may end it, what its read may call, and the
- * shapes of what it answers to a check and to a decline.
+ * to a human, when its check opens, which outcomes may end it, what its read may call, the shapes
+ * of what it answers to a check and to a decline, and the kinds of point it raises.
  */
 public record RoleDefinition(
     String id,
@@ -15,7 +15,8 @@ public record RoleDefinition(
     Trigger trigger,
     Replies replies,
     Tools tools,
-    Checking checking) {
+    Checking checking,
+    List<String> points) {
 
   private static final Schema ABSENT = Schema.of("no role installed");
 
@@ -31,7 +32,8 @@ public record RoleDefinition(
         new Trigger(List.of(), ""),
         new Replies(List.of(), ABSENT, ABSENT),
         new Tools(List.of(), List.of(), List.of(), false, false, List.of()),
-        new Checking(false, List.of()));
+        new Checking(false, List.of()),
+        List.of());
   }
 
   public boolean installed() {

@@ -103,7 +103,9 @@ public record TaskState(
       @Nullable String headTip,
       // The re-runs of a pipeline that died on infrastructure: the ones sent, and at most one still
       // armed.
-      @JsonInclude(JsonInclude.Include.NON_EMPTY) List<InfraRetry> infraRetries) {
+      @JsonInclude(JsonInclude.Include.NON_EMPTY) List<InfraRetry> infraRetries,
+      // The pipeline of the request's head as the host listed it; null = none listed yet.
+      @Nullable String pipelineUrl) {
 
     public Checks {
       checksUnread = checksUnread == null ? List.of() : List.copyOf(checksUnread);
@@ -271,6 +273,10 @@ public record TaskState(
   }
 
   @JsonIgnore
+  public @Nullable String pipelineUrl() {
+    return checks.pipelineUrl();
+  }
+
   public @Nullable String checksTip() {
     return checks.checksTip();
   }
@@ -382,6 +388,7 @@ public record TaskState(
         .checksTip(checksTip())
         .headTip(headTip())
         .infraRetries(infraRetries())
+        .pipelineUrl(pipelineUrl())
         .planGate(planGate())
         .probes(probes())
         .switches(switches())
@@ -587,6 +594,14 @@ public record TaskState(
         .build();
   }
 
+  /** The pipeline address a read listed; a read that listed none must not erase one that did. */
+  public TaskState withPipelineUrl(@Nullable String url) {
+    String listed = blankToNull(url);
+    return listed == null || listed.equals(pipelineUrl())
+        ? this
+        : toBuilder().pipelineUrl(listed).build();
+  }
+
   /** The newest commit a read saw pushed. */
   public TaskState withHead(@Nullable String tip) {
     String head = blankToNull(tip);
@@ -661,7 +676,12 @@ public record TaskState(
    * No checks read, none unread: a round's answers describe a dead state once the round is over.
    */
   public TaskState withChecksReset() {
-    return toBuilder().pipelineStatus(null).checksUnread(List.of()).checksTip(null).build();
+    return toBuilder()
+        .pipelineStatus(null)
+        .pipelineUrl(null)
+        .checksUnread(List.of())
+        .checksTip(null)
+        .build();
   }
 
   public TaskState withApproved(@Nullable Boolean approved) {
@@ -1090,6 +1110,7 @@ public record TaskState(
     private @Nullable String checksTip;
     private @Nullable String headTip;
     private List<InfraRetry> infraRetries = List.of();
+    private @Nullable String pipelineUrl;
     private PlanGate planGate = PlanGate.OPEN;
     private List<Probe> probes = List.of();
     private Map<String, String> switches = Map.of();
@@ -1193,6 +1214,11 @@ public record TaskState(
 
     public TaskStateBuilder trail(@Nullable RoundTrail trail) {
       this.trail = trail;
+      return this;
+    }
+
+    public TaskStateBuilder pipelineUrl(@Nullable String pipelineUrl) {
+      this.pipelineUrl = pipelineUrl;
       return this;
     }
 
@@ -1315,7 +1341,7 @@ public record TaskState(
           new Standing(status, lastActiveTimestamp, message, report, opened),
           new Ticket(alias, title, ticketUrl, baseBranch),
           new Round(mrCreatedAt, requestOpenedAt, lastPolledAt, autoReview, approved, told, trail),
-          new Checks(pipelineStatus, checksUnread, checksTip, headTip, infraRetries),
+          new Checks(pipelineStatus, checksUnread, checksTip, headTip, infraRetries, pipelineUrl),
           new Gate(planGate, probes, switches, gitTrust, refusals, usage, agentSpend),
           new Work(session, turn, waits, stop, repoRequest, deployment, roles, master));
     }

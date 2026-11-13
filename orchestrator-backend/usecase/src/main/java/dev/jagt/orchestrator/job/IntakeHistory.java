@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.flow.Point;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.FinishedTasks;
@@ -55,6 +56,7 @@ public class IntakeHistory {
         .log();
     notifications.send(
         Notification.housekeeping(
+            Point.HOUSEKEEPING.id(),
             "intake cannot start " + key,
             cause + " — start it with the board's `do " + key + " <project>`"));
   }

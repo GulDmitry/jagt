@@ -39,6 +39,11 @@ public class ReachLedger implements Reach {
   }
 
   @Override
+  public void marked(ReachLost lost) {
+    standing.put(lost.key(), new Standing(lost, () -> true));
+  }
+
+  @Override
   public void reached(String driver, String host) {
     if (standing.remove(driver + "@" + host) != null) {
       log.atInfo()

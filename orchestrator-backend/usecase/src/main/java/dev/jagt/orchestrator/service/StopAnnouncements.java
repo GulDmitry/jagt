@@ -1,8 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.StopHold;
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStop;
 import java.util.Locale;
@@ -11,18 +8,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * What a newly tripped stop tells: the log, the human, the journal; a stop the human set, or the
- * Master holds, tells the human nothing.
+ * What a newly tripped stop tells: the log and the journal.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class StopAnnouncements {
 
-  private final Notifications notifications;
   private final StopLog journal;
 
-  public void announce(String taskId, TaskState task, TaskStop stop, StopHold hold) {
+  public void announce(String taskId, TaskState task, TaskStop stop) {
     if (stop.trigger().ends() == TaskStop.Trigger.Ends.PAUSE) {
       return;
     }
@@ -37,16 +32,6 @@ public class StopAnnouncements {
         .addKeyValue("effect", "auto-review and the master leave the task")
         .addKeyValue("fix", "lift " + alias)
         .log();
-    if (hold != StopHold.MASTER) {
-      notifications.send(
-          new Notification(
-              Notification.Topic.INSTALL,
-              Notification.Event.STOPPED,
-              taskId,
-              null,
-              "jagt stopped a task",
-              stop.reading()));
-    }
     journal.record(
         new StopLog.Stop(stop.at(), taskId, alias, trigger, task.status(), stop.evidence()));
   }

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.port;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import dev.jagt.orchestrator.flow.Point;
 import dev.jagt.orchestrator.task.TokenUsage;
 import java.nio.file.Path;
 import java.util.List;
@@ -46,13 +47,14 @@ class ValuesTest {
 
   @Test
   void routesAnAgentNotificationOnItsTopicWithTheTaskItIsAbout() {
-    Notification told = Notification.fromAgent("ABC-1", "question", "which branch?");
+    Notification told =
+        Notification.fromAgent(Point.YOUR_MOVE.id(), "ABC-1", "question", "which branch?");
 
     assertThat(told)
         .isEqualTo(
             new Notification(
                 Notification.Topic.AGENT,
-                Notification.Event.YOUR_MOVE,
+                Point.YOUR_MOVE.id(),
                 "ABC-1",
                 null,
                 "question",
@@ -61,59 +63,39 @@ class ValuesTest {
 
   @Test
   void routesTheOtherNotificationsOnTheirOwnTopicsAndNamesTaskOnlyForTheWatchdog() {
-    assertThat(Notification.watchdog("ABC-1", "quiet", "no report").topic())
+    assertThat(Notification.watchdog(Point.STOPPED.id(), "ABC-1", "quiet", "no report").topic())
         .isEqualTo(Notification.Topic.WATCHDOG);
-    assertThat(Notification.watchdog("ABC-1", "quiet", "no report").taskId()).isEqualTo("ABC-1");
-    assertThat(Notification.housekeeping("tidy", "x").topic())
+    assertThat(Notification.watchdog(Point.STOPPED.id(), "ABC-1", "quiet", "no report").taskId())
+        .isEqualTo("ABC-1");
+    assertThat(Notification.housekeeping(Point.HOUSEKEEPING.id(), "tidy", "x").topic())
         .isEqualTo(Notification.Topic.HOUSEKEEPING);
-    assertThat(Notification.install("act", "x").topic()).isEqualTo(Notification.Topic.INSTALL);
-    assertThat(Notification.usage("window", "x").topic()).isEqualTo(Notification.Topic.USAGE);
-    assertThat(Notification.install("act", "x").taskId()).isNull();
+    assertThat(Notification.install(Point.INSTALL.id(), "act", "x").topic())
+        .isEqualTo(Notification.Topic.INSTALL);
+    assertThat(Notification.usage(Point.USAGE.id(), "window", "x").topic())
+        .isEqualTo(Notification.Topic.USAGE);
+    assertThat(Notification.install(Point.INSTALL.id(), "act", "x").taskId()).isNull();
   }
 
   @Test
-  void raisesAnOpenedRequestAndLandedDeployAsTheirOwnEventsOfTask() {
-    assertThat(Notification.requestOpened("ABC-1", "!7"))
+  void raisesAnOpenedRequestAndLandedDeployAsTheirOwnPointsOfTask() {
+    assertThat(Notification.requestOpened(Point.REQUEST_OPENED.id(), "ABC-1", "!7"))
         .isEqualTo(
             new Notification(
                 Notification.Topic.AGENT,
-                Notification.Event.REQUEST_OPENED,
+                Point.REQUEST_OPENED.id(),
                 "ABC-1",
                 null,
                 "request opened",
                 "!7"));
-    assertThat(Notification.deployed("ABC-1", "deployed"))
+    assertThat(Notification.deployed(Point.DEPLOYED.id(), "ABC-1", "deployed"))
         .isEqualTo(
             new Notification(
                 Notification.Topic.AGENT,
-                Notification.Event.DEPLOYED,
+                Point.DEPLOYED.id(),
                 "ABC-1",
                 null,
                 "deployed",
                 "deployed"));
-  }
-
-  @Test
-  void namesAnEventByTheIdConfigurationListsIt() {
-    assertThat(Notification.Event.REQUEST_OPENED.id()).isEqualTo("request-opened");
-    assertThat(Notification.Event.ofId(Notification.Event.DEPLOYED.id()))
-        .contains(Notification.Event.DEPLOYED);
-  }
-
-  @Test
-  void wantsEveryNotificationUnlessChannelSaysOtherwise() {
-    Notifier everything =
-        new Notifier() {
-          @Override
-          public String id() {
-            return "all";
-          }
-
-          @Override
-          public void deliver(Notification notification) {}
-        };
-
-    assertThat(everything.takes(Notification.usage("window", "x"))).isTrue();
   }
 
   @Test

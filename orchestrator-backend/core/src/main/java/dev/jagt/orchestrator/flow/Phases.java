@@ -63,7 +63,7 @@ record Phases(Progress progress, Delivery delivery, Gates gates, Watchers watche
             phasesOf(task, CheckerPhase::of),
             phasesOf(task, CheckerPhase::beneath),
             MasterPhase.of(task),
-            task.session().stampedAsk()));
+            task.session().hasStampedAsk()));
   }
 
   private static Map<String, CheckerPhase> phasesOf(

@@ -551,6 +551,7 @@ class TaskChartTest {
                     "acceptance", AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS));
 
     assertThat(stepped.configuration().toPlain()).containsEntry("lifecycle", "DEPLOYED");
+    assertThat(stepped.effects()).contains(new TaskEffect.DeclinesRound("acceptance"));
   }
 
   static Stream<Arguments> regionEdges() {

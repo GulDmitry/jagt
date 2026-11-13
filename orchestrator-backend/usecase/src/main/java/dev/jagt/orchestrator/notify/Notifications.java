@@ -1,78 +1,35 @@
 package dev.jagt.orchestrator.notify;
 
+import dev.jagt.orchestrator.notify.Routes.Routed;
 import dev.jagt.orchestrator.port.Notification;
-import dev.jagt.orchestrator.port.Notifier;
+import dev.jagt.orchestrator.port.NotificationSink;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
-import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Qualifier;
+import java.util.Optional;
 import org.springframework.stereotype.Component;
 
-/**
- * Delivery happens off the caller's thread with a bounded backlog: a hung channel costs a banner,
- * not a task.
- */
+/** Tells a point to every channel routed for it, each with its own text. */
 @Component
-@Slf4j
-public class Notifications {
+public class Notifications implements NotificationSink {
 
-  private final List<Notifier> channels;
+  private final Routes routes;
+  private final Messages messages;
+  private final ChannelPosts posts;
   private final TaskStore tasks;
-  private final Executor delivery;
 
-  public Notifications(
-      List<Notifier> channels,
-      TaskStore tasks,
-      @Qualifier("notificationDelivery") Executor delivery) {
-    this.channels = List.copyOf(channels);
+  public Notifications(Routes routes, Messages messages, ChannelPosts posts, TaskStore tasks) {
+    this.routes = routes;
+    this.messages = messages;
+    this.posts = posts;
     this.tasks = tasks;
-    this.delivery = delivery;
   }
 
+  @Override
   public void send(Notification sent) {
-    Notification notification =
-        sent.taskId() == null ? sent : sent.withAlias(aliasOf(sent.taskId()));
-    for (Notifier channel : channels) {
-      if (!channel.takes(notification)) {
-        continue;
-      }
-      try {
-        delivery.execute(() -> deliver(channel, notification));
-      } catch (RejectedExecutionException e) {
-        log.atWarn()
-            .setMessage("notification dropped")
-            .addKeyValue("channel", channel.id())
-            .addKeyValue("said", notification.title())
-            .addKeyValue("cause", "channel backed up")
-            .log();
-      }
-    }
-  }
-
-  private @Nullable String aliasOf(String taskId) {
-    return tasks.task(taskId).map(TaskState::alias).orElse(null);
-  }
-
-  private static void deliver(Notifier channel, Notification notification) {
-    try {
-      channel.deliver(notification);
-      log.atInfo()
-          .setMessage("notification sent")
-          .addKeyValue("channel", channel.id())
-          .addKeyValue("task", notification.taskId())
-          .addKeyValue("said", notification.title())
-          .log();
-    } catch (Throwable t) {
-      log.atWarn()
-          .setMessage("notification delivery failed")
-          .addKeyValue("channel", channel.id())
-          .addKeyValue("said", notification.title())
-          .addKeyValue("cause", t.toString())
-          .log();
+    Optional<TaskState> task = sent.taskId() == null ? Optional.empty() : tasks.task(sent.taskId());
+    Notification notification = task.map(TaskState::alias).map(sent::withAlias).orElse(sent);
+    for (Routed routed : routes.of(notification.point())) {
+      posts.post(routed.channel(), messages.of(routed, notification, task));
     }
   }
 }

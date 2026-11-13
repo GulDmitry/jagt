@@ -11,7 +11,6 @@ import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -35,7 +34,6 @@ class SessionAliveJobTest {
 
   @TempDir Path root;
   private final AgentPresence agents = mock(AgentPresence.class);
-  private final Notifications notifications = mock(Notifications.class);
   private StateService state;
   private TaskStops stops;
 
@@ -53,7 +51,7 @@ class SessionAliveJobTest {
             new StopPolicy(
                 ignored -> Arbiter.Profile.OFF,
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
+                new StopAnnouncements(new StopLog(new JsonMapper(), paths))),
             state,
             Clock.fixed(Instant.ofEpochMilli(100_000_000), ZoneOffset.UTC),
             new FlowRules(new TaskChart(Composition.builtIn())));

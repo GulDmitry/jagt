@@ -46,7 +46,7 @@ class SessionTest {
                 new Session.Halt(Session.Halt.Kind.FAILED, 6, "overloaded"),
                 2,
                 "/logs/s.jsonl",
-                true,
+                1,
                 new Session.Start(
                     3, new Session.Window(Session.Window.State.RUNNING, 7, 8), null)));
   }

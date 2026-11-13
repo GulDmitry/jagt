@@ -4,8 +4,6 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.SessionPhase;
 import dev.jagt.orchestrator.flow.SessionSign;
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.SessionProbe;
@@ -34,7 +32,6 @@ import org.springframework.stereotype.Service;
 public class WatchdogService implements Job {
 
   private final StateService stateService;
-  private final Notifications notifications;
   private final OrchestratorProperties properties;
   private final SessionProbe probe;
   private final Clock clock;
@@ -129,8 +126,8 @@ public class WatchdogService implements Job {
       return;
     }
     long since = SessionPhase.silentSince(task);
-    // The wait FOLLOWING an agent's own question was announced when it asked.
-    if (stillAsking(task) || task.toldOrNone().said(ToldOnce.Kind.SILENCE, String.valueOf(since))) {
+    if (SessionPhase.silentSinceUnasked(task) == 0
+        || task.toldOrNone().said(ToldOnce.Kind.SILENCE, String.valueOf(since))) {
       return;
     }
     String said = Objects.requireNonNullElse(SessionPhase.silentBecause(task), "no sign of life");
@@ -144,12 +141,6 @@ public class WatchdogService implements Job {
         .addKeyValue("cause", cause(task.session()))
         .addKeyValue("silent", (now - since) / 60_000)
         .log();
-    notifications.send(Notification.watchdog(taskId, "agent stopped", said));
-  }
-
-  private static boolean stillAsking(TaskState task) {
-    Session.Halt halt = task.session().halt();
-    return task.report().asks() && (halt == null || halt.kind() == Session.Halt.Kind.IDLE);
   }
 
   private void forgetAlert(String taskId, TaskState task) {

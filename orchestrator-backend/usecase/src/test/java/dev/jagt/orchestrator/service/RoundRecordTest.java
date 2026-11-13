@@ -312,6 +312,55 @@ class RoundRecordTest {
   }
 
   @Test
+  void writesThePipelineLinkWhenOnlyItIsNew() {
+    when(stateService.task("ABC-1"))
+        .thenReturn(
+            Optional.of(
+                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                    .pipelineStatus("success")
+                    .build()));
+    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
+
+    roundRecord.recordListed(
+        "ABC-1",
+        new ReviewFacts(
+            new ReviewFacts.Request(true, false, false, false, 0),
+            new ReviewFacts.Pipeline("success", "", "https://host.invalid/p/9"),
+            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+        "");
+
+    verify(stateService).reduce(eq("ABC-1"), stamped.capture());
+    assertThat(
+            stamped
+                .getValue()
+                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .pipelineUrl())
+        .isEqualTo("https://host.invalid/p/9");
+  }
+
+  @Test
+  void writesNothingWhenTheReadRepeatsWhatTheTaskHolds() {
+    when(stateService.task("ABC-1"))
+        .thenReturn(
+            Optional.of(
+                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                    .pipelineStatus("success")
+                    .pipelineUrl("https://host.invalid/p/9")
+                    .approved(false)
+                    .build()));
+
+    roundRecord.recordListed(
+        "ABC-1",
+        new ReviewFacts(
+            new ReviewFacts.Request(true, false, false, false, 0),
+            new ReviewFacts.Pipeline("success", "", "https://host.invalid/p/9"),
+            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+        "");
+
+    verify(stateService, never()).reduce(any(), any());
+  }
+
+  @Test
   void writesNothingForReadThatListedNoChecks() {
     roundRecord.recordListed(
         "ABC-1",

@@ -6,6 +6,9 @@ import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.config.RoleInvalid;
 import dev.jagt.orchestrator.flow.CheckerRole;
 import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.Point;
+import dev.jagt.orchestrator.flow.Points;
+import dev.jagt.orchestrator.flow.RolePointKind;
 import dev.jagt.orchestrator.flow.Roles;
 import dev.jagt.orchestrator.port.Problem;
 import java.io.IOException;
@@ -51,6 +54,11 @@ public final class InstalledRoles {
     return Composition.of(checkers());
   }
 
+  /** Every point there is: the built-in ones and those the standing roles declare. */
+  public List<Point> points() {
+    return Points.all(checkers());
+  }
+
   private List<CheckerRole> checkers() {
     return definitions.stream().map(InstalledRoles::checker).toList();
   }
@@ -85,7 +93,11 @@ public final class InstalledRoles {
   }
 
   private static CheckerRole checker(RoleDefinition role) {
-    return new CheckerRole(role.id(), role.checking().jobs(), role.checking().readSteps());
+    return new CheckerRole(
+        role.id(),
+        role.checking().jobs(),
+        role.checking().readSteps(),
+        role.points().stream().map(id -> RolePointKind.ofId(id).orElseThrow()).toList());
   }
 
   public List<RoleDefinition> definitions() {

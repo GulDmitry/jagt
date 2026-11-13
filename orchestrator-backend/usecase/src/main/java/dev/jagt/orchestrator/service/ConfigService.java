@@ -7,7 +7,6 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.protocol.SwitchJudgements;
 import dev.jagt.orchestrator.task.LoopBreaker;
 import dev.jagt.orchestrator.task.MasterMode;
@@ -24,7 +23,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -95,64 +93,34 @@ public class ConfigService implements LoopBreaker.Current, SessionReach {
         @Nullable String codeHost,
         @Nullable NotificationsConfig notifications) {}
 
-    /**
-     * Which events raise a desktop banner, and which a team channel's command receives; unset keeps
-     * each event's own default for the desktop, an unknown id is ignored.
-     */
+    /** Where points are told: the channels, and the routes that send a point to them. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
     public record NotificationsConfig(
-        @Nullable List<String> desktop, @Nullable ChannelConfig channel) {
+        @Nullable Map<String, ChannelDef> channels,
+        @Nullable Map<String, List<RouteDef>> points) {
 
       public static NotificationsConfig defaults() {
         return new NotificationsConfig(null, null);
       }
 
-      public Set<Notification.Event> desktopEvents() {
-        if (desktop == null) {
-          return Arrays.stream(Notification.Event.values())
-              .filter(Notification.Event::onByDefault)
-              .collect(Collectors.toUnmodifiableSet());
-        }
-        return eventsOf(desktop);
+      public Map<String, ChannelDef> channelDefs() {
+        return channels == null ? Map.of() : channels;
       }
 
-      @Override
-      public ChannelConfig channel() {
-        return channel == null ? ChannelConfig.defaults() : channel;
+      public Map<String, List<RouteDef>> routeDefs() {
+        return points == null ? Map.of() : points;
       }
 
-      private static Set<Notification.Event> eventsOf(List<String> ids) {
-        return ids.stream()
-            .map(Notification.Event::ofId)
-            .flatMap(Optional::stream)
-            .collect(Collectors.toUnmodifiableSet());
-      }
-
-      /** An empty command is off; unset events are a request opening and a deploy landing. */
+      /** One place a point is told: its kind, the environment variable of a secret, a command. */
       @JsonIgnoreProperties(ignoreUnknown = true)
-      @With
-      public record ChannelConfig(@Nullable List<String> command, @Nullable List<String> events) {
+      public record ChannelDef(
+          @Nullable String kind, @Nullable String webhookEnv, @Nullable List<String> command) {}
 
-        public static ChannelConfig defaults() {
-          return new ChannelConfig(null, null);
-        }
-
-        public List<String> commandOrEmpty() {
-          boolean blank =
-              command == null
-                  || command.isEmpty()
-                  || command.get(0) == null
-                  || command.get(0).isBlank();
-          return blank ? List.of() : List.copyOf(command);
-        }
-
-        public Set<Notification.Event> eventSet() {
-          return events == null
-              ? Set.of(Notification.Event.REQUEST_OPENED, Notification.Event.DEPLOYED)
-              : eventsOf(events);
-        }
-      }
+      /** One point told to one channel; an unset title or text is empty. */
+      @JsonIgnoreProperties(ignoreUnknown = true)
+      public record RouteDef(
+          @Nullable String channel, @Nullable String title, @Nullable String text) {}
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

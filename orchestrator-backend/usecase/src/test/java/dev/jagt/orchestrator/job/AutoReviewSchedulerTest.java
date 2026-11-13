@@ -1,8 +1,6 @@
 package dev.jagt.orchestrator.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -17,8 +15,6 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.AutoReviewCadence;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
@@ -141,7 +137,6 @@ class AutoReviewSchedulerTest {
             .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
             .build());
     ReviewSweepService sweep = mock(ReviewSweepService.class);
-    Notifications notifications = mock(Notifications.class);
     final long before = System.currentTimeMillis();
     ConfigService config = mock(ConfigService.class);
     when(config.load())
@@ -153,13 +148,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 sweep,
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -170,7 +163,6 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC())
         .run();
 
@@ -202,7 +194,6 @@ class AutoReviewSchedulerTest {
         .thenReturn(
             new ReviewSweepService.SweepResult(
                 ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
-    Notifications notifications = mock(Notifications.class);
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -213,13 +204,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 sweep,
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -230,7 +219,6 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC());
 
     scheduler.run();
@@ -238,7 +226,6 @@ class AutoReviewSchedulerTest {
     scheduler.run();
 
     verify(sweep, times(2)).sweep("ABC-1");
-    verify(notifications, times(1)).send(argThat(sent -> sent.body().contains("read failed")));
   }
 
   @Test
@@ -259,7 +246,6 @@ class AutoReviewSchedulerTest {
             .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis())
             .build());
     ReviewSweepService sweep = mock(ReviewSweepService.class);
-    Notifications notifications = mock(Notifications.class);
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -270,13 +256,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 sweep,
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -287,19 +271,11 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC());
 
     scheduler.run();
     scheduler.run();
 
-    verify(notifications)
-        .send(
-            argThat(
-                sent ->
-                    sent.topic() == Notification.Topic.AGENT
-                        && "ABC-1".equals(sent.taskId())
-                        && sent.body().contains("past its 24h window")));
     verifyNoInteractions(sweep);
   }
 
@@ -320,7 +296,6 @@ class AutoReviewSchedulerTest {
             .autoReview(true)
             .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis())
             .build());
-    Notifications notifications = mock(Notifications.class);
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -331,13 +306,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 mock(ReviewSweepService.class),
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -348,7 +321,6 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC());
     scheduler.run();
 
@@ -361,13 +333,8 @@ class AutoReviewSchedulerTest {
             .build());
     scheduler.run();
 
-    verify(notifications, times(2))
-        .send(
-            argThat(
-                sent ->
-                    sent.topic() == Notification.Topic.AGENT
-                        && "ABC-1".equals(sent.taskId())
-                        && sent.body().contains("past its 24h window")));
+    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
+        .isTrue();
   }
 
   @ParameterizedTest
@@ -392,7 +359,6 @@ class AutoReviewSchedulerTest {
             .autoReview(true)
             .told(told)
             .build());
-    Notifications notifications = mock(Notifications.class);
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -403,13 +369,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 mock(ReviewSweepService.class),
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -420,7 +384,6 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC());
 
     scheduler.run();
@@ -447,7 +410,6 @@ class AutoReviewSchedulerTest {
             .autoReview(true)
             .mrCreatedAt(window)
             .build());
-    Notifications notifications = mock(Notifications.class);
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -458,13 +420,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 mock(ReviewSweepService.class),
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -475,7 +435,6 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC());
     scheduler.run();
 
@@ -490,13 +449,8 @@ class AutoReviewSchedulerTest {
             .build());
     scheduler.run();
 
-    verify(notifications, times(2))
-        .send(
-            argThat(
-                sent ->
-                    sent.topic() == Notification.Topic.AGENT
-                        && "ABC-1".equals(sent.taskId())
-                        && sent.body().contains("past its 24h window")));
+    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
+        .isTrue();
   }
 
   @Test
@@ -528,13 +482,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 sweep,
-                mock(Notifications.class),
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -545,7 +497,6 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            mock(Notifications.class),
             Clock.systemUTC())
         .run();
 
@@ -570,7 +521,6 @@ class AutoReviewSchedulerTest {
             .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(1).toMillis())
             .build());
     ReviewSweepService sweep = mock(ReviewSweepService.class);
-    Notifications notifications = mock(Notifications.class);
     ConfigService disabled = mock(ConfigService.class);
     when(disabled.load()).thenReturn(ConfigFile.defaults());
 
@@ -579,13 +529,11 @@ class AutoReviewSchedulerTest {
             disabled,
             new AutoReviewPolls(
                 sweep,
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -596,11 +544,10 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC())
         .run();
 
-    verifyNoInteractions(sweep, notifications);
+    verifyNoInteractions(sweep);
   }
 
   @Test
@@ -631,7 +578,6 @@ class AutoReviewSchedulerTest {
             .lastPolledAt(now - Duration.ofMinutes(30).toMillis())
             .build());
     ReviewSweepService sweep = mock(ReviewSweepService.class);
-    Notifications notifications = mock(Notifications.class);
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -642,13 +588,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 sweep,
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -659,7 +603,6 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC())
         .run();
 
@@ -703,7 +646,6 @@ class AutoReviewSchedulerTest {
         .thenReturn(
             new ReviewSweepService.SweepResult(
                 ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
-    Notifications notifications = mock(Notifications.class);
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -714,13 +656,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 sweep,
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -731,11 +671,16 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC())
         .run();
 
-    verify(notifications).send(argThat(sent -> sent.body().contains("read failed")));
+    assertThat(
+            state
+                .task("ABC-1")
+                .orElseThrow()
+                .toldOrNone()
+                .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
+        .isTrue();
   }
 
   @Test
@@ -756,7 +701,6 @@ class AutoReviewSchedulerTest {
             .autoReview(true)
             .mrCreatedAt(window)
             .build());
-    Notifications notifications = mock(Notifications.class);
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -767,13 +711,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 mock(ReviewSweepService.class),
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -784,7 +726,6 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC());
     scheduler.run();
 
@@ -805,10 +746,8 @@ class AutoReviewSchedulerTest {
             .build());
     scheduler.run();
 
-    verify(notifications, times(2))
-        .send(
-            argThat(
-                sent -> sent.topic() == Notification.Topic.AGENT && "ABC-1".equals(sent.taskId())));
+    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
+        .isTrue();
   }
 
   @Test
@@ -835,7 +774,6 @@ class AutoReviewSchedulerTest {
             .autoReview(true)
             .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
             .build());
-    Notifications notifications = mock(Notifications.class);
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -846,13 +784,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 mock(ReviewSweepService.class),
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -863,13 +799,13 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC());
 
     scheduler.run();
     scheduler.run();
 
-    verify(notifications, times(1)).send(argThat(sent -> "ABC-1".equals(sent.taskId())));
+    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
+        .isTrue();
   }
 
   @Test
@@ -902,7 +838,6 @@ class AutoReviewSchedulerTest {
         .thenReturn(
             new ReviewSweepService.SweepResult(
                 ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
-    Notifications notifications = mock(Notifications.class);
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -913,13 +848,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 sweep,
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -930,14 +863,19 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC());
 
     scheduler.run();
     state.updateTask("ABC-1", task -> task.withLastPolledAt(0));
     scheduler.run();
 
-    verify(notifications, times(1)).send(argThat(sent -> sent.body().contains("read failed")));
+    assertThat(
+            state
+                .task("ABC-1")
+                .orElseThrow()
+                .toldOrNone()
+                .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
+        .isTrue();
   }
 
   @Test
@@ -963,7 +901,6 @@ class AutoReviewSchedulerTest {
         .thenReturn(
             new ReviewSweepService.SweepResult(
                 ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
-    Notifications notifications = mock(Notifications.class);
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -974,13 +911,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 sweep,
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -991,7 +926,6 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC());
     scheduler.run();
 
@@ -1013,7 +947,13 @@ class AutoReviewSchedulerTest {
             .build());
     scheduler.run();
 
-    verify(notifications, times(2)).send(argThat(sent -> sent.body().contains("read failed")));
+    assertThat(
+            state
+                .task("ABC-1")
+                .orElseThrow()
+                .toldOrNone()
+                .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
+        .isTrue();
   }
 
   @Test
@@ -1045,13 +985,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 mock(ReviewSweepService.class),
-                mock(Notifications.class),
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -1062,7 +1000,6 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            mock(Notifications.class),
             clock)
         .run();
 
@@ -1092,20 +1029,17 @@ class AutoReviewSchedulerTest {
         .thenReturn(
             ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
     List<Runnable> queued = new ArrayList<>();
-    Notifications notifications = mock(Notifications.class);
     AutoReviewScheduler scheduler =
         new AutoReviewScheduler(
             state,
             config,
             new AutoReviewPolls(
                 mock(ReviewSweepService.class),
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -1116,7 +1050,6 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 queued::add,
                 state),
-            notifications,
             Clock.systemUTC());
 
     scheduler.run();
@@ -1148,7 +1081,6 @@ class AutoReviewSchedulerTest {
         .thenReturn(
             new ReviewSweepService.SweepResult(
                 ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
-    Notifications notifications = mock(Notifications.class);
     ConfigService config = mock(ConfigService.class);
     when(config.load())
         .thenReturn(
@@ -1159,13 +1091,11 @@ class AutoReviewSchedulerTest {
             config,
             new AutoReviewPolls(
                 sweep,
-                notifications,
                 new TaskStops(
                     new StopPolicy(
                         ignored -> Arbiter.Profile.OFF,
                         ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(
                                 new JsonMapper(),
                                 new OrchestratorPaths(
@@ -1176,7 +1106,6 @@ class AutoReviewSchedulerTest {
                     Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
                 Runnable::run,
                 state),
-            notifications,
             Clock.systemUTC());
     scheduler.run();
 
@@ -1185,168 +1114,12 @@ class AutoReviewSchedulerTest {
     state.putTask("ABC-1", polling);
     scheduler.run();
 
-    verify(notifications, times(2)).send(argThat(sent -> sent.body().contains("read failed")));
-  }
-
-  @Test
-  void doesNotTapAgainAfterRestartForAnUnreadableRoundAlreadyTold(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .build());
-    ReviewSweepService sweep = mock(ReviewSweepService.class);
-    when(sweep.sweep("ABC-1"))
-        .thenReturn(
-            new ReviewSweepService.SweepResult(
-                ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
-    Notifications notifications = mock(Notifications.class);
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-    new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                sweep,
-                notifications,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            notifications,
-            Clock.systemUTC())
-        .run();
-    state.updateTask("ABC-1", task -> task.withLastPolledAt(0));
-
-    new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                sweep,
-                notifications,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            notifications,
-            Clock.systemUTC())
-        .run();
-
-    verify(notifications, times(1)).send(argThat(sent -> sent.body().contains("read failed")));
-  }
-
-  @Test
-  void doesNotTapAgainAfterRestartForAnElapsedWindowAlreadyTold(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis())
-            .build());
-    ReviewSweepService sweep = mock(ReviewSweepService.class);
-    Notifications notifications = mock(Notifications.class);
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-    new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                sweep,
-                notifications,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            notifications,
-            Clock.systemUTC())
-        .run();
-
-    new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                sweep,
-                notifications,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            notifications,
-            Clock.systemUTC())
-        .run();
-
-    verify(notifications, times(1)).send(any(Notification.class));
+    assertThat(
+            state
+                .task("ABC-1")
+                .orElseThrow()
+                .toldOrNone()
+                .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
+        .isTrue();
   }
 }

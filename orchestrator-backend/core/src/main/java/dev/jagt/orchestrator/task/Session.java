@@ -1,13 +1,18 @@
 package dev.jagt.orchestrator.task;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.annotation.Nulls;
 import lombok.With;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 /**
- * What a task's session has signed: times in millis, 0 meaning never; {@code halt} null while
+ * What a task's session has signed: times in millis, 0 meaning never (a file holding the old ask
+ * flag reads as not asked); {@code halt} null while
  * nothing has stopped it.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -19,11 +24,19 @@ public record Session(
     @With @Nullable Halt halt,
     @With long quietSince,
     @With @Nullable String log,
-    @With boolean stampedAsk,
+    @With
+        @JsonAlias("stampedAsk")
+        @JsonDeserialize(using = AskStampReader.class)
+        @JsonSetter(nulls = Nulls.AS_EMPTY)
+        long askedAt,
     @With @JsonUnwrapped Start start) {
 
   public static Session defaults() {
-    return new Session(0, 0, 0, null, 0, null, false, new Start(0, null, null));
+    return new Session(0, 0, 0, null, 0, null, 0, new Start(0, null, null));
+  }
+
+  public boolean hasStampedAsk() {
+    return askedAt > 0;
   }
 
   public int generation() {

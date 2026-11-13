@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Point;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.WorktreeNoise;
@@ -36,7 +37,7 @@ public class WorktreeOrphanScanner implements Job {
   @Override
   public String describe() {
     return "delete jagt's own worktree residue, warn about the leftovers holding work or copied"
-               + " secrets";
+        + " secrets";
   }
 
   @Override
@@ -68,6 +69,7 @@ public class WorktreeOrphanScanner implements Job {
                 .log());
     notifications.send(
         Notification.housekeeping(
+            Point.HOUSEKEEPING.id(),
             left.size() + " orphaned worktree(s)",
             secrets > 0
                 ? secrets + " copied secret file(s) left on disk — `worktrees` lists them"

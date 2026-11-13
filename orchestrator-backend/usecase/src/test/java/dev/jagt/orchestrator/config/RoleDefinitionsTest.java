@@ -114,6 +114,32 @@ class RoleDefinitionsTest {
   }
 
   @Test
+  void theShippedAcceptanceRaisesAllThreeRolePointKinds() {
+    RoleDefinition compiled =
+        RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist"));
+
+    assertThat(compiled.points()).containsExactly("passed", "round-sent", "declined");
+  }
+
+  @Test
+  void refusesPointKindTheVocabularyDoesNotHold() {
+    assertThatThrownBy(
+            () ->
+                RoleDefinitions.compile(
+                    """
+                    id: x
+                    name: X
+                    model: m
+                    trigger: [deployed]
+                    oncePer: deploy
+                    outcomes: [round]
+                    points: [exploded]
+                    """))
+        .isInstanceOf(RoleInvalid.class)
+        .hasMessageContaining("exploded");
+  }
+
+  @Test
   void refusesTriggerWordTheVocabularyDoesNotHold() {
     assertThatThrownBy(
             () ->

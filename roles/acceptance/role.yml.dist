@@ -5,7 +5,8 @@
 # A `setup.md` beside it is your own setup brief for any session to follow; nothing in jagt reads it.
 # What to check and how: copy brief.md.dist to brief.md.
 # Take effect: id, model, trigger, tools, answer, decline, environments, flows,
-# jobs (true = the role runs jobs), readSteps (the brief steps whose turn opens its read).
+# jobs (true = the role runs jobs), readSteps (the brief steps whose turn opens its read),
+# points (passed, round-sent, declined: the points the role raises, each as acceptance-<kind>, routed in jagt.yml).
 # tools: shell and refuseShell are command globs, refuseRead path globs; reads are always on, writes always refused.
 # tools.mcp: MCP servers or tools the read loads beside assistant.allowedTools; a bare server gives its get/list/read
 # tools, a browser server also its navigation (to a listed environment only), snapshot and screenshot; click, fill and the
@@ -21,6 +22,7 @@ oncePer: deploy
 outcomes: [round, question, wait, dispute, stop]
 jobs: true
 readSteps: [accept, again, decline]
+points: [passed, round-sent, declined]
 tools:
   shell: ["curl -sS*", "git log*", "git show*", "git diff*", "git -C*"]
   refuseShell: ["git * --output*", "git push*", "git commit*", "git reset*", "git checkout*"]

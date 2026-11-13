@@ -149,6 +149,10 @@ final class E2eWorkspace {
             %s
           viewer: { tmuxSession: "%s", viewMode: "%s" }
           autoReview: { enabled: %s }
+          notifications:
+            channels: { desktop: { kind: desktop } }
+            points:
+              conflict-stalled: [ { channel: desktop, title: "deploy conflict stalled", text: "{next}" } ]
         """
             .formatted(configured, TMUX_SESSION, viewMode, autoReview));
   }

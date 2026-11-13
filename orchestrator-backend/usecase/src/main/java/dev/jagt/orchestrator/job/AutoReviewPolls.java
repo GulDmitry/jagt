@@ -1,7 +1,5 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.ReviewSweepService;
 import dev.jagt.orchestrator.service.StateService;
@@ -26,7 +24,6 @@ import org.springframework.stereotype.Component;
 class AutoReviewPolls {
 
   private final ReviewSweepService reviewSweep;
-  private final Notifications notifications;
   private final TaskStops stops;
 
   @Qualifier("autoReviewSweeps")
@@ -42,11 +39,7 @@ class AutoReviewPolls {
    * auto-review for the JVM's life.
    */
   boolean start(
-      String taskId,
-      @Nullable String alias,
-      long round,
-      SweepFetches fetches,
-      Runnable finished) {
+      String taskId, @Nullable String alias, long round, SweepFetches fetches, Runnable finished) {
     if (!stops.moveDue(taskId) || !inFlight.add(taskId)) {
       return false;
     }
@@ -94,9 +87,6 @@ class AutoReviewPolls {
             taskId,
             (reducer, t) ->
                 reducer.told(t, ToldOnce.Kind.AUTO_REVIEW_UNREADABLE, String.valueOf(round)));
-        notifications.send(
-            Notification.fromAgent(taskId, "auto-review", result.message())
-                .withEvent(Notification.Event.AUTO_REVIEW));
       }
     } catch (RuntimeException e) {
       log.atWarn()

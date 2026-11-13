@@ -82,6 +82,8 @@ sealed interface TaskEffect {
 
   record SendsCheckerRound(String role, String digest, String rows) implements TaskEffect {}
 
+  record DeclinesRound(String role) implements TaskEffect {}
+
   record SeesHead(String tip) implements TaskEffect {}
 
   record ReadsChecks(String hostStatus, String tip) implements TaskEffect {}

@@ -6,10 +6,8 @@ import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.notify.Notifications;
 import java.nio.file.Path;
 import java.time.Clock;
-import java.util.List;
 import lombok.With;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -26,7 +24,6 @@ public record TestTaskStopsBuilder(Path root, Arbiter.Profile profile) {
             ignored -> profile,
             ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
             new StopAnnouncements(
-                new Notifications(List.of(), state, Runnable::run),
                 new StopLog(
                     new JsonMapper(),
                     new OrchestratorPaths(

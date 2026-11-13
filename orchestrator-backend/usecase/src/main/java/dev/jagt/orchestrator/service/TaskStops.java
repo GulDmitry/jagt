@@ -188,11 +188,6 @@ public class TaskStops {
     return stateService.task(taskId).filter(TaskState::stopped).isPresent();
   }
 
-  /** Whose the standing stop is to lift, in the phase the task stands in. */
-  private StopHold holdOf(TaskState task) {
-    return StopHold.of(task, policy.profiles().at(task));
-  }
-
   /** Whether the human keeps this verb from the Master, whatever phase the task stands in. */
   public boolean masterKeeps(String taskId, TaskAction action) {
     return stateService
@@ -335,11 +330,7 @@ public class TaskStops {
             stop ->
                 policy
                     .announcements()
-                    .announce(
-                        taskId,
-                        Objects.requireNonNull(stoppedTask.get()),
-                        stop,
-                        holdOf(stoppedTask.get())));
+                    .announce(taskId, Objects.requireNonNull(stoppedTask.get()), stop));
     return Optional.ofNullable(standing.get());
   }
 

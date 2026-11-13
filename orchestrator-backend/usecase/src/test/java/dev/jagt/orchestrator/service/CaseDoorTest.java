@@ -13,7 +13,6 @@ import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Master;
@@ -56,7 +55,6 @@ class CaseDoorTest {
                 task -> master.profile(),
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
                     new StopLog(new JsonMapper(), paths))),
             state,
             Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))));

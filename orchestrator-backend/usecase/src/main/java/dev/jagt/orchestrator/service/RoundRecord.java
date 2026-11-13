@@ -75,14 +75,18 @@ public class RoundRecord {
     boolean newOpened =
         facts.request().openedAt() > 0
             && before.map(TaskState::requestOpenedAt).orElse(0L) != facts.request().openedAt();
-    if (newChecks || newTip || newApproval || newOpened) {
+    boolean newUrl =
+        !facts.pipeline().url().isBlank()
+            && !facts.pipeline().url().equals(before.map(TaskState::pipelineUrl).orElse(null));
+    if (newChecks || newTip || newApproval || newOpened || newUrl) {
       stateService.reduce(
           taskId,
           (reducer, task) ->
               reducer.approvalRead(
                       reducer.checksRead(reducer.headSeen(task, tip), read, tip),
                       facts.request().approved())
-                  .withRequestOpenedAt(facts.request().openedAt()));
+                  .withRequestOpenedAt(facts.request().openedAt())
+                  .withPipelineUrl(facts.pipeline().url()));
     }
   }
 

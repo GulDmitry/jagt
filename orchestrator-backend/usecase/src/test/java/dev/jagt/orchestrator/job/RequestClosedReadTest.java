@@ -2,18 +2,15 @@ package dev.jagt.orchestrator.job;
 
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.service.MergedRequests;
 import dev.jagt.orchestrator.service.ReviewReader;
@@ -24,6 +21,7 @@ import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.ToldOnce;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +39,6 @@ class RequestClosedReadTest {
   @TempDir Path root;
   private final ReviewReader reader = mock(ReviewReader.class);
   private final MergedRequests merged = mock(MergedRequests.class);
-  private final Notifications notifications = mock(Notifications.class);
   private final TaskRepo alpha =
       new TaskRepo("alpha", "/alpha-wt", "git@host:g/alpha.git", "http://mr/alpha");
   private final TaskRepo beta =
@@ -69,7 +66,7 @@ class RequestClosedReadTest {
   @BeforeEach
   void readOverStateOnDisk() {
     state = stateService().withRoot(root).build();
-    read = new RequestClosedRead(reader, merged, state, notifications);
+    read = new RequestClosedRead(reader, merged, state);
   }
 
   @Test
@@ -83,7 +80,6 @@ class RequestClosedReadTest {
     read.read("ABC-42", red);
 
     verify(merged).hostSaidClosed("ABC-42", beta);
-    verifyNoInteractions(notifications);
   }
 
   @Test
@@ -107,7 +103,13 @@ class RequestClosedReadTest {
     read.read("ABC-42", state.task("ABC-42").orElseThrow());
 
     verify(reader, times(1)).read("ABC-42", "http://mr/alpha");
-    verify(notifications, times(1)).send(any());
+    assertThat(
+            state
+                .task("ABC-42")
+                .orElseThrow()
+                .toldOrNone()
+                .said(ToldOnce.Kind.CONFLICT_REQUEST_GONE, "http://mr/alpha"))
+        .isTrue();
   }
 
   @ParameterizedTest

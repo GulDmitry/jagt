@@ -1,7 +1,5 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.AutoReviewCadence;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ReviewSweepService;
@@ -12,7 +10,6 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.ToldOnce;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -54,7 +51,6 @@ public class AutoReviewScheduler implements Job {
   private final StateService stateService;
   private final ConfigService configService;
   private final AutoReviewPolls polls;
-  private final Notifications notifications;
   private final Clock clock;
 
   @Override
@@ -92,13 +88,6 @@ public class AutoReviewScheduler implements Job {
                 stateService.reduce(
                     taskId,
                     (reducer, t) -> reducer.told(t, ToldOnce.Kind.AUTO_REVIEW_WINDOW, window));
-                notifications.send(
-                    Notification.fromAgent(
-                            taskId,
-                            "auto-review",
-                            Objects.requireNonNull(
-                                AutoReviewWatch.windowElapsed(cadence.windowHours()).note()))
-                        .withEvent(Notification.Event.AUTO_REVIEW));
               }
             }
             case POLL -> poll(taskId, task.alias(), task.mrCreatedAt(), fetches);

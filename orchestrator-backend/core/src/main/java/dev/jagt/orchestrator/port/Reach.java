@@ -17,6 +17,9 @@ public interface Reach {
    */
   void lost(ReachLost lost, BooleanSupplier stands);
 
+  /** As {@link #lost(ReachLost)} for a caller that has logged the loss itself. */
+  void marked(ReachLost lost);
+
   /** A read through {@code driver} on {@code host} succeeded: whatever stood for that pair ends. */
   void reached(String driver, String host);
 

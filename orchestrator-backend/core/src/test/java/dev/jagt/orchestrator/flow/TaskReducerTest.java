@@ -80,6 +80,18 @@ class TaskReducerTest {
   }
 
   @Test
+  void tellsPointOncePerKeyAndLeavesTheKindsAlone() {
+    TaskState task = TaskState.builder("api", "/wt", TaskStatus.IN_PROGRESS).build();
+
+    TaskState told =
+        reducer.told(reducer.told(task, ToldOnce.Kind.SILENCE, "9"), Point.DEPLOYED, "abc");
+
+    assertThat(told.toldOrNone().saidPoint("deployed", "abc")).isTrue();
+    assertThat(told.toldOrNone().saidPoint("deployed", "def")).isFalse();
+    assertThat(told.toldOrNone().said(ToldOnce.Kind.SILENCE, "9")).isTrue();
+  }
+
+  @Test
   void forgetsTheDeployConflictOnceTheDeployLands() {
     TaskState deployed =
         reducer.reduce(

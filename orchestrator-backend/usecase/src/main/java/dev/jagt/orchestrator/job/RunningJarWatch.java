@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.flow.Point;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Host;
 import dev.jagt.orchestrator.port.Notification;
@@ -105,6 +106,7 @@ public class RunningJarWatch implements Job {
         .log();
     notifications.send(
         Notification.install(
+            Point.INSTALL.id(),
             "restart needed",
             supervisor.supervised()
                 ? "the running jar was rebuilt — press `restart` on the board"

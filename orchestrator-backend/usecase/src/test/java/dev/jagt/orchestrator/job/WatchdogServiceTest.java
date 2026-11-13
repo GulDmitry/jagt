@@ -4,12 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Logger;
@@ -25,8 +22,6 @@ import dev.jagt.orchestrator.flow.SessionPhase;
 import dev.jagt.orchestrator.flow.SessionSign;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.StateService;
@@ -34,6 +29,7 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.ToldOnce;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -61,7 +57,7 @@ class WatchdogServiceTest {
   @EnumSource(
       value = TaskStatus.class,
       names = {"NEW", "IN_PROGRESS", "SHIPPING"})
-  void alertsTheHumanWhenAnAgentStoppedInStatusItShouldBeWorkingIn(
+  void recordsTheSilenceWhenAnAgentStoppedInStatusItShouldBeWorkingIn(
       TaskStatus status, @TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
@@ -73,20 +69,14 @@ class WatchdogServiceTest {
         "ABC-1",
         TaskState.builder("proj", "/wt", status).alias("a1").lastActiveTimestamp(1_000).build());
     state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 5_000));
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
 
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
-    verify(notifications)
-        .send(
-            argThat(
-                sent ->
-                    sent.topic() == Notification.Topic.WATCHDOG
-                        && "ABC-1".equals(sent.taskId())
-                        && "the session ended".equals(sent.body())));
+    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.SILENCE))
+        .isTrue();
   }
 
   @Test
@@ -104,7 +94,6 @@ class WatchdogServiceTest {
             .alias("a1")
             .lastActiveTimestamp(now)
             .build());
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenAnswer(
@@ -114,11 +103,10 @@ class WatchdogServiceTest {
                   Session.Window.State.DEAD_SHELL, 0, 0, now, 300_000, null);
             });
 
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
     assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))
         .isNotEqualTo(SessionPhase.GONE);
-    verifyNoInteractions(notifications);
   }
 
   @Test
@@ -137,7 +125,6 @@ class WatchdogServiceTest {
             .lastActiveTimestamp(now)
             .build());
     state.updateTask("ABC-1", reducer::sessionStartedOver);
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenAnswer(
@@ -147,11 +134,10 @@ class WatchdogServiceTest {
                   Session.Window.State.DEAD_SHELL, 0, 0, now, 300_000, null);
             });
 
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
     assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))
         .isNotEqualTo(SessionPhase.GONE);
-    verifyNoInteractions(notifications);
   }
 
   @Test
@@ -170,16 +156,14 @@ class WatchdogServiceTest {
             .lastActiveTimestamp(now)
             .build());
     state.updateTask("ABC-1", reducer::sessionStartedOver);
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.MISSING, 0, 0, now, 300_000, null));
 
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
     assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))
         .isNotEqualTo(SessionPhase.GONE);
-    verifyNoInteractions(notifications);
   }
 
   @Test
@@ -197,22 +181,15 @@ class WatchdogServiceTest {
             .lastActiveTimestamp(1_000)
             .build());
     state.updateTask("ABC-1", reducer::sessionStartedOver);
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
 
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC())
+    new WatchdogService(state, properties, probe, Clock.systemUTC())
         .ended("ABC-1", "Error: bad config");
 
     assertThat(SessionPhase.silentBecause(state.task("ABC-1").orElseThrow()))
         .isEqualTo("the session ended: Error: bad config");
-    verify(notifications)
-        .send(
-            argThat(
-                sent ->
-                    "ABC-1".equals(sent.taskId())
-                        && "the session ended: Error: bad config".equals(sent.body())));
   }
 
   @Test
@@ -240,7 +217,7 @@ class WatchdogServiceTest {
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
     SessionProbe probe = mock(SessionProbe.class);
 
-    new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
+    new WatchdogService(state, properties, probe, Clock.systemUTC())
         .run();
 
     verify(probe).read(anyString(), any(), anyLong(), anyLong());
@@ -257,14 +234,14 @@ class WatchdogServiceTest {
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
     SessionProbe probe = mock(SessionProbe.class);
 
-    new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
+    new WatchdogService(state, properties, probe, Clock.systemUTC())
         .run();
 
     verify(probe, never()).read(anyString(), any(), anyLong(), anyLong());
   }
 
   @Test
-  void alertsNobodyAboutAnEndedSessionWhoseStatusIdlesByDesign(@TempDir Path root) {
+  void recordsNoSilenceOfAnEndedSessionWhoseStatusIdlesByDesign(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -278,18 +255,17 @@ class WatchdogServiceTest {
             .lastActiveTimestamp(1_000)
             .build());
     state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 5_000));
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
 
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
-    verifyNoInteractions(notifications);
+    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().isEmpty()).isTrue();
   }
 
   @Test
-  void alertsNobodyAboutSessionThatToldJagtItWaitsOnDependency(@TempDir Path root) {
+  void recordsNoSilenceOfSessionThatToldJagtItWaitsOnDependency(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -305,18 +281,17 @@ class WatchdogServiceTest {
             .lastActiveTimestamp(1_000)
             .build());
     state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 5_000));
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
 
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
-    verifyNoInteractions(notifications);
+    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().isEmpty()).isTrue();
   }
 
   @Test
-  void sendsNoSecondBannerForAnAgentThatHadAlreadyAsked(@TempDir Path root) {
+  void recordsNoSilenceOfAnAgentThatHadAlreadyAsked(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -332,18 +307,17 @@ class WatchdogServiceTest {
             .lastActiveTimestamp(1_000)
             .build());
     state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.TurnEnded(null), 1_000));
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
 
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
-    verifyNoInteractions(notifications);
+    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().isEmpty()).isTrue();
   }
 
   @Test
-  void sendsNoBannerForAnAgentWhosePromptTheScreenRaisedAndNoHookEverFollowed(@TempDir Path root) {
+  void recordsNoSilenceOfAnAgentWhosePromptTheScreenRaisedWithNoHookAfter(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -357,14 +331,13 @@ class WatchdogServiceTest {
             .report(AgentReport.PERMISSION)
             .lastActiveTimestamp(1_000)
             .build());
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
 
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
-    verifyNoInteractions(notifications);
+    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().isEmpty()).isTrue();
   }
 
   @Test
@@ -385,7 +358,7 @@ class WatchdogServiceTest {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
 
-    new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
+    new WatchdogService(state, properties, probe, Clock.systemUTC())
         .run();
 
     assertThat(SessionPhase.silentSince(state.task("ABC-1").orElseThrow())).isEqualTo(1_000);
@@ -420,7 +393,7 @@ class WatchdogServiceTest {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
     WatchdogService watchdog =
-        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC());
+        new WatchdogService(state, properties, probe, Clock.systemUTC());
 
     watchdog.run();
     watchdog.run();
@@ -454,7 +427,7 @@ class WatchdogServiceTest {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 300_000, null));
     WatchdogService watchdog =
-        new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC());
+        new WatchdogService(state, properties, probe, Clock.systemUTC());
 
     watchdog.run();
     watchdog.run();
@@ -463,7 +436,7 @@ class WatchdogServiceTest {
   }
 
   @Test
-  void bannersDeadSessionEvenWhereTheQuestionItAskedIsStillUnanswered(@TempDir Path root) {
+  void recordsSilenceOfDeadSessionEvenWhereTheQuestionItAskedIsStillUnanswered(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -479,18 +452,18 @@ class WatchdogServiceTest {
             .lastActiveTimestamp(1_000)
             .build());
     state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 5_000));
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
 
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
-    verify(notifications).send(argThat(sent -> "the session ended".equals(sent.body())));
+    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.SILENCE))
+        .isTrue();
   }
 
   @Test
-  void saysThereIsNoSignOfLifeWhereNothingWasReportedAtAll(@TempDir Path root) {
+  void recordsSilenceWhereNothingWasReportedAtAll(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -503,18 +476,19 @@ class WatchdogServiceTest {
             .alias("a1")
             .lastActiveTimestamp(1_000)
             .build());
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
 
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
-    verify(notifications).send(argThat(sent -> "no sign of life".equals(sent.body())));
+    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.SILENCE))
+        .isTrue();
   }
 
   @Test
-  void alertsOnceWhileTheSameSilenceKeepsStandingWithinTheStaleWindow(@TempDir Path root) {
+  @ResourceLock(Resources.GLOBAL)
+  void logsOnceWhileTheSameSilenceKeepsStandingWithinTheStaleWindow(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -528,21 +502,26 @@ class WatchdogServiceTest {
             .lastActiveTimestamp(1_000)
             .build());
     state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 5_000));
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
     WatchdogService watchdog =
-        new WatchdogService(state, notifications, properties, probe, Clock.systemUTC());
+        new WatchdogService(state, properties, probe, Clock.systemUTC());
 
     watchdog.run();
     watchdog.run();
 
-    verify(notifications, times(1)).send(any());
+    assertThat(List.copyOf(log.list))
+        .filteredOn(event -> "task stopped".equals(event.getMessage()))
+        .hasSize(1);
   }
 
   @Test
-  void alertsOnceForOneSilenceAcrossRestart(@TempDir Path root) {
+  @ResourceLock(Resources.GLOBAL)
+  void logsOnceForOneSilenceAcrossRestart(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -556,19 +535,24 @@ class WatchdogServiceTest {
             .lastActiveTimestamp(1_000)
             .build());
     state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 5_000));
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
+    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
-    verify(notifications, times(1)).send(any());
+    assertThat(List.copyOf(log.list))
+        .filteredOn(event -> "task stopped".equals(event.getMessage()))
+        .hasSize(1);
   }
 
   @Test
-  void alertsOnceForOneSilenceAcrossManyStaleWindows(@TempDir Path root) {
+  @ResourceLock(Resources.GLOBAL)
+  void logsOnceForOneSilenceAcrossManyStaleWindows(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -582,24 +566,29 @@ class WatchdogServiceTest {
             .lastActiveTimestamp(1_000)
             .build());
     state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 5_000));
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
     Clock clock = mock(Clock.class);
     when(clock.millis()).thenReturn(10_000_000L, 10_300_000L, 10_600_000L, 12_000_000L);
-    WatchdogService watchdog = new WatchdogService(state, notifications, properties, probe, clock);
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
+    WatchdogService watchdog = new WatchdogService(state, properties, probe, clock);
 
     watchdog.run();
     watchdog.run();
     watchdog.run();
     watchdog.run();
 
-    verify(notifications, times(1)).send(any());
+    assertThat(List.copyOf(log.list))
+        .filteredOn(event -> "task stopped".equals(event.getMessage()))
+        .hasSize(1);
   }
 
   @Test
-  void alertsAgainWhenTheSilenceEndedAndNewOneBegan(@TempDir Path root) {
+  @ResourceLock(Resources.GLOBAL)
+  void logsAgainWhenTheSilenceEndedAndNewOneBegan(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -612,14 +601,15 @@ class WatchdogServiceTest {
             .alias("a1")
             .lastActiveTimestamp(1_000)
             .build());
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
     WatchdogService watchdog =
         new WatchdogService(
             state,
-            notifications,
             properties,
             probe,
             Clock.fixed(Instant.ofEpochMilli(5_500), ZoneOffset.UTC));
@@ -631,7 +621,9 @@ class WatchdogServiceTest {
 
     watchdog.run();
 
-    verify(notifications, times(2)).send(any());
+    assertThat(List.copyOf(log.list))
+        .filteredOn(event -> "task stopped".equals(event.getMessage()))
+        .hasSize(2);
   }
 
   @Test
@@ -655,7 +647,6 @@ class WatchdogServiceTest {
     WatchdogService watchdog =
         new WatchdogService(
             state,
-            mock(Notifications.class),
             properties,
             probe,
             Clock.fixed(Instant.ofEpochMilli(5_500), ZoneOffset.UTC));
@@ -694,7 +685,7 @@ class WatchdogServiceTest {
     log.start();
     ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
 
-    new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
+    new WatchdogService(state, properties, probe, Clock.systemUTC())
         .check("ABC-1");
 
     assertThat(List.copyOf(log.list))
@@ -727,7 +718,7 @@ class WatchdogServiceTest {
     log.start();
     ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
 
-    new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
+    new WatchdogService(state, properties, probe, Clock.systemUTC())
         .check("ABC-1");
 
     assertThat(List.copyOf(log.list))
@@ -751,7 +742,7 @@ class WatchdogServiceTest {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 300_000, null));
 
-    new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
+    new WatchdogService(state, properties, probe, Clock.systemUTC())
         .ended("ABC-1", " ");
 
     assertThat(Objects.requireNonNull(state.task("ABC-1").orElseThrow().session().halt()).cause())
@@ -772,7 +763,7 @@ class WatchdogServiceTest {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 0, 300_000, null));
 
-    new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
+    new WatchdogService(state, properties, probe, Clock.systemUTC())
         .ended("ABC-1", "Error: usage limit");
 
     assertThat(SessionPhase.silentBecause(state.task("ABC-1").orElseThrow()))
@@ -793,21 +784,20 @@ class WatchdogServiceTest {
             .lastActiveTimestamp(1_000)
             .session(Session.defaults().withQuietSince(1_000))
             .build());
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenThrow(
             new SessionHost.WindowsUnreadable(
                 "tmux list-windows jagt failed (exit 1): server timed out"));
 
-    new WatchdogService(state, notifications, properties, probe, Clock.systemUTC()).run();
+    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
     assertThat(SessionPhase.silentSince(state.task("ABC-1").orElseThrow())).isEqualTo(1_000);
-    verifyNoInteractions(notifications);
   }
 
   @Test
-  void endsGoneVerdictOnTheCardAndTheBannerWhenTheWorktreeCallsMcp(@TempDir Path root) {
+  @ResourceLock(Resources.GLOBAL)
+  void endsGoneVerdictOnTheCardAndLogsItOnceWhenTheWorktreeCallsMcp(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
             .withRoot(root.toString())
@@ -820,14 +810,15 @@ class WatchdogServiceTest {
             .alias("a1")
             .lastActiveTimestamp(1_000)
             .build());
-    Notifications notifications = mock(Notifications.class);
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
+    ListAppender<ILoggingEvent> log = new ListAppender<>();
+    log.start();
+    ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
     WatchdogService watchdog =
         new WatchdogService(
             state,
-            notifications,
             properties,
             probe,
             Clock.fixed(Instant.ofEpochMilli(10_000), ZoneOffset.UTC));
@@ -841,8 +832,9 @@ class WatchdogServiceTest {
 
     assertThat(silentAfterEnd).isTrue();
     assertThat(SessionPhase.silent(state.task("ABC-1").orElseThrow())).isFalse();
-    verify(notifications, times(1))
-        .send(argThat(sent -> "the session ended: boom".equals(sent.body())));
+    assertThat(List.copyOf(log.list))
+        .filteredOn(event -> "task stopped".equals(event.getMessage()))
+        .hasSize(1);
   }
 
   @Test
@@ -864,7 +856,7 @@ class WatchdogServiceTest {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.RUNNING, 0, 0, 1_000, 300_000, null));
 
-    new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
+    new WatchdogService(state, properties, probe, Clock.systemUTC())
         .run();
 
     assertThat(SessionPhase.silentBecause(state.task("ABC-1").orElseThrow()))
@@ -894,7 +886,7 @@ class WatchdogServiceTest {
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(window, 0, 0, now, 300_000, "Error: bad config"));
 
-    new WatchdogService(state, mock(Notifications.class), properties, probe, Clock.systemUTC())
+    new WatchdogService(state, properties, probe, Clock.systemUTC())
         .run();
 
     assertThat(SessionPhase.of(state.task("ABC-1").orElseThrow().session()))

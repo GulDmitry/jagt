@@ -17,7 +17,6 @@ import dev.jagt.orchestrator.flow.Arbiter;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.service.StateService;
@@ -50,7 +49,6 @@ class StopTriageJobTest {
   @TempDir Path root;
   private final ConfigService config = mock(ConfigService.class);
   private final StopTriagePanel panel = mock(StopTriagePanel.class);
-  private final Notifications notifications = mock(Notifications.class);
   private final StopTriage jagtRead =
       new StopTriage(
           StopTriage.Who.JAGT,
@@ -91,7 +89,7 @@ class StopTriageJobTest {
             new StopPolicy(
                 ignored -> masterProfile,
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(notifications, new StopLog(new JsonMapper(), paths))),
+                new StopAnnouncements(new StopLog(new JsonMapper(), paths))),
             state,
             Clock.systemUTC(),
             new FlowRules(new TaskChart(Composition.builtIn()))));
@@ -190,11 +188,10 @@ class StopTriageJobTest {
   }
 
   @Test
-  void liftThatLooksSafeStillLeavesTheStopStandingAndTellsNobody() {
+  void liftThatLooksSafeStillLeavesTheStopStanding() {
 
     job(paths, state, Arbiter.Profile.OFF).runOn(state.tasks());
 
     assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
-    verifyNoInteractions(notifications);
   }
 }

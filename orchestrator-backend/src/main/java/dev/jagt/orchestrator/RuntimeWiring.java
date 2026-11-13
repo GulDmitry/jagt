@@ -13,6 +13,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.springframework.context.ApplicationEventPublisher;
@@ -67,6 +68,16 @@ public class RuntimeWiring {
         TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(NOTIFICATION_BACKLOG),
         Thread.ofPlatform().name("jagt-notify-", 0).daemon().factory());
+  }
+
+  @Bean(destroyMethod = "")
+  public ScheduledExecutorService notificationRetries() {
+    return Executors.newSingleThreadScheduledExecutor(
+        task -> {
+          Thread thread = new Thread(task, "jagt-notify-retry");
+          thread.setDaemon(true);
+          return thread;
+        });
   }
 
   /** Serial: a sweep runs for minutes, so polls must not pile up behind it. */

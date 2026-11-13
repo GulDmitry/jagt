@@ -17,8 +17,8 @@ record CheckerRegion(CheckerRole role) implements Role {
           new CheckerRole(
               Checkers.ACCEPTANCE,
               true,
-              List.of(
-                  AcceptanceVerdict.ACCEPT, AcceptanceVerdict.AGAIN, AcceptanceVerdict.DECLINE)));
+              List.of(AcceptanceVerdict.ACCEPT, AcceptanceVerdict.AGAIN, AcceptanceVerdict.DECLINE),
+              List.of(RolePointKind.values())));
 
   @Override
   public String id() {
@@ -44,8 +44,7 @@ record CheckerRegion(CheckerRole role) implements Role {
   }
 
   @Override
-  public void declareRegion(
-      ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Landing landing) {
+  public void declareRegion(ChartBuilder<TaskMove, ChartFacts, TaskEffect> chart, Landing landing) {
     chart.region(region(), CheckerPhase.NONE);
     for (CheckerPhase from : CheckerPhase.values()) {
       chart
@@ -157,7 +156,7 @@ record CheckerRegion(CheckerRole role) implements Role {
             (others, move) ->
                 others.get(region()) == CheckerPhase.ROUND_OPEN
                     && others.get(TaskChart.TURN) == TurnKind.OPEN)
-        .emit(new TaskEffect.Lands(DEPLOYED))
+        .emit(new TaskEffect.DeclinesRound(id()))
         .to(DEPLOYED);
   }
 

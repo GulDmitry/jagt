@@ -6,14 +6,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.command.MasterPresses;
+import dev.jagt.orchestrator.flow.Point;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
-import dev.jagt.orchestrator.port.Notifier;
 import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
@@ -35,7 +36,6 @@ import dev.jagt.orchestrator.surface.mcp.MessageHandler;
 import dev.jagt.orchestrator.surface.mcp.MessageTool;
 import dev.jagt.orchestrator.surface.mcp.ToolHandler;
 import dev.jagt.orchestrator.task.ProjectConfig;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -137,7 +137,7 @@ class McpToolScopeTest {
             statusReports,
             ownReports,
             new CallerScope(stateService),
-            new Notifications(List.of(), stateService, Runnable::run))
+            mock(Notifications.class))
         .declare(registered);
     ToolHandler handler = registered.handlers.get("update_agent_status");
 
@@ -162,7 +162,7 @@ class McpToolScopeTest {
             statusReports,
             ownReports,
             new CallerScope(mock(StateService.class)),
-            new Notifications(List.of(), mock(StateService.class), Runnable::run))
+            mock(Notifications.class))
         .declare(registered);
     ToolHandler handler = registered.handlers.get("update_agent_status");
     when(ownReports.report(argThat(said -> "IN_PROGRESS".equals(said.status())), eq("MINE-1")))
@@ -182,25 +182,13 @@ class McpToolScopeTest {
 
   @Test
   void notifiesTheHumanWithTheTitleAndLineTheCallerGave() {
-    List<Notification> delivered = new ArrayList<>();
-    Notifier channel =
-        new Notifier() {
-          @Override
-          public String id() {
-            return "test";
-          }
-
-          @Override
-          public void deliver(Notification notification) {
-            delivered.add(notification);
-          }
-        };
+    Notifications notifications = mock(Notifications.class);
     Registered registered = new Registered();
     new StatusTools(
             mock(AgentStatusReports.class),
             mock(OwnStatusReports.class),
             new CallerScope(mock(StateService.class)),
-            new Notifications(List.of(channel), mock(StateService.class), Runnable::run))
+            notifications)
         .declare(registered);
     ToolHandler handler = registered.handlers.get("notify_user");
 
@@ -210,13 +198,8 @@ class McpToolScopeTest {
                 new JsonMapper().readTree("{\"title\":\"jagt\",\"message\":\"round addressed\"}"),
                 "MINE-1");
 
-    assertThat(delivered)
-        .singleElement()
-        .satisfies(
-            sent -> {
-              assertThat(sent.title()).isEqualTo("jagt");
-              assertThat(sent.body()).isEqualTo("round addressed");
-            });
+    verify(notifications)
+        .send(Notification.fromAgent(Point.YOUR_MOVE.id(), null, "jagt", "round addressed"));
     assertThat(answered).isEqualTo("Notification sent");
   }
 

@@ -70,7 +70,9 @@ class RoleStartupTest {
     assertThat(roles.definitions()).extracting(RoleDefinition::id).containsExactly("acceptance");
     assertThat(roles.skipped()).isEmpty();
     assertThat(
-            Roles.lint(new CheckerRole("acceptance", true, List.of("accept", "again", "decline"))))
+            Roles.lint(
+                new CheckerRole(
+                    "acceptance", true, List.of("accept", "again", "decline"), List.of())))
         .isEmpty();
   }
 

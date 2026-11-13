@@ -10,9 +10,11 @@ import java.util.TreeMap;
 
 /**
  * What was said to the human once, each fact with the key it was said for; a fact absent was never
- * said.
+ * said. A point is told by its id.
  */
-public record ToldOnce(Map<Kind, String> entries) {
+public record ToldOnce(Map<Kind, String> entries, Map<String, String> points) {
+
+  private static final String POINTS = "points";
 
   private static final String UNSAID = "0";
 
@@ -35,10 +37,11 @@ public record ToldOnce(Map<Kind, String> entries) {
     Map<Kind, String> copy = new EnumMap<>(Kind.class);
     copy.putAll(entries);
     entries = Collections.unmodifiableMap(copy);
+    points = Collections.unmodifiableMap(new TreeMap<>(points));
   }
 
   public static ToldOnce none() {
-    return new ToldOnce(Map.of());
+    return new ToldOnce(Map.of(), Map.of());
   }
 
   @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
@@ -51,18 +54,25 @@ public record ToldOnce(Map<Kind, String> entries) {
         read.put(kind, text);
       }
     }
-    return new ToldOnce(read);
+    Map<String, String> told = new TreeMap<>();
+    if (stored.get(POINTS) instanceof Map<?, ?> named) {
+      named.forEach((id, key) -> told.put(String.valueOf(id), String.valueOf(key)));
+    }
+    return new ToldOnce(read, told);
   }
 
   @JsonValue
-  Map<String, String> ids() {
-    Map<String, String> byId = new TreeMap<>();
+  Map<String, Object> ids() {
+    Map<String, Object> byId = new TreeMap<>();
     entries.forEach((kind, key) -> byId.put(kind.id, key));
+    if (!points.isEmpty()) {
+      byId.put(POINTS, points);
+    }
     return byId;
   }
 
   public boolean isEmpty() {
-    return entries.isEmpty();
+    return entries.isEmpty() && points.isEmpty();
   }
 
   public boolean has(Kind kind) {
@@ -81,13 +91,23 @@ public record ToldOnce(Map<Kind, String> entries) {
     Map<Kind, String> next = new EnumMap<>(Kind.class);
     next.putAll(entries);
     next.put(kind, key);
-    return new ToldOnce(next);
+    return new ToldOnce(next, points);
+  }
+
+  public boolean saidPoint(String pointId, String key) {
+    return key.equals(points.get(pointId));
+  }
+
+  public ToldOnce withPoint(String pointId, String key) {
+    Map<String, String> next = new TreeMap<>(points);
+    next.put(pointId, key);
+    return new ToldOnce(entries, next);
   }
 
   public ToldOnce without(Kind... kinds) {
     Map<Kind, String> next = new EnumMap<>(Kind.class);
     next.putAll(entries);
     Arrays.stream(kinds).forEach(next::remove);
-    return new ToldOnce(next);
+    return new ToldOnce(next, points);
   }
 }

@@ -94,7 +94,7 @@ class McpProtocolServiceTest {
                     mock(AgentStatusReports.class),
                     mock(OwnStatusReports.class),
                     new CallerScope(state),
-                    new Notifications(List.of(), state, Runnable::run))));
+                    mock(Notifications.class))));
 
     JsonNode response =
         protocol
@@ -474,7 +474,7 @@ class McpProtocolServiceTest {
                     mock(AgentStatusReports.class),
                     mock(OwnStatusReports.class),
                     scope,
-                    new Notifications(List.of(), state, Runnable::run)),
+                    mock(Notifications.class)),
                 new IdeTools(mock(CommandService.class), scope),
                 new DeployTools(mock(CommandService.class))));
 
@@ -600,7 +600,7 @@ class McpProtocolServiceTest {
                     mock(AgentStatusReports.class),
                     mock(OwnStatusReports.class),
                     scope,
-                    new Notifications(List.of(), state, Runnable::run))));
+                    mock(Notifications.class))));
 
     String text =
         protocol

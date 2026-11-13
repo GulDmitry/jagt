@@ -1,0 +1,35 @@
+package dev.jagt.orchestrator.flow;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import dev.jagt.orchestrator.task.AgentReport;
+import dev.jagt.orchestrator.task.Deployment;
+import dev.jagt.orchestrator.task.RoleRecord;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.task.Turn;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+class DeclinedRoundTest {
+
+  private final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+
+  @Test
+  void declinedRoundLandsDeployedAndRecordsTheDigestOnTheRole() {
+    TaskState task =
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .deployment(new Deployment(5L, List.of(), 0, "d1"))
+            .roles(Map.of("acceptance", new RoleRecord("", "", "d1", "- row", "")))
+            .turn(new Turn("acceptance-round", 1L, "d1", 0L, Map.of(), List.of()))
+            .build();
+
+    TaskState declined =
+        reducer.checkerDeclined(
+            task, "acceptance", AgentReport.NO_CHANGES, TaskStatus.IN_PROGRESS, 10L);
+
+    assertThat(declined.status()).isEqualTo(TaskStatus.DEPLOYED);
+    assertThat(declined.roleOrNone("acceptance").declined()).isEqualTo("d1");
+  }
+}

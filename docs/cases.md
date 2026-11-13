@@ -65,6 +65,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | B35 | a task is retired and a later task opens under the same id → its plan is not diffed against the first task's approved-plan baseline | seen 2026-11-09: `plan-baselines/<slug>.md` was never deleted | `TaskRetirementTest` |
 | B36 | concurrent tests of one class write and read one role file under a shared temp dir → each test owns its dir, so a read never meets a half-written file and an environment listed stays listed | seen 2026-11-10: acceptance flows read UNPROVABLE, the environment not listed | `CheckerFlowsTest` |
 | B37 | a test asserting on a log line runs beside a test logging through the same logger → its captured list is never written while it reads it: every such test holds the global lock | seen 2026-11-12: `ConcurrentModificationException` reading the appender's list | `LogCaptureTest`, `ChargedReviewsTest`, `MasterPanelTest`, `ScenarioWindowsTest` |
+| B38 | two scans of one task run from write snapshots taken before either recorded the point → the point is told once: told-ness is read from the stored task inside the write, never from the snapshot | seen 2026-11-13: a stalled conflict's banner sent twice in one millisecond in `e2eTest` | `PointWatchTest` |
 ## C — turn collision
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
@@ -158,6 +159,7 @@ One row per use case a defect broke, kept by its fix with a `Defect-family:` tra
 | F18 | a Master ship answers no recorded round (first ship, a CI fix, a human's edit) → it counts toward `loopBreaker.ships` only on the tree of the ship before; new work never trips it | seen 2026-10-30: four ships of new work stopped a task as SHIPS | `LoopBreakerTest`, `ShipRecordTest` |
 | F19 | jagt says a line, relays, or asks after a restart into a session whose last sign (an open turn's included) is past the cache lifetime → the line goes to a fresh session, the restart ask skips it, and asks a warm one only if its log was written while jagt was down (`AliveStamp`) | seen 2026-11-05: a restart's ask and a relay rewrote two idle sessions' 100K+ contexts cold | `SessionPhaseTest`, `AgentSessionsTest`, `PromptGateTest`, `RestartAskJobTest`, `AliveStampTest` |
 | F20 | a push's range holds a mass reformat listed in `.git-blame-ignore-revs` → `pitestDiff` judges only lines another commit changed | seen 2026-11-08: CI's unit job mutated every class for 54 min | `jagt.pitest.gradle`, checked by a dry run (`-m`) on the reformat's range |
+| F21 | a channel keeps failing while the same point stands → one pending post per (channel, point, task) retried at 10 s, 20 s, then every 30 s, one WARN and one board-head mark, not a retry chain per post | seen 2026-11-11: each re-post of a failing point started its own endless chain and a second WARN | `ChannelPostsTest` |
 ## G — prose routing
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

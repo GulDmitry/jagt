@@ -4,8 +4,6 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.Turns;
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -31,7 +29,6 @@ import org.springframework.stereotype.Component;
 class ConflictStall {
 
   private final StateService stateService;
-  private final Notifications notifications;
   private final ConfigService config;
   private final Clock clock;
   private final Checkers checkers;
@@ -104,6 +101,5 @@ class ConflictStall {
         .addKeyValue(
             "fix", "resolve it in the " + kind + " worktree, git add, then " + kind + " " + alias)
         .log();
-    notifications.send(Notification.watchdog(taskId, kind + " conflict stalled", stop.reason()));
   }
 }

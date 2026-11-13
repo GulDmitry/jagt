@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
+import dev.jagt.orchestrator.flow.Point;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
@@ -58,7 +59,8 @@ public class StatusTools implements McpTools {
         UserNotice.class,
         (said, caller) -> MessageContext.NONE,
         (said, caller) -> {
-          notifications.send(Notification.fromAgent(null, said.title(), said.message()));
+          notifications.send(
+              Notification.fromAgent(Point.YOUR_MOVE.id(), null, said.title(), said.message()));
           return "Notification sent";
         });
   }

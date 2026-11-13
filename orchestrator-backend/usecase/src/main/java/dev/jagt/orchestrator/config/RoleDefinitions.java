@@ -1,15 +1,18 @@
 package dev.jagt.orchestrator.config;
 
+import dev.jagt.orchestrator.flow.RolePointKind;
 import dev.jagt.orchestrator.protocol.Schema;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -27,6 +30,9 @@ public final class RoleDefinitions {
   private static final Set<String> ONCE_PER = Set.of("deploy");
   private static final Set<String> OUTCOMES =
       Set.of("round", "question", "wait", "dispute", "stop", "label");
+
+  private static final Set<String> POINT_KINDS =
+      Arrays.stream(RolePointKind.values()).map(RolePointKind::id).collect(Collectors.toSet());
 
   private RoleDefinitions() {}
 
@@ -82,7 +88,8 @@ public final class RoleDefinitions {
             outcomes, schema(document, "answer"), schema(document, "decline")),
         tools(map(document, "tools")),
         new RoleDefinition.Checking(
-            Boolean.TRUE.equals(document.get("jobs")), strings(document, "readSteps")));
+            Boolean.TRUE.equals(document.get("jobs")), strings(document, "readSteps")),
+        words(document, "points", POINT_KINDS));
   }
 
   private static Object load(String yaml) {

@@ -44,7 +44,8 @@ class TaskChartCompositionTest {
         new TaskChart(
                 new Composition(
                     List.of(
-                        new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"))))))
+                        new CheckerRegion(
+                            new CheckerRole("lint", false, List.of("lint-read"), List.of())))))
             .chart();
 
     assertThat(alone.initial().toPlain().keySet())
@@ -60,7 +61,8 @@ class TaskChartCompositionTest {
                 new Composition(
                     List.of(
                         CheckerRegion.ACCEPTANCE,
-                        new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"))))))
+                        new CheckerRegion(
+                            new CheckerRole("lint", false, List.of("lint-read"), List.of())))))
             .chart();
 
     assertThat(chart.initial().toPlain())
@@ -75,7 +77,8 @@ class TaskChartCompositionTest {
                 new Composition(
                     List.of(
                         CheckerRegion.ACCEPTANCE,
-                        new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"))))))
+                        new CheckerRegion(
+                            new CheckerRole("lint", false, List.of("lint-read"), List.of())))))
             .chart();
     Map<String, String> lintRound = new HashMap<>(chart.initial().toPlain());
     lintRound.put("lifecycle", TaskStatus.IN_PROGRESS.name());
@@ -113,7 +116,8 @@ class TaskChartCompositionTest {
                 new Composition(
                     List.of(
                         CheckerRegion.ACCEPTANCE,
-                        new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"))))))
+                        new CheckerRegion(
+                            new CheckerRole("lint", false, List.of("lint-read"), List.of())))))
             .chart();
     Map<String, String> deployed = new HashMap<>(chart.initial().toPlain());
     deployed.put("lifecycle", TaskStatus.DEPLOYED.name());
@@ -141,7 +145,7 @@ class TaskChartCompositionTest {
     List<Role> roles =
         List.of(
             CheckerRegion.ACCEPTANCE,
-            new CheckerRegion(new CheckerRole("lint", false, List.of("decline"))));
+            new CheckerRegion(new CheckerRole("lint", false, List.of("decline"), List.of())));
 
     assertThatThrownBy(() -> new Composition(roles))
         .isInstanceOf(IllegalArgumentException.class)
@@ -154,8 +158,9 @@ class TaskChartCompositionTest {
         new Composition(
             List.of(
                 CheckerRegion.ACCEPTANCE,
-                new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"))),
-                new CheckerRegion(new CheckerRole("audit", true, List.of("audit-read")))));
+                new CheckerRegion(new CheckerRole("lint", false, List.of("lint-read"), List.of())),
+                new CheckerRegion(
+                    new CheckerRole("audit", true, List.of("audit-read"), List.of()))));
 
     assertThat(composition.withJobs()).containsExactly("acceptance", "audit");
   }
@@ -165,7 +170,8 @@ class TaskChartCompositionTest {
     TaskChart acceptanceOnly = new TaskChart(Composition.builtIn());
     TaskChart lintOnly =
         new TaskChart(
-            Composition.of(List.of(new CheckerRole("lint", false, List.of("lint-read")))));
+            Composition.of(
+                List.of(new CheckerRole("lint", false, List.of("lint-read"), List.of()))));
 
     assertThat(acceptanceOnly.installedCheckers()).containsExactly("acceptance");
     assertThat(lintOnly.installedCheckers()).containsExactly("lint");

@@ -12,7 +12,6 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
@@ -97,89 +96,6 @@ class ConfigServiceTest {
     ConfigFile config = new JsonMapper().readValue("{}", ConfigFile.class);
 
     assertThat(config.role("acceptance").enabledOrDefault()).isFalse();
-  }
-
-  @Test
-  void readsTheEventsTheHumanListedForDesktopBanners(@TempDir Path root) throws Exception {
-    Path configFile = root.resolve("jagt.yml");
-    Files.writeString(
-        configFile, "orchestrator:\n  notifications:\n    desktop: [stopped, deployed]\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    var events =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
-            .load()
-            .notifications()
-            .desktopEvents();
-
-    assertThat(events)
-        .containsExactlyInAnyOrder(Notification.Event.STOPPED, Notification.Event.DEPLOYED);
-  }
-
-  @Test
-  void keepsEveryBannerButDeployedWhereTheHumanListedNone() {
-    var events = ConfigFile.defaults().notifications().desktopEvents();
-
-    assertThat(events)
-        .contains(Notification.Event.YOUR_MOVE, Notification.Event.REQUEST_OPENED)
-        .doesNotContain(Notification.Event.DEPLOYED);
-  }
-
-  @Test
-  void readsTheCommandAndEventsTheHumanListedForTheTeamChannel(@TempDir Path root)
-      throws Exception {
-    Path configFile = root.resolve("jagt.yml");
-    Files.writeString(
-        configFile,
-        """
-        orchestrator:
-          notifications:
-            channel:
-              command: [sh, -c, cat]
-              events: [stopped, no-such-event]
-        """);
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    var channel =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
-            .load()
-            .notifications()
-            .channel();
-
-    assertThat(channel.commandOrEmpty()).containsExactly("sh", "-c", "cat");
-    assertThat(channel.eventSet()).containsExactly(Notification.Event.STOPPED);
-  }
-
-  @Test
-  void leavesTheTeamChannelOffAndListsRequestAndDeployWhereTheHumanWroteNone() {
-    var channel = ConfigFile.defaults().notifications().channel();
-
-    assertThat(channel.commandOrEmpty()).isEmpty();
-    assertThat(channel.eventSet())
-        .containsExactlyInAnyOrder(Notification.Event.REQUEST_OPENED, Notification.Event.DEPLOYED);
-  }
-
-  @Test
-  void treatsBlankFirstWordAsNoCommand() {
-    var channel = new ConfigFile.NotificationsConfig.ChannelConfig(List.of(" "), null);
-
-    assertThat(channel.commandOrEmpty()).isEmpty();
   }
 
   @Test
@@ -1139,9 +1055,19 @@ class ConfigServiceTest {
             mode: intake
           codeHost: gitlab
           notifications:
-            desktop: [stopped]
-            channel:
-              events: [deployed]
+            channels:
+              desktop:
+                kind: desktop
+              team:
+                kind: teams
+                webhookEnv: TEAMS_HOOK
+            points:
+              deployed:
+                - channel: desktop
+                  title: "{title}"
+                  text: "{sha}"
+                - channel: team
+                  text: "{alias} is live"
         """;
     Files.writeString(configFile, written);
     OrchestratorProperties properties =

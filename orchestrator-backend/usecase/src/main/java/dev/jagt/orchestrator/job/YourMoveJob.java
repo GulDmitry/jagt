@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.Owner;
+import dev.jagt.orchestrator.flow.Point;
 import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
@@ -95,7 +96,7 @@ public class YourMoveJob implements Job {
     boolean settled = !standing.told() && !now.isBefore(standing.since().plus(SETTLE));
     seen.put(taskId, settled ? new Standing(yours, standing.since(), true) : standing);
     if (settled) {
-      notifications.send(Notification.fromAgent(taskId, title, banner));
+      notifications.send(Notification.fromAgent(Point.YOUR_MOVE.id(), taskId, title, banner));
     }
   }
 

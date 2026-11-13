@@ -16,7 +16,7 @@ public sealed interface SessionSign {
     public Session applyTo(Session session, long now) {
       return older(session, now, false)
           ? session
-          : alive(session, now).withWorkStartedAt(now).withStampedAsk(false);
+          : alive(session, now).withWorkStartedAt(now).withAskedAt(0);
     }
   }
 
@@ -44,7 +44,7 @@ public sealed interface SessionSign {
   record Reported() implements SessionSign {
     @Override
     public Session applyTo(Session session, long now) {
-      return session.withReportedAt(now).withStampedAsk(false);
+      return session.withReportedAt(now).withAskedAt(0);
     }
   }
 
@@ -61,7 +61,7 @@ public sealed interface SessionSign {
 
     @Override
     public Session applyTo(Session session, long now) {
-      return session.withStampedAsk(true);
+      return session.hasStampedAsk() ? session : session.withAskedAt(now);
     }
   }
 

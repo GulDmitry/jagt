@@ -21,7 +21,6 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
-import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.task.AgentReport;
@@ -60,7 +59,6 @@ class OwnStatusReportsTest {
                 ignored -> Arbiter.Profile.OFF,
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(
-                    new Notifications(List.of(), state, Runnable::run),
                     new StopLog(
                         new JsonMapper(),
                         new OrchestratorPaths(OrchestratorProperties.defaults())))),
@@ -274,7 +272,6 @@ class OwnStatusReportsTest {
                         ignored -> Arbiter.Profile.OFF,
                         ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
                     Clock.systemUTC(),
@@ -333,7 +330,6 @@ class OwnStatusReportsTest {
                         ignored -> Arbiter.Profile.OFF,
                         ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
                     Clock.systemUTC(),
@@ -393,7 +389,6 @@ class OwnStatusReportsTest {
                         ignored -> Arbiter.Profile.OFF,
                         ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
                     Clock.systemUTC(),
@@ -455,7 +450,6 @@ class OwnStatusReportsTest {
                         ignored -> Arbiter.Profile.OFF,
                         ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                         new StopAnnouncements(
-                            new Notifications(List.of(), state, Runnable::run),
                             new StopLog(new JsonMapper(), paths))),
                     state,
                     Clock.systemUTC(),

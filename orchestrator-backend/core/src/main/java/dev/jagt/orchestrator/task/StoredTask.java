@@ -47,7 +47,8 @@ record StoredTask(
       @Nullable List<ChecksUnread> checksUnread,
       @Nullable String checksTip,
       @Nullable String headTip,
-      @Nullable List<InfraRetry> infraRetries) {}
+      @Nullable List<InfraRetry> infraRetries,
+      @Nullable String pipelineUrl) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   record ReadWork(
@@ -144,7 +145,8 @@ record StoredTask(
         unreadOf(checks.checksUnread(), unmigrated.pipelineUnread()),
         checks.checksTip(),
         checks.headTip(),
-        infraRetries == null ? List.of() : infraRetries);
+        infraRetries == null ? List.of() : infraRetries,
+        checks.pipelineUrl());
   }
 
   private TaskState.Work migratedWork() {
