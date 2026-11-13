@@ -18,9 +18,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
@@ -31,6 +29,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
@@ -44,14 +43,11 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 import org.springframework.scheduling.TaskScheduler;
@@ -210,7 +206,6 @@ class JobsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsNoErrorForRunWhoseCommandStoppedWithJagt() {
     Job stopping = mock(Job.class);
     when(stopping.id()).thenReturn("master-review");
@@ -222,19 +217,14 @@ class JobsTest {
     ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
     jobs.start();
     verify(scheduler).schedule(work.capture(), any(Trigger.class));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger jobsLog = (Logger) LoggerFactory.getLogger(Jobs.class);
-    jobsLog.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(Jobs.class)) {
+      work.getValue().run();
 
-    work.getValue().run();
-
-    jobsLog.detachAppender(log);
-    assertThat(log.list).filteredOn(event -> event.getLevel() == Level.ERROR).isEmpty();
+      assertThat(log.events()).filteredOn(event -> event.getLevel() == Level.ERROR).isEmpty();
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsJobFailingTheSameWayOnEveryRunAsAnErrorOnce() {
     Job failing = mock(Job.class);
     when(failing.id()).thenReturn("feed-every-tick");
@@ -244,21 +234,16 @@ class JobsTest {
     ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
     jobs.start();
     verify(scheduler).schedule(work.capture(), any(Trigger.class));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger jobsLog = (Logger) LoggerFactory.getLogger(Jobs.class);
-    jobsLog.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(Jobs.class)) {
+      work.getValue().run();
+      work.getValue().run();
+      work.getValue().run();
 
-    work.getValue().run();
-    work.getValue().run();
-    work.getValue().run();
-
-    jobsLog.detachAppender(log);
-    assertThat(log.list).filteredOn(event -> event.getLevel() == Level.ERROR).hasSize(1);
+      assertThat(log.events()).filteredOn(event -> event.getLevel() == Level.ERROR).hasSize(1);
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void reportsFailingJobRecoveredOnItsFirstRunThatDoesNotThrow() {
     Job flaky = mock(Job.class);
     when(flaky.id()).thenReturn("feed-recovering");
@@ -268,18 +253,14 @@ class JobsTest {
     ArgumentCaptor<Runnable> work = ArgumentCaptor.captor();
     jobs.start();
     verify(scheduler).schedule(work.capture(), any(Trigger.class));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger jobsLog = (Logger) LoggerFactory.getLogger(Jobs.class);
-    jobsLog.addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(Jobs.class)) {
+      work.getValue().run();
+      work.getValue().run();
 
-    work.getValue().run();
-    work.getValue().run();
-
-    jobsLog.detachAppender(log);
-    assertThat(log.list)
-        .extracting(ILoggingEvent::getMessage)
-        .containsExactly("job failed", "job recovered");
+      assertThat(log.events())
+          .extracting(ILoggingEvent::getMessage)
+          .containsExactly("job failed", "job recovered");
+    }
   }
 
   @ParameterizedTest

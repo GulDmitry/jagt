@@ -4,9 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
@@ -22,6 +19,7 @@ import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -29,9 +27,6 @@ import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 class ConflictStallTest {
@@ -432,7 +427,6 @@ class ConflictStallTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void pointsStalledRevertConflictAtTheRevertWorktreeAndRevert(@TempDir Path root) {
     StateService state =
         new StateService(
@@ -468,34 +462,28 @@ class ConflictStallTest {
             Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
             new Checkers(new TaskChart(Composition.builtIn())))
         .watch("ABC-42", conflict);
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger stallLog = (Logger) LoggerFactory.getLogger(ConflictStall.class);
-    stallLog.addAppender(log);
-    try {
+    try (FakeLogCapture log = new FakeLogCapture(ConflictStall.class)) {
       new ConflictStall(
               state,
               config,
               Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC),
               new Checkers(new TaskChart(Composition.builtIn())))
           .watch("ABC-42", conflict);
-    } finally {
-      stallLog.detachAppender(log);
-    }
 
-    assertThat(log.list)
-        .singleElement()
-        .satisfies(
-            event -> {
-              assertThat(event.getMessage()).isEqualTo("revert conflict stalled");
-              assertThat(event.getKeyValuePairs())
-                  .anySatisfy(
-                      pair -> {
-                        assertThat(pair.key).isEqualTo("fix");
-                        assertThat(String.valueOf(pair.value))
-                            .isEqualTo(
-                                "resolve it in the revert worktree, git add, then revert ABC-42");
-                      });
-            });
+      assertThat(log.events())
+          .singleElement()
+          .satisfies(
+              event -> {
+                assertThat(event.getMessage()).isEqualTo("revert conflict stalled");
+                assertThat(event.getKeyValuePairs())
+                    .anySatisfy(
+                        pair -> {
+                          assertThat(pair.key).isEqualTo("fix");
+                          assertThat(String.valueOf(pair.value))
+                              .isEqualTo(
+                                  "resolve it in the revert worktree, git add, then revert ABC-42");
+                        });
+              });
+    }
   }
 }

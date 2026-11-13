@@ -13,25 +13,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.ChannelAddress;
 import dev.jagt.orchestrator.port.ChannelDriver;
 import dev.jagt.orchestrator.port.ChannelMessage;
 import dev.jagt.orchestrator.port.Reach;
 import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.service.ReachLedger;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.mockito.ArgumentCaptor;
-import org.slf4j.LoggerFactory;
 
 class ChannelPostsTest {
 
@@ -160,23 +156,18 @@ class ChannelPostsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsOneWarnNotificationNotDeliveredNoMatterHowOftenItIsTried() {
     doThrow(new IllegalStateException("HTTP 500")).when(driver).deliver(any(), any());
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger postsLog = (Logger) LoggerFactory.getLogger(ChannelPosts.class);
-    postsLog.addAppender(log);
     ArgumentCaptor<Runnable> retry = ArgumentCaptor.forClass(Runnable.class);
-    try {
+    try (FakeLogCapture log = new FakeLogCapture(ChannelPosts.class)) {
       posts.post(TEAM, DEPLOYED);
       verify(retries).schedule(retry.capture(), eq(10L), eq(TimeUnit.SECONDS));
-      assertThat(List.copyOf(log.list))
+      assertThat(log.events())
           .filteredOn(event -> "notification not delivered".equals(event.getMessage()))
           .hasSize(1);
       retry.getValue().run();
 
-      assertThat(List.copyOf(log.list))
+      assertThat(log.events())
           .filteredOn(event -> "notification not delivered".equals(event.getMessage()))
           .singleElement()
           .satisfies(
@@ -189,30 +180,21 @@ class ChannelPostsTest {
                           "task=ABC-42",
                           "cause=HTTP 500",
                           "effect=tried again until it lands"));
-    } finally {
-      postsLog.detachAppender(log);
     }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void warnsOnceInTotalWhenPostFailsAndBoardHeadStandsMarked() {
     doThrow(new IllegalStateException("HTTP 500")).when(driver).deliver(any(), any());
     ReachLedger ledger = new ReachLedger();
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger root = (Logger) LoggerFactory.getLogger("dev.jagt.orchestrator");
-    root.addAppender(log);
-    try {
+    try (FakeLogCapture log = new FakeLogCapture("dev.jagt.orchestrator")) {
       new ChannelPosts(List.of(driver), ledger, Runnable::run, retries).post(TEAM, DEPLOYED);
 
-      assertThat(List.copyOf(log.list))
+      assertThat(log.events())
           .filteredOn(event -> event.getLevel() == Level.WARN)
           .extracting(ILoggingEvent::getMessage)
           .containsExactly("notification not delivered");
       assertThat(ledger.standing()).extracting(ReachLost::host).containsExactly("team/deployed");
-    } finally {
-      root.detachAppender(log);
     }
   }
 

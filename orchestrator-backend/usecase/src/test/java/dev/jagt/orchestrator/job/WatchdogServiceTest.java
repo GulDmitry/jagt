@@ -9,9 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
@@ -30,22 +28,19 @@ import dev.jagt.orchestrator.task.Session;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.ToldOnce;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.slf4j.LoggerFactory;
 import org.slf4j.event.KeyValuePair;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -487,7 +482,6 @@ class WatchdogServiceTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsOnceWhileTheSameSilenceKeepsStandingWithinTheStaleWindow(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
@@ -505,22 +499,20 @@ class WatchdogServiceTest {
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
-    WatchdogService watchdog =
-        new WatchdogService(state, properties, probe, Clock.systemUTC());
+    try (FakeLogCapture log = new FakeLogCapture(WatchdogService.class)) {
+      WatchdogService watchdog =
+          new WatchdogService(state, properties, probe, Clock.systemUTC());
 
-    watchdog.run();
-    watchdog.run();
+      watchdog.run();
+      watchdog.run();
 
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "task stopped".equals(event.getMessage()))
-        .hasSize(1);
+      assertThat(log.events())
+          .filteredOn(event -> "task stopped".equals(event.getMessage()))
+          .hasSize(1);
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsOnceForOneSilenceAcrossRestart(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
@@ -538,20 +530,18 @@ class WatchdogServiceTest {
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
-    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
+    try (FakeLogCapture log = new FakeLogCapture(WatchdogService.class)) {
+      new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
-    new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
+      new WatchdogService(state, properties, probe, Clock.systemUTC()).run();
 
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "task stopped".equals(event.getMessage()))
-        .hasSize(1);
+      assertThat(log.events())
+          .filteredOn(event -> "task stopped".equals(event.getMessage()))
+          .hasSize(1);
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsOnceForOneSilenceAcrossManyStaleWindows(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
@@ -571,23 +561,21 @@ class WatchdogServiceTest {
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
     Clock clock = mock(Clock.class);
     when(clock.millis()).thenReturn(10_000_000L, 10_300_000L, 10_600_000L, 12_000_000L);
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
-    WatchdogService watchdog = new WatchdogService(state, properties, probe, clock);
+    try (FakeLogCapture log = new FakeLogCapture(WatchdogService.class)) {
+      WatchdogService watchdog = new WatchdogService(state, properties, probe, clock);
 
-    watchdog.run();
-    watchdog.run();
-    watchdog.run();
-    watchdog.run();
+      watchdog.run();
+      watchdog.run();
+      watchdog.run();
+      watchdog.run();
 
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "task stopped".equals(event.getMessage()))
-        .hasSize(1);
+      assertThat(log.events())
+          .filteredOn(event -> "task stopped".equals(event.getMessage()))
+          .hasSize(1);
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsAgainWhenTheSilenceEndedAndNewOneBegan(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
@@ -604,30 +592,28 @@ class WatchdogServiceTest {
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
-    WatchdogService watchdog =
-        new WatchdogService(
-            state,
-            properties,
-            probe,
-            Clock.fixed(Instant.ofEpochMilli(5_500), ZoneOffset.UTC));
-    state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 2_000));
-    watchdog.run();
-    state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Called(), 3_000));
-    watchdog.run();
-    state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 4_000));
+    try (FakeLogCapture log = new FakeLogCapture(WatchdogService.class)) {
+      WatchdogService watchdog =
+          new WatchdogService(
+              state,
+              properties,
+              probe,
+              Clock.fixed(Instant.ofEpochMilli(5_500), ZoneOffset.UTC));
+      state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 2_000));
+      watchdog.run();
+      state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Called(), 3_000));
+      watchdog.run();
+      state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended(null), 4_000));
 
-    watchdog.run();
+      watchdog.run();
 
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "task stopped".equals(event.getMessage()))
-        .hasSize(2);
+      assertThat(log.events())
+          .filteredOn(event -> "task stopped".equals(event.getMessage()))
+          .hasSize(2);
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void forgetsTheSilenceAlertOnceTheSilenceEnded(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
@@ -660,7 +646,6 @@ class WatchdogServiceTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsWhatEndedTheSessionAsTheCauseNeverNull(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
@@ -681,23 +666,20 @@ class WatchdogServiceTest {
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(WatchdogService.class)) {
+      new WatchdogService(state, properties, probe, Clock.systemUTC())
+          .check("ABC-1");
 
-    new WatchdogService(state, properties, probe, Clock.systemUTC())
-        .check("ABC-1");
-
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "task stopped".equals(event.getMessage()))
-        .singleElement()
-        .extracting(ILoggingEvent::getKeyValuePairs)
-        .asInstanceOf(InstanceOfAssertFactories.LIST)
-        .contains(new KeyValuePair("cause", "Error: Invalid MCP configuration"));
+      assertThat(log.events())
+          .filteredOn(event -> "task stopped".equals(event.getMessage()))
+          .singleElement()
+          .extracting(ILoggingEvent::getKeyValuePairs)
+          .asInstanceOf(InstanceOfAssertFactories.LIST)
+          .contains(new KeyValuePair("cause", "Error: Invalid MCP configuration"));
+    }
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void logsSilentAsTheCauseOfSessionThatWentQuietWithoutWord(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
@@ -714,19 +696,17 @@ class WatchdogServiceTest {
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(WatchdogService.class)) {
+      new WatchdogService(state, properties, probe, Clock.systemUTC())
+          .check("ABC-1");
 
-    new WatchdogService(state, properties, probe, Clock.systemUTC())
-        .check("ABC-1");
-
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "task stopped".equals(event.getMessage()))
-        .singleElement()
-        .extracting(ILoggingEvent::getKeyValuePairs)
-        .asInstanceOf(InstanceOfAssertFactories.LIST)
-        .contains(new KeyValuePair("cause", "silent"));
+      assertThat(log.events())
+          .filteredOn(event -> "task stopped".equals(event.getMessage()))
+          .singleElement()
+          .extracting(ILoggingEvent::getKeyValuePairs)
+          .asInstanceOf(InstanceOfAssertFactories.LIST)
+          .contains(new KeyValuePair("cause", "silent"));
+    }
   }
 
   @Test
@@ -796,7 +776,6 @@ class WatchdogServiceTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void endsGoneVerdictOnTheCardAndLogsItOnceWhenTheWorktreeCallsMcp(@TempDir Path root) {
     OrchestratorProperties properties =
         OrchestratorProperties.defaults()
@@ -813,28 +792,27 @@ class WatchdogServiceTest {
     SessionProbe probe = mock(SessionProbe.class);
     when(probe.read(anyString(), any(), anyLong(), anyLong()))
         .thenReturn(new SessionSign.Read(Session.Window.State.UNREAD, 0, 0, 1_000, 300_000, null));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(WatchdogService.class)).addAppender(log);
-    WatchdogService watchdog =
-        new WatchdogService(
-            state,
-            properties,
-            probe,
-            Clock.fixed(Instant.ofEpochMilli(10_000), ZoneOffset.UTC));
-    state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended("boom"), 5_000));
+    try (FakeLogCapture log = new FakeLogCapture(WatchdogService.class)) {
+      WatchdogService watchdog =
+          new WatchdogService(
+              state,
+              properties,
+              probe,
+              Clock.fixed(Instant.ofEpochMilli(10_000), ZoneOffset.UTC));
+      state.updateTask("ABC-1", task -> reducer.signed(task, new SessionSign.Ended("boom"), 5_000));
 
-    watchdog.run();
-    boolean silentAfterEnd = SessionPhase.silent(state.task("ABC-1").orElseThrow());
-    state.updateTask(
-        "ABC-1", task -> reducer.signed(task.touched(9_000), new SessionSign.Called(), 9_000));
-    watchdog.run();
+      watchdog.run();
+      boolean silentAfterEnd = SessionPhase.silent(state.task("ABC-1").orElseThrow());
+      state.updateTask(
+          "ABC-1", task -> reducer.signed(task.touched(9_000), new SessionSign.Called(), 9_000));
+      watchdog.run();
 
-    assertThat(silentAfterEnd).isTrue();
-    assertThat(SessionPhase.silent(state.task("ABC-1").orElseThrow())).isFalse();
-    assertThat(List.copyOf(log.list))
-        .filteredOn(event -> "task stopped".equals(event.getMessage()))
-        .hasSize(1);
+      assertThat(silentAfterEnd).isTrue();
+      assertThat(SessionPhase.silent(state.task("ABC-1").orElseThrow())).isFalse();
+      assertThat(log.events())
+          .filteredOn(event -> "task stopped".equals(event.getMessage()))
+          .hasSize(1);
+    }
   }
 
   @Test

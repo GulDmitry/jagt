@@ -9,9 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.service.ProjectRouting;
 import dev.jagt.orchestrator.service.TaskLauncher;
@@ -19,12 +17,10 @@ import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
 
 class IntakeStartTest {
 
@@ -75,29 +71,26 @@ class IntakeStartTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void namesTheFailuresTypeAndKeepsItsStackWhereTheLaunchFailedWithoutMessage() {
     TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1");
     when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed(List.of("api")));
     when(launcher.launch(any(), any())).thenThrow(new NullPointerException());
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(IntakeStart.class)).addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(IntakeStart.class)) {
+      starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
 
-    starts.start(new IntakeCandidates.Ready(item, TokenUsage.NONE));
-
-    ILoggingEvent failed =
-        assertThat(List.copyOf(log.list))
-            .filteredOn(ILoggingEvent::getMessage, "intake could not start a task")
-            .singleElement()
-            .actual();
-    assertThat(failed.getKeyValuePairs())
-        .anySatisfy(
-            pair -> {
-              assertThat(pair.key).isEqualTo("cause");
-              assertThat(pair.value).isEqualTo("NullPointerException");
-            });
-    assertThat(failed.getThrowableProxy()).isNotNull();
+      ILoggingEvent failed =
+          assertThat(log.events())
+              .filteredOn(ILoggingEvent::getMessage, "intake could not start a task")
+              .singleElement()
+              .actual();
+      assertThat(failed.getKeyValuePairs())
+          .anySatisfy(
+              pair -> {
+                assertThat(pair.key).isEqualTo("cause");
+                assertThat(pair.value).isEqualTo("NullPointerException");
+              });
+      assertThat(failed.getThrowableProxy()).isNotNull();
+    }
   }
 
   @Test

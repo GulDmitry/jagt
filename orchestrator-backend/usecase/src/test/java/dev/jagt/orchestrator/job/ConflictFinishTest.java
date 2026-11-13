@@ -8,9 +8,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.DeployStep;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -23,16 +21,15 @@ import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
 
 class ConflictFinishTest {
 
@@ -76,7 +73,7 @@ class ConflictFinishTest {
   @Nested
   class WhileJagtHoldsResolvedConflictStopped {
 
-    private final ListAppender<ILoggingEvent> log = new ListAppender<>();
+    private final FakeLogCapture log = new FakeLogCapture(ConflictFinish.class);
 
     @BeforeEach
     void theConflictIsResolvedWhileTheTaskIsStopped() {
@@ -91,13 +88,15 @@ class ConflictFinishTest {
           "ABC-42",
           reducer.deployStepped(
               opened, new DeployStep.Conflicted("proj", Deployment.Cause.MERGE), 1));
-      log.start();
-      ((Logger) LoggerFactory.getLogger(ConflictFinish.class)).addAppender(log);
+    }
+
+    @AfterEach
+    void releasesTheLog() {
+      log.close();
     }
 
     @Test
-    @ResourceLock(Resources.GLOBAL)
-    void pressesNothingAndSaysOnceWhileJagtHoldsResolvedConflictStopped() {
+      void pressesNothingAndSaysOnceWhileJagtHoldsResolvedConflictStopped() {
       ConflictFinish finish = new ConflictFinish(commands, stops, state, Clock.systemUTC());
 
       finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
@@ -105,20 +104,19 @@ class ConflictFinishTest {
       finish.press("ABC-42", Path.of("/src/ABC-42-deploy"));
 
       verify(commands, never()).execute("ABC-42", TaskAction.DEPLOY);
-      assertThat(List.copyOf(log.list))
+      assertThat(log.events())
           .extracting(ILoggingEvent::getMessage)
           .containsExactly("conflict resolved held by stop");
     }
 
     @Test
-    @ResourceLock(Resources.GLOBAL)
-    void saysOnceAcrossRestartWhileJagtHoldsResolvedConflictStopped() {
+      void saysOnceAcrossRestartWhileJagtHoldsResolvedConflictStopped() {
       new ConflictFinish(commands, stops, state, Clock.systemUTC())
           .press("ABC-42", Path.of("/src/ABC-42-deploy"));
       new ConflictFinish(commands, stops, state, Clock.systemUTC())
           .press("ABC-42", Path.of("/src/ABC-42-deploy"));
 
-      assertThat(List.copyOf(log.list))
+      assertThat(log.events())
           .extracting(ILoggingEvent::getMessage)
           .containsExactly("conflict resolved held by stop");
     }

@@ -11,9 +11,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Checkers;
@@ -32,17 +30,15 @@ import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 class MasterAnswerJobTest {
@@ -445,7 +441,6 @@ class MasterAnswerJobTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void namesWhyTheMastersAnswerWasUnusable(@TempDir Path root) {
     StateService state =
         new StateService(
@@ -468,30 +463,28 @@ class MasterAnswerJobTest {
                     new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
     when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean()))
         .thenReturn(new MasterPanel.Undecided("the worktree could not be listed"));
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    ((Logger) LoggerFactory.getLogger(MasterAnswerJob.class)).addAppender(log);
+    try (FakeLogCapture log = new FakeLogCapture(MasterAnswerJob.class)) {
+      new MasterAnswerJob(
+              state,
+              config,
+              panel,
+              verdicts,
+              new TaskTurns(
+                  state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
+          .run();
 
-    new MasterAnswerJob(
-            state,
-            config,
-            panel,
-            verdicts,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .run();
-
-    ILoggingEvent unusable =
-        assertThat(List.copyOf(log.list))
-            .filteredOn(ILoggingEvent::getMessage, "master answer unusable")
-            .singleElement()
-            .actual();
-    assertThat(unusable.getKeyValuePairs())
-        .anySatisfy(
-            pair -> {
-              assertThat(pair.key).isEqualTo("cause");
-              assertThat(pair.value).isEqualTo("the worktree could not be listed");
-            });
+      ILoggingEvent unusable =
+          assertThat(log.events())
+              .filteredOn(ILoggingEvent::getMessage, "master answer unusable")
+              .singleElement()
+              .actual();
+      assertThat(unusable.getKeyValuePairs())
+          .anySatisfy(
+              pair -> {
+                assertThat(pair.key).isEqualTo("cause");
+                assertThat(pair.value).isEqualTo("the worktree could not be listed");
+              });
+    }
   }
 
   @Test

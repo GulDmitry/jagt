@@ -10,22 +10,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
 
 class IntakeCandidatesTest {
 
@@ -43,19 +39,14 @@ class IntakeCandidatesTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
   void warnsRatherThanErrsWhenPollNeverReachedTheTracker() {
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger intakeLog = (Logger) LoggerFactory.getLogger(IntakeCandidates.class);
-    intakeLog.addAppender(log);
     when(workflow.candidateQuery()).thenReturn("whatever is ready");
     when(assistants.tracker().findCandidates("whatever is ready")).thenReturn(Answer.unavailable());
+    try (FakeLogCapture log = new FakeLogCapture(IntakeCandidates.class)) {
+      candidates.waiting(Set.of());
 
-    candidates.waiting(Set.of());
-
-    assertThat(log.list).extracting(ILoggingEvent::getLevel).containsExactly(Level.WARN);
-    intakeLog.detachAppender(log);
+      assertThat(log.events()).extracting(ILoggingEvent::getLevel).containsExactly(Level.WARN);
+    }
   }
 
   @Test
