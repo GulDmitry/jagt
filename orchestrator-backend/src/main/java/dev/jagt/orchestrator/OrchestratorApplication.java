@@ -88,7 +88,8 @@ public class OrchestratorApplication {
   // Visible for a test: the REGISTRATION is what breaks while the listener itself works.
   static SpringApplication application() {
     SpringApplication application = new SpringApplication(OrchestratorApplication.class);
-    application.addListeners(new PortGuard(), new LogFileRoll(RuntimeWiring.utcClock()));
+    application.addListeners(
+        new PortGuard(), new LogFileRoll(RuntimeWiring.utcClock(), System.err));
     return application;
   }
 }

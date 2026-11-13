@@ -27,8 +27,6 @@ class LogCaptureTest {
           "dev.jagt.orchestrator.adapter.ProcessRunnerTest",
           "dev.jagt.orchestrator.adapter.replay.ReplaySessionsTest",
           "dev.jagt.orchestrator.surface.board.AbortedConnectionFilterTest",
-          "dev.jagt.orchestrator.surface.ui.BoardBannerTest",
-          "dev.jagt.orchestrator.surface.ui.LogFileRollTest",
           "dev.jagt.orchestrator.eval.EvalQuorumTest");
 
   @Test

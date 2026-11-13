@@ -2,11 +2,14 @@ package dev.jagt.orchestrator.surface.ui;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -14,17 +17,11 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.springframework.boot.context.logging.LoggingApplicationListener;
 import org.springframework.boot.support.EnvironmentPostProcessorApplicationListener;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mock.env.MockEnvironment;
 
-@ExtendWith(OutputCaptureExtension.class)
 class LogFileRollTest {
 
   @Test
@@ -41,7 +38,7 @@ class LogFileRollTest {
       freePort = probe.getLocalPort();
     }
 
-    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC), System.err)
         .apply(
             new MockEnvironment()
                 .withProperty("logging.file.name", log.toString())
@@ -61,7 +58,9 @@ class LogFileRollTest {
     Files.writeString(previous, "the day before");
     Files.setLastModifiedTime(previous, FileTime.from(Instant.parse("2100-03-04T05:06:07Z")));
 
-    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).start(log);
+    new LogFileRoll(
+        Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
+        System.err).start(log);
 
     assertThat(root.resolve("jagt.log.2100-03-04-050607")).content().isEqualTo("the day before");
     assertThat(previous).content().contains("yesterday");
@@ -79,7 +78,9 @@ class LogFileRollTest {
     Files.writeString(recent, "fresh");
     Files.setLastModifiedTime(recent, FileTime.from(Instant.parse("2026-10-28T12:00:00Z")));
 
-    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).start(log);
+    new LogFileRoll(
+        Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
+        System.err).start(log);
 
     assertThat(old).doesNotExist();
     assertThat(recent).exists();
@@ -100,7 +101,9 @@ class LogFileRollTest {
         sparseArchive(
             root.resolve("jagt.log.2026-01-03-000000"), 100, Instant.parse("2026-11-09T12:00:00Z"));
 
-    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).start(log);
+    new LogFileRoll(
+        Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
+        System.err).start(log);
 
     assertThat(oldest).doesNotExist();
     assertThat(middle).exists();
@@ -118,7 +121,9 @@ class LogFileRollTest {
         sparseArchive(
             root.resolve("jagt.log.2026-01-02-000000"), 100, Instant.parse("2026-11-09T12:00:00Z"));
 
-    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC)).start(log);
+    new LogFileRoll(
+        Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
+        System.err).start(log);
 
     assertThat(older).exists();
     assertThat(newer).exists();
@@ -144,7 +149,7 @@ class LogFileRollTest {
       freePort = probe.getLocalPort();
     }
 
-    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC), System.err)
         .apply(
             new MockEnvironment()
                 .withProperty("logging.file.name", folder.toString())
@@ -165,7 +170,7 @@ class LogFileRollTest {
       freePort = probe.getLocalPort();
     }
 
-    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
+    new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC), System.err)
         .apply(
             new MockEnvironment()
                 .withProperty("logging.file.name", root.resolve("jagt.log").toString())
@@ -183,7 +188,9 @@ class LogFileRollTest {
     try (ServerSocket occupied = new ServerSocket()) {
       occupied.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
       boolean rolled =
-          new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
+          new LogFileRoll(
+              Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
+              System.err)
               .apply(
                   new MockEnvironment()
                       .withProperty("logging.file.name", log.toString())
@@ -201,7 +208,9 @@ class LogFileRollTest {
     Files.writeString(log, "yesterday\n");
 
     boolean rolled =
-        new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
+        new LogFileRoll(
+            Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
+            System.err)
             .apply(
                 new MockEnvironment()
                     .withProperty("logging.file.name", log.toString())
@@ -212,9 +221,7 @@ class LogFileRollTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
-  void tellsTheHumanWhichLogItCouldNotRollAndStillStarts(@TempDir Path root, CapturedOutput output)
-      throws IOException {
+  void tellsTheHumanWhichLogItCouldNotRollAndStillStarts(@TempDir Path root) throws IOException {
     Path stuck = root.resolve("jagt.log");
     Files.writeString(stuck, "yesterday\n");
     Path archive = Files.createDirectories(root.resolve("jagt.log.1"));
@@ -225,21 +232,26 @@ class LogFileRollTest {
       freePort = probe.getLocalPort();
     }
 
+    ByteArrayOutputStream err = new ByteArrayOutputStream();
     boolean rolled =
-        new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
+        new LogFileRoll(
+                Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
+                new PrintStream(err, true, StandardCharsets.UTF_8))
             .apply(
                 new MockEnvironment()
                     .withProperty("logging.file.name", stuck.toString())
                     .withProperty("server.port", String.valueOf(freePort)));
 
     assertThat(rolled).isTrue();
-    assertThat(output.getErr()).contains("Could not roll " + stuck);
+    assertThat(err.toString(StandardCharsets.UTF_8)).contains("Could not roll " + stuck);
   }
 
   @Test
   void rollsNothingWhenNoLogFileIsConfigured() {
     assertThat(
-            new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
+            new LogFileRoll(
+                Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
+                System.err)
                 .apply(new MockEnvironment()))
         .isFalse();
   }
@@ -247,7 +259,9 @@ class LogFileRollTest {
   @Test
   void runsAfterTheConfigFilesAreReadAndBeforeLoggingIsInitialised() {
     assertThat(
-            new LogFileRoll(Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC))
+            new LogFileRoll(
+                Clock.fixed(Instant.parse("2026-11-10T12:00:00Z"), ZoneOffset.UTC),
+                System.err)
                 .getOrder())
         .isGreaterThan(new EnvironmentPostProcessorApplicationListener().getOrder())
         .isLessThan(new LoggingApplicationListener().getOrder());

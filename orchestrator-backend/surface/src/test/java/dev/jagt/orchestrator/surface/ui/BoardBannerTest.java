@@ -3,22 +3,22 @@ package dev.jagt.orchestrator.surface.ui;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.service.BoardUrl;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.springframework.boot.DefaultApplicationArguments;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 
-@ExtendWith(OutputCaptureExtension.class)
 class BoardBannerTest {
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
-  void tellsTheHumanWhereTheBoardListens(CapturedOutput output) {
-    new BoardBanner(new BoardUrl("8290")).run(new DefaultApplicationArguments());
+  void tellsTheHumanWhereTheBoardListens() {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-    assertThat(output.getOut()).contains("jagt board → http://localhost:8290   (Ctrl-C stops)");
+    new BoardBanner(new BoardUrl("8290"), new PrintStream(out, true, StandardCharsets.UTF_8))
+        .run(new DefaultApplicationArguments());
+
+    assertThat(out.toString(StandardCharsets.UTF_8))
+        .contains("jagt board → http://localhost:8290   (Ctrl-C stops)");
   }
 }

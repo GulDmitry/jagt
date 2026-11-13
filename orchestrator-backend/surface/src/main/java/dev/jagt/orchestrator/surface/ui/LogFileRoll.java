@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.ui;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -22,9 +23,11 @@ public class LogFileRoll
     implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
 
   private final Clock clock;
+  private final PrintStream problems;
 
-  public LogFileRoll(Clock clock) {
+  public LogFileRoll(Clock clock, PrintStream problems) {
     this.clock = clock;
+    this.problems = problems;
   }
 
   @Override
@@ -83,7 +86,7 @@ public class LogFileRoll
       }
       LogArchives.prune(directory, name, clock.instant());
     } catch (IOException | RuntimeException e) {
-      Console.problem("Could not roll " + absolute + ": " + e.getMessage());
+      problems.println("Could not roll " + absolute + ": " + e.getMessage());
     }
   }
 
