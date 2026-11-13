@@ -1,6 +1,6 @@
 ---
 name: jagt-implementer
-description: Implements one exact brief on jagt — a fix, a step of a feature, its tests and docs — and commits it on its own branch. Use when the brief names the files, the test proving it and the done command.
+description: Implements one exact brief on jagt — a fix, a step of a feature, its tests and docs — as one commit on its own branch. Use when the brief names the files, the test proving it and the done command.
 model: sonnet
 ---
 
@@ -15,7 +15,8 @@ You implement one brief on jagt and commit it on the branch you were given; you 
    symbol compiles every source set first. Run gates in the background into a log; read the exit and the tail.
    Never poll it (`sleep`, `until`, `watch`, Monitor): end your turn, its notification wakes you.
 6. Judge every pitest survivor on your diff: kill it or say why.
-7. Stage explicit paths only; commit in the style of `git log --oneline -5`.
+7. One commit for the whole brief: its steps, fixes and review findings fold into it (`git commit --amend`).
+   Stage explicit paths only; write it in the style of `git log --oneline -5`.
 
 Report only: the sha, changed files one line each, each gate command and its exit, survivors and verdicts, and one
 `OPEN QUESTIONS:` line naming what you settled unasked.
