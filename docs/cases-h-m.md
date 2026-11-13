@@ -82,6 +82,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | L18 | an acceptance eval installs its role file with the environment and the flows driver → every placeholder is filled, the whole file is formatted, never only its last line | seen 2026-11-10: a precedence slip left the url's `%s` literal in `role.yml` | `AcceptanceRoleYmlTest` |
 | L19 | a file a rule test reads (the CI workflow, the tmux stop script) changes outside every source set → `test` runs again, never UP-TO-DATE over a breach | seen 2026-11-10: a workflow edit left `CiWorkflowTest` up to date | `CiWorkflowTest`, `SuitesTapNobodyTest` |
 | L20 | a flow test stubs the code host's review read → the stub stands before the session reports `CI_POLLING`, so the background sweep never reads a half-made stub and answers 500 | seen 2026-11-11: `JudgeModeFlowTest` red 1 of 50, a deep-stub answer with a null failure | `JudgeModeFlowTest`, `MasterModeFlowTest` |
+| L21 | a test captures a logger while a parallel test still initialises SLF4J → logging is initialised once when the test launcher opens, so no test is handed a substitute logger | seen 2026-11-13: `FakeLogCaptureTest` red on a `SubstituteLogger` cast under `test --rerun-tasks` | none: a JVM-start race |
 ## M — anything else
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|

@@ -12,6 +12,8 @@ dependencies {
     implementation 'org.yaml:snakeyaml'
     testFixturesImplementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter'
+    testFixturesCompileOnly platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+    testFixturesCompileOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
