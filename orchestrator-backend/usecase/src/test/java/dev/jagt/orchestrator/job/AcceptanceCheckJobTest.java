@@ -1,5 +1,11 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.job.TestAcceptanceEnvironmentBuilder.acceptanceEnvironment;
+import static dev.jagt.orchestrator.job.TestAcceptanceRoleBuilder.acceptanceRole;
+import static dev.jagt.orchestrator.job.TestAcceptanceVerdictBuilder.acceptanceVerdict;
+import static dev.jagt.orchestrator.job.TestAskedDeployBuilder.askedDeploy;
+import static dev.jagt.orchestrator.job.TestCheckerCheckJobBuilder.checkerCheckJob;
+import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -10,19 +16,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.RoleDefinition;
-import dev.jagt.orchestrator.config.RoleDefinitions;
-import dev.jagt.orchestrator.config.RoleFiles;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.service.RoleSettings;
+import dev.jagt.orchestrator.task.AcceptanceEnding;
 import dev.jagt.orchestrator.task.AcceptanceVerdict;
-import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -30,10 +31,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -41,237 +40,104 @@ class AcceptanceCheckJobTest {
 
   private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
-  private static final ConfigFile ON =
-      ConfigFile.defaults().withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));
+  private final ConfigService config = mock(ConfigService.class);
+  private final CheckerReads reader = mock(CheckerReads.class);
+  private final CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
 
-  private static TaskState deployed(@Nullable String askedDigest) {
-    return TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-        .build()
-        .withDeployment(
-            new Deployment(
-                1,
-                List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                1,
-                askedDigest));
-  }
+  @TempDir Path root;
 
-  private static AcceptanceVerdict met() {
-    return new AcceptanceVerdict(
-        "proj@0123456789abcdef",
-        "",
-        List.of(
-            new AcceptanceVerdict.Row("login works", AcceptanceVerdict.Status.MET, "GET /me 200")),
-        "",
-        "",
-        AcceptanceVerdict.Flows.none());
-  }
+  private OrchestratorPaths paths;
 
-  private static AcceptanceVerdict notMet() {
-    return new AcceptanceVerdict(
-        "proj@0123456789abcdef",
-        "",
-        List.of(
-            new AcceptanceVerdict.Row(
-                "list is sorted", AcceptanceVerdict.Status.NOT_MET, "GET /list unsorted")),
-        "",
-        "",
-        AcceptanceVerdict.Flows.none());
-  }
-
-  @Test
-  void checksNothingWhereAcceptanceIsOff(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    CheckerReads reader = mock(CheckerReads.class);
-    when(config.load()).thenReturn(ConfigFile.defaults());
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-
-    new CheckerCheckJob(
-            new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                config,
-                paths),
-            new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance")),
-            reader,
-            new CheckerRecords(paths, Clock.systemUTC()),
-            mock(CheckerOutcomes.class))
-        .run("ABC-42", deployed("digest"));
-
-    verify(reader, never()).check(any(), any(), any(), any());
-  }
-
-  @Test
-  void waitsForTheDeploysPipelineToBeGreenBeforeItChecks(@TempDir Path root) throws IOException {
-    ConfigService config = mock(ConfigService.class);
-    final CheckerReads reader = mock(CheckerReads.class);
-    when(config.load()).thenReturn(ON);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.writeString(
-        root.resolve("roles/acceptance/role.yml"),
-        "environments: [{url: \"https://stage.example.com\"}]\n");
-
-    new CheckerCheckJob(
-            new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                config,
-                paths),
-            new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance")),
-            reader,
-            new CheckerRecords(paths, Clock.systemUTC()),
-            mock(CheckerOutcomes.class))
-        .run("ABC-42", deployed(null));
-
-    verify(reader, never()).check(any(), any(), any(), any());
-  }
-
-  @Test
-  void checksDeployOnceThenLeavesItAloneAcrossRestart(@TempDir Path root) throws IOException {
-    ConfigService config = mock(ConfigService.class);
-    CheckerReads reader = mock(CheckerReads.class);
-    when(config.load()).thenReturn(ON);
+  @BeforeEach
+  void acceptanceOnAndTheReaderFindingEverythingMet() {
+    paths = orchestratorPaths().withRoot(root).build();
+    when(config.load()).thenReturn(checkerCheckJob().config());
     when(reader.check(any(), any(), any(), any()))
-        .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
-    final OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.writeString(
-        root.resolve("roles/acceptance/role.yml"),
-        "environments: [{url: \"https://stage.example.com\"}]\n");
-    CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
-    when(outcomes.apply(any(), any(), any()))
-        .thenReturn(dev.jagt.orchestrator.task.AcceptanceEnding.PASSED);
-    new CheckerCheckJob(
-            new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                config,
-                paths),
-            new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance")),
-            reader,
-            new CheckerRecords(paths, Clock.systemUTC()),
-            outcomes)
-        .run("ABC-42", deployed("digest"));
+        .thenReturn(new Answer<>(Optional.of(acceptanceVerdict().build()), TokenUsage.NONE));
+  }
 
-    new CheckerCheckJob(
-            new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                config,
-                paths),
-            new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance")),
-            reader,
-            new CheckerRecords(paths, Clock.systemUTC()),
-            outcomes)
-        .run("ABC-42", deployed("digest"));
+  @Test
+  void checksNothingWhereAcceptanceIsOff() {
+    when(config.load()).thenReturn(ConfigFile.defaults());
+
+    checkerCheckJob()
+        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .run("ABC-42", askedDeploy().build());
+
+    verify(reader, never()).check(any(), any(), any(), any());
+  }
+
+  @Test
+  void waitsForTheDeploysPipelineToBeGreenBeforeItChecks() {
+    acceptanceEnvironment().build(root);
+
+    checkerCheckJob()
+        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .run("ABC-42", askedDeploy().withAskedDigest(null).build());
+
+    verify(reader, never()).check(any(), any(), any(), any());
+  }
+
+  @Test
+  void checksDeployOnceThenLeavesItAloneAcrossRestart() {
+    acceptanceEnvironment().build(root);
+    when(outcomes.apply(any(), any(), any())).thenReturn(AcceptanceEnding.PASSED);
+    checkerCheckJob()
+        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .run("ABC-42", askedDeploy().build());
+
+    checkerCheckJob()
+        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .run("ABC-42", askedDeploy().build());
 
     verify(reader, times(1)).check(any(), any(), any(), any());
   }
 
   @Test
-  void sendsRowNotMetBackToTheSession(@TempDir Path root) throws IOException {
-    ConfigService config = mock(ConfigService.class);
-    CheckerReads reader = mock(CheckerReads.class);
-    final CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
-    when(config.load()).thenReturn(ON);
+  void sendsRowNotMetBackToTheSession() {
+    AcceptanceVerdict notMet =
+        acceptanceVerdict()
+            .withRow(
+                new AcceptanceVerdict.Row(
+                    "list is sorted", AcceptanceVerdict.Status.NOT_MET, "GET /list unsorted"))
+            .build();
     when(reader.check(any(), any(), any(), any()))
-        .thenReturn(new Answer<>(Optional.of(notMet()), TokenUsage.NONE));
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.writeString(
-        root.resolve("roles/acceptance/role.yml"),
-        "environments: [{url: \"https://stage.example.com\"}]\n");
-    TaskState task = deployed("digest");
+        .thenReturn(new Answer<>(Optional.of(notMet), TokenUsage.NONE));
+    acceptanceEnvironment().build(root);
+    TaskState task = askedDeploy().build();
 
-    new CheckerCheckJob(
-            new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                config,
-                paths),
-            new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance")),
-            reader,
-            new CheckerRecords(paths, Clock.systemUTC()),
-            outcomes)
+    checkerCheckJob()
+        .build(config, paths, reader, outcomes, Clock.systemUTC())
         .run("ABC-42", task);
 
-    verify(outcomes).apply(eq("ABC-42"), eq(task), eq(notMet()));
+    verify(outcomes).apply(eq("ABC-42"), eq(task), eq(notMet));
   }
 
   @Test
-  void handsMetVerdictToTheOutcomesToMarkPassed(@TempDir Path root) throws IOException {
-    ConfigService config = mock(ConfigService.class);
-    CheckerReads reader = mock(CheckerReads.class);
-    final CheckerOutcomes outcomes = mock(CheckerOutcomes.class);
-    when(config.load()).thenReturn(ON);
-    when(reader.check(any(), any(), any(), any()))
-        .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.writeString(
-        root.resolve("roles/acceptance/role.yml"),
-        "environments: [{url: \"https://stage.example.com\"}]\n");
+  void handsMetVerdictToTheOutcomesToMarkPassed() {
+    acceptanceEnvironment().build(root);
 
-    new CheckerCheckJob(
-            new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                config,
-                paths),
-            new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance")),
-            reader,
-            new CheckerRecords(paths, Clock.systemUTC()),
-            outcomes)
-        .run("ABC-42", deployed("digest"));
+    checkerCheckJob()
+        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .run("ABC-42", askedDeploy().build());
 
-    verify(outcomes).apply(eq("ABC-42"), any(), eq(met()));
+    verify(outcomes).apply(eq("ABC-42"), any(), eq(acceptanceVerdict().build()));
   }
 
   @Test
-  void runsCheckAgainOnTheSameShaWhereItsTurnWasLeftOpenUnanswered(@TempDir Path root)
-      throws IOException {
+  void runsCheckAgainOnTheSameShaWhereItsTurnWasLeftOpenUnanswered() throws IOException {
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.copy(
         Path.of("../../roles/acceptance/brief.md.dist"),
         root.resolve("roles/acceptance/brief.md.dist"));
-    ConfigService config = mock(ConfigService.class);
-    CheckerReads reads = mock(CheckerReads.class);
-    when(config.load()).thenReturn(ON);
-    when(reads.check(any(), any(), any(), any()))
-        .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.writeString(
-        root.resolve("roles/acceptance/role.yml"),
-        "environments: [{url: \"https://stage.example.com\"}]\n");
-    TaskState restarted = reducer.relayed(deployed("digest"), "accept", "digest", "", 1);
+    acceptanceEnvironment().build(root);
+    TaskState restarted = reducer.relayed(askedDeploy().build(), "accept", "digest", "", 1);
 
-    new CheckerCheckJob(
-            new RoleSettings(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                config,
-                paths),
-            new CheckerPrompts(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                new RoleFiles(paths, "acceptance")),
-            reads,
-            new CheckerRecords(paths, Clock.systemUTC()),
-            mock(CheckerOutcomes.class))
+    checkerCheckJob()
+        .build(config, paths, reader, outcomes, Clock.systemUTC())
         .run("ABC-42", restarted);
 
-    verify(reads)
+    verify(reader)
         .check(
             eq("ABC-42"),
             eq("again"),
@@ -283,137 +149,38 @@ class AcceptanceCheckJobTest {
   }
 
   @Test
-  void opensWithNoEnvironmentNamedWhereTheRolesTriggerOmitsEnvironmentNamed(@TempDir Path root)
-      throws IOException {
-    Files.writeString(
-        root.resolve("role.yml"),
-        """
-        id: acceptance
-        name: acceptance
-        model: sonnet
-        trigger: [deployed, pipelines-green]
-        oncePer: deploy
-        outcomes: [round]
-        tools:
-          shell: ["git log*"]
-        answer:
-          - required: failure
-        decline:
-          - required: failure
-        """);
-    ConfigService config = mock(ConfigService.class);
-    CheckerReads reader = mock(CheckerReads.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null))));
-    when(reader.check(any(), any(), any(), any()))
-        .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    RoleDefinition role = RoleDefinitions.fromFile(root.resolve("role.yml"));
+  void opensWithNoEnvironmentNamedWhereTheRolesTriggerOmitsEnvironmentNamed() {
+    Path role = acceptanceRole().withTrigger("deployed, pipelines-green").build(root);
 
-    new CheckerCheckJob(
-            new RoleSettings(role, config, paths),
-            new CheckerPrompts(role, new RoleFiles(paths, "acceptance")),
-            reader,
-            new CheckerRecords(paths, Clock.systemUTC()),
-            mock(CheckerOutcomes.class))
-        .run("ABC-42", deployed("digest"));
+    checkerCheckJob()
+        .withRoleFile(role)
+        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .run("ABC-42", askedDeploy().build());
 
     verify(reader).check(any(), any(), any(), any());
   }
 
   @Test
-  void opensNothingWithNoEnvironmentNamedWhereTheRolesTriggerNamesIt(@TempDir Path root)
-      throws IOException {
-    Files.writeString(
-        root.resolve("role.yml"),
-        """
-        id: acceptance
-        name: acceptance
-        model: sonnet
-        trigger: [deployed, pipelines-green, environment-named]
-        oncePer: deploy
-        outcomes: [round]
-        tools:
-          shell: ["git log*"]
-        answer:
-          - required: failure
-        decline:
-          - required: failure
-        """);
-    ConfigService config = mock(ConfigService.class);
-    CheckerReads reader = mock(CheckerReads.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null))));
-    when(reader.check(any(), any(), any(), any()))
-        .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    RoleDefinition role = RoleDefinitions.fromFile(root.resolve("role.yml"));
+  void opensNothingWithNoEnvironmentNamedWhereTheRolesTriggerNamesIt() {
+    Path role = acceptanceRole().build(root);
 
-    new CheckerCheckJob(
-            new RoleSettings(role, config, paths),
-            new CheckerPrompts(role, new RoleFiles(paths, "acceptance")),
-            reader,
-            new CheckerRecords(paths, Clock.systemUTC()),
-            mock(CheckerOutcomes.class))
-        .run("ABC-42", deployed("digest"));
+    checkerCheckJob()
+        .withRoleFile(role)
+        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .run("ABC-42", askedDeploy().build());
 
     verify(reader, never()).check(any(), any(), any(), any());
   }
 
   @Test
-  void opensOnTaskNoLongerOpenWhereTheRolesTriggerOmitsTrackerOpen(@TempDir Path root)
-      throws IOException {
-    Files.writeString(
-        root.resolve("role.yml"),
-        """
-        id: acceptance
-        name: acceptance
-        model: sonnet
-        trigger: [deployed, pipelines-green, environment-named]
-        oncePer: deploy
-        outcomes: [round]
-        tools:
-          shell: ["git log*"]
-        answer:
-          - required: failure
-        decline:
-          - required: failure
-        """);
-    ConfigService config = mock(ConfigService.class);
-    CheckerReads reader = mock(CheckerReads.class);
-    when(config.load()).thenReturn(ON);
-    when(reader.check(any(), any(), any(), any()))
-        .thenReturn(new Answer<>(Optional.of(met()), TokenUsage.NONE));
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.writeString(
-        root.resolve("roles/acceptance/role.yml"),
-        "environments: [{url: \"https://stage.example.com\"}]\n");
-    RoleDefinition role = RoleDefinitions.fromFile(root.resolve("role.yml"));
+  void opensOnTaskNoLongerOpenWhereTheRolesTriggerOmitsTrackerOpen() {
+    Path role = acceptanceRole().build(root);
+    acceptanceEnvironment().build(root);
 
-    new CheckerCheckJob(
-            new RoleSettings(role, config, paths),
-            new CheckerPrompts(role, new RoleFiles(paths, "acceptance")),
-            reader,
-            new CheckerRecords(paths, Clock.systemUTC()),
-            mock(CheckerOutcomes.class))
-        .run(
-            "ABC-42",
-            TaskState.builder("proj", "/wt", TaskStatus.DONE)
-                .build()
-                .withDeployment(
-                    new Deployment(
-                        1,
-                        List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                        1,
-                        "digest")));
+    checkerCheckJob()
+        .withRoleFile(role)
+        .build(config, paths, reader, outcomes, Clock.systemUTC())
+        .run("ABC-42", askedDeploy().withStatus(TaskStatus.DONE).build());
 
     verify(reader).check(any(), any(), any(), any());
   }

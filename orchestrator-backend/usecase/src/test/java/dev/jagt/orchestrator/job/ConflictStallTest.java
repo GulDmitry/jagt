@@ -1,15 +1,15 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.job.TestConflictStallBuilder.conflictStall;
+import static dev.jagt.orchestrator.job.TestConflictedTaskBuilder.conflictedTask;
+import static dev.jagt.orchestrator.job.TestWaitingConflictBuilder.waitingConflict;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.DeployStep;
-import dev.jagt.orchestrator.flow.Standing;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -18,124 +18,51 @@ import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Conflict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class ConflictStallTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
-
   private final ConfigService config = mock(ConfigService.class);
+  private final Clock clock = mock(Clock.class);
+
+  @TempDir Path root;
+
+  private StateService state;
+  private ConflictStall stall;
+  private final DeployConflicts.WaitingConflict conflict = waitingConflict().build();
+
+  @BeforeEach
+  void conflictHandedToTheWatch() {
+    state = stateService().withRoot(root).build();
+    state.putTask("ABC-42", conflictedTask().build());
+    stall = conflictStall().build(state, config, clock);
+    when(config.load()).thenReturn(conflictStall().config());
+  }
 
   @Test
-  void tellsTheHumanOnceWhenHandedConflictStopsMoving(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState conflicted =
-        TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .lastActiveTimestamp(1_000)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
-    state.putTask(
-        "ABC-42",
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000));
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    DeployConflicts.WaitingConflict conflict =
-        new DeployConflicts.WaitingConflict(
-            Path.of("/src/ABC-42-deploy"),
-            false,
-            new Conflict.Progress(7, 0, "d"),
-            null,
-            false,
-            Standing.ABSENT);
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
+  void tellsTheHumanOnceWhenHandedConflictStopsMoving() {
+    when(clock.millis()).thenReturn(1_000L, 1_201_000L, 2_401_000L);
 
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(2_401_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
+    stall.watch("ABC-42", conflict);
+    stall.watch("ABC-42", conflict);
+    stall.watch("ABC-42", conflict);
 
     assertThat(state.task("ABC-42").orElseThrow().currentConflict())
         .hasValueSatisfying(watch -> assertThat(watch.stalled()).isTrue());
   }
 
   @Test
-  void asksTheMasterInsteadOfTellingTheHumanOnTheFirstStallWhereItAnswers(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState conflicted =
-        TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .lastActiveTimestamp(1_000)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
-    state.putTask(
-        "ABC-42",
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    DeployConflicts.WaitingConflict conflict =
-        new DeployConflicts.WaitingConflict(
-            Path.of("/src/ABC-42-deploy"),
-            false,
-            new Conflict.Progress(7, 0, "d"),
-            null,
-            false,
-            Standing.ABSENT);
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
+  void asksTheMasterInsteadOfTellingTheHumanOnTheFirstStallWhereItAnswers() {
+    when(config.load()).thenReturn(conflictStall().withMasterMode("act").config());
+    when(clock.millis()).thenReturn(1_000L, 1_201_000L);
 
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
+    stall.watch("ABC-42", conflict);
+    stall.watch("ABC-42", conflict);
 
     TaskState asked = state.task("ABC-42").orElseThrow();
     assertThat(asked.report()).isEqualTo(AgentReport.QUESTION);
@@ -144,282 +71,67 @@ class ConflictStallTest {
   }
 
   @Test
-  void tellsTheHumanOnTheSecondStallOfConflictTheMasterWasAsked(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState conflicted =
-        TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .lastActiveTimestamp(1_000)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
-    state.putTask(
-        "ABC-42",
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    DeployConflicts.WaitingConflict conflict =
-        new DeployConflicts.WaitingConflict(
-            Path.of("/src/ABC-42-deploy"),
-            false,
-            new Conflict.Progress(7, 0, "d"),
-            null,
-            false,
-            Standing.ABSENT);
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
+  void tellsTheHumanOnTheSecondStallOfConflictTheMasterWasAsked() {
+    when(config.load()).thenReturn(conflictStall().withMasterMode("act").config());
+    when(clock.millis()).thenReturn(1_000L, 1_201_000L, 2_401_000L);
 
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(2_401_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
+    stall.watch("ABC-42", conflict);
+    stall.watch("ABC-42", conflict);
+    stall.watch("ABC-42", conflict);
 
     assertThat(state.task("ABC-42").orElseThrow().currentConflict().orElseThrow().told())
         .isNotNull();
   }
 
   @Test
-  void tellsTheHumanOnTheFirstStallWhereQuestionOfTheSessionAlreadyStands(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState conflicted =
-        TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .lastActiveTimestamp(1_000)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
-    TaskState asking =
-        reducer
-            .deployStepped(opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000)
-            .withReport(AgentReport.QUESTION);
-    state.putTask("ABC-42", asking);
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    DeployConflicts.WaitingConflict conflict =
-        new DeployConflicts.WaitingConflict(
-            Path.of("/src/ABC-42-deploy"),
-            false,
-            new Conflict.Progress(7, 0, "d"),
-            null,
-            false,
-            Standing.ABSENT);
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
+  void tellsTheHumanOnTheFirstStallWhereQuestionOfTheSessionAlreadyStands() {
+    state.putTask("ABC-42", conflictedTask().build().withReport(AgentReport.QUESTION));
+    when(config.load()).thenReturn(conflictStall().withMasterMode("act").config());
+    when(clock.millis()).thenReturn(1_000L, 1_201_000L);
 
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
+    stall.watch("ABC-42", conflict);
+    stall.watch("ABC-42", conflict);
 
     assertThat(state.task("ABC-42").orElseThrow().currentConflict().orElseThrow().askedTheMaster())
         .isFalse();
   }
 
   @Test
-  void leavesConflictWhoseWorktreeChangedWithinTheWindowToTheSession(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState conflicted =
-        TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .lastActiveTimestamp(1_000)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
-    state.putTask(
-        "ABC-42",
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000));
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    Path worktree = Path.of("/src/ABC-42-deploy");
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch(
-            "ABC-42",
-            new DeployConflicts.WaitingConflict(
-                worktree, false, new Conflict.Progress(7, 0, "a"), null, false, Standing.ABSENT));
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_141_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch(
-            "ABC-42",
-            new DeployConflicts.WaitingConflict(
-                worktree, false, new Conflict.Progress(7, 0, "b"), null, false, Standing.ABSENT));
+  void leavesConflictWhoseWorktreeChangedWithinTheWindowToTheSession() {
+    when(clock.millis()).thenReturn(1_000L, 1_141_000L, 1_501_000L);
+    DeployConflicts.WaitingConflict changed =
+        waitingConflict().withProgress(new Conflict.Progress(7, 0, "b")).build();
 
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_501_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch(
-            "ABC-42",
-            new DeployConflicts.WaitingConflict(
-                worktree, false, new Conflict.Progress(7, 0, "b"), null, false, Standing.ABSENT));
-
+    stall.watch("ABC-42", conflict);
+    stall.watch("ABC-42", changed);
+    stall.watch("ABC-42", changed);
   }
 
   @Test
-  void restartNeitherTellsTheHumanAgainNorHandsTheConflictAgain(@TempDir Path root) {
-    Path file = root.resolve("state.json");
-    StateService before =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {});
-    TaskState conflicted =
-        TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .lastActiveTimestamp(1_000)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
-    before.putTask(
-        "ABC-42",
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000));
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    DeployConflicts.WaitingConflict conflict =
-        new DeployConflicts.WaitingConflict(
-            Path.of("/src/ABC-42-deploy"),
-            false,
-            new Conflict.Progress(7, 0, "d"),
-            null,
-            false,
-            Standing.ABSENT);
-    new ConflictStall(
-            before,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
-    new ConflictStall(
-            before,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
-    StateService after =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(file.toString())),
-            reducer, event -> {});
+  void restartNeitherTellsTheHumanAgainNorHandsTheConflictAgain() {
+    when(clock.millis()).thenReturn(1_000L, 1_201_000L, 3_601_000L, 4_801_000L);
+    stall.watch("ABC-42", conflict);
+    stall.watch("ABC-42", conflict);
     ConflictStall restarted =
-        new ConflictStall(
-            after,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(3_601_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())));
+        conflictStall().build(stateService().withRoot(root).build(), config, clock);
 
     final boolean handed = restarted.handed("ABC-42");
     restarted.watch("ABC-42", conflict);
-    new ConflictStall(
-            after,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(4_801_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
+    restarted.watch("ABC-42", conflict);
 
     assertThat(handed).isTrue();
   }
 
   @Test
-  void conflictFromNewDeployPressIsHandedAgain(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState conflicted =
-        TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .lastActiveTimestamp(1_000)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
-    state.putTask(
-        "ABC-42",
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 1_000));
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    ConflictStall stall =
-        new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())));
-    stall.watch(
-        "ABC-42",
-        new DeployConflicts.WaitingConflict(
-            Path.of("/src/ABC-42-deploy"),
-            false,
-            new Conflict.Progress(7, 0, "d"),
-            null,
-            false,
-            Standing.ABSENT));
+  void conflictFromNewDeployPressIsHandedAgain() {
+    when(clock.millis()).thenReturn(1_000L);
+    stall.watch("ABC-42", conflict);
     state.updateTask(
         "ABC-42",
         task ->
-            reducer.deployStepped(
-                task, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 900_000));
+            new TaskReducer(new TaskChart(Composition.builtIn()))
+                .deployStepped(
+                    task, new DeployStep.Conflicted("web", Deployment.Cause.MERGE), 900_000));
 
     boolean handed = stall.handed("ABC-42");
 
@@ -427,48 +139,14 @@ class ConflictStallTest {
   }
 
   @Test
-  void pointsStalledRevertConflictAtTheRevertWorktreeAndRevert(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState conflicted =
-        TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
-            .lastActiveTimestamp(1_000)
-            .build();
-    TaskState opened =
-        reducer.deployStepped(
-            conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
-    state.putTask(
-        "ABC-42",
-        reducer.deployStepped(
-            opened, new DeployStep.Conflicted("web", Deployment.Cause.REVERT), 1_000));
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    DeployConflicts.WaitingConflict conflict =
-        new DeployConflicts.WaitingConflict(
-            Path.of("/src/ABC-42-revert"),
-            false,
-            new Conflict.Progress(7, 0, "d"),
-            null,
-            false,
-            Standing.ABSENT);
-    new ConflictStall(
-            state,
-            config,
-            Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
-        .watch("ABC-42", conflict);
+  void pointsStalledRevertConflictAtTheRevertWorktreeAndRevert() {
+    state.putTask("ABC-42", conflictedTask().withCause(Deployment.Cause.REVERT).build());
+    DeployConflicts.WaitingConflict revert =
+        waitingConflict().withWorktree(Path.of("/src/ABC-42-revert")).build();
+    when(clock.millis()).thenReturn(1_000L, 1_201_000L);
+    stall.watch("ABC-42", revert);
     try (FakeLogCapture log = new FakeLogCapture(ConflictStall.class)) {
-      new ConflictStall(
-              state,
-              config,
-              Clock.fixed(Instant.ofEpochMilli(1_201_000), ZoneOffset.UTC),
-              new Checkers(new TaskChart(Composition.builtIn())))
-          .watch("ABC-42", conflict);
+      stall.watch("ABC-42", revert);
 
       assertThat(log.events())
           .singleElement()

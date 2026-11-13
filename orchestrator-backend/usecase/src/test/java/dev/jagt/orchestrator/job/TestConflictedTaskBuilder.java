@@ -1,0 +1,31 @@
+package dev.jagt.orchestrator.job;
+
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.DeployStep;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.task.Deployment;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
+import java.util.List;
+import lombok.With;
+
+@With
+public record TestConflictedTaskBuilder(Deployment.Cause cause) {
+
+  public static TestConflictedTaskBuilder conflictedTask() {
+    return new TestConflictedTaskBuilder(Deployment.Cause.MERGE);
+  }
+
+  public TaskState build() {
+    TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+    TaskState conflicted =
+        TaskState.builder("web", "/wt", TaskStatus.DEPLOY_CONFLICT)
+            .lastActiveTimestamp(1_000)
+            .build();
+    TaskState opened =
+        reducer.deployStepped(
+            conflicted, new DeployStep.Opened(List.of(Deployment.Target.of("web", "dev"))), 1_000);
+    return reducer.deployStepped(opened, new DeployStep.Conflicted("web", cause), 1_000);
+  }
+}

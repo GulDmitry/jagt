@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.job.TestTicketCloseJobBuilder.ticketCloseJob;
+import static dev.jagt.orchestrator.job.TestTicketCloseTaskBuilder.ticketCloseTask;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -8,16 +11,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
@@ -28,32 +25,31 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class TicketCloseJobTest {
-
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final ConfigService configService = mock(ConfigService.class);
   private final TrackerClose close = mock(TrackerClose.class);
   private final CommandService commands = mock(CommandService.class);
 
+  @TempDir Path root;
+
+  private StateService stateService;
+  private TicketCloseJob job;
+
+  @BeforeEach
+  void trackerWatchingAnEmptyState() {
+    stateService = stateService().withRoot(root).build();
+    when(configService.load()).thenReturn(ticketCloseJob().config());
+    job = ticketCloseJob().build(configService, stateService, close, commands, Clock.systemUTC());
+  }
+
   @Test
-  void asksAboutNothingWhileIntakeIsOff(@TempDir Path root) {
-    StateService stateService =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+  void asksAboutNothingWhileIntakeIsOff() {
     when(configService.load()).thenReturn(ConfigFile.defaults());
-    TicketCloseJob job =
-        new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
 
     job.run();
 
@@ -61,25 +57,8 @@ class TicketCloseJobTest {
   }
 
   @Test
-  void asksAboutNoTaskWhoseWorkIsStillInItsWorktree(@TempDir Path root) {
-    StateService stateService =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withTracker(
-                    new TrackerConfig(
-                        "both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
-    stateService.putTask(
-        "ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
-    TicketCloseJob job =
-        new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
+  void asksAboutNoTaskWhoseWorkIsStillInItsWorktree() {
+    stateService.putTask("ABC-42", ticketCloseTask().withStatus(TaskStatus.IN_PROGRESS).build());
 
     job.run();
 
@@ -87,27 +66,11 @@ class TicketCloseJobTest {
   }
 
   @Test
-  void closesTheTaskTheTrackerSaysIsFinishedWith(@TempDir Path root) {
+  void closesTheTaskTheTrackerSaysIsFinishedWith() {
     when(close.watches("ABC-42")).thenReturn(true);
-    StateService stateService =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withTracker(
-                    new TrackerConfig(
-                        "both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
+    TaskState task = ticketCloseTask().build();
     stateService.putTask("ABC-42", task);
     when(close.closes("ABC-42", task)).thenReturn(true);
-    TicketCloseJob job =
-        new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
 
     job.run();
 
@@ -115,69 +78,37 @@ class TicketCloseJobTest {
   }
 
   @Test
-  void reachesTheTaskPastTheReadsOnePollCanAffordOnTheNextPoll(@TempDir Path root) {
+  void leavesTheSixthTaskUnaskedWithinOnePollAndReachesItOnTheNextPoll() {
     when(close.watches("ABC-1")).thenReturn(true);
     when(close.watches("ABC-2")).thenReturn(true);
     when(close.watches("ABC-3")).thenReturn(true);
     when(close.watches("ABC-4")).thenReturn(true);
     when(close.watches("ABC-5")).thenReturn(true);
     when(close.watches("ABC-6")).thenReturn(true);
-    StateService stateService =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
+    TaskState task = ticketCloseTask().build();
     stateService.putTask("ABC-1", task);
     stateService.putTask("ABC-2", task);
     stateService.putTask("ABC-3", task);
     stateService.putTask("ABC-4", task);
     stateService.putTask("ABC-5", task);
     stateService.putTask("ABC-6", task);
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withTracker(
-                    new TrackerConfig(
-                        "both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
-    TicketCloseJob job =
-        new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
 
     job.run();
+    verify(close, never()).closes("ABC-6", task);
     job.run();
 
     verify(close).closes("ABC-6", task);
   }
 
   @Test
-  void buysNoSecondReadAboutTaskThatHasNotMovedSinceItWasAsked(@TempDir Path root) {
+  void buysNoSecondReadAboutTaskThatHasNotMovedSinceItWasAsked() {
     when(close.watches("ABC-42")).thenReturn(true);
-    StateService stateService =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
     TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .alias("a1")
-            .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1_000L, null)))
+        ticketCloseTask()
+            .withHistory(List.of(new StatusChange(TaskStatus.DEPLOYED, 1_000L, null)))
             .build();
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withTracker(
-                    new TrackerConfig(
-                        "both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
     stateService.putTask("ABC-42", task);
     when(close.closes("ABC-42", task)).thenReturn(false);
-    TicketCloseJob job =
-        new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
 
     job.run();
     job.run();
@@ -186,36 +117,18 @@ class TicketCloseJobTest {
   }
 
   @Test
-  void asksAgainTheMomentTheTaskItselfHasMoved(@TempDir Path root) {
+  void asksAgainTheMomentTheTaskItselfHasMoved() {
     when(close.watches("ABC-42")).thenReturn(true);
-    StateService stateService =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    TaskState stood =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .alias("a1")
-            .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1_000L, null)))
-            .build();
+    stateService.putTask(
+        "ABC-42",
+        ticketCloseTask()
+            .withHistory(List.of(new StatusChange(TaskStatus.DEPLOYED, 1_000L, null)))
+            .build());
     final TaskState moved =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .alias("a1")
-            .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 2_000L, null)))
+        ticketCloseTask()
+            .withHistory(List.of(new StatusChange(TaskStatus.DEPLOYED, 2_000L, null)))
             .build();
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withTracker(
-                    new TrackerConfig(
-                        "both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
-    stateService.putTask("ABC-42", stood);
     when(close.closes(anyString(), any())).thenReturn(false);
-    TicketCloseJob job =
-        new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
     job.run();
     stateService.putTask("ABC-42", moved);
 
@@ -225,26 +138,10 @@ class TicketCloseJobTest {
   }
 
   @Test
-  void leavesOpenTheTaskTheTrackerHasNotFinishedWith(@TempDir Path root) {
-    StateService stateService =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withTracker(
-                    new TrackerConfig(
-                        "both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
+  void leavesOpenTheTaskTheTrackerHasNotFinishedWith() {
+    TaskState task = ticketCloseTask().build();
     stateService.putTask("ABC-42", task);
     when(close.closes("ABC-42", task)).thenReturn(false);
-    TicketCloseJob job =
-        new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
 
     job.run();
 
@@ -252,73 +149,32 @@ class TicketCloseJobTest {
   }
 
   @Test
-  void leavesTheSixthHandedOverTaskUnaskedWithinOnePoll(@TempDir Path root) {
-    StateService stateService =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
-    stateService.putTask("ABC-1", task);
-    stateService.putTask("ABC-2", task);
-    stateService.putTask("ABC-3", task);
-    stateService.putTask("ABC-4", task);
-    stateService.putTask("ABC-5", task);
-    stateService.putTask("ABC-6", task);
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withTracker(
-                    new TrackerConfig(
-                        "both", "jira", "jdoe", "In Progress", "Ready for Stage", null)));
-    TicketCloseJob job =
-        new TicketCloseJob(configService, stateService, close, commands, Clock.systemUTC());
-
-    job.run();
-
-    verify(close, never()).closes("ABC-6", task);
-  }
-
-  @Test
-  void asksMissedTaskAgainAfterTheIntervalThenAfterTwiceAsLongThenAfterFourTimes(
-      @TempDir Path root) {
+  void asksMissedTaskAgainAfterTheIntervalThenAfterTwiceAsLongThenAfterFourTimes() {
     when(close.watches("ABC-42")).thenReturn(true);
-    StateService stateService =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
     TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .alias("a1")
-            .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1_000L, null)))
+        ticketCloseTask()
+            .withHistory(List.of(new StatusChange(TaskStatus.DEPLOYED, 1_000L, null)))
             .build();
-    when(configService.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withTracker(
-                    new TrackerConfig(
-                        "both", "jira", "jdoe", "In Progress", "Ready for Stage", 10)));
+    ConfigFile every10 =
+        ticketCloseJob()
+            .withTracker(ticketCloseJob().tracker().withEveryMinutes(10))
+            .config();
+    when(configService.load()).thenReturn(every10);
     stateService.putTask("ABC-42", task);
     when(close.closes("ABC-42", task)).thenReturn(false);
     Ticking clock = new Ticking();
-    TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands, clock);
+    TicketCloseJob ticking =
+        ticketCloseJob().build(configService, stateService, close, commands, clock);
 
-    job.run();
+    ticking.run();
     clock.minutes(10);
-    job.run();
+    ticking.run();
     clock.minutes(19);
-    job.run();
+    ticking.run();
     clock.minutes(1);
-    job.run();
+    ticking.run();
     clock.minutes(10);
-    job.run();
+    ticking.run();
 
     verify(close, times(3)).closes("ABC-42", task);
   }

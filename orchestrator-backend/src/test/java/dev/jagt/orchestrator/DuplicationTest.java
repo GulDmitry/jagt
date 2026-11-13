@@ -22,21 +22,16 @@ class DuplicationTest {
   private static final List<Path> SKIPPED =
       Stream.of(
           "service/AgentSessionsTest.java",
-          "job/AcceptanceCheckJobTest.java",
           "job/AcceptanceOutcomesTest.java",
           "job/AcceptanceRoundFlowTest.java",
           "job/AutoReviewSchedulerTest.java",
-          "job/ConflictStallTest.java",
           "job/DeployCheckJobAcceptanceTest.java",
           "job/DeployCheckJobTest.java",
-          "job/JobsTest.java",
           "job/MasterAnswerJobTest.java",
           "job/MasterPressTest.java",
           "job/RestartAskJobTest.java",
-          "job/TicketCloseJobTest.java",
           "job/VerifyJobTest.java",
           "job/WatchdogServiceTest.java",
-          "job/WorktreeOrphanScannerTest.java",
           "job/YourMoveJobTest.java")
           .map(name -> Path.of("usecase/src/test/java/dev/jagt/orchestrator", name))
           .toList();

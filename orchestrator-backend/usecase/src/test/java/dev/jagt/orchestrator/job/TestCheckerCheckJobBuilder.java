@@ -1,0 +1,41 @@
+package dev.jagt.orchestrator.job;
+
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.RoleDefinition;
+import dev.jagt.orchestrator.config.RoleDefinitions;
+import dev.jagt.orchestrator.config.RoleFiles;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.RoleSettings;
+import java.nio.file.Path;
+import java.time.Clock;
+import java.util.Map;
+import lombok.With;
+
+@With
+public record TestCheckerCheckJobBuilder(Path roleFile) {
+
+  public static TestCheckerCheckJobBuilder checkerCheckJob() {
+    return new TestCheckerCheckJobBuilder(Path.of("../../roles/acceptance/role.yml.dist"));
+  }
+
+  public ConfigFile config() {
+    return ConfigFile.defaults()
+        .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));
+  }
+
+  public CheckerCheckJob build(
+      ConfigService config,
+      OrchestratorPaths paths,
+      CheckerReads reader,
+      CheckerOutcomes outcomes,
+      Clock clock) {
+    RoleDefinition role = RoleDefinitions.fromFile(roleFile);
+    return new CheckerCheckJob(
+        new RoleSettings(role, config, paths),
+        new CheckerPrompts(role, new RoleFiles(paths, "acceptance")),
+        reader,
+        new CheckerRecords(paths, clock),
+        outcomes);
+  }
+}
