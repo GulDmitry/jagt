@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.job.TestYourMoveJobBuilder.yourMoveJob;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
+import static dev.jagt.orchestrator.service.master.TestMasterReviewBuilder.masterReview;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -9,19 +12,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.Notification;
-import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.HandBack;
-import dev.jagt.orchestrator.service.Rounds;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.service.master.MasterReview;
@@ -42,11 +35,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-import tools.jackson.databind.json.JsonMapper;
 
 class YourMoveJobTest {
-
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final Notifications notifications = mock(Notifications.class);
   private final WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
@@ -78,34 +68,10 @@ class YourMoveJobTest {
 
   @Test
   void tapsYouWhenSessionHandsRoundBackAndNoMasterReadsIt(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob();
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     job.run();
@@ -124,34 +90,10 @@ class YourMoveJobTest {
 
   @Test
   void tapsYouWhenSessionStopsToAskWithoutLeavingTheStatusItWorkedIn(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob();
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -176,34 +118,10 @@ class YourMoveJobTest {
 
   @Test
   void tapsYouOnceForMoveSeenOnManyTicks(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob();
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     job.run();
@@ -221,34 +139,10 @@ class YourMoveJobTest {
 
   @Test
   void staysQuietOnKeepAliveWhileTheSessionWorks(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob();
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -272,34 +166,10 @@ class YourMoveJobTest {
 
   @Test
   void staysQuietAboutTaskAlreadyYoursWhenJagtStartsUp(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob();
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
 
@@ -312,34 +182,10 @@ class YourMoveJobTest {
 
   @Test
   void staysQuietAboutTaskThatLeftAndCameBackAlreadyYours(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob();
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     job.run();
@@ -357,34 +203,10 @@ class YourMoveJobTest {
 
   @Test
   void staysQuietWhileTheMasterStillReadsTheHandBack(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob().withMode("judge");
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
     job.run();
@@ -400,34 +222,10 @@ class YourMoveJobTest {
 
   @Test
   void tapsYouWhenTheReviewApprovesTheRound(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob();
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -452,34 +250,10 @@ class YourMoveJobTest {
 
   @Test
   void tapsYouWhenTheChecksFailedAndTheRoundIsYoursToRelay(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob();
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -503,37 +277,13 @@ class YourMoveJobTest {
 
   @Test
   void tellsYouAboutTheDraftedRepliesWaitingInTheWorktree(@TempDir Path root) throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
-    final YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    TestYourMoveJobBuilder builder = yourMoveJob();
+    when(configService.load()).thenReturn(builder.config());
     Files.createDirectories(root.resolve("wt"));
     Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: done\n");
     String worktree = root.resolve("wt").toString();
+    StateService state = stateService().withRoot(root).build();
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     state.putTask(
         "ABC-1", TaskState.builder("proj", worktree, TaskStatus.IN_PROGRESS).alias("a1").build());
     job.run();
@@ -558,35 +308,10 @@ class YourMoveJobTest {
   @Test
   void tapsYouOnceTheMastersReadyVerdictLeavesThePlanToYouWhenYouKeptApprovingPlans(
       @TempDir Path root) throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("plan"), null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob().withMode("act").withMine(List.of("plan"));
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
     state.putTask(
@@ -597,14 +322,12 @@ class YourMoveJobTest {
         .write(
             "ABC-1",
             judged,
-            new MasterReview.Review(
-                judged.statusSince(),
-                "",
-                "",
-                "",
-                List.of(
-                    new MasterReview.Read(
-                        "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+            masterReview()
+                .withRound(judged.statusSince())
+                .withDiff("")
+                .withKind("")
+                .withInputs("")
+                .build(),
             "");
 
     job.run();
@@ -619,35 +342,10 @@ class YourMoveJobTest {
 
   @Test
   void staysQuietWhileTheMasterReadsPlan(@TempDir Path root) throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("plan"), null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob().withMode("act").withMine(List.of("plan"));
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
     state.putTask(
@@ -666,35 +364,10 @@ class YourMoveJobTest {
   @Test
   void neverTapsYouForRoundTheMasterShipsBeforeTheMoveSettles(@TempDir Path root)
       throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("plan"), null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob().withMode("act").withMine(List.of("plan"));
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
     state.putTask(
@@ -706,14 +379,12 @@ class YourMoveJobTest {
         .write(
             "ABC-1",
             judged,
-            new MasterReview.Review(
-                judged.statusSince(),
-                "",
-                "",
-                "",
-                List.of(
-                    new MasterReview.Read(
-                        "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+            masterReview()
+                .withRound(judged.statusSince())
+                .withDiff("")
+                .withKind("")
+                .withInputs("")
+                .build(),
             "");
 
     job.run();
@@ -730,35 +401,10 @@ class YourMoveJobTest {
 
   @Test
   void tapsYouOnceForReadyRoundWhenYouKeptShipping(@TempDir Path root) throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("ship"), null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob().withMode("act").withMine(List.of("ship"));
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
     state.putTask(
@@ -770,14 +416,12 @@ class YourMoveJobTest {
         .write(
             "ABC-1",
             judged,
-            new MasterReview.Review(
-                judged.statusSince(),
-                "",
-                "",
-                "",
-                List.of(
-                    new MasterReview.Read(
-                        "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+            masterReview()
+                .withRound(judged.statusSince())
+                .withDiff("")
+                .withKind("")
+                .withInputs("")
+                .build(),
             "");
 
     job.run();
@@ -790,35 +434,10 @@ class YourMoveJobTest {
 
   @Test
   void staysQuietWhenTheMasterApprovesPlanBeforeItSettles(@TempDir Path root) throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("reply"), null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob().withMode("act").withMine(List.of("reply"));
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
     state.putTask(
@@ -829,14 +448,12 @@ class YourMoveJobTest {
         .write(
             "ABC-1",
             judged,
-            new MasterReview.Review(
-                judged.statusSince(),
-                "",
-                "",
-                "",
-                List.of(
-                    new MasterReview.Read(
-                        "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+            masterReview()
+                .withRound(judged.statusSince())
+                .withDiff("")
+                .withKind("")
+                .withInputs("")
+                .build(),
             "");
 
     job.run();
@@ -852,35 +469,10 @@ class YourMoveJobTest {
 
   @Test
   void tapsYouOnceForQuestionWhenYouKeptAnswering(@TempDir Path root) throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("answer"), null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob().withMode("act").withMine(List.of("answer"));
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
     state.putTask(
@@ -908,35 +500,10 @@ class YourMoveJobTest {
   @Test
   void staysQuietWhenTheMasterAnswersQuestionBeforeItSettles(@TempDir Path root)
       throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("plan"), null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob().withMode("act").withMine(List.of("plan"));
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
     state.putTask(
@@ -971,35 +538,10 @@ class YourMoveJobTest {
   @Test
   void staysQuietWhileTheMasterAnswersQuestionThatOutlivesTheSettle(@TempDir Path root)
       throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("plan"), null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob().withMode("act").withMine(List.of("plan"));
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
     state.putTask(
@@ -1025,35 +567,10 @@ class YourMoveJobTest {
 
   @Test
   void tapsYouOnceTheMasterLeavesQuestionUnanswered(@TempDir Path root) throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("plan"), null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob().withMode("act").withMine(List.of("plan"));
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
     state.putTask(
@@ -1080,35 +597,11 @@ class YourMoveJobTest {
 
   @Test
   void tapsYouOnceForAnApprovedTaskWhenYouKeptTheDeploy(@TempDir Path root) throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("deploy", "revert"), null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder =
+        yourMoveJob().withMode("act").withMine(List.of("deploy", "revert"));
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
     state.putTask(
@@ -1135,35 +628,10 @@ class YourMoveJobTest {
   @Test
   void staysQuietWhenTheMasterDeploysAnApprovedTaskBeforeItSettles(@TempDir Path root)
       throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("plan"), null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob().withMode("act").withMine(List.of("plan"));
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
     state.putTask(
@@ -1197,38 +665,14 @@ class YourMoveJobTest {
   @Test
   void namesTheDraftedRepliesWhenShipTheMasterMadeLeftThemForYou(@TempDir Path root)
       throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("reply", "ship"), null)));
-    final YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    TestYourMoveJobBuilder builder =
+        yourMoveJob().withMode("act").withMine(List.of("reply", "ship"));
+    when(configService.load()).thenReturn(builder.config());
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
     Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: done\n");
+    StateService state = stateService().withRoot(root).build();
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", worktree, TaskStatus.REVIEW_PENDING)
@@ -1241,14 +685,12 @@ class YourMoveJobTest {
         .write(
             "ABC-1",
             judged,
-            new MasterReview.Review(
-                judged.statusSince(),
-                "",
-                "",
-                "",
-                List.of(
-                    new MasterReview.Read(
-                        "acceptance", new Judgement("", "ready", List.of(), "", List.of(), "")))),
+            masterReview()
+                .withRound(judged.statusSince())
+                .withDiff("")
+                .withKind("")
+                .withInputs("")
+                .build(),
             "");
 
     job.run();
@@ -1260,35 +702,10 @@ class YourMoveJobTest {
 
   @Test
   void tapsYouOnceForRepositoryRequestYouKeptTheAttachingOf(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig(
-                        "act", null, null, List.of("repo"), null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob().withMode("act").withMine(List.of("repo"));
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -1320,34 +737,10 @@ class YourMoveJobTest {
 
   @Test
   void staysQuietWhenTheMasterAttachesTheRepositoryBeforeTheRequestSettles(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob().withMode("act");
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -1382,34 +775,10 @@ class YourMoveJobTest {
   @Test
   void tapsYouAgainWhenDraftedRepliesArriveUnderTheMoveYouWereToldOf(@TempDir Path root)
       throws IOException {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    when(configService.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withMaster(
-                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
-    YourMoveJob job =
-        new YourMoveJob(
-            state,
-            notifications,
-            new HandBack(
-                worktreeChanges,
-                new Rounds(
-                    configService,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                configService),
-            clock,
-            new FlowRules(new TaskChart(Composition.builtIn())));
+    StateService state = stateService().withRoot(root).build();
+    TestYourMoveJobBuilder builder = yourMoveJob();
+    when(configService.load()).thenReturn(builder.config());
+    YourMoveJob job = builder.build(state, notifications, worktreeChanges, configService, clock);
     Files.createDirectories(root.resolve("wt"));
     String worktree = root.resolve("wt").toString();
     state.putTask(
