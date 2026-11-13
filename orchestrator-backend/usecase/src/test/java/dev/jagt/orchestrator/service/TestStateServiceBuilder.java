@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
+import dev.jagt.orchestrator.port.StateEvents;
 import java.nio.file.Path;
 import lombok.With;
 import tools.jackson.databind.json.JsonMapper;
@@ -17,6 +18,10 @@ public record TestStateServiceBuilder(Path root) {
   }
 
   public StateService build() {
+    return build(event -> {});
+  }
+
+  public StateService build(StateEvents events) {
     return new StateService(
         new JsonMapper(),
         new OrchestratorPaths(
@@ -24,6 +29,6 @@ public record TestStateServiceBuilder(Path root) {
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString())),
         new TaskReducer(new TaskChart(Composition.builtIn())),
-        event -> {});
+        events);
   }
 }

@@ -37,6 +37,17 @@ class RoundRecordTest {
   private final StateService stateService = mock(StateService.class);
   private final TaskStops stops = mock(TaskStops.class);
   private final RedCauses causes = mock(RedCauses.class);
+  private final TaskState polling = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build();
+  private final TaskState failing =
+      TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).pipelineStatus("failed").build();
+  private final ReviewFacts.Request approvedRequest =
+      new ReviewFacts.Request(true, true, false, false, 0);
+  private final ReviewFacts.Request openRequest =
+      new ReviewFacts.Request(true, false, false, false, 0);
+  private final ReviewFacts.Discussion noDiscussion =
+      new ReviewFacts.Discussion(List.of(), List.of(), List.of());
+  private final ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped =
+      ArgumentCaptor.captor();
   private final RoundRecord roundRecord =
       new RoundRecord(
           stateService, stops, Clock.fixed(Instant.ofEpochMilli(3_000), ZoneOffset.UTC), causes);
@@ -49,9 +60,9 @@ class RoundRecordTest {
         "ABC-1",
         "shop",
         new ReviewFacts(
-            new ReviewFacts.Request(true, false, false, false, 0),
+            openRequest,
             new ReviewFacts.Pipeline("unknown", "list_pipelines: 403 Forbidden", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            noDiscussion),
         "");
 
     verify(stops).trip(eq("ABC-1"), tripped.capture());
@@ -69,22 +80,21 @@ class RoundRecordTest {
 
   @Test
   void keepsTheReadsOwnWordsForWhyItCouldNotListTheChecks() {
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
 
     roundRecord.record(
         "ABC-1",
         "shop",
         new ReviewFacts(
-            new ReviewFacts.Request(true, false, false, false, 0),
+            openRequest,
             new ReviewFacts.Pipeline("unknown", "list_pipelines: 403 Forbidden", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            noDiscussion),
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(
             stamped
                 .getValue()
-                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .apply(reducer, polling)
                 .checksUnread())
         .containsExactly(new ChecksUnread(3_000, "list_pipelines: 403 Forbidden"));
   }
@@ -94,18 +104,15 @@ class RoundRecordTest {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .pipelineStatus("failed")
-                    .build()));
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
+                failing));
 
     roundRecord.record(
         "ABC-1",
         "shop",
         new ReviewFacts(
-            new ReviewFacts.Request(true, false, false, false, 0),
+            openRequest,
             new ReviewFacts.Pipeline("unknown", "", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            noDiscussion),
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
@@ -113,9 +120,7 @@ class RoundRecordTest {
         stamped
             .getValue()
             .apply(reducer,
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .pipelineStatus("failed")
-                    .build());
+                failing);
     assertThat(after.pipelineStatus()).isEqualTo("failed");
     assertThat(after.pipelineUnread()).isTrue();
   }
@@ -123,23 +128,22 @@ class RoundRecordTest {
   @Test
   void stampsWhetherTheRoundIsApprovedSoBothSurfacesCanShowItBesideTheRequest() {
     when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
+        .thenReturn(Optional.of(polling));
 
     roundRecord.record(
         "ABC-1",
         "shop",
         new ReviewFacts(
-            new ReviewFacts.Request(true, true, false, false, 0),
+            approvedRequest,
             new ReviewFacts.Pipeline("success", "", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            noDiscussion),
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(
             stamped
                 .getValue()
-                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .apply(reducer, polling)
                 .approved())
         .isTrue();
   }
@@ -147,23 +151,22 @@ class RoundRecordTest {
   @Test
   void keepsWhatTheHostSaidAboutTheChecksOnTheTask() {
     when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
+        .thenReturn(Optional.of(polling));
 
     roundRecord.record(
         "ABC-1",
         "shop",
         new ReviewFacts(
-            new ReviewFacts.Request(true, false, false, false, 0),
+            openRequest,
             new ReviewFacts.Pipeline("SUCCEEDED", "", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            noDiscussion),
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(
             stamped
                 .getValue()
-                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .apply(reducer, polling)
                 .pipelineStatus())
         .isEqualTo("SUCCEEDED");
   }
@@ -171,8 +174,7 @@ class RoundRecordTest {
   @Test
   void keepsWhenTheHostSaysTheRequestWasOpened() {
     when(stateService.task("ABC-1"))
-        .thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()));
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
+        .thenReturn(Optional.of(polling));
 
     roundRecord.record(
         "ABC-1",
@@ -180,14 +182,14 @@ class RoundRecordTest {
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 1_700_000_000_000L),
             new ReviewFacts.Pipeline("running", "", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            noDiscussion),
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(
             stamped
                 .getValue()
-                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .apply(reducer, polling)
                 .requestOpenedAt())
         .isEqualTo(1_700_000_000_000L);
   }
@@ -207,9 +209,9 @@ class RoundRecordTest {
         "ABC-1",
         "shop",
         new ReviewFacts(
-            new ReviewFacts.Request(true, false, false, false, 0),
+            openRequest,
             new ReviewFacts.Pipeline("running", "", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            noDiscussion),
         "");
 
     verify(stateService, never()).reduce(eq("ABC-1"), any());
@@ -225,7 +227,6 @@ class RoundRecordTest {
                     .approved(false)
                     .requestOpenedAt(1_700_000_000_000L)
                     .build()));
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
 
     roundRecord.record(
         "ABC-1",
@@ -233,14 +234,14 @@ class RoundRecordTest {
         new ReviewFacts(
             new ReviewFacts.Request(true, false, false, false, 1_700_000_500_000L),
             new ReviewFacts.Pipeline("running", "", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            noDiscussion),
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(
             stamped
                 .getValue()
-                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .apply(reducer, polling)
                 .requestOpenedAt())
         .isEqualTo(1_700_000_500_000L);
   }
@@ -256,9 +257,9 @@ class RoundRecordTest {
             "ABC-1",
             "shop",
             new ReviewFacts(
-                new ReviewFacts.Request(true, false, false, false, 0),
+                openRequest,
                 new ReviewFacts.Pipeline("unknown", "list_pipelines: 403 Forbidden", ""),
-                new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+                noDiscussion),
             "");
 
     assertThat(answer.stop()).contains(standing);
@@ -268,9 +269,9 @@ class RoundRecordTest {
   void answersWhoseFaultFailedRunIsWhereTheChecksWereRead() {
     ReviewFacts facts =
         new ReviewFacts(
-            new ReviewFacts.Request(true, false, false, false, 0),
+            openRequest,
             new ReviewFacts.Pipeline("failed", "unit-tests", "https://host.invalid/p/1"),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of()));
+            noDiscussion);
     RedCauses.Verdict infrastructure =
         new RedCauses.Verdict(RedCause.INFRASTRUCTURE, true, "waiting", Optional.empty());
     when(causes.judge("ABC-1", "shop", facts, Pipeline.RED)).thenReturn(infrastructure);
@@ -285,17 +286,14 @@ class RoundRecordTest {
     when(stateService.task("ABC-1"))
         .thenReturn(
             Optional.of(
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .pipelineStatus("failed")
-                    .build()));
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
+                failing));
 
     roundRecord.recordListed(
         "ABC-1",
         new ReviewFacts(
-            new ReviewFacts.Request(true, true, false, false, 0),
+            approvedRequest,
             new ReviewFacts.Pipeline("success", "", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            noDiscussion),
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
@@ -303,9 +301,7 @@ class RoundRecordTest {
         stamped
             .getValue()
             .apply(reducer,
-                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                    .pipelineStatus("failed")
-                    .build());
+                failing);
     assertThat(after.pipelineStatus()).isEqualTo("success");
     assertThat(after.approved()).isTrue();
     verifyNoInteractions(stops, causes);
@@ -319,21 +315,20 @@ class RoundRecordTest {
                 TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                     .pipelineStatus("success")
                     .build()));
-    ArgumentCaptor<BiFunction<TaskReducer, TaskState, TaskState>> stamped = ArgumentCaptor.captor();
 
     roundRecord.recordListed(
         "ABC-1",
         new ReviewFacts(
-            new ReviewFacts.Request(true, false, false, false, 0),
+            openRequest,
             new ReviewFacts.Pipeline("success", "", "https://host.invalid/p/9"),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            noDiscussion),
         "");
 
     verify(stateService).reduce(eq("ABC-1"), stamped.capture());
     assertThat(
             stamped
                 .getValue()
-                .apply(reducer, TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .apply(reducer, polling)
                 .pipelineUrl())
         .isEqualTo("https://host.invalid/p/9");
   }
@@ -352,9 +347,9 @@ class RoundRecordTest {
     roundRecord.recordListed(
         "ABC-1",
         new ReviewFacts(
-            new ReviewFacts.Request(true, false, false, false, 0),
+            openRequest,
             new ReviewFacts.Pipeline("success", "", "https://host.invalid/p/9"),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            noDiscussion),
         "");
 
     verify(stateService, never()).reduce(any(), any());
@@ -365,9 +360,9 @@ class RoundRecordTest {
     roundRecord.recordListed(
         "ABC-1",
         new ReviewFacts(
-            new ReviewFacts.Request(true, false, false, false, 0),
+            openRequest,
             new ReviewFacts.Pipeline("unknown", "", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())),
+            noDiscussion),
         "");
 
     verifyNoInteractions(stateService, stops, causes);

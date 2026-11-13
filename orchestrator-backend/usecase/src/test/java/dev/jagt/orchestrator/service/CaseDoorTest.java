@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -12,7 +13,6 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Master;
@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,8 +33,20 @@ import tools.jackson.databind.json.JsonMapper;
 
 class CaseDoorTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  @TempDir Path root;
+
+  private StateService state;
+  private OrchestratorPaths paths;
+
+  @BeforeEach
+  void wireState() {
+    state = stateService().withRoot(root).build();
+    paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+  }
 
   private static final String SHIP_CASE =
       "## ship\n\nmove: ship\nat: REVIEW_PENDING\nby: master\nThe Master ships it.\n";
@@ -61,13 +74,7 @@ class CaseDoorTest {
   }
 
   @Test
-  void letsAnyPressThroughThatTheMasterDidNotMake(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
+  void letsAnyPressThroughThatTheMasterDidNotMake() {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -86,17 +93,11 @@ class CaseDoorTest {
     "REMOVE_REPO, remove-repo"
   })
   void letsTheMasterPressVerbOnceReservedForHumanWhereCaseAllowsIt(
-      TaskAction action, String move, @TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+      TaskAction action, String move) throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(
         root.resolve("roles/master/cases.md"),
         "## verb\n\nmove: " + move + "\nat: any\nby: master\nThe Master presses it.\n");
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -115,13 +116,7 @@ class CaseDoorTest {
     "ADD_REPO, repo"
   })
   void refusesTheMasterVerbItsHumanKeepsInMine(
-      TaskAction action, String mine, @TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
+      TaskAction action, String mine) {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door =
         doorOver(
@@ -137,15 +132,9 @@ class CaseDoorTest {
   }
 
   @Test
-  void letsTheMasterPressVerbCaseAllowsAtTheTasksStatus(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+  void letsTheMasterPressVerbCaseAllowsAtTheTasksStatus() throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -159,15 +148,9 @@ class CaseDoorTest {
   }
 
   @Test
-  void stopsTheTaskWhereNoMasterCaseAllowsTheVerbAtItsStatus(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+  void stopsTheTaskWhereNoMasterCaseAllowsTheVerbAtItsStatus() throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -181,15 +164,9 @@ class CaseDoorTest {
   }
 
   @Test
-  void refusesTheMasterMoveNoCaseAllowsAtTheTasksStatus(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+  void refusesTheMasterMoveNoCaseAllowsAtTheTasksStatus() throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door = doorOver(paths, state);
 
@@ -199,17 +176,11 @@ class CaseDoorTest {
   }
 
   @Test
-  void takesNoChangesFromShipTheMasterPressedOnCleanPushedTree(@TempDir Path root)
+  void takesNoChangesFromShipTheMasterPressedOnCleanPushedTree()
       throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
@@ -235,17 +206,11 @@ class CaseDoorTest {
   @ParameterizedTest
   @CsvSource({"LIFT, lift", "ESCALATE, escalate"})
   void refusesTheMasterLiftOnceItsOneLiftSinceTheHumansLastIsSpent(
-      TaskAction action, String move, @TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+      TaskAction action, String move) throws Exception {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(
         root.resolve("roles/master/cases.md"),
         "## verb\n\nmove: " + move + "\nat: any\nby: master\nThe Master presses it.\n");
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)

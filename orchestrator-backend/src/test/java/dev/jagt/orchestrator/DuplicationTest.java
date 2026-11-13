@@ -22,17 +22,6 @@ class DuplicationTest {
   private static final List<Path> SKIPPED =
       Stream.of(
           "service/AgentSessionsTest.java",
-          "service/AgentStatusReportsTest.java",
-          "service/CaseDoorTest.java",
-          "service/ConfigServiceTest.java",
-          "service/OwnStatusReportsTest.java",
-          "service/ReportEffectsTest.java",
-          "service/RoundRecordTest.java",
-          "service/SessionLedgerTest.java",
-          "service/StateServiceTest.java",
-          "service/TaskStopsTest.java",
-          "service/TestStateServiceBuilder.java",
-          "service/TestTaskStopsBuilder.java",
           "job/AcceptanceCheckJobTest.java",
           "job/AcceptanceOutcomesTest.java",
           "job/AcceptanceRoundFlowTest.java",

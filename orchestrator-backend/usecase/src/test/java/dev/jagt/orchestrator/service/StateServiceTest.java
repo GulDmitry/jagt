@@ -1,14 +1,10 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -26,28 +22,25 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class StateServiceTest {
 
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
+  private final TaskState polling =
+      TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build();
+  private final TaskState fresh =
+      TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build();
 
   @Test
   void tellsListenersAboutChangeOnlyAfterItIsOnDisk(@TempDir Path root) {
     Path stateFile = root.resolve("state.json");
     List<String> seenByListener = new ArrayList<>();
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer,
-                    written ->
-                        seenByListener.add(
-                            written.tasks().keySet() + " on disk: " + Files.exists(stateFile)));
+        stateService()
+            .withRoot(root)
+            .build(
+                written ->
+                    seenByListener.add(
+                        written.tasks().keySet() + " on disk: " + Files.exists(stateFile)));
 
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
@@ -56,15 +49,8 @@ class StateServiceTest {
 
   @Test
   void clearsRequestItsRepositorysRemoteDoesNotHoldOnTheFirstRead(@TempDir Path root) {
-    Path stateFile = root.resolve("state.json");
     StateService writer =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     writer.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -77,13 +63,7 @@ class StateServiceTest {
                         "https://host/other/proj/-/merge_requests/9")))
             .build());
     StateService reader =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
 
     TaskState read = reader.task("ABC-1").orElseThrow();
 
@@ -95,13 +75,7 @@ class StateServiceTest {
     Path api = Files.createDirectories(root.resolve("ABC-1-alpha"));
     Path client = Files.createDirectories(root.resolve("ABC-1-beta"));
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask(
         "ABC-1",
         TaskState.builder(
@@ -132,13 +106,7 @@ class StateServiceTest {
             .formatted(worktree));
 
     assertThat(
-            new StateService(
-                    new JsonMapper(),
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults()
-                            .withRoot(root.toString())
-                            .withStateFile(stateFile.toString())),
-                            reducer, event -> {})
+            stateService().withRoot(root).build()
                 .findByWorktree(worktree.toString()))
         .get()
         .extracting(Map.Entry::getKey)
@@ -149,13 +117,7 @@ class StateServiceTest {
   void staysQuietWhenMutationChangedNothing(@TempDir Path root) {
     AtomicInteger changes = new AtomicInteger();
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, written -> changes.incrementAndGet());
+        stateService().withRoot(root).build(written -> changes.incrementAndGet());
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     boolean found = state.updateTask("NOPE-1", task -> task.touched(2_000));
@@ -168,13 +130,7 @@ class StateServiceTest {
   void reportsEveryKindOfChangeIncludingRemoval(@TempDir Path root) {
     AtomicInteger changes = new AtomicInteger();
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, written -> changes.incrementAndGet());
+        stateService().withRoot(root).build(written -> changes.incrementAndGet());
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.IN_PROGRESS, "working", 2_000));
@@ -186,23 +142,16 @@ class StateServiceTest {
   @Test
   void keepsThePreviousVersionBesideTheStateFileOnEveryWrite(@TempDir Path root)
       throws IOException {
-    Path stateFile = root.resolve("state.json");
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
-    state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build());
+    state.putTask("ABC-2", fresh);
 
     assertThat(Files.readString(root.resolve("state.json.bak")))
         .contains("ABC-1")
         .doesNotContain("ABC-2");
-    assertThat(Files.readString(stateFile)).contains("ABC-1", "ABC-2");
+    assertThat(Files.readString(root.resolve("state.json"))).contains("ABC-1", "ABC-2");
   }
 
   @Test
@@ -210,26 +159,13 @@ class StateServiceTest {
       throws IOException {
     Path stateFile = root.resolve("state.json");
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
-    state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build());
+        stateService().withRoot(root).build();
+    state.putTask("ABC-1", polling);
+    state.putTask("ABC-2", fresh);
     Files.writeString(stateFile, "{\"tasks\": {\"ABC-1\": {truncated…");
 
     var tasks =
-        new StateService(
-                new JsonMapper(),
-                new OrchestratorPaths(
-                    OrchestratorProperties.defaults()
-                        .withRoot(root.toString())
-                        .withStateFile(stateFile.toString())),
-                        reducer, event -> {})
+        stateService().withRoot(root).build()
             .tasks();
 
     assertThat(tasks).containsOnlyKeys("ABC-1");
@@ -242,35 +178,16 @@ class StateServiceTest {
       throws IOException {
     Path stateFile = root.resolve("state.json");
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
-    state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build());
+        stateService().withRoot(root).build();
+    state.putTask("ABC-1", polling);
+    state.putTask("ABC-2", fresh);
     Files.writeString(stateFile, "{\"tasks\": {\"ABC-1\": {truncated…");
 
-    new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {})
+    stateService().withRoot(root).build()
         .tasks();
 
     assertThat(
-            new StateService(
-                    new JsonMapper(),
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults()
-                            .withRoot(root.toString())
-                            .withStateFile(stateFile.toString())),
-                            reducer, event -> {})
+            stateService().withRoot(root).build()
                 .tasks())
         .containsOnlyKeys("ABC-1");
   }
@@ -283,13 +200,7 @@ class StateServiceTest {
 
     assertThatThrownBy(
             () ->
-                new StateService(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults()
-                                .withRoot(root.toString())
-                                .withStateFile(stateFile.toString())),
-                                reducer, event -> {})
+                stateService().withRoot(root).build()
                     .tasks())
         .isInstanceOf(UncheckedIOException.class)
         .hasMessageContaining("no usable backup");
@@ -304,13 +215,7 @@ class StateServiceTest {
 
     assertThatThrownBy(
             () ->
-                new StateService(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults()
-                                .withRoot(root.toString())
-                                .withStateFile(stateFile.toString())),
-                                reducer, event -> {})
+                stateService().withRoot(root).build()
                     .tasks())
         .isInstanceOf(UncheckedIOException.class)
         .hasMessageContaining("no usable backup");
@@ -327,13 +232,7 @@ class StateServiceTest {
         Files.createDirectories(root.resolve("state.json.corrupt")).resolve("occupant"), "");
     Files.writeString(root.resolve("state.json.bak"), "{\"tasks\":{}}");
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
 
     assertThatThrownBy(
             () -> state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build()))
@@ -349,13 +248,7 @@ class StateServiceTest {
   void answersFromTheLastParseWhileTheFileOnDiskHasNotMoved(@TempDir Path root) throws IOException {
     Path stateFile = root.resolve("state.json");
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
     FileTime written = Files.getLastModifiedTime(stateFile);
     Files.writeString(stateFile, "x".repeat((int) Files.size(stateFile)));
@@ -368,13 +261,7 @@ class StateServiceTest {
   void picksUpStateFileThatSomethingElseRewrote(@TempDir Path root) throws IOException {
     Path stateFile = root.resolve("state.json");
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     Files.writeString(
@@ -389,13 +276,7 @@ class StateServiceTest {
   @Test
   void keepsItsOwnCopyWhenCallerMutatesTheTasksItWasHanded(@TempDir Path root) {
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     state.tasks().clear();
@@ -407,13 +288,7 @@ class StateServiceTest {
   void writesOnlyRealStateForTaskThatHasSpentTokens(@TempDir Path root) throws IOException {
     Path stateFile = root.resolve("state.json");
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -437,13 +312,7 @@ class StateServiceTest {
         "lastActiveTimestamp":123,"alias":"a1","mrUrl":"http://mr/1"}}}\
         """);
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
 
     var task = state.task("ABC-1").orElseThrow();
 
@@ -458,13 +327,7 @@ class StateServiceTest {
   void resolvesCallerTaskWhenCallerReportsPhysicalPathOfSymlinkedWorktree(@TempDir Path root)
       throws IOException {
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.NEW).alias("a1").build());
     String physicalCallerCwd = root.toRealPath().toString();
@@ -477,13 +340,7 @@ class StateServiceTest {
   @Test
   void recordsWhoAskedForEachStepTaskTakes(@TempDir Path root) {
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     OriginContext.as(
@@ -501,13 +358,7 @@ class StateServiceTest {
   @Test
   void recordsTheReasonOnTheStepItsRequestTook(@TempDir Path root) {
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
 
@@ -527,13 +378,7 @@ class StateServiceTest {
   @Test
   void keepsReasonGivenWithNoStepOffTheEarlierStep(@TempDir Path root) {
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask(
         "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
 
@@ -555,13 +400,7 @@ class StateServiceTest {
         "history":[{"status":"NEW","at":1000,"origin":"BOARD"}]}}}\
         """);
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
 
     assertThat(state.task("ABC-1").orElseThrow().history())
         .containsExactly(new StatusChange(TaskStatus.NEW, 1000, ActionOrigin.BOARD));
@@ -570,13 +409,7 @@ class StateServiceTest {
   @Test
   void leavesTheEarlierStepAloneWhenKeepAliveChangesNothing(@TempDir Path root) {
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     OriginContext.as(
         ActionOrigin.BOARD,
         () ->
@@ -602,13 +435,7 @@ class StateServiceTest {
         "lastActiveTimestamp":1000}}}\
         """);
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
 
     OriginContext.as(
         ActionOrigin.MCP, () -> state.updateTask("ABC-1", task -> task.touched(2_000)));
@@ -621,13 +448,7 @@ class StateServiceTest {
   @Test
   void appliesAnUpdateToAnExistingTaskAndSaysSo(@TempDir Path root) {
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
     boolean updated =
@@ -640,13 +461,7 @@ class StateServiceTest {
   @Test
   void saysSoWhenAnUpdateNamesNoTask(@TempDir Path root) {
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
 
     assertThat(
             state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.DONE, "finished", 2_000)))
@@ -656,13 +471,7 @@ class StateServiceTest {
   @Test
   void resolvesAnAliasToItsOwnTaskIgnoringCase(@TempDir Path root) {
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt1", TaskStatus.NEW).alias("a1").build());
     state.putTask("ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.NEW).alias("a2").build());
 
@@ -675,13 +484,7 @@ class StateServiceTest {
     Path first = Files.createDirectories(root.resolve("ABC-1"));
     Path second = Files.createDirectories(root.resolve("ABC-2"));
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", first.toString(), TaskStatus.NEW).build());
     state.putTask("ABC-2", TaskState.builder("proj", second.toString(), TaskStatus.NEW).build());
 
@@ -701,13 +504,7 @@ class StateServiceTest {
         """;
     Files.writeString(stateFile, written);
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(stateFile.toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     FileTime stamp = Files.getLastModifiedTime(stateFile);
     state.tasks();
     Files.writeString(stateFile, "x".repeat(written.length()));
@@ -719,13 +516,7 @@ class StateServiceTest {
   @Test
   void forgetsTaskWhenItIsRemoved(@TempDir Path root) {
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
 
     boolean removed = state.removeTask("ABC-1");
@@ -737,13 +528,7 @@ class StateServiceTest {
   @Test
   void saysNothingWasRemovedWhereTheTaskIsNotThere(@TempDir Path root) {
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
 
     boolean removed = state.removeTask("ABC-9");
@@ -755,13 +540,7 @@ class StateServiceTest {
   @Test
   void findsNoTaskForDirectoryThatIsNoWorktreeAndDoesNotExist(@TempDir Path root) {
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt/gone", TaskStatus.DONE).build());
 
     assertThat(state.findByWorktree("/elsewhere/gone")).isEmpty();
@@ -770,13 +549,7 @@ class StateServiceTest {
   @Test
   void reduceHandsTheStoredTaskToTheUpdateAndSaysWhetherTheTaskWasThere(@TempDir Path root) {
     StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+        stateService().withRoot(root).build();
     state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build());
 
     boolean found = state.reduce("ABC-1", (taskReducer, task) -> task);

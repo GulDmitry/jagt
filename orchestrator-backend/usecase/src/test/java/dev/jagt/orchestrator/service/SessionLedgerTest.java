@@ -1,13 +1,9 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.SessionSign;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -15,26 +11,24 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class SessionLedgerTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  @TempDir Path root;
+
+  private StateService state;
+
+  @BeforeEach
+  void putTask() {
+    state = stateService().withRoot(root).build();
+    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  }
 
   @Test
-  void writesTheSignOnTheTask(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer,
-            event -> {});
-    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void writesTheSignOnTheTask() {
     Clock clock = Clock.fixed(Instant.ofEpochMilli(7_000), ZoneOffset.UTC);
 
     new SessionLedger(state, clock)
@@ -44,17 +38,7 @@ class SessionLedgerTest {
   }
 
   @Test
-  void recordsTheLogFileTheSessionAppendsToOnTheTask(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer,
-            event -> {});
-    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void recordsTheLogFileTheSessionAppendsToOnTheTask() {
 
     new SessionLedger(state, Clock.systemUTC())
         .record("ABC-1", Path.of("/logs/session.jsonl"), new SessionSign.WorkStarted());
@@ -63,17 +47,7 @@ class SessionLedgerTest {
   }
 
   @Test
-  void raisesPermissionOnTheTaskWhenPromptBlocksTheSession(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer,
-            event -> {});
-    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void raisesPermissionOnTheTaskWhenPromptBlocksTheSession() {
 
     new SessionLedger(state, Clock.systemUTC())
         .sign(
@@ -84,17 +58,7 @@ class SessionLedgerTest {
   }
 
   @Test
-  void stampsTheAskWithTheMomentItArrivedAndKeepsTheFirstStamp(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer,
-            event -> {});
-    state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+  void stampsTheAskWithTheMomentItArrivedAndKeepsTheFirstStamp() {
     SessionSign.Asked ask =
         new SessionSign.Asked("waiting on the trust dialog", SessionSign.Asked.Channel.SCREEN);
 

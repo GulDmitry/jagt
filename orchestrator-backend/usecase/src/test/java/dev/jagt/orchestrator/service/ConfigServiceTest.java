@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestProjectConfigBuilder.projectConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -23,6 +24,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,6 +37,25 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 class ConfigServiceTest {
+
+  @TempDir Path root;
+
+  private final Checkers checkers = new Checkers(new TaskChart(Composition.builtIn()));
+  private OrchestratorPaths paths;
+  private ActStops stops;
+  private ConfigService service;
+
+  @BeforeEach
+  void wireService() {
+    paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withConfigFile(root.resolve("jagt.yml").toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    stops = new ActStops(new MasterBrake(paths));
+    service = new ConfigService(paths, mock(AgentRuntime.class), mock(ActStops.class), checkers);
+  }
 
   @Test
   void readsEverySectionTheHumanActuallyWrote() {
@@ -99,21 +120,12 @@ class ConfigServiceTest {
   }
 
   @Test
-  void acceptanceIsOffWhereTheRolesKeyDoesNotSayOtherwise(@TempDir Path root) throws Exception {
+  void acceptanceIsOffWhereTheRolesKeyDoesNotSayOtherwise() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
 
     boolean enabled =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .load()
             .role("acceptance")
             .enabledOrDefault();
@@ -122,7 +134,7 @@ class ConfigServiceTest {
   }
 
   @Test
-  void rolesKeyNamingNoRoleWithJobsNeverSwitchesTheSessionsDeployCheckOff(@TempDir Path root)
+  void rolesKeyNamingNoRoleWithJobsNeverSwitchesTheSessionsDeployCheckOff()
       throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
@@ -135,39 +147,21 @@ class ConfigServiceTest {
             ACCEPTANCE:
               enabled: true
         """);
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
 
     boolean any =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .anyCheckerEnabled();
 
     assertThat(any).isFalse();
   }
 
   @Test
-  void jagtYmlWithTheOldMasterKeyStillActs(@TempDir Path root) throws Exception {
+  void jagtYmlWithTheOldMasterKeyStillActs() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n    mine: [ship]\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
 
     MasterConfig master =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .load()
             .master();
 
@@ -176,7 +170,7 @@ class ConfigServiceTest {
   }
 
   @Test
-  void theRolesKeyWinsOverTheOldMasterKey(@TempDir Path root) throws Exception {
+  void theRolesKeyWinsOverTheOldMasterKey() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
@@ -189,18 +183,9 @@ class ConfigServiceTest {
               mode: judge
               mine: [reply]
         """);
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
 
     MasterConfig master =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .load()
             .master();
 
@@ -209,7 +194,7 @@ class ConfigServiceTest {
   }
 
   @Test
-  void partialRolesMasterKeepsTheMinesTheOldKeyNamed(@TempDir Path root) throws Exception {
+  void partialRolesMasterKeepsTheMinesTheOldKeyNamed() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
@@ -221,18 +206,9 @@ class ConfigServiceTest {
             master:
               mode: act
         """);
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
 
     MasterConfig master =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .load()
             .master();
 
@@ -241,23 +217,14 @@ class ConfigServiceTest {
   }
 
   @Test
-  void partialRolesMasterKeepsTheOldMode(@TempDir Path root) throws Exception {
+  void partialRolesMasterKeepsTheOldMode() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
         "orchestrator:\n  master:\n    mode: judge\n  roles:\n    master:\n      mine: [reply]\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
 
     MasterConfig master =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .load()
             .master();
 
@@ -266,7 +233,7 @@ class ConfigServiceTest {
   }
 
   @Test
-  void readsTheMastersModeAsWrittenInTheShippedExample(@TempDir Path root) throws Exception {
+  void readsTheMastersModeAsWrittenInTheShippedExample() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
@@ -275,18 +242,9 @@ class ConfigServiceTest {
           master:
             mode: off
         """);
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
 
     String mode =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .load()
             .master()
             .mode();
@@ -295,25 +253,13 @@ class ConfigServiceTest {
   }
 
   @Test
-  void readsActAsJudgeWhileActIsStopped(@TempDir Path root) throws Exception {
+  void readsActAsJudgeWhileActIsStopped() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    OrchestratorPaths paths = new OrchestratorPaths(properties);
-    ActStops stops = new ActStops(new MasterBrake(paths));
 
     String mode =
-        new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                stops,
-                new Checkers(new TaskChart(Composition.builtIn())))
+        new ConfigService(paths, mock(AgentRuntime.class), stops, checkers)
             .load()
             .master()
             .mode();
@@ -322,20 +268,11 @@ class ConfigServiceTest {
   }
 
   @Test
-  void readsAnEditToTheConfigFileOnTheNextLoad(@TempDir Path root) throws Exception {
+  void readsAnEditToTheConfigFileOnTheNextLoad() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: off\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
     ConfigService configService =
-        new ConfigService(
-            new OrchestratorPaths(properties),
-            mock(AgentRuntime.class),
-            mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
+        service;
     configService.load();
     Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
 
@@ -347,23 +284,14 @@ class ConfigServiceTest {
   @ParameterizedTest
   @CsvSource({"true, judge", "false, off"})
   void leavesTheMasterJudgingByDefaultOnlyWhereTheRuntimeReadsWhatTheHumanTyped(
-      boolean reads, String expected, @TempDir Path root) throws Exception {
+      boolean reads, String expected) throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
     AgentRuntime runtime = mock(AgentRuntime.class);
     when(runtime.readsWhatTheHumanTyped()).thenReturn(reads);
 
     String mode =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                runtime,
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        new ConfigService(paths, runtime, mock(ActStops.class), checkers)
             .load()
             .master()
             .mode();
@@ -372,22 +300,13 @@ class ConfigServiceTest {
   }
 
   @Test
-  void leavesTheMasterOffForBlankModeWhereTheRuntimeCannotReadTheHuman(@TempDir Path root)
+  void leavesTheMasterOffForBlankModeWhereTheRuntimeCannotReadTheHuman()
       throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n  master:\n    mode: \"\"\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
 
     String mode =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .load()
             .master()
             .mode();
@@ -396,7 +315,7 @@ class ConfigServiceTest {
   }
 
   @Test
-  void loadsConfigFileThatContainsComments(@TempDir Path root) throws Exception {
+  void loadsConfigFileThatContainsComments() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
@@ -407,17 +326,6 @@ class ConfigServiceTest {
             copyGlobs: ["**/.env"]
           projects: {}   # none yet
         """);
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-    ConfigService service =
-        new ConfigService(
-            new OrchestratorPaths(properties),
-            mock(AgentRuntime.class),
-            mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
 
     assertThat(service.load().worktree().copyGlobsOrDefault()).containsExactly("**/.env");
   }
@@ -450,71 +358,26 @@ class ConfigServiceTest {
   }
 
   @Test
-  void readsActAsJudgeWhileThreeBadEndingsStandInRow(@TempDir Path root) throws Exception {
-    Path configFile = root.resolve("jagt.yml");
-    Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
-    Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-
-    OrchestratorPaths paths = new OrchestratorPaths(properties);
-    ActStops stops = new ActStops(new MasterBrake(paths));
-
-    String mode =
-        new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                stops,
-                new Checkers(new TaskChart(Composition.builtIn())))
-            .load()
-            .master()
-            .mode();
-
-    assertThat(mode).isEqualTo("judge");
-  }
-
-  @Test
-  void readsNoStopWhereNothingStopsTheMaster(@TempDir Path root) throws Exception {
+  void readsNoStopWhereNothingStopsTheMaster() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-    OrchestratorPaths paths = new OrchestratorPaths(properties);
-    ActStops stops = new ActStops(new MasterBrake(paths));
 
     ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            stops,
-            new Checkers(new TaskChart(Composition.builtIn())));
+        new ConfigService(paths, mock(AgentRuntime.class), stops, checkers);
 
     assertThat(config.actStop()).isEmpty();
   }
 
   @Test
-  void readsAnEmptySectionAsAnEmptyConfigurationWithItsMasterDefault(@TempDir Path root)
+  void readsAnEmptySectionAsAnEmptyConfigurationWithItsMasterDefault()
       throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "other: 1\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-    OrchestratorPaths paths = new OrchestratorPaths(properties);
     AgentRuntime runtime = mock(AgentRuntime.class);
     when(runtime.readsWhatTheHumanTyped()).thenReturn(true);
-    ActStops stops = new ActStops(new MasterBrake(paths));
 
     ConfigFile config =
-        new ConfigService(paths, runtime, stops, new Checkers(new TaskChart(Composition.builtIn())))
+        new ConfigService(paths, runtime, stops, checkers)
             .load();
 
     assertThat(config.projects()).isEmpty();
@@ -522,24 +385,13 @@ class ConfigServiceTest {
   }
 
   @Test
-  void answersWhichProjectIsConfiguredAndRefusesAnUnknownOne(@TempDir Path root) throws Exception {
+  void answersWhichProjectIsConfiguredAndRefusesAnUnknownOne() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
         "orchestrator:\n  projects:\n    api: {path: /srv/api, baseBranch: origin/main}\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-    OrchestratorPaths paths = new OrchestratorPaths(properties);
-    ActStops stops = new ActStops(new MasterBrake(paths));
     ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            stops,
-            new Checkers(new TaskChart(Composition.builtIn())));
+        new ConfigService(paths, mock(AgentRuntime.class), stops, checkers);
 
     assertThat(config.project("api").path()).isEqualTo("/srv/api");
     assertThatThrownBy(() -> config.project("web"))
@@ -779,7 +631,7 @@ class ConfigServiceTest {
   }
 
   @Test
-  void reachesTheDirectoriesSessionMayWriteThatExistWithTheSandboxOff(@TempDir Path root)
+  void reachesTheDirectoriesSessionMayWriteThatExistWithTheSandboxOff()
       throws Exception {
     Path specs = Files.createDirectory(root.resolve("specs"));
     Path configFile = root.resolve("jagt.yml");
@@ -793,25 +645,16 @@ class ConfigServiceTest {
               allowWrite: ["%s", "%s"]
         """
             .formatted(specs, root.resolve("gone")));
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
 
     var beside =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .beside();
 
     assertThat(beside).containsExactly(specs.toRealPath());
   }
 
   @Test
-  void handsTheLoopBreakerTheOwnerConfiguredAtTheMomentItIsAsked(@TempDir Path root)
+  void handsTheLoopBreakerTheOwnerConfiguredAtTheMomentItIsAsked()
       throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
@@ -823,18 +666,9 @@ class ConfigServiceTest {
             ships: 6
             stalledRounds: 7
         """);
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
 
     var breaker =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .current();
 
     assertThat(breaker.rounds()).isEqualTo(5);
@@ -857,30 +691,19 @@ class ConfigServiceTest {
   }
 
   @Test
-  void readsTheStopThatStandsOnTheMaster(@TempDir Path root) throws Exception {
+  void readsTheStopThatStandsOnTheMaster() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
-    OrchestratorPaths paths = new OrchestratorPaths(properties);
-    ActStops stops = new ActStops(new MasterBrake(paths));
 
     ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            stops,
-            new Checkers(new TaskChart(Composition.builtIn())));
+        new ConfigService(paths, mock(AgentRuntime.class), stops, checkers);
 
     assertThat(config.actStop()).isPresent();
   }
 
   @Test
-  void namesTheRolesTheHumanWroteThatNoInstalledRoleAnswers(@TempDir Path root) throws Exception {
+  void namesTheRolesTheHumanWroteThatNoInstalledRoleAnswers() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
@@ -892,18 +715,9 @@ class ConfigServiceTest {
             acceptance:
               enabled: true
         """);
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
 
     List<String> unknown =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .load()
             .unknownRoles(List.of("acceptance"));
 
@@ -911,23 +725,14 @@ class ConfigServiceTest {
   }
 
   @Test
-  void theMasterWrittenTwiceIsNoUnknownRole(@TempDir Path root) throws Exception {
+  void theMasterWrittenTwiceIsNoUnknownRole() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(
         configFile,
         "orchestrator:\n  master:\n    mode: judge\n  roles:\n    master:\n      mine: [reply]\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
 
     List<String> unknown =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .load()
             .unknownRoles(List.of("acceptance"));
 
@@ -935,22 +740,13 @@ class ConfigServiceTest {
   }
 
   @Test
-  void anAcceptanceWrittenUnderRolesIsUnknownWhereNoAcceptanceRoleIsInstalled(@TempDir Path root)
+  void anAcceptanceWrittenUnderRolesIsUnknownWhereNoAcceptanceRoleIsInstalled()
       throws Exception {
     Path configFile = root.resolve("jagt.yml");
     Files.writeString(configFile, "orchestrator:\n  roles:\n    acceptance:\n      model: haiku\n");
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
 
     List<String> unknown =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .load()
             .unknownRoles(List.of());
 
@@ -997,20 +793,13 @@ class ConfigServiceTest {
             .withProjects(
                 java.util.Map.of(
                     "demo",
-                    new dev.jagt.orchestrator.task.ProjectConfig(
-                        new dev.jagt.orchestrator.task.ProjectConfig.Repository(
-                            "/repo", List.of(), null, List.of()),
-                        new dev.jagt.orchestrator.task.ProjectConfig.Branches(
-                            "main", "dev", "none"),
-                        new dev.jagt.orchestrator.task.ProjectConfig.CodeHost(
-                            null, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-                        new dev.jagt.orchestrator.task.ProjectConfig.Verify(List.of(), null))));
+                    projectConfig().withBaseBranch("main").withRemote("none").build()));
 
     assertThat(config.hasNoCodeHost("demo")).isTrue();
   }
 
   @Test
-  void writesEveryKeyOfFlatConfigFileBackAsTheSameTree(@TempDir Path root) throws Exception {
+  void writesEveryKeyOfFlatConfigFileBackAsTheSameTree() throws Exception {
     Path configFile = root.resolve("jagt.yml");
     String written =
         """
@@ -1070,11 +859,6 @@ class ConfigServiceTest {
                   text: "{alias} is live"
         """;
     Files.writeString(configFile, written);
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(configFile.toString())
-            .withStateFile(root.resolve("state.json").toString());
     JsonMapper mapper =
         JsonMapper.builder()
             .changeDefaultPropertyInclusion(
@@ -1082,11 +866,7 @@ class ConfigServiceTest {
             .build();
 
     ConfigFile config =
-        new ConfigService(
-                new OrchestratorPaths(properties),
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn())))
+        service
             .load();
 
     Object expected = new Yaml().<java.util.Map<String, Object>>load(written).get("orchestrator");
