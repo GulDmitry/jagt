@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.job;
 
-import static dev.jagt.orchestrator.service.TestCaseDoorBuilder.caseDoor;
-import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
+import static dev.jagt.orchestrator.job.TestMasterClaimsBuilder.masterClaims;
+import static dev.jagt.orchestrator.job.TestRolesRootBuilder.rolesRoot;
+import static dev.jagt.orchestrator.job.TestStepRelayBuilder.stepRelay;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
-import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -18,23 +18,14 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.FlowReports;
-import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskMovedOn;
-import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterPanel;
@@ -221,35 +212,10 @@ class MasterVerdictsTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    OrchestratorPaths paths = orchestratorPaths().withRoot(root).build();
     state = stateService().withRoot(root).build();
-    CaseDoor door =
-        caseDoor()
-            .withRoot(root)
-            .build(
-                state,
-                taskStops().withRoot(root).build(state, Clock.systemUTC()),
-                Clock.systemUTC());
-    Checkers checkers = new Checkers(new TaskChart(Composition.builtIn()));
-    relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            door,
-            new TaskTurns(state, Clock.systemUTC(), checkers));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.copy(
-        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    claims =
-        new MasterClaims(
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                checkers,
-                new FlowRules(new TaskChart(Composition.builtIn()))));
+    rolesRoot().withRoot(root).build();
+    relay = stepRelay().withRoot(root).build(state, sessions, Clock.systemUTC());
+    claims = masterClaims().build(state, Clock.systemUTC());
     reviewPending =
         TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
     verdicts = new MasterVerdicts(relay, ship, claims, decisions);
@@ -531,8 +497,15 @@ class MasterVerdictsTest {
         .containsExactly(AgentReport.PLAIN, TaskStop.Trigger.ROUNDS);
   }
 
-  @Test
-  void relaysFourthReturnWhereEachSessionReportItAnsweredWasReworked() throws Exception {
+  @ParameterizedTest(name = "{0}")
+  @CsvSource({
+    "each session report was reworked,plan 1,plan 2,plan 3,plan 4,true,false",
+    "the session reported the same each time,plan 1,plan 1,plan 1,plan 1,false,true"
+  })
+  void fourthReturnOfTheSameFindingsDependsOnWhatTheSessionReported(
+      String situation, String first, String second, String third, String fourth, boolean moved,
+      boolean stopped)
+      throws Exception {
     state.putTask("ABC-1", reviewPending);
     state.updateTask(
         "ABC-1",
@@ -540,7 +513,7 @@ class MasterVerdictsTest {
             handedBack
                 .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 1)
                 .withLastChangeOrigin(ActionOrigin.MCP)
-                .withLastChangeWhy("plan 1"));
+                .withLastChangeWhy(first));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayNeverPinned, acting);
     state.updateTask(
         "ABC-1",
@@ -548,7 +521,7 @@ class MasterVerdictsTest {
             handedBack
                 .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 2)
                 .withLastChangeOrigin(ActionOrigin.MCP)
-                .withLastChangeWhy("plan 2"));
+                .withLastChangeWhy(second));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayStillNeverPinned, acting);
     state.updateTask(
         "ABC-1",
@@ -556,7 +529,7 @@ class MasterVerdictsTest {
             handedBack
                 .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 3)
                 .withLastChangeOrigin(ActionOrigin.MCP)
-                .withLastChangeWhy("plan 3"));
+                .withLastChangeWhy(third));
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), noTestPinsDelay, acting);
     state.updateTask(
         "ABC-1",
@@ -564,55 +537,13 @@ class MasterVerdictsTest {
             handedBack
                 .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 4)
                 .withLastChangeOrigin(ActionOrigin.MCP)
-                .withLastChangeWhy("plan 4"));
+                .withLastChangeWhy(fourth));
 
-    boolean moved =
+    boolean actual =
         verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayNeverPinnedAgain, acting);
 
-    assertThat(moved).isEqualTo(true);
-    assertThat(state.task("ABC-1").orElseThrow().stop()).isNull();
-  }
-
-  @Test
-  void stopsTheTaskOnFourthReturnWhereTheSessionReportedTheSameEachTime() throws Exception {
-    state.putTask("ABC-1", reviewPending);
-    state.updateTask(
-        "ABC-1",
-        handedBack ->
-            handedBack
-                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 1)
-                .withLastChangeOrigin(ActionOrigin.MCP)
-                .withLastChangeWhy("plan 1"));
-    verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayNeverPinned, acting);
-    state.updateTask(
-        "ABC-1",
-        handedBack ->
-            handedBack
-                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 2)
-                .withLastChangeOrigin(ActionOrigin.MCP)
-                .withLastChangeWhy("plan 1"));
-    verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayStillNeverPinned, acting);
-    state.updateTask(
-        "ABC-1",
-        handedBack ->
-            handedBack
-                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 3)
-                .withLastChangeOrigin(ActionOrigin.MCP)
-                .withLastChangeWhy("plan 1"));
-    verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), noTestPinsDelay, acting);
-    state.updateTask(
-        "ABC-1",
-        handedBack ->
-            handedBack
-                .withStatus(TaskStatus.REVIEW_PENDING, "plan", true, 4)
-                .withLastChangeOrigin(ActionOrigin.MCP)
-                .withLastChangeWhy("plan 1"));
-
-    boolean moved =
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), delayNeverPinnedAgain, acting);
-
-    assertThat(moved).isEqualTo(false);
-    assertThat(state.task("ABC-1").orElseThrow().stop()).isNotNull();
+    assertThat(actual).isEqualTo(moved);
+    assertThat(state.task("ABC-1").orElseThrow().stopped()).isEqualTo(stopped);
   }
 
   @Test
@@ -881,34 +812,21 @@ class MasterVerdictsTest {
     verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), orderGuardInverted, acting);
     state.updateTask(
         "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
-    verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), paymentGuardInverted, acting);
+    boolean third =
+        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), paymentGuardInverted, acting);
+    boolean stoppedAfterThird = state.task("ABC-1").orElseThrow().stopped();
     state.updateTask(
         "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 3));
 
     boolean moved =
         verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), invoiceGuardInverted, acting);
 
+    assertThat(third).isTrue();
+    assertThat(stoppedAfterThird).isFalse();
     assertThat(moved).isFalse();
     assertThat(state.task("ABC-1").orElseThrow())
         .extracting(TaskState::status, done -> Objects.requireNonNull(done.stop()).trigger())
         .containsExactly(TaskStatus.REVIEW_PENDING, TaskStop.Trigger.ROUNDS);
-  }
-
-  @Test
-  void returnsThirdRoundOfFreshFindingsRunning() throws Exception {
-    state.putTask("ABC-1", reviewPending);
-    verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), cartGuardInverted, acting);
-    state.updateTask(
-        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 1));
-    verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), orderGuardInverted, acting);
-    state.updateTask(
-        "ABC-1", handedBack -> handedBack.withStatus(TaskStatus.REVIEW_PENDING, "fixed", 2));
-
-    boolean moved =
-        verdicts.act("ABC-1", state.task("ABC-1").orElseThrow(), paymentGuardInverted, acting);
-
-    assertThat(moved).isTrue();
-    assertThat(state.task("ABC-1").orElseThrow().stopped()).isFalse();
   }
 
   @ParameterizedTest
