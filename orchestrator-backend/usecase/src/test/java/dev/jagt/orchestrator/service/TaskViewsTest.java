@@ -30,7 +30,7 @@ class TaskViewsTest {
 
   @BeforeEach
   void setUp() {
-    views = TestTaskViewsBuilder.taskViews(stateService, configService).build();
+    views = TestTaskViewsBuilder.defaults().build(stateService, configService);
     when(stateService.tasks())
         .thenReturn(
             Map.of(
@@ -134,9 +134,9 @@ class TaskViewsTest {
     when(stateService.tasks()).thenReturn(Map.of("ABC-1", task));
     when(stateService.task("ABC-1")).thenReturn(Optional.of(task));
     TaskViews ready =
-        TestTaskViewsBuilder.taskViews(stateService, configService)
-            .withScenarios(() -> true)
-            .build();
+        TestTaskViewsBuilder.defaults()
+            .withScenariosReady(true)
+            .build(stateService, configService);
 
     assertThat(ready.listing()).contains("pause,done,scenarios,focus");
   }

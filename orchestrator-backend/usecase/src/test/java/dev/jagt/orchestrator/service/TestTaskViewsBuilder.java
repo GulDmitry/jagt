@@ -4,27 +4,24 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.port.ScenarioReach;
 import java.time.Clock;
 import lombok.With;
 
 @With
-public record TestTaskViewsBuilder(
-    StateService stateService, ConfigService configService, ScenarioReach scenarios) {
+public record TestTaskViewsBuilder(boolean scenariosReady) {
 
-  public static TestTaskViewsBuilder taskViews(
-      StateService stateService, ConfigService configService) {
-    return new TestTaskViewsBuilder(stateService, configService, () -> false);
+  public static TestTaskViewsBuilder defaults() {
+    return new TestTaskViewsBuilder(false);
   }
 
-  public TaskViews build() {
+  public TaskViews build(StateService stateService, ConfigService configService) {
     return new TaskViews(
         stateService,
         configService,
         new Rounds(
             configService,
             ignored -> false,
-            scenarios,
+            () -> scenariosReady,
             () -> false,
             new Checkers(new TaskChart(Composition.builtIn()))),
         Clock.systemUTC(),

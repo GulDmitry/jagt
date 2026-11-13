@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,18 +33,59 @@ class ProjectSetupTest {
 
   @TempDir Path root;
 
+  private final Processes git = mock(Processes.class);
+  private final Processes bareGit =
+      mock(Processes.class, call -> new Processes.Result(1, "", ""));
+
+  private Path configFile;
+  private OrchestratorPaths paths;
+  private ConfigService config;
+  private ProjectSetup setup;
+  private ProjectSetup bareSetup;
+  private Path confFolder;
+  private Path repo;
+  private ProjectSetup.Entry billingEntry;
+
+  @BeforeEach
+  void wireSetup() throws Exception {
+    confFolder = Files.createDirectories(root.resolve("conf"));
+    configFile =
+        Files.writeString(confFolder.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+    repo = Files.createDirectories(root.resolve("billing"));
+    Files.createDirectories(repo.resolve(".git"));
+    billingEntry =
+        new ProjectSetup.Entry(
+            "billing", repo.toString(), "origin/main", null, null, null, null, null);
+    paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withConfigFile(configFile.toString()));
+    config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
+    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
+    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
+        .thenReturn(new Processes.Result(0, repo + "\n", ""));
+    doReturn(new Processes.Result(0, repo + "\n", ""))
+        .when(bareGit)
+        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
+    setup = new ProjectSetup(config, paths, git, checkout -> List.of());
+    bareSetup = new ProjectSetup(config, paths, bareGit, checkout -> List.of());
+  }
+
   @AfterEach
   void unlock() {
-    root.resolve("conf").toFile().setWritable(true);
+    confFolder.toFile().setWritable(true);
   }
 
   @Test
   void addsTheEntryUnderProjectsAndKeepsEveryOtherLineAsItWas() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"),
+    Files.writeString(
+            configFile,
             """
             # mine
             orchestrator:
@@ -53,26 +95,6 @@ class ProjectSetupTest {
                   baseBranch: origin/main
               keepAwake: false   # stays
             """);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
     String answer =
         setup.add(
             new ProjectSetup.Entry(
@@ -110,27 +132,9 @@ class ProjectSetupTest {
   @Test
   void refusesPathThatIsNotGitRepositoryAndWritesNothing() throws Exception {
     Path folder = Files.createDirectories(root.resolve("notes"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList()))
-        .thenReturn(new Processes.Result(128, "", "not a git repository"));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
+    doReturn(new Processes.Result(128, "", "not a git repository"))
+        .when(git)
+        .run(any(), any(), anyList());
     assertThatThrownBy(
             () ->
                 setup.add(
@@ -143,40 +147,14 @@ class ProjectSetupTest {
 
   @Test
   void refusesKeyAnotherProjectAlreadyHolds() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("payments"));
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"),
+    Files.writeString(
+            configFile,
             """
             orchestrator:
               projects:
                 billing: {path: /srv/other, baseBranch: origin/main}
             """);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
-    assertThatThrownBy(
-            () ->
-                setup.add(
-                    new ProjectSetup.Entry(
-                        "billing", repo.toString(), "origin/main", null, null, null, null, null)))
+    assertThatThrownBy(() -> setup.add(billingEntry))
         .isInstanceOf(IllegalArgumentException.class);
     assertThat(Files.readString(configFile))
         .isEqualTo(
@@ -190,11 +168,8 @@ class ProjectSetupTest {
   @Test
   void addsUnderTheOrchestratorsProjectsAtTheIndentItsEntriesUseAndNotUnderTheTrackers()
       throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"),
+    Files.writeString(
+            configFile,
             """
             orchestrator:   # mine
                 tracker:
@@ -205,29 +180,8 @@ class ProjectSetupTest {
                         path: /srv/web
                         baseBranch: origin/main
             """);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
 
-    setup.add(
-        new ProjectSetup.Entry(
-            "billing", repo.toString(), "origin/main", null, null, null, null, null));
+    setup.add(billingEntry);
 
     assertThat(Files.readString(configFile))
         .isEqualTo(
@@ -249,34 +203,9 @@ class ProjectSetupTest {
 
   @Test
   void addsTheFirstProjectToAnEmptyProjectsMap() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n  keepAwake: false\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
+    Files.writeString(configFile, "orchestrator:\n  projects: {}\n  keepAwake: false\n");
 
-    setup.add(
-        new ProjectSetup.Entry(
-            "billing", repo.toString(), "origin/main", null, null, null, null, null));
+    setup.add(billingEntry);
 
     assertThat(Files.readString(configFile))
         .isEqualTo(
@@ -286,27 +215,8 @@ class ProjectSetupTest {
 
   @Test
   void refusesFolderInsideRepositoryAndNamesTheRepositoryToAddInstead() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
     Path docs = Files.createDirectories(repo.resolve("docs"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
+    doReturn(new Processes.Result(0, repo + "\n", "")).when(git).run(any(), any(), anyList());
 
     ProjectSetup.Reading reading = setup.read(docs.toString());
 
@@ -318,30 +228,6 @@ class ProjectSetupTest {
 
   @Test
   void refusesDeployBranchEqualToTheBaseBranchAndLeavesTheFileUnchanged() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
     assertThatThrownBy(
             () ->
                 setup.add(
@@ -354,29 +240,12 @@ class ProjectSetupTest {
 
   @Test
   void readsAnOriginWithoutTheCredentialsItCarries() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList()))
-        .thenReturn(new Processes.Result(0, "https://user:secret@host.test/g/p.git\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
+    doReturn(new Processes.Result(0, "https://user:secret@host.test/g/p.git\n", ""))
+        .when(git)
+        .run(any(), any(), anyList());
+    doReturn(new Processes.Result(0, repo + "\n", ""))
+        .when(git)
+        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
 
     ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -387,29 +256,10 @@ class ProjectSetupTest {
 
   @Test
   void saysGitCouldNotReadRepositoryItRefusesForItsOwnership() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
     when(git.run(any(), any(), anyList()))
         .thenReturn(
             new Processes.Result(
                 128, "", "fatal: detected dubious ownership in repository at '/x'\nmore"));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
 
     ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -423,34 +273,11 @@ class ProjectSetupTest {
 
   @Test
   void putsTheFileBackWhenTheInsertedEntryDoesNotRead() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ConfigService config =
-        spy(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))));
-    doThrow(new IllegalStateException("bad yaml")).when(config).project("billing");
-    ProjectSetup setup = new ProjectSetup(config, paths, git, checkout -> List.of());
+    ConfigService spied = spy(config);
+    doThrow(new IllegalStateException("bad yaml")).when(spied).project("billing");
+    ProjectSetup spying = new ProjectSetup(spied, paths, git, checkout -> List.of());
 
-    assertThatThrownBy(
-            () ->
-                setup.add(
-                    new ProjectSetup.Entry(
-                        "billing", repo.toString(), "origin/main", null, null, null, null, null)))
+    assertThatThrownBy(() -> spying.add(billingEntry))
         .isInstanceOf(IllegalStateException.class)
         .hasMessage("jagt.yml did not read after the change, so it was put back: bad yaml");
     assertThat(Files.readString(configFile)).isEqualTo("orchestrator:\n  projects: {}\n");
@@ -458,41 +285,18 @@ class ProjectSetupTest {
 
   @Test
   void namesTheFileWhenItDidNotReadAndCouldNotBePutBack() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ConfigService config =
-        spy(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))));
+    ConfigService spied = spy(config);
     doAnswer(
             call -> {
               Files.delete(configFile);
               Files.createDirectories(configFile.resolve("child"));
               throw new IllegalStateException("bad yaml");
             })
-        .when(config)
+        .when(spied)
         .project("billing");
-    ProjectSetup setup = new ProjectSetup(config, paths, git, checkout -> List.of());
+    ProjectSetup spying = new ProjectSetup(spied, paths, git, checkout -> List.of());
 
-    assertThatThrownBy(
-            () ->
-                setup.add(
-                    new ProjectSetup.Entry(
-                        "billing", repo.toString(), "origin/main", null, null, null, null, null)))
+    assertThatThrownBy(() -> spying.add(billingEntry))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageStartingWith(
             "jagt.yml did not read after the change and could not be put back; fix it by hand:");
@@ -500,33 +304,11 @@ class ProjectSetupTest {
 
   @Test
   void keepsConfigFileThatIsSymlinkAndWritesTheEntryIntoItsTarget() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
     Path target = Files.writeString(root.resolve("real.yml"), "orchestrator:\n  projects: {}\n");
-    Path configFile = Files.createSymbolicLink(root.resolve("jagt.yml"), target);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
+    Files.delete(configFile);
+    Files.createSymbolicLink(configFile, target);
 
-    setup.add(
-        new ProjectSetup.Entry(
-            "billing", repo.toString(), "origin/main", null, null, null, null, null));
+    setup.add(billingEntry);
 
     assertThat(Files.isSymbolicLink(configFile)).isTrue();
     assertThat(Files.readString(target)).contains("billing:");
@@ -534,27 +316,12 @@ class ProjectSetupTest {
 
   @Test
   void readsNoDirectoryWhereThePathLeadsNowhereAndKeysItByItsLowerCasedName() {
-    Path missing = root.resolve("Billing");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            mock(Processes.class),
-            checkout -> List.of());
+    Path missing = root.resolve("Ledger");
 
     ProjectSetup.Reading reading = setup.read(missing.toString());
 
     assertThat(reading.ready()).isFalse();
-    assertThat(reading.key()).isEqualTo("billing");
+    assertThat(reading.key()).isEqualTo("ledger");
     assertThat(reading.lines())
         .extracting(ProjectSetup.Line::text)
         .containsExactly("no directory at " + missing);
@@ -563,24 +330,9 @@ class ProjectSetupTest {
   @Test
   void readsFolderThatIsNoRepositoryAsSuch() throws Exception {
     Path folder = Files.createDirectories(root.resolve("notes"));
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(root.resolve("jagt.yml").toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList()))
-        .thenReturn(new Processes.Result(128, "", "fatal: not a git repository"));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
+    doReturn(new Processes.Result(128, "", "fatal: not a git repository"))
+        .when(git)
+        .run(any(), any(), anyList());
 
     ProjectSetup.Reading reading = setup.read(folder.toString());
 
@@ -593,153 +345,47 @@ class ProjectSetupTest {
   @CsvSource(value = {"0,'',''", "2,'','error: No such remote origin'"})
   void readsRepositoryWithoutAnOriginAsNotReady(int exit, String stdout, String stderr)
       throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     doReturn(new Processes.Result(exit, stdout, stderr))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("get-url")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
 
-    ProjectSetup.Reading reading = setup.read(repo.toString());
+    ProjectSetup.Reading reading = bareSetup.read(repo.toString());
 
     assertThat(reading.lines())
         .extracting(ProjectSetup.Line::text)
         .contains("no remote named origin");
   }
 
-  @Test
-  void readsRepositoryWithNoRemoteFromItsLocalBranches() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
+  @ParameterizedTest
+  @CsvSource({"main", "master"})
+  void readsRepositoryWithNoRemoteFromItsLocalBranches(String branch) throws Exception {
     doReturn(new Processes.Result(0, "", ""))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("remote") && command.size() == 4));
-    doReturn(new Processes.Result(0, "main\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("main")));
-    doReturn(new Processes.Result(0, "main\ndev\n", ""))
-        .when(git)
+    doReturn(new Processes.Result(0, branch + "\n", ""))
+        .when(bareGit)
+        .run(any(), any(), argThat(command -> command.contains(branch)));
+    doReturn(new Processes.Result(0, branch + "\ndev\n", ""))
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
 
-    ProjectSetup.Reading reading = setup.read(repo.toString());
+    ProjectSetup.Reading reading = bareSetup.read(repo.toString());
 
     assertThat(reading.ready()).isTrue();
-    assertThat(reading.baseBranch()).isEqualTo("main");
+    assertThat(reading.baseBranch()).isEqualTo(branch);
     assertThat(reading.deployBranches()).containsExactly("dev");
   }
 
   @Test
-  void cutsTasksFromLocalMasterWhereRepositoryWithNoRemoteHasNoMain() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
-    doReturn(new Processes.Result(0, "", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("remote") && command.size() == 4));
-    doReturn(new Processes.Result(0, "master\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("master")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
-    ProjectSetup.Reading reading = setup.read(repo.toString());
-
-    assertThat(reading.baseBranch()).isEqualTo("master");
-  }
-
-  @Test
   void addsRepositoryWithNoRemoteAndWritesRemoteNone() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     doReturn(new Processes.Result(0, "", ""))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("remote") && command.size() == 4));
     doReturn(new Processes.Result(0, "main\n", ""))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("main")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
 
-    setup.add(
+    bareSetup.add(
         new ProjectSetup.Entry("billing", repo.toString(), "main", null, null, null, null, null));
 
     assertThat(Files.readString(configFile))
@@ -757,34 +403,11 @@ class ProjectSetupTest {
 
   @Test
   void saysGitCouldNotReadTheRemoteWhereItFailsForAnotherReason() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     doReturn(new Processes.Result(1, "", "fatal: broken config\nmore"))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("get-url")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
 
-    ProjectSetup.Reading reading = setup.read(repo.toString());
+    ProjectSetup.Reading reading = bareSetup.read(repo.toString());
 
     assertThat(reading.lines())
         .extracting(ProjectSetup.Line::text)
@@ -794,40 +417,19 @@ class ProjectSetupTest {
   @Test
   void readsWhatTheEntryWouldSayFromTheOriginsHeadTheDeployBranchAndTheBuildScript()
       throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     doReturn(new Processes.Result(0, "git@host.test:g/p.git\n", ""))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("get-url")));
     doReturn(new Processes.Result(0, "origin/trunk\n", ""))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("symbolic-ref")));
     doReturn(new Processes.Result(0, "origin/HEAD\norigin/trunk\norigin/dev\n", ""))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of("./gradlew", "test"));
+    ProjectSetup scripted =
+        new ProjectSetup(config, paths, bareGit, checkout -> List.of("./gradlew", "test"));
 
-    ProjectSetup.Reading reading = setup.read(repo.toString());
+    ProjectSetup.Reading reading = scripted.read(repo.toString());
 
     assertThat(reading.ready()).isTrue();
     assertThat(reading.baseBranch()).isEqualTo("origin/trunk");
@@ -841,39 +443,16 @@ class ProjectSetupTest {
   @Test
   void offersTheRemotesBranchesExceptItsHeadAndTheBaseAndPrefillsTheFirstConventionalOne()
       throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     doReturn(new Processes.Result(0, "origin/main\n", ""))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("symbolic-ref")));
     doReturn(
             new Processes.Result(
                 0, "origin\norigin/main\norigin/feature-x\norigin/staging\norigin/develop\n", ""))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
 
-    ProjectSetup.Reading reading = setup.read(repo.toString());
+    ProjectSetup.Reading reading = bareSetup.read(repo.toString());
 
     assertThat(reading.deployBranch()).isEqualTo("develop");
     assertThat(reading.deployBranches()).containsExactly("feature-x", "staging", "develop");
@@ -881,148 +460,44 @@ class ProjectSetupTest {
 
   @Test
   void prefillsNoDeployBranchWhereNoRemoteBranchIsConventionalOne() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     doReturn(new Processes.Result(0, "origin/main\n", ""))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("symbolic-ref")));
     doReturn(new Processes.Result(0, "origin/main\norigin/feature-x\n", ""))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("for-each-ref")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
 
-    ProjectSetup.Reading reading = setup.read(repo.toString());
+    ProjectSetup.Reading reading = bareSetup.read(repo.toString());
 
     assertThat(reading.deployBranch()).isEmpty();
     assertThat(reading.deployBranches()).containsExactly("feature-x");
   }
 
-  @Test
-  void fallsBackToOriginMainWhereTheRemoteNamesNoHead() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
+  @ParameterizedTest
+  @CsvSource({"origin/main", "origin/master"})
+  void fallsBackToTheConventionalOriginBranchWhereTheRemoteNamesNoHead(String branch)
+      throws Exception {
     doReturn(new Processes.Result(0, "git@host.test:g/p.git\n", ""))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("get-url")));
     doReturn(new Processes.Result(0, "abc\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("origin/main")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
+        .when(bareGit)
+        .run(any(), any(), argThat(command -> command.contains(branch)));
 
-    ProjectSetup.Reading reading = setup.read(repo.toString());
+    ProjectSetup.Reading reading = bareSetup.read(repo.toString());
 
-    assertThat(reading.baseBranch()).isEqualTo("origin/main");
+    assertThat(reading.baseBranch()).isEqualTo(branch);
     assertThat(reading.deployBranch()).isEmpty();
-  }
-
-  @Test
-  void fallsBackToOriginMasterWhereThereIsNoOriginMain() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
-    doReturn(new Processes.Result(0, "git@host.test:g/p.git\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("get-url")));
-    doReturn(new Processes.Result(0, "abc\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("origin/master")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
-    ProjectSetup.Reading reading = setup.read(repo.toString());
-
-    assertThat(reading.baseBranch()).isEqualTo("origin/master");
     assertThat(reading.verifyCommand()).isEmpty();
   }
 
   @Test
   void readsRepositoryWithNoBranchToCutTasksFromAsNotReady() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     doReturn(new Processes.Result(0, "git@host.test:g/p.git\n", ""))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("get-url")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
 
-    ProjectSetup.Reading reading = setup.read(repo.toString());
+    ProjectSetup.Reading reading = bareSetup.read(repo.toString());
 
     assertThat(reading.ready()).isFalse();
     assertThat(reading.baseBranch()).isEmpty();
@@ -1033,33 +508,9 @@ class ProjectSetupTest {
 
   @Test
   void readsRepositoryAnotherProjectAlreadyPointsAtAsNotReady() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"),
-            "orchestrator:\n  projects:\n    web: {path: \""
+    Files.writeString(configFile, "orchestrator:\n  projects:\n    web: {path: \""
                 + repo
                 + "\", baseBranch: origin/main}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
 
     ProjectSetup.Reading reading = setup.read(repo.toString());
 
@@ -1071,47 +522,16 @@ class ProjectSetupTest {
 
   @Test
   void refusesToAddWhereTheFileHoldsNoProjectsUnderOrchestrator() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  keepAwake: false\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
-    assertThatThrownBy(
-            () ->
-                setup.add(
-                    new ProjectSetup.Entry(
-                        "billing", repo.toString(), "origin/main", null, null, null, null, null)))
+    Files.writeString(configFile, "orchestrator:\n  keepAwake: false\n");
+    assertThatThrownBy(() -> setup.add(billingEntry))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("jagt.yml holds no projects: under orchestrator: to add to");
   }
 
   @Test
   void addsAtTheIndentTheExistingEntriesUseWhenItIsNotTwiceTheMapsOwn() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"),
+    Files.writeString(
+            configFile,
             """
             orchestrator:
               projects:
@@ -1119,30 +539,8 @@ class ProjectSetupTest {
                     path: /srv/web
                     baseBranch: origin/main
             """);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
 
-    setup.add(
-        new ProjectSetup.Entry(
-            "billing", repo.toString(), "origin/main", null, null, null, null, null));
+    setup.add(billingEntry);
 
     assertThat(Files.readString(configFile))
         .startsWith(
@@ -1157,38 +555,10 @@ class ProjectSetupTest {
 
   @Test
   void refusesRepositoryByTheFirstThingThatIsWrongWithItNotByWhatIsFine() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Path configFile =
-        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(1, "", ""));
-    doReturn(new Processes.Result(0, repo + "\n", ""))
-        .when(git)
-        .run(any(), any(), argThat(command -> command.contains("--show-toplevel")));
     doReturn(new Processes.Result(0, "git@host.test:g/p.git\n", ""))
-        .when(git)
+        .when(bareGit)
         .run(any(), any(), argThat(command -> command.contains("get-url")));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
-    assertThatThrownBy(
-            () ->
-                setup.add(
-                    new ProjectSetup.Entry(
-                        "billing", repo.toString(), "origin/main", null, null, null, null, null)))
+    assertThatThrownBy(() -> bareSetup.add(billingEntry))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("no origin/main or origin/master to cut tasks from");
   }
@@ -1196,11 +566,8 @@ class ProjectSetupTest {
   @Test
   void editRewritesTheManagedKeysOfOneBlockAndKeepsItsOtherKeysAndEveryOtherLine()
       throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"),
+    Files.writeString(
+            configFile,
             """
             # mine
             orchestrator:
@@ -1218,26 +585,6 @@ class ProjectSetupTest {
                   baseBranch: origin/main
               keepAwake: false   # stays
             """);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
     String answer =
         setup.edit(
             new ProjectSetup.Entry(
@@ -1275,34 +622,9 @@ class ProjectSetupTest {
 
   @Test
   void editKeepsTheProjectsOwnPathWhereItIsUnchanged() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"),
-            "orchestrator:\n  projects:\n    billing:\n      path: \""
+    Files.writeString(configFile, "orchestrator:\n  projects:\n    billing:\n      path: \""
                 + repo
                 + "\"\n      baseBranch: origin/main\n");
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
     String answer =
         setup.edit(
             new ProjectSetup.Entry(
@@ -1320,8 +642,6 @@ class ProjectSetupTest {
 
   @Test
   void editRefusesPathAnotherProjectAlreadyHoldsAndLeavesTheFileUnchanged() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
     String before =
         "orchestrator:\n"
             + "  projects:\n"
@@ -1332,32 +652,11 @@ class ProjectSetupTest {
             + "      path: \""
             + repo
             + "\"\n      baseBranch: origin/main\n";
-    Path configFile = Files.writeString(root.resolve("jagt.yml"), before);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
+    Files.writeString(configFile, before);
     assertThatThrownBy(
             () ->
                 setup.edit(
-                    new ProjectSetup.Entry(
-                        "billing", repo.toString(), "origin/main", null, null, null, null, null)))
+                    billingEntry))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("a project already points here");
     assertThat(Files.readString(configFile)).isEqualTo(before);
@@ -1365,11 +664,8 @@ class ProjectSetupTest {
 
   @Test
   void editRefusesProjectTheFileDoesNotHold() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"),
+    Files.writeString(
+            configFile,
             """
             orchestrator:
               projects:
@@ -1377,67 +673,23 @@ class ProjectSetupTest {
                   path: /srv/web
                   baseBranch: origin/main
             """);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
     assertThatThrownBy(
             () ->
                 setup.edit(
-                    new ProjectSetup.Entry(
-                        "billing", repo.toString(), "origin/main", null, null, null, null, null)))
+                    billingEntry))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("No project billing");
   }
 
   @Test
   void editRefusesAnEntryWrittenInlineAndLeavesTheFileUnchanged() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
     String before =
         "orchestrator:\n  projects:\n    billing: {path: /srv/billing, baseBranch: origin/main}\n";
-    Path configFile = Files.writeString(root.resolve("jagt.yml"), before);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
+    Files.writeString(configFile, before);
     assertThatThrownBy(
             () ->
                 setup.edit(
-                    new ProjectSetup.Entry(
-                        "billing", repo.toString(), "origin/main", null, null, null, null, null)))
+                    billingEntry))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("written inline");
     assertThat(Files.readString(configFile)).isEqualTo(before);
@@ -1445,11 +697,8 @@ class ProjectSetupTest {
 
   @Test
   void removeDeletesOneBlockAndLeavesTheCommentOfTheNextOne() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"),
+    Files.writeString(
+            configFile,
             """
             orchestrator:
               projects:
@@ -1464,26 +713,6 @@ class ProjectSetupTest {
                   baseBranch: origin/main
               keepAwake: false   # stays
             """);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
     String answer = setup.remove("billing");
 
     assertThat(answer).isEqualTo("Removed billing from jagt.yml");
@@ -1503,11 +732,8 @@ class ProjectSetupTest {
 
   @Test
   void removeDeletesTheLastBlockOfTheFileWhereTheSectionEndsTheFile() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"),
+    Files.writeString(
+            configFile,
             """
             orchestrator:
               projects:
@@ -1518,26 +744,6 @@ class ProjectSetupTest {
                   path: /srv/billing
                   baseBranch: origin/main
             """);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
     setup.remove("billing");
 
     assertThat(Files.readString(configFile))
@@ -1553,8 +759,6 @@ class ProjectSetupTest {
 
   @Test
   void removeRefusesTheOnlyProjectBecauseJagtDoesNotStartWithoutOne() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
     String before =
         """
         orchestrator:
@@ -1563,27 +767,7 @@ class ProjectSetupTest {
               path: /srv/billing
               baseBranch: origin/main
         """;
-    Path configFile = Files.writeString(root.resolve("jagt.yml"), before);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-
+    Files.writeString(configFile, before);
     assertThatThrownBy(() -> setup.remove("billing"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("only project");
@@ -1592,9 +776,6 @@ class ProjectSetupTest {
 
   @Test
   void addRefusesAndLeavesTheFileUnchangedWhereItsFolderCannotBeWritten() throws Exception {
-    Path repo = Files.createDirectories(root.resolve("billing"));
-    Files.createDirectories(repo.resolve(".git"));
-    Path folder = Files.createDirectories(root.resolve("conf"));
     String before =
         """
         orchestrator:
@@ -1603,33 +784,10 @@ class ProjectSetupTest {
               path: /srv/web
               baseBranch: origin/main
         """;
-    Path configFile = Files.writeString(folder.resolve("jagt.yml"), before);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    Processes git = mock(Processes.class);
-    when(git.run(any(), any(), anyList())).thenReturn(new Processes.Result(0, "origin/main\n", ""));
-    when(git.run(any(), any(), argThat(command -> command.contains("--show-toplevel"))))
-        .thenReturn(new Processes.Result(0, repo + "\n", ""));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            git,
-            checkout -> List.of());
-    folder.toFile().setWritable(false);
+    Files.writeString(configFile, before);
+    confFolder.toFile().setWritable(false);
 
-    assertThatThrownBy(
-            () ->
-                setup.add(
-                    new ProjectSetup.Entry(
-                        "billing", repo.toString(), "origin/main", null, null, null, null, null)))
+    assertThatThrownBy(() -> setup.add(billingEntry))
         .isInstanceOf(java.io.UncheckedIOException.class)
         .hasMessageStartingWith("Cannot change ");
     assertThat(Files.readString(configFile)).isEqualTo(before);
@@ -1637,9 +795,8 @@ class ProjectSetupTest {
 
   @Test
   void entryServesOneProjectsManagedKeysAndRefusesKeyJagtYmlDoesNotHold() throws Exception {
-    Path configFile =
-        Files.writeString(
-            root.resolve("jagt.yml"),
+    Files.writeString(
+            configFile,
             """
             orchestrator:
               projects:
@@ -1651,22 +808,6 @@ class ProjectSetupTest {
                   labels: [bill, pay]
                   humanPaths: ["**/auth/**"]
             """);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withConfigFile(configFile.toString()));
-    ProjectSetup setup =
-        new ProjectSetup(
-            new ConfigService(
-                paths,
-                mock(AgentRuntime.class),
-                mock(ActStops.class),
-                new Checkers(new TaskChart(Composition.builtIn()))),
-            paths,
-            mock(Processes.class),
-            checkout -> List.of());
-
     assertThat(setup.entry("billing"))
         .isEqualTo(
             new ProjectSetup.Entry(

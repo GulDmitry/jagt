@@ -13,42 +13,63 @@ import dev.jagt.orchestrator.task.ProjectConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class SubAgentBriefingTest {
 
   private final TicketScenarios scenarios = mock(TicketScenarios.class, call -> "");
+  private final NewRepo web =
+      new NewRepo(
+          "web",
+          new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
+          Path.of("/repo/web"),
+          Path.of("/w/ABC-42"),
+          Path.of("/repo/web/.git"),
+          "origin/main",
+          "git@host:g/web.git",
+          true);
+  private final NewRepo api =
+      new NewRepo(
+          "api",
+          new ProjectConfig("/repo/api", "origin/develop", "stage", List.of()),
+          Path.of("/repo/api"),
+          Path.of("/w/ABC-42-api"),
+          Path.of("/repo/api/.git"),
+          "origin/develop",
+          "git@host:g/api.git",
+          false);
+  private final NewTask plainTask = NewTask.builder("ABC-42", "web").build();
+  private final ConfigService.ConfigFile.AutoplanConfig autoplan =
+      ConfigService.ConfigFile.AutoplanConfig.defaults();
+  private final ConfigService.ConfigFile.VisualizeConfig visualize =
+      ConfigService.ConfigFile.VisualizeConfig.defaults();
+  private final ConfigService.ConfigFile.DiagnoseConfig diagnose =
+      ConfigService.ConfigFile.DiagnoseConfig.defaults();
+
+  @TempDir Path root;
+
+  private SubAgentBriefing agent;
+
+  @BeforeEach
+  void wireAgent() {
+    agent =
+        new SubAgentBriefing(
+            new SessionBrief(
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()))),
+            scenarios);
+  }
 
   @Test
-  void pointsTheAgentAtTheRequestTheTaskWasOpenedWithSinceLaterInstructionsReplaceTheContext(
-      @TempDir Path root) throws Exception {
+  void pointsTheAgentAtTheRequestTheTaskWasOpenedWithSinceLaterInstructionsReplaceTheContext()
+      throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing)
         .contains(
@@ -56,31 +77,17 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void namesLogicHardToFollowFromItsCodeAsWorthPictureWhenVisualizeIsOn(@TempDir Path root)
+  void namesLogicHardToFollowFromItsCodeAsWorthPictureWhenVisualizeIsOn()
       throws Exception {
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                new ConfigService.ConfigFile.VisualizeConfig(true),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(
+            plainTask,
+            web,
+            List.of(web),
+            autoplan,
+            new ConfigService.ConfigFile.VisualizeConfig(true),
+            diagnose);
 
     assertThat(briefing)
         .contains(
@@ -89,31 +96,11 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void grantsTheRebaseOntoTheMovedTargetWithLeaseAndStillForbidsForceAndMerge(@TempDir Path root)
+  void grantsTheRebaseOntoTheMovedTargetWithLeaseAndStillForbidsForceAndMerge()
       throws Exception {
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing)
         .contains(
@@ -124,23 +111,13 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void addsNothingForContextSectionTheBriefLeavesEmpty(@TempDir Path root) throws Exception {
+  void addsNothingForContextSectionTheBriefLeavesEmpty() throws Exception {
     Path blank = Files.createDirectories(root.resolve("blank"));
     Path absent = Files.createDirectories(root.resolve("absent"));
     Files.createDirectories(blank.resolve("roles/session"));
     Files.writeString(blank.resolve("roles/session/brief.md"), "## context\n");
     Files.createDirectories(absent.resolve("roles/session"));
     Files.writeString(absent.resolve("roles/session/brief.md"), "## other\nText.\n");
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String withBlank =
         new SubAgentBriefing(
@@ -149,8 +126,8 @@ class SubAgentBriefingTest {
                         OrchestratorProperties.defaults().withRoot(blank.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
+                web,
+                List.of(web),
                 ConfigService.ConfigFile.AutoplanConfig.defaults(),
                 ConfigService.ConfigFile.VisualizeConfig.defaults(),
                 ConfigService.ConfigFile.DiagnoseConfig.defaults());
@@ -161,8 +138,8 @@ class SubAgentBriefingTest {
                         OrchestratorProperties.defaults().withRoot(absent.toString()))), scenarios)
             .of(
                 NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
+                web,
+                List.of(web),
                 ConfigService.ConfigFile.AutoplanConfig.defaults(),
                 ConfigService.ConfigFile.VisualizeConfig.defaults(),
                 ConfigService.ConfigFile.DiagnoseConfig.defaults());
@@ -171,67 +148,27 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void namesTheDeployBranchAsJagtsAloneSoTheAgentNeverMergesIntoIt(@TempDir Path root)
+  void namesTheDeployBranchAsJagtsAloneSoTheAgentNeverMergesIntoIt()
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing).contains("The deploy branch `dev` is jagt's `deploy` alone.");
   }
 
   @Test
-  void listsTheDeployWorktreeConflictIsHandedOverInAsTheSessionsOwn(@TempDir Path root)
+  void listsTheDeployWorktreeConflictIsHandedOverInAsTheSessionsOwn()
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing)
         .contains(
@@ -239,21 +176,11 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void namesTheDeployBranchOfEveryRepositoryOfTheTask(@TempDir Path root) throws Exception {
+  void namesTheDeployBranchOfEveryRepositoryOfTheTask() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo web =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
-    NewRepo api =
+    NewRepo apiOnMain =
         new NewRepo(
             "api",
             new ProjectConfig("/repo/api", "origin/main", "stage", List.of()),
@@ -265,67 +192,27 @@ class SubAgentBriefingTest {
             false);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                web,
-                List.of(web, api),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web, apiOnMain), autoplan, visualize, diagnose);
 
     assertThat(briefing)
         .contains("The deploy branches `dev` (web), `stage` (api) are jagt's `deploy` alone.");
   }
 
   @Test
-  void namesTheBaseBranchOfEveryRepositoryOfTheTaskReadOnly(@TempDir Path root) throws Exception {
+  void namesTheBaseBranchOfEveryRepositoryOfTheTaskReadOnly() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo web =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
-    NewRepo api =
-        new NewRepo(
-            "api",
-            new ProjectConfig("/repo/api", "origin/develop", "stage", List.of()),
-            Path.of("/repo/api"),
-            Path.of("/w/ABC-42-api"),
-            Path.of("/repo/api/.git"),
-            "origin/develop",
-            "git@host:g/api.git",
-            false);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                web,
-                List.of(web, api),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web, api), autoplan, visualize, diagnose);
 
     assertThat(briefing)
         .contains("The base branches `origin/main` (web), `origin/develop` (api) are read-only.");
   }
 
   @Test
-  void saysNothingOfDeployBranchWhenTheTaskHasNone(@TempDir Path root) throws Exception {
+  void saysNothingOfDeployBranchWhenTheTaskHasNone() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
@@ -341,49 +228,25 @@ class SubAgentBriefingTest {
             true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, repo, List.of(repo), autoplan, visualize, diagnose);
 
     assertThat(briefing).doesNotContain("deploy branch");
   }
 
   @Test
-  void asksForPlanFirstWhenAutoplanIsOnNamingTheFileCount(@TempDir Path root) throws Exception {
+  void asksForPlanFirstWhenAutoplanIsOnNamingTheFileCount() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults().withEnabled(true).withFiles(12),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(
+            plainTask,
+            web,
+            List.of(web),
+            autoplan.withEnabled(true).withFiles(12),
+            visualize,
+            diagnose);
 
     assertThat(briefing)
         .contains("plan first if the task changes more than 12 files")
@@ -391,142 +254,64 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void tellsTheSessionToPlanFirstWhenTheTaskWasOpenedInPlanMode(@TempDir Path root)
+  void tellsTheSessionToPlanFirstWhenTheTaskWasOpenedInPlanMode()
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").mode("plan").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(
+            NewTask.builder("ABC-42", "web").mode("plan").build(),
+            web,
+            List.of(web),
+            autoplan,
+            visualize,
+            diagnose);
 
     assertThat(briefing).contains("PLAN FIRST: the human asked for a plan.");
   }
 
   @Test
-  void saysNothingOfPlanningFirstWhenTheTaskWasOpenedInAutoMode(@TempDir Path root)
+  void saysNothingOfPlanningFirstWhenTheTaskWasOpenedInAutoMode()
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").mode("auto").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(
+            NewTask.builder("ABC-42", "web").mode("auto").build(),
+            web,
+            List.of(web),
+            autoplan,
+            visualize,
+            diagnose);
 
     assertThat(briefing).doesNotContain("PLAN FIRST");
   }
 
   @Test
-  void saysNothingOfAutoplanWhenItIsLeftAtItsDefault(@TempDir Path root) throws Exception {
+  void saysNothingOfAutoplanWhenItIsLeftAtItsDefault() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing).doesNotContain("AUTOPLAN");
   }
 
   @Test
-  void namesTheOtherWorktreesOfTaskAndNotTheOneTheAgentRunsIn(@TempDir Path root)
+  void namesTheOtherWorktreesOfTaskAndNotTheOneTheAgentRunsIn()
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo web =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
-    NewRepo api =
-        new NewRepo(
-            "api",
-            new ProjectConfig("/repo/api", "origin/develop", "stage", List.of()),
-            Path.of("/repo/api"),
-            Path.of("/w/ABC-42-api"),
-            Path.of("/repo/api/.git"),
-            "origin/develop",
-            "git@host:g/api.git",
-            false);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                web,
-                List.of(web, api),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web, api), autoplan, visualize, diagnose);
 
     assertThat(briefing)
         .contains("- This task ALSO works in these worktrees")
@@ -535,33 +320,13 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void saysTaskWorksInOneRepositoryOnlyWhereItHasNoOther(@TempDir Path root) throws Exception {
+  void saysTaskWorksInOneRepositoryOnlyWhereItHasNoOther() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo web =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                web,
-                List.of(web),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing)
         .contains("- This task works in this repository only.")
@@ -569,33 +334,13 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void asksForTaskVisualMdWhenVisualizeIsOn(@TempDir Path root) throws Exception {
+  void asksForTaskVisualMdWhenVisualizeIsOn() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults().withEnabled(true),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web), autoplan, visualize.withEnabled(true), diagnose);
 
     assertThat(briefing)
         .contains(
@@ -605,34 +350,14 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void tablesAndCallsBetweenServersAreAlwaysWorthPictureWhenVisualizeIsOn(@TempDir Path root)
+  void tablesAndCallsBetweenServersAreAlwaysWorthPictureWhenVisualizeIsOn()
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults().withEnabled(true),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web), autoplan, visualize.withEnabled(true), diagnose);
 
     assertThat(briefing)
         .contains(
@@ -643,98 +368,38 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void warnsThatSemicolonEndsMermaidStatementWhenVisualizeIsOn(@TempDir Path root)
+  void warnsThatSemicolonEndsMermaidStatementWhenVisualizeIsOn()
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults().withEnabled(true),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web), autoplan, visualize.withEnabled(true), diagnose);
 
     assertThat(briefing).contains("no `;` in a Mermaid label, where it ends the statement");
   }
 
   @Test
-  void saysNothingOfPictureWhenVisualizeIsLeftAtItsDefault(@TempDir Path root) throws Exception {
+  void saysNothingOfPictureWhenVisualizeIsLeftAtItsDefault() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing).doesNotContain("VISUALIZE").doesNotContain("task_visual.md");
   }
 
   @Test
-  void asksForFactsAndControlBeforeCauseWhenDiagnoseIsOn(@TempDir Path root) throws Exception {
+  void asksForFactsAndControlBeforeCauseWhenDiagnoseIsOn() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults().withEnabled(true));
+        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose.withEnabled(true));
 
     assertThat(briefing)
         .contains("DIAGNOSE: a bug is diagnosed from facts before code.")
@@ -742,98 +407,44 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void saysNothingOfDiagnosingWhenDiagnoseIsLeftAtItsDefault(@TempDir Path root) throws Exception {
+  void saysNothingOfDiagnosingWhenDiagnoseIsLeftAtItsDefault() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing).doesNotContain("DIAGNOSE");
   }
 
   @Test
-  void keepsTheBranchRuleWhereTheHumansCopyDropsIt(@TempDir Path root) throws Exception {
+  void keepsTheBranchRuleWhereTheHumansCopyDropsIt() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.writeString(
         root.resolve("roles/session/brief.md"), "## context\n\n<rules>\n1. Work.\n</rules>\n");
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                ConfigService.ConfigFile.VisualizeConfig.defaults(),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(plainTask, web, List.of(web), autoplan, visualize, diagnose);
 
     assertThat(briefing).contains("1. Work.", "<hard_safety>", "push only to `ABC-42`");
   }
 
   @Test
-  void asksForTheJudgementOfEverySwitchThatIsOnInTheFirstReportAndThePlanHandBack(
-      @TempDir Path root) throws Exception {
+  void asksForTheJudgementOfEverySwitchThatIsOnInTheFirstReportAndThePlanHandBack()
+      throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
-    NewRepo repo =
-        new NewRepo(
-            "web",
-            new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
-            Path.of("/repo/web"),
-            Path.of("/w/ABC-42"),
-            Path.of("/repo/web/.git"),
-            "origin/main",
-            "git@host:g/web.git",
-            true);
 
     String briefing =
-        new SubAgentBriefing(
-                new SessionBrief(
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults().withRoot(root.toString()))), scenarios)
-            .of(
-                NewTask.builder("ABC-42", "web").build(),
-                repo,
-                List.of(repo),
-                ConfigService.ConfigFile.AutoplanConfig.defaults(),
-                new ConfigService.ConfigFile.VisualizeConfig(true),
-                ConfigService.ConfigFile.DiagnoseConfig.defaults());
+        agent.of(
+            plainTask,
+            web,
+            List.of(web),
+            autoplan,
+            new ConfigService.ConfigFile.VisualizeConfig(true),
+            diagnose);
 
     assertThat(briefing)
         .contains(
@@ -842,7 +453,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void tellsTaskWithNoRepositoryToNameEveryProjectItChangesInItsPlan(@TempDir Path root)
+  void tellsTaskWithNoRepositoryToNameEveryProjectItChangesInItsPlan()
       throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
@@ -864,7 +475,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void endsTheBriefingWithTheScenariosLineWhenThereIsOne(@TempDir Path root) throws Exception {
+  void endsTheBriefingWithTheScenariosLineWhenThereIsOne() throws Exception {
     NewRepo repo =
         new NewRepo(
             "web",
@@ -896,7 +507,7 @@ class SubAgentBriefingTest {
   }
 
   @Test
-  void endsTheScratchBriefingWithTheScenariosLineWhenThereIsOne(@TempDir Path root)
+  void endsTheScratchBriefingWithTheScenariosLineWhenThereIsOne()
       throws Exception {
     TicketScenarios found = mock(TicketScenarios.class);
     when(found.briefingLine("ABC-42")).thenReturn("\n\n<scenarios>rows</scenarios>");

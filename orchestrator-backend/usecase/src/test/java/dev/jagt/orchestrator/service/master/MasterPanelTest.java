@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -52,15 +53,49 @@ class MasterPanelTest {
   private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @TempDir Path stateRoot;
+  @TempDir Path worktree;
 
-  private StateService state() {
-    return new StateService(
-        new JsonMapper(),
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(stateRoot.toString())
-                .withStateFile(stateRoot.resolve("state.json").toString())),
-        reducer, event -> {});
+  private final ChargedReviews reviews = mock(ChargedReviews.class);
+  private final MasterBriefs briefs = mock(MasterBriefs.class);
+  private final RoundQuotes quotes = mock(RoundQuotes.class);
+  private final ConfigService.ConfigFile.MasterConfig judge =
+      new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
+  private final ConfigService.ConfigFile.MasterConfig act =
+      new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+  private final MasterPanel.RoundRead emptyRead =
+      new MasterPanel.RoundRead("", "", "", List.of(), "");
+  private final MasterPanel.Briefs briefsPair =
+      new MasterPanel.Briefs("judge hard", "never commit unasked");
+  private final Judgement ready = new Judgement("", "ready", List.of(), "", List.of(), "");
+
+  private StateService state;
+  private MasterReview stored;
+  private MasterPanel panel;
+  private TaskState reviewPending;
+  private TaskState planPending;
+  private TaskState inProgress;
+
+  @BeforeEach
+  void wirePanel() {
+    state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(stateRoot.toString())
+                    .withStateFile(stateRoot.resolve("state.json").toString())),
+            reducer,
+            event -> {});
+    stored = new MasterReview(state);
+    panel = new MasterPanel(reviews, briefs, quotes, stored);
+    reviewPending =
+        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+    planPending = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+    inProgress = TaskState.builder("proj", worktree.toString(), TaskStatus.IN_PROGRESS).build();
+    when(briefs.author()).thenReturn("");
+    when(quotes.round("ABC-1", reviewPending)).thenReturn(Optional.of(emptyRead));
+    when(quotes.question(inProgress)).thenReturn(Optional.of(emptyRead));
+    when(reviews.review(eq("ABC-1"), any())).thenReturn(ready);
   }
 
   private static final List<MasterPanel.Role> TWO =
@@ -98,12 +133,11 @@ class MasterPanelTest {
 
   @Test
   void quotesTheTicketReadForTheRoundToEachReviewer() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
     String prompt =
         MasterPanel.quote(
             "ABC-1",
-            task,
+            reviewPending,
             new MasterPanel.RoundRead("Summary: accept v3 calls", "", "", List.of(), ""));
 
     assertThat(prompt)
@@ -121,7 +155,7 @@ class MasterPanelTest {
             .build();
 
     String prompt =
-        MasterPanel.quote("ABC-1", task, new MasterPanel.RoundRead("", "", "", List.of(), ""));
+        MasterPanel.quote("ABC-1", task, emptyRead);
 
     assertThat(prompt).contains("<probes>\ncommand ./gradlew test — passed\nexit 0\n</probes>");
   }
@@ -139,7 +173,7 @@ class MasterPanelTest {
             task,
             "judge hard",
             "1. tag v1",
-            new MasterPanel.RoundRead("", "", "", List.of(), ""),
+            emptyRead,
             false,
             true);
 
@@ -148,12 +182,11 @@ class MasterPanelTest {
 
   @Test
   void judgesThePlanAgainstTheTicketItQuotes() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =
         MasterPanel.planPrompt(
             "ABC-1",
-            task,
+            planPending,
             "judge hard",
             "1. add the v3 route",
             new MasterPanel.RoundRead("Summary: accept v3 calls", "", "", List.of(), ""),
@@ -170,15 +203,14 @@ class MasterPanelTest {
 
   @Test
   void tellsPlanReaderLoadingNoServerThatTheTicketWasNeverRead() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =
         MasterPanel.planPrompt(
             "ABC-1",
-            task,
+            planPending,
             "judge hard",
             "1. add the v3 route",
-            new MasterPanel.RoundRead("", "", "", List.of(), ""),
+            emptyRead,
             false,
             false);
 
@@ -187,15 +219,14 @@ class MasterPanelTest {
 
   @Test
   void sendsPlanReaderLoadingServerToItsMcpToolsWhicheverServerThatIs() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =
         MasterPanel.planPrompt(
             "ABC-1",
-            task,
+            planPending,
             "judge hard",
             "1. add the v3 route",
-            new MasterPanel.RoundRead("", "", "", List.of(), ""),
+            emptyRead,
             false,
             true);
 
@@ -206,15 +237,14 @@ class MasterPanelTest {
 
   @Test
   void tellsPlanReaderHowToWriteItsGitReads() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =
         MasterPanel.planPrompt(
             "ABC-1",
-            task,
+            planPending,
             "judge hard",
             "1. add the v3 route",
-            new MasterPanel.RoundRead("", "", "", List.of(), ""),
+            emptyRead,
             false,
             true);
 
@@ -223,13 +253,12 @@ class MasterPanelTest {
 
   @Test
   void tellsTheMasterAnsweringQuestionHowToWriteItsGitReads() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 
     String prompt =
         MasterPanel.answerPrompt(
             "ABC-1",
-            task,
-            new MasterPanel.Briefs("judge hard", "never commit unasked"),
+            inProgress,
+            briefsPair,
             new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), false),
             true);
 
@@ -238,89 +267,49 @@ class MasterPanelTest {
 
   @Test
   void tellsTheMasterAnsweringQuestionWithNoServerThatTheTicketWasNeverRead() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 
     String prompt =
         MasterPanel.answerPrompt(
             "ABC-1",
-            task,
-            new MasterPanel.Briefs("judge hard", "never commit unasked"),
+            inProgress,
+            briefsPair,
             new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), false),
             false);
 
     assertThat(prompt).contains("The ticket was not read").doesNotContain("Read the ticket");
   }
 
-  @Test
-  void tellsReviewerLoadingNoServerThatTicketTheRoundDoesNotQuoteWasNeverRead(
-      @TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  @ParameterizedTest
+  @CsvSource(
+      delimiter = ';',
+      value = {
+        "false;call any premise resting on the ticket unproven",
+        "true;Read the ticket with your MCP tools"
+      })
+  void tellsReviewerWhatToDoWithTheTicketTheRoundDoesNotQuote(boolean loadsServer, String told) {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
+    when(reviews.loadsMcpServer()).thenReturn(loadsServer);
     when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
 
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
-        .review(
-            "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+    panel.review("ABC-1", reviewPending, judge);
 
     ArgumentCaptor<RoundReviewer.Round> round = ArgumentCaptor.captor();
     verify(reviews).review(eq("ABC-1"), round.capture());
-    assertThat(round.getValue().shared())
-        .doesNotContain("tracker tools")
-        .contains("call any premise resting on the ticket unproven");
-  }
-
-  @Test
-  void sendsReviewerWhoseReadLoadsServerToItsMcpToolsForTheTicket(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
-    when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
-    when(reviews.loadsMcpServer()).thenReturn(true);
-    when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
-
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
-        .review(
-            "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
-
-    ArgumentCaptor<RoundReviewer.Round> round = ArgumentCaptor.captor();
-    verify(reviews).review(eq("ABC-1"), round.capture());
-    assertThat(round.getValue().shared()).contains("Read the ticket with your MCP tools");
+    assertThat(round.getValue().shared()).doesNotContain("tracker tools").contains(told);
   }
 
   @Test
   void quotesTheDiffReadForTheRoundToEachReviewer() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
     String prompt =
         MasterPanel.quote(
-            "ABC-1", task, new MasterPanel.RoundRead("", "+int x;\n", "", List.of(), ""));
+            "ABC-1", reviewPending, new MasterPanel.RoundRead("", "+int x;\n", "", List.of(), ""));
 
     assertThat(prompt).contains("<diff>\n+int x;\n</diff>");
   }
 
   @Test
-  void givesEveryRoleTheRoundAsTheSamePrefixSoItIsReadFromCache(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void givesEveryRoleTheRoundAsTheSamePrefixSoItIsReadFromCache() {
     when(briefs.master(eq("ABC-1"), any()))
         .thenReturn(
             Optional.of(
@@ -329,16 +318,15 @@ class MasterPanelTest {
                 | chaplain | should it exist |
                 | developer | is the code right |\
                 """));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task))
+    when(quotes.round("ABC-1", reviewPending))
         .thenReturn(Optional.of(new MasterPanel.RoundRead("", "+int x;\n", "", List.of(), "")));
     when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
 
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+    panel
         .review(
             "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+            reviewPending,
+            judge);
 
     ArgumentCaptor<RoundReviewer.Round> round = ArgumentCaptor.captor();
     verify(reviews, times(2)).review(eq("ABC-1"), round.capture());
@@ -349,12 +337,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void startsTheOtherRolesOnlyOnceTheFirstHasAnswered(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void startsTheOtherRolesOnlyOnceTheFirstHasAnswered() {
     when(briefs.master(eq("ABC-1"), any()))
         .thenReturn(
             Optional.of(
@@ -363,9 +346,6 @@ class MasterPanelTest {
                 | chaplain | should it exist |
                 | developer | is the code right |\
                 """));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
     CountDownLatch developerStarted = new CountDownLatch(1);
     when(reviews.review(eq("ABC-1"), argThat(round -> round.prompt().contains("chaplain"))))
         .thenAnswer(
@@ -379,24 +359,23 @@ class MasterPanelTest {
               return Judgement.failed("stopped");
             });
 
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+    panel
         .review(
             "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+            reviewPending,
+            judge);
 
     assertThat(worktree.resolve(MasterReview.FILE)).content().contains("developer started: false");
   }
 
   @Test
   void asksTheMasterToDecideTheSessionsQuestionRatherThanDeferIt() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 
     String prompt =
         MasterPanel.answerPrompt(
             "ABC-1",
-            task,
-            new MasterPanel.Briefs("judge hard", "never commit unasked"),
+            inProgress,
+            briefsPair,
             new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), false),
             false);
 
@@ -405,13 +384,12 @@ class MasterPanelTest {
 
   @Test
   void asksTheMasterForTheChangeThatTurnsRedCheckGreenRatherThanAnOverride() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
     String prompt =
         MasterPanel.answerPrompt(
             "ABC-1",
-            task,
-            new MasterPanel.Briefs("judge hard", "never commit unasked"),
+            reviewPending,
+            briefsPair,
             new MasterPanel.Asked(
                 "outcome=question — refactor, or override the gate?", "", List.of(), false),
             false);
@@ -424,13 +402,12 @@ class MasterPanelTest {
 
   @Test
   void asksTheMasterToTakeTheBestOptionOnceItsAnswersChangedNothing() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
     String prompt =
         MasterPanel.answerPrompt(
             "ABC-1",
-            task,
-            new MasterPanel.Briefs("judge hard", "never commit unasked"),
+            reviewPending,
+            briefsPair,
             new MasterPanel.Asked("outcome=question — override the gate?", "", List.of(), true),
             false);
 
@@ -439,13 +416,12 @@ class MasterPanelTest {
 
   @Test
   void opensEveryMasterReadOnTheTaskFinishedGreenRatherThanOnJudging() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
     String answer =
         MasterPanel.answerPrompt(
             "ABC-1",
-            task,
-            new MasterPanel.Briefs("judge hard", "never commit unasked"),
+            reviewPending,
+            briefsPair,
             new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), false),
             false);
     String review = MasterPanel.shared("judge hard", "never commit unasked", true, true);
@@ -460,15 +436,14 @@ class MasterPanelTest {
 
   @Test
   void definesAllFiveSeveritiesToThePlanReaderAsToEveryRoundReader() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =
         MasterPanel.planPrompt(
             "ABC-1",
-            task,
+            planPending,
             "judge hard",
             "1. add the v3 route",
-            new MasterPanel.RoundRead("", "", "", List.of(), ""),
+            emptyRead,
             false,
             true);
 
@@ -484,15 +459,14 @@ class MasterPanelTest {
 
   @Test
   void rulesWordingGlossaryAndStyleNeverStopTheRound() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =
         MasterPanel.planPrompt(
             "ABC-1",
-            task,
+            planPending,
             "judge hard",
             "1. add the v3 route",
-            new MasterPanel.RoundRead("", "", "", List.of(), ""),
+            emptyRead,
             false,
             true);
 
@@ -504,19 +478,18 @@ class MasterPanelTest {
 
   @Test
   void tagsTheRoleAndForbidsPreambleInEveryMasterPrompt() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
-    MasterPanel.RoundRead read = new MasterPanel.RoundRead("", "", "", List.of(), "");
+    MasterPanel.RoundRead read = emptyRead;
 
     assertThat(MasterPanel.prompt(TWO.getFirst()))
         .startsWith("<role>You are the chaplain")
         .endsWith("</role>\nRespond directly, no preamble.");
-    assertThat(MasterPanel.planPrompt("ABC-1", task, "judge hard", "", read, false, true))
+    assertThat(MasterPanel.planPrompt("ABC-1", planPending, "judge hard", "", read, false, true))
         .contains("<role>You judge the plan of task ABC-1")
         .endsWith("Respond directly, no preamble.");
     assertThat(
             MasterPanel.answerPrompt(
                 "ABC-1",
-                task,
+                planPending,
                 new MasterPanel.Briefs("judge hard", "author"),
                 new MasterPanel.Asked("keep v2?", "", List.of(), false),
                 true))
@@ -526,12 +499,11 @@ class MasterPanelTest {
 
   @Test
   void holdsEveryReviewerToWhatEarlierRoundsSettled() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
     String prompt =
         MasterPanel.quote(
             "ABC-1",
-            task,
+            reviewPending,
             new MasterPanel.RoundRead(
                 "", "", "- keep the extraction per the human", List.of(), ""));
 
@@ -540,12 +512,11 @@ class MasterPanelTest {
 
   @Test
   void quotesWhatTheHumanTypedToTheSessionToEachReviewer() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
     String prompt =
         MasterPanel.quote(
             "ABC-1",
-            task,
+            reviewPending,
             new MasterPanel.RoundRead(
                 "", "", "- keep the old field name", List.of("rename it everywhere"), ""));
 
@@ -554,12 +525,11 @@ class MasterPanelTest {
 
   @Test
   void quotesTheSessionsNotesSoReviewerCanCheckWhatItDisputed() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
     String prompt =
         MasterPanel.quote(
             "ABC-1",
-            task,
+            reviewPending,
             new MasterPanel.RoundRead(
                 "", "", "", List.of(), "disputed: drop v2 — Api.java:12 has no caller"));
 
@@ -590,7 +560,7 @@ class MasterPanelTest {
                         "",
                         List.of(),
                         ""),
-                    new Judgement("", "ready", List.of(), "", List.of(), ""))),
+                    ready)),
             List.of());
 
     assertThat(file)
@@ -599,13 +569,12 @@ class MasterPanelTest {
 
   @Test
   void quotesWhatTheHumanTypedToTheSessionWhenAnsweringInTheirStead() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 
     String prompt =
         MasterPanel.answerPrompt(
             "ABC-1",
-            task,
-            new MasterPanel.Briefs("judge hard", "never commit unasked"),
+            inProgress,
+            briefsPair,
             new MasterPanel.Asked(
                 "outcome=question — rename the field?", "", List.of("rename it everywhere"), false),
             false);
@@ -614,21 +583,15 @@ class MasterPanelTest {
   }
 
   @Test
-  void asksNoReviewerWhereWhatTheHumanTypedCouldNotBeRead(@TempDir Path worktree) throws Exception {
-    final ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void asksNoReviewerWhereWhatTheHumanTypedCouldNotBeRead() throws Exception {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task)).thenReturn(Optional.empty());
+    when(quotes.round("ABC-1", reviewPending)).thenReturn(Optional.empty());
 
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+    panel
         .review(
             "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+            reviewPending,
+            act);
 
     verify(reviews, never()).review(any(), any());
     assertThat(Files.readString(worktree.resolve(MasterReview.FILE)))
@@ -637,26 +600,18 @@ class MasterPanelTest {
   }
 
   @Test
-  void writesNoVerdictOnRoundWhoseReadStoppedWithJagt(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void writesNoVerdictOnRoundWhoseReadStoppedWithJagt() {
     when(briefs.master(eq("ABC-1"), any()))
         .thenReturn(Optional.of("| role | question |\n| QA | is it tested |"));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
     when(reviews.review(eq("ABC-1"), any())).thenThrow(new Processes.Stopped(List.of("claude")));
 
     assertThatThrownBy(
             () ->
-                new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+                panel
                     .review(
                         "ABC-1",
-                        task,
-                        new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)))
+                        reviewPending,
+                        judge))
         .isInstanceOf(Processes.Stopped.class);
 
     assertThat(worktree.resolve(MasterReview.FILE)).doesNotExist();
@@ -729,13 +684,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void skipsTheReadOfRoleWhoseGlobsMatchNoChangedPathAndSaysSoInTheReviewFile(
-      @TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void skipsTheReadOfRoleWhoseGlobsMatchNoChangedPathAndSaysSoInTheReviewFile() {
     when(briefs.master(eq("ABC-1"), any()))
         .thenReturn(
             Optional.of(
@@ -744,18 +693,13 @@ class MasterPanelTest {
                 | designer | is the mark worth it | static/** |
                 | QA | is it tested |\
                 """));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
-    when(quotes.paths(task)).thenReturn(Optional.of(List.of("src/Main.java")));
-    when(reviews.review(eq("ABC-1"), any()))
-        .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    when(quotes.paths(reviewPending)).thenReturn(Optional.of(List.of("src/Main.java")));
 
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+    panel
         .review(
             "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+            reviewPending,
+            judge);
 
     verify(reviews, times(1)).review(eq("ABC-1"), argThat(round -> round.prompt().contains("QA")));
     verify(reviews, never())
@@ -780,12 +724,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void readsRoundByRoleWithGlobsWhereTheChangedPathsCouldNotBeRead(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void readsRoundByRoleWithGlobsWhereTheChangedPathsCouldNotBeRead() {
     when(briefs.master(eq("ABC-1"), any()))
         .thenReturn(
             Optional.of(
@@ -794,45 +733,30 @@ class MasterPanelTest {
                 | designer | is the mark worth it | static/** |
                 | QA | is it tested |\
                 """));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
-    when(quotes.paths(task)).thenReturn(Optional.empty());
-    when(reviews.review(eq("ABC-1"), any()))
-        .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    when(quotes.paths(reviewPending)).thenReturn(Optional.empty());
 
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+    panel
         .review(
             "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+            reviewPending,
+            judge);
 
     verify(reviews).review(eq("ABC-1"), argThat(round -> round.prompt().contains("designer")));
   }
 
   @Test
-  void readsRoundByEveryRoleWhereNoRolesGlobsMatchIt(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void readsRoundByEveryRoleWhereNoRolesGlobsMatchIt() {
     when(briefs.master(eq("ABC-1"), any()))
         .thenReturn(
             Optional.of(
                 "| role | question | applies |\n| designer | is the mark worth it | static/** |"));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
-    when(quotes.paths(task)).thenReturn(Optional.of(List.of("src/Main.java")));
-    when(reviews.review(eq("ABC-1"), any()))
-        .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    when(quotes.paths(reviewPending)).thenReturn(Optional.of(List.of("src/Main.java")));
 
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+    panel
         .review(
             "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+            reviewPending,
+            judge);
 
     verify(reviews).review(eq("ABC-1"), argThat(round -> round.prompt().contains("designer")));
   }
@@ -852,7 +776,7 @@ class MasterPanelTest {
                         "",
                         List.of(new Premise("tests pass", "gradle test: 2 passed")),
                         ""),
-                    new Judgement("", "ready", List.of(), "", List.of(), ""))),
+                    ready)),
             List.of());
 
     assertThat(file).doesNotContain("unproven").endsWith("VERDICT: ready\n");
@@ -880,7 +804,7 @@ class MasterPanelTest {
                         "",
                         List.of(),
                         ""),
-                    new Judgement("", "ready", List.of(), "", List.of(), ""))),
+                    ready)),
             List.of());
 
     assertThat(file)
@@ -903,7 +827,7 @@ class MasterPanelTest {
                         "",
                         List.of(new Premise("v2 and v3 cannot be told apart", "")),
                         ""),
-                    new Judgement("", "ready", List.of(), "", List.of(), ""))),
+                    ready)),
             List.of());
 
     assertThat(file)
@@ -927,7 +851,7 @@ class MasterPanelTest {
                         "",
                         List.of(),
                         ""),
-                    new Judgement("", "ready", List.of(), "", List.of(), ""))),
+                    ready)),
             List.of());
 
     assertThat(file)
@@ -950,7 +874,7 @@ class MasterPanelTest {
                         "Add v3 beside v2, or replace it?",
                         List.of(),
                         ""),
-                    new Judgement("", "ready", List.of(), "", List.of(), ""))),
+                    ready)),
             List.of());
 
     assertThat(file).endsWith("Add v3 beside v2, or replace it?\n\nVERDICT: question\n");
@@ -965,7 +889,7 @@ class MasterPanelTest {
                 TWO,
                 List.of(
                     Judgement.failed("no tracker tool in this session"),
-                    new Judgement("", "ready", List.of(), "", List.of(), ""))),
+                    ready)),
             List.of());
 
     assertThat(file)
@@ -978,110 +902,83 @@ class MasterPanelTest {
   }
 
   @Test
-  void writesNothingAndAsksNoReviewerWhereTheBriefCouldNotBeRead(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void writesNothingAndAsksNoReviewerWhereTheBriefCouldNotBeRead() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.empty());
 
     boolean written =
-        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        panel
             .review(
                 "ABC-1",
-                task,
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+                reviewPending,
+                act);
 
     assertThat(written).isFalse();
     verify(reviews, never()).review(any(), any());
   }
 
   @Test
-  void saysSoAfterWritingTheReviewFileIntoTheWorktree(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void saysSoAfterWritingTheReviewFileIntoTheWorktree() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task)).thenReturn(Optional.empty());
+    when(quotes.round("ABC-1", reviewPending)).thenReturn(Optional.empty());
 
     boolean written =
-        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        panel
             .review(
                 "ABC-1",
-                task,
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+                reviewPending,
+                act);
 
     assertThat(written).isTrue();
     assertThat(worktree.resolve(MasterReview.FILE)).exists();
   }
 
   @Test
-  void saysNothingWasWrittenWhereTheWorktreeCannotTakeTheReviewFile(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
+  void saysNothingWasWrittenWhereTheWorktreeCannotTakeTheReviewFile() {
     TaskState task =
         TaskState.builder("proj", worktree.resolve("gone").toString(), TaskStatus.REVIEW_PENDING)
             .build();
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-    when(briefs.author()).thenReturn("");
     when(quotes.round("ABC-1", task)).thenReturn(Optional.empty());
 
     boolean written =
-        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        panel
             .review(
                 "ABC-1",
                 task,
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+                act);
 
     assertThat(written).isFalse();
   }
 
   @Test
-  void writesNothingForPlanWhereTheBriefCouldNotBeRead(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+  void writesNothingForPlanWhereTheBriefCouldNotBeRead() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.empty());
 
     boolean written =
-        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        panel
             .plan(
                 "ABC-1",
-                task,
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+                planPending,
+                act);
 
     assertThat(written).isFalse();
     assertThat(worktree.resolve(MasterReview.FILE)).doesNotExist();
   }
 
   @Test
-  void writesReadyVerdictForPlanThePlannerFoundNothingWrongWith(@TempDir Path worktree)
+  void writesReadyVerdictForPlanThePlannerFoundNothingWrongWith()
       throws Exception {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
-    when(quotes.plan("ABC-1", task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
-    when(quotes.planFile(task)).thenReturn("1. add the v3 route");
-    when(reviews.review(eq("ABC-1"), any()))
-        .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
+    when(quotes.plan("ABC-1", planPending))
+        .thenReturn(Optional.of(emptyRead));
+    when(quotes.planFile(planPending)).thenReturn("1. add the v3 route");
 
     boolean written =
-        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        panel
             .plan(
                 "ABC-1",
-                task,
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+                planPending,
+                act);
 
     assertThat(written).isTrue();
     assertThat(Files.readString(worktree.resolve(MasterReview.FILE)))
@@ -1090,20 +987,15 @@ class MasterPanelTest {
   }
 
   @Test
-  void asksNoPlannerWhereWhatTheHumanTypedCouldNotBeRead(@TempDir Path worktree) throws Exception {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+  void asksNoPlannerWhereWhatTheHumanTypedCouldNotBeRead() throws Exception {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
-    when(quotes.plan("ABC-1", task)).thenReturn(Optional.empty());
+    when(quotes.plan("ABC-1", planPending)).thenReturn(Optional.empty());
 
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+    panel
         .plan(
             "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+            planPending,
+            act);
 
     verify(reviews, never()).review(any(), any());
     assertThat(Files.readString(worktree.resolve(MasterReview.FILE)))
@@ -1112,15 +1004,8 @@ class MasterPanelTest {
   }
 
   @Test
-  void answersQuestionWithTheFindingsTheReviewerReturned(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.IN_PROGRESS).build();
+  void answersQuestionWithTheFindingsTheReviewerReturned() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
-    when(briefs.author()).thenReturn("");
-    when(quotes.question(task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
     when(reviews.review(eq("ABC-1"), any()))
         .thenReturn(
             new Judgement(
@@ -1132,12 +1017,12 @@ class MasterPanelTest {
                 "do proj drop the old keys"));
 
     MasterPanel.Answer decision =
-        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        panel
             .answer(
                 "ABC-1",
-                task,
+                inProgress,
                 "outcome=question — keep v2?",
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null),
+                act,
                 false);
 
     assertThat(decision)
@@ -1145,40 +1030,26 @@ class MasterPanelTest {
   }
 
   @Test
-  void answersNothingWhereTheReviewerNamedNothing(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.IN_PROGRESS).build();
+  void answersNothingWhereTheReviewerNamedNothing() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
-    when(briefs.author()).thenReturn("");
-    when(quotes.question(task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
     when(reviews.review(eq("ABC-1"), any()))
         .thenReturn(new Judgement("", "answer", List.of(), "", List.of(), ""));
 
     MasterPanel.Answer decision =
-        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        panel
             .answer(
                 "ABC-1",
-                task,
+                inProgress,
                 "outcome=question — keep v2?",
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null),
+                act,
                 false);
 
     assertThat(decision).isInstanceOf(MasterPanel.Undecided.class);
   }
 
   @Test
-  void namesTheReviewersFailureAsWhyNothingWasDecided(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.IN_PROGRESS).build();
+  void namesTheReviewersFailureAsWhyNothingWasDecided() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
-    when(briefs.author()).thenReturn("");
-    when(quotes.question(task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
     when(reviews.review(eq("ABC-1"), any()))
         .thenReturn(
             new Judgement(
@@ -1190,33 +1061,29 @@ class MasterPanelTest {
                 ""));
 
     MasterPanel.Answer decision =
-        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        panel
             .answer(
                 "ABC-1",
-                task,
+                inProgress,
                 "outcome=question — keep v2?",
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null),
+                act,
                 false);
 
     assertThat(decision).isEqualTo(new MasterPanel.Undecided("stopped"));
   }
 
   @Test
-  void answersNothingWhereTheBriefOrWhatTheHumanSaidCouldNotBeRead(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.IN_PROGRESS).build();
+  void answersNothingWhereTheBriefOrWhatTheHumanSaidCouldNotBeRead() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
-    when(quotes.question(task)).thenReturn(Optional.empty());
+    when(quotes.question(inProgress)).thenReturn(Optional.empty());
 
     MasterPanel.Answer decision =
-        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        panel
             .answer(
                 "ABC-1",
-                task,
+                inProgress,
                 "outcome=question — keep v2?",
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null),
+                act,
                 false);
 
     assertThat(decision).isInstanceOf(MasterPanel.Undecided.class);
@@ -1225,12 +1092,11 @@ class MasterPanelTest {
 
   @Test
   void quotesTheSessionsNotesToThePlanReader() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =
         MasterPanel.planPrompt(
             "ABC-1",
-            task,
+            planPending,
             "judge hard",
             "1. add the v3 route",
             new MasterPanel.RoundRead("", "", "", List.of(), "disputed: the ticket line 2"),
@@ -1242,15 +1108,14 @@ class MasterPanelTest {
 
   @Test
   void holdsPlanReaderToTheFactThatTheSessionWroteNoPlan() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =
         MasterPanel.planPrompt(
             "ABC-1",
-            task,
+            planPending,
             "judge hard",
             "",
-            new MasterPanel.RoundRead("", "", "", List.of(), ""),
+            emptyRead,
             false,
             true);
 
@@ -1261,15 +1126,14 @@ class MasterPanelTest {
 
   @Test
   void letsPlanReaderStandingInForTheHumanDecideWhatTheTicketLeavesOpen() {
-    TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
     String prompt =
         MasterPanel.planPrompt(
             "ABC-1",
-            task,
+            planPending,
             "judge hard",
             "1. add the v3 route",
-            new MasterPanel.RoundRead("", "", "", List.of(), ""),
+            emptyRead,
             true,
             true);
 
@@ -1287,7 +1151,7 @@ class MasterPanelTest {
         MasterPanel.answerPrompt(
             "ABC-1",
             task,
-            new MasterPanel.Briefs("judge hard", "never commit unasked"),
+            briefsPair,
             new MasterPanel.Asked("outcome=question — keep v2?", "", List.of(), false),
             true);
 
@@ -1304,7 +1168,7 @@ class MasterPanelTest {
             .build();
 
     String prompt =
-        MasterPanel.quote("ABC-1", task, new MasterPanel.RoundRead("", "", "", List.of(), ""));
+        MasterPanel.quote("ABC-1", task, emptyRead);
 
     assertThat(prompt)
         .contains("ticket https://tracker.example/ABC-1.")
@@ -1312,21 +1176,16 @@ class MasterPanelTest {
   }
 
   @Test
-  void doesNotReadAgainRoundWhoseReadyVerdictStillStands(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void doesNotReadAgainRoundWhoseReadyVerdictStillStands() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-    when(quotes.carried("ABC-1", task, "")).thenReturn(true);
+    when(quotes.carried("ABC-1", reviewPending, "")).thenReturn(true);
 
     boolean written =
-        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        panel
             .review(
                 "ABC-1",
-                task,
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+                reviewPending,
+                act);
 
     assertThat(written).isTrue();
     verify(reviews, never()).review(any(), any());
@@ -1335,28 +1194,22 @@ class MasterPanelTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void namesWhyAndOverWhatRoundWasReadInTheLog(@TempDir Path worktree) {
-    final ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void namesWhyAndOverWhatRoundWasReadInTheLog() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-    when(briefs.author()).thenReturn("");
-    when(quotes.inputs("ABC-1", task)).thenReturn(Optional.of("in1"));
-    when(quotes.trigger(task, "in1")).thenReturn("retry");
-    when(quotes.fingerprint(task, "in1")).thenReturn("fp1");
-    when(quotes.round("ABC-1", task)).thenReturn(Optional.empty());
+    when(quotes.inputs("ABC-1", reviewPending)).thenReturn(Optional.of("in1"));
+    when(quotes.trigger(reviewPending, "in1")).thenReturn("retry");
+    when(quotes.fingerprint(reviewPending, "in1")).thenReturn("fp1");
+    when(quotes.round("ABC-1", reviewPending)).thenReturn(Optional.empty());
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger panelLog = (Logger) LoggerFactory.getLogger(MasterPanel.class);
     panelLog.addAppender(log);
 
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+    panel
         .review(
             "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+            reviewPending,
+            act);
 
     panelLog.detachAppender(log);
     assertThat(List.copyOf(log.list))
@@ -1368,26 +1221,21 @@ class MasterPanelTest {
 
   @Test
   @ResourceLock(Resources.GLOBAL)
-  void namesPlanReadAsSuchInTheLog(@TempDir Path worktree) {
-    final ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+  void namesPlanReadAsSuchInTheLog() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-    when(quotes.inputs("ABC-1", task)).thenReturn(Optional.of("in1"));
-    when(quotes.planFingerprint(task, "in1")).thenReturn("fp2");
-    when(quotes.plan("ABC-1", task)).thenReturn(Optional.empty());
+    when(quotes.inputs("ABC-1", planPending)).thenReturn(Optional.of("in1"));
+    when(quotes.planFingerprint(planPending, "in1")).thenReturn("fp2");
+    when(quotes.plan("ABC-1", planPending)).thenReturn(Optional.empty());
     ListAppender<ILoggingEvent> log = new ListAppender<>();
     log.start();
     Logger panelLog = (Logger) LoggerFactory.getLogger(MasterPanel.class);
     panelLog.addAppender(log);
 
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+    panel
         .plan(
             "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+            planPending,
+            act);
 
     panelLog.detachAppender(log);
     assertThat(List.copyOf(log.list))
@@ -1398,23 +1246,15 @@ class MasterPanelTest {
   }
 
   @Test
-  void asksTheHumanWhereReviewerThrewInsteadOfAnswering(@TempDir Path worktree) throws Exception {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void asksTheHumanWhereReviewerThrewInsteadOfAnswering() throws Exception {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
     when(reviews.review(eq("ABC-1"), any())).thenThrow(new IllegalStateException("cli gone"));
 
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+    panel
         .review(
             "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+            reviewPending,
+            act);
 
     assertThat(Files.readString(worktree.resolve(MasterReview.FILE)))
         .contains(
@@ -1424,32 +1264,23 @@ class MasterPanelTest {
   }
 
   @Test
-  void storesTheOwnDiffAndTheHandBackItWasAskedAboutWhereEveryReviewerReadIt(
-      @TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
+  void storesTheOwnDiffAndTheHandBackItWasAskedAboutWhereEveryReviewerReadIt() {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .build()
             .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-    when(briefs.author()).thenReturn("");
     when(quotes.round("ABC-1", task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
+        .thenReturn(Optional.of(emptyRead));
     when(quotes.ownDiff(task)).thenReturn(Optional.of("abc123"));
-    when(reviews.review(eq("ABC-1"), any()))
-        .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
-    StateService state = state();
     state.putTask("ABC-1", task);
-    MasterReview stored = new MasterReview(state);
 
-    new MasterPanel(reviews, briefs, quotes, stored)
+    panel
         .review(
             "ABC-1",
             task,
-            new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+            act);
 
     assertThat(stored.of(state.task("ABC-1").orElseThrow()))
         .get()
@@ -1458,28 +1289,18 @@ class MasterPanelTest {
   }
 
   @Test
-  void storesNoOwnDiffWhereReviewerCouldNotReadTheRound(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void storesNoOwnDiffWhereReviewerCouldNotReadTheRound() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
-    when(quotes.ownDiff(task)).thenReturn(Optional.of("abc123"));
+    when(quotes.ownDiff(reviewPending)).thenReturn(Optional.of("abc123"));
     when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("no tracker tool"));
 
-    StateService state = state();
-    state.putTask("ABC-1", task);
-    MasterReview stored = new MasterReview(state);
+    state.putTask("ABC-1", reviewPending);
 
-    new MasterPanel(reviews, briefs, quotes, stored)
+    panel
         .review(
             "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+            reviewPending,
+            act);
 
     assertThat(stored.of(state.task("ABC-1").orElseThrow()))
         .get()
@@ -1487,31 +1308,23 @@ class MasterPanelTest {
   }
 
   @Test
-  void stopsAndSaysNothingWasWrittenWhereTheCallerIsInterruptedMidRound(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void stopsAndSaysNothingWasWrittenWhereTheCallerIsInterruptedMidRound() {
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
     CountDownLatch stillReviewing = new CountDownLatch(1);
     when(reviews.review(eq("ABC-1"), any()))
         .thenAnswer(
             call -> {
               stillReviewing.await(2, TimeUnit.SECONDS);
-              return new Judgement("", "ready", List.of(), "", List.of(), "");
+              return ready;
             });
     Thread.currentThread().interrupt();
 
     boolean written =
-        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        panel
             .review(
                 "ABC-1",
-                task,
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+                reviewPending,
+                act);
 
     assertThat(Thread.interrupted()).isTrue();
     assertThat(written).isFalse();
@@ -1519,10 +1332,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void saysNothingWasWrittenForPlanWhereTheWorktreeCannotTakeTheFile(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
+  void saysNothingWasWrittenForPlanWhereTheWorktreeCannotTakeTheFile() {
     TaskState task =
         TaskState.builder("proj", worktree.resolve("gone").toString(), TaskStatus.PLAN_PENDING)
             .build();
@@ -1530,11 +1340,11 @@ class MasterPanelTest {
     when(quotes.plan("ABC-1", task)).thenReturn(Optional.empty());
 
     boolean written =
-        new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+        panel
             .plan(
                 "ABC-1",
                 task,
-                new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
+                act);
 
     assertThat(written).isFalse();
   }
@@ -1585,22 +1395,18 @@ class MasterPanelTest {
 
   @Test
   void namesEveryWorktreeOfTheTaskToTheMasterAnsweringQuestion() {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
     TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
     when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("judge hard"));
-    when(briefs.author()).thenReturn("");
     when(quotes.question(task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
+        .thenReturn(Optional.of(emptyRead));
     when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
 
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+    panel
         .answer(
             "ABC-1",
             task,
             "keep v2?",
-            new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null),
+            act,
             false);
 
     ArgumentCaptor<RoundReviewer.Round> asked = ArgumentCaptor.captor();
@@ -1609,12 +1415,7 @@ class MasterPanelTest {
   }
 
   @Test
-  void readsNoChangedPathsWhereNoRoleScopesItselfByGlobs(@TempDir Path worktree) {
-    ChargedReviews reviews = mock(ChargedReviews.class);
-    MasterBriefs briefs = mock(MasterBriefs.class);
-    RoundQuotes quotes = mock(RoundQuotes.class);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+  void readsNoChangedPathsWhereNoRoleScopesItselfByGlobs() {
     when(briefs.master(eq("ABC-1"), any()))
         .thenReturn(
             Optional.of(
@@ -1623,19 +1424,14 @@ class MasterPanelTest {
                 | chaplain | should it exist |
                 | developer | is the code right |\
                 """));
-    when(briefs.author()).thenReturn("");
-    when(quotes.round("ABC-1", task))
-        .thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
-    when(reviews.review(eq("ABC-1"), any()))
-        .thenReturn(new Judgement("", "ready", List.of(), "", List.of(), ""));
 
-    new MasterPanel(reviews, briefs, quotes, new MasterReview(state()))
+    panel
         .review(
             "ABC-1",
-            task,
-            new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+            reviewPending,
+            judge);
 
-    verify(quotes, never()).paths(task);
+    verify(quotes, never()).paths(reviewPending);
   }
 
   @Test
@@ -1653,7 +1449,7 @@ class MasterPanelTest {
                         "",
                         List.of(new Premise("tests pass", "")),
                         ""),
-                    new Judgement("", "ready", List.of(), "", List.of(), ""))),
+                    ready)),
             List.of());
 
     assertThat(file).doesNotContain("unproven [chaplain]");
