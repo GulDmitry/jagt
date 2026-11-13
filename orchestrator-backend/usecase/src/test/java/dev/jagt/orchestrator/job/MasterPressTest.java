@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.job.TestTaskTurnsBuilder.taskTurns;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -11,17 +13,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskStops;
-import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -30,157 +25,88 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class MasterPressTest {
-
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private final CommandService commands = mock(CommandService.class);
   private final HumanPaths humanPaths = mock(HumanPaths.class);
   private final TaskStops stops = mock(TaskStops.class);
 
+  @TempDir Path root;
+
+  private StateService state;
+  private MasterPress press;
+
+  @BeforeEach
+  void masterPressOverAnEmptyState() {
+    state = stateService().withRoot(root).build();
+    press =
+        new MasterPress(
+            commands, humanPaths, stops, taskTurns().build(state, Clock.systemUTC()));
+  }
+
   @Test
-  void pressesTheVerbWhereTheTaskTouchedNoPathKeptForTheHuman(@TempDir Path root) {
+  void pressesTheVerbWhereTheTaskTouchedNoPathKeptForTheHuman() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     when(stops.moveDue("ABC-1")).thenReturn(true);
     when(humanPaths.touched(task)).thenReturn(Optional.empty());
 
-    boolean pressed =
-        new MasterPress(
-                commands,
-                humanPaths,
-                stops,
-                new TaskTurns(
-                    new StateService(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults()
-                                .withRoot(root.toString())
-                                .withStateFile(root.resolve("state.json").toString())),
-                        reducer, event -> {}),
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn()))))
-            .press("ABC-1", task, TaskAction.DEPLOY);
+    boolean pressed = press.press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(pressed).isTrue();
     verify(commands).execute("ABC-1", TaskAction.DEPLOY);
   }
 
   @Test
-  void leavesTheVerbToTheHumanWhereTheTaskTouchedPathKeptForThem(@TempDir Path root) {
+  void leavesTheVerbToTheHumanWhereTheTaskTouchedPathKeptForThem() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     when(humanPaths.touched(task)).thenReturn(Optional.of("demo/src/auth/Login.java"));
 
-    boolean pressed =
-        new MasterPress(
-                commands,
-                humanPaths,
-                stops,
-                new TaskTurns(
-                    new StateService(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults()
-                                .withRoot(root.toString())
-                                .withStateFile(root.resolve("state.json").toString())),
-                        reducer, event -> {}),
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn()))))
-            .press("ABC-1", task, TaskAction.DEPLOY);
+    boolean pressed = press.press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(pressed).isFalse();
     verify(commands, never()).execute(anyString(), any());
   }
 
   @Test
-  void refusesPressWhereTheTaskMadeTooManyUnattendedMovesInTheHour(@TempDir Path root) {
+  void refusesPressWhereTheTaskMadeTooManyUnattendedMovesInTheHour() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     when(humanPaths.touched(task)).thenReturn(Optional.empty());
     when(stops.moveDue("ABC-1")).thenReturn(false);
 
-    boolean pressed =
-        new MasterPress(
-                commands,
-                humanPaths,
-                stops,
-                new TaskTurns(
-                    new StateService(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults()
-                                .withRoot(root.toString())
-                                .withStateFile(root.resolve("state.json").toString())),
-                        reducer, event -> {}),
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn()))))
-            .press("ABC-1", task, TaskAction.DEPLOY);
+    boolean pressed = press.press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(pressed).isFalse();
     verify(commands, never()).execute(anyString(), any());
   }
 
   @Test
-  void pressesVerbNoPathCanKeepWithoutAskingWhatTheTaskTouched(@TempDir Path root) {
+  void pressesVerbNoPathCanKeepWithoutAskingWhatTheTaskTouched() {
     when(stops.moveDue("ABC-1")).thenReturn(true);
-    new MasterPress(
-            commands,
-            humanPaths,
-            stops,
-            new TaskTurns(
-                new StateService(
-                    new JsonMapper(),
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults()
-                            .withRoot(root.toString())
-                            .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {}),
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn()))))
-        .execute("ABC-1", TaskAction.ADD_REPO);
+
+    press.execute("ABC-1", TaskAction.ADD_REPO);
 
     verify(commands).execute("ABC-1", TaskAction.ADD_REPO);
     verifyNoInteractions(humanPaths);
   }
 
   @Test
-  void marksTheStepLeftToTheHumanWithThePathThatKeptItFromTheMaster(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void marksTheStepLeftToTheHumanWithThePathThatKeptItFromTheMaster() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     state.putTask("ABC-1", task);
     when(humanPaths.touched(task)).thenReturn(Optional.of("demo/src/auth/Login.java"));
 
-    new MasterPress(
-            commands,
-            humanPaths,
-            stops,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .press("ABC-1", task, TaskAction.DEPLOY);
+    press.press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left())
         .isEqualTo("deploy demo/src/auth/Login.java");
   }
 
   @Test
-  void replacesTheStepLeftWithTheOneLeftNow(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void replacesTheStepLeftWithTheOneLeftNow() {
     TaskState task =
         TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
             .master(Master.defaults().withLeft("deploy demo/src/old/Old.java"))
@@ -188,28 +114,14 @@ class MasterPressTest {
     state.putTask("ABC-1", task);
     when(humanPaths.touched(task)).thenReturn(Optional.of("demo/src/auth/Login.java"));
 
-    new MasterPress(
-            commands,
-            humanPaths,
-            stops,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .press("ABC-1", task, TaskAction.DEPLOY);
+    press.press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left())
         .isEqualTo("deploy demo/src/auth/Login.java");
   }
 
   @Test
-  void forgetsTheStepLeftOnceTheVerbIsPressed(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void forgetsTheStepLeftOnceTheVerbIsPressed() {
     TaskState task =
         TaskState.builder("demo", "/wt", TaskStatus.REVIEWED)
             .master(Master.defaults().withLeft("deploy demo/src/old/Old.java"))
@@ -218,19 +130,13 @@ class MasterPressTest {
     when(stops.moveDue("ABC-1")).thenReturn(true);
     when(humanPaths.touched(task)).thenReturn(Optional.empty());
 
-    new MasterPress(
-            commands,
-            humanPaths,
-            stops,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))))
-        .press("ABC-1", task, TaskAction.DEPLOY);
+    press.press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(state.task("ABC-1").orElseThrow().masterOrNone().left()).isEmpty();
   }
 
   @Test
-  void takesRefusedDeployAsAnOutcomeNotFault(@TempDir Path root) {
+  void takesRefusedDeployAsAnOutcomeNotFault() {
     TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build();
     when(stops.moveDue("ABC-1")).thenReturn(true);
     when(humanPaths.touched(task)).thenReturn(Optional.empty());
@@ -238,70 +144,25 @@ class MasterPressTest {
         .when(commands)
         .execute("ABC-1", TaskAction.DEPLOY);
 
-    boolean pressed =
-        new MasterPress(
-                commands,
-                humanPaths,
-                stops,
-                new TaskTurns(
-                    new StateService(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults()
-                                .withRoot(root.toString())
-                                .withStateFile(root.resolve("state.json").toString())),
-                        reducer, event -> {}),
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn()))))
-            .press("ABC-1", task, TaskAction.DEPLOY);
+    boolean pressed = press.press("ABC-1", task, TaskAction.DEPLOY);
 
     assertThat(pressed).isFalse();
   }
 
   @Test
-  void letsFaultOtherThanRefusalEscape(@TempDir Path root) {
+  void letsFaultOtherThanRefusalEscape() {
     when(stops.moveDue("ABC-1")).thenReturn(true);
     doThrow(new UncheckedIOException(new IOException("disk gone")))
         .when(commands)
         .execute("ABC-1", TaskAction.DEPLOY);
-    MasterPress press =
-        new MasterPress(
-            commands,
-            humanPaths,
-            stops,
-            new TaskTurns(
-                new StateService(
-                    new JsonMapper(),
-                    new OrchestratorPaths(
-                        OrchestratorProperties.defaults()
-                            .withRoot(root.toString())
-                            .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {}),
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn()))));
 
     assertThatThrownBy(() -> press.execute("ABC-1", TaskAction.DEPLOY))
         .isInstanceOf(UncheckedIOException.class);
   }
 
   @Test
-  void liftsStopWithoutAskingWhetherMoveIsDueForTaskThatIsStopped(@TempDir Path root) {
-    boolean lifted =
-        new MasterPress(
-                commands,
-                humanPaths,
-                stops,
-                new TaskTurns(
-                    new StateService(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults()
-                                .withRoot(root.toString())
-                                .withStateFile(root.resolve("state.json").toString())),
-                        reducer, event -> {}),
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn()))))
-            .lift("ABC-1");
+  void liftsStopWithoutAskingWhetherMoveIsDueForTaskThatIsStopped() {
+    boolean lifted = press.lift("ABC-1");
 
     assertThat(lifted).isTrue();
     verify(commands).execute("ABC-1", TaskAction.LIFT);
@@ -309,27 +170,12 @@ class MasterPressTest {
   }
 
   @Test
-  void reportsLiftTheDoorRefusedAsNotMade(@TempDir Path root) {
+  void reportsLiftTheDoorRefusedAsNotMade() {
     doThrow(new IllegalStateException("not stopped"))
         .when(commands)
         .execute("ABC-1", TaskAction.LIFT);
 
-    boolean lifted =
-        new MasterPress(
-                commands,
-                humanPaths,
-                stops,
-                new TaskTurns(
-                    new StateService(
-                        new JsonMapper(),
-                        new OrchestratorPaths(
-                            OrchestratorProperties.defaults()
-                                .withRoot(root.toString())
-                                .withStateFile(root.resolve("state.json").toString())),
-                        reducer, event -> {}),
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn()))))
-            .lift("ABC-1");
+    boolean lifted = press.lift("ABC-1");
 
     assertThat(lifted).isFalse();
   }

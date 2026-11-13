@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -97,9 +98,10 @@ class AcceptanceCheckJobTest {
   void sendsRowNotMetBackToTheSession() {
     AcceptanceVerdict notMet =
         acceptanceVerdict()
-            .withRow(
-                new AcceptanceVerdict.Row(
-                    "list is sorted", AcceptanceVerdict.Status.NOT_MET, "GET /list unsorted"))
+            .withRows(
+                List.of(
+                    new AcceptanceVerdict.Row(
+                        "list is sorted", AcceptanceVerdict.Status.NOT_MET, "GET /list unsorted")))
             .build();
     when(reader.check(any(), any(), any(), any()))
         .thenReturn(new Answer<>(Optional.of(notMet), TokenUsage.NONE));

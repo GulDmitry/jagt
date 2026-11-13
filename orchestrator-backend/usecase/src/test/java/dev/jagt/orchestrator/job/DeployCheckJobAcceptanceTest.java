@@ -1,5 +1,9 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.job.TestAskedDeployBuilder.askedDeploy;
+import static dev.jagt.orchestrator.job.TestFlowReportsBuilder.flowReports;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
+import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -9,28 +13,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Arbiter;
-import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.FlowReports;
-import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
-import dev.jagt.orchestrator.service.StopAnnouncements;
-import dev.jagt.orchestrator.service.StopLog;
-import dev.jagt.orchestrator.service.StopPolicy;
-import dev.jagt.orchestrator.service.TaskStops;
-import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.Step;
-import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
@@ -38,35 +26,16 @@ import java.util.Map;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class DeployCheckJobAcceptanceTest {
-
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   @Test
   void asksTheSessionNothingWhereAcceptanceChecksTheDeploy(@TempDir Path root) {
     ConfigService config = mock(ConfigService.class);
     final StepRelay relay = mock(StepRelay.class);
     final DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    null)));
+    StateService state = stateService().withRoot(root).build();
+    state.putTask("ABC-42", askedDeploy().withAskedDigest(null).build());
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
@@ -82,23 +51,8 @@ class DeployCheckJobAcceptanceTest {
             config,
             relay,
             pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
+            flowReports().build(state, Clock.systemUTC()),
+            taskStops().withRoot(root).build(state, Clock.systemUTC()))
         .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));

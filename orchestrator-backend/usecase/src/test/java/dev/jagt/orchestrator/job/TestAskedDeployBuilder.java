@@ -8,19 +8,26 @@ import lombok.With;
 import org.jspecify.annotations.Nullable;
 
 @With
-public record TestAskedDeployBuilder(TaskStatus status, @Nullable String askedDigest) {
+public record TestAskedDeployBuilder(
+    TaskStatus status,
+    @Nullable String askedDigest,
+    String worktree,
+    @Nullable String alias,
+    String merge) {
 
   public static TestAskedDeployBuilder askedDeploy() {
-    return new TestAskedDeployBuilder(TaskStatus.DEPLOYED, "digest");
+    return new TestAskedDeployBuilder(
+        TaskStatus.DEPLOYED, "digest", "/wt", null, "0123456789abcdef");
   }
 
   public TaskState build() {
-    return TaskState.builder("proj", "/wt", status)
+    return TaskState.builder("proj", worktree, status)
+        .alias(alias)
         .build()
         .withDeployment(
             new Deployment(
                 1,
-                List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
+                List.of(Deployment.Target.of("proj", "dev").withMerge(merge)),
                 1,
                 askedDigest));
   }

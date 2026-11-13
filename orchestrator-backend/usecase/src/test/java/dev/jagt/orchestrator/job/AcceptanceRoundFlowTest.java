@@ -1,153 +1,85 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.job.TestAcceptanceVerdictBuilder.acceptanceVerdict;
+import static dev.jagt.orchestrator.job.TestAgentStatusReportsBuilder.agentStatusReports;
+import static dev.jagt.orchestrator.job.TestAskedDeployBuilder.askedDeploy;
+import static dev.jagt.orchestrator.job.TestCheckerOutcomesBuilder.checkerOutcomes;
+import static dev.jagt.orchestrator.job.TestFlowReportsBuilder.flowReports;
+import static dev.jagt.orchestrator.job.TestRolesRootBuilder.rolesRoot;
+import static dev.jagt.orchestrator.job.TestStepRelayBuilder.stepRelay;
+import static dev.jagt.orchestrator.job.TestTaskTurnsBuilder.taskTurns;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
+import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.MasterCases;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.RoleDefinitions;
-import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.config.SessionCases;
-import dev.jagt.orchestrator.flow.Arbiter;
-import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowReports;
-import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentStatusReports;
-import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.HandBack;
-import dev.jagt.orchestrator.service.LinkRefusals;
-import dev.jagt.orchestrator.service.MissLog;
-import dev.jagt.orchestrator.service.ReachLedger;
-import dev.jagt.orchestrator.service.Rounds;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
-import dev.jagt.orchestrator.service.StopAnnouncements;
-import dev.jagt.orchestrator.service.StopLog;
-import dev.jagt.orchestrator.service.StopPolicy;
 import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.task.AcceptanceEnding;
 import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.AgentReport;
-import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
-import java.nio.file.Files;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class AcceptanceRoundFlowTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
-
   private final AgentSessions sessions = mock(AgentSessions.class);
+  private final ConfigService config = mock(ConfigService.class);
+
+  @TempDir Path root;
+
+  private StateService state;
+  private FlowReports flow;
+  private TaskTurns turns;
+  private TaskStops stops;
+  private AcceptanceVerdict notMet;
+  private StepRelay relay;
+  private AgentStatusReports reports;
+  private TaskState task;
+
+  @BeforeEach
+  void deployedTaskWaitingOnAcceptance() throws IOException {
+    rolesRoot().withRoot(root).build();
+    state = stateService().withRoot(root).build();
+    flow = flowReports().build(state, Clock.systemUTC());
+    turns = taskTurns().build(state, Clock.systemUTC());
+    stops = taskStops().withRoot(root).build(state, Clock.systemUTC());
+    notMet =
+        acceptanceVerdict()
+            .withRows(
+                List.of(
+                    new AcceptanceVerdict.Row(
+                        "login works", AcceptanceVerdict.Status.NOT_MET, "GET /me answered 500")))
+            .build();
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    relay = stepRelay().withRoot(root).build(state, sessions, Clock.systemUTC());
+    reports = agentStatusReports().build(state, flow, mock(WorktreeChanges.class), config);
+    task = askedDeploy().withWorktree(root.toString()).withAlias("a1").build();
+  }
 
   @Test
-  void movesDeployedTaskToInProgressAndHoldsItThereUntilTheSessionReportsNoChanges(
-      @TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.copy(
-        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED)
-            .alias("a1")
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    "digest"));
+  void movesDeployedTaskToInProgressAndHoldsItThereUntilTheSessionReportsNoChanges() {
     state.putTask("ABC-42", task);
-    FlowReports flow =
-        new FlowReports(
-            state,
-            Clock.systemUTC(),
-            new Checkers(new TaskChart(Composition.builtIn())),
-            new FlowRules(new TaskChart(Composition.builtIn())));
-    TaskStops stops =
-        new TaskStops(
-            new StopPolicy(
-                ignored -> Arbiter.Profile.OFF,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new StopLog(new JsonMapper(), paths))),
-            state,
-            Clock.systemUTC(),
-            new FlowRules(new TaskChart(Composition.builtIn())));
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-            stops);
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            door,
-            new TaskTurns(
-                state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-    ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    AgentStatusReports reports =
-        new AgentStatusReports(
-            state,
-            new LinkRefusals(new ReachLedger(), (session, line) -> "", state),
-            flow,
-            new HandBack(
-                mock(WorktreeChanges.class),
-                new Rounds(
-                    config,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                config),
-            config);
-    AcceptanceVerdict verdict =
-        new AcceptanceVerdict(
-            "proj@0123456789abcdef",
-            "",
-            List.of(
-                new AcceptanceVerdict.Row(
-                    "login works", AcceptanceVerdict.Status.NOT_MET, "GET /me answered 500")),
-            "",
-            "",
-            AcceptanceVerdict.Flows.none());
 
-    new CheckerOutcomes(
-            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-            relay,
-            flow,
-            stops,
-            state)
-        .apply("ABC-42", task, verdict);
+    checkerOutcomes().build(relay, flow, stops, state).apply("ABC-42", task, notMet);
     TaskState relayed = state.task("ABC-42").orElseThrow();
     reports.report(
         new AgentStatusMessage("IN_PROGRESS", "the endpoint is fine", "no_changes", null, Map.of()),
@@ -160,92 +92,10 @@ class AcceptanceRoundFlowTest {
   }
 
   @Test
-  void holdsDeployedWhereTheSessionDeclinesRoundAfterItsQuestionWasAnsweredInsideTheRound(
-      @TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    Files.createDirectories(root.resolve("roles/session"));
-    Files.copy(
-        Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
-    Files.createDirectories(root.resolve("roles/master"));
-    Files.copy(
-        Path.of("../../roles/master/cases.md.dist"), root.resolve("roles/master/cases.md.dist"));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED)
-            .alias("a1")
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    "digest"));
+  void holdsDeployedWhereTheSessionDeclinesRoundAfterItsQuestionWasAnsweredInsideTheRound() {
     state.putTask("ABC-42", task);
-    FlowReports flow =
-        new FlowReports(
-            state,
-            Clock.systemUTC(),
-            new Checkers(new TaskChart(Composition.builtIn())),
-            new FlowRules(new TaskChart(Composition.builtIn())));
-    TaskStops stops =
-        new TaskStops(
-            new StopPolicy(
-                ignored -> Arbiter.Profile.OFF,
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(
-                    new StopLog(new JsonMapper(), paths))),
-            state,
-            Clock.systemUTC(),
-            new FlowRules(new TaskChart(Composition.builtIn())));
-    CaseDoor door =
-        new CaseDoor(
-            new SessionCases(paths),
-            new MasterCases(paths),
-            state,
-            new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-            stops);
-    TaskTurns turns =
-        new TaskTurns(state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn())));
-    StepRelay relay = new StepRelay(new SessionBrief(paths), sessions, door, turns);
-    ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    AgentStatusReports reports =
-        new AgentStatusReports(
-            state,
-            new LinkRefusals(new ReachLedger(), (session, line) -> "", state),
-            flow,
-            new HandBack(
-                mock(WorktreeChanges.class),
-                new Rounds(
-                    config,
-                    ignored -> false,
-                    () -> false,
-                    () -> false,
-                    new Checkers(new TaskChart(Composition.builtIn()))),
-                config),
-            config);
-    AcceptanceVerdict verdict =
-        new AcceptanceVerdict(
-            "proj@0123456789abcdef",
-            "",
-            List.of(
-                new AcceptanceVerdict.Row(
-                    "login works", AcceptanceVerdict.Status.NOT_MET, "GET /me answered 500")),
-            "",
-            "",
-            AcceptanceVerdict.Flows.none());
 
-    new CheckerOutcomes(
-            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-            relay,
-            flow,
-            stops,
-            state)
-        .apply("ABC-42", task, verdict);
+    checkerOutcomes().build(relay, flow, stops, state).apply("ABC-42", task, notMet);
     reports.report(
         new AgentStatusMessage("IN_PROGRESS", "which environment?", "question", null, Map.of()),
         "ABC-42");
@@ -258,46 +108,19 @@ class AcceptanceRoundFlowTest {
   }
 
   @Test
-  void asksTheHumanThroughTheFlowWhereRowIsUnprovableAndKeepsTheStatusDeployed(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED)
-            .alias("a1")
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    "digest"));
+  void asksTheHumanThroughTheFlowWhereRowIsUnprovableAndKeepsTheStatusDeployed() {
     state.putTask("ABC-42", task);
-    AcceptanceVerdict verdict =
-        new AcceptanceVerdict(
-            "proj@0123456789abcdef",
-            "",
-            List.of(
-                new AcceptanceVerdict.Row(
-                    "login works", AcceptanceVerdict.Status.UNPROVABLE, "no login")),
-            "",
-            "",
-            AcceptanceVerdict.Flows.none());
+    AcceptanceVerdict unprovable =
+        acceptanceVerdict()
+            .withRows(
+                List.of(
+                    new AcceptanceVerdict.Row(
+                        "login works", AcceptanceVerdict.Status.UNPROVABLE, "no login")))
+            .build();
 
-    new CheckerOutcomes(
-            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-            mock(StepRelay.class),
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            mock(TaskStops.class),
-            state)
-        .apply("ABC-42", task, verdict);
+    checkerOutcomes()
+        .build(mock(StepRelay.class), flow, mock(TaskStops.class), state)
+        .apply("ABC-42", task, unprovable);
 
     TaskState asked = state.task("ABC-42").orElseThrow();
     assertThat(asked.status()).isEqualTo(TaskStatus.DEPLOYED);
@@ -306,49 +129,15 @@ class AcceptanceRoundFlowTest {
   }
 
   @Test
-  void refusesVerdictAtTheDoorWhereTheTaskWasClosedWhileAcceptanceRead(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED)
-            .alias("a1")
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    "digest"));
-    AcceptanceVerdict verdict =
-        new AcceptanceVerdict(
-            "proj@0123456789abcdef",
-            "",
-            List.of(
-                new AcceptanceVerdict.Row(
-                    "login works", AcceptanceVerdict.Status.NOT_MET, "GET /me answered 500")),
-            "",
-            "",
-            AcceptanceVerdict.Flows.none());
-    StepRelay relay = mock(StepRelay.class);
+  void refusesVerdictAtTheDoorWhereTheTaskWasClosedWhileAcceptanceRead() {
+    StepRelay unused = mock(StepRelay.class);
 
     AcceptanceEnding ending =
-        new CheckerOutcomes(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                relay,
-                new FlowReports(
-                    state,
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn())),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                mock(TaskStops.class),
-                state)
-            .apply("ABC-42", task, verdict);
+        checkerOutcomes()
+            .build(unused, flow, mock(TaskStops.class), state)
+            .apply("ABC-42", task, notMet);
 
     assertThat(ending).isEqualTo(AcceptanceEnding.GONE);
-    verifyNoInteractions(relay);
+    verifyNoInteractions(unused);
   }
 }

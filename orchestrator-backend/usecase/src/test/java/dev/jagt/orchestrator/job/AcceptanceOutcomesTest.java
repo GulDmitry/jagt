@@ -1,17 +1,14 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.job.TestAcceptanceVerdictBuilder.acceptanceVerdict;
+import static dev.jagt.orchestrator.job.TestAskedDeployBuilder.askedDeploy;
+import static dev.jagt.orchestrator.job.TestCheckerOutcomesBuilder.checkerOutcomes;
+import static dev.jagt.orchestrator.job.TestFlowReportsBuilder.flowReports;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.RoleDefinitions;
 import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.FlowReports;
-import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import dev.jagt.orchestrator.service.TaskStops;
@@ -20,125 +17,55 @@ import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.RoleRecord;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class AcceptanceOutcomesTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  @TempDir Path root;
 
-  @Test
-  void marksTheChangePassedWhileItsShaIsTheDeployTip(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    "digest"));
-    state.putTask("ABC-42", task);
-    AcceptanceVerdict verdict =
-        new AcceptanceVerdict(
-            "proj@0123456789abcdef",
-            "",
-            List.of(
-                new AcceptanceVerdict.Row(
-                    "login works", AcceptanceVerdict.Status.MET, "GET /me 200")),
-            "",
-            "",
-            AcceptanceVerdict.Flows.none());
+  private StateService state;
+  private CheckerOutcomes outcomes;
 
-    AcceptanceEnding ending =
-        new CheckerOutcomes(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
+  @BeforeEach
+  void outcomesOverAnEmptyState() {
+    state = stateService().withRoot(root).build();
+    outcomes =
+        checkerOutcomes()
+            .build(
                 mock(StepRelay.class),
-                new FlowReports(
-                    state,
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn())),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
+                flowReports().build(state, Clock.systemUTC()),
                 mock(TaskStops.class),
-                state)
-            .apply("ABC-42", task, verdict);
+                state);
+  }
 
-    assertThat(ending).isEqualTo(AcceptanceEnding.PASSED);
-    assertThat(state.task("ABC-42").orElseThrow().passedBy(Checkers.ACCEPTANCE)).isTrue();
+  @ParameterizedTest
+  @CsvSource({"0123456789abcdef,PASSED,true", "fedcba9876543210,DROPPED,false"})
+  void passesTheChangeOnlyWhileTheVerdictShaIsTheDeployTip(
+      String tip, AcceptanceEnding ending, boolean passed) {
+    TaskState task = askedDeploy().withMerge(tip).build();
+    state.putTask("ABC-42", task);
+
+    AcceptanceEnding result = outcomes.apply("ABC-42", task, acceptanceVerdict().build());
+
+    assertThat(result).isEqualTo(ending);
+    assertThat(state.task("ABC-42").orElseThrow().passedBy(Checkers.ACCEPTANCE)).isEqualTo(passed);
   }
 
   @Test
-  void dropsVerdictOnShaThatIsNoLongerTheDeployTip(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
+  void showsNoPassedLabelOnceLaterDeployMovedTheTip() {
     TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+        askedDeploy()
             .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("fedcba9876543210")),
-                    1,
-                    "digest"));
-    state.putTask("ABC-42", task);
-    AcceptanceVerdict verdict =
-        new AcceptanceVerdict(
-            "proj@0123456789abcdef",
-            "",
-            List.of(
-                new AcceptanceVerdict.Row(
-                    "login works", AcceptanceVerdict.Status.MET, "GET /me 200")),
-            "",
-            "",
-            AcceptanceVerdict.Flows.none());
-
-    AcceptanceEnding ending =
-        new CheckerOutcomes(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                mock(StepRelay.class),
-                new FlowReports(
-                    state,
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn())),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                mock(TaskStops.class),
-                state)
-            .apply("ABC-42", task, verdict);
-
-    assertThat(ending).isEqualTo(AcceptanceEnding.DROPPED);
-    assertThat(state.task("ABC-42").orElseThrow().passedBy(Checkers.ACCEPTANCE)).isFalse();
-  }
-
-  @Test
-  void showsNoPassedLabelOnceLaterDeployMovedTheTip(@TempDir Path root) {
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    "digest"))
             .withRole(
                 Checkers.ACCEPTANCE, RoleRecord.defaults().withPassed("proj@0123456789abcdef"));
 
@@ -155,184 +82,47 @@ class AcceptanceOutcomesTest {
   }
 
   @Test
-  void recordsNoRoundSentWhereTheSessionWasNotHandedTheRows(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    "digest"));
+  void recordsNoRoundSentWhereTheSessionWasNotHandedTheRows() {
+    TaskState task = askedDeploy().build();
     state.putTask("ABC-42", task);
     AcceptanceVerdict verdict =
-        new AcceptanceVerdict(
-            "proj@0123456789abcdef",
-            "",
-            List.of(
-                new AcceptanceVerdict.Row(
-                    "login works", AcceptanceVerdict.Status.NOT_MET, "GET /me 500")),
-            "",
-            "",
-            AcceptanceVerdict.Flows.none());
+        acceptanceVerdict()
+            .withRows(
+                List.of(
+                    new AcceptanceVerdict.Row(
+                        "login works", AcceptanceVerdict.Status.NOT_MET, "GET /me 500")))
+            .build();
 
-    AcceptanceEnding ending =
-        new CheckerOutcomes(
-                RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-                mock(StepRelay.class),
-                new FlowReports(
-                    state,
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn())),
-                    new FlowRules(new TaskChart(Composition.builtIn()))),
-                mock(TaskStops.class),
-                state)
-            .apply("ABC-42", task, verdict);
+    AcceptanceEnding ending = outcomes.apply("ABC-42", task, verdict);
 
     assertThat(ending).isEqualTo(AcceptanceEnding.NOT_MET);
     assertThat(state.task("ABC-42").orElseThrow()).isEqualTo(task);
   }
 
-  @Test
-  void asksTheQuestionAcceptancePutWhereItSentOneAndNotTheRows(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    "digest"));
+  @ParameterizedTest
+  @MethodSource("whatTheHumanIsAsked")
+  void asksTheHumanWhatAcceptanceCouldNotProve(
+      List<AcceptanceVerdict.Row> rows, String question, String asked) {
+    TaskState task = askedDeploy().build();
     state.putTask("ABC-42", task);
-    AcceptanceVerdict verdict =
-        new AcceptanceVerdict(
-            "proj@0123456789abcdef",
-            "",
-            List.of(
-                new AcceptanceVerdict.Row(
-                    "login works", AcceptanceVerdict.Status.UNPROVABLE, "no login")),
-            "which user?",
-            "",
-            AcceptanceVerdict.Flows.none());
 
-    new CheckerOutcomes(
-            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-            mock(StepRelay.class),
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            mock(TaskStops.class),
-            state)
-        .apply("ABC-42", task, verdict);
+    outcomes.apply(
+        "ABC-42", task, acceptanceVerdict().withRows(rows).withQuestion(question).build());
 
-    assertThat(state.task("ABC-42").orElseThrow().message()).endsWith(":\nwhich user?");
+    assertThat(state.task("ABC-42").orElseThrow().message()).endsWith(asked);
   }
 
-  @Test
-  void asksOnlyTheRowsNotMetWhereAcceptanceSentNoQuestion(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    "digest"));
-    state.putTask("ABC-42", task);
-    AcceptanceVerdict verdict =
-        new AcceptanceVerdict(
-            "proj@0123456789abcdef",
+  static Stream<Arguments> whatTheHumanIsAsked() {
+    AcceptanceVerdict.Row unprovable =
+        new AcceptanceVerdict.Row("login works", AcceptanceVerdict.Status.UNPROVABLE, "no login");
+    AcceptanceVerdict.Row met =
+        new AcceptanceVerdict.Row("page opens", AcceptanceVerdict.Status.MET, "200");
+    return Stream.of(
+        Arguments.of(List.of(unprovable), "which user?", ":\nwhich user?"),
+        Arguments.of(
+            List.of(met, unprovable),
             "",
-            List.of(
-                new AcceptanceVerdict.Row("page opens", AcceptanceVerdict.Status.MET, "200"),
-                new AcceptanceVerdict.Row(
-                    "login works", AcceptanceVerdict.Status.UNPROVABLE, "no login")),
-            "",
-            "",
-            AcceptanceVerdict.Flows.none());
-
-    new CheckerOutcomes(
-            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-            mock(StepRelay.class),
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            mock(TaskStops.class),
-            state)
-        .apply("ABC-42", task, verdict);
-
-    assertThat(state.task("ABC-42").orElseThrow().message())
-        .endsWith(":\n- login works — unprovable: no login");
-  }
-
-  @Test
-  void namesNoCriterionWhereAcceptanceProvedNothingAndSentNoRowOrQuestion(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer, event -> {});
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    "digest"));
-    state.putTask("ABC-42", task);
-    AcceptanceVerdict verdict =
-        new AcceptanceVerdict(
-            "proj@0123456789abcdef", "", List.of(), "", "", AcceptanceVerdict.Flows.none());
-
-    new CheckerOutcomes(
-            RoleDefinitions.fromFile(Path.of("../../roles/acceptance/role.yml.dist")),
-            mock(StepRelay.class),
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            mock(TaskStops.class),
-            state)
-        .apply("ABC-42", task, verdict);
-
-    assertThat(state.task("ABC-42").orElseThrow().message())
-        .endsWith(":\nthe check named no criterion");
+            ":\n- login works — unprovable: no login"),
+        Arguments.of(List.of(), "", ":\nthe check named no criterion"));
   }
 }
