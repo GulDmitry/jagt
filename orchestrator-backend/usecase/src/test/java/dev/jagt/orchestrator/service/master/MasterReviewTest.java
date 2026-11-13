@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -30,45 +31,49 @@ class MasterReviewTest {
   private static final TaskReducer reducer =
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
-  private final MasterReview reviews = new MasterReview(mock(StateService.class));
+  @TempDir Path worktree;
+  private final MasterReview stateless = new MasterReview(mock(StateService.class));
+  private StateService state;
+  private MasterReview reviews;
+  private TaskState task;
+  private TaskState taskInRound5;
 
-  @Test
-  void readsNothingFromTaskTheReviewerHasNotWrittenAbout(@TempDir Path worktree) {
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build();
-
-    assertThat(reviews.of(task)).isEmpty();
-  }
-
-  @Test
-  void neverReadsVerdictBackOutOfTheFileWrittenForTheHuman(@TempDir Path worktree)
-      throws Exception {
-    Files.writeString(worktree.resolve(MasterReview.FILE), "nothing wrong\n\nVERDICT: ready\n");
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build();
-
-    assertThat(reviews.of(task)).isEmpty();
-  }
-
-  @Test
-  void readsBackTheFindingsEveryRoleAnsweredWithTheRoleThatMadeThem(@TempDir Path worktree) {
-    StateService state =
+  @BeforeEach
+  void setUp() {
+    state =
         new StateService(
             new JsonMapper(),
             new OrchestratorPaths(
                 OrchestratorProperties.defaults()
                     .withRoot(worktree.toString())
                     .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    MasterReview reviews = new MasterReview(state);
-    TaskState task =
+            reducer,
+            event -> {});
+    reviews = new MasterReview(state);
+    task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
             .build();
+    taskInRound5 =
+        task.withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
+  }
+
+  @Test
+  void readsNothingFromTaskTheReviewerHasNotWrittenAbout() {
+
+    assertThat(stateless.of(task)).isEmpty();
+  }
+
+  @Test
+  void neverReadsVerdictBackOutOfTheFileWrittenForTheHuman()
+      throws Exception {
+    Files.writeString(worktree.resolve(MasterReview.FILE), "nothing wrong\n\nVERDICT: ready\n");
+
+    assertThat(stateless.of(task)).isEmpty();
+  }
+
+  @Test
+  void readsBackTheFindingsEveryRoleAnsweredWithTheRoleThatMadeThem() {
     Finding inverted =
         new Finding(
             "Foo.java",
@@ -101,30 +106,16 @@ class MasterReviewTest {
   }
 
   @Test
-  void writesTheFileForTheHumanBesideTheVerdict(@TempDir Path worktree) {
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build();
+  void writesTheFileForTheHumanBesideTheVerdict() {
 
-    reviews.write(
+    stateless.write(
         "a1", task, new MasterReview.Review(1, "", "", "", List.of()), "VERDICT: ready\n");
 
     assertThat(worktree.resolve(MasterReview.FILE)).content().isEqualTo("VERDICT: ready\n");
   }
 
   @Test
-  void doesNotTakeVerdictAskedAboutAnEarlierHandBackForTheOneInFrontHoweverLateItWasWritten(
-      @TempDir Path worktree) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    MasterReview reviews = new MasterReview(state);
+  void doesNotTakeVerdictAskedAboutAnEarlierHandBackForTheOneInFrontHoweverLateItWasWritten() {
     TaskState handedBackAgain =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -139,17 +130,7 @@ class MasterReviewTest {
   }
 
   @Test
-  void doesNotTakeVerdictForHandBackTheSessionMadeAgainWithNoRelayBetween(
-      @TempDir Path worktree) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    MasterReview reviews = new MasterReview(state);
+  void doesNotTakeVerdictForHandBackTheSessionMadeAgainWithNoRelayBetween() {
     Turn handedBack = new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of());
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
@@ -169,24 +150,10 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterReadsTheRoundAgainWhereTheVerdictFileWasDeleted(@TempDir Path worktree)
+  void theMasterReadsTheRoundAgainWhereTheVerdictFileWasDeleted()
       throws Exception {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    MasterReview reviews = new MasterReview(state);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build()
-            .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-    state.putTask("a1", task);
-    reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
+    state.putTask("a1", taskInRound5);
+    reviews.write("a1", taskInRound5, new MasterReview.Review(5, "", "", "", List.of()), "");
     Files.delete(worktree.resolve(".jagt").resolve(MasterReview.STORED));
 
     reviews.settle("a1", state.task("a1").orElseThrow());
@@ -195,24 +162,10 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterReadsTheRoundAgainWhereTheVerdictFileWasRewritten(@TempDir Path worktree)
+  void theMasterReadsTheRoundAgainWhereTheVerdictFileWasRewritten()
       throws Exception {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    MasterReview reviews = new MasterReview(state);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build()
-            .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-    state.putTask("a1", task);
-    reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
+    state.putTask("a1", taskInRound5);
+    reviews.write("a1", taskInRound5, new MasterReview.Review(5, "", "", "", List.of()), "");
     Files.writeString(
         worktree.resolve(".jagt").resolve(MasterReview.STORED), "{\"round\":5,\"reads\":[]}");
 
@@ -222,24 +175,10 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterKeepsReadingTheRoundWhereTheVerdictFileCouldNotBeRead(@TempDir Path worktree)
+  void theMasterKeepsReadingTheRoundWhereTheVerdictFileCouldNotBeRead()
       throws Exception {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    MasterReview reviews = new MasterReview(state);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build()
-            .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-    state.putTask("a1", task);
-    reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
+    state.putTask("a1", taskInRound5);
+    reviews.write("a1", taskInRound5, new MasterReview.Review(5, "", "", "", List.of()), "");
     Files.setPosixFilePermissions(worktree.resolve(".jagt").resolve(MasterReview.STORED), Set.of());
 
     reviews.settle("a1", state.task("a1").orElseThrow());
@@ -248,17 +187,8 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterStandsInWhereTheVerdictFileItSealedDoesNotParse(@TempDir Path worktree)
+  void theMasterStandsInWhereTheVerdictFileItSealedDoesNotParse()
       throws Exception {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    final MasterReview reviews = new MasterReview(state);
     Files.createDirectories(worktree.resolve(".jagt"));
     Files.writeString(worktree.resolve(".jagt").resolve(MasterReview.STORED), "not json");
     TaskState task =
@@ -280,17 +210,8 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterReadsVerdictSealedWithoutItsRoundAsTheRoundItAnswers(@TempDir Path worktree)
+  void theMasterReadsVerdictSealedWithoutItsRoundAsTheRoundItAnswers()
       throws Exception {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    final MasterReview reviews = new MasterReview(state);
     Files.createDirectories(worktree.resolve(".jagt"));
     String stored = "{\"round\":3,\"reads\":[]}";
     Files.writeString(worktree.resolve(".jagt").resolve(MasterReview.STORED), stored);
@@ -313,23 +234,9 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterKeepsSealWrittenWhileTheCallerStillHeldTheOlderOne(@TempDir Path worktree) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    MasterReview reviews = new MasterReview(state);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build()
-            .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-    state.putTask("a1", task);
-    reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
+  void theMasterKeepsSealWrittenWhileTheCallerStillHeldTheOlderOne() {
+    state.putTask("a1", taskInRound5);
+    reviews.write("a1", taskInRound5, new MasterReview.Review(5, "", "", "", List.of()), "");
     TaskState older =
         state.task("a1").orElseThrow().withMaster(Master.defaults().withSeal("older", 5));
 
@@ -339,24 +246,10 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterKeepsSealWrittenWhileTheCallerSawTheVerdictFileGone(@TempDir Path worktree)
+  void theMasterKeepsSealWrittenWhileTheCallerSawTheVerdictFileGone()
       throws Exception {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    MasterReview reviews = new MasterReview(state);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build()
-            .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-    state.putTask("a1", task);
-    reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
+    state.putTask("a1", taskInRound5);
+    reviews.write("a1", taskInRound5, new MasterReview.Review(5, "", "", "", List.of()), "");
     TaskState older =
         state.task("a1").orElseThrow().withMaster(Master.defaults().withSeal("older", 5));
     Files.delete(worktree.resolve(".jagt").resolve(MasterReview.STORED));
@@ -367,23 +260,9 @@ class MasterReviewTest {
   }
 
   @Test
-  void theMasterHoldsReadTheRoundWhereTheVerdictFileStandsAsJagtWroteIt(@TempDir Path worktree) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    MasterReview reviews = new MasterReview(state);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build()
-            .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-    state.putTask("a1", task);
-    reviews.write("a1", task, new MasterReview.Review(5, "", "", "", List.of()), "");
+  void theMasterHoldsReadTheRoundWhereTheVerdictFileStandsAsJagtWroteIt() {
+    state.putTask("a1", taskInRound5);
+    reviews.write("a1", taskInRound5, new MasterReview.Review(5, "", "", "", List.of()), "");
 
     reviews.settle("a1", state.task("a1").orElseThrow());
 
@@ -391,23 +270,9 @@ class MasterReviewTest {
   }
 
   @Test
-  void makesRestampedVerdictAnswerTheHandBackInFront(@TempDir Path worktree) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    MasterReview reviews = new MasterReview(state);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build()
-            .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-    state.putTask("a1", task);
-    reviews.write("a1", task, new MasterReview.Review(3, "abc123", "", "", List.of()), "");
+  void makesRestampedVerdictAnswerTheHandBackInFront() {
+    state.putTask("a1", taskInRound5);
+    reviews.write("a1", taskInRound5, new MasterReview.Review(3, "abc123", "", "", List.of()), "");
 
     boolean restamped = reviews.restamp("a1", state.task("a1").orElseThrow());
 
@@ -416,13 +281,9 @@ class MasterReviewTest {
   }
 
   @Test
-  void saysNothingWasRestampedWhereNoVerdictExists(@TempDir Path worktree) {
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build();
+  void saysNothingWasRestampedWhereNoVerdictExists() {
 
-    assertThat(reviews.restamp("a1", task)).isFalse();
+    assertThat(stateless.restamp("a1", task)).isFalse();
   }
 
   @Test
@@ -439,22 +300,18 @@ class MasterReviewTest {
     TaskState task = TaskState.builder("proj", "  ", TaskStatus.REVIEW_PENDING).alias("a1").build();
 
     assertThat(
-            reviews.write(
+            stateless.write(
                 "a1", task, new MasterReview.Review(1, "", "", "", List.of()), "VERDICT: ready\n"))
         .isFalse();
   }
 
   @Test
-  void saysTheVerdictWasNotWrittenWhereOnlyTheFileForTheHumanCould(@TempDir Path worktree)
+  void saysTheVerdictWasNotWrittenWhereOnlyTheFileForTheHumanCould()
       throws Exception {
     Files.writeString(worktree.resolve(".jagt"), "in the way");
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build();
 
     boolean written =
-        reviews.write(
+        stateless.write(
             "a1", task, new MasterReview.Review(1, "", "", "", List.of()), "VERDICT: ready\n");
 
     assertThat(written).isFalse();
@@ -462,21 +319,16 @@ class MasterReviewTest {
   }
 
   @Test
-  void saysBothFilesWereWrittenWhereTheyWere(@TempDir Path worktree) {
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build();
+  void saysBothFilesWereWrittenWhereTheyWere() {
 
     assertThat(
-            reviews.write(
+            stateless.write(
                 "a1", task, new MasterReview.Review(1, "", "", "", List.of()), "VERDICT: ready\n"))
         .isTrue();
   }
 
   @Test
-  void loadsVerdictStoredBeforeItKeptTheReportKindAsOneThatMatchesNoHandBack(
-      @TempDir Path worktree) throws Exception {
+  void loadsVerdictStoredBeforeItKeptTheReportKindAsOneThatMatchesNoHandBack() throws Exception {
     Files.createDirectories(worktree.resolve(".jagt"));
     String stored = "{\"round\":3,\"ownDiff\":\"abc123\",\"reads\":[]}";
     Files.writeString(worktree.resolve(".jagt").resolve(MasterReview.STORED), stored);
@@ -491,22 +343,13 @@ class MasterReviewTest {
                     JagtJson.fingerprint(stored.getBytes(java.nio.charset.StandardCharsets.UTF_8)),
                     0));
 
-    MasterReview.Review review = reviews.stored(task).orElseThrow();
+    MasterReview.Review review = stateless.stored(task).orElseThrow();
 
     assertThat(review.readsInputsOf(task, "abc123", "in1")).isFalse();
   }
 
   @Test
-  void remembersTheKindOfTheHandBackItReadBesideTheOwnDiff(@TempDir Path worktree) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    MasterReview reviews = new MasterReview(state);
+  void remembersTheKindOfTheHandBackItReadBesideTheOwnDiff() {
     TaskState task =
         TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
             .alias("a1")
@@ -522,24 +365,10 @@ class MasterReviewTest {
   }
 
   @Test
-  void takesNoVerdictFromFileJagtDidNotWriteHoweverItNamesTheRoundInFront(@TempDir Path worktree)
+  void takesNoVerdictFromFileJagtDidNotWriteHoweverItNamesTheRoundInFront()
       throws Exception {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(worktree.toString())
-                    .withStateFile(worktree.resolve("state.json").toString())),
-                    reducer, event -> {});
-    MasterReview reviews = new MasterReview(state);
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build()
-            .withTurn(new Turn("round-not-ready", 5, "", 5_000, Map.of(), List.of()));
-    state.putTask("a1", task);
-    reviews.write("a1", task, new MasterReview.Review(4, "", "", "", List.of()), "");
+    state.putTask("a1", taskInRound5);
+    reviews.write("a1", taskInRound5, new MasterReview.Review(4, "", "", "", List.of()), "");
     Files.writeString(
         worktree.resolve(".jagt").resolve(MasterReview.STORED), "{\"round\":5,\"reads\":[]}");
 
@@ -549,17 +378,13 @@ class MasterReviewTest {
   }
 
   @Test
-  void takesNoVerdictFromFileWhenJagtStoredNoFingerprintForIt(@TempDir Path worktree)
+  void takesNoVerdictFromFileWhenJagtStoredNoFingerprintForIt()
       throws Exception {
     Files.createDirectories(worktree.resolve(".jagt"));
     Files.writeString(
         worktree.resolve(".jagt").resolve(MasterReview.STORED), "{\"round\":0,\"reads\":[]}");
-    TaskState task =
-        TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
-            .alias("a1")
-            .build();
 
-    assertThat(reviews.of(task)).isEmpty();
+    assertThat(stateless.of(task)).isEmpty();
   }
 
   @Test

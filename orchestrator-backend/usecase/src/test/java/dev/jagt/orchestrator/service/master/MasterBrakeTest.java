@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -28,26 +29,69 @@ class MasterBrakeTest {
   private static final TaskReducer reducer =
       new TaskReducer(new TaskChart(Composition.builtIn()));
 
-  @Test
-  void stopsActWhenThreeTasksTheMasterMovedEndBadlyInRow(@TempDir Path root) {
-    OrchestratorPaths paths =
+  @TempDir Path root;
+  private OrchestratorPaths paths;
+  private AnnotationConfigApplicationContext context;
+  private TaskState reverted1;
+  private TaskState reverted2;
+  private TaskState reverted3;
+  private TaskState reverted4;
+  private TaskState reverted5;
+
+  @BeforeEach
+  void setUp() {
+    paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
                 .withRoot(root.toString())
                 .withStateFile(root.resolve("state.json").toString()));
-    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context = new AnnotationConfigApplicationContext();
     context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
     context.refresh();
+    reverted1 =
+        TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
+            .history(
+                List.of(
+                    new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
+                    new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD)))
+            .build();
+    reverted2 =
+        TaskState.builder("proj", "/wt2", TaskStatus.REVERTED)
+            .history(
+                List.of(
+                    new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
+                    new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
+            .build();
+    reverted3 =
+        TaskState.builder("proj", "/wt3", TaskStatus.REVERTED)
+            .history(
+                List.of(
+                    new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
+                    new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD)))
+            .build();
+    reverted4 =
+        TaskState.builder("proj", "/wt4", TaskStatus.REVERTED)
+            .history(
+                List.of(
+                    new StatusChange(TaskStatus.SHIPPING, 13, ActionOrigin.MASTER),
+                    new StatusChange(TaskStatus.REVERTED, 23, ActionOrigin.BOARD)))
+            .build();
+    reverted5 =
+        TaskState.builder("proj", "/wt5", TaskStatus.REVERTED)
+            .history(
+                List.of(
+                    new StatusChange(TaskStatus.SHIPPING, 14, ActionOrigin.MASTER),
+                    new StatusChange(TaskStatus.REVERTED, 24, ActionOrigin.BOARD)))
+            .build();
+  }
+
+  @Test
+  void stopsActWhenThreeTasksTheMasterMovedEndBadlyInRow() {
 
     context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
-                TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
-                    .history(
-                        List.of(
-                            new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
-                            new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD)))
-                    .build(),
+                reverted1,
             "ABC-2",
                 TaskState.builder("proj", "/wt2", TaskStatus.DEPLOY_CONFLICT)
                     .history(
@@ -68,15 +112,7 @@ class MasterBrakeTest {
   }
 
   @Test
-  void countsNoSilenceAfterTheSessionReportedItself(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
-    context.refresh();
+  void countsNoSilenceAfterTheSessionReportedItself() {
 
     context.publishEvent(new StateWritten(Map.of(),
         Map.of(
@@ -109,15 +145,7 @@ class MasterBrakeTest {
   }
 
   @Test
-  void stopsActWhenThreeSessionsFallSilentRightAfterTheMastersMove(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
-    context.refresh();
+  void stopsActWhenThreeSessionsFallSilentRightAfterTheMastersMove() {
 
     context.publishEvent(new StateWritten(Map.of(),
         Map.of(
@@ -144,15 +172,7 @@ class MasterBrakeTest {
   }
 
   @Test
-  void countsNoSilenceAfterTheHumansOwnMove(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
-    context.refresh();
+  void countsNoSilenceAfterTheHumansOwnMove() {
 
     context.publishEvent(new StateWritten(Map.of(),
         Map.of(
@@ -185,58 +205,27 @@ class MasterBrakeTest {
   }
 
   @Test
-  void keepsActWhereDeployCameBetweenTheBadEndings(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
-    context.refresh();
+  void keepsActWhereDeployCameBetweenTheBadEndings() {
 
     context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
-                TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
-                    .history(
-                        List.of(
-                            new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
-                            new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD)))
-                    .build(),
+                reverted1,
             "ABC-2",
-                TaskState.builder("proj", "/wt2", TaskStatus.REVERTED)
-                    .history(
-                        List.of(
-                            new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
-                            new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
-                    .build(),
+                reverted2,
             "ABC-3",
                 TaskState.builder("proj", "/wt3", TaskStatus.DEPLOYED)
                     .history(
                         List.of(new StatusChange(TaskStatus.DEPLOYED, 22, ActionOrigin.MASTER)))
                     .build(),
             "ABC-4",
-                TaskState.builder("proj", "/wt4", TaskStatus.REVERTED)
-                    .history(
-                        List.of(
-                            new StatusChange(TaskStatus.SHIPPING, 13, ActionOrigin.MASTER),
-                            new StatusChange(TaskStatus.REVERTED, 23, ActionOrigin.BOARD)))
-                    .build())));
+                reverted4)));
 
     assertThat(root.resolve("act-stopped")).doesNotExist();
   }
 
   @Test
-  void countsOneTaskEndingBadlyTwiceAsOne(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
-    context.refresh();
+  void countsOneTaskEndingBadlyTwiceAsOne() {
 
     context.publishEvent(new StateWritten(Map.of(),
         Map.of(
@@ -249,26 +238,13 @@ class MasterBrakeTest {
                             new StatusChange(TaskStatus.REVERTED, 30, ActionOrigin.BOARD)))
                     .build(),
             "ABC-2",
-                TaskState.builder("proj", "/wt2", TaskStatus.REVERTED)
-                    .history(
-                        List.of(
-                            new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
-                            new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
-                    .build())));
+                reverted2)));
 
     assertThat(root.resolve("act-stopped")).doesNotExist();
   }
 
   @Test
-  void countsNoTaskTheMasterNeverMoved(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
-    context.refresh();
+  void countsNoTaskTheMasterNeverMoved() {
 
     context.publishEvent(new StateWritten(Map.of(),
         Map.of(
@@ -289,53 +265,22 @@ class MasterBrakeTest {
   }
 
   @Test
-  void countsNothingThatHadAlreadyEndedWhenJagtStarted(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+  void countsNothingThatHadAlreadyEndedWhenJagtStarted() {
     StateService before = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    before.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
-            .history(
-                List.of(
-                    new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
-                    new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD)))
-            .build());
-    before.putTask(
-        "ABC-2",
-        TaskState.builder("proj", "/wt2", TaskStatus.REVERTED)
-            .history(
-                List.of(
-                    new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
-                    new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
-            .build());
-    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
-    context.refresh();
-    StateService state = new StateService(new JsonMapper(), paths, reducer, context::publishEvent);
+    before.putTask("ABC-1", reverted1);
+    before.putTask("ABC-2", reverted2);
+    AnnotationConfigApplicationContext started = new AnnotationConfigApplicationContext();
+    started.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
+    started.refresh();
+    StateService after = new StateService(new JsonMapper(), paths, reducer, started::publishEvent);
 
-    state.putTask(
-        "ABC-3",
-        TaskState.builder("proj", "/wt3", TaskStatus.REVERTED)
-            .history(
-                List.of(
-                    new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
-                    new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD)))
-            .build());
+    after.putTask("ABC-3", reverted3);
 
     assertThat(root.resolve("act-stopped")).doesNotExist();
   }
 
   @Test
-  void givesActBackWhenTheHumanRestoresIt(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+  void givesActBackWhenTheHumanRestoresIt() throws Exception {
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
     MasterBrake brake = new MasterBrake(paths);
 
@@ -346,184 +291,75 @@ class MasterBrakeTest {
   }
 
   @Test
-  void stopsActOnEndingsWrittenToTheStateAfterItStartedFollowing(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
-    context.refresh();
+  void stopsActOnEndingsWrittenToTheStateAfterItStartedFollowing() {
     StateService state = new StateService(new JsonMapper(), paths, reducer, context::publishEvent);
 
     state.putTask(
         "ABC-1",
-        TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
-            .history(
-                List.of(
-                    new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
-                    new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD)))
-            .build());
+        reverted1);
     state.putTask(
         "ABC-2",
-        TaskState.builder("proj", "/wt2", TaskStatus.REVERTED)
-            .history(
-                List.of(
-                    new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
-                    new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
-            .build());
+        reverted2);
     state.putTask(
         "ABC-3",
-        TaskState.builder("proj", "/wt3", TaskStatus.REVERTED)
-            .history(
-                List.of(
-                    new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
-                    new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD)))
-            .build());
+        reverted3);
 
     assertThat(root.resolve("act-stopped")).exists();
   }
 
   @Test
-  void startsTheCountAgainWhereTheHumanRestoredActBetweenBadEndings(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
-    context.refresh();
+  void startsTheCountAgainWhereTheHumanRestoredActBetweenBadEndings() {
     MasterBrake brake = context.getBean(MasterBrake.class);
     context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
-            TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD)))
-                .build(),
+            reverted1,
             "ABC-2",
-            TaskState.builder("proj", "/wt2", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
-                .build())));
+            reverted2)));
     brake.restore();
 
     context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
-            TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD)))
-                .build(),
+            reverted1,
             "ABC-2",
-            TaskState.builder("proj", "/wt2", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
-                .build(),
+            reverted2,
             "ABC-3",
-            TaskState.builder("proj", "/wt3", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD)))
-                .build())));
+            reverted3)));
 
     assertThat(root.resolve("act-stopped")).doesNotExist();
   }
 
   @Test
-  void startsTheCountAgainOnceItHasStoppedAct(@TempDir Path root) throws Exception {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-    context.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
-    context.refresh();
+  void startsTheCountAgainOnceItHasStoppedAct() throws Exception {
     context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
-            TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD)))
-                .build(),
+            reverted1,
             "ABC-2",
-            TaskState.builder("proj", "/wt2", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
-                .build(),
+            reverted2,
             "ABC-3",
-            TaskState.builder("proj", "/wt3", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD)))
-                .build())));
+            reverted3)));
     Files.delete(root.resolve("act-stopped"));
 
     context.publishEvent(new StateWritten(Map.of(),
         Map.of(
             "ABC-1",
-            TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD)))
-                .build(),
+            reverted1,
             "ABC-2",
-            TaskState.builder("proj", "/wt2", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
-                .build(),
+            reverted2,
             "ABC-3",
-            TaskState.builder("proj", "/wt3", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD)))
-                .build(),
+            reverted3,
             "ABC-4",
-            TaskState.builder("proj", "/wt4", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 13, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 23, ActionOrigin.BOARD)))
-                .build(),
+            reverted4,
             "ABC-5",
-            TaskState.builder("proj", "/wt5", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 14, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 24, ActionOrigin.BOARD)))
-                .build())));
+            reverted5)));
 
     assertThat(root.resolve("act-stopped")).doesNotExist();
   }
 
   @Test
-  void keepsTheCountAcrossRestart(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+  void keepsTheCountAcrossRestart() {
     AnnotationConfigApplicationContext first = new AnnotationConfigApplicationContext();
     first.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
     first.refresh();
@@ -532,19 +368,9 @@ class MasterBrakeTest {
             Map.of(),
             Map.of(
                 "ABC-1",
-                    TaskState.builder("proj", "/wt1", TaskStatus.REVERTED)
-                        .history(
-                            List.of(
-                                new StatusChange(TaskStatus.SHIPPING, 10, ActionOrigin.MASTER),
-                                new StatusChange(TaskStatus.REVERTED, 20, ActionOrigin.BOARD)))
-                        .build(),
+                    reverted1,
                 "ABC-2",
-                    TaskState.builder("proj", "/wt2", TaskStatus.REVERTED)
-                        .history(
-                            List.of(
-                                new StatusChange(TaskStatus.SHIPPING, 11, ActionOrigin.MASTER),
-                                new StatusChange(TaskStatus.REVERTED, 21, ActionOrigin.BOARD)))
-                        .build())));
+                    reverted2)));
     AnnotationConfigApplicationContext restarted = new AnnotationConfigApplicationContext();
     restarted.registerBean(MasterBrake.class, () -> new MasterBrake(paths));
     restarted.refresh();
@@ -554,23 +380,13 @@ class MasterBrakeTest {
             Map.of(),
             Map.of(
             "ABC-3",
-            TaskState.builder("proj", "/wt3", TaskStatus.REVERTED)
-                .history(
-                    List.of(
-                        new StatusChange(TaskStatus.SHIPPING, 12, ActionOrigin.MASTER),
-                        new StatusChange(TaskStatus.REVERTED, 22, ActionOrigin.BOARD)))
-                .build())));
+            reverted3)));
 
     assertThat(root.resolve("act-stopped")).exists();
   }
 
   @Test
-  void saysActWasNotStoppedWhereThereWasNothingToRestore(@TempDir Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+  void saysActWasNotStoppedWhereThereWasNothingToRestore() {
     MasterBrake brake = new MasterBrake(paths);
 
     boolean restored = brake.restore();
