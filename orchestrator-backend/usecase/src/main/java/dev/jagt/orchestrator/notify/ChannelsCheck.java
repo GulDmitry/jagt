@@ -105,6 +105,10 @@ public class ChannelsCheck implements StartupCheck {
     if (COMMAND_KIND.equals(kind) && !hasArgv(def)) {
       problems.add(new Problem(key + ".command", key + ".command is empty, so nothing is run"));
     }
+    if (needsSecret(kind) && def.webhookEnv() == null) {
+      problems.add(
+          new Problem(key + ".webhookEnv", key + ".webhookEnv is missing, so nothing is posted"));
+    }
     if (def.webhookEnv() != null && !isSet(def.webhookEnv())) {
       problems.add(
           new Problem(
@@ -189,6 +193,11 @@ public class ChannelsCheck implements StartupCheck {
   private static Problem inert(String pointId, String role) {
     return new Problem(
         POINTS + pointId, POINTS + pointId + " is never told: the role " + role + " is disabled");
+  }
+
+  private boolean needsSecret(String kind) {
+    return drivers.stream()
+        .anyMatch(driver -> driver.kind().equals(kind) && driver.needsSecret());
   }
 
   private List<String> kinds() {

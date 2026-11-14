@@ -21,6 +21,8 @@
 - **Notifications routed per point** — `notifications.channels` and `notifications.points` route each point of a task's life (`your-move`, `stopped`,
   `auto-review`, `conflict-stalled`, `deployed`, …) to a channel, once, with your own text.
   [spec](../openspec/specs/notification-routing/spec.md#requirement-a-point-is-routed-to-the-channels-jagtyml-lists-told-once-per-key)
+- **Teams channel** — A `teams` channel posts a point as an Adaptive Card to a Workflows webhook, its links as buttons.
+  [spec](../openspec/specs/notification-routing/spec.md#requirement-a-teams-channel-posts-an-adaptive-card-to-a-workflows-webhook)
 
 ## Board · [spec](../openspec/specs/board/spec.md)
 - **One surface** — Cards, buttons and gates read the same rules. [spec](../openspec/specs/board/spec.md#requirement-one-surface-one-projection)

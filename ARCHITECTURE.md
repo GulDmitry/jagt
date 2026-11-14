@@ -171,7 +171,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `AcceptanceRunner` | `adapter/flows/FlowsRunner` choosing `PlaywrightRunner` by `flows.driver` in the role folder, read per run — scripted flows run as argv, judged from the JSON report |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Reach` | `service/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login`; `adapter/assistant/AssistantBreaker` writes the assistant's outage into it |
-| `ChannelDriver` | `adapter/DesktopNotifier`, `adapter/CommandChannel` — one per channel `kind`; `notify/Notifications` routes a point to the channels `jagt.yml` lists |
+| `ChannelDriver` | `adapter/DesktopNotifier`, `adapter/CommandChannel`, `adapter/teams/TeamsWorkflowChannel` — one per channel `kind`; `notify/Notifications` routes a point to the channels `jagt.yml` lists |
 | `Processes` | `adapter/ProcessRunner` |
 | `Host` | `adapter/SystemHost` — OS name, home, environment, executables on PATH, the running jar |
 | `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one single-impl seam; `openCommandWindow` runs a command as a window's process |

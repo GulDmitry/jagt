@@ -280,6 +280,7 @@ orchestrator:
       desktop: { kind: desktop }                          # a banner; a click opens the task on the board
       # ops: { kind: command, command: ["sh", "-c", "curl -s -X POST -H 'Content-Type: application/json' -d @- \"$OPS_WEBHOOK\""] }
       #                                                   # stdin: one JSON object {"event","task","alias","title","body"}
+      # chat: { kind: teams, webhookEnv: TEAMS_WEBHOOK_URL }   # a Workflows webhook URL in that env var; links in the text become buttons
     points:
       your-move:        [ { channel: desktop, title: "jagt · {alias} · {task} · {title}", text: "{body}" } ]
       stopped:          [ { channel: desktop, title: "jagt · {alias} · {task} · stopped", text: "{next}" } ]

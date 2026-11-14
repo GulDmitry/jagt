@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.port.ChannelDriver;
 import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.InstalledRoles;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -53,5 +54,13 @@ class DistRoutesTest {
             "housekeeping",
             "install",
             "usage");
+  }
+
+  @Test
+  void shippedExampleShowsCommentedTeamsChannel() throws Exception {
+    Path dist = Path.of("../../jagt.yml.dist").toAbsolutePath().normalize();
+
+    assertThat(Files.readAllLines(dist))
+        .anyMatch(line -> line.matches("\\s*# chat: \\{ kind: teams, webhookEnv: \\w+ \\}.*"));
   }
 }

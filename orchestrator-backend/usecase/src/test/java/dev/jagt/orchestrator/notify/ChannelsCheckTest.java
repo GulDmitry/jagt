@@ -32,6 +32,7 @@ class ChannelsCheckTest {
   private final InstalledRoles roles = mock(InstalledRoles.class);
   private final ChannelDriver desktop = mock(ChannelDriver.class);
   private final ChannelDriver command = mock(ChannelDriver.class);
+  private final ChannelDriver teams = mock(ChannelDriver.class);
   private final StandardEnvironment environment = new StandardEnvironment();
   private final OrchestratorPaths paths =
       new OrchestratorPaths(
@@ -42,12 +43,14 @@ class ChannelsCheckTest {
       Map<String, ChannelDef> channels, Map<String, List<RouteDef>> points) {
     when(desktop.kind()).thenReturn("desktop");
     when(command.kind()).thenReturn("command");
+    when(teams.kind()).thenReturn("teams");
+    when(teams.needsSecret()).thenReturn(true);
     when(roles.points()).thenReturn(Points.builtIn());
     when(config.load())
         .thenReturn(
             ConfigFile.defaults()
                 .withNotifications(new NotificationsConfig(channels, points)));
-    return new ChannelsCheck(config, roles, List.of(desktop, command), environment, paths);
+    return new ChannelsCheck(config, roles, List.of(desktop, command, teams), environment, paths);
   }
 
   @Test
@@ -94,6 +97,26 @@ class ChannelsCheckTest {
     assertThat(check.problems())
         .extracting(Problem::key)
         .containsExactly("orchestrator.notifications.channels.chat.kind");
+  }
+
+  @Test
+  void acceptsTeamsChannelWhoseWebhookEnvIsSet() {
+    environment
+        .getPropertySources()
+        .addFirst(new MapPropertySource("test", Map.of("ABC_HOOK", "https://example.invalid")));
+    ChannelsCheck check =
+        checkOf(Map.of("chat", new ChannelDef("teams", "ABC_HOOK", null)), Map.of());
+
+    assertThat(check.problems()).isEmpty();
+  }
+
+  @Test
+  void refusesTeamsChannelNamingNoWebhookEnv() {
+    ChannelsCheck check = checkOf(Map.of("chat", new ChannelDef("teams", null, null)), Map.of());
+
+    assertThat(check.problems())
+        .extracting(Problem::key)
+        .containsExactly("orchestrator.notifications.channels.chat.webhookEnv");
   }
 
   @Test

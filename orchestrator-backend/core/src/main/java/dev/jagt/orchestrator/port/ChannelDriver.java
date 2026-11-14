@@ -10,5 +10,10 @@ public interface ChannelDriver {
   /** The {@code kind} a channel names in {@code jagt.yml}. */
   String kind();
 
+  /** Whether a channel of this kind must name the environment variable holding its secret. */
+  default boolean needsSecret() {
+    return false;
+  }
+
   void deliver(ChannelAddress address, ChannelMessage message);
 }
