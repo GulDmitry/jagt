@@ -28,10 +28,6 @@ class PlaywrightRunnerTest {
 
   private static final String STAGE = "https://alpha.test";
 
-  private static Flows configured(String command) {
-    return new Flows("playwright", "/flows", List.of(command), Duration.ofMinutes(2));
-  }
-
   @Test
   void flowsAreUnprovableWhenNoCommandIsConfigured(@TempDir Path worktree) {
     Processes processes = mock(Processes.class);
@@ -47,13 +43,15 @@ class PlaywrightRunnerTest {
   @Test
   void flowsAreUnprovableNotFailedWhenTheCommandCannotStart(@TempDir Path worktree) {
     Processes processes = mock(Processes.class);
+    Flows flows =
+        new Flows("playwright", "/flows", List.of("no-such-tool"), Duration.ofMinutes(2));
     when(processes.run(any(), any(), anyMap(), anyList()))
         .thenThrow(
             new IllegalStateException("Failed to start command", new IOException("missing")));
 
     List<FlowResult> results =
         new PlaywrightRunner(processes)
-            .run(configured("no-such-tool"), worktree, List.of("AC-1", "AC-2"), STAGE);
+            .run(flows, worktree, List.of("AC-1", "AC-2"), STAGE);
 
     assertThat(results)
         .extracting(FlowResult::verdict)
@@ -63,11 +61,13 @@ class PlaywrightRunnerTest {
   @Test
   void flowsAreUnprovableWhenTheCommandPrintsNoJsonReport(@TempDir Path worktree) {
     Processes processes = mock(Processes.class);
+    Flows flows =
+        new Flows("playwright", "/flows", List.of("npx"), Duration.ofMinutes(2));
     when(processes.run(any(), any(), anyMap(), anyList()))
         .thenReturn(new Processes.Result(1, "", "browser missing"));
 
     List<FlowResult> results =
-        new PlaywrightRunner(processes).run(configured("npx"), worktree, List.of("AC-1"), STAGE);
+        new PlaywrightRunner(processes).run(flows, worktree, List.of("AC-1"), STAGE);
 
     assertThat(results.get(0).verdict()).isEqualTo(Verdict.UNPROVABLE);
     assertThat(results.get(0).reason()).isEqualTo("no JSON report (exit 1)");
@@ -80,11 +80,13 @@ class PlaywrightRunnerTest {
         "{\"suites\":[{\"specs\":[{\"title\":\"alpha\",\"tags\":[\"AC-1\"],"
             + "\"tests\":[{\"status\":\"expected\",\"results\":[]}]}]}]}";
     Processes processes = mock(Processes.class);
+    Flows flows =
+        new Flows("playwright", "/flows", List.of("npx"), Duration.ofMinutes(2));
     when(processes.run(any(), any(), anyMap(), anyList()))
         .thenReturn(new Processes.Result(0, json, ""));
 
     List<FlowResult> results =
-        new PlaywrightRunner(processes).run(configured("npx"), worktree, List.of("AC-1"), STAGE);
+        new PlaywrightRunner(processes).run(flows, worktree, List.of("AC-1"), STAGE);
 
     ArgumentCaptor<List<String>> argv = ArgumentCaptor.captor();
     verify(processes)
@@ -106,10 +108,12 @@ class PlaywrightRunnerTest {
   @Test
   void flowIdsAreEscapedIntoOneAlternationForTheGrep(@TempDir Path worktree) {
     Processes processes = mock(Processes.class);
+    Flows flows =
+        new Flows("playwright", "/flows", List.of("npx"), Duration.ofMinutes(2));
     when(processes.run(any(), any(), anyMap(), anyList()))
         .thenReturn(new Processes.Result(0, "{\"suites\":[]}", ""));
 
-    new PlaywrightRunner(processes).run(configured("npx"), worktree, List.of("a.b", "c(d)"), STAGE);
+    new PlaywrightRunner(processes).run(flows, worktree, List.of("a.b", "c(d)"), STAGE);
 
     ArgumentCaptor<List<String>> argv = ArgumentCaptor.captor();
     verify(processes).run(any(), any(), anyMap(), argv.capture());
@@ -119,9 +123,11 @@ class PlaywrightRunnerTest {
   @Test
   void noFlowsRunNothing(@TempDir Path worktree) {
     Processes processes = mock(Processes.class);
+    Flows flows =
+        new Flows("playwright", "/flows", List.of("npx"), Duration.ofMinutes(2));
 
     List<FlowResult> results =
-        new PlaywrightRunner(processes).run(configured("npx"), worktree, List.of(), STAGE);
+        new PlaywrightRunner(processes).run(flows, worktree, List.of(), STAGE);
 
     assertThat(results).isEmpty();
   }

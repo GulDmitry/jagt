@@ -19,18 +19,15 @@ class StopHoldTest {
 
   private static final Arbiter.Profile ACT = new Arbiter.Profile(MasterMode.ACT, Set.of());
 
-  private static TaskState stopped(TaskStop.Trigger trigger) {
-    return TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-        .stop(new TaskStop(trigger, 5, "evidence"))
-        .build();
-  }
-
   @ParameterizedTest
   @EnumSource(
       value = TaskStop.Trigger.class,
       names = {"STALLED", "SHIPS", "ROUNDS", "PACE", "UNCHANGED_FAILURE"})
   void stopForSuspectedLoopIsTheMastersTurnInAct(TaskStop.Trigger trigger) {
-    TaskState task = stopped(trigger);
+    TaskState task =
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .stop(new TaskStop(trigger, 5, "evidence"))
+            .build();
 
     Holder holder = Turns.next(task.status(), task.report(), StopHold.of(task, ACT), Map.of(), ACT);
 
@@ -51,7 +48,10 @@ class StopHoldTest {
         "DEPLOY_UNREAD"
       })
   void stopTheHumanSetOrReadEndsIsNeverTheMastersTurn(TaskStop.Trigger trigger) {
-    TaskState task = stopped(trigger);
+    TaskState task =
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .stop(new TaskStop(trigger, 5, "evidence"))
+            .build();
 
     assertThat(StopHold.of(task, ACT)).isEqualTo(StopHold.HUMAN);
   }
@@ -59,20 +59,31 @@ class StopHoldTest {
   @Test
   void stopTheHumanKeptTheLiftOfIsTheirsInAct() {
     Arbiter.Profile kept = new Arbiter.Profile(MasterMode.ACT, Set.of("lift"));
+    TaskState task =
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .stop(new TaskStop(TaskStop.Trigger.ROUNDS, 5, "evidence"))
+            .build();
 
-    assertThat(StopHold.of(stopped(TaskStop.Trigger.ROUNDS), kept)).isEqualTo(StopHold.HUMAN);
+    assertThat(StopHold.of(task, kept)).isEqualTo(StopHold.HUMAN);
   }
 
   @Test
   void stopIsTheHumansInJudge() {
     Arbiter.Profile judge = new Arbiter.Profile(MasterMode.JUDGE, Set.of());
+    TaskState task =
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .stop(new TaskStop(TaskStop.Trigger.ROUNDS, 5, "evidence"))
+            .build();
 
-    assertThat(StopHold.of(stopped(TaskStop.Trigger.ROUNDS), judge)).isEqualTo(StopHold.HUMAN);
+    assertThat(StopHold.of(task, judge)).isEqualTo(StopHold.HUMAN);
   }
 
   @Test
   void stopTheMasterWasAskedAboutIsTheHumansOnceAsked() {
-    TaskState task = stopped(TaskStop.Trigger.ROUNDS);
+    TaskState task =
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .stop(new TaskStop(TaskStop.Trigger.ROUNDS, 5, "evidence"))
+            .build();
     TaskState asked =
         task.withMaster(Master.defaults().withAskedStop(Objects.requireNonNull(task.stop()).key()));
 
@@ -82,7 +93,10 @@ class StopHoldTest {
   @Test
   void stopIsTheHumansOnceTheMasterLiftedOneSinceTheirLastLift() {
     TaskState spent =
-        stopped(TaskStop.Trigger.ROUNDS).withMaster(Master.defaults().withLiftedStops(1));
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .stop(new TaskStop(TaskStop.Trigger.ROUNDS, 5, "evidence"))
+            .build()
+            .withMaster(Master.defaults().withLiftedStops(1));
 
     assertThat(StopHold.of(spent, ACT)).isEqualTo(StopHold.HUMAN);
   }

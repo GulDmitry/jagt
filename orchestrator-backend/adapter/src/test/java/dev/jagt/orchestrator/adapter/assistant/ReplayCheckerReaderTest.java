@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import static dev.jagt.orchestrator.adapter.assistant.TestCheckerRunBuilder.checkerRun;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.adapter.replay.RecordedReads;
@@ -8,8 +9,6 @@ import dev.jagt.orchestrator.port.CheckerReader;
 import dev.jagt.orchestrator.task.AcceptanceVerdict;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -28,7 +27,8 @@ class ReplayCheckerReaderTest {
     CheckerReader reader =
         new ReplayCheckerReader(new RecordedReads(new Recording(file.toString())));
 
-    AcceptanceVerdict verdict = reader.read(run()).facts().orElseThrow();
+    AcceptanceVerdict verdict =
+        reader.read(checkerRun().withWorktree(root).build()).facts().orElseThrow();
 
     assertThat(verdict.flows().ids()).containsExactly("@AC-1");
     assertThat(verdict.flows().environment()).isEqualTo("http://127.0.0.1:1/app");
@@ -45,7 +45,7 @@ class ReplayCheckerReaderTest {
     CheckerReader reader =
         new ReplayCheckerReader(new RecordedReads(new Recording(file.toString())));
 
-    var answer = reader.read(run());
+    var answer = reader.read(checkerRun().withWorktree(root).build());
 
     assertThat(answer.facts().orElseThrow().failure())
         .contains("the recording holds no acceptance check");
@@ -58,21 +58,9 @@ class ReplayCheckerReaderTest {
     CheckerReader reader =
         new ReplayCheckerReader(new RecordedReads(new Recording(file.toString())));
 
-    var answer = reader.reconsider(run());
+    var answer = reader.reconsider(checkerRun().withWorktree(root).build());
 
     assertThat(answer.facts().orElseThrow().toString())
         .contains("the recording holds no acceptance check");
-  }
-
-  private CheckerReader.Run run() {
-    return new CheckerReader.Run(
-        "",
-        "prompt",
-        root,
-        "abc123",
-        "",
-        new CheckerReader.Reach(List.of(), List.of(), Optional.empty()),
-        "{}",
-        "acceptance");
   }
 }
