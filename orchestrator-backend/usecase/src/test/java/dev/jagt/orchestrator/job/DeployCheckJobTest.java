@@ -1,5 +1,9 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.job.TestDeployCheckJobBuilder.deployCheckJob;
+import static dev.jagt.orchestrator.job.TestDeployCheckTaskBuilder.deployCheckTask;
+import static dev.jagt.orchestrator.job.TestStepRelayBuilder.stepRelay;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -11,31 +15,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.MasterCases;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.config.SessionCases;
-import dev.jagt.orchestrator.flow.Arbiter;
-import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.FlowReports;
-import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Standing;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.CaseDoor;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.MissLog;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
-import dev.jagt.orchestrator.service.StopAnnouncements;
-import dev.jagt.orchestrator.service.StopLog;
-import dev.jagt.orchestrator.service.StopPolicy;
-import dev.jagt.orchestrator.service.TaskStops;
-import dev.jagt.orchestrator.service.TaskTurns;
-import dev.jagt.orchestrator.task.Deployment;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.Step;
 import dev.jagt.orchestrator.task.TaskState;
@@ -48,1104 +32,371 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class DeployCheckJobTest {
-
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final DeployPipelines.Reading GREEN =
       new DeployPipelines.Reading(DeployPipelines.Kind.GREEN, "", "", "", List.of());
 
-  private StateService state(Path root) {
-    return new StateService(
-        new JsonMapper(),
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString())),
-        reducer, event -> {});
-  }
+  private final ConfigService config = mock(ConfigService.class);
+  private final StepRelay relay = mock(StepRelay.class);
+  private final DeployPipelines pipelines = mock(DeployPipelines.class);
 
-  @Test
-  void asksDeployedTasksSessionToCheckItWhereItLandedOnceItsPipelineIsGreen(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    final StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    null)));
+  @TempDir Path root;
+
+  private StateService state;
+  private DeployCheckJob job;
+
+  @BeforeEach
+  void givenProjectConfiguredOverAnEmptyState() {
+    state = stateService().withRoot(root).build();
     when(config.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
                     Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
-    when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
-
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
-
-    verify(relay)
-        .relay(
-            eq("ABC-42"),
-            eq(Step.DEPLOY),
-            contains("- proj: 01234567 on dev"),
-            any(Standing.class));
+    job = deployCheckJob().withRoot(root).build(state, config, relay, pipelines);
   }
 
   @Test
-  void handsBackPipelineRedOnTheCodeThatTheHostListedAfterTheDeployStoodWithNone(
-      @TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
-    final DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    null)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
-    when(relay.relay(eq("ABC-42"), eq(Step.DEPLOY), anyString(), any(Standing.class)))
-        .thenReturn(true);
-    when(pipelines.read(eq("ABC-42"), any()))
-        .thenReturn(
-            new DeployPipelines.Reading(DeployPipelines.Kind.GREEN, "", "", "", List.of("proj")),
-            new DeployPipelines.Reading(
-                DeployPipelines.Kind.RED,
-                "red pipeline on the deploy commit: proj 01234567",
-                "proj",
-                "https://git.example.invalid/p/7",
-                List.of()));
-    DeployCheckJob job =
-        new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    job.runOn(state.tasks());
+  void asksNothingWhileTheFixOfFailedCheckIsUnderway() {
+    state.putTask("ABC-42", deployCheckTask().withStatus(TaskStatus.IN_PROGRESS).build());
 
     job.runOn(state.tasks());
-
-    assertThat(state.task("ABC-42").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-  }
-
-  @Test
-  void stopsTheTaskOnTheThirdReadRunningThatCannotListItsDeployPipeline(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    final StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    null)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.read(eq("ABC-42"), any()))
-        .thenReturn(
-            new DeployPipelines.Reading(
-                DeployPipelines.Kind.UNREAD,
-                "proj 01234567: pipeline unread, glab not logged in",
-                "proj",
-                "",
-                List.of()));
-    DeployCheckJob job =
-        new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    job.runOn(state.tasks());
-    job.runOn(state.tasks());
-
-    job.runOn(state.tasks());
-
-    assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).trigger())
-        .isEqualTo(TaskStop.Trigger.DEPLOY_UNREAD);
-  }
-
-  @Test
-  void stopsNoTaskAndKeepsItsUnreadCountWhileJagtCannotReachTheHost(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    final StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(
-                        Deployment.Target.of("proj", "dev")
-                            .withMerge("0123456789abcdef")
-                            .withUnread(true)
-                            .withUnread(true)),
-                    1,
-                    null)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.read(eq("ABC-42"), any()))
-        .thenReturn(
-            new DeployPipelines.Reading(
-                DeployPipelines.Kind.UNREACHED,
-                "proj 01234567: pipeline unreached, glab not logged in",
-                "proj",
-                "",
-                List.of()));
-    DeployCheckJob job =
-        new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))));
-    job.runOn(state.tasks());
-    job.runOn(state.tasks());
-
-    job.runOn(state.tasks());
-
-    TaskState task = state.task("ABC-42").orElseThrow();
-    assertThat(task.stopped()).isFalse();
-    assertThat(Objects.requireNonNull(task.deployment()).targets().getFirst().unreadReads())
-        .isEqualTo(2);
-  }
-
-  @Test
-  void endsTheUnreadDeployStopOnTheFirstReadThatListsThePipeline(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    final StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .stop(
-                new TaskStop(
-                    TaskStop.Trigger.DEPLOY_UNREAD, 1_000, "3 reads running could not list it"))
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(
-                        Deployment.Target.of("proj", "dev")
-                            .withMerge("0123456789abcdef")
-                            .withUnread(true)),
-                    1,
-                    null)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.read(eq("ABC-42"), any()))
-        .thenReturn(
-            new DeployPipelines.Reading(
-                DeployPipelines.Kind.WAITING,
-                "proj 01234567: pipeline running",
-                "",
-                "",
-                List.of()));
-
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
-
-    assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
-  }
-
-  @Test
-  void asksNothingAndSaysItWaitsOnItsPipelineWhileTheDeployPipelineIsRunning(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    final StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    null)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.read(eq("ABC-42"), any()))
-        .thenReturn(
-            new DeployPipelines.Reading(
-                DeployPipelines.Kind.WAITING,
-                "proj 01234567: pipeline running",
-                "",
-                "",
-                List.of()));
-
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
-    assertThat(state.task("ABC-42").orElseThrow().message())
-        .isEqualTo("deployed to dev — waiting on its pipeline: proj 01234567: pipeline running");
+    verify(pipelines, never()).read(anyString(), any());
   }
 
   @Test
-  void handsDeployBackToItsSessionWhenItsPipelineIsRedOnTheCodeAndAsksNothing(@TempDir Path root) {
-    StateService state = state(root);
-    ConfigService config = mock(ConfigService.class);
-    final StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    null)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.read(eq("ABC-42"), any()))
-        .thenReturn(
-            new DeployPipelines.Reading(
-                DeployPipelines.Kind.RED,
-                "red pipeline on the deploy commit: proj 01234567",
-                "proj",
-                "https://git.example.invalid/p/7",
-                List.of()));
+  void asksNothingOfDeployedTaskWhoseDeployLeftNoCommit() {
+    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
 
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+    job.runOn(state.tasks());
 
-    TaskState handed = state.task("ABC-42").orElseThrow();
-    assertThat(handed.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-    assertThat(handed.message())
-        .isEqualTo(
-            "red pipeline on the deploy commit: proj 01234567 https://git.example.invalid/p/7");
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
   }
 
   @Test
-  void asksOncePerDeployThoughAnotherRelayFollowedAndJagtRestarted(@TempDir Path root)
-      throws Exception {
-    final ConfigService config = mock(ConfigService.class);
-    final DeployPipelines pipelines = mock(DeployPipelines.class);
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+  void asksOncePerDeployThoughAnotherRelayFollowedAndJagtRestarted() throws Exception {
     Files.createDirectories(root.resolve("roles/session"));
     Files.copy(
         Path.of("../../roles/session/cases.md.dist"), root.resolve("roles/session/cases.md.dist"));
     Path worktree = Files.createDirectories(root.resolve("ABC-42"));
-    new StateService(new JsonMapper(), paths, reducer, event -> {})
-        .putTask(
-            "ABC-42",
-            TaskState.builder("proj", worktree.toString(), TaskStatus.DEPLOYED)
-                .build()
-                .withDeployment(
-                    new Deployment(
-                        1,
-                        List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                        1,
-                        null)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", worktree.toString(), TaskStatus.DEPLOYED)
+            .build()
+            .withDeployment(
+                Objects.requireNonNull(deployCheckTask().build().deployment())));
     when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
     AgentSessions sessions = mock(AgentSessions.class);
-    StateService before = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    StepRelay relay =
-        new StepRelay(
-            new SessionBrief(paths),
-            sessions,
-            new CaseDoor(
-                new SessionCases(paths),
-                new MasterCases(paths),
-                before,
-                new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(new JsonMapper(), paths))),
-                    before,
-                    Clock.systemUTC(),
-                    new FlowRules(new TaskChart(Composition.builtIn())))),
-            new TaskTurns(
-                before, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                before,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(new JsonMapper(), paths))),
-                before,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(before.tasks());
-    relay.relay(
+    StepRelay firstRelay = stepRelay().withRoot(root).build(state, sessions, Clock.systemUTC());
+    deployCheckJob()
+        .withRoot(root)
+        .build(state, config, firstRelay, pipelines)
+        .runOn(state.tasks());
+    firstRelay.relay(
         "ABC-42",
         Step.ANSWERED,
         "The Master answered your question, standing in for the human:\nyes",
-        relay.standing("ABC-42"));
-    StateService restarted = new StateService(new JsonMapper(), paths, reducer, event -> {});
+        firstRelay.standing("ABC-42"));
+    StateService restarted = stateService().withRoot(root).build();
+    StepRelay restartedRelay =
+        stepRelay().withRoot(root).build(restarted, sessions, Clock.systemUTC());
 
-    new DeployCheckJob(
-            config,
-            new StepRelay(
-                new SessionBrief(paths),
-                sessions,
-                new CaseDoor(
-                    new SessionCases(paths),
-                    new MasterCases(paths),
-                    restarted,
-                    new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-                    new TaskStops(
-                        new StopPolicy(
-                            ignored -> Arbiter.Profile.OFF,
-                            ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                            new StopAnnouncements(
-                                new StopLog(new JsonMapper(), paths))),
-                        restarted,
-                        Clock.systemUTC(),
-                        new FlowRules(new TaskChart(Composition.builtIn())))),
-                new TaskTurns(
-                    restarted,
-                    Clock.systemUTC(),
-                    new Checkers(new TaskChart(Composition.builtIn())))),
-            pipelines,
-            new FlowReports(
-                restarted,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(new JsonMapper(), paths))),
-                restarted,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
+    deployCheckJob()
+        .withRoot(root)
+        .build(restarted, config, restartedRelay, pipelines)
         .runOn(restarted.tasks());
 
     verify(sessions, times(1)).writeTaskContext(eq("ABC-42"), contains("ABC-42 is deployed"));
   }
 
   @Test
-  void asksNothingWhileTheFixOfFailedCheckIsUnderway(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
+  void readsNoPipelineAgainForDeployWhoseCheckWasAlreadyAsked() {
+    TaskState deployed = deployCheckTask().build();
     state.putTask(
         "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    null)));
+        deployed.withDeployment(
+            Objects.requireNonNull(deployed.deployment())
+                .withAskedDigest(Turn.digestOf("ABC-42 is deployed:\n- proj: 01234567 on dev"))));
 
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+    job.runOn(state.tasks());
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
     verify(pipelines, never()).read(anyString(), any());
   }
 
-  @Test
-  void namesAnEightCharacterCommitWhole(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    final StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("01234567")),
-                    1,
-                    null)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
-    when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
+  @Nested
+  class WhereTheDeployLanded {
 
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+    @BeforeEach
+    void givenDeployedTask() {
+      state.putTask("ABC-42", deployCheckTask().build());
+    }
 
-    verify(relay)
-        .relay(
-            eq("ABC-42"),
-            eq(Step.DEPLOY),
-            contains("- proj: 01234567 on dev"),
-            any(Standing.class));
+    @Test
+    void handsBackPipelineRedOnTheCodeThatTheHostListedAfterTheDeployStoodWithNone() {
+      when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
+      when(relay.relay(eq("ABC-42"), eq(Step.DEPLOY), anyString(), any(Standing.class)))
+          .thenReturn(true);
+      when(pipelines.read(eq("ABC-42"), any()))
+          .thenReturn(
+              new DeployPipelines.Reading(DeployPipelines.Kind.GREEN, "", "", "", List.of("proj")),
+              new DeployPipelines.Reading(
+                  DeployPipelines.Kind.RED,
+                  "red pipeline on the deploy commit: proj 01234567",
+                  "proj",
+                  "https://git.example.invalid/p/7",
+                  List.of()));
+      job.runOn(state.tasks());
+
+      job.runOn(state.tasks());
+
+      assertThat(state.task("ABC-42").orElseThrow().status())
+          .isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    }
+
+    @Test
+    void stopsTheTaskOnTheThirdReadRunningThatCannotListItsDeployPipeline() {
+      when(pipelines.read(eq("ABC-42"), any()))
+          .thenReturn(
+              new DeployPipelines.Reading(
+                  DeployPipelines.Kind.UNREAD,
+                  "proj 01234567: pipeline unread, glab not logged in",
+                  "proj",
+                  "",
+                  List.of()));
+      job.runOn(state.tasks());
+      job.runOn(state.tasks());
+
+      job.runOn(state.tasks());
+
+      assertThat(Objects.requireNonNull(state.task("ABC-42").orElseThrow().stop()).trigger())
+          .isEqualTo(TaskStop.Trigger.DEPLOY_UNREAD);
+    }
+
+    @Test
+    void asksNothingAndSaysItWaitsOnItsPipelineWhileTheDeployPipelineIsRunning() {
+      when(pipelines.read(eq("ABC-42"), any()))
+          .thenReturn(
+              new DeployPipelines.Reading(
+                  DeployPipelines.Kind.WAITING,
+                  "proj 01234567: pipeline running",
+                  "",
+                  "",
+                  List.of()));
+
+      job.runOn(state.tasks());
+
+      verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
+      assertThat(state.task("ABC-42").orElseThrow().message())
+          .isEqualTo("deployed to dev — waiting on its pipeline: proj 01234567: pipeline running");
+    }
+
+    @Test
+    void handsDeployBackToItsSessionWhenItsPipelineIsRedOnTheCodeAndAsksNothing() {
+      when(pipelines.read(eq("ABC-42"), any()))
+          .thenReturn(
+              new DeployPipelines.Reading(
+                  DeployPipelines.Kind.RED,
+                  "red pipeline on the deploy commit: proj 01234567",
+                  "proj",
+                  "https://git.example.invalid/p/7",
+                  List.of()));
+
+      job.runOn(state.tasks());
+
+      TaskState handed = state.task("ABC-42").orElseThrow();
+      assertThat(handed.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+      assertThat(handed.message())
+          .isEqualTo(
+              "red pipeline on the deploy commit: proj 01234567 https://git.example.invalid/p/7");
+      verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
+    }
+
+    @Nested
+    class AndItsPipelineIsGreen {
+
+      @BeforeEach
+      void givenGreenPipelineAndNoSessionStanding() {
+        when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
+        when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
+      }
+
+      @Test
+      void asksDeployedTasksSessionToCheckItWhereItLandedOnceItsPipelineIsGreen() {
+        job.runOn(state.tasks());
+
+        verify(relay)
+            .relay(
+                eq("ABC-42"),
+                eq(Step.DEPLOY),
+                contains("- proj: 01234567 on dev"),
+                any(Standing.class));
+      }
+
+      @Test
+      void namesAnEightCharacterCommitWhole() {
+        state.putTask("ABC-42", deployCheckTask().withMerge("01234567").build());
+
+        job.runOn(state.tasks());
+
+        verify(relay)
+            .relay(
+                eq("ABC-42"),
+                eq(Step.DEPLOY),
+                contains("- proj: 01234567 on dev"),
+                any(Standing.class));
+      }
+
+      @Test
+      void namesTheDeployBranchOfNoProjectTheConfigDoesNotHold() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+
+        job.runOn(state.tasks());
+
+        verify(relay)
+            .relay(
+                eq("ABC-42"),
+                eq(Step.DEPLOY),
+                contains("- proj: 01234567 on its deploy branch"),
+                any(Standing.class));
+      }
+
+      @Test
+      void recordsTheDeployAskedOnceItsSessionWasHanded() {
+        when(relay.relay(eq("ABC-42"), eq(Step.DEPLOY), anyString(), any(Standing.class)))
+            .thenReturn(true);
+
+        job.runOn(state.tasks());
+
+        assertThat(
+                Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment())
+                    .askedDigest())
+            .isEqualTo(Turn.digestOf("ABC-42 is deployed:\n- proj: 01234567 on dev"));
+      }
+
+      @Test
+      void recordsNoDeployAskedWhereTheSessionWasNotHanded() {
+        job.runOn(state.tasks());
+
+        assertThat(
+                Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment())
+                    .askedDigest())
+            .isNull();
+      }
+    }
   }
 
-  @Test
-  void asksNothingOfDeployedTaskWhoseDeployLeftNoCommit(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+  @Nested
+  class WhereAnUnreadReadWasCounted {
 
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+    @BeforeEach
+    void givenDeployedTaskWhoseLastReadWasUnread() {
+      state.putTask("ABC-42", deployCheckTask().withUnread(true).build());
+    }
 
-    verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
-  }
+    @Test
+    void stopsNoTaskAndKeepsItsUnreadCountWhileJagtCannotReachTheHost() {
+      TaskState once = deployCheckTask().withUnread(true).build();
+      state.putTask(
+          "ABC-42",
+          once.withDeployment(
+              Objects.requireNonNull(once.deployment())
+                  .withTarget("proj", target -> target.withUnread(true))));
+      when(pipelines.read(eq("ABC-42"), any()))
+          .thenReturn(
+              new DeployPipelines.Reading(
+                  DeployPipelines.Kind.UNREACHED,
+                  "proj 01234567: pipeline unreached, glab not logged in",
+                  "proj",
+                  "",
+                  List.of()));
+      job.runOn(state.tasks());
+      job.runOn(state.tasks());
 
-  @Test
-  void readsNoPipelineAgainForDeployWhoseCheckWasAlreadyAsked(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    String asked = "ABC-42 is deployed:\n- proj: 01234567 on dev";
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    Turn.digestOf(asked))));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+      job.runOn(state.tasks());
 
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+      TaskState task = state.task("ABC-42").orElseThrow();
+      assertThat(task.stopped()).isFalse();
+      assertThat(Objects.requireNonNull(task.deployment()).targets().getFirst().unreadReads())
+          .isEqualTo(2);
+    }
 
-    verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
-    verify(pipelines, never()).read(anyString(), any());
-  }
+    @Test
+    void forgetsTheUnreadReadsOnceReadListsThePipeline() {
+      when(pipelines.read(eq("ABC-42"), any()))
+          .thenReturn(
+              new DeployPipelines.Reading(
+                  DeployPipelines.Kind.WAITING,
+                  "proj 01234567: pipeline running",
+                  "",
+                  "",
+                  List.of()));
 
-  @Test
-  void recordsTheDeployAskedOnceItsSessionWasHanded(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    final StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    null)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
-    when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
-    when(relay.relay(eq("ABC-42"), eq(Step.DEPLOY), anyString(), any(Standing.class)))
-        .thenReturn(true);
+      job.runOn(state.tasks());
 
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+      assertThat(
+              Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment())
+                  .targets()
+                  .getFirst()
+                  .unreadReads())
+          .isZero();
+    }
 
-    assertThat(
-            Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment()).askedDigest())
-        .isEqualTo(Turn.digestOf("ABC-42 is deployed:\n- proj: 01234567 on dev"));
-  }
+    @Nested
+    class AndTheDeployIsStoppedForIt {
 
-  @Test
-  void recordsNoDeployAskedWhereTheSessionWasNotHanded(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    final StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    null)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
-    when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
-
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
-
-    assertThat(
-            Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment()).askedDigest())
-        .isNull();
-  }
-
-  @Test
-  void namesTheDeployBranchOfNoProjectTheConfigDoesNotHold(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    final StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                    1,
-                    null)));
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    when(pipelines.read(eq("ABC-42"), any())).thenReturn(GREEN);
-    when(relay.standing("ABC-42")).thenReturn(Standing.ABSENT);
-
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
-
-    verify(relay)
-        .relay(
-            eq("ABC-42"),
-            eq(Step.DEPLOY),
-            contains("- proj: 01234567 on its deploy branch"),
-            any(Standing.class));
-  }
-
-  @Test
-  void keepsTheUnreadDeployStopWhileTheReadStillCannotListThePipeline(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    final StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .stop(
+      @BeforeEach
+      void givenUnreadDeployStop() {
+        TaskState unread = state.task("ABC-42").orElseThrow();
+        state.putTask(
+            "ABC-42",
+            unread.withStop(
                 new TaskStop(
-                    TaskStop.Trigger.DEPLOY_UNREAD, 1_000, "3 reads running could not list it"))
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(
-                        Deployment.Target.of("proj", "dev")
-                            .withMerge("0123456789abcdef")
-                            .withUnread(true)),
-                    1,
-                    null)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.read(eq("ABC-42"), any()))
-        .thenReturn(
-            new DeployPipelines.Reading(
-                DeployPipelines.Kind.UNREAD,
-                "proj 01234567: pipeline unread, glab not logged in",
-                "proj",
-                "",
-                List.of()));
+                    TaskStop.Trigger.DEPLOY_UNREAD, 1_000, "3 reads running could not list it")));
+      }
 
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+      @Test
+      void endsTheUnreadDeployStopOnTheFirstReadThatListsThePipeline() {
+        when(pipelines.read(eq("ABC-42"), any()))
+            .thenReturn(
+                new DeployPipelines.Reading(
+                    DeployPipelines.Kind.WAITING,
+                    "proj 01234567: pipeline running",
+                    "",
+                    "",
+                    List.of()));
 
-    assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
-  }
+        job.runOn(state.tasks());
 
-  @Test
-  void keepsTheUnreadDeployStopWhileJagtCannotReachTheHost(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    final StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .stop(
-                new TaskStop(
-                    TaskStop.Trigger.DEPLOY_UNREAD, 1_000, "3 reads running could not list it"))
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(
-                        Deployment.Target.of("proj", "dev")
-                            .withMerge("0123456789abcdef")
-                            .withUnread(true)),
-                    1,
-                    null)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.read(eq("ABC-42"), any()))
-        .thenReturn(
-            new DeployPipelines.Reading(
-                DeployPipelines.Kind.UNREACHED,
-                "proj 01234567: pipeline unreached, glab not logged in",
-                "proj",
-                "",
-                List.of()));
+        assertThat(state.task("ABC-42").orElseThrow().stopped()).isFalse();
+      }
 
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
+      @ParameterizedTest
+      @CsvSource(
+          delimiter = '|',
+          value = {
+            "UNREAD|proj 01234567: pipeline unread, glab not logged in",
+            "UNREACHED|proj 01234567: pipeline unreached, glab not logged in"
+          })
+      void keepsTheUnreadDeployStopWhileTheReadCannotListThePipelineOrReachTheHost(
+          DeployPipelines.Kind kind, String summary) {
+        when(pipelines.read(eq("ABC-42"), any()))
+            .thenReturn(new DeployPipelines.Reading(kind, summary, "proj", "", List.of()));
 
-    assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
-  }
+        job.runOn(state.tasks());
 
-  @Test
-  void forgetsTheUnreadReadsOnceReadListsThePipeline(@TempDir Path root) {
-    ConfigService config = mock(ConfigService.class);
-    final StepRelay relay = mock(StepRelay.class);
-    DeployPipelines pipelines = mock(DeployPipelines.class);
-    StateService state = state(root);
-    state.putTask(
-        "ABC-42",
-        TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-            .build()
-            .withDeployment(
-                new Deployment(
-                    1,
-                    List.of(
-                        Deployment.Target.of("proj", "dev")
-                            .withMerge("0123456789abcdef")
-                            .withUnread(true)),
-                    1,
-                    null)));
-    when(config.load())
-        .thenReturn(
-            ConfigService.ConfigFile.defaults()
-                .withProjects(
-                    Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
-    when(pipelines.read(eq("ABC-42"), any()))
-        .thenReturn(
-            new DeployPipelines.Reading(
-                DeployPipelines.Kind.WAITING,
-                "proj 01234567: pipeline running",
-                "",
-                "",
-                List.of()));
-
-    new DeployCheckJob(
-            config,
-            relay,
-            pipelines,
-            new FlowReports(
-                state,
-                Clock.systemUTC(),
-                new Checkers(new TaskChart(Composition.builtIn())),
-                new FlowRules(new TaskChart(Composition.builtIn()))),
-            new TaskStops(
-                new StopPolicy(
-                    ignored -> Arbiter.Profile.OFF,
-                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                    new StopAnnouncements(
-                        new StopLog(
-                            new JsonMapper(),
-                            new OrchestratorPaths(
-                                OrchestratorProperties.defaults().withRoot(root.toString()))))),
-                state,
-                Clock.systemUTC(),
-                new FlowRules(new TaskChart(Composition.builtIn()))))
-        .runOn(state.tasks());
-
-    assertThat(
-            Objects.requireNonNull(state.task("ABC-42").orElseThrow().deployment())
-                .targets()
-                .getFirst()
-                .unreadReads())
-        .isZero();
+        assertThat(state.task("ABC-42").orElseThrow().stopped()).isTrue();
+      }
+    }
   }
 }

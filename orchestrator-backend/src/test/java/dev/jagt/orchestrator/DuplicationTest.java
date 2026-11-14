@@ -21,9 +21,7 @@ class DuplicationTest {
 
   private static final List<Path> SKIPPED =
       Stream.of(
-          "service/AgentSessionsTest.java",
-          "job/DeployCheckJobTest.java",
-          "job/WatchdogServiceTest.java")
+          "service/AgentSessionsTest.java")
           .map(name -> Path.of("usecase/src/test/java/dev/jagt/orchestrator", name))
           .toList();
 
