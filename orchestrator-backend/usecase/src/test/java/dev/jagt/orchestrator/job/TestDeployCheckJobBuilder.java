@@ -8,6 +8,8 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StepRelay;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import lombok.With;
 
 @With
@@ -19,7 +21,7 @@ public record TestDeployCheckJobBuilder(Path root) {
 
   public DeployCheckJob build(
       StateService state, ConfigService config, StepRelay relay, DeployPipelines pipelines) {
-    Clock clock = Clock.systemUTC();
+    Clock clock = Clock.fixed(Instant.parse("2026-10-23T10:00:00Z"), ZoneOffset.UTC);
     return new DeployCheckJob(
         config,
         relay,

@@ -5,6 +5,8 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskChart;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import lombok.With;
 
 @With
@@ -24,7 +26,7 @@ public record TestTaskViewsBuilder(boolean scenariosReady) {
             () -> scenariosReady,
             () -> false,
             new Checkers(new TaskChart(Composition.builtIn()))),
-        Clock.systemUTC(),
+        Clock.fixed(Instant.parse("2026-10-23T10:00:00Z"), ZoneOffset.UTC),
         new FlowRules(new TaskChart(Composition.builtIn())));
   }
 }

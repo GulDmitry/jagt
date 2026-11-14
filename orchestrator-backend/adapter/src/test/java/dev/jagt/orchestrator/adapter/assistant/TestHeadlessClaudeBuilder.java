@@ -6,6 +6,8 @@ import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.ReachLedger;
 import dev.jagt.orchestrator.service.UsageTracker;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import lombok.With;
 
 @With
@@ -19,7 +21,11 @@ public record TestHeadlessClaudeBuilder(
   public HeadlessClaude build(Processes runner, UsageTracker usage, ReadOnlyTools reads) {
     return new HeadlessClaude(
         new AssistantProcess(
-            runner, new AssistantBreaker(breaker, Clock.systemUTC(), new ReachLedger())),
+            runner,
+            new AssistantBreaker(
+                breaker,
+                Clock.fixed(Instant.parse("2026-10-23T10:00:00Z"), ZoneOffset.UTC),
+                new ReachLedger())),
         ClaudeProperties.defaults(),
         properties,
         usage,

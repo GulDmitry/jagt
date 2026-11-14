@@ -8,6 +8,8 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskTurns;
 import dev.jagt.orchestrator.service.master.MasterPanel;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import lombok.With;
 import org.jspecify.annotations.Nullable;
@@ -35,6 +37,8 @@ public record TestMasterAnswerJobBuilder(@Nullable List<String> mine) {
         panel,
         verdicts,
         new TaskTurns(
-            state, Clock.systemUTC(), new Checkers(new TaskChart(Composition.builtIn()))));
+            state,
+            Clock.fixed(Instant.parse("2026-10-23T10:00:00Z"), ZoneOffset.UTC),
+            new Checkers(new TaskChart(Composition.builtIn()))));
   }
 }

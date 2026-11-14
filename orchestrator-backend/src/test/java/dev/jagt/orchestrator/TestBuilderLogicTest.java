@@ -11,11 +11,10 @@ class TestBuilderLogicTest {
 
   @Test
   void builderReadsNoClockRandomAndCallsNoMockOrAssertion() {
-    FreezingArchRule.freeze(
-            noClasses()
-                .that(TestKinds.testBuilders())
-                .should()
-                .callMethodWhere(TestKinds.readClockRandomMockOrAssertion()))
+    noClasses()
+        .that(TestKinds.testBuilders())
+        .should()
+        .callMethodWhere(TestKinds.readClockRandomMockOrAssertion())
         .check(SourceRoots.ALL);
   }
 

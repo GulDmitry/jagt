@@ -9,6 +9,8 @@ import dev.jagt.orchestrator.service.Rounds;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskViews;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import lombok.With;
 
 @With
@@ -30,7 +32,7 @@ public record TestPaletteContextBuilder() {
                 () -> false,
                 () -> false,
                 new Checkers(new TaskChart(Composition.builtIn()))),
-            Clock.systemUTC(),
+            Clock.fixed(Instant.parse("2026-10-23T10:00:00Z"), ZoneOffset.UTC),
             new FlowRules(new TaskChart(Composition.builtIn()))));
   }
 }

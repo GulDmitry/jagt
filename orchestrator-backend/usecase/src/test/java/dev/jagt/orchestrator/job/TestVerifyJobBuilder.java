@@ -17,6 +17,8 @@ import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.service.Verification;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import lombok.With;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -48,7 +50,7 @@ public record TestVerifyJobBuilder(Path root) {
                 ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
                 new StopAnnouncements(new StopLog(new JsonMapper(), paths))),
             state,
-            Clock.systemUTC(),
+            Clock.fixed(Instant.parse("2026-10-23T10:00:00Z"), ZoneOffset.UTC),
             new FlowRules(new TaskChart(Composition.builtIn()))));
   }
 }
