@@ -13,8 +13,6 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class StepsWithinCasesTest {
 
@@ -60,19 +58,14 @@ class StepsWithinCasesTest {
     assertThat(violations).isEmpty();
   }
 
-  @ParameterizedTest
-  @ValueSource(
-      strings = {
+  @Test
+  void stepOpenedAtStatusNoCaseNamesIsViolationAtThatStatus() throws Exception {
+    Path log = dir.resolve("jagt-backend.log");
+    Files.writeString(
+        log,
         """
         {"@timestamp":"2026-10-25T10:22:53.993Z","message":"turn opened","task":"ABC-5","step":"round-not-ready","status":"IN_PROGRESS","turn":3}
-        """,
-        """
-        {"@timestamp":"2026-10-25T10:22:53.993Z","message":"turn opened","task":"ABC-5","step":"round-not-ready","turn":3}
-        """
-      })
-  void stepOpenedAtStatusNoCaseNamesIsViolationAtThatStatus(String logLine) throws Exception {
-    Path log = dir.resolve("jagt-backend.log");
-    Files.writeString(log, logLine);
+        """);
 
     List<Violation> violations =
         new StepsWithinCases(book)
@@ -87,5 +80,30 @@ class StepsWithinCasesTest {
         .singleElement()
         .satisfies(violation ->
             assertThat(violation.evidence()).startsWith("round-not-ready at IN_PROGRESS"));
+  }
+
+  @Test
+  void lineWithoutStatusIsReadAtTheStatusTheHistoryHeldAtThatTime() throws Exception {
+    Path log = dir.resolve("jagt-backend.log");
+    Files.writeString(
+        log,
+        """
+        {"@timestamp":"2026-10-25T10:22:53.993Z","message":"turn opened","task":"ABC-5","step":"round-not-ready","turn":3}
+        """);
+
+    List<Violation> violations =
+        new StepsWithinCases(book)
+            .check(
+                new RunRecord(
+                    history,
+                    List.of(),
+                    new RunRecord.Timeline(List.of(), BackendLog.relays(log), Set.of()),
+                    Map.of()));
+
+    assertThat(violations)
+        .singleElement()
+        .extracting(Violation::evidence)
+        .asString()
+        .startsWith("round-not-ready at IN_PROGRESS");
   }
 }

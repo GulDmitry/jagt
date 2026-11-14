@@ -26,7 +26,6 @@ import dev.jagt.orchestrator.surface.mcp.MasterToken;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
@@ -119,105 +118,6 @@ class ReviewAndDeployFlowTest {
     E2eWorkspace.killTmuxSessions(Objects.requireNonNull(properties.tmuxCommand()));
   }
 
-  @ParameterizedTest(name = "[{index}] {0}")
-  @MethodSource("dev.jagt.orchestrator.e2e.ReviewRoundCase#matrix")
-  void sweptRoundEndsWhereItsFactsSayAndBriefsTheAgentOnlyWhenThereIsWork(ReviewRoundCase round)
-      throws Exception {
-    flow.shipsTheFirstRound(TITLE);
-    flow.reads(round.round());
-
-    assertThat(flow.act("sweep")).contains(round.sentence());
-
-    assertThat(flow.task().status()).isEqualTo(round.expected());
-    assertThat(
-            Files.readString(flow.worktree().resolve("task_context.md"))
-                .contains("Review round for"))
-        .as("the agent was handed this round")
-        .isEqualTo(round.briefed());
-  }
-
-  @Test
-  void roundTripFromShipToDeployAndBackOutAgain() throws Exception {
-    String shipped = flow.shipsTheFirstRound(TITLE);
-    assertThat(shipped).contains("relayed to the agent", "SHIPPING");
-    assertThat(Files.readString(flow.worktree().resolve("task_context.md")))
-        .contains(
-            "proj: " + flow.worktree() + ", merges into main",
-            "EXACTLY \"" + TASK + " " + TITLE + "\"",
-            "reviewRequestUrl=<the url>");
-    assertThat(flow.task().mrUrl()).isEqualTo(flow.request());
-    assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", TASK))
-        .contains(TASK + " " + TITLE);
-
-    flow.reads(
-        new ReviewFacts(
-            new ReviewFacts.Request(true, false, false, false, 0),
-            new ReviewFacts.Pipeline("success", "", ""),
-            new ReviewFacts.Discussion(
-                List.of("bot (Widget.java:12): tighten this"), List.of(), List.of())));
-    flow.act("sweep");
-    assertThat(Files.readString(flow.worktree().resolve("task_context.md")))
-        .contains("bot (Widget.java:12): tighten this", "Do NOT push or post anything yourself");
-
-    Files.writeString(flow.worktree().resolve("widget.txt"), "tightened\n");
-    Files.writeString(flow.worktree().resolve("review_replies.md"), "> tighten this\n\nDone.\n");
-    flow.agentHandsBack("comment addressed");
-
-    assertThat(flow.act("ship")).contains("relayed to the agent");
-    assertThat(Files.readString(flow.worktree().resolve("task_context.md")))
-        .contains(
-            "its request is already open",
-            "do NOT create another or retitle it",
-            "post each drafted reply to its thread");
-    flow.agentCommitsAndPushes(flow.worktree(), TASK + " address review comments");
-    flow.agentReportsRequest("CI_POLLING", "review request: " + flow.request(), flow.request());
-    assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", TASK))
-        .contains(TASK + " address review comments");
-
-    flow.reads(
-        new ReviewFacts(
-            new ReviewFacts.Request(true, true, false, false, 0),
-            new ReviewFacts.Pipeline("success", "", ""),
-            new ReviewFacts.Discussion(List.of(), List.of(), List.of())));
-    assertThat(flow.act("sweep")).contains("approved, checks success");
-    assertThat(flow.task().status()).isEqualTo(TaskStatus.APPROVED);
-
-    assertThat(flow.act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");
-    assertThat(
-            Objects.requireNonNull(flow.task().deployment()).targets().getFirst().landing().merge())
-        .isNotBlank();
-    assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
-        .contains("Merge branch '" + TASK + "' into dev");
-
-    assertThat(flow.act("revert")).contains("Reverted " + TASK + " on dev", "REVERTED");
-    assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
-        .contains("Revert \"Merge branch '" + TASK + "' into dev\"");
-
-    assertThat(flow.task().history())
-        .extracting(StatusChange::status)
-        .containsExactly(
-            TaskStatus.NEW,
-            TaskStatus.REVIEW_PENDING,
-            TaskStatus.SHIPPING,
-            TaskStatus.CI_POLLING,
-            TaskStatus.REVIEW_PENDING,
-            TaskStatus.SHIPPING,
-            TaskStatus.CI_POLLING,
-            TaskStatus.APPROVED,
-            TaskStatus.DEPLOYED,
-            TaskStatus.REVERTED);
-    assertThat(flow.task().history())
-        .extracting(StatusChange::status, StatusChange::origin)
-        .contains(
-            tuple(TaskStatus.REVIEW_PENDING, ActionOrigin.MCP),
-            tuple(TaskStatus.DEPLOYED, ActionOrigin.BOARD));
-
-    assertThat(flow.act("done")).contains("worktree deleted", "Branch '" + TASK + "' was kept");
-    assertThat(flow.worktree()).doesNotExist();
-    assertThat(stateService.task(TASK)).isEmpty();
-    assertThat(E2eWorkspace.git(flow.repo(), "branch", "--list", TASK)).contains(TASK);
-  }
-
   @Test
   void opensNoRequestInTheRepositoryTheTaskNeverChanged() throws Exception {
     E2eWorkspace.writeConfig(
@@ -233,7 +133,8 @@ class ReviewAndDeployFlowTest {
             .title(TITLE)
             .build());
     Files.writeString(flow.worktree().resolve("widget.txt"), "api side\n");
-    flow.agentHandsBack("api side done");
+    Files.writeString(flow.worktree().resolve("task_notes.md"), "api side done\n");
+    flow.agentReports("REVIEW_PENDING", "api side done", "");
 
     String shipped = flow.act("ship");
 
@@ -262,20 +163,29 @@ class ReviewAndDeployFlowTest {
               .build());
       Files.writeString(flow.worktree().resolve("widget.txt"), "api side\n");
       Files.writeString(flow.webWorktree().resolve("widget.txt"), "web side\n");
+      when(assistants.codeHost().readReview(flow.request()))
+          .thenReturn(
+              new Answer<>(Optional.of(reviewFacts().withApproved(true).build()), TokenUsage.NONE));
+      when(assistants.codeHost().readReview(flow.webRequest()))
+          .thenReturn(
+              new Answer<>(Optional.of(reviewFacts().withApproved(true).build()), TokenUsage.NONE));
     }
 
     @Test
     void stopsAtTheRepositoryThatConflictsAndFinishesItOnTheNextDeploy() throws Exception {
-      flow.agentHandsBack("both sides done");
+      Files.writeString(flow.worktree().resolve("task_notes.md"), "both sides done\n");
+      flow.agentReports("REVIEW_PENDING", "both sides done", "");
       flow.act("ship");
       flow.agentCommitsAndPushes(flow.worktree(), TASK + " " + TITLE);
       flow.agentCommitsAndPushes(flow.webWorktree(), TASK + " " + TITLE);
-      flow.agentReportsRequests(Map.of("proj", flow.request(), "web", flow.webRequest()));
-      flow.reads(
-          new ReviewFacts(
-              new ReviewFacts.Request(true, true, false, false, 0),
-              new ReviewFacts.Pipeline("success", "", ""),
-              new ReviewFacts.Discussion(List.of(), List.of(), List.of())));
+      flow.agentReports(
+          "CI_POLLING",
+          "requests up",
+          ", \"reviewRequests\": {\"proj\": \""
+              + flow.request()
+              + "\", \"web\": \""
+              + flow.webRequest()
+              + "\"}");
       flow.act("sweep");
       E2eWorkspace.commitOnDeployBranch(flow.webRepo(), "widget.txt", "someone else's line\n");
 
@@ -305,7 +215,8 @@ class ReviewAndDeployFlowTest {
     @Test
     void oneSessionShipsAndDeploysEveryRepositoryTheTaskSpansAndTakesThemBackOutInReverse()
         throws Exception {
-      flow.agentHandsBack("both sides done");
+      Files.writeString(flow.worktree().resolve("task_notes.md"), "both sides done\n");
+      flow.agentReports("REVIEW_PENDING", "both sides done", "");
 
       String shipped = flow.act("ship");
 
@@ -317,7 +228,14 @@ class ReviewAndDeployFlowTest {
               "reviewRequests={\"proj\": \"<its url>\", \"web\": \"<its url>\"}");
       flow.agentCommitsAndPushes(flow.worktree(), TASK + " " + TITLE);
       flow.agentCommitsAndPushes(flow.webWorktree(), TASK + " " + TITLE);
-      flow.agentReportsRequests(Map.of("proj", flow.request(), "web", flow.webRequest()));
+      flow.agentReports(
+          "CI_POLLING",
+          "requests up",
+          ", \"reviewRequests\": {\"proj\": \""
+              + flow.request()
+              + "\", \"web\": \""
+              + flow.webRequest()
+              + "\"}");
       assertThat(E2eWorkspace.git(flow.webOrigin(), "log", "-1", "--format=%s", TASK))
           .contains(TASK + " " + TITLE);
       assertThat(flow.task().repos())
@@ -331,11 +249,6 @@ class ReviewAndDeployFlowTest {
               TaskStatus.SHIPPING,
               TaskStatus.CI_POLLING);
 
-      flow.reads(
-          new ReviewFacts(
-              new ReviewFacts.Request(true, true, false, false, 0),
-              new ReviewFacts.Pipeline("success", "", ""),
-              new ReviewFacts.Discussion(List.of(), List.of(), List.of())));
       flow.act("sweep");
       assertThat(flow.task().status()).isEqualTo(TaskStatus.APPROVED);
 
@@ -428,47 +341,150 @@ class ReviewAndDeployFlowTest {
         .containsExactly(tuple(TaskStatus.NEW, ActionOrigin.ROOT));
   }
 
-  @Test
-  void followUpRequestAfterMergedOneLiftsTheStopAndIsReadByTheNextSweep(@TempDir Path clone)
-      throws Exception {
-    flow.shipsTheFirstRound(TITLE);
-    for (String round : List.of("second", "third", "fourth")) {
-      flow.agentHandsBack(round + " round");
-      flow.act("ship");
-      flow.agentReportsRequest("CI_POLLING", "review request: " + flow.request(), flow.request());
+  @Nested
+  class AfterTheFirstRoundShipped {
+
+    private String shipped;
+
+    @BeforeEach
+    void theAgentHandsBackAndThePushedRoundOpensItsRequest() throws Exception {
+      provisioning.initializeTask(
+          NewTask.builder(TASK, "proj").instructions("Fix the widget").title(TITLE).build());
+      Files.writeString(flow.worktree().resolve("widget.txt"), "fixed\n");
+      Files.writeString(flow.worktree().resolve("task_notes.md"), "widget fixed\n");
+      flow.agentReports("REVIEW_PENDING", "widget fixed", "");
+      shipped = flow.act("ship");
+      flow.agentCommitsAndPushes(flow.worktree(), TASK + " " + TITLE);
+      flow.agentReports(
+          "CI_POLLING",
+          "review request: " + flow.request(),
+          ", \"reviewRequestUrl\": \"" + flow.request() + "\"");
     }
-    flow.agentHandsBack("fifth round");
-    assertThat(stops.mayShip(TASK)).isFalse();
-    assertThat(Objects.requireNonNull(flow.task().stop()).trigger())
-        .isEqualTo(TaskStop.Trigger.SHIPS);
-    assertThat(flow.task().stop().request()).isEqualTo(flow.request());
-    assertThat(
-            views.all().stream()
-                .filter(view -> view.id().equals(TASK))
-                .findFirst()
-                .orElseThrow()
-                .actions()
-                .stream()
-                .map(TaskView.ActionView::id)
-                .toList())
-        .contains("ship");
-    long ships =
-        flow.task().history().stream().filter(step -> step.status() == TaskStatus.SHIPPING).count();
-    String main = E2eWorkspace.git(flow.origin(), "rev-parse", "main").strip();
 
-    try {
-      E2eWorkspace.git(clone, "clone", "-q", E2eWorkspace.remoteUrl(flow.origin()), ".");
-      E2eWorkspace.git(clone, "config", "user.email", "e2e@example.com");
-      E2eWorkspace.git(clone, "config", "user.name", "jagt e2e");
-      E2eWorkspace.git(clone, "merge", "--no-ff", "-m", "Merge " + TASK, "origin/" + TASK);
-      E2eWorkspace.git(clone, "push", "-q", "origin", "main");
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("dev.jagt.orchestrator.e2e.ReviewRoundCase#matrix")
+    void sweptRoundEndsWhereItsFactsSayAndBriefsTheAgentOnlyWhenThereIsWork(ReviewRoundCase round)
+        throws Exception {
+      when(assistants.codeHost().readReview(flow.request()))
+          .thenReturn(new Answer<>(Optional.ofNullable(round.round()), TokenUsage.NONE));
 
-      assertThat(flow.act("ship")).contains("already merged");
+      assertThat(flow.act("sweep")).contains(round.sentence());
+
+      assertThat(flow.task().status()).isEqualTo(round.expected());
       assertThat(
-              flow.task().history().stream()
-                  .filter(step -> step.status() == TaskStatus.SHIPPING)
-                  .count())
-          .isEqualTo(ships);
+              Files.readString(flow.worktree().resolve("task_context.md"))
+                  .contains("Review round for"))
+          .as("the agent was handed this round")
+          .isEqualTo(round.briefed());
+    }
+
+    @Test
+    void roundTripFromShipToDeployAndBackOutAgain() throws Exception {
+      assertThat(shipped).contains("relayed to the agent", "SHIPPING");
+      assertThat(Files.readString(flow.worktree().resolve("task_context.md")))
+          .contains(
+              "proj: " + flow.worktree() + ", merges into main",
+              "EXACTLY \"" + TASK + " " + TITLE + "\"",
+              "reviewRequestUrl=<the url>");
+      assertThat(flow.task().mrUrl()).isEqualTo(flow.request());
+      assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", TASK))
+          .contains(TASK + " " + TITLE);
+
+      when(assistants.codeHost().readReview(flow.request()))
+          .thenReturn(
+              new Answer<>(
+                  Optional.of(
+                      reviewFacts()
+                          .withThreads(List.of("bot (Widget.java:12): tighten this"))
+                          .build()),
+                  TokenUsage.NONE));
+      flow.act("sweep");
+      assertThat(Files.readString(flow.worktree().resolve("task_context.md")))
+          .contains("bot (Widget.java:12): tighten this", "Do NOT push or post anything yourself");
+
+      Files.writeString(flow.worktree().resolve("widget.txt"), "tightened\n");
+      Files.writeString(flow.worktree().resolve("review_replies.md"), "> tighten this\n\nDone.\n");
+      Files.writeString(flow.worktree().resolve("task_notes.md"), "comment addressed\n");
+      flow.agentReports("REVIEW_PENDING", "comment addressed", "");
+
+      assertThat(flow.act("ship")).contains("relayed to the agent");
+      assertThat(Files.readString(flow.worktree().resolve("task_context.md")))
+          .contains(
+              "its request is already open",
+              "do NOT create another or retitle it",
+              "post each drafted reply to its thread");
+      flow.agentCommitsAndPushes(flow.worktree(), TASK + " address review comments");
+      flow.agentReports(
+          "CI_POLLING",
+          "review request: " + flow.request(),
+          ", \"reviewRequestUrl\": \"" + flow.request() + "\"");
+      assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", TASK))
+          .contains(TASK + " address review comments");
+
+      when(assistants.codeHost().readReview(flow.request()))
+          .thenReturn(
+              new Answer<>(Optional.of(reviewFacts().withApproved(true).build()), TokenUsage.NONE));
+      assertThat(flow.act("sweep")).contains("approved, checks success");
+      assertThat(flow.task().status()).isEqualTo(TaskStatus.APPROVED);
+
+      assertThat(flow.act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");
+      assertThat(
+              Objects.requireNonNull(flow.task().deployment())
+                  .targets()
+                  .getFirst()
+                  .landing()
+                  .merge())
+          .isNotBlank();
+      assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
+          .contains("Merge branch '" + TASK + "' into dev");
+
+      assertThat(flow.act("revert")).contains("Reverted " + TASK + " on dev", "REVERTED");
+      assertThat(E2eWorkspace.git(flow.origin(), "log", "-1", "--format=%s", "dev"))
+          .contains("Revert \"Merge branch '" + TASK + "' into dev\"");
+
+      assertThat(flow.task().history())
+          .extracting(StatusChange::status)
+          .containsExactly(
+              TaskStatus.NEW,
+              TaskStatus.REVIEW_PENDING,
+              TaskStatus.SHIPPING,
+              TaskStatus.CI_POLLING,
+              TaskStatus.REVIEW_PENDING,
+              TaskStatus.SHIPPING,
+              TaskStatus.CI_POLLING,
+              TaskStatus.APPROVED,
+              TaskStatus.DEPLOYED,
+              TaskStatus.REVERTED);
+      assertThat(flow.task().history())
+          .extracting(StatusChange::status, StatusChange::origin)
+          .contains(
+              tuple(TaskStatus.REVIEW_PENDING, ActionOrigin.MCP),
+              tuple(TaskStatus.DEPLOYED, ActionOrigin.BOARD));
+
+      assertThat(flow.act("done")).contains("worktree deleted", "Branch '" + TASK + "' was kept");
+      assertThat(flow.worktree()).doesNotExist();
+      assertThat(stateService.task(TASK)).isEmpty();
+      assertThat(E2eWorkspace.git(flow.repo(), "branch", "--list", TASK)).contains(TASK);
+    }
+
+    @Test
+    void followUpRequestAfterMergedOneLiftsTheStopAndIsReadByTheNextSweep(@TempDir Path clone)
+        throws Exception {
+      for (String round : List.of("second", "third", "fourth")) {
+        Files.writeString(flow.worktree().resolve("task_notes.md"), round + " round\n");
+        flow.agentReports("REVIEW_PENDING", round + " round", "");
+        flow.act("ship");
+        flow.agentReports(
+            "CI_POLLING",
+            "review request: " + flow.request(),
+            ", \"reviewRequestUrl\": \"" + flow.request() + "\"");
+      }
+      Files.writeString(flow.worktree().resolve("task_notes.md"), "fifth round\n");
+      flow.agentReports("REVIEW_PENDING", "fifth round", "");
+      assertThat(stops.mayShip(TASK)).isFalse();
+      assertThat(Objects.requireNonNull(flow.task().stop()).trigger())
+          .isEqualTo(TaskStop.Trigger.SHIPS);
+      assertThat(flow.task().stop().request()).isEqualTo(flow.request());
       assertThat(
               views.all().stream()
                   .filter(view -> view.id().equals(TASK))
@@ -478,23 +494,56 @@ class ReviewAndDeployFlowTest {
                   .stream()
                   .map(TaskView.ActionView::id)
                   .toList())
-          .doesNotContain("ship");
+          .contains("ship");
+      long ships =
+          flow.task().history().stream()
+              .filter(step -> step.status() == TaskStatus.SHIPPING)
+              .count();
+      String main = E2eWorkspace.git(flow.origin(), "rev-parse", "main").strip();
 
-      String followUp = flow.request().replace("/merge_requests/1", "/merge_requests/2");
-      when(assistants.codeHost().readReview(followUp))
-          .thenReturn(new Answer<>(Optional.of(reviewFacts().build()), TokenUsage.NONE));
-      flow.agentReports("IN_PROGRESS", "more work after the merge", "");
-      Files.writeString(flow.worktree().resolve("widget.txt"), "follow-up\n");
-      flow.agentCommitsAndPushes(flow.worktree(), TASK + " follow-up");
-      flow.agentReportsRequest("CI_POLLING", "review request: " + followUp, followUp);
+      try {
+        E2eWorkspace.git(clone, "clone", "-q", E2eWorkspace.remoteUrl(flow.origin()), ".");
+        E2eWorkspace.git(clone, "config", "user.email", "e2e@example.com");
+        E2eWorkspace.git(clone, "config", "user.name", "jagt e2e");
+        E2eWorkspace.git(clone, "merge", "--no-ff", "-m", "Merge " + TASK, "origin/" + TASK);
+        E2eWorkspace.git(clone, "push", "-q", "origin", "main");
 
-      assertThat(flow.task().stopped()).isFalse();
-      assertThat(stops.mayShip(TASK)).isTrue();
-      assertThat(flow.act("sweep")).doesNotContain("stopped");
-      verify(assistants.codeHost(), atLeastOnce()).readReview(followUp);
-    } finally {
-      E2eWorkspace.git(clone, "push", "-q", "--force", "origin", main + ":refs/heads/main");
-      E2eWorkspace.git(flow.repo(), "fetch", "-q", "origin");
+        assertThat(flow.act("ship")).contains("already merged");
+        assertThat(
+                flow.task().history().stream()
+                    .filter(step -> step.status() == TaskStatus.SHIPPING)
+                    .count())
+            .isEqualTo(ships);
+        assertThat(
+                views.all().stream()
+                    .filter(view -> view.id().equals(TASK))
+                    .findFirst()
+                    .orElseThrow()
+                    .actions()
+                    .stream()
+                    .map(TaskView.ActionView::id)
+                    .toList())
+            .doesNotContain("ship");
+
+        String followUp = flow.request().replace("/merge_requests/1", "/merge_requests/2");
+        when(assistants.codeHost().readReview(followUp))
+            .thenReturn(new Answer<>(Optional.of(reviewFacts().build()), TokenUsage.NONE));
+        flow.agentReports("IN_PROGRESS", "more work after the merge", "");
+        Files.writeString(flow.worktree().resolve("widget.txt"), "follow-up\n");
+        flow.agentCommitsAndPushes(flow.worktree(), TASK + " follow-up");
+        flow.agentReports(
+            "CI_POLLING",
+            "review request: " + followUp,
+            ", \"reviewRequestUrl\": \"" + followUp + "\"");
+
+        assertThat(flow.task().stopped()).isFalse();
+        assertThat(stops.mayShip(TASK)).isTrue();
+        assertThat(flow.act("sweep")).doesNotContain("stopped");
+        verify(assistants.codeHost(), atLeastOnce()).readReview(followUp);
+      } finally {
+        E2eWorkspace.git(clone, "push", "-q", "--force", "origin", main + ":refs/heads/main");
+        E2eWorkspace.git(flow.repo(), "fetch", "-q", "origin");
+      }
     }
   }
 }
