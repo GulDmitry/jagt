@@ -35,7 +35,7 @@ class LocalModelReachTest {
 
     new LocalModelReach(
             OpenCodeProperties.defaults(),
-            new LocalModelProperties(endpoint, "qwen", Duration.ofSeconds(5), List.of(), 0),
+            new LocalModelProperties(endpoint, "qwen", Duration.ofSeconds(5), List.of()),
             reach)
         .run();
 
@@ -74,7 +74,7 @@ class LocalModelReachTest {
 
     new LocalModelReach(
             OpenCodeProperties.defaults(),
-            new LocalModelProperties(endpoint, "qwen", Duration.ofSeconds(5), List.of(), 0),
+            new LocalModelProperties(endpoint, "qwen", Duration.ofSeconds(5), List.of()),
             reach)
         .run();
 

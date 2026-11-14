@@ -40,13 +40,13 @@ Measured 2026-11-05 on an M4, 32 GiB (`promptEval`, 15 cases, one run; acceptanc
 | Qwen3.5-27B UD-IQ3_XXS (11.5 GB) | not run | — | 0 judged in 10 min (a run before it: 1 of 12, wrong, 595 s) | +3.3 GiB: dropped |
 | Qwen3.5-9B Q4_K_M, `--reasoning-budget 2048` | not run | — | 0 in 10 min | -0.6 GiB (swap was 5.5 GiB before) |
 
+A logprob confidence does not rescue the misses: Qwen3.5-9B's three wrong COMMAND_MAP answers scored 0.97–0.997 on
+their enum tokens, among right ones at 0.89–0.998 (2026-11-14).
+
 `assistant.local.kinds: [COMMAND_MAP]` is the one kind to try; a failed or late local answer is asked of the cloud
 once ([0135](decisions/0135-tool-less-reads-may-call-a-local-model-directly.md)). Role reads on OpenCode
 (`opencode.reads`, [0138](decisions/0138-a-read-may-run-on-opencode.md)) stay for a machine whose model passes
 `roleEval -ProleCli=opencode`.
-
-`assistant.local.minConfidence` (0..1, default 0 = accept all) sends an answer whose enum fields' joint token
-probability (llama-server logprobs; free text does not count) is lower to the cloud; the confidence is logged at DEBUG as `confidence`.
 
 Every local model misses the same rows: "get going on ABC-99" (answers `none`), "send it for review" and the deploy row (answer `ship`).
 

@@ -9,15 +9,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @With
 @ConfigurationProperties(prefix = "orchestrator.assistant.local")
 public record LocalModelProperties(
-    String endpoint,
-    String model,
-    Duration timeout,
-    List<AssistantCallKind> kinds,
-    double minConfidence) {
+    String endpoint, String model, Duration timeout, List<AssistantCallKind> kinds) {
 
   public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(20);
-
-  public static final double DEFAULT_MIN_CONFIDENCE = 0;
 
   public LocalModelProperties {
     endpoint = endpoint == null ? "" : endpoint.strip();
@@ -25,10 +19,6 @@ public record LocalModelProperties(
     timeout =
         timeout == null || timeout.isNegative() || timeout.isZero() ? DEFAULT_TIMEOUT : timeout;
     kinds = kinds == null ? List.of(AssistantCallKind.COMMAND_MAP) : List.copyOf(kinds);
-    minConfidence =
-        Double.isNaN(minConfidence) || minConfidence < 0 || minConfidence > 1
-            ? DEFAULT_MIN_CONFIDENCE
-            : minConfidence;
   }
 
   public boolean on() {
@@ -41,6 +31,6 @@ public record LocalModelProperties(
 
   public static LocalModelProperties off() {
     return new LocalModelProperties(
-        "", "", DEFAULT_TIMEOUT, List.of(AssistantCallKind.COMMAND_MAP), DEFAULT_MIN_CONFIDENCE);
+        "", "", DEFAULT_TIMEOUT, List.of(AssistantCallKind.COMMAND_MAP));
   }
 }
