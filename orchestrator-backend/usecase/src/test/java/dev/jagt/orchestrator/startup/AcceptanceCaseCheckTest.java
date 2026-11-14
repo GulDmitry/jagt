@@ -14,25 +14,50 @@ import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.ConfigService;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class AcceptanceCaseCheckTest {
 
+  @TempDir Path root;
+  private AcceptanceCaseCheck check;
+
+  @BeforeEach
+  void checkOverThisTestsRoot() {
+    OrchestratorProperties properties =
+        OrchestratorProperties.defaults()
+            .withRoot(root.toString())
+            .withConfigFile(root.resolve("jagt.yml").toString())
+            .withStateFile(root.resolve("state.json").toString());
+    OrchestratorPaths paths = new OrchestratorPaths(properties);
+    ConfigService config =
+        new ConfigService(
+            paths,
+            mock(AgentRuntime.class),
+            mock(ActStops.class),
+            new Checkers(new TaskChart(Composition.builtIn())));
+    check =
+        new AcceptanceCaseCheck(
+            new RoleFiles(paths, "acceptance"),
+            config,
+            paths,
+            new Checkers(new TaskChart(Composition.builtIn())));
+  }
+
   @Test
-  void readsNothingWhereAcceptanceIsOff(@TempDir Path root) throws Exception {
+  void readsNothingWhereAcceptanceIsOff() throws Exception {
     Files.writeString(
         root.resolve("jagt.yml"),
         "orchestrator:\n  roles:\n    acceptance:\n      enabled: false\n");
     Files.createDirectories(root.resolve("roles/acceptance"));
     Files.writeString(root.resolve("roles/acceptance/cases.md"), "## broken\n\nnot a case\n");
 
-    assertThat(check(root).problems()).isEmpty();
+    assertThat(check.problems()).isEmpty();
   }
 
   @Test
-  void acceptsTheShippedCasesAgainstTheShippedBriefWhereAcceptanceIsOn(@TempDir Path root)
-      throws Exception {
+  void acceptsTheShippedCasesAgainstTheShippedBriefWhereAcceptanceIsOn() throws Exception {
     Files.writeString(
         root.resolve("jagt.yml"),
         "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
@@ -45,11 +70,11 @@ class AcceptanceCaseCheckTest {
         Path.of("../../roles/acceptance/brief.md.dist"),
         root.resolve("roles/acceptance/brief.md.dist"));
 
-    assertThat(check(root).problems()).isEmpty();
+    assertThat(check.problems()).isEmpty();
   }
 
   @Test
-  void namesCaseWhoseStepNoBriefSectionHolds(@TempDir Path root) throws Exception {
+  void namesCaseWhoseStepNoBriefSectionHolds() throws Exception {
     Files.writeString(
         root.resolve("jagt.yml"),
         "orchestrator:\n  roles:\n    acceptance:\n      enabled: true\n");
@@ -67,26 +92,6 @@ class AcceptanceCaseCheckTest {
         """);
     Files.writeString(root.resolve("roles/acceptance/brief.md"), "## other\n\ntext\n");
 
-    assertThat(check(root).problems()).hasSize(2);
-  }
-
-  private static AcceptanceCaseCheck check(Path root) {
-    OrchestratorProperties properties =
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withConfigFile(root.resolve("jagt.yml").toString())
-            .withStateFile(root.resolve("state.json").toString());
-    OrchestratorPaths paths = new OrchestratorPaths(properties);
-    ConfigService config =
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn())));
-    return new AcceptanceCaseCheck(
-        new RoleFiles(paths, "acceptance"),
-        config,
-        paths,
-        new Checkers(new TaskChart(Composition.builtIn())));
+    assertThat(check.problems()).hasSize(2);
   }
 }

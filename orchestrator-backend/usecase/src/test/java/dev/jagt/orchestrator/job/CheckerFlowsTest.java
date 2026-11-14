@@ -54,7 +54,14 @@ class CheckerFlowsTest {
   private CheckerFlows flows;
 
   @BeforeEach
-  void flowsOverThisTestsRoot() {
+  void flowsOverThisTestsRootListingTheStage() throws IOException {
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null))));
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.writeString(
+        root.resolve("roles/acceptance/role.yml"), "environments: [{url: \"" + STAGE + "\"}]\n");
     flows =
         new CheckerFlows(
             runner,
@@ -64,16 +71,6 @@ class CheckerFlowsTest {
                 config,
                 new OrchestratorPaths(
                     OrchestratorProperties.defaults().withRoot(root.toString()))));
-  }
-
-  private void stageListed() throws IOException {
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults()
-                .withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null))));
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.writeString(
-        root.resolve("roles/acceptance/role.yml"), "environments: [{url: \"" + STAGE + "\"}]\n");
   }
 
   @Test
@@ -90,7 +87,6 @@ class CheckerFlowsTest {
 
   @Test
   void failedFlowIsNotMetRowInTheVerdictAndTheReport(@TempDir Path worktree) throws IOException {
-    stageListed();
     when(runner.run(worktree, List.of("AC-1"), STAGE))
         .thenReturn(
             List.of(
@@ -129,7 +125,6 @@ class CheckerFlowsTest {
 
   @Test
   void passedFlowIsMetRow(@TempDir Path worktree) throws IOException {
-    stageListed();
     when(runner.run(worktree, List.of("AC-1"), STAGE))
         .thenReturn(List.of(FlowResult.defaults().withFlow("AC-1").withVerdict(Verdict.PASSED)));
 
@@ -147,7 +142,6 @@ class CheckerFlowsTest {
   @Test
   void passedFlowMakesItsCriterionsUnprovableRowMetAndDropsTheQuestion(@TempDir Path worktree)
       throws IOException {
-    stageListed();
     when(runner.run(worktree, List.of("open-page"), STAGE))
         .thenReturn(
             List.of(FlowResult.defaults().withFlow("open-page").withVerdict(Verdict.PASSED)));
@@ -162,7 +156,6 @@ class CheckerFlowsTest {
 
   @Test
   void failedFlowMakesItsCriterionsRowNotMet(@TempDir Path worktree) throws IOException {
-    stageListed();
     when(runner.run(worktree, List.of("open-page"), STAGE))
         .thenReturn(
             List.of(
@@ -191,7 +184,6 @@ class CheckerFlowsTest {
   @Test
   void anUnprovableFlowLeavesTheReadsRowAndAddsItsReason(@TempDir Path worktree)
       throws IOException {
-    stageListed();
     when(runner.run(worktree, List.of("open-page"), STAGE))
         .thenReturn(
             List.of(
@@ -213,7 +205,6 @@ class CheckerFlowsTest {
   @Test
   void eachOfTwoFlowsDecidesOnlyTheRowOfTheCriterionItNames(@TempDir Path worktree)
       throws IOException {
-    stageListed();
     when(runner.run(worktree, List.of("page-a", "page-b"), STAGE))
         .thenReturn(
             List.of(
@@ -245,7 +236,6 @@ class CheckerFlowsTest {
 
   @Test
   void flowNamingCriterionNoRowHasKeepsItsOwnRow(@TempDir Path worktree) throws IOException {
-    stageListed();
     when(runner.run(worktree, List.of("open-page"), STAGE))
         .thenReturn(
             List.of(FlowResult.defaults().withFlow("open-page").withVerdict(Verdict.PASSED)));
@@ -271,7 +261,6 @@ class CheckerFlowsTest {
 
   @Test
   void anEnvironmentNotListedIsRefusedBeforeAnyRun(@TempDir Path worktree) throws IOException {
-    stageListed();
 
     AcceptanceVerdict result =
         flows.run(

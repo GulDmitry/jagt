@@ -46,7 +46,19 @@ class FlowEngineTest {
           Clock.systemUTC(),
           rules);
 
-  private record FixedCapability(TaskAction action, Outcome outcome) implements TaskCapability {
+  private static final class FixedCapability implements TaskCapability {
+    private final TaskAction action;
+    private final Outcome outcome;
+
+    FixedCapability(TaskAction action, Outcome outcome) {
+      this.action = action;
+      this.outcome = outcome;
+    }
+
+    @Override
+    public TaskAction action() {
+      return action;
+    }
 
     @Override
     public Outcome run(String taskId) {
@@ -54,8 +66,21 @@ class FlowEngineTest {
     }
   }
 
-  private record KnowingCapability(TaskAction action, Outcome outcome, String known)
-      implements TaskCapability {
+  private static final class KnowingCapability implements TaskCapability {
+    private final TaskAction action;
+    private final Outcome outcome;
+    private final String known;
+
+    KnowingCapability(TaskAction action, Outcome outcome, String known) {
+      this.action = action;
+      this.outcome = outcome;
+      this.known = known;
+    }
+
+    @Override
+    public TaskAction action() {
+      return action;
+    }
 
     @Override
     public Outcome run(String taskId) {
@@ -80,7 +105,14 @@ class FlowEngineTest {
     }
   }
 
-  private record ScenariosThatAre(boolean ready, Outcome outcome) implements TaskCapability {
+  private static final class ScenariosThatAre implements TaskCapability {
+    private final boolean ready;
+    private final Outcome outcome;
+
+    ScenariosThatAre(boolean ready, Outcome outcome) {
+      this.ready = ready;
+      this.outcome = outcome;
+    }
 
     @Override
     public TaskAction action() {

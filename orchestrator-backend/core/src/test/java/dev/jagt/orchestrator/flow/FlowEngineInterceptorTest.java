@@ -23,7 +23,13 @@ class FlowEngineInterceptorTest {
 
   private final FlowRules rules = new FlowRules(new TaskChart(Composition.builtIn()));
 
-  private record Ships(List<String> log) implements TaskCapability {
+  private static final class Ships implements TaskCapability {
+    private final List<String> log;
+
+    Ships(List<String> log) {
+      this.log = log;
+    }
+
     @Override
     public TaskAction action() {
       return TaskAction.SHIP;
@@ -36,7 +42,20 @@ class FlowEngineInterceptorTest {
     }
   }
 
-  private record Announces(List<String> log, int order) implements CapabilityInterceptor {
+  private static final class Announces implements CapabilityInterceptor {
+    private final List<String> log;
+    private final int order;
+
+    Announces(List<String> log, int order) {
+      this.log = log;
+      this.order = order;
+    }
+
+    @Override
+    public int order() {
+      return order;
+    }
+
     @Override
     public TaskAction action() {
       return TaskAction.SHIP;

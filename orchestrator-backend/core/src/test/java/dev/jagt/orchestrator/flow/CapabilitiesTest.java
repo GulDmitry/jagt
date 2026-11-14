@@ -7,7 +7,26 @@ import org.junit.jupiter.api.Test;
 
 class CapabilitiesTest {
 
-  private record Declared(TaskAction action, int priority, String says) implements TaskCapability {
+  private static final class Declared implements TaskCapability {
+    private final TaskAction action;
+    private final int priority;
+    private final String says;
+
+    Declared(TaskAction action, int priority, String says) {
+      this.action = action;
+      this.priority = priority;
+      this.says = says;
+    }
+
+    @Override
+    public TaskAction action() {
+      return action;
+    }
+
+    @Override
+    public int priority() {
+      return priority;
+    }
 
     @Override
     public Outcome run(String taskId) {

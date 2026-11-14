@@ -20,6 +20,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -30,15 +31,17 @@ class IntakeHistoryTest {
   private final Notifications notifications = mock(Notifications.class);
   @TempDir Path root;
 
-  private OrchestratorPaths paths() {
-    return new OrchestratorPaths(
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withStateFile(root.resolve("state.json").toString()));
-  }
+  private OrchestratorPaths paths;
+  private IntakeHistory history;
 
-  private IntakeHistory history() {
-    return new IntakeHistory(stateService, finished, notifications, paths());
+  @BeforeEach
+  void historyOverStateOnDisk() {
+    paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    history = new IntakeHistory(stateService, finished, notifications, paths);
   }
 
   @Test
@@ -56,7 +59,7 @@ class IntakeHistoryTest {
                     TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a2").build(),
                     0L)));
 
-    assertThat(history().held()).containsExactlyInAnyOrder("ABC-1", "ABC-2");
+    assertThat(history.held()).containsExactlyInAnyOrder("ABC-1", "ABC-2");
   }
 
   @Test
@@ -64,7 +67,6 @@ class IntakeHistoryTest {
     when(stateService.tasks()).thenReturn(Map.of());
     when(finished.all()).thenReturn(List.of());
 
-    IntakeHistory history = history();
     history.turnAway("ABC-42", "nothing routes it");
 
     assertThat(history.held()).isEmpty();
@@ -72,7 +74,6 @@ class IntakeHistoryTest {
 
   @Test
   void tellsHumanAboutAnItemItTurnedAwayOnceRatherThanEveryPoll() {
-    IntakeHistory history = history();
     history.turnAway("ABC-42", "nothing routes it");
     history.turnAway("ABC-42", "nothing routes it");
 
@@ -81,7 +82,7 @@ class IntakeHistoryTest {
 
   @Test
   void tellsHumanHowToStartTurnedAwayItemByHand() {
-    history().turnAway("ABC-42", "nothing routes it");
+    history.turnAway("ABC-42", "nothing routes it");
 
     verify(notifications)
         .send(
@@ -93,9 +94,9 @@ class IntakeHistoryTest {
 
   @Test
   void doesNotTellAgainAfterRestartAboutAnItemItTurnedAway() {
-    history().turnAway("ABC-42", "nothing routes it");
+    history.turnAway("ABC-42", "nothing routes it");
 
-    IntakeHistory restarted = history();
+    IntakeHistory restarted = new IntakeHistory(stateService, finished, notifications, paths);
     restarted.turnAway("ABC-42", "nothing routes it");
 
     verify(notifications, times(1)).send(any(Notification.class));

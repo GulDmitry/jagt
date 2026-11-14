@@ -1,19 +1,13 @@
 package dev.jagt.orchestrator.startup;
 
+import static dev.jagt.orchestrator.startup.TestRoleCheckBuilder.roleCheck;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.RoleDefinition;
 import dev.jagt.orchestrator.flow.CheckerRole;
-import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.Roles;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.service.ActStops;
-import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.InstalledRoles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,8 +40,9 @@ class RoleCheckStartupTest {
     InstalledRoles roles = new InstalledRoles(paths);
 
     assertThat(roles.definitions()).extracting(RoleDefinition::id).containsExactly("acceptance");
-    assertThat(check(roles, paths).problems()).isEmpty();
-    assertThat(check(roles, paths).notes())
+    RoleCheck check = roleCheck(roles, paths).build();
+    assertThat(check.problems()).isEmpty();
+    assertThat(check.notes())
         .singleElement()
         .satisfies(note -> {
           assertThat(note.key()).isEqualTo("roles/dead");
@@ -128,7 +123,7 @@ class RoleCheckStartupTest {
         new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
     InstalledRoles roles = new InstalledRoles(paths);
 
-    RoleCheck check = check(roles, paths);
+    RoleCheck check = roleCheck(roles, paths).build();
 
     assertThat(check.problems()).isEmpty();
     assertThat(check.notes())
@@ -152,7 +147,7 @@ class RoleCheckStartupTest {
                 .withConfigFile(root.resolve("jagt.yml").toString()));
     InstalledRoles roles = new InstalledRoles(paths);
 
-    assertThat(check(roles, paths).problems())
+    assertThat(roleCheck(roles, paths).build().problems())
         .singleElement()
         .satisfies(problem -> {
           assertThat(problem.key()).isEqualTo("roles/acceptance");
@@ -177,7 +172,7 @@ class RoleCheckStartupTest {
                 .withRoot(root.toString())
                 .withConfigFile(root.resolve("jagt.yml").toString()));
 
-    RoleCheck check = check(new InstalledRoles(paths), paths);
+    RoleCheck check = roleCheck(new InstalledRoles(paths), paths).build();
 
     assertThat(check.notes()).isEmpty();
   }
@@ -197,7 +192,7 @@ class RoleCheckStartupTest {
                 .withRoot(root.toString())
                 .withConfigFile(root.resolve("jagt.yml").toString()));
 
-    RoleCheck check = check(new InstalledRoles(paths), paths);
+    RoleCheck check = roleCheck(new InstalledRoles(paths), paths).build();
 
     assertThat(check.notes())
         .singleElement()
@@ -206,16 +201,5 @@ class RoleCheckStartupTest {
           assertThat(note.text()).contains("orchestrator.roles.ACCEPTANCE names no installed role");
         });
     assertThat(check.problems()).isEmpty();
-  }
-
-  private static RoleCheck check(InstalledRoles roles, OrchestratorPaths paths) {
-    return new RoleCheck(
-        roles,
-        new ConfigService(
-            paths,
-            mock(AgentRuntime.class),
-            mock(ActStops.class),
-            new Checkers(new TaskChart(Composition.builtIn()))),
-        paths);
   }
 }

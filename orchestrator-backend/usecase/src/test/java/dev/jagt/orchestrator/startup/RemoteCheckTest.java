@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.startup;
 
+import static dev.jagt.orchestrator.startup.TestRemoteProjectBuilder.remoteProject;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -10,11 +11,8 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.port.Problem;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.task.ProjectConfig;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 class RemoteCheckTest {
@@ -23,23 +21,14 @@ class RemoteCheckTest {
   private final Processes processes = mock(Processes.class);
   private final RemoteCheck check = new RemoteCheck(configService, processes);
 
-  private static ProjectConfig project(@Nullable String codeHost, @Nullable String remote) {
-    return new ProjectConfig(
-        new ProjectConfig.Repository("/repo/shop", List.of(), null, List.of()),
-        new ProjectConfig.Branches("main", "dev", remote),
-        new ProjectConfig.CodeHost(
-            codeHost, null, List.of(), List.of(), List.of(), List.of(), List.of()),
-        new ProjectConfig.Verify(List.of(), null));
-  }
-
   @Test
   void acceptsRemoteTheRepositoryLists() {
+    when(processes.run(isNull(), any(Duration.class), anyList()))
+        .thenReturn(new Processes.Result(0, "origin\nupstream\n", ""));
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("shop", project(null, "upstream"))));
-    when(processes.run(isNull(), any(Duration.class), anyList()))
-        .thenReturn(new Processes.Result(0, "origin\nupstream\n", ""));
+                .withProjects(Map.of("shop", remoteProject().withRemote("upstream").build())));
 
     assertThat(check.problems()).isEmpty();
   }
@@ -49,7 +38,7 @@ class RemoteCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("shop", project(null, "upstream"))));
+                .withProjects(Map.of("shop", remoteProject().withRemote("upstream").build())));
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "origin\n", ""));
 
@@ -62,7 +51,8 @@ class RemoteCheckTest {
   void refusesTheDefaultOriginOfRepositoryWithNoRemote() {
     when(configService.load())
         .thenReturn(
-            ConfigService.ConfigFile.defaults().withProjects(Map.of("shop", project(null, null))));
+            ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("shop", remoteProject().build())));
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(0, "", ""));
 
@@ -76,7 +66,10 @@ class RemoteCheckTest {
     when(configService.load())
         .thenReturn(
             ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("shop", project("gitlab", "none"))));
+                .withProjects(
+                    Map.of(
+                        "shop",
+                        remoteProject().withCodeHost("gitlab").withRemote("none").build())));
 
     assertThat(check.problems())
         .singleElement()
@@ -93,7 +86,7 @@ class RemoteCheckTest {
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withCodeHost("github")
-                .withProjects(Map.of("shop", project(null, "none"))));
+                .withProjects(Map.of("shop", remoteProject().withRemote("none").build())));
 
     assertThat(check.problems())
         .singleElement()
@@ -106,7 +99,11 @@ class RemoteCheckTest {
         .thenReturn(
             ConfigService.ConfigFile.defaults()
                 .withProjects(
-                    Map.of("shop", project("none", "none"), "web", project(null, "none"))));
+                    Map.of(
+                        "shop",
+                        remoteProject().withCodeHost("none").withRemote("none").build(),
+                        "web",
+                        remoteProject().withRemote("none").build())));
 
     assertThat(check.problems()).isEmpty();
   }

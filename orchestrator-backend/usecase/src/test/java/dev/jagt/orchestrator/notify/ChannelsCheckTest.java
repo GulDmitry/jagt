@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
@@ -39,37 +40,44 @@ class ChannelsCheckTest {
           OrchestratorProperties.defaults()
               .withConfigFile(Path.of("build.gradle").toAbsolutePath().toString()));
 
-  private ChannelsCheck checkOf(
-      Map<String, ChannelDef> channels, Map<String, List<RouteDef>> points) {
+  private ChannelsCheck check;
+
+  @BeforeEach
+  void checkOverTheThreeDrivers() {
     when(desktop.kind()).thenReturn("desktop");
     when(command.kind()).thenReturn("command");
     when(teams.kind()).thenReturn("teams");
     when(teams.needsSecret()).thenReturn(true);
     when(roles.points()).thenReturn(Points.builtIn());
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withNotifications(new NotificationsConfig(channels, points)));
-    return new ChannelsCheck(config, roles, List.of(desktop, command, teams), environment, paths);
+    check = new ChannelsCheck(config, roles, List.of(desktop, command, teams), environment, paths);
   }
 
   @Test
   void findsNothingWrongWithRoutesToDeclaredChannelsOfKnownPoints() {
-    ChannelsCheck check =
-        checkOf(
-            Map.of("desktop", new ChannelDef("desktop", null, null)),
-            Map.of(
-                "deployed",
-                List.of(new RouteDef("desktop", "jagt · {alias}", "{sha} {pipeline} {board}"))));
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("desktop", new ChannelDef("desktop", null, null)),
+                        Map.of(
+                            "deployed",
+                            List.of(
+                                new RouteDef(
+                                    "desktop", "jagt · {alias}", "{sha} {pipeline} {board}"))))));
 
     assertThat(check.problems()).isEmpty();
   }
 
   @Test
   void refusesRouteNamingPointNoCatalogueHas() {
-    ChannelsCheck check =
-        checkOf(
-            Map.of("desktop", new ChannelDef("desktop", null, null)),
-            Map.of("deployd", List.of(new RouteDef("desktop", "t", "x"))));
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("desktop", new ChannelDef("desktop", null, null)),
+                        Map.of("deployd", List.of(new RouteDef("desktop", "t", "x"))))));
 
     assertThat(check.problems())
         .extracting(Problem::key)
@@ -78,8 +86,12 @@ class ChannelsCheckTest {
 
   @Test
   void refusesRouteNamingChannelNotDeclared() {
-    ChannelsCheck check =
-        checkOf(Map.of(), Map.of("deployed", List.of(new RouteDef("team", "t", "x"))));
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of(), Map.of("deployed", List.of(new RouteDef("team", "t", "x"))))));
 
     assertThat(check.problems())
         .extracting(Problem::text)
@@ -91,7 +103,12 @@ class ChannelsCheckTest {
 
   @Test
   void refusesChannelOfKindNoDriverTells() {
-    ChannelsCheck check = checkOf(Map.of("chat", new ChannelDef("pager", null, null)), Map.of());
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("chat", new ChannelDef("pager", null, null)), Map.of())));
 
     assertThat(check.problems())
         .extracting(Problem::key)
@@ -103,15 +120,24 @@ class ChannelsCheckTest {
     environment
         .getPropertySources()
         .addFirst(new MapPropertySource("test", Map.of("ABC_HOOK", "https://example.invalid")));
-    ChannelsCheck check =
-        checkOf(Map.of("chat", new ChannelDef("teams", "ABC_HOOK", null)), Map.of());
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("chat", new ChannelDef("teams", "ABC_HOOK", null)), Map.of())));
 
     assertThat(check.problems()).isEmpty();
   }
 
   @Test
   void refusesTeamsChannelNamingNoWebhookEnv() {
-    ChannelsCheck check = checkOf(Map.of("chat", new ChannelDef("teams", null, null)), Map.of());
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("chat", new ChannelDef("teams", null, null)), Map.of())));
 
     assertThat(check.problems())
         .extracting(Problem::key)
@@ -120,8 +146,12 @@ class ChannelsCheckTest {
 
   @Test
   void refusesCommandChannelWithNoArgv() {
-    ChannelsCheck check =
-        checkOf(Map.of("ops", new ChannelDef("command", null, List.of())), Map.of());
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("ops", new ChannelDef("command", null, List.of())), Map.of())));
 
     assertThat(check.problems())
         .extracting(Problem::key)
@@ -130,8 +160,13 @@ class ChannelsCheckTest {
 
   @Test
   void refusesChannelWhoseWebhookEnvIsNotSet() {
-    ChannelsCheck check =
-        checkOf(Map.of("ops", new ChannelDef("command", "ABC_HOOK", List.of("cat"))), Map.of());
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("ops", new ChannelDef("command", "ABC_HOOK", List.of("cat"))),
+                        Map.of())));
 
     assertThat(check.problems())
         .extracting(Problem::key)
@@ -143,18 +178,26 @@ class ChannelsCheckTest {
     environment
         .getPropertySources()
         .addFirst(new MapPropertySource("test", Map.of("ABC_HOOK", "https://example.invalid")));
-    ChannelsCheck check =
-        checkOf(Map.of("ops", new ChannelDef("command", "ABC_HOOK", List.of("cat"))), Map.of());
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("ops", new ChannelDef("command", "ABC_HOOK", List.of("cat"))),
+                        Map.of())));
 
     assertThat(check.problems()).isEmpty();
   }
 
   @Test
   void refusesRouteWithNoText() {
-    ChannelsCheck check =
-        checkOf(
-            Map.of("desktop", new ChannelDef("desktop", null, null)),
-            Map.of("deployed", List.of(new RouteDef("desktop", "t", " "))));
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("desktop", new ChannelDef("desktop", null, null)),
+                        Map.of("deployed", List.of(new RouteDef("desktop", "t", " "))))));
 
     assertThat(check.problems())
         .extracting(Problem::text)
@@ -165,10 +208,13 @@ class ChannelsCheckTest {
 
   @Test
   void refusesUnknownPlaceholderNamingIt() {
-    ChannelsCheck check =
-        checkOf(
-            Map.of("desktop", new ChannelDef("desktop", null, null)),
-            Map.of("deployed", List.of(new RouteDef("desktop", "t", "{shaa}"))));
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("desktop", new ChannelDef("desktop", null, null)),
+                        Map.of("deployed", List.of(new RouteDef("desktop", "t", "{shaa}"))))));
 
     assertThat(check.problems())
         .extracting(Problem::text)
@@ -179,10 +225,13 @@ class ChannelsCheckTest {
 
   @Test
   void refusesTaskPlaceholderOnPointStandingFromNoTask() {
-    ChannelsCheck check =
-        checkOf(
-            Map.of("desktop", new ChannelDef("desktop", null, null)),
-            Map.of("usage", List.of(new RouteDef("desktop", "t", "{task} {body}"))));
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("desktop", new ChannelDef("desktop", null, null)),
+                        Map.of("usage", List.of(new RouteDef("desktop", "t", "{task} {body}"))))));
     when(roles.points()).thenReturn(List.of(Point.USAGE));
 
     assertThat(check.problems())
@@ -195,12 +244,15 @@ class ChannelsCheckTest {
 
   @Test
   void reportsEveryProblemAtOnce() {
-    ChannelsCheck check =
-        checkOf(
-            Map.of("chat", new ChannelDef("pager", null, null)),
-            Map.of(
-                "deployd", List.of(new RouteDef("ghost", "t", "{nope}")),
-                "deployed", List.of(new RouteDef("chat", "t", ""))));
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("chat", new ChannelDef("pager", null, null)),
+                        Map.of(
+                            "deployd", List.of(new RouteDef("ghost", "t", "{nope}")),
+                            "deployed", List.of(new RouteDef("chat", "t", ""))))));
 
     assertThat(check.problems()).hasSizeGreaterThanOrEqualTo(5);
   }
@@ -249,10 +301,13 @@ class ChannelsCheckTest {
 
   @Test
   void notesNothingWhereOneRouteIsWritten() {
-    ChannelsCheck check =
-        checkOf(
-            Map.of("desktop", new ChannelDef("desktop", null, null)),
-            Map.of("deployed", List.of(new RouteDef("desktop", "t", "x"))));
+    when(config.load())
+        .thenReturn(
+            ConfigFile.defaults()
+                .withNotifications(
+                    new NotificationsConfig(
+                        Map.of("desktop", new ChannelDef("desktop", null, null)),
+                        Map.of("deployed", List.of(new RouteDef("desktop", "t", "x"))))));
 
     assertThat(check.notes()).isEmpty();
   }

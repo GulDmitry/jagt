@@ -49,18 +49,15 @@ class MasterReviewJobTest {
     job = new MasterReviewJob(state, config, panel, reviews, verdicts);
   }
 
-  private ConfigService.ConfigFile.MasterConfig master(String mode) {
-    ConfigService.ConfigFile.MasterConfig master =
-        new ConfigService.ConfigFile.MasterConfig(mode, null, null, null, null);
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(master));
-    return master;
-  }
-
   @Test
   void readsNoRoundWhileTheMasterIsOff() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
-    master("off");
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withMaster(
+                    new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 
     job.run();
 
@@ -74,7 +71,9 @@ class MasterReviewJobTest {
             .lastActiveTimestamp(2_000L)
             .build();
     state.putTask("ABC-1", back);
-    ConfigService.ConfigFile.MasterConfig master = master("judge");
+    ConfigService.ConfigFile.MasterConfig master =
+        new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(master));
 
     job.run();
 
@@ -85,7 +84,9 @@ class MasterReviewJobTest {
   void handsPlanToThePlanReadingPanelNotTheRoundReadingOne() {
     TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
     state.putTask("ABC-1", planned);
-    ConfigService.ConfigFile.MasterConfig master = master("judge");
+    ConfigService.ConfigFile.MasterConfig master =
+        new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
+    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(master));
 
     job.run();
 
@@ -97,7 +98,11 @@ class MasterReviewJobTest {
   void readsNothingOfTaskTheSessionStillWorksOn() {
     state.putTask(
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
-    master("judge");
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withMaster(
+                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
 
     job.run();
 
@@ -123,8 +128,10 @@ class MasterReviewJobTest {
     void actsOnTheVerdictWrittenAboutTheRoundInsteadOfAskingAgain() {
       reviews.write(
           "ABC-1", back, new MasterReview.Review(5, "", "", "", List.of(acceptanceReady)), "");
+      ConfigService.ConfigFile.MasterConfig master =
+          new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+      when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(master));
       TaskState written = state.task("ABC-1").orElseThrow();
-      ConfigService.ConfigFile.MasterConfig master = master("act");
 
       job.run();
 
@@ -134,7 +141,11 @@ class MasterReviewJobTest {
 
     @Test
     void keepsTheTickGoingWhenVerdictFindsTheTaskMovedOn() {
-      master("judge");
+      when(config.load())
+          .thenReturn(
+              ConfigService.ConfigFile.defaults()
+                  .withMaster(
+                      new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
       when(verdicts.act(anyString(), any(), any(), any())).thenThrow(new TaskMovedOn("ABC-1"));
       reviews.write(
           "ABC-1", back, new MasterReview.Review(5, "", "", "", List.of(acceptanceReady)), "");
@@ -149,13 +160,14 @@ class MasterReviewJobTest {
     void asksAgainWhenTheOnlyVerdictWasAskedAboutAnEarlierHandBack() {
       reviews.write(
           "ABC-1", back, new MasterReview.Review(3, "", "", "", List.of(acceptanceReady)), "");
-      TaskState written = state.task("ABC-1").orElseThrow();
-      ConfigService.ConfigFile.MasterConfig master = master("act");
+      ConfigService.ConfigFile.MasterConfig master =
+          new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+      when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withMaster(master));
 
       job.run();
 
       verify(verdicts, never()).act(anyString(), any(), any(), any());
-      verify(panel).review("ABC-1", written, master);
+      verify(panel).review("ABC-1", state.task("ABC-1").orElseThrow(), master);
     }
   }
 
@@ -205,7 +217,11 @@ class MasterReviewJobTest {
     state.putTask("ABC-1", sealed);
     reviews.write("ABC-1", sealed, new MasterReview.Review(5, "", "", "", List.of()), "");
     Files.delete(root.resolve(".jagt").resolve("master-review.json"));
-    master("judge");
+    when(config.load())
+        .thenReturn(
+            ConfigService.ConfigFile.defaults()
+                .withMaster(
+                    new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
 
     job.run();
 

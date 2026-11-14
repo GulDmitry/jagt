@@ -17,11 +17,8 @@ import org.junit.jupiter.api.Test;
 
 class RoutesTest {
 
-  private static Routes routesOf(NotificationsConfig notifications) {
-    ConfigService config = mock(ConfigService.class);
-    when(config.load()).thenReturn(ConfigFile.defaults().withNotifications(notifications));
-    return new Routes(config);
-  }
+  private final ConfigService config = mock(ConfigService.class);
+  private final Routes routes = new Routes(config);
 
   @Test
   void routesOnePointToTwoChannelsEachWithItsOwnText() {
@@ -36,7 +33,9 @@ class RoutesTest {
                     new RouteDef("desktop", "jagt · {task}", "{sha}"),
                     new RouteDef("team", null, "{alias} is live"))));
 
-    List<Routed> routed = routesOf(notifications).of("deployed");
+    when(config.load()).thenReturn(ConfigFile.defaults().withNotifications(notifications));
+
+    List<Routed> routed = routes.of("deployed");
 
     assertThat(routed)
         .containsExactly(
@@ -55,7 +54,9 @@ class RoutesTest {
             Map.of("desktop", new ChannelDef("desktop", null, null)),
             Map.of("deployed", List.of(new RouteDef("desktop", "t", "x"))));
 
-    assertThat(routesOf(notifications).of("merged")).isEmpty();
+    when(config.load()).thenReturn(ConfigFile.defaults().withNotifications(notifications));
+
+    assertThat(routes.of("merged")).isEmpty();
   }
 
   @Test
@@ -64,6 +65,8 @@ class RoutesTest {
         new NotificationsConfig(
             Map.of(), Map.of("deployed", List.of(new RouteDef("ghost", "t", "x"))));
 
-    assertThat(routesOf(notifications).of("deployed")).isEmpty();
+    when(config.load()).thenReturn(ConfigFile.defaults().withNotifications(notifications));
+
+    assertThat(routes.of("deployed")).isEmpty();
   }
 }

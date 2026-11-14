@@ -20,7 +20,13 @@ import org.junit.jupiter.api.Test;
 
 class MasterPressesTest {
 
-  private record Spend(AtomicReference<ActionOrigin> seen) implements GlobalCommand {
+  private static final class Spend implements GlobalCommand {
+    private final AtomicReference<ActionOrigin> seen;
+
+    Spend(AtomicReference<ActionOrigin> seen) {
+      this.seen = seen;
+    }
+
     @Override
     public String id() {
       return "spend";

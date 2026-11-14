@@ -52,33 +52,29 @@ class CheckerReadsTest {
               .json(),
           "acceptance");
 
-  private static TaskState deployed() {
-    return TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-        .alias("a1")
-        .build()
-        .withDeployment(
-            new Deployment(
-                1,
-                List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                1,
-                "digest"));
-  }
-
-  private static StateService stateIn(Path root) {
-    return new StateService(
-        new JsonMapper(),
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString())),
-        reducer,
-        event -> {});
-  }
+  private static final TaskState DEPLOYED =
+      TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+          .alias("a1")
+          .build()
+          .withDeployment(
+              new Deployment(
+                  1,
+                  List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
+                  1,
+                  "digest"));
 
   @Test
   void acceptanceHoldsTheTurnWhileItReadsAndNobodyHoldsItOnceItAnswered(@TempDir Path root) {
-    StateService state = stateIn(root);
-    state.putTask("ABC-42", deployed());
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer,
+            event -> {});
+    state.putTask("ABC-42", DEPLOYED);
     List<Turn.Holder> whileReading = new ArrayList<>();
     CheckerReader reader = mock(CheckerReader.class);
     when(reader.read(any()))
@@ -116,8 +112,16 @@ class CheckerReadsTest {
 
   @Test
   void flowsTheReadNamesRunAndTheirRowsJoinTheVerdict(@TempDir Path root) {
-    StateService state = stateIn(root);
-    state.putTask("ABC-42", deployed());
+    StateService state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer,
+            event -> {});
+    state.putTask("ABC-42", DEPLOYED);
     AcceptanceVerdict read =
         new AcceptanceVerdict(
             "proj@0123",

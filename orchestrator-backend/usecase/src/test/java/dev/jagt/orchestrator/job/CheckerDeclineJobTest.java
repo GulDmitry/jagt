@@ -48,21 +48,19 @@ class CheckerDeclineJobTest {
   private static final ConfigFile ON =
       ConfigFile.defaults().withRoles(Map.of("acceptance", new ConfigFile.RoleConfig(true, null)));
 
-  private static TaskState declined(long reportedAt) {
-    return TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
-        .report(AgentReport.NO_CHANGES)
-        .message("the list is sorted by name, as the ticket says")
-        .build()
-        .withDeployment(
-            new Deployment(
-                1,
-                List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
-                1,
-                "digest"))
-        .withRole(
-            Checkers.ACCEPTANCE, RoleRecord.defaults().withRound("digest", "- list is sorted"))
-        .withSession(Session.startedOver(Session.defaults()).withReportedAt(reportedAt));
-  }
+  private static final TaskState DECLINED =
+      TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED)
+          .report(AgentReport.NO_CHANGES)
+          .message("the list is sorted by name, as the ticket says")
+          .build()
+          .withDeployment(
+              new Deployment(
+                  1,
+                  List.of(Deployment.Target.of("proj", "dev").withMerge("0123456789abcdef")),
+                  1,
+                  "digest"))
+          .withRole(
+              Checkers.ACCEPTANCE, RoleRecord.defaults().withRound("digest", "- list is sorted"));
 
   @TempDir Path root;
   private final ConfigService config = mock(ConfigService.class);
@@ -102,7 +100,11 @@ class CheckerDeclineJobTest {
         .thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.NOT_MET);
 
-    job.run("ABC-42", declined(System.currentTimeMillis() + 1000));
+    job.run(
+        "ABC-42",
+        DECLINED.withSession(
+            Session.startedOver(Session.defaults())
+                .withReportedAt(System.currentTimeMillis() + 1000)));
 
     verify(outcomes).declined(eq("ABC-42"), eq(accepted), eq(false));
   }
@@ -111,7 +113,8 @@ class CheckerDeclineJobTest {
   void readsNothingBeforeTheSessionRepliedToTheRound() {
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.NOT_MET);
 
-    job.run("ABC-42", declined(1));
+    job.run(
+        "ABC-42", DECLINED.withSession(Session.startedOver(Session.defaults()).withReportedAt(1)));
 
     verify(reader, never()).decline(any(), any(), any(), any());
   }
@@ -120,7 +123,11 @@ class CheckerDeclineJobTest {
   void readsNothingOnceTheDisputeWentToTheHuman() {
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.ESCALATED);
 
-    job.run("ABC-42", declined(System.currentTimeMillis() + 1000));
+    job.run(
+        "ABC-42",
+        DECLINED.withSession(
+            Session.startedOver(Session.defaults())
+                .withReportedAt(System.currentTimeMillis() + 1000)));
 
     verify(reader, never()).decline(any(), any(), any(), any());
   }
@@ -133,7 +140,11 @@ class CheckerDeclineJobTest {
         .thenReturn(new Answer<>(Optional.of(disputed), TokenUsage.NONE));
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.DISPUTED);
 
-    job.run("ABC-42", declined(System.currentTimeMillis() + 1000));
+    job.run(
+        "ABC-42",
+        DECLINED.withSession(
+            Session.startedOver(Session.defaults())
+                .withReportedAt(System.currentTimeMillis() + 1000)));
 
     verify(outcomes).declined(eq("ABC-42"), eq(disputed), eq(true));
   }
@@ -145,7 +156,14 @@ class CheckerDeclineJobTest {
         .thenReturn(new Answer<>(Optional.of(accepted), TokenUsage.NONE));
     records.put("ABC-42", "digest", "proj@0123456789abcdef", AcceptanceEnding.NOT_MET);
     TaskState reading =
-        reducer.relayed(declined(System.currentTimeMillis() + 1000), "decline", "digest", "", 1);
+        reducer.relayed(
+            DECLINED.withSession(
+                Session.startedOver(Session.defaults())
+                    .withReportedAt(System.currentTimeMillis() + 1000)),
+            "decline",
+            "digest",
+            "",
+            1);
 
     job.run("ABC-42", reading);
 

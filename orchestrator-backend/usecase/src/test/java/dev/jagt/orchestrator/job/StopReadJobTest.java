@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskStop;
 import java.nio.file.Path;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -22,11 +23,25 @@ class StopReadJobTest {
 
   private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
 
+  @TempDir Path root;
   private final StopReads reads = mock(StopReads.class);
+  private StateService state;
+
+  @BeforeEach
+  void stateOnDisk() {
+    state =
+        new StateService(
+            new JsonMapper(),
+            new OrchestratorPaths(
+                OrchestratorProperties.defaults()
+                    .withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())),
+            reducer,
+            event -> {});
+  }
 
   @Test
-  void readsTheChecksOfTaskStoppedByAnOutsideConditionWhateverAutoReviewSays(@TempDir Path root) {
-    StateService state = state(root);
+  void readsTheChecksOfTaskStoppedByAnOutsideConditionWhateverAutoReviewSays() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -41,8 +56,7 @@ class StopReadJobTest {
   }
 
   @Test
-  void readsTheChecksOfResolvedDeployConflictHeldByAnInfrastructureStop(@TempDir Path root) {
-    StateService state = state(root);
+  void readsTheChecksOfResolvedDeployConflictHeldByAnInfrastructureStop() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT)
@@ -55,8 +69,7 @@ class StopReadJobTest {
   }
 
   @Test
-  void readsNothingForStopOnlyHumanLifts(@TempDir Path root) {
-    StateService state = state(root);
+  void readsNothingForStopOnlyHumanLifts() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -67,16 +80,5 @@ class StopReadJobTest {
     new StopReadJob(reads).runOn(state.tasks());
 
     verify(reads, never()).probe("ABC-42");
-  }
-
-  private static StateService state(Path root) {
-    return new StateService(
-        new JsonMapper(),
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString())),
-        reducer,
-        event -> {});
   }
 }

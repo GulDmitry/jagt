@@ -77,7 +77,7 @@ class ConfigCheckTest {
   }
 
   @ParameterizedTest
-  @MethodSource
+  @MethodSource("namesKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt")
   void namesKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt(String key, String expected)
       throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
@@ -133,7 +133,7 @@ class ConfigCheckTest {
   }
 
   @ParameterizedTest
-  @MethodSource
+  @MethodSource("namesWhatConfiguredProjectWouldFailOn")
   void namesWhatConfiguredProjectWouldFailOn(String config, String expected) throws Exception {
     Files.createDirectories(root.resolve("repo").resolve(".git"));
     Files.createDirectories(root.resolve("plain-dir"));
