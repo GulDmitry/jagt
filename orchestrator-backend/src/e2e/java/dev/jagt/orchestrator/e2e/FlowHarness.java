@@ -15,6 +15,9 @@ import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskProvisioning;
+import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -30,6 +33,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 
@@ -112,6 +117,64 @@ final class FlowHarness {
         .thenReturn(new Answer<>(Optional.of(reviewFacts().build()), TokenUsage.NONE));
     agentReports(
         "CI_POLLING", "review request up", ", \"reviewRequestUrl\": \"" + request() + "\"");
+  }
+
+  String shipsTheFirstRound(String title) throws Exception {
+    context
+        .getBean(TaskProvisioning.class)
+        .initializeTask(
+            NewTask.builder(task, "proj").instructions("Fix the widget").title(title).build());
+    Files.writeString(worktree().resolve("widget.txt"), "fixed\n");
+    agentHandsBack("widget fixed");
+    String shipped = act("ship");
+    agentCommitsAndPushes(worktree(), task + " " + title);
+    agentReportsRequest("CI_POLLING", "review request: " + request(), request());
+    return shipped;
+  }
+
+  void agentCommitsAndPushes(Path worktree, String message) throws Exception {
+    E2eWorkspace.git(worktree, "add", "-A");
+    E2eWorkspace.git(worktree, "commit", "-m", message);
+    E2eWorkspace.git(worktree, "push", "-u", "origin", task);
+  }
+
+  void reads(@Nullable ReviewFacts facts) {
+    Answer<ReviewFacts> answer = new Answer<>(Optional.ofNullable(facts), TokenUsage.NONE);
+    when(context.getBean(Assistants.class).codeHost().readReview(request())).thenReturn(answer);
+    when(context.getBean(Assistants.class).codeHost().readReview(webRequest())).thenReturn(answer);
+  }
+
+  void agentHandsBack(String message) throws Exception {
+    Files.writeString(worktree().resolve("task_notes.md"), message + "\n");
+    agentReports("REVIEW_PENDING", message, "");
+  }
+
+  void agentReportsRequest(String status, String message, String requestUrl) throws Exception {
+    agentReports(status, message, ", \"reviewRequestUrl\": \"" + requestUrl + "\"");
+  }
+
+  void agentReportsRequests(Map<String, String> byProject) throws Exception {
+    String requests =
+        byProject.entrySet().stream()
+            .map(entry -> "\"" + entry.getKey() + "\": \"" + entry.getValue() + "\"")
+            .collect(Collectors.joining(", "));
+    agentReports("CI_POLLING", "requests up", ", \"reviewRequests\": {" + requests + "}");
+  }
+
+  Path webRepo() {
+    return workspace.resolve("web");
+  }
+
+  Path webOrigin() {
+    return workspace.resolve("web-origin.git");
+  }
+
+  Path webWorktree() {
+    return workspace.resolve(task + "-web");
+  }
+
+  String webRequest() {
+    return E2eWorkspace.requestUrl(webOrigin());
   }
 
   void leaveNothingBehind() {
