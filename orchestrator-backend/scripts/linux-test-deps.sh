@@ -48,7 +48,8 @@ apt-get install -y --no-install-recommends \
     libxext6 \
     libxfixes3 \
     libxkbcommon0 \
-    libxrandr2
+    libxrandr2 \
+    libxtst6
 rm -rf /var/lib/apt/lists/*
 
 # Why each one is here, so nobody trims the list by guessing:
@@ -62,6 +63,7 @@ rm -rf /var/lib/apt/lists/*
 #   dunst      — a notification daemon: notify-send exits non-zero when nothing owns the bus name
 #   libnotify-bin — notify-send itself, what LibNotifyNotifier runs
 #   procps, lsof  — agent liveness probing and language-server reaping read the process table
+#   libxtst6   — on a display the JDK loads its X toolkit, which links against it; ImageIO reads the board's icons
 #   fonts-liberation … libxrandr2 — the shared libraries the board suite's Chromium links against. The BROWSER
 #     comes from Playwright's own cache (the `playwrightChromium` task), which cannot install system packages.
 #     The t64 names are Ubuntu 24.04 and newer; on an older Debian they are the ones without the suffix.
