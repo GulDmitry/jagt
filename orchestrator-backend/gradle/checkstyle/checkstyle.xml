@@ -183,7 +183,8 @@
     <module name="FallThrough"/>
     <module name="UpperEll"/>
     <module name="ModifierOrder"/>
-    <!-- google-java-format 2.0 keeps a text block's opening quotes on the preceding line, the check has no property to accept that; see decision 0143. -->
+    <!-- google-java-format 2.0 keeps a text block's opening quotes on the preceding line,
+         the check has no property to accept that; see decision 0143. -->
     <!-- <module name="TextBlockGoogleStyleFormatting"/> -->
     <module name="EmptyLineSeparator">
       <property name="tokens"

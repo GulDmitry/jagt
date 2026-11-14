@@ -5,7 +5,8 @@
 ## Writing
 
 - **Java follows Google style**; Checkstyle's Google checks gate every source set, Javadoc checks off; `gradle/checkstyle/` holds the config.
-- **google-java-format's output is the layout**; a check contradicting it is switched off as the Checkstyle counts rule below says ([0143](../decisions/0143-checkstyle-gates-parameter-and-component-counts.md)).
+- **google-java-format's output is the layout**; a check contradicting it is switched off as the Checkstyle counts rule
+  below says ([0143](../decisions/0143-checkstyle-gates-parameter-and-component-counts.md)).
   Write to it: a line ≤ 100 columns, wrapped before a `.` or after `(`, indent 2, continuation 4; no unused import;
   overloads adjacent; no one-letter word in a name (`ofA`).
   Error Prone runs with `-Werror` on every set: `&&` inside `||` takes parentheses.
