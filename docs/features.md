@@ -29,7 +29,7 @@
 - **Judge on the board** — A failed check's output, what Trust adopts, `tail` and `worktrees`. [spec](../openspec/specs/board-judgement/spec.md)
 - **Command palette** — Type a command, or free text that a model turns into one proposed command.
   [spec](../openspec/specs/board-verbs/spec.md#requirement-tier-1-is-grammar-tier-2-only-proposes)
-- **Lost reach on the head** — jagt's own failed reach of a code host is one mark on the board's head with its login, never a card's stop.
+- **Lost reach on the head** — A code host's lost reach is one mark on the head, never a card's stop; its login runs on the Session tab, no browser.
   [spec](../openspec/specs/board/spec.md#requirement-a-lost-reach-of-a-code-host-is-the-boards-head)
 - **Theme and language on the gear** — The gear chooses both per browser; a catalog file adds a language. [spec](../openspec/specs/board/spec.md)
 - **Local, installable** — Answers locally only, refuses foreign writes, installs as an app. [spec](../openspec/specs/board/spec.md)

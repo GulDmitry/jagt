@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.OpenedWindows;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.surface.board.NaturalLanguageDispatch;
@@ -105,6 +106,7 @@ abstract class BoardPageContext {
   @MockitoBean NaturalLanguageDispatch naturalLanguage;
   @MockitoBean EditorDriver editorDriver;
   @MockitoBean AgentSessions sessions;
+  @MockitoBean OpenedWindows windows;
   @MockitoBean SessionHost sessionHost;
   @MockitoSpyBean ReviewRepliesReport replies;
 

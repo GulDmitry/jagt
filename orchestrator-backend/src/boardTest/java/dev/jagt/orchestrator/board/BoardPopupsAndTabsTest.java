@@ -186,6 +186,26 @@ class BoardPopupsAndTabsTest extends BoardPageContext {
   }
 
   @Test
+  void theSessionTabShowsTheLoginWindowWholeAndSaysToIt() {
+    state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
+    when(windows.open()).thenReturn(List.of("login"));
+    when(windows.screen("login"))
+        .thenReturn(Optional.of("code ABCD-1234 at https://host.example.invalid/device"));
+    when(windows.say("login", "y")).thenReturn("Said to login.");
+    Page page = openBoard();
+
+    page.locator("#pane .tabs button[data-tab=session]").click();
+    page.locator("#pane .session button[data-window=login]").click();
+    assertThat(page.locator("#pane .session .screen"))
+        .hasText("code ABCD-1234 at https://host.example.invalid/device");
+    page.locator("#pane .say input").fill("y");
+    page.locator("#pane .say input").press("Enter");
+
+    assertThat(page.locator("#toasts .toast")).hasText("Said to login.");
+    verify(windows).say("login", "y");
+  }
+
+  @Test
   void theSessionTabRunsTheLineThroughTheRunVerbInsteadOfSayingIt() {
     state.putTask("ABC-1", alphaTask("ABC-1", TaskStatus.IN_PROGRESS).build());
     when(commands.executeLine("ABC-1", TaskAction.RUN, "ls -la"))

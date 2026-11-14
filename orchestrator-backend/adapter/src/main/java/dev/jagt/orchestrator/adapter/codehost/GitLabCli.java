@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
+import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommitPipeline;
 import dev.jagt.orchestrator.port.Problem;
@@ -43,9 +44,17 @@ public class GitLabCli implements CodeHostDriver {
   private final HostCli cli;
 
   public GitLabCli(Processes processes, Reach reach) {
-    this.cli =
-        new HostCli(
-            processes, reach, "glab", hostname -> List.of("auth", "login", "--hostname", hostname));
+    this.cli = new HostCli(processes, reach, "glab", GitLabCli::login);
+  }
+
+  private static List<String> login(String hostname) {
+    String glab = quoted(Executables.resolve("glab"));
+    String login = glab + " auth login --hostname " + quoted(hostname);
+    return List.of("sh", "-c", login + " --device || " + login);
+  }
+
+  private static String quoted(String word) {
+    return "'" + word.replace("'", "'\\''") + "'";
   }
 
   @Override

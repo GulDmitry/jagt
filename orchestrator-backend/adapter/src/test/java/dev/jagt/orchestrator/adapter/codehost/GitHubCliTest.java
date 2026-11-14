@@ -247,7 +247,7 @@ class GitHubCliTest {
   }
 
   @Test
-  void signedOutGhNamesItsWebLoginOnTheHostAsTheFix() {
+  void signedOutGhNamesItsLoginAsTheFixWithTheBrowserTurnedOff() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "HTTP 401"));
 
@@ -255,7 +255,15 @@ class GitHubCliTest {
         github.retryFailed(host, "https://github.example.invalid/acme/shop/actions/runs/5");
 
     assertThat(answer.reach().orElseThrow().fix())
-        .containsExactly("gh", "auth", "login", "--hostname", "github.example.invalid", "--web");
+        .containsExactly(
+            "env",
+            "GH_BROWSER=true",
+            "gh",
+            "auth",
+            "login",
+            "--hostname",
+            "github.example.invalid",
+            "--web");
   }
 
   @Test

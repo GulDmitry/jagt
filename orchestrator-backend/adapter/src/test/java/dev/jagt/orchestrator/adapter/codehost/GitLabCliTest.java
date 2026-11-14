@@ -247,7 +247,7 @@ class GitLabCliTest {
   }
 
   @Test
-  void signedOutGlabNamesItsLoginOnTheHostAsTheFix() {
+  void signedOutGlabTriesTheDeviceFlowThenItsOwnPromptAsTheFix() {
     when(processes.run(isNull(), any(Duration.class), anyList()))
         .thenReturn(new Processes.Result(1, "", "HTTP 401"));
 
@@ -255,7 +255,14 @@ class GitLabCliTest {
         gitlab.onCommit(host, "https://git.example.invalid/shop/web.git", "0123abc");
 
     assertThat(answer.reach().orElseThrow().fix())
-        .containsExactly("glab", "auth", "login", "--hostname", "git.example.invalid");
+        .satisfies(
+            fix -> {
+              assertThat(fix.get(0)).isEqualTo("sh");
+              assertThat(fix.get(1)).isEqualTo("-c");
+              assertThat(fix.get(2))
+                  .contains(" auth login --hostname 'git.example.invalid' --device || ")
+                  .endsWith(" auth login --hostname 'git.example.invalid'");
+            });
   }
 
   @Test

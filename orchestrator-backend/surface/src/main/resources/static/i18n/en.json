@@ -91,6 +91,8 @@
   "say.label": "tell this session",
   "say.hint": "tell this session — no, answer 2 differently",
   "keys.session": "keys for the session",
+  "windows.label": "windows jagt opened",
+  "windows.task": "this task's session",
   "say.send": "Send",
   "say.run": "Run",
   "said.label": "the session is working",

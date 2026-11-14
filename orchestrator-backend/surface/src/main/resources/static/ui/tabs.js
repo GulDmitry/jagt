@@ -17,11 +17,27 @@ const artifacts = async (task) => {
   return {names, name, html: rendered ? rendered.html : ''};
 };
 
+let windowName = null;
+
+// The task's own session, or one of the windows jagt opened that is no task's.
+async function sessionOf(task) {
+  const names = await api('/api/windows').catch(() => []);
+  const name = names.includes(windowName) ? windowName : null;
+  const path = name ? `/api/windows/screen?name=${encodeURIComponent(name)}`
+    : `/api/tasks/screen?task=${encodeURIComponent(task.id)}`;
+  const screen = await api(path).catch((e) => ({held: true, shown: t('tabs.unread', {cause: e.message})}));
+  return {...screen, names, name};
+}
+
+export const pickWindow = (name) => {
+  windowName = name;
+  forget();
+};
+
 const sources = {
   artifacts,
   diff: (task) => api(`/api/tasks/diff?task=${encodeURIComponent(task.id)}`),
-  session: (task) => api(`/api/tasks/screen?task=${encodeURIComponent(task.id)}`)
-    .catch((e) => ({held: true, shown: t('tabs.unread', {cause: e.message})})),
+  session: sessionOf,
   round: (task, offer) => text(`/api/commands/${offer.id}?about=${encodeURIComponent(task.alias || task.id)}`),
 };
 

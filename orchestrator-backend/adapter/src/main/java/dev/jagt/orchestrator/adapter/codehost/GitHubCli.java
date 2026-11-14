@@ -55,7 +55,16 @@ public class GitHubCli implements CodeHostDriver {
             processes,
             reach,
             "gh",
-            hostname -> List.of("auth", "login", "--hostname", hostname, "--web"));
+            hostname ->
+                List.of(
+                    "env",
+                    "GH_BROWSER=true",
+                    "gh",
+                    "auth",
+                    "login",
+                    "--hostname",
+                    hostname,
+                    "--web"));
   }
 
   @Override

@@ -37,7 +37,7 @@ final class HostCli {
   private final String cli;
   private final Function<String, List<String>> login;
 
-  /** {@code login} gives the arguments of the CLI's own interactive login on a host. */
+  /** {@code login} gives the whole command of the CLI's own interactive login on a host. */
   HostCli(Processes processes, Reach reach, String cli, Function<String, List<String>> login) {
     this.processes = processes;
     this.reach = reach;
@@ -125,9 +125,7 @@ final class HostCli {
   }
 
   private <T> Answer<T> signedOut(String hostname) {
-    List<String> fix = new ArrayList<>(List.of(cli));
-    fix.addAll(login.apply(hostname));
-    return unreached(hostname, fix, cli + " not logged in to " + hostname);
+    return unreached(hostname, login.apply(hostname), cli + " not logged in to " + hostname);
   }
 
   private <T> Answer<T> unreached(String hostname, List<String> fix, String said) {

@@ -18,7 +18,7 @@ import * as seen from './seen.js';
 import * as repliesOpened from './repliesOpened.js';
 import * as selection from './selection.js';
 import * as tabs from './tabs.js';
-import {pressKey, refusal, runTo, sayTo} from '../core/api.js';
+import {pressKey, refusal, runTo, sayTo, sayToWindow} from '../core/api.js';
 import {toast} from './toast.js';
 import {sending} from './submit.js';
 import {said} from './keys.js';
@@ -89,6 +89,12 @@ export const onClick = ({action}) => {
       render();
       return;
     }
+    const named = event.target.closest('button[data-window]');
+    if (named) {
+      tabs.pickWindow(named.dataset.window || null);
+      render();
+      return;
+    }
     const file = event.target.closest('button[data-file]');
     if (file) {
       tabs.pick(file.dataset.task, file.dataset.file);
@@ -123,8 +129,9 @@ board.addEventListener('submit', (event) => {
   event.preventDefault();
   const line = form.elements.line.value.trim();
   if (!line) return;
-  const send = event.submitter?.hasAttribute('data-run') ? runTo : sayTo;
-  sending(form, {waiting: 'sending…', send: () => send(form.dataset.say, line), done: () => {
+  const send = form.dataset.window ? (name, said) => sayToWindow(name, said)
+    : event.submitter?.hasAttribute('data-run') ? runTo : sayTo;
+  sending(form, {waiting: 'sending…', send: () => send(form.dataset.window || form.dataset.say, line), done: () => {
     form.reset();
     tabs.forget();
     render();

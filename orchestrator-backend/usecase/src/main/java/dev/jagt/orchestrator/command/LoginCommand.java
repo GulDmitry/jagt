@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.Reach;
 import dev.jagt.orchestrator.port.ReachLost;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.OpenedWindows;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -11,8 +12,6 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class LoginCommand implements GlobalCommand {
-
-  static final String WINDOW = "login";
 
   private final Reach reach;
   private final SessionHost sessions;
@@ -45,11 +44,11 @@ public class LoginCommand implements GlobalCommand {
                         "no login is waiting: jagt reaches what it reads"));
     List<String> fix = lost.fix();
     String session = sessions.sessionName(configService.load().viewer().session());
-    sessions.openCommandWindow(session, session, WINDOW, fix);
+    sessions.openCommandWindow(session, session, OpenedWindows.LOGIN, fix);
     return "`"
         + String.join(" ", fix)
         + "` is open in the "
-        + WINDOW
+        + OpenedWindows.LOGIN
         + " window; the next read that succeeds clears the mark";
   }
 }

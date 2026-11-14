@@ -27,14 +27,17 @@ const KEYS = [['ESCAPE', 'Esc'], ['UP', '↑'], ['DOWN', '↓'], ['LEFT', '←']
   ['CTRL_C', '^C'], ['CTRL_U', '^U']];
 
 const Session = ({task, shown}) => html`<section class="session" role="tabpanel" id="panel-session" aria-labelledby="tab-session">
+  ${shown && shown.names && shown.names.length ? html`<div class="keys windows" role="group" aria-label=${t('windows.label')}>
+    <button data-window="" aria-pressed=${!shown.name}>${t('windows.task')}</button>${shown.names.map((name) => html`<button
+    data-window=${name} aria-pressed=${shown.name === name}>${name}</button>`)}</div>` : ''}
   <pre class="screen">${shown === null ? t('reading') : shown.held ? shown.shown : t('pane.no-window')}</pre>
-  <div class="keys" role="group" aria-label=${t('keys.session')}>${KEYS.map(([name, cap]) => html`<button
-    data-press=${name} data-task=${task.id}>${cap}</button>`)}</div>
-  <form class="say" data-say=${task.id}>
+  ${shown && shown.name ? '' : html`<div class="keys" role="group" aria-label=${t('keys.session')}>${KEYS.map(([name, cap]) => html`<button
+    data-press=${name} data-task=${task.id}>${cap}</button>`)}</div>`}
+  <form class="say" data-say=${task.id} data-window=${shown && shown.name ? shown.name : undefined}>
     <input name="line" aria-label=${t('say.label')} placeholder=${t('say.hint')}
       autocomplete="off" required/>
     <button type="submit">${t('say.send')}</button>
-    ${(task.actions || []).some((action) => action.id === 'run')
+    ${!(shown && shown.name) && (task.actions || []).some((action) => action.id === 'run')
       ? html`<button type="submit" data-run="">${t('say.run')}</button>` : ''}
   </form>
 </section>`;
