@@ -2,7 +2,6 @@ package dev.jagt.orchestrator;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
-import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaAnnotation;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaEnumConstant;
@@ -22,17 +21,9 @@ class LogCaptureTest {
 
   private static final String LIST_APPENDER = "ch.qos.logback.core.read.ListAppender";
 
-  private static final Set<String> SKIPPED =
-      Set.of(
-          "dev.jagt.orchestrator.adapter.ProcessRunnerTest",
-          "dev.jagt.orchestrator.adapter.replay.ReplaySessionsTest",
-          "dev.jagt.orchestrator.surface.board.AbortedConnectionFilterTest",
-          "dev.jagt.orchestrator.eval.EvalQuorumTest");
-
   @Test
   void noTestHoldsLockOrRunsOnOneThread() {
     classes()
-        .that(notSkipped())
         .should(holdNoLockAndNoSameThread())
         .allowEmptyShould(true)
         .check(SourceRoots.ALL);
@@ -41,21 +32,9 @@ class LogCaptureTest {
   @Test
   void logIsCapturedOnlyThroughTheFake() {
     classes()
-        .that(notSkipped())
         .should(buildNoListAppender())
         .allowEmptyShould(true)
         .check(SourceRoots.ALL);
-  }
-
-  private static DescribedPredicate<JavaClass> notSkipped() {
-    return DescribedPredicate.describe(
-        "are not on the skipped list", type -> !SKIPPED.contains(topLevel(type)));
-  }
-
-  private static String topLevel(JavaClass type) {
-    String name = type.getName();
-    int nested = name.indexOf('$');
-    return nested < 0 ? name : name.substring(0, nested);
   }
 
   private static ArchCondition<JavaClass> holdNoLockAndNoSameThread() {

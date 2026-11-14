@@ -14,14 +14,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceAccessMode;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 
 class EvalQuorumTest {
 
   @Test
-  @ResourceLock(value = Resources.SYSTEM_PROPERTIES, mode = ResourceAccessMode.READ)
   void caseHoldsWhenOneRunInThreeFlakes() {
     Deque<Executable> answers =
         new ArrayDeque<>(
@@ -34,13 +30,12 @@ class EvalQuorumTest {
 
     assertThatCode(
             () ->
-                new EvalQuorum(3, 2)
+                new EvalQuorum(3, 2, null)
                     .hold("flaky", EvalSpend.UNMETERED, () -> answers.poll().execute()))
         .doesNotThrowAnyException();
   }
 
   @Test
-  @ResourceLock(value = Resources.SYSTEM_PROPERTIES, mode = ResourceAccessMode.READ)
   void caseFailsWithBothJudgesReasonsWhenTwoRunsInThreeFail() {
     Deque<Executable> answers =
         new ArrayDeque<>(
@@ -55,7 +50,7 @@ class EvalQuorumTest {
 
     assertThatThrownBy(
             () ->
-                new EvalQuorum(3, 2)
+                new EvalQuorum(3, 2, null)
                     .hold("broken", EvalSpend.UNMETERED, () -> answers.poll().execute()))
         .isInstanceOf(AssertionError.class)
         .hasMessageContaining("judge said first")
@@ -63,20 +58,17 @@ class EvalQuorumTest {
   }
 
   @Test
-  @ResourceLock(value = Resources.SYSTEM_PROPERTIES, mode = ResourceAccessMode.READ)
   void thirdRunIsNeverMadeOnceTwoPassesInRowDecideTheCase() {
     AtomicInteger made = new AtomicInteger();
 
-    new EvalQuorum(3, 2).hold("steady", EvalSpend.UNMETERED, made::incrementAndGet);
+    new EvalQuorum(3, 2, null).hold("steady", EvalSpend.UNMETERED, made::incrementAndGet);
 
     assertThat(made).hasValue(2);
   }
 
   @Test
-  @ResourceLock(value = Resources.SYSTEM_PROPERTIES, mode = ResourceAccessMode.READ_WRITE)
   void stalledRunIsCountedAsStalledAndWrongAnswerIsNot(@TempDir Path dir) throws Exception {
     Path file = dir.resolve("eval-stats.jsonl");
-    System.setProperty("eval.stats", file.toString());
     Deque<Executable> answers =
         new ArrayDeque<>(
             List.of(
@@ -87,15 +79,12 @@ class EvalQuorumTest {
                   throw new AssertionError("wrong answer");
                 },
                 () -> {}));
-    try {
-      assertThatThrownBy(
-              () ->
-                  new EvalQuorum(3, 2)
-                      .hold("mixed", EvalSpend.UNMETERED, () -> answers.poll().execute()))
-          .isInstanceOf(AssertionError.class);
-    } finally {
-      System.clearProperty("eval.stats");
-    }
+
+    assertThatThrownBy(
+            () ->
+                new EvalQuorum(3, 2, file)
+                    .hold("mixed", EvalSpend.UNMETERED, () -> answers.poll().execute()))
+        .isInstanceOf(AssertionError.class);
 
     assertThat(Files.readAllLines(file))
         .singleElement()
@@ -105,13 +94,11 @@ class EvalQuorumTest {
   }
 
   @Test
-  @ResourceLock(value = Resources.SYSTEM_PROPERTIES, mode = ResourceAccessMode.READ_WRITE)
   void caseRecordsTheSpendBetweenItsFirstRunAndItsLast(@TempDir Path dir) throws Exception {
     Path file = dir.resolve("eval-stats.jsonl");
-    System.setProperty("eval.stats", file.toString());
     Deque<Double> meter = new ArrayDeque<>(List.of(1.0, 1.75));
     try {
-      new EvalQuorum(1, 1).hold("metered", () -> OptionalDouble.of(meter.poll()), () -> {});
+      new EvalQuorum(1, 1, file).hold("metered", () -> OptionalDouble.of(meter.poll()), () -> {});
     } finally {
       System.clearProperty("eval.stats");
     }
@@ -121,7 +108,7 @@ class EvalQuorumTest {
 
   @Test
   void morePassesThanRunsIsRefused() {
-    assertThatThrownBy(() -> new EvalQuorum(2, 3))
+    assertThatThrownBy(() -> new EvalQuorum(2, 3, null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("3")
         .hasMessageContaining("2");

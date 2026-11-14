@@ -10,7 +10,6 @@ import jakarta.annotation.PreDestroy;
 import java.net.SocketException;
 import java.util.Arrays;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.springframework.stereotype.Component;
 
@@ -25,34 +24,26 @@ public class AbortedConnectionFilter extends TurboFilter {
   private static final String TOMCAT_NET_LOGGER = "org.apache.tomcat.util.net.";
   private static final String LINGER_CALL = "setSoLinger";
 
+  private final LoggerContext loggers;
+
+  public AbortedConnectionFilter(LoggerContext context) {
+    this.loggers = context;
+  }
+
   /**
    * Bean creation is before the connector binds its port, so no abandoned connection can arrive
    * earlier.
    */
   @PostConstruct
   void install() {
-    if (LoggerFactory.getILoggerFactory() instanceof LoggerContext context) {
-      installInto(context);
-    }
+    start();
+    loggers.addTurboFilter(this);
   }
 
-  /**
-   * The logger context is the JVM's, so a filter left installed outlives this application context.
-   */
+  /** A filter left installed outlives this application context. */
   @PreDestroy
   void uninstall() {
-    if (LoggerFactory.getILoggerFactory() instanceof LoggerContext context) {
-      removeFrom(context);
-    }
-  }
-
-  void installInto(LoggerContext context) {
-    start();
-    context.addTurboFilter(this);
-  }
-
-  void removeFrom(LoggerContext context) {
-    context.getTurboFilterList().remove(this);
+    loggers.getTurboFilterList().remove(this);
     stop();
   }
 

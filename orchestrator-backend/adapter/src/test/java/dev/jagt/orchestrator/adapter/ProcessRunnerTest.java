@@ -4,29 +4,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.Isolated;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.slf4j.LoggerFactory;
 
-@Isolated
 class ProcessRunnerTest {
 
   @Test
@@ -257,28 +254,19 @@ class ProcessRunnerTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
-  void recordsHowLaunchEndedSoDeathNobodyAskedForCanBeAttributed() throws Exception {
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    Logger runnerLog = (Logger) LoggerFactory.getLogger(ProcessRunner.class);
-    runnerLog.addAppender(log);
-    try {
-      Process launched = new ProcessRunner().runDetached(null, List.of("sleep", "30"));
+  void recordsHowLaunchEndedSoDeathNobodyAskedForCanBeAttributed() {
+    Process launched = mock(Process.class);
+    when(launched.pid()).thenReturn(4242L);
+    when(launched.exitValue()).thenReturn(143);
+    when(launched.onExit()).thenReturn(CompletableFuture.completedFuture(launched));
+    try (FakeLogCapture log = new FakeLogCapture(ProcessRunner.class)) {
+      ProcessRunner.reportLifeOf(launched, List.of("sleep", "30"), true, System.nanoTime());
 
-      new ProcessBuilder("kill", "-TERM", String.valueOf(launched.pid())).start().waitFor();
-
-      await()
-          .atMost(Duration.ofSeconds(5))
-          .untilAsserted(
-              () ->
-                  assertThat(List.copyOf(log.list))
-                      .filteredOn(event -> "process ended".equals(event.getMessage()))
-                      .flatExtracting(ILoggingEvent::getKeyValuePairs)
-                      .extracting(pair -> pair.key + "=" + pair.value)
-                      .contains("pid=" + launched.pid(), "exit=on SIGTERM (143)"));
-    } finally {
-      runnerLog.detachAppender(log);
+      assertThat(log.events())
+          .filteredOn(event -> "process ended".equals(event.getMessage()))
+          .flatExtracting(ILoggingEvent::getKeyValuePairs)
+          .extracting(pair -> pair.key + "=" + pair.value)
+          .contains("pid=4242", "exit=on SIGTERM (143)");
     }
   }
 

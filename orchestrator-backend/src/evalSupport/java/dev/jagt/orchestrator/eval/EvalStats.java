@@ -54,8 +54,8 @@ public final class EvalStats {
   }
 
   public static void record(
+      @Nullable Path file,
       String name, boolean passed, int runs, double seconds, OptionalDouble costUsd, int stalled) {
-    String file = System.getProperty("eval.stats");
     if (file == null) {
       return;
     }
@@ -69,12 +69,12 @@ public final class EvalStats {
             briefHash(System.getProperty("eval.brief.file")),
             new Tally(runs, seconds, costUsd, stalled));
     try {
-      append(Path.of(file), entry);
+      append(file, entry);
     } catch (IOException | JacksonException unwritable) {
       LoggerFactory.getLogger(EvalStats.class)
           .atWarn()
           .setMessage("eval stats unwritten")
-          .addKeyValue("file", file)
+          .addKeyValue("file", file.toString())
           .addKeyValue("cause", unwritable.toString())
           .log();
     }

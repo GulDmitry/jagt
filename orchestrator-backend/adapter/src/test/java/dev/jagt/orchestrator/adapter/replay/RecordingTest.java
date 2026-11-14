@@ -54,4 +54,36 @@ class RecordingTest {
           .anyMatch(pair -> pair.key.equals("cause") && pair.value.equals("first cause"));
     }
   }
+
+  @Test
+  void saysOnlyOnceThatTheReplayDrainedHoweverOftenItIsToldSo(@TempDir Path root)
+      throws Exception {
+    Path file = root.resolve("recording.jsonl");
+    Files.writeString(file, "\n");
+    Recording recording = new Recording(file.toString());
+    try (FakeLogCapture log = new FakeLogCapture(Recording.class)) {
+      recording.drain();
+      List<String> afterFirst =
+          log.events().stream().map(event -> event.getFormattedMessage()).toList();
+      recording.drain();
+
+      assertThat(afterFirst).containsExactly("replay drained");
+      assertThat(log.events()).hasSize(1);
+      assertThat(recording.drained()).isTrue();
+    }
+  }
+
+  @Test
+  void neverSaysTheReplayDrainedOnceItDiverged(@TempDir Path root) throws Exception {
+    Path file = root.resolve("recording.jsonl");
+    Files.writeString(file, "\n");
+    Recording recording = new Recording(file.toString());
+    recording.diverge("ABC-1", "ship", "the turn never opened");
+    try (FakeLogCapture log = new FakeLogCapture(Recording.class)) {
+      recording.drain();
+
+      assertThat(log.events()).isEmpty();
+      assertThat(recording.drained()).isFalse();
+    }
+  }
 }

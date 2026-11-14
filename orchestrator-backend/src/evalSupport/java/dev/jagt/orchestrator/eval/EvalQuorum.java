@@ -1,12 +1,14 @@
 package dev.jagt.orchestrator.eval;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalDouble;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.function.Executable;
 import org.slf4j.LoggerFactory;
 
-public record EvalQuorum(int runs, int passes) {
+public record EvalQuorum(int runs, int passes, @Nullable Path stats) {
 
   public EvalQuorum {
     if (passes < 1 || passes > runs) {
@@ -17,7 +19,11 @@ public record EvalQuorum(int runs, int passes) {
 
   public static EvalQuorum configured() {
     int runs = Integer.getInteger("eval.runs", 3);
-    return new EvalQuorum(runs, Integer.getInteger("eval.passes", runs / 2 + 1));
+    String stats = System.getProperty("eval.stats");
+    return new EvalQuorum(
+        runs,
+        Integer.getInteger("eval.passes", runs / 2 + 1),
+        stats == null ? null : Path.of(stats));
   }
 
   public void hold(String name, EvalSpend spend, Executable run) {
@@ -46,6 +52,7 @@ public record EvalQuorum(int runs, int passes) {
         .addKeyValue("runs", made)
         .log();
     EvalStats.record(
+        stats,
         name,
         held,
         made,

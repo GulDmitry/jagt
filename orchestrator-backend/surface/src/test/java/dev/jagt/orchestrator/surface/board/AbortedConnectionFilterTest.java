@@ -10,16 +10,14 @@ import ch.qos.logback.core.spi.FilterReply;
 import java.net.SocketException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.LoggerFactory;
 
 class AbortedConnectionFilterTest {
 
-  private final AbortedConnectionFilter filter = new AbortedConnectionFilter();
+  private final LoggerContext own = new LoggerContext();
+  private final AbortedConnectionFilter filter = new AbortedConnectionFilter(own);
 
   @Test
   void dropsTomcatsErrorForConnectionTheClientAbortedBeforeItCouldBeConfigured() {
@@ -45,31 +43,16 @@ class AbortedConnectionFilterTest {
   }
 
   @Test
-  void registersItselfWithTheLoggerContextAndTakesItselfBackOutWhenTheBackendCloses() {
-    LoggerContext context = new LoggerContext();
-
-    filter.installInto(context);
-    boolean installed = context.getTurboFilterList().contains(filter);
-    boolean startedWhileInstalled = filter.isStarted();
-    filter.removeFrom(context);
-
-    assertThat(installed).isTrue();
-    assertThat(startedWhileInstalled).isTrue();
-    assertThat(context.getTurboFilterList()).doesNotContain(filter);
-    assertThat(filter.isStarted()).isFalse();
-  }
-
-  @Test
-  @ResourceLock(Resources.GLOBAL)
-  void joinsTheJvmsLoggerContextWhenCreatedAndLeavesItWhenDestroyed() {
-    LoggerContext jvm = (LoggerContext) LoggerFactory.getILoggerFactory();
-
+  void registersItselfWithTheLoggerContextWhenCreatedAndLeavesItWhenDestroyed() {
     filter.install();
-    boolean installed = jvm.getTurboFilterList().contains(filter);
+    boolean installed = own.getTurboFilterList().contains(filter);
+    boolean startedWhileInstalled = filter.isStarted();
     filter.uninstall();
 
     assertThat(installed).isTrue();
-    assertThat(jvm.getTurboFilterList()).doesNotContain(filter);
+    assertThat(startedWhileInstalled).isTrue();
+    assertThat(own.getTurboFilterList()).doesNotContain(filter);
+    assertThat(filter.isStarted()).isFalse();
   }
 
   @ParameterizedTest

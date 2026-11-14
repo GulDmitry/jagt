@@ -24,6 +24,7 @@ public class Recording {
 
   private final List<RecordingLine> lines;
   private final AtomicBoolean diverged = new AtomicBoolean();
+  private final AtomicBoolean drained = new AtomicBoolean();
 
   public Recording(@Value("${orchestrator.replay.file}") String file) {
     this.lines = read(Path.of(file));
@@ -58,6 +59,17 @@ public class Recording {
 
   public boolean diverged() {
     return diverged.get();
+  }
+
+  public boolean drained() {
+    return drained.get();
+  }
+
+  /** Says once that every recorded move was made, and never after a divergence. */
+  public void drain() {
+    if (!diverged.get() && drained.compareAndSet(false, true)) {
+      log.atInfo().setMessage("replay drained").log();
+    }
   }
 
   /** The first divergence ends the replay; a later one only follows from it. */

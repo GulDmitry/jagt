@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.replay;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
@@ -11,9 +12,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -24,14 +22,12 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.api.parallel.ResourceLock;
-import org.junit.jupiter.api.parallel.Resources;
-import org.slf4j.LoggerFactory;
 
 class ReplaySessionsTest {
 
@@ -249,38 +245,25 @@ class ReplaySessionsTest {
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
-  void saysOnceThatTheReplayDrainedWhenEveryRecordedMoveWasMade(@TempDir Path root)
-      throws Exception {
+  void drainsTheRecordingWhenEveryRecordedMoveWasMade(@TempDir Path root) throws Exception {
     Path file =
         Files.writeString(
             root.resolve("recording.jsonl"),
             """
             {"type":"tree","task":"ABC-1","turn":0,"files":{"notes.md":"one"}}
             """);
+    Recording recording = new Recording(file.toString());
     when(tasks.task("ABC-1")).thenReturn(Optional.of(newTask));
-    sessions =
-        new ReplaySessions(
-            new Recording(file.toString()), tasks, moves, checkers);
+    sessions = new ReplaySessions(recording, tasks, moves, checkers);
     sessions.launched(Path.of("/work/ABC-1"));
-
-    Logger sessionsLog = (Logger) LoggerFactory.getLogger(ReplaySessions.class);
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    sessionsLog.addAppender(log);
 
     sessions.start();
 
-    verify(tasks, timeout(WAIT_MILLIS).atLeast(FEW_TICKS)).task("ABC-1");
-    sessionsLog.detachAppender(log);
-    assertThat(log.list)
-        .extracting(ILoggingEvent::getFormattedMessage)
-        .containsExactly("replay drained");
+    await().atMost(Duration.ofSeconds(10)).until(recording::drained);
   }
 
   @Test
-  @ResourceLock(Resources.GLOBAL)
-  void neverSaysTheReplayDrainedOnceItDiverged(@TempDir Path root) throws Exception {
+  void neverDrainsTheRecordingOnceItDiverged(@TempDir Path root) throws Exception {
     Path file =
         Files.writeString(
             root.resolve("recording.jsonl"),
@@ -291,15 +274,9 @@ class ReplaySessionsTest {
     recording.diverge("", "intake", "a read the recording never held");
     sessions = new ReplaySessions(recording, tasks, moves, checkers);
 
-    Logger sessionsLog = (Logger) LoggerFactory.getLogger(ReplaySessions.class);
-    ListAppender<ILoggingEvent> log = new ListAppender<>();
-    log.start();
-    sessionsLog.addAppender(log);
-
     sessions.start();
 
     verify(tasks, after(2_000).never()).task(any());
-    sessionsLog.detachAppender(log);
-    assertThat(log.list).isEmpty();
+    assertThat(recording.drained()).isFalse();
   }
 }

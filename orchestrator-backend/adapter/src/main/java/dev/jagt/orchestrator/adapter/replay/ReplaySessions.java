@@ -15,7 +15,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -28,7 +27,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "replay")
-@Slf4j
 public class ReplaySessions {
 
   private static final long TICK_MILLIS = 500;
@@ -41,7 +39,6 @@ public class ReplaySessions {
   private final Map<String, Long> answered = new ConcurrentHashMap<>();
   private final Set<Path> launched = ConcurrentHashMap.newKeySet();
   private final ScheduledExecutorService ticker = Executors.newSingleThreadScheduledExecutor();
-  private boolean drained;
 
   public ReplaySessions(
       Recording recording, TaskStore tasks, ReplayMoves moves, Checkers checkers) {
@@ -83,11 +80,8 @@ public class ReplaySessions {
     try {
       scripts.forEach(
           (task, script) -> tasks.task(task).ifPresent(state -> answer(task, state, script)));
-      if (!drained
-          && !recording.diverged()
-          && scripts.values().stream().allMatch(TurnScript::drained)) {
-        drained = true;
-        log.atInfo().setMessage("replay drained").log();
+      if (scripts.values().stream().allMatch(TurnScript::drained)) {
+        recording.drain();
       }
     } catch (RuntimeException e) {
       recording.diverge("", "", "the replay failed: " + e);

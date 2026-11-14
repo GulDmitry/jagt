@@ -132,7 +132,7 @@ public class ProcessRunner implements Processes {
   /**
    * A launch outlives the call, so only how it ENDED can later attribute a death nobody asked for.
    */
-  private static void reportLifeOf(
+  static void reportLifeOf(
       Process launched, List<String> command, boolean ownSession, long startedAt) {
     log.atInfo()
         .setMessage("process launched")
