@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -1110,27 +1112,45 @@ class AgentSessionsTest {
   }
 
   @Nested
-  class WhileTheHumanHasUnsentInput {
+  class WhileTheFreshStartWaitsOnTheHuman {
 
-    private String answer;
+    private final AtomicBoolean typing = new AtomicBoolean(true);
+    private final AtomicBoolean ownTurnOpen = new AtomicBoolean(false);
+    private final AtomicBoolean windowUnreadable = new AtomicBoolean(false);
+    private final AtomicReference<SessionHost.WindowState> window =
+        new AtomicReference<>(SessionHost.WindowState.AGENT_RUNNING);
 
     @BeforeEach
-    void theHumanTypesWhileFreshStartIsRelayed() {
-      state.putTask("ABC-1", reviewPending);
+    void theHumanSitsInTheAgentsWindow() {
+      state.putTask(
+          "ABC-1", reviewPending.withSession(Session.defaults().withMovedAt(5_000)));
       when(tmux.taskWindowState("jagt", "ABC-1"))
-          .thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+          .thenAnswer(
+              call -> {
+                if (windowUnreadable.get()) {
+                  throw new SessionHost.WindowsUnreadable(
+                      "tmux list-windows jagt failed (exit 1): server timed out");
+                }
+                return window.get();
+              });
       when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("typed"));
-      when(agentRuntime.holdsDraft("typed")).thenReturn(true, true, false);
-      answer = sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+      when(agentRuntime.holdsDraft("typed")).thenAnswer(call -> typing.get());
+      when(agentRuntime.humanExchangeOpen(root, Set.of(AgentSessions.NUDGE)))
+          .thenAnswer(call -> ownTurnOpen.get());
     }
 
     @Test
-    void freshStartWaitsWhileTheHumanHasUnsentInput() {
+    void freshStartTellsTheCallerItWaitsWhereTheHumanHasUnsentInput() {
+      String answer = sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+
       assertThat(answer).contains("starts when they are done");
     }
 
     @Test
     void freshStartOpensNothingWhileTheHumanKeepsTyping() {
+      sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+
+      sessions.startWaitingFreshWhenFree("ABC-1");
       sessions.startWaitingFreshWhenFree("ABC-1");
       sessions.startWaitingFreshWhenFree("ABC-1");
 
@@ -1140,116 +1160,101 @@ class AgentSessionsTest {
     }
 
     @Test
-    void freshStartOpensOnceTheHumanIsDone() {
+    void freshStartOpensOnceTheHumanHasBeenGoneOnTwoConsecutiveReads() {
+      sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+      typing.set(false);
+
       sessions.startWaitingFreshWhenFree("ABC-1");
+      verify(tmux, never())
+          .openTaskWindow(
+              anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
+      sessions.startWaitingFreshWhenFree("ABC-1");
+
+      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    }
+
+    @Test
+    void freshStartWaitsAgainWhenTheHumanTypesAgainBetweenTheTwoReads() {
+      sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+      typing.set(false);
+      sessions.startWaitingFreshWhenFree("ABC-1");
+      typing.set(true);
+      sessions.startWaitingFreshWhenFree("ABC-1");
+      typing.set(false);
+
+      sessions.startWaitingFreshWhenFree("ABC-1");
+
+      verify(tmux, never())
+          .openTaskWindow(
+              anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
+    }
+
+    @Test
+    void freshStartOpensOnceTheHumanIsFinallyDoneAfterTypingAgain() {
+      sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+      typing.set(false);
+      sessions.startWaitingFreshWhenFree("ABC-1");
+      typing.set(true);
+      sessions.startWaitingFreshWhenFree("ABC-1");
+      typing.set(false);
+      sessions.startWaitingFreshWhenFree("ABC-1");
+
+      sessions.startWaitingFreshWhenFree("ABC-1");
+
+      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+    }
+
+    @Test
+    void freshStartOpensOnceTheHumansWindowIsGone() {
+      sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+      window.set(SessionHost.WindowState.MISSING);
+
       sessions.startWaitingFreshWhenFree("ABC-1");
       sessions.startWaitingFreshWhenFree("ABC-1");
 
       verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
     }
-  }
-
-  @Nested
-  class WhileTheHumansOwnTurnIsOpen {
-
-    @BeforeEach
-    void theSessionRunsAnUnsignedTurn() {
-      state.putTask(
-          "ABC-1",
-          TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
-              .build()
-              .withSession(Session.defaults().withMovedAt(5_000)));
-      when(tmux.taskWindowState("jagt", "ABC-1"))
-          .thenReturn(SessionHost.WindowState.AGENT_RUNNING);
-    }
 
     @Test
-    void freshStartWaitsWhileTheHumansOwnTurnIsOpen() {
-      when(agentRuntime.humanExchangeOpen(root, Set.of(AgentSessions.NUDGE)))
-          .thenReturn(true, true, false);
+    void freshStartWaitsWhileTheHumansOwnTurnIsOpenAndOpensOnceItEnds() {
+      typing.set(false);
+      ownTurnOpen.set(true);
 
       sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
-
       sessions.startWaitingFreshWhenFree("ABC-1");
       sessions.startWaitingFreshWhenFree("ABC-1");
       verify(tmux, never())
           .openTaskWindow(
               anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
+      ownTurnOpen.set(false);
       sessions.startWaitingFreshWhenFree("ABC-1");
+      sessions.startWaitingFreshWhenFree("ABC-1");
+
       verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
     }
 
     @Test
     void freshStartDoesNotWaitOnTurnJagtOpened() {
-      when(agentRuntime.humanExchangeOpen(root, Set.of(AgentSessions.NUDGE))).thenReturn(false);
+      typing.set(false);
 
       sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
 
       verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
     }
-  }
-
-  @Nested
-  class WhenTheHumansWindowGoesAway {
-
-    @BeforeEach
-    void theHumanTypesAndTheWindowVanishes() {
-      state.putTask("ABC-1", reviewPending);
-      when(tmux.taskWindowState("jagt", "ABC-1"))
-          .thenReturn(
-              SessionHost.WindowState.AGENT_RUNNING,
-              SessionHost.WindowState.AGENT_RUNNING,
-              SessionHost.WindowState.MISSING);
-      when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("typed"));
-      when(agentRuntime.holdsDraft("typed")).thenReturn(true);
-
-      sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
-      sessions.startWaitingFreshWhenFree("ABC-1");
-      sessions.startWaitingFreshWhenFree("ABC-1");
-    }
 
     @Test
-    void freshStartOpensNothingWhileTheirWindowStands() {
+    void freshStartKeepsWaitingThroughReadThatFailsAndOpensOnceTheHumanIsGone() {
+      sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
+      windowUnreadable.set(true);
+      typing.set(false);
+      sessions.startWaitingFreshWhenFree("ABC-1");
+      sessions.startWaitingFreshWhenFree("ABC-1");
       verify(tmux, never())
           .openTaskWindow(
               anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
-    }
+      windowUnreadable.set(false);
 
-    @Test
-    void freshStartWaitingOnTheHumanProceedsOnceTheirWindowIsGone() {
       sessions.startWaitingFreshWhenFree("ABC-1");
-
-      verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
-    }
-  }
-
-  @Nested
-  class WhenTheHumanTypesAgainBeforeTheLaunch {
-
-    @BeforeEach
-    void theHumanTypesAgainAfterFinishing() {
-      state.putTask("ABC-1", reviewPending);
-      when(tmux.taskWindowState("jagt", "ABC-1"))
-          .thenReturn(SessionHost.WindowState.AGENT_RUNNING);
-      when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("typed"));
-      when(agentRuntime.holdsDraft("typed")).thenReturn(true, true, false, true, false);
-
-      sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
-      sessions.startWaitingFreshWhenFree("ABC-1");
-      sessions.startWaitingFreshWhenFree("ABC-1");
-      sessions.startWaitingFreshWhenFree("ABC-1");
-      sessions.startWaitingFreshWhenFree("ABC-1");
-    }
-
-    @Test
-    void freshStartWaitsAgainWhenTheHumanTypesAgainBeforeItLaunches() {
-      verify(tmux, never())
-          .openTaskWindow(
-              anyString(), anyString(), anyString(), any(), any(), anyBoolean(), anyString());
-    }
-
-    @Test
-    void freshStartOpensOnceTheHumanIsFinallyDone() {
       sessions.startWaitingFreshWhenFree("ABC-1");
 
       verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
@@ -1292,26 +1297,6 @@ class AgentSessionsTest {
           .filteredOn(event -> "fresh start waits".equals(event.getMessage()))
           .hasSize(1);
     }
-  }
-
-  @Test
-  void freshStartKeepsWaitingThroughReadThatFails() {
-    state.putTask("ABC-1", reviewPending);
-    when(tmux.taskWindowState("jagt", "ABC-1"))
-        .thenReturn(SessionHost.WindowState.AGENT_RUNNING)
-        .thenThrow(
-            new SessionHost.WindowsUnreadable(
-                "tmux list-windows jagt failed (exit 1): server timed out"))
-        .thenReturn(SessionHost.WindowState.AGENT_RUNNING);
-    when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("typed"));
-    when(agentRuntime.holdsDraft("typed")).thenReturn(true, false);
-
-    sessions.relayFresh("ABC-1", "Review round for http://mr/1.");
-    sessions.startWaitingFreshWhenFree("ABC-1");
-    sessions.startWaitingFreshWhenFree("ABC-1");
-    sessions.startWaitingFreshWhenFree("ABC-1");
-
-    verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
   }
 
   @Test
