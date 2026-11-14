@@ -1,0 +1,57 @@
+package dev.jagt.orchestrator.job;
+
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Arbiter;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.TaskChart;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ReviewSweepService;
+import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.StopAnnouncements;
+import dev.jagt.orchestrator.service.StopLog;
+import dev.jagt.orchestrator.service.StopPolicy;
+import dev.jagt.orchestrator.service.TaskStops;
+import java.nio.file.Path;
+import java.time.Clock;
+import java.util.concurrent.Executor;
+import lombok.With;
+import tools.jackson.databind.json.JsonMapper;
+
+@With
+public record TestAutoReviewSchedulerBuilder(Path root) {
+
+  public static TestAutoReviewSchedulerBuilder autoReviewScheduler() {
+    return new TestAutoReviewSchedulerBuilder(Path.of("/state"));
+  }
+
+  public AutoReviewScheduler build(
+      StateService state,
+      ConfigService config,
+      ReviewSweepService sweep,
+      Executor executor,
+      Clock clock) {
+    OrchestratorPaths paths =
+        new OrchestratorPaths(
+            OrchestratorProperties.defaults()
+                .withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()));
+    return new AutoReviewScheduler(
+        state,
+        config,
+        new AutoReviewPolls(
+            sweep,
+            new TaskStops(
+                new StopPolicy(
+                    ignored -> Arbiter.Profile.OFF,
+                    ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
+                    new StopAnnouncements(new StopLog(new JsonMapper(), paths))),
+                state,
+                Clock.systemUTC(),
+                new FlowRules(new TaskChart(Composition.builtIn()))),
+            executor,
+            state),
+        clock);
+  }
+}

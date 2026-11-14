@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator.job;
 
+import static dev.jagt.orchestrator.job.TestAutoReviewSchedulerBuilder.autoReviewScheduler;
+import static dev.jagt.orchestrator.job.TestPollingTaskBuilder.pollingTask;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -8,23 +11,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Arbiter;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.service.AutoReviewCadence;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
 import dev.jagt.orchestrator.service.ReviewSweepService;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.StopAnnouncements;
-import dev.jagt.orchestrator.service.StopLog;
-import dev.jagt.orchestrator.service.StopPolicy;
-import dev.jagt.orchestrator.service.TaskStops;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
@@ -37,530 +29,121 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
-import tools.jackson.databind.json.JsonMapper;
 
 class AutoReviewSchedulerTest {
-
-  private static final TaskReducer reducer =
-      new TaskReducer(new TaskChart(Composition.builtIn()));
 
   private static final AutoReviewCadence CADENCE =
       new AutoReviewCadence(true, Duration.ofHours(24), 10, 60, 240);
   private static final long NOW = 1_000_000_000_000L;
 
-  @Test
-  void pollsWhenTheIntervalHasElapsed() {
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(NOW - Duration.ofMinutes(20).toMillis())
-            .lastPolledAt(NOW - Duration.ofMinutes(20).toMillis())
-            .build();
+  private final long now = System.currentTimeMillis();
+  private final TaskState due =
+      pollingTask()
+          .withMrCreatedAt(now - Duration.ofMinutes(30).toMillis())
+          .withLastPolledAt(now - Duration.ofMinutes(30).toMillis())
+          .build();
+  private final TaskState windowElapsed =
+      pollingTask().withMrCreatedAt(now - Duration.ofHours(25).toMillis()).build();
+  private final TaskState closedOther =
+      pollingTask()
+          .withStatus(TaskStatus.DONE)
+          .withMrUrl("http://mr/2")
+          .withMrCreatedAt(now - Duration.ofMinutes(30).toMillis())
+          .build();
+  private final ReviewSweepService sweep = mock(ReviewSweepService.class);
+  private final ConfigService config = mock(ConfigService.class);
 
-    assertThat(AutoReviewScheduler.decide(task, CADENCE, NOW))
-        .isEqualTo(AutoReviewScheduler.Action.POLL);
-  }
+  @TempDir Path root;
 
-  @Test
-  void skipsWhenTheLastPollWasTooRecent() {
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(NOW - Duration.ofMinutes(20).toMillis())
-            .lastPolledAt(NOW - Duration.ofMinutes(2).toMillis())
-            .build();
+  private StateService state;
+  private AutoReviewScheduler scheduler;
 
-    assertThat(AutoReviewScheduler.decide(task, CADENCE, NOW))
-        .isEqualTo(AutoReviewScheduler.Action.SKIP);
-  }
-
-  @Test
-  void stopsPollingTaskThatHasBeenOutForReviewLongerThanTheWindow() {
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(NOW - Duration.ofHours(25).toMillis())
-            .build();
-
-    assertThat(AutoReviewScheduler.decide(task, CADENCE, NOW))
-        .isEqualTo(AutoReviewScheduler.Action.WINDOW_ELAPSED);
-  }
-
-  @Test
-  void skipsTaskThatOptedOutOfAutoReview() {
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(false)
-            .mrCreatedAt(NOW - Duration.ofMinutes(20).toMillis())
-            .build();
-
-    assertThat(AutoReviewScheduler.decide(task, CADENCE, NOW))
-        .isEqualTo(AutoReviewScheduler.Action.SKIP);
-  }
-
-  @Test
-  void skipsTaskWithNoRequestToRead() {
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .autoReview(true)
-            .mrCreatedAt(NOW - Duration.ofMinutes(20).toMillis())
-            .build();
-
-    assertThat(AutoReviewScheduler.decide(task, CADENCE, NOW))
-        .isEqualTo(AutoReviewScheduler.Action.SKIP);
-  }
-
-  @Test
-  void sweepsDueTaskAndRecordsThatItLooked(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .build());
-    ReviewSweepService sweep = mock(ReviewSweepService.class);
-    final long before = System.currentTimeMillis();
-    ConfigService config = mock(ConfigService.class);
+  @BeforeEach
+  void schedulerOverAnEmptyStateWithAutoReviewOn() {
+    state = stateService().withRoot(root).build();
     when(config.load())
         .thenReturn(
             ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-
-    new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                sweep,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC())
-        .run();
-
-    verify(sweep).sweep("ABC-1");
-    assertThat(state.task("ABC-1").orElseThrow().lastPolledAt())
-        .isBetween(before, System.currentTimeMillis());
-  }
-
-  @Test
-  void tapsTheHumanOnceForRoundNobodyCouldReadInsteadOfOnlyLoggingIt(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .build());
-    ReviewSweepService sweep = mock(ReviewSweepService.class);
-    when(sweep.sweep("ABC-1"))
-        .thenReturn(
-            new ReviewSweepService.SweepResult(
-                ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-    AutoReviewScheduler scheduler =
-        new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                sweep,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC());
-
-    scheduler.run();
-    state.updateTask("ABC-1", task -> task.withLastPolledAt(0));
-    scheduler.run();
-
-    verify(sweep, times(2)).sweep("ABC-1");
-  }
-
-  @Test
-  void tapsTheHumanOncePerElapsedWindowInsteadOfPollingOn(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis())
-            .build());
-    ReviewSweepService sweep = mock(ReviewSweepService.class);
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-    AutoReviewScheduler scheduler =
-        new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                sweep,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC());
-
-    scheduler.run();
-    scheduler.run();
-
-    verifyNoInteractions(sweep);
-  }
-
-  @Test
-  void pingsAgainForTheNewWindowShippedRoundOpens(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis())
-            .build());
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-    AutoReviewScheduler scheduler =
-        new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                mock(ReviewSweepService.class),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC());
-    scheduler.run();
-
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(26).toMillis())
-            .build());
-    scheduler.run();
-
-    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
-        .isTrue();
+    scheduler =
+        autoReviewScheduler()
+            .withRoot(root)
+            .build(state, config, sweep, Runnable::run, Clock.systemUTC());
   }
 
   @ParameterizedTest
-  @EnumSource(
-      value = ToldOnce.Kind.class,
-      names = {"AUTO_REVIEW_WINDOW", "AUTO_REVIEW_UNREADABLE"})
-  void forgetsOnlyTheAutoReviewReminderOfTaskThatLeftPolling(
-      ToldOnce.Kind reminder, @TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    ToldOnce told = ToldOnce.none().with(reminder, "5").with(ToldOnce.Kind.SILENCE, "9");
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.DONE)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .told(told)
-            .build());
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-    AutoReviewScheduler scheduler =
-        new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                mock(ReviewSweepService.class),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC());
+  @CsvSource(
+      nullValues = "null",
+      value = {
+        "http://mr/1, true, 999998800000, 999998800000, POLL",
+        "http://mr/1, true, 999998800000, 999999880000, SKIP",
+        "http://mr/1, true, 999910000000, 0, WINDOW_ELAPSED",
+        "http://mr/1, false, 999998800000, 0, SKIP",
+        "null, true, 999998800000, 0, SKIP",
+        "http://mr/1, true, 1000000000000, 999999400000, POLL"
+      })
+  void decidesFromTheOptInTheRequestAndTheRoundsClocks(
+      String mrUrl,
+      boolean autoReview,
+      long mrCreatedAt,
+      long lastPolledAt,
+      AutoReviewScheduler.Action expected) {
+    TaskState task =
+        pollingTask()
+            .withMrUrl(mrUrl)
+            .withAutoReview(autoReview)
+            .withMrCreatedAt(mrCreatedAt)
+            .withLastPolledAt(lastPolledAt)
+            .build();
 
-    scheduler.run();
-
-    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().entries())
-        .containsOnlyKeys(ToldOnce.Kind.SILENCE);
+    assertThat(AutoReviewScheduler.decide(task, CADENCE, NOW)).isEqualTo(expected);
   }
 
   @Test
-  void forgetsTheRemindersOfTaskThatWasRetiredWhileStillPolling(@TempDir Path root) {
-    long window = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(window)
-            .build());
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-    AutoReviewScheduler scheduler =
-        new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                mock(ReviewSweepService.class),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC());
+  void sweepsDueTaskAndRecordsThatItLooked() {
+    state.putTask("ABC-1", due);
+
     scheduler.run();
 
-    state.removeTask("ABC-1");
-    scheduler.run();
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(window)
-            .build());
-    scheduler.run();
-
-    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
-        .isTrue();
+    verify(sweep).sweep("ABC-1");
+    assertThat(state.task("ABC-1").orElseThrow().lastPolledAt())
+        .isBetween(now, System.currentTimeMillis());
   }
 
   @Test
-  void keepsPollingRoundThatCameBackCleanUntilSomebodyApprovesIt(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+  void keepsPollingRoundThatCameBackCleanUntilSomebodyApprovesIt() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.REVIEWED)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(61).toMillis())
-            .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(61).toMillis())
+        pollingTask()
+            .withStatus(TaskStatus.REVIEWED)
+            .withMrCreatedAt(now - Duration.ofMinutes(61).toMillis())
+            .withLastPolledAt(now - Duration.ofMinutes(61).toMillis())
             .build());
-    ReviewSweepService sweep = mock(ReviewSweepService.class);
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
 
-    new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                sweep,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC())
-        .run();
+    scheduler.run();
 
     verify(sweep).sweep("ABC-1");
   }
 
   @Test
-  void pollsNothingWhenTheInstallHasAutoReviewOff(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+  void pollsNothingWhenTheInstallHasAutoReviewOff() {
+    when(config.load()).thenReturn(ConfigFile.defaults());
     state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(1).toMillis())
-            .build());
-    ReviewSweepService sweep = mock(ReviewSweepService.class);
-    ConfigService disabled = mock(ConfigService.class);
-    when(disabled.load()).thenReturn(ConfigFile.defaults());
+        "ABC-1", pollingTask().withMrCreatedAt(now - Duration.ofHours(1).toMillis()).build());
 
-    new AutoReviewScheduler(
-            state,
-            disabled,
-            new AutoReviewPolls(
-                sweep,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC())
-        .run();
+    scheduler.run();
 
     verifyNoInteractions(sweep);
   }
 
   @Test
-  void sweepsNothingWhereTheTaskMadeTwentyUnattendedMovesInTheHour(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    long now = System.currentTimeMillis();
+  void sweepsNothingWhereTheTaskMadeTwentyUnattendedMovesInTheHour() {
     List<StatusChange> moves =
         java.util.stream.IntStream.range(0, 20)
             .mapToObj(
@@ -574,552 +157,233 @@ class AutoReviewSchedulerTest {
             .mrUrl("http://mr/1")
             .autoReview(true)
             .history(moves)
-            .mrCreatedAt(now - Duration.ofMinutes(30).toMillis())
-            .lastPolledAt(now - Duration.ofMinutes(30).toMillis())
+            .mrCreatedAt(due.mrCreatedAt())
+            .lastPolledAt(due.lastPolledAt())
             .build());
-    ReviewSweepService sweep = mock(ReviewSweepService.class);
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
 
-    new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                sweep,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC())
-        .run();
+    scheduler.run();
 
     verify(sweep, never()).sweep("ABC-1");
   }
 
-  @Test
-  void pollsTheMomentTheMinimumIntervalHasExactlyElapsed() {
-    TaskState task =
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(NOW)
-            .lastPolledAt(NOW - Duration.ofMinutes(10).toMillis())
-            .build();
-
-    assertThat(AutoReviewScheduler.decide(task, CADENCE, NOW))
-        .isEqualTo(AutoReviewScheduler.Action.POLL);
-  }
-
-  @Test
-  void tapsTheHumanAtTheFirstUnreadableRound(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .build());
-    ReviewSweepService sweep = mock(ReviewSweepService.class);
-    when(sweep.sweep("ABC-1"))
-        .thenReturn(
-            new ReviewSweepService.SweepResult(
-                ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-
-    new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                sweep,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC())
-        .run();
-
-    assertThat(
-            state
-                .task("ABC-1")
-                .orElseThrow()
-                .toldOrNone()
-                .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
-        .isTrue();
-  }
-
-  @Test
-  void pingsAgainForRoundWhoseTaskLeftAutoReviewAndCameBack(@TempDir Path root) {
-    long window = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(window)
-            .build());
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-    AutoReviewScheduler scheduler =
-        new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                mock(ReviewSweepService.class),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC());
-    scheduler.run();
-
+  @ParameterizedTest
+  @EnumSource(
+      value = ToldOnce.Kind.class,
+      names = {"AUTO_REVIEW_WINDOW", "AUTO_REVIEW_UNREADABLE"})
+  void forgetsOnlyTheAutoReviewReminderOfTaskThatLeftPolling(ToldOnce.Kind reminder) {
+    ToldOnce told = ToldOnce.none().with(reminder, "5").with(ToldOnce.Kind.SILENCE, "9");
     state.putTask(
         "ABC-1",
         TaskState.builder("proj", "/wt", TaskStatus.DONE)
             .mrUrl("http://mr/1")
             .autoReview(true)
-            .mrCreatedAt(window)
+            .told(told)
             .build());
-    scheduler.run();
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(window)
-            .build());
+
     scheduler.run();
 
-    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
-        .isTrue();
+    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().entries())
+        .containsOnlyKeys(ToldOnce.Kind.SILENCE);
   }
 
   @Test
-  void tapsOnceForAnElapsedWindowWhileAnotherTaskIsClosed(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
+  void stampsThePollAtTheInstantTheClockGave() {
     state.putTask(
         "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("proj", "/wt", TaskStatus.DONE)
-            .mrUrl("http://mr/2")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .build());
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-    AutoReviewScheduler scheduler =
-        new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                mock(ReviewSweepService.class),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC());
-
-    scheduler.run();
-    scheduler.run();
-
-    assertThat(state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
-        .isTrue();
-  }
-
-  @Test
-  void tapsOnceForAnUnreadableRoundWhileAnotherTaskIsClosed(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .build());
-    state.putTask(
-        "ABC-2",
-        TaskState.builder("proj", "/wt", TaskStatus.DONE)
-            .mrUrl("http://mr/2")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .build());
-    ReviewSweepService sweep = mock(ReviewSweepService.class);
-    when(sweep.sweep("ABC-1"))
-        .thenReturn(
-            new ReviewSweepService.SweepResult(
-                ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-    AutoReviewScheduler scheduler =
-        new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                sweep,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC());
-
-    scheduler.run();
-    state.updateTask("ABC-1", task -> task.withLastPolledAt(0));
-    scheduler.run();
-
-    assertThat(
-            state
-                .task("ABC-1")
-                .orElseThrow()
-                .toldOrNone()
-                .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
-        .isTrue();
-  }
-
-  @Test
-  void tapsAgainForAnUnreadableRoundWhoseTaskWasClosedAndReopened(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    TaskState polling =
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .build();
-    state.putTask("ABC-1", polling);
-    ReviewSweepService sweep = mock(ReviewSweepService.class);
-    when(sweep.sweep("ABC-1"))
-        .thenReturn(
-            new ReviewSweepService.SweepResult(
-                ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-    AutoReviewScheduler scheduler =
-        new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                sweep,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC());
-    scheduler.run();
-
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.DONE)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(polling.mrCreatedAt())
-            .build());
-    scheduler.run();
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(polling.mrCreatedAt())
-            .lastPolledAt(1)
-            .build());
-    scheduler.run();
-
-    assertThat(
-            state
-                .task("ABC-1")
-                .orElseThrow()
-                .toldOrNone()
-                .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
-        .isTrue();
-  }
-
-  @Test
-  void stampsThePollAtTheInstantTheClockGave(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(999_998_200_000L)
-            .lastPolledAt(999_998_200_000L)
-            .build());
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+        pollingTask().withMrCreatedAt(999_998_200_000L).withLastPolledAt(999_998_200_000L).build());
     Clock clock = Clock.fixed(Instant.ofEpochMilli(1_000_000_000_000L), ZoneOffset.UTC);
 
-    new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                mock(ReviewSweepService.class),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            clock)
-        .run();
+    autoReviewScheduler().withRoot(root).build(state, config, sweep, Runnable::run, clock).run();
 
     assertThat(state.task("ABC-1").orElseThrow().lastPolledAt()).isEqualTo(1_000_000_000_000L);
   }
 
   @Test
-  void submitsTaskOnceWhileItsEarlierPollIsStillRunning(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    state.putTask(
-        "ABC-1",
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .build());
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+  void submitsTaskOnceWhileItsEarlierPollIsStillRunning() {
+    state.putTask("ABC-1", due);
     List<Runnable> queued = new ArrayList<>();
-    AutoReviewScheduler scheduler =
-        new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                mock(ReviewSweepService.class),
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                queued::add,
-                state),
-            Clock.systemUTC());
+    AutoReviewScheduler queuing =
+        autoReviewScheduler()
+            .withRoot(root)
+            .build(state, config, sweep, queued::add, Clock.systemUTC());
 
-    scheduler.run();
-    scheduler.run();
+    queuing.run();
+    queuing.run();
 
     assertThat(queued).hasSize(1);
   }
 
-  @Test
-  void tapsAgainForAnUnreadableRoundWhoseTaskWasRetiredAndCameBack(@TempDir Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-                    reducer, event -> {});
-    TaskState polling =
-        TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-            .mrUrl("http://mr/1")
-            .autoReview(true)
-            .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
-            .build();
-    state.putTask("ABC-1", polling);
-    ReviewSweepService sweep = mock(ReviewSweepService.class);
-    when(sweep.sweep("ABC-1"))
-        .thenReturn(
-            new ReviewSweepService.SweepResult(
-                ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
-    ConfigService config = mock(ConfigService.class);
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-    AutoReviewScheduler scheduler =
-        new AutoReviewScheduler(
-            state,
-            config,
-            new AutoReviewPolls(
-                sweep,
-                new TaskStops(
-                    new StopPolicy(
-                        ignored -> Arbiter.Profile.OFF,
-                        ConfigFile.defaults()::loopBreakerOrDefault,
-                        new StopAnnouncements(
-                            new StopLog(
-                                new JsonMapper(),
-                                new OrchestratorPaths(
-                                    OrchestratorProperties.defaults()
-                                        .withRoot(root.toString())
-                                        .withStateFile(root.resolve("state.json").toString()))))),
-                    state,
-                    Clock.systemUTC(), new FlowRules(new TaskChart(Composition.builtIn()))),
-                Runnable::run,
-                state),
-            Clock.systemUTC());
-    scheduler.run();
+  @Nested
+  class WhereTheReviewWindowElapsed {
 
-    state.removeTask("ABC-1");
-    scheduler.run();
-    state.putTask("ABC-1", polling);
-    scheduler.run();
+    @Test
+    void tapsTheHumanOncePerElapsedWindowInsteadOfPollingOn() {
+      state.putTask("ABC-1", windowElapsed);
 
-    assertThat(
-            state
-                .task("ABC-1")
-                .orElseThrow()
-                .toldOrNone()
-                .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
-        .isTrue();
+      scheduler.run();
+      scheduler.run();
+
+      verifyNoInteractions(sweep);
+    }
+
+    @Test
+    void pingsAgainForTheNewWindowShippedRoundOpens() {
+      state.putTask("ABC-1", windowElapsed);
+      scheduler.run();
+
+      state.putTask(
+          "ABC-1", pollingTask().withMrCreatedAt(now - Duration.ofHours(26).toMillis()).build());
+      scheduler.run();
+
+      assertThat(
+              state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
+          .isTrue();
+    }
+
+    @Test
+    void forgetsTheRemindersOfTaskThatWasRetiredWhileStillPolling() {
+      state.putTask("ABC-1", windowElapsed);
+      scheduler.run();
+
+      state.removeTask("ABC-1");
+      scheduler.run();
+      state.putTask("ABC-1", windowElapsed);
+      scheduler.run();
+
+      assertThat(
+              state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
+          .isTrue();
+    }
+
+    @Test
+    void pingsAgainForRoundWhoseTaskLeftAutoReviewAndCameBack() {
+      state.putTask("ABC-1", windowElapsed);
+      scheduler.run();
+
+      state.putTask(
+          "ABC-1",
+          pollingTask()
+              .withStatus(TaskStatus.DONE)
+              .withMrCreatedAt(windowElapsed.mrCreatedAt())
+              .build());
+      scheduler.run();
+      state.putTask("ABC-1", windowElapsed);
+      scheduler.run();
+
+      assertThat(
+              state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
+          .isTrue();
+    }
+
+    @Test
+    void tapsOnceForAnElapsedWindowWhileAnotherTaskIsClosed() {
+      state.putTask("ABC-1", windowElapsed);
+      state.putTask("ABC-2", closedOther);
+
+      scheduler.run();
+      scheduler.run();
+
+      assertThat(
+              state.task("ABC-1").orElseThrow().toldOrNone().has(ToldOnce.Kind.AUTO_REVIEW_WINDOW))
+          .isTrue();
+    }
+  }
+
+  @Nested
+  class WhereNobodyCouldReadTheRound {
+
+    @BeforeEach
+    void sweepUnreadable() {
+      when(sweep.sweep("ABC-1"))
+          .thenReturn(
+              new ReviewSweepService.SweepResult(
+                  ReviewSweepService.SweepResult.Kind.UNREADABLE,
+                  "error: read failed: http://mr/1"));
+    }
+
+    @Test
+    void tapsTheHumanOnceForRoundNobodyCouldReadInsteadOfOnlyLoggingIt() {
+      state.putTask("ABC-1", due);
+
+      scheduler.run();
+      state.updateTask("ABC-1", task -> task.withLastPolledAt(0));
+      scheduler.run();
+
+      verify(sweep, times(2)).sweep("ABC-1");
+    }
+
+    @Test
+    void tapsTheHumanAtTheFirstUnreadableRound() {
+      state.putTask("ABC-1", due);
+
+      scheduler.run();
+
+      assertThat(
+              state
+                  .task("ABC-1")
+                  .orElseThrow()
+                  .toldOrNone()
+                  .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
+          .isTrue();
+    }
+
+    @Test
+    void tapsOnceForAnUnreadableRoundWhileAnotherTaskIsClosed() {
+      state.putTask("ABC-1", due);
+      state.putTask("ABC-2", closedOther);
+
+      scheduler.run();
+      state.updateTask("ABC-1", task -> task.withLastPolledAt(0));
+      scheduler.run();
+
+      assertThat(
+              state
+                  .task("ABC-1")
+                  .orElseThrow()
+                  .toldOrNone()
+                  .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
+          .isTrue();
+    }
+
+    @Test
+    void tapsAgainForAnUnreadableRoundWhoseTaskWasClosedAndReopened() {
+      state.putTask("ABC-1", due);
+      scheduler.run();
+
+      state.putTask(
+          "ABC-1",
+          pollingTask().withStatus(TaskStatus.DONE).withMrCreatedAt(due.mrCreatedAt()).build());
+      scheduler.run();
+      state.putTask(
+          "ABC-1", pollingTask().withMrCreatedAt(due.mrCreatedAt()).withLastPolledAt(1).build());
+      scheduler.run();
+
+      assertThat(
+              state
+                  .task("ABC-1")
+                  .orElseThrow()
+                  .toldOrNone()
+                  .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
+          .isTrue();
+    }
+
+    @Test
+    void tapsAgainForAnUnreadableRoundWhoseTaskWasRetiredAndCameBack() {
+      state.putTask("ABC-1", due);
+      scheduler.run();
+
+      state.removeTask("ABC-1");
+      scheduler.run();
+      state.putTask("ABC-1", due);
+      scheduler.run();
+
+      assertThat(
+              state
+                  .task("ABC-1")
+                  .orElseThrow()
+                  .toldOrNone()
+                  .has(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE))
+          .isTrue();
+    }
   }
 }
