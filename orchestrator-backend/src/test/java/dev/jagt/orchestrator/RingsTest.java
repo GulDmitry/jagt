@@ -23,12 +23,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class RingsTest {
 
-  private static final List<Path> ROOTS =
-      SourceRoots.ROOTS.stream()
-          .map(root -> root.resolve("dev/jagt/orchestrator"))
-          .filter(Files::isDirectory)
-          .toList();
-
   @ParameterizedTest
   @CsvSource({
     "task, task",
@@ -39,14 +33,14 @@ class RingsTest {
   void centreRingDependsOnlyOnTheRingsItMaySee(String ring, String maySee) {
     classes()
         .that()
-        .resideInAPackage(packageOf(ring))
+        .resideInAPackage(RingFiles.packageOf(ring))
         .should()
         .onlyDependOnClassesThat(
             resideOutsideOfPackage("dev.jagt.orchestrator..")
                 .or(
                     resideInAnyPackage(
                         Stream.of(maySee.split(" "))
-                            .map(RingsTest::packageOf)
+                            .map(RingFiles::packageOf)
                             .toArray(String[]::new))))
         .check(MainClasses.CODE);
   }
@@ -66,10 +60,10 @@ class RingsTest {
   void nothingBetweenTheCentreAndTheEdgeNamesTheEdge(String ring) {
     noClasses()
         .that()
-        .resideInAPackage(packageOf(ring))
+        .resideInAPackage(RingFiles.packageOf(ring))
         .should()
         .dependOnClassesThat()
-        .resideInAPackage(packageOf("adapter"))
+        .resideInAPackage(RingFiles.packageOf("adapter"))
         .check(MainClasses.CODE);
   }
 
@@ -85,7 +79,8 @@ class RingsTest {
   @ParameterizedTest
   @ValueSource(strings = {"flow", "task", "port", "protocol"})
   void theCentreCarriesNoSpring(String ring) {
-    assertThat(sources(ring).filter(text -> text.contains("org.springframework"))).isEmpty();
+    assertThat(RingFiles.sources(ring).filter(text -> text.contains("org.springframework")))
+        .isEmpty();
   }
 
   @ParameterizedTest
@@ -97,12 +92,12 @@ class RingsTest {
   void moduleNamesNoTypeOfTheModulesAroundItEvenInComment(String inner, String outer) {
     Set<String> outerTypes =
         Stream.of(outer.split(" "))
-            .flatMap(module -> javaFilesIn(module, true))
+            .flatMap(module -> RingFiles.inModule(module, true))
             .map(path -> path.getFileName().toString().replace(".java", ""))
             .collect(toSet());
 
     assertThat(
-            javaFilesIn(inner, false)
+            RingFiles.inModule(inner, false)
                 .filter(path ->
                     Pattern.compile("\\b[A-Z]\\w+")
                         .matcher(SourceRoots.read(path))
@@ -116,7 +111,7 @@ class RingsTest {
   @Test
   void theStatechartImportsNothingButTheJdk() {
     assertThat(
-            javaFilesIn("statechart", true)
+            RingFiles.inModule("statechart", true)
                 .filter(path ->
                     Pattern.compile(
                             "^import (?:static )?"
@@ -130,7 +125,7 @@ class RingsTest {
 
   @Test
   void readsEveryRingItClaimsToCheck() {
-    assertThat(ROOTS)
+    assertThat(RingFiles.ROOTS)
         .allSatisfy(root ->
             assertThat(Files.isDirectory(root)).describedAs("source root %s", root).isTrue());
     assertThat(
@@ -149,7 +144,9 @@ class RingsTest {
                 "config",
                 "startup"))
         .allSatisfy(ring ->
-            assertThat(sources(ring).count()).describedAs("java files in %s", ring).isPositive());
+            assertThat(RingFiles.sources(ring).count())
+                .describedAs("java files in %s", ring)
+                .isPositive());
   }
 
   @Test
@@ -168,7 +165,7 @@ class RingsTest {
             "/Applications");
 
     assertThat(
-            filesOutsideTheEdge(true)
+            RingFiles.outsideTheEdge(true)
                 .filter(
                     path -> osOnly.stream().anyMatch(name -> SourceRoots.read(path).contains(name)))
                 .map(Path::getFileName))
@@ -194,7 +191,7 @@ class RingsTest {
     Pattern keysNamingVendorByDesign = Pattern.compile("tmuxCommand|tmuxSession|tmuxSocket");
 
     assertThat(
-            filesOutsideTheEdge(false)
+            RingFiles.outsideTheEdge(false)
                 .filter(path ->
                     vendors.stream()
                         .anyMatch(
@@ -213,39 +210,10 @@ class RingsTest {
     List<String> worktreeFilling = List.of("WorktreeNoise.java", "WorktreeFiles.java");
 
     assertThat(
-            filesOutsideTheEdge(false)
+            RingFiles.outsideTheEdge(false)
                 .filter(path -> !worktreeFilling.contains(path.getFileName().toString()))
                 .filter(path -> ideFolders.stream().anyMatch(SourceRoots.read(path)::contains))
                 .map(Path::getFileName))
         .isEmpty();
-  }
-
-  private static String packageOf(String ring) {
-    return "dev.jagt.orchestrator." + ring + "..";
-  }
-
-  private static Stream<Path> filesOutsideTheEdge(boolean withTests) {
-    return SourceRoots.ROOTS.stream()
-        .filter(root -> withTests || !SourceRoots.isTest(root))
-        .filter(root -> !SourceRoots.moduleOf(root).equals(Path.of("adapter")))
-        .filter(
-            root -> !(SourceRoots.isTest(root) && SourceRoots.moduleOf(root).equals(Path.of("."))))
-        .flatMap(SourceRoots::javaFilesUnder)
-        .filter(path -> !path.toString().contains("/adapter/"));
-  }
-
-  private static Stream<String> sources(String ring) {
-    return ROOTS.stream()
-        .map(root -> root.resolve(ring))
-        .filter(Files::isDirectory)
-        .flatMap(SourceRoots::javaFilesUnder)
-        .map(SourceRoots::read);
-  }
-
-  private static Stream<Path> javaFilesIn(String module, boolean mainOnly) {
-    return SourceRoots.ROOTS.stream()
-        .filter(root -> SourceRoots.moduleOf(root).equals(Path.of(module)))
-        .filter(root -> !mainOnly || !SourceRoots.isTest(root))
-        .flatMap(SourceRoots::javaFilesUnder);
   }
 }

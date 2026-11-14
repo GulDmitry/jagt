@@ -4,12 +4,7 @@ import static dev.jagt.orchestrator.DocFiles.markdownIn;
 import static dev.jagt.orchestrator.DocFiles.specs;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -17,9 +12,6 @@ import org.junit.jupiter.api.Test;
 
 class TextBudgetTest {
 
-  private static final Pattern NOT_PROSE = Pattern.compile("^(```|\\||#|<|>)");
-  private static final Pattern LIST_ITEM = Pattern.compile("^([-*]|\\d+\\.)\\s+");
-  private static final Path SESSION_BRIEF = Path.of("../roles/session/brief.md.dist");
   private static final Pattern STEP = Pattern.compile("(?m)^## [a-z][a-z0-9-]*$");
   private static final Path MAP_FILE = Path.of("../ARCHITECTURE.md");
   private static final int RECORD = 50;
@@ -27,58 +19,61 @@ class TextBudgetTest {
   private static final int PAGE = 200;
   private static final int MAP = 500;
   private static final int WIDTH = 150;
-  private static final String PROMPT_RULE =
-      " — a prompt: compress it, then run promptEval and roleEval -Prole=master"
-          + " (docs/rules/testing.md)";
 
   @Test
   void decisionIsOneRecordOfFiftyLines() {
-    assertThat(decisions())
+    assertThat(DecisionRecords.records())
         .allSatisfy(record ->
-            assertThat(lines(record)).describedAs("%s", record).hasSizeLessThanOrEqualTo(RECORD));
+            assertThat(DocFiles.read(record).lines().toList())
+                .describedAs("%s", record)
+                .hasSizeLessThanOrEqualTo(RECORD));
   }
 
   @Test
   void ruleIsStatedInHundredLinesOrItIsBeingArgued() {
     assertThat(markdownIn(Path.of("../docs/rules")))
-        .allSatisfy(
-            rule -> assertThat(lines(rule)).describedAs("%s", rule).hasSizeLessThanOrEqualTo(RULE));
+        .allSatisfy(rule ->
+            assertThat(DocFiles.read(rule).lines().toList())
+                .describedAs("%s", rule)
+                .hasSizeLessThanOrEqualTo(RULE));
   }
 
   @Test
   void pageReadWholeStaysUnderTwoHundredLines() {
-    assertThat(pages())
+    assertThat(BudgetedTexts.pages())
         .allSatisfy(page ->
-            assertThat(lines(page))
-                .describedAs("%s%s", page, prompt(page))
+            assertThat(DocFiles.read(page).lines().toList())
+                .describedAs("%s%s", page, BudgetedTexts.prompt(page))
                 .hasSizeLessThanOrEqualTo(PAGE));
   }
 
   @Test
   void stepOfTheSessionBriefStaysUnderTwoHundredLines() {
-    assertThat(STEP.split(String.join("\n", lines(SESSION_BRIEF))))
+    assertThat(
+            STEP.split(
+                String.join("\n", DocFiles.read(BudgetedTexts.SESSION_BRIEF).lines().toList())))
         .allSatisfy(step ->
             assertThat(step.lines().count())
-                .describedAs("%s%s", step.lines().findFirst().orElse(""), PROMPT_RULE)
+                .describedAs("%s%s", step.lines().findFirst().orElse(""), BudgetedTexts.PROMPT_RULE)
                 .isLessThanOrEqualTo(PAGE));
   }
 
   @Test
   void theMapReadInPartsStaysUnderFiveHundredLines() {
-    assertThat(lines(MAP_FILE)).hasSizeLessThanOrEqualTo(MAP);
+    assertThat(DocFiles.read(MAP_FILE).lines().toList()).hasSizeLessThanOrEqualTo(MAP);
   }
 
   @Test
   void noLineOutsideTableRunsPastOneHundredFiftyCharacters() {
     assertThat(
             Stream.of(
-                    pages(),
-                    decisions(),
+                    BudgetedTexts.pages(),
+                    DecisionRecords.records(),
                     markdownIn(Path.of("../docs/rules")),
-                    List.of(MAP_FILE, SESSION_BRIEF))
+                    List.of(MAP_FILE, BudgetedTexts.SESSION_BRIEF))
                 .flatMap(List::stream)
                 .flatMap(text ->
-                    lines(text).stream()
+                    DocFiles.read(text).lines().toList().stream()
                         .filter(line -> line.length() > WIDTH && !line.startsWith("|"))
                         .map(line -> text.getFileName() + ": " + line)))
         .isEmpty();
@@ -91,17 +86,20 @@ class TextBudgetTest {
                 markdownIn(Path.of("../docs/rules")),
                 specs(),
                 List.of(Path.of("../AGENTS.md")),
-                List.of(SESSION_BRIEF))
+                List.of(BudgetedTexts.SESSION_BRIEF))
             .flatMap(List::stream)
             .toList();
 
     assertThat(
             read.stream()
                 .flatMap(document ->
-                    sentences(document).stream()
+                    BudgetedTexts.sentences(document).stream()
                         .filter(sentence -> sentence.split("\\s+").length > 25)
                         .map(sentence ->
-                            document.getFileName() + ": " + sentence + prompt(document))))
+                            document.getFileName()
+                                + ": "
+                                + sentence
+                                + BudgetedTexts.prompt(document))))
         .isEmpty();
   }
 
@@ -109,7 +107,7 @@ class TextBudgetTest {
   void commentsAreAtMostFifteenPercentOfTheCode() {
     List<String> code =
         SourceRoots.javaFiles()
-            .flatMap(source -> lines(source).stream())
+            .flatMap(source -> DocFiles.read(source).lines().toList().stream())
             .map(String::strip)
             .filter(line -> !line.isEmpty())
             .toList();
@@ -128,66 +126,8 @@ class TextBudgetTest {
     assertThat(markdownIn(Path.of("../docs/rules"))).hasSizeGreaterThan(3);
     assertThat(markdownIn(Path.of("../docs"))).hasSizeGreaterThan(3);
     assertThat(markdownIn(Path.of("../docs/decisions"))).hasSizeGreaterThan(1);
-    assertThat(SESSION_BRIEF).isRegularFile();
+    assertThat(BudgetedTexts.SESSION_BRIEF).isRegularFile();
     assertThat(specs()).hasSizeGreaterThan(5);
     assertThat(SourceRoots.javaFiles().count()).isGreaterThan(100);
-  }
-
-  private static String prompt(Path document) {
-    return document.equals(SESSION_BRIEF) ? PROMPT_RULE : "";
-  }
-
-  private static List<Path> pages() {
-    return Stream.of(
-            List.of(
-                Path.of("../AGENTS.md"),
-                Path.of("../README.md"),
-                Path.of("../docs/decisions/README.md")),
-            markdownIn(Path.of("../docs")),
-            markdownIn(Path.of("../docs/features")),
-            specs())
-        .flatMap(List::stream)
-        .toList();
-  }
-
-  private static List<Path> decisions() {
-    return markdownIn(Path.of("../docs/decisions")).stream()
-        .filter(path -> path.getFileName().toString().matches("\\d{4}-.*"))
-        .toList();
-  }
-
-  private static List<String> sentences(Path document) {
-    List<String> blocks = new ArrayList<>();
-    StringBuilder block = new StringBuilder();
-    boolean fenced = false;
-    for (String line : lines(document)) {
-      String text = line.strip();
-      boolean fence = text.startsWith("```");
-      fenced ^= fence;
-      boolean prose = !fenced && !fence && !text.isEmpty() && !NOT_PROSE.matcher(text).find();
-      if (!prose || LIST_ITEM.matcher(text).find()) {
-        blocks.add(block.toString());
-        block.setLength(0);
-      }
-      if (prose) {
-        block.append(' ').append(LIST_ITEM.matcher(text).replaceFirst(""));
-      }
-    }
-    blocks.add(block.toString());
-    return blocks.stream()
-        .map(text ->
-            text.replaceAll("`[^`]*`", "CODE").replaceAll("\\[([^\\]]*)\\]\\([^)]*\\)", "$1"))
-        .flatMap(text -> Arrays.stream(text.split("(?<=[.!?;:])\\s+| · ")))
-        .map(String::strip)
-        .filter(sentence -> !sentence.isEmpty())
-        .toList();
-  }
-
-  private static List<String> lines(Path path) {
-    try {
-      return Files.readAllLines(path);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 }

@@ -32,7 +32,7 @@ class RoleNamesTest {
   void noClassOutsideRolesModuleNamesIt() {
     Map<String, List<String>> modules = new LinkedHashMap<>();
     modules.put("arbiter", RoleModules.ARBITER);
-    roleFolderIds()
+    RoleFolders.ids()
         .forEach(id ->
             modules.put(
                 id.toLowerCase(Locale.ROOT),
@@ -73,19 +73,6 @@ class RoleNamesTest {
                   .filter(folder -> !Files.exists(folder.resolve("design.md")))
                   .map(folder -> folder.getFileName().toString()))
           .isEmpty();
-    } catch (IOException unread) {
-      throw new UncheckedIOException(unread);
-    }
-  }
-
-  private static Stream<String> roleFolderIds() {
-    try (Stream<Path> folders = Files.list(Path.of("..", "roles"))) {
-      return folders
-          .filter(Files::isDirectory)
-          .filter(folder -> !folder.getFileName().toString().equals("session"))
-          .map(folder -> folder.getFileName().toString())
-          .toList()
-          .stream();
     } catch (IOException unread) {
       throw new UncheckedIOException(unread);
     }

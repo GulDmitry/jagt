@@ -2,8 +2,6 @@ package dev.jagt.orchestrator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -45,7 +43,8 @@ class UnattendedLoopTest {
             UNATTENDED.stream()
                 .filter(path ->
                     writers.stream()
-                        .anyMatch(writer -> read(path).contains("private final " + writer + " ")))
+                        .anyMatch(writer ->
+                            SourceRoots.read(path).contains("private final " + writer + " ")))
                 .map(Path::getFileName))
         .isEmpty();
   }
@@ -54,7 +53,7 @@ class UnattendedLoopTest {
   void theSweepNobodyAskedForMovesNoTaskAlongItsFlow() {
     assertThat(
             UNATTENDED.stream()
-                .filter(path -> read(path).contains("withStatus"))
+                .filter(path -> SourceRoots.read(path).contains("withStatus"))
                 .map(Path::getFileName))
         .isEmpty();
   }
@@ -64,13 +63,5 @@ class UnattendedLoopTest {
     assertThat(UNATTENDED)
         .allSatisfy(path ->
             assertThat(Files.isRegularFile(path)).describedAs("source file %s", path).isTrue());
-  }
-
-  private static String read(Path path) {
-    try {
-      return Files.readString(path);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 }

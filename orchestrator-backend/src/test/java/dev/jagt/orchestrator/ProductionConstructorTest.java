@@ -3,18 +3,10 @@ package dev.jagt.orchestrator;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.constructors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 
-import ch.qos.logback.core.spi.LifeCycle;
 import com.tngtech.archunit.base.DescribedPredicate;
-import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.domain.JavaConstructor;
-import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.library.freeze.FreezingArchRule;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.diagnostics.FailureAnalyzer;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
 
 class ProductionConstructorTest {
 
@@ -23,13 +15,8 @@ class ProductionConstructorTest {
     constructors()
         .that()
         .areNotPrivate()
-        .and(notCalledFromMain())
-        .should(
-            ArchCondition.from(
-                DescribedPredicate.describe(
-                    "be a Spring bean's, Logback component's or Boot failure analyzer's only"
-                        + " constructor or a record's canonical one",
-                    ProductionConstructorTest::springOrRecordOwns)))
+        .and(ConstructorOwners.notCalledFromMain())
+        .should(ArchCondition.from(ConstructorOwners.springOrRecordOwns()))
         .check(MainClasses.CODE);
   }
 
@@ -42,33 +29,5 @@ class ProductionConstructorTest {
                     ArchCondition.from(
                         DescribedPredicate.describe("be called from main", method -> false))))
         .check(MainClasses.CODE);
-  }
-
-  private static DescribedPredicate<JavaConstructor> notCalledFromMain() {
-    return DescribedPredicate.describe(
-        "is never called from main",
-        constructor ->
-            constructor.getCallsOfSelf().stream()
-                .allMatch(call ->
-                    call.getOrigin() instanceof JavaConstructor
-                        && call.getOriginOwner().equals(constructor.getOwner())));
-  }
-
-  private static boolean springOrRecordOwns(JavaConstructor constructor) {
-    JavaClass owner = constructor.getOwner();
-    boolean canonical =
-        owner.isRecord()
-            && constructor.getRawParameterTypes().size()
-                == owner.getFields().stream()
-                    .filter(field -> !field.getModifiers().contains(JavaModifier.STATIC))
-                    .count();
-    boolean theBeansOnly =
-        owner.getConstructors().size() == 1
-            && (owner.isMetaAnnotatedWith(Component.class)
-                || owner.isAnnotatedWith(ConfigurationProperties.class)
-                || owner.isAnnotatedWith(Configuration.class)
-                || owner.isAssignableTo(LifeCycle.class)
-                || owner.isAssignableTo(FailureAnalyzer.class));
-    return canonical || theBeansOnly;
   }
 }
