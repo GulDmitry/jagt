@@ -22,6 +22,9 @@ import org.junit.jupiter.api.Test;
 class OpenAiCompatibleModelTest {
 
   private static final String SCHEMA = "{\"type\":\"object\",\"required\":[\"command\"]}";
+  private static final String ENUM_SCHEMA =
+      "{\"type\":\"object\",\"properties\":{\"command\":{\"enum\":[\"ship\",\"none\"]},"
+          + "\"reason\":{\"type\":\"string\"}}}";
   private final UsageTracker usageTracker = mock(UsageTracker.class);
   private final AtomicReference<String> sent = new AtomicReference<>();
   private int status = 200;
@@ -147,14 +150,21 @@ class OpenAiCompatibleModelTest {
   }
 
   @Test
-  void acceptsTheAnswerWhereItsConfidenceReachesTheThreshold() throws IOException {
+  void acceptsTheAnswerWhereOnlyItsFreeTextIsDoubtful() throws IOException {
     reply =
-        "{\"choices\":[{\"message\":{\"content\":\"{\\\"command\\\":\\\"ship\\\"}\"},"
-            + "\"logprobs\":{\"content\":[{\"logprob\":-0.05},{\"logprob\":-0.05}]}}]}";
+        """
+        {"choices":[{"message":{"content":"{\\"command\\":\\"ship\\",\\"reason\\":\\"why\\"}"},
+        "logprobs":{"content":[
+          {"token":"{\\"command\\":\\"","logprob":-0.9},
+          {"token":"ship","logprob":-0.05},
+          {"token":"\\",\\"reason\\":\\"","logprob":-0.9},
+          {"token":"why","logprob":-9.0},
+          {"token":"\\"}","logprob":-0.9}]}}]}
+        """;
 
     var answer =
         modelWithMinConfidence(0.8)
-            .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+            .ask("map this", ENUM_SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
 
     assertThat(answer.facts().orElseThrow().path("command").asString("")).isEqualTo("ship");
   }
@@ -162,28 +172,42 @@ class OpenAiCompatibleModelTest {
   @Test
   void acceptsTheAnswerWhereItsConfidenceEqualsTheThreshold() throws IOException {
     reply =
-        "{\"choices\":[{\"message\":{\"content\":\"{\\\"command\\\":\\\"ship\\\"}\"},"
-            + "\"logprobs\":{\"content\":[{\"logprob\":0.0}]}}]}";
+        """
+        {"choices":[{"message":{"content":"{\\"command\\":\\"ship\\",\\"reason\\":\\"why\\"}"},
+        "logprobs":{"content":[
+          {"token":"{\\"command\\":\\"","logprob":-0.9},
+          {"token":"ship","logprob":0.0},
+          {"token":"\\",\\"reason\\":\\"","logprob":-0.9},
+          {"token":"why","logprob":-9.0},
+          {"token":"\\"}","logprob":-0.9}]}}]}
+        """;
 
     var answer =
         modelWithMinConfidence(1)
-            .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+            .ask("map this", ENUM_SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
 
     assertThat(answer.facts()).isPresent();
   }
 
   @Test
-  void refusesTheAnswerWhereItsConfidenceIsBelowTheThreshold() throws IOException {
+  void refusesTheAnswerWhereItsEnumValueIsDoubtful() throws IOException {
     reply =
-        "{\"choices\":[{\"message\":{\"content\":\"{\\\"command\\\":\\\"ship\\\"}\"},"
-            + "\"logprobs\":{\"content\":[{\"logprob\":-0.5},{\"logprob\":-0.5}]}}]}";
+        """
+        {"choices":[{"message":{"content":"{\\"command\\":\\"ship\\",\\"reason\\":\\"why\\"}"},
+        "logprobs":{"content":[
+          {"token":"{\\"command\\":\\"","logprob":-0.9},
+          {"token":"ship","logprob":-0.5},
+          {"token":"\\",\\"reason\\":\\"","logprob":-0.9},
+          {"token":"why","logprob":0.0},
+          {"token":"\\"}","logprob":-0.9}]}}]}
+        """;
 
     var answer =
         modelWithMinConfidence(0.8)
-            .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+            .ask("map this", ENUM_SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
 
     assertThat(answer.facts()).isEmpty();
-    assertThat(answer.failure()).isEqualTo("confidence 0.368 below 0.8");
+    assertThat(answer.failure()).isEqualTo("confidence 0.607 below 0.8");
   }
 
   @Test
@@ -192,10 +216,31 @@ class OpenAiCompatibleModelTest {
 
     var answer =
         modelWithMinConfidence(0.8)
+            .ask("map this", ENUM_SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
+
+    assertThat(answer.facts()).isEmpty();
+    assertThat(answer.failure()).contains("confidence unknown");
+  }
+
+  @Test
+  void refusesTheAnswerWhereTheSchemaHasNoEnumPropertyAndTheThresholdIsSet() throws IOException {
+    reply =
+        """
+        {"choices":[{"message":{"content":"{\\"command\\":\\"ship\\",\\"reason\\":\\"why\\"}"},
+        "logprobs":{"content":[
+          {"token":"{\\"command\\":\\"","logprob":-0.9},
+          {"token":"ship","logprob":0.0},
+          {"token":"\\",\\"reason\\":\\"","logprob":-0.9},
+          {"token":"why","logprob":0.0},
+          {"token":"\\"}","logprob":-0.9}]}}]}
+        """;
+
+    var answer =
+        modelWithMinConfidence(0.8)
             .ask("map this", SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP);
 
     assertThat(answer.facts()).isEmpty();
-    assertThat(answer.failure()).contains("no logprobs");
+    assertThat(answer.failure()).contains("confidence unknown");
   }
 
   @Test

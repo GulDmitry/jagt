@@ -50,13 +50,12 @@ class OpenAiCompatibleModel {
       JsonNode body = mapper.readTree(response.body());
       usage = usageOf(body);
       usageTracker.record(kind, usage);
-      JsonNode answer =
-          mapper.readTree(
-              body.path("choices").path(0).path("message").path("content").asString(""));
+      String content = body.path("choices").path(0).path("message").path("content").asString("");
+      JsonNode answer = mapper.readTree(content);
       if (!answer.isObject()) {
         return failed(usage, label, kind, "content is not an object");
       }
-      OptionalDouble confidence = confidenceOf(body);
+      OptionalDouble confidence = confidenceOf(body, schema, content);
       Optional<String> doubt = doubtOf(confidence);
       if (doubt.isPresent()) {
         return failed(usage, label, kind, doubt.get());
@@ -91,16 +90,9 @@ class OpenAiCompatibleModel {
         .build();
   }
 
-  private static OptionalDouble confidenceOf(JsonNode body) {
+  private OptionalDouble confidenceOf(JsonNode body, String schema, String content) {
     JsonNode tokens = body.path("choices").path(0).path("logprobs").path("content");
-    if (!tokens.isArray() || tokens.isEmpty()) {
-      return OptionalDouble.empty();
-    }
-    double sum = 0;
-    for (JsonNode token : tokens) {
-      sum += token.path("logprob").asDouble(0);
-    }
-    return OptionalDouble.of(Math.exp(sum));
+    return EnumFieldConfidence.of(mapper.readTree(schema), content, tokens);
   }
 
   private Optional<String> doubtOf(OptionalDouble confidence) {
@@ -109,7 +101,7 @@ class OpenAiCompatibleModel {
       return Optional.empty();
     }
     if (confidence.isEmpty()) {
-      return Optional.of("no logprobs in the response, confidence unknown");
+      return Optional.of("no enum-field logprobs in the response, confidence unknown");
     }
     return confidence.getAsDouble() < threshold
         ? Optional.of("confidence %.3f below %s".formatted(confidence.getAsDouble(), threshold))
