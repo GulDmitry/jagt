@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-11-11.
+Accepted 2026-11-11. Amended by [0164](0164-a-unit-test-is-named-after-its-main-class.md): a unit test is named after its main class.
 
 ## Context
 

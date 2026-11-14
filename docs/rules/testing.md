@@ -22,6 +22,7 @@ the human's. Shared test code (AGENTS.md "Tests"): `TextBudgetTest.mainSources` 
 `<thing>()` setting fixed valid defaults and `build()` calling production's constructor or builder; it holds no branch, loop,
 mock, assertion, clock or random value; one of outside state (a git repo) may write.
 A class or member held in an ArchUnit freeze store (`src/test/resources/archunit/`) is debt to shed, never an example to copy.
+A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../decisions/0164-a-unit-test-is-named-after-its-main-class.md)).
 
 ### Every test pins a business case
 
