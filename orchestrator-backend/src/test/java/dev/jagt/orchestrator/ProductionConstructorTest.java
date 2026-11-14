@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.constructors;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 
 import ch.qos.logback.core.spi.LifeCycle;
 import com.tngtech.archunit.base.DescribedPredicate;
@@ -8,6 +9,7 @@ import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaConstructor;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.lang.ArchCondition;
+import com.tngtech.archunit.library.freeze.FreezingArchRule;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.diagnostics.FailureAnalyzer;
@@ -28,6 +30,17 @@ class ProductionConstructorTest {
                     "be a Spring bean's, Logback component's or Boot failure analyzer's only"
                         + " constructor or a record's canonical one",
                     ProductionConstructorTest::springOrRecordOwns)))
+        .check(MainClasses.CODE);
+  }
+
+  @Test
+  void everyMemberIsCalledFromMain() {
+    FreezingArchRule.freeze(
+            methods()
+                .that(MainMembers.calledOnlyFromOutsideMain())
+                .should(
+                    ArchCondition.from(
+                        DescribedPredicate.describe("be called from main", method -> false))))
         .check(MainClasses.CODE);
   }
 

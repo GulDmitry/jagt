@@ -1,6 +1,7 @@
 #
-#Sat Nov 14 09:45:47 UTC 2026
+#Sat Nov 14 09:48:39 UTC 2026
 classes\ that\ top-level\ in\ a\ test\ source\ set\ should\ be\ a\ test,\ a\ Test<Thing>Builder\ record,\ a\ fake\ or\ a\ scanner=81a059bc-c636-4f9c-b922-3115e925acbf
 fields\ should\ not\ be\ annotated\ with\ @Autowired=c97a611a-0eb1-4787-8f7d-893590917040
 methods\ that\ are\ declared\ in\ classes\ that\ a\ test\ class\ should\ be\ a\ test,\ its\ setup\ or\ its\ arguments=810148ef-a56b-4e8e-a5ab-d635e66c135e
+methods\ that\ are\ never\ called\ from\ main\ nor\ by\ a\ framework\ should\ be\ called\ from\ main=40449679-b868-4f04-975c-54c0c906d650
 no\ classes\ that\ Test<Thing>Builders\ should\ call\ method\ where\ a\ clock,\ random,\ mock\ or\ assertion\ call=f8f85b3a-f5ed-491a-9b6d-fc7a2eb0e797

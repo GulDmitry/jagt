@@ -10,7 +10,6 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -69,20 +68,8 @@ final class TestKinds {
         || method.isMetaAnnotatedWith(TESTABLE)
         || method.getAnnotations().stream()
             .anyMatch(a -> CALLED_BY_A_FRAMEWORK.contains(a.getRawType().getName()))
-        || overrides(method)
+        || MainMembers.overrides(method)
         || argumentsOf(outermost(method.getOwner())).contains(method.getName());
-  }
-
-  private static boolean overrides(JavaMethod method) {
-    List<JavaClass> parameters = method.getRawParameterTypes();
-    return Stream.concat(
-            method.getOwner().getAllRawSuperclasses().stream(),
-            method.getOwner().getAllRawInterfaces().stream())
-        .flatMap(type -> type.getMethods().stream())
-        .anyMatch(
-            other ->
-                other.getName().equals(method.getName())
-                    && other.getRawParameterTypes().equals(parameters));
   }
 
   private static Set<String> argumentsOf(JavaClass testClass) {
