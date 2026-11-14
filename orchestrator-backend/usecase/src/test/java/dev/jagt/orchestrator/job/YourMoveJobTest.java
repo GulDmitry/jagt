@@ -24,14 +24,11 @@ import dev.jagt.orchestrator.task.Master;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.Turn;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -46,7 +43,7 @@ class YourMoveJobTest {
   private final Notifications notifications = mock(Notifications.class);
   private final WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
   private final ConfigService configService = mock(ConfigService.class);
-  private final SteppingClock clock = new SteppingClock();
+  private final FakeClock clock = new FakeClock();
 
   @TempDir Path root;
 
@@ -54,29 +51,6 @@ class YourMoveJobTest {
   private MasterReview reviews;
   private String worktree;
   private YourMoveJob job;
-
-  private static final class SteppingClock extends Clock {
-    private Instant now = Instant.parse("2026-10-23T10:00:00Z");
-
-    void advance(Duration by) {
-      now = now.plus(by);
-    }
-
-    @Override
-    public ZoneId getZone() {
-      return ZoneOffset.UTC;
-    }
-
-    @Override
-    public Clock withZone(ZoneId zone) {
-      return this;
-    }
-
-    @Override
-    public Instant instant() {
-      return now;
-    }
-  }
 
   @BeforeEach
   void youWatchingAnEmptyState() throws IOException {

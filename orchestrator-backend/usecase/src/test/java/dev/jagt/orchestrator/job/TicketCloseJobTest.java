@@ -19,11 +19,10 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.testing.FakeClock;
 import java.nio.file.Path;
 import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -162,44 +161,21 @@ class TicketCloseJobTest {
     when(configService.load()).thenReturn(every10);
     stateService.putTask("ABC-42", task);
     when(close.closes("ABC-42", task)).thenReturn(false);
-    Ticking clock = new Ticking();
+    FakeClock clock = new FakeClock();
     TicketCloseJob ticking =
         ticketCloseJob().build(configService, stateService, close, commands, clock);
 
     ticking.run();
-    clock.minutes(10);
+    clock.advance(Duration.ofMinutes(10));
     ticking.run();
-    clock.minutes(19);
+    clock.advance(Duration.ofMinutes(19));
     ticking.run();
-    clock.minutes(1);
+    clock.advance(Duration.ofMinutes(1));
     ticking.run();
-    clock.minutes(10);
+    clock.advance(Duration.ofMinutes(10));
     ticking.run();
 
     verify(close, times(3)).closes("ABC-42", task);
   }
 
-  private static final class Ticking extends Clock {
-
-    private long millis = 1_000_000_000L;
-
-    void minutes(long minutes) {
-      millis += minutes * 60_000L;
-    }
-
-    @Override
-    public ZoneId getZone() {
-      return ZoneOffset.UTC;
-    }
-
-    @Override
-    public Clock withZone(ZoneId zone) {
-      return this;
-    }
-
-    @Override
-    public Instant instant() {
-      return Instant.ofEpochMilli(millis);
-    }
-  }
 }
