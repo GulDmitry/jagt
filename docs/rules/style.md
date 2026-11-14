@@ -5,7 +5,8 @@
 ## Writing
 
 - **Java follows Google style**; Checkstyle's Google checks gate every source set, Javadoc checks off; `gradle/checkstyle/` holds the config.
-  Write to it: a line ≤ 100 columns, wrapped before a `.` or after `(`, indent 2, continuation 4; imports unused none.
+  Write to it: a line ≤ 100 columns, wrapped before a `.` or after `(`, indent 2, continuation 4; no unused import; overloads adjacent.
+  Error Prone runs with `-Werror` on every set: `&&` inside `||` takes parentheses.
 - A comment is deleted on sight when it is narration of what the code does; an argument that a change
   is correct; how the code got this way; a fact whose source of truth is elsewhere.
 - **A situation is a scenario in its spec** (`openspec/specs/`): "the request does not target the base branch → …".
