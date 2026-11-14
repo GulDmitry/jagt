@@ -89,10 +89,13 @@ allprojects {
                 java.nio.file.Files.copy(it.toPath(), new File(testRoot, it.name).toPath(),
                         java.nio.file.StandardCopyOption.REPLACE_EXISTING)
             }
-            new File(shipped, 'roles').eachFileRecurse(groovy.io.FileType.FILES) {
-                File target = new File(testRoot, shipped.toPath().relativize(it.toPath()).toString())
-                target.parentFile.mkdirs()
-                java.nio.file.Files.copy(it.toPath(), target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            // A role workspace may link node_modules to a path a container does not mount: links are not followed.
+            java.nio.file.Files.walk(new File(shipped, 'roles').toPath()).withCloseable { paths ->
+                paths.filter { java.nio.file.Files.isRegularFile(it, java.nio.file.LinkOption.NOFOLLOW_LINKS) }.each {
+                    File target = new File(testRoot, shipped.toPath().relativize(it).toString())
+                    target.parentFile.mkdirs()
+                    java.nio.file.Files.copy(it, target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                }
             }
         }
     }

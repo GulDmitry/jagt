@@ -83,6 +83,7 @@ The rows of families H–M; the families and the row form: [cases.md](cases.md).
 | L19 | a file a rule test reads (the CI workflow, the tmux stop script) changes outside every source set → `test` runs again, never UP-TO-DATE over a breach | seen 2026-11-10: a workflow edit left `CiWorkflowTest` up to date | `CiWorkflowTest`, `SuitesTapNobodyTest` |
 | L20 | a flow test stubs the code host's review read → the stub stands before the session reports `CI_POLLING`, so the background sweep never reads a half-made stub and answers 500 | seen 2026-11-11: `JudgeModeFlowTest` red 1 of 50, a deep-stub answer with a null failure | `JudgeModeFlowTest`, `MasterModeFlowTest` |
 | L21 | a test captures a logger while a parallel test still initialises SLF4J → logging is initialised once when the test launcher opens, so no test is handed a substitute logger | seen 2026-11-13: `FakeLogCaptureTest` red on a `SubstituteLogger` cast under `test --rerun-tasks` | none: a JVM-start race |
+| L22 | a role folder holds a link whose target is absent where the suite runs → every test task seeds its root with the role's regular files alone, never following a link | seen 2026-11-14: `scripts/linux-suite.sh` failed every test task on a workspace `node_modules` link to a host path | none: the container suite with such a link present |
 ## M — anything else
 | id | the case, one line | defects | pinned by |
 |----|--------------------|---------|-----------|
