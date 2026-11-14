@@ -16,6 +16,7 @@ import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ScenarioWindowsTest {
@@ -27,10 +28,15 @@ class ScenarioWindowsTest {
   private final CheckerReader.Workspace workspace =
       new CheckerReader.Workspace(Path.of("/ws"), List.of());
 
-  @Test
-  void opensTheSessionInTheWorkspaceNamedForItsProject() {
+  @BeforeEach
+  void configAndHostAreReady() {
     when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     when(hosts.sessionName(any())).thenReturn("jagt");
+    when(agent.workspaceCommand(Path.of("/ws"), "", "go", workspace)).thenReturn("line");
+  }
+
+  @Test
+  void opensTheSessionInTheWorkspaceNamedForItsProject() {
     when(agent.workspaceCommand(Path.of("/ws"), "sonnet", "go", workspace)).thenReturn("line");
 
     windows.open("alpha", "sonnet", "go", workspace);
@@ -40,8 +46,6 @@ class ScenarioWindowsTest {
 
   @Test
   void focusesTheRunningSessionAndOpensNoSecond() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    when(hosts.sessionName(any())).thenReturn("jagt");
     when(hosts.taskWindowState("jagt", "acceptance-alpha"))
         .thenReturn(SessionHost.WindowState.AGENT_RUNNING);
     when(hosts.focusTaskWindow("jagt", "jagt", "acceptance-alpha")).thenReturn(true);
@@ -55,101 +59,110 @@ class ScenarioWindowsTest {
 
   @Test
   void opensAgainWhereOnlyTheShellOfAnEndedSessionIsLeft() {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    when(hosts.sessionName(any())).thenReturn("jagt");
     when(hosts.taskWindowState("jagt", "acceptance-alpha"))
         .thenReturn(SessionHost.WindowState.DEAD_SHELL);
-    when(agent.workspaceCommand(Path.of("/ws"), "", "go", workspace)).thenReturn("line");
 
     windows.open("alpha", "", "go", workspace);
 
     verify(hosts).openShellWindow("jagt", "jagt", "acceptance-alpha", Path.of("/ws"), "line");
   }
 
-  private List<ILoggingEvent> watched(String project, SessionHost.WindowState... states) {
-    try (FakeLogCapture log = new FakeLogCapture(ScenarioWindows.class)) {
-      for (SessionHost.WindowState state : states) {
-        when(hosts.taskWindowState("jagt", "acceptance-" + project)).thenReturn(state);
-        windows.watch();
-      }
-      return log.events().stream()
-          .filter(e -> e.getMessage().equals("acceptance session ended"))
-          .filter(e -> e.getKeyValuePairs().stream().anyMatch(kv -> project.equals(kv.value)))
-          .toList();
-    }
-  }
-
-  private void opened(String project) {
-    when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    when(hosts.sessionName(any())).thenReturn("jagt");
-    when(agent.workspaceCommand(Path.of("/ws"), "", "go", workspace)).thenReturn("line");
-    windows.open(project, "", "go", workspace);
-  }
-
   @Test
   void logsGoneOnceWhereTheWindowClosesAfterRunning() {
-    opened("p0");
-
-    List<ILoggingEvent> ended =
-        watched(
-            "p0",
+    windows.open("p0", "", "go", workspace);
+    when(hosts.taskWindowState("jagt", "acceptance-p0"))
+        .thenReturn(
             SessionHost.WindowState.AGENT_RUNNING,
             SessionHost.WindowState.MISSING,
             SessionHost.WindowState.MISSING);
 
-    assertThat(ended)
-        .singleElement()
-        .satisfies(e ->
-            assertThat(e.getKeyValuePairs())
-                .anySatisfy(kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("ending=gone")));
+    try (FakeLogCapture log = new FakeLogCapture(ScenarioWindows.class)) {
+      windows.watch();
+      windows.watch();
+      windows.watch();
+
+      assertThat(log.events())
+          .filteredOn(e -> e.getMessage().equals("acceptance session ended"))
+          .singleElement()
+          .satisfies(e ->
+              assertThat(e.getKeyValuePairs())
+                  .anySatisfy(kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("ending=gone")));
+    }
   }
 
   @Test
   void logsFinishedWithWhatTheAgentPrintedWhereItLeavesItsShellAfterRunning() {
-    opened("p1");
+    windows.open("p1", "", "go", workspace);
     when(hosts.exitTail("jagt", "acceptance-p1")).thenReturn(Optional.of("Goodbye"));
+    when(hosts.taskWindowState("jagt", "acceptance-p1"))
+        .thenReturn(SessionHost.WindowState.AGENT_RUNNING, SessionHost.WindowState.DEAD_SHELL);
 
-    List<ILoggingEvent> ended =
-        watched("p1", SessionHost.WindowState.AGENT_RUNNING, SessionHost.WindowState.DEAD_SHELL);
+    try (FakeLogCapture log = new FakeLogCapture(ScenarioWindows.class)) {
+      windows.watch();
+      windows.watch();
 
-    assertThat(ended)
-        .singleElement()
-        .satisfies(e ->
-            assertThat(e.getKeyValuePairs())
-                .anySatisfy(kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("ending=finished"))
-                .anySatisfy(kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("cause=Goodbye")));
+      assertThat(log.events())
+          .filteredOn(e -> e.getMessage().equals("acceptance session ended"))
+          .singleElement()
+          .satisfies(e ->
+              assertThat(e.getKeyValuePairs())
+                  .anySatisfy(
+                      kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("ending=finished"))
+                  .anySatisfy(
+                      kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("cause=Goodbye")));
+    }
   }
 
   @Test
   void namesNoCauseWhereTheAgentPrintedNothingOnItsWayOut() {
-    opened("p2");
+    windows.open("p2", "", "go", workspace);
     when(hosts.exitTail("jagt", "acceptance-p2")).thenReturn(Optional.of("  "));
+    when(hosts.taskWindowState("jagt", "acceptance-p2"))
+        .thenReturn(SessionHost.WindowState.AGENT_RUNNING, SessionHost.WindowState.DEAD_SHELL);
 
-    List<ILoggingEvent> ended =
-        watched("p2", SessionHost.WindowState.AGENT_RUNNING, SessionHost.WindowState.DEAD_SHELL);
+    try (FakeLogCapture log = new FakeLogCapture(ScenarioWindows.class)) {
+      windows.watch();
+      windows.watch();
 
-    assertThat(ended)
-        .singleElement()
-        .satisfies(e -> assertThat(e.getKeyValuePairs()).noneMatch(kv -> kv.key.equals("cause")));
+      assertThat(log.events())
+          .filteredOn(e -> e.getMessage().equals("acceptance session ended"))
+          .hasSize(1)
+          .flatExtracting(ILoggingEvent::getKeyValuePairs)
+          .noneMatch(kv -> kv.key.equals("cause"));
+    }
   }
 
   @Test
   void logsFailedWhereTheAgentLeavesItsShellWithoutEverRunning() {
-    opened("p3");
+    windows.open("p3", "", "go", workspace);
+    when(hosts.taskWindowState("jagt", "acceptance-p3"))
+        .thenReturn(SessionHost.WindowState.DEAD_SHELL);
 
-    List<ILoggingEvent> ended = watched("p3", SessionHost.WindowState.DEAD_SHELL);
+    try (FakeLogCapture log = new FakeLogCapture(ScenarioWindows.class)) {
+      windows.watch();
 
-    assertThat(ended)
-        .singleElement()
-        .satisfies(e ->
-            assertThat(e.getKeyValuePairs())
-                .anySatisfy(kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("ending=failed")));
+      assertThat(log.events())
+          .filteredOn(e -> e.getMessage().equals("acceptance session ended"))
+          .singleElement()
+          .satisfies(e ->
+              assertThat(e.getKeyValuePairs())
+                  .anySatisfy(
+                      kv -> assertThat(kv.key + "=" + kv.value).isEqualTo("ending=failed")));
+    }
   }
 
   @Test
   void logsNothingWhereTheWindowIsNotYetThereToRead() {
-    opened("p4");
+    windows.open("p4", "", "go", workspace);
+    when(hosts.taskWindowState("jagt", "acceptance-p4"))
+        .thenReturn(SessionHost.WindowState.MISSING);
 
-    assertThat(watched("p4", SessionHost.WindowState.MISSING)).isEmpty();
+    try (FakeLogCapture log = new FakeLogCapture(ScenarioWindows.class)) {
+      windows.watch();
+
+      assertThat(log.events())
+          .filteredOn(e -> e.getMessage().equals("acceptance session ended"))
+          .isEmpty();
+    }
   }
 }

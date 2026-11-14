@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestReportedBuilder.reported;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -7,58 +9,40 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.ReachLost;
-import dev.jagt.orchestrator.protocol.Reported;
-import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class LinkRefusalsTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  @TempDir Path root;
 
-  private static Reported ship(String url) {
-    return new Reported(
-        TaskStatus.CI_POLLING, AgentReport.PLAIN, "shipped", url, Map.of(), false, null, Map.of());
-  }
+  private StateService state;
 
-  private static StateService state(Path root) {
-    StateService state =
-        new StateService(
-            new JsonMapper(),
-            new OrchestratorPaths(
-                OrchestratorProperties.defaults()
-                    .withRoot(root.toString())
-                    .withStateFile(root.resolve("state.json").toString())),
-            reducer,
-            event -> {});
+  @BeforeEach
+  void startsOneRunningTaskWithItsRemote() {
+    state = stateService().withRoot(root).build();
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .alias("a42")
             .repos(List.of(new TaskRepo("proj", "/wt", "git@host:team/proj.git", null)))
             .build());
-    return state;
   }
 
   @Test
-  void showsOneLineOnTheBoardsHeadForRefusedLink(@TempDir Path root) {
+  void showsOneLineOnTheBoardsHeadForRefusedLink() {
     ReachLedger reach = new ReachLedger();
 
-    new LinkRefusals(reach, mock(SessionLines.class), state(root))
-        .onBoard(ship("https://host/other/proj/-/merge_requests/9"), "ABC-42");
+    new LinkRefusals(reach, mock(SessionLines.class), state)
+        .onBoard(
+            reported().withLink("https://host/other/proj/-/merge_requests/9").build(), "ABC-42");
 
     assertThat(reach.standing())
         .extracting(ReachLost::said)
@@ -66,31 +50,31 @@ class LinkRefusalsTest {
   }
 
   @Test
-  void nudgesTheSessionOnceNamingTheExpectedRemote(@TempDir Path root) {
+  void nudgesTheSessionOnceNamingTheExpectedRemote() {
     SessionLines sessions = mock(SessionLines.class);
 
-    new LinkRefusals(new ReachLedger(), sessions, state(root))
-        .told(ship("https://host/other/proj/-/merge_requests/9"), "ABC-42");
+    new LinkRefusals(new ReachLedger(), sessions, state)
+        .told(reported().withLink("https://host/other/proj/-/merge_requests/9").build(), "ABC-42");
 
     verify(sessions).say(eq("ABC-42"), contains("team/proj"));
   }
 
   @Test
-  void nudgesNoSessionForLinkUnderTheRemote(@TempDir Path root) {
+  void nudgesNoSessionForLinkUnderTheRemote() {
     SessionLines sessions = mock(SessionLines.class);
 
-    new LinkRefusals(new ReachLedger(), sessions, state(root))
-        .told(ship("https://host/team/proj/-/merge_requests/9"), "ABC-42");
+    new LinkRefusals(new ReachLedger(), sessions, state)
+        .told(reported().withLink("https://host/team/proj/-/merge_requests/9").build(), "ABC-42");
 
     verifyNoInteractions(sessions);
   }
 
   @Test
-  void endsTheLineOnTheRepositorysNextGoodLink(@TempDir Path root) {
+  void endsTheLineOnTheRepositorysNextGoodLink() {
     ReachLedger reach = new ReachLedger();
-    StateService state = state(root);
     new LinkRefusals(reach, mock(SessionLines.class), state)
-        .onBoard(ship("https://host/other/proj/-/merge_requests/9"), "ABC-42");
+        .onBoard(
+            reported().withLink("https://host/other/proj/-/merge_requests/9").build(), "ABC-42");
 
     state.updateTask(
         "ABC-42", task -> task.withMrUrl("proj", "https://host/team/proj/-/merge_requests/9", 1L));
@@ -99,11 +83,11 @@ class LinkRefusalsTest {
   }
 
   @Test
-  void endsTheLineWhenTheTaskCloses(@TempDir Path root) {
+  void endsTheLineWhenTheTaskCloses() {
     ReachLedger reach = new ReachLedger();
-    StateService state = state(root);
     new LinkRefusals(reach, mock(SessionLines.class), state)
-        .onBoard(ship("https://host/other/proj/-/merge_requests/9"), "ABC-42");
+        .onBoard(
+            reported().withLink("https://host/other/proj/-/merge_requests/9").build(), "ABC-42");
 
     state.removeTask("ABC-42");
 

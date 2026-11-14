@@ -1,12 +1,11 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestRoleConfigOriginsBuilder.roleConfigOrigins;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
@@ -14,110 +13,92 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import org.jspecify.annotations.Nullable;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class RoleConfigOriginsTest {
 
   private final ConfigService config = mock(ConfigService.class);
 
-  @Test
-  void enabledComesFromJagtYmlAndEnvironmentsFromTheHumanCopy(@TempDir Path root) throws Exception {
-    install(root, "environments: [{url: https://stage.example.com}]\n");
-    when(config.load())
-        .thenReturn(
-            ConfigFile.defaults().withRoles(Map.of("acceptance", new RoleConfig(true, "opus"))));
-
-    List<String> lines = logged(root);
-
-    assertThat(lines)
-        .contains(
-            "acceptance enabled true jagt.yml",
-            "acceptance model sonnet role.yml.dist",
-            "acceptance environments 1 role.yml");
+  static Stream<Arguments> origins() {
+    return Stream.of(
+        Arguments.of(
+            "enabled comes from jagt.yml and environments from the human copy",
+            "environments: [{url: https://stage.example.com}]\n",
+            ConfigFile.defaults().withRoles(Map.of("acceptance", new RoleConfig(true, "opus"))),
+            List.of(
+                "acceptance enabled true jagt.yml",
+                "acceptance model sonnet role.yml.dist",
+                "acceptance environments 1 role.yml")),
+        Arguments.of(
+            "model comes from the human copy when jagt.yml writes none",
+            "model: haiku\n",
+            ConfigFile.defaults(),
+            List.of("acceptance model haiku role.yml")),
+        Arguments.of(
+            "model comes from the shipped dist when neither writes one",
+            "",
+            ConfigFile.defaults(),
+            List.of("acceptance model sonnet role.yml.dist")),
+        Arguments.of(
+            "model comes from the shipped dist when the human copy cannot be read",
+            "model: [haiku\n",
+            ConfigFile.defaults(),
+            List.of("acceptance model sonnet role.yml.dist")),
+        Arguments.of(
+            "enabled and environments are defaults when jagt.yml writes none",
+            "",
+            ConfigFile.defaults(),
+            List.of("acceptance enabled false default", "acceptance environments 0 default")));
   }
 
-  @Test
-  void modelComesFromTheHumanCopyWhenJagtYmlWritesNone(@TempDir Path root) throws Exception {
-    install(root, "model: haiku\n");
-    when(config.load()).thenReturn(ConfigFile.defaults());
-
-    List<String> lines = logged(root);
-
-    assertThat(lines).contains("acceptance model haiku role.yml");
-  }
-
-  @Test
-  void modelComesFromTheShippedDistWhenNeitherWritesOne(@TempDir Path root) throws Exception {
-    install(root, "");
-    when(config.load()).thenReturn(ConfigFile.defaults());
-
-    List<String> lines = logged(root);
-
-    assertThat(lines).contains("acceptance model sonnet role.yml.dist");
-  }
-
-  @Test
-  void modelComesFromTheShippedDistWhenTheHumanCopyCannotBeRead(@TempDir Path root)
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("origins")
+  void logsEachRoleSettingWithTheFileItCameFrom(
+      String name, String humanCopy, ConfigFile file, List<String> expected, @TempDir Path root)
       throws Exception {
-    install(root, "model: [haiku\n");
-    when(config.load()).thenReturn(ConfigFile.defaults());
+    when(config.load()).thenReturn(file);
+    RoleConfigOrigins origins =
+        roleConfigOrigins().withRoot(root).withHumanCopy(humanCopy).build(config);
 
-    List<String> lines = logged(root);
+    try (FakeLogCapture appender = new FakeLogCapture(RoleConfigOrigins.class)) {
+      origins.logAtStart();
 
-    assertThat(lines).contains("acceptance model sonnet role.yml.dist");
-  }
-
-  @Test
-  void enabledAndEnvironmentsAreDefaultsWhenJagtYmlWritesNone(@TempDir Path root) throws Exception {
-    install(root, "");
-    when(config.load()).thenReturn(ConfigFile.defaults());
-
-    List<String> lines = logged(root);
-
-    assertThat(lines)
-        .contains("acceptance enabled false default", "acceptance environments 0 default");
+      assertThat(appender.events())
+          .extracting(event -> event.getMessage())
+          .containsOnly("role config");
+      assertThat(appender.events())
+          .extracting(event ->
+              event.getKeyValuePairs().stream()
+                  .map(pair -> String.valueOf(pair.value))
+                  .collect(Collectors.joining(" ")))
+          .containsAll(expected);
+    }
   }
 
   @Test
   void everyValueIsDefaultedWhereNoJagtYmlExistsYet(@TempDir Path root) throws Exception {
-    install(root, "");
+    RoleConfigOrigins origins = roleConfigOrigins().withRoot(root).build(config);
     Files.delete(root.resolve("jagt.yml"));
 
-    List<String> lines = logged(root);
-
-    assertThat(lines)
-        .contains("acceptance enabled false default", "acceptance environments 0 default");
-  }
-
-  private static void install(Path root, @Nullable String humanCopy) throws Exception {
-    Files.createDirectories(root.resolve("roles/acceptance"));
-    Files.copy(
-        Path.of("../../roles/acceptance/role.yml.dist"),
-        root.resolve("roles/acceptance/role.yml.dist"));
-    Files.writeString(root.resolve("jagt.yml"), "");
-    if (humanCopy != null) {
-      Files.writeString(root.resolve("roles/acceptance/role.yml"), humanCopy);
-    }
-  }
-
-  private List<String> logged(Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
-    RoleConfigOrigins origins = new RoleConfigOrigins(new InstalledRoles(paths), config, paths);
     try (FakeLogCapture appender = new FakeLogCapture(RoleConfigOrigins.class)) {
       origins.logAtStart();
 
-      List<ILoggingEvent> events = appender.events();
-      assertThat(events).extracting(ILoggingEvent::getMessage).containsOnly("role config");
-      return events.stream()
-          .map(event ->
+      assertThat(appender.events())
+          .extracting(ILoggingEvent::getMessage)
+          .containsOnly("role config");
+      assertThat(appender.events())
+          .extracting(event ->
               event.getKeyValuePairs().stream()
                   .map(pair -> String.valueOf(pair.value))
-                  .reduce((a, b) -> a + " " + b)
+                  .reduce((first, second) -> first + " " + second)
                   .orElse(""))
-          .toList();
+          .contains("acceptance enabled false default", "acceptance environments 0 default");
     }
   }
 }

@@ -21,10 +21,18 @@ import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalLong;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class SessionProbeTest {
+
+  private final AgentSessions running = mock(AgentSessions.class);
+
+  @BeforeEach
+  void everyWindowRunsAnAgent() {
+    when(running.windowState(anyString())).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+  }
 
   @Test
   void readsTheLogFileTheSessionRecordNames(@TempDir Path root) throws Exception {
@@ -36,7 +44,7 @@ class SessionProbeTest {
             .build()
             .withSession(Session.defaults().withLog(log.toString()));
     SessionProbe probe =
-        new SessionProbe(mock(ConfigService.class), running(), mock(AgentRuntime.class));
+        new SessionProbe(mock(ConfigService.class), running, mock(AgentRuntime.class));
 
     assertThat(probe.read("ABC-1", task, 300_000, 10_000_000).logAt()).isEqualTo(9_990_000L);
   }
@@ -52,15 +60,9 @@ class SessionProbeTest {
             .lastActiveTimestamp(9_000_000L)
             .build()
             .withSession(Session.defaults().withLog(stale.toString()));
-    SessionProbe probe = new SessionProbe(mock(ConfigService.class), running(), runtime);
+    SessionProbe probe = new SessionProbe(mock(ConfigService.class), running, runtime);
 
     assertThat(probe.read("ABC-1", task, 300_000, 10_000_000).logAt()).isEqualTo(9_990_000L);
-  }
-
-  private static AgentSessions running() {
-    AgentSessions sessions = mock(AgentSessions.class);
-    when(sessions.windowState(anyString())).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
-    return sessions;
   }
 
   @Test
@@ -126,7 +128,7 @@ class SessionProbeTest {
     ConfigService config = mock(ConfigService.class);
     when(config.load()).thenThrow(new IllegalStateException("config.json is half-written"));
 
-    Duration every = new SessionProbe(config, running(), mock(AgentRuntime.class)).every();
+    Duration every = new SessionProbe(config, running, mock(AgentRuntime.class)).every();
 
     assertThat(every).isEqualTo(Duration.ofMinutes(10));
   }
@@ -141,7 +143,7 @@ class SessionProbeTest {
             .build();
 
     SessionSign.Read read =
-        new SessionProbe(config, running(), mock(AgentRuntime.class))
+        new SessionProbe(config, running, mock(AgentRuntime.class))
             .read("ABC-1", task, 300_000, 10_000_000);
 
     assertThat(read.staleAfter()).isEqualTo(300_000);

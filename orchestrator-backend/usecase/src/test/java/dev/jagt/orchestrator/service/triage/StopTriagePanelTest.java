@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service.triage;
 
+import static dev.jagt.orchestrator.service.triage.TestStopTriagePanelBuilder.stopTriagePanel;
+import static dev.jagt.orchestrator.service.triage.TestTriageJudgementBuilder.triageJudgement;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,7 +28,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -41,33 +42,18 @@ class StopTriagePanelTest {
   private final StopTriagePanel.Trail trail =
       new StopTriagePanel.Trail("10:00 round relayed", "abc1234 Change");
 
-  private StopTriagePanel panel(Path root, @Nullable String brief) throws Exception {
-    Files.createDirectories(root.resolve("roles/triage"));
-    if (brief != null) {
-      Files.writeString(root.resolve("roles/triage/brief.md.dist"), brief);
-    }
-    return new StopTriagePanel(
-        reviews,
-        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
-  }
-
-  private static Judgement answer(String verdict, String issue, String pattern) {
-    return new Judgement(
-        "",
-        verdict,
-        List.of(new Finding("-", issue, pattern, "noise", "-", "scope")),
-        "",
-        List.of(new RoundReviewer.Premise("the trail shows one tree", "")),
-        "");
-  }
-
   @Test
   void readyVerdictIsLiftSafeAndTheFindingNamesWhoClassAndFamily(@TempDir Path root)
       throws Exception {
     when(reviews.review(eq("ABC-42"), any()))
-        .thenReturn(answer("ready", "jagt: ships counted past a merge", "H"));
+        .thenReturn(
+            triageJudgement()
+                .withIssue("jagt: ships counted past a merge")
+                .withPattern("H")
+                .build());
 
-    StopTriage read = panel(root, "brief").read("ABC-42", stopped, trail, "haiku");
+    StopTriage read =
+        stopTriagePanel().withRoot(root).build(reviews).read("ABC-42", stopped, trail, "haiku");
 
     assertThat(read)
         .isEqualTo(
@@ -83,9 +69,15 @@ class StopTriagePanelTest {
   @Test
   void notReadyVerdictIsLiftUnsafe(@TempDir Path root) throws Exception {
     when(reviews.review(eq("ABC-42"), any()))
-        .thenReturn(answer("not ready", "session: same tree handed back", "F"));
+        .thenReturn(
+            triageJudgement()
+                .withVerdict("not ready")
+                .withIssue("session: same tree handed back")
+                .withPattern("F")
+                .build());
 
-    StopTriage read = panel(root, "brief").read("ABC-42", stopped, trail, "haiku");
+    StopTriage read =
+        stopTriagePanel().withRoot(root).build(reviews).read("ABC-42", stopped, trail, "haiku");
 
     assertThat(read.lift()).isEqualTo(StopTriage.Lift.UNSAFE);
     assertThat(read.who()).isEqualTo(StopTriage.Who.SESSION);
@@ -94,19 +86,23 @@ class StopTriagePanelTest {
   @Test
   void familyOutsideTheDefectRangeIsUnknown(@TempDir Path root) throws Exception {
     when(reviews.review(eq("ABC-42"), any()))
-        .thenReturn(answer("ready", "none: the work moved", "Z"));
+        .thenReturn(triageJudgement().withIssue("none: the work moved").withPattern("Z").build());
 
-    StopTriage read = panel(root, "brief").read("ABC-42", stopped, trail, "haiku");
+    StopTriage read =
+        stopTriagePanel().withRoot(root).build(reviews).read("ABC-42", stopped, trail, "haiku");
 
     assertThat(read.family()).isEqualTo("unknown");
   }
 
   @Test
   void theReaderIsGivenTheBriefTheStopTheTrailAndTheCommits(@TempDir Path root) throws Exception {
-    when(reviews.review(eq("ABC-42"), any()))
-        .thenReturn(answer("ready", "none: the work moved", "unknown"));
+    when(reviews.review(eq("ABC-42"), any())).thenReturn(triageJudgement().build());
 
-    panel(root, "the triage brief").read("ABC-42", stopped, trail, "haiku");
+    stopTriagePanel()
+        .withRoot(root)
+        .withBrief("the triage brief")
+        .build(reviews)
+        .read("ABC-42", stopped, trail, "haiku");
 
     ArgumentCaptor<RoundReviewer.Round> round = ArgumentCaptor.forClass(RoundReviewer.Round.class);
     verify(reviews).review(eq("ABC-42"), round.capture());
@@ -131,7 +127,8 @@ class StopTriagePanelTest {
                     new RoundReviewer.Premise("tests green", "")),
                 ""));
 
-    StopTriage read = panel(root, "brief").read("ABC-42", stopped, trail, "haiku");
+    StopTriage read =
+        stopTriagePanel().withRoot(root).build(reviews).read("ABC-42", stopped, trail, "haiku");
 
     assertThat(read.evidence()).isEqualTo("tree changed; tests green");
   }
@@ -140,7 +137,7 @@ class StopTriagePanelTest {
   void failedReadFailsNamingItsCause(@TempDir Path root) throws Exception {
     when(reviews.review(eq("ABC-42"), any())).thenReturn(Judgement.failed("git state changed"));
 
-    StopTriagePanel panel = panel(root, "brief");
+    StopTriagePanel panel = stopTriagePanel().withRoot(root).build(reviews);
 
     assertThatThrownBy(() -> panel.read("ABC-42", stopped, trail, "haiku"))
         .isInstanceOf(StopTriageFailed.class)
@@ -150,9 +147,9 @@ class StopTriagePanelTest {
   @Test
   void findingNamingNoWhoFails(@TempDir Path root) throws Exception {
     when(reviews.review(eq("ABC-42"), any()))
-        .thenReturn(answer("ready", "a loop of some kind", "F"));
+        .thenReturn(triageJudgement().withIssue("a loop of some kind").withPattern("F").build());
 
-    StopTriagePanel panel = panel(root, "brief");
+    StopTriagePanel panel = stopTriagePanel().withRoot(root).build(reviews);
 
     assertThatThrownBy(() -> panel.read("ABC-42", stopped, trail, "haiku"))
         .isInstanceOf(StopTriageFailed.class);
@@ -160,7 +157,11 @@ class StopTriagePanelTest {
 
   @Test
   void missingBriefFailsBeforeAnythingIsAsked(@TempDir Path root) throws Exception {
-    StopTriagePanel panel = panel(root, null);
+    Files.createDirectories(root.resolve("roles/triage"));
+    StopTriagePanel panel =
+        new StopTriagePanel(
+            reviews,
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
 
     assertThatThrownBy(() -> panel.read("ABC-42", stopped, trail, "haiku"))
         .isInstanceOf(StopTriageFailed.class);

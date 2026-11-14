@@ -1,51 +1,30 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestPlanBaselineBuilder.planBaseline;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.port.LineChange;
-import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class PlanBaselineTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
-
   @TempDir Path root;
-
-  private PlanBaseline baselineOver(Path worktree) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    StateService state = new StateService(new JsonMapper(), paths, reducer, event -> {});
-    state.putTask(
-        "ABC-42", TaskState.builder("web", worktree.toString(), TaskStatus.PLAN_PENDING).build());
-    return new PlanBaseline(
-        paths,
-        new TaskArtifacts(state),
-        (earlier, later) -> new LineChange(Set.of(), Map.of(0, List.of(earlier))));
-  }
 
   @Test
   void marksNothingBeforeAnyPlanWasApproved() throws Exception {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(worktree.resolve("plan.md"), "# Plan\n- a\n");
 
-    LineChange change = baselineOver(worktree).since("ABC-42", "# Plan\n- a\n- b\n");
+    LineChange change =
+        planBaseline()
+            .withRoot(root)
+            .withWorktree(worktree)
+            .build()
+            .since("ABC-42", "# Plan\n- a\n- b\n");
 
     assertThat(change.removed()).isEmpty();
   }
@@ -54,7 +33,7 @@ class PlanBaselineTest {
   void comparesThePlanWithTheOneThatWasApproved() throws Exception {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(worktree.resolve("plan.md"), "# Plan\n- a\n");
-    PlanBaseline baseline = baselineOver(worktree);
+    PlanBaseline baseline = planBaseline().withRoot(root).withWorktree(worktree).build();
     baseline.keep("ABC-42");
     Files.writeString(worktree.resolve("plan.md"), "# Plan\n- a\n- b\n");
 
@@ -67,7 +46,7 @@ class PlanBaselineTest {
   void comparesWithTheLatestApprovalOnceTheChangedPlanIsApprovedAgain() throws Exception {
     Path worktree = Files.createDirectories(root.resolve("wt"));
     Files.writeString(worktree.resolve("plan.md"), "# Plan\n- a\n");
-    PlanBaseline baseline = baselineOver(worktree);
+    PlanBaseline baseline = planBaseline().withRoot(root).withWorktree(worktree).build();
     baseline.keep("ABC-42");
     Files.writeString(worktree.resolve("plan.md"), "# Plan\n- a\n- b\n");
     baseline.keep("ABC-42");
@@ -80,7 +59,7 @@ class PlanBaselineTest {
   @Test
   void marksNothingWhenTheApprovalFoundNoPlanFileToKeep() throws Exception {
     Path worktree = Files.createDirectories(root.resolve("wt"));
-    PlanBaseline baseline = baselineOver(worktree);
+    PlanBaseline baseline = planBaseline().withRoot(root).withWorktree(worktree).build();
     baseline.keep("ABC-42");
 
     assertThat(baseline.since("ABC-42", "# Plan\n").removed()).isEmpty();

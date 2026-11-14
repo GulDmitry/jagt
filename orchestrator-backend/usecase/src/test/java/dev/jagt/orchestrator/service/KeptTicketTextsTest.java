@@ -1,9 +1,8 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -14,7 +13,7 @@ class KeptTicketTextsTest {
 
   @Test
   void forgetsTheReadOfTaskSoItsTicketIsReadAgain() {
-    KeptTicketTexts kept = new KeptTicketTexts(paths());
+    KeptTicketTexts kept = new KeptTicketTexts(orchestratorPaths().withRoot(root).build());
     kept.markRead("ABC-42", 1_000L);
 
     kept.forget("ABC-42");
@@ -24,18 +23,11 @@ class KeptTicketTextsTest {
 
   @Test
   void forgetsKeptTextFromDisk() {
-    KeptTicketTexts kept = new KeptTicketTexts(paths());
+    KeptTicketTexts kept = new KeptTicketTexts(orchestratorPaths().withRoot(root).build());
     kept.keep("ABC-42", "Widget layout is off");
 
     kept.forget("ABC-42");
 
     assertThat(kept.of("ABC-42")).isEmpty();
-  }
-
-  private OrchestratorPaths paths() {
-    return new OrchestratorPaths(
-        OrchestratorProperties.defaults()
-            .withRoot(root.toString())
-            .withStateFile(root.resolve("state.json").toString()));
   }
 }

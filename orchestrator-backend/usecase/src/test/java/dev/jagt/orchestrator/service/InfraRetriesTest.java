@@ -1,31 +1,31 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestInfraRetriesBuilder.infraRetries;
+import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
-import dev.jagt.orchestrator.config.InfraWaitProperties;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.TaskChart;
-import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tools.jackson.databind.json.JsonMapper;
 
 class InfraRetriesTest {
 
-  private static final TaskReducer reducer = new TaskReducer(new TaskChart(Composition.builtIn()));
+  @TempDir Path dir;
+
+  private StateService state;
+
+  @BeforeEach
+  void startsWithAnEmptyState() {
+    state = stateService().withRoot(dir).build();
+  }
 
   private static final Instant NOW = Instant.parse("2026-10-29T10:00:00Z");
   private static final InfraRetry SENT_FIRST =
@@ -59,32 +59,13 @@ class InfraRetriesTest {
           1,
           3);
 
-  private static StateService state(Path dir) {
-    return new StateService(
-        new JsonMapper(),
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(dir.toString())
-                .withStateFile(dir.resolve("state.json").toString())),
-        reducer,
-        event -> {});
-  }
-
-  private static InfraRetries retries(StateService state) {
-    return new InfraRetries(
-        state,
-        mock(TaskStops.class),
-        InfraWaitProperties.defaults(),
-        Clock.fixed(NOW, ZoneOffset.UTC));
-  }
-
   @Test
-  void armsTheFirstRetryFiveMinutesOut(@TempDir Path dir) {
-    StateService state = state(dir);
+  void armsTheFirstRetryFiveMinutesOut() {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
 
     Optional<InfraRetry> armed =
-        retries(state)
+        infraRetries()
+            .build(state)
             .arm(
                 "ABC-42",
                 "shop",
@@ -97,12 +78,12 @@ class InfraRetriesTest {
   }
 
   @Test
-  void numbersTheFirstRetryOneOfThree(@TempDir Path dir) {
-    StateService state = state(dir);
+  void numbersTheFirstRetryOneOfThree() {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
 
     Optional<InfraRetry> armed =
-        retries(state)
+        infraRetries()
+            .build(state)
             .arm(
                 "ABC-42",
                 "shop",
@@ -114,10 +95,9 @@ class InfraRetriesTest {
   }
 
   @Test
-  void keepsTheTimeOfRetryAlreadyArmedForTheSamePipeline(@TempDir Path dir) {
-    StateService state = state(dir);
+  void keepsTheTimeOfRetryAlreadyArmedForTheSamePipeline() {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-    InfraRetries retries = retries(state);
+    InfraRetries retries = infraRetries().build(state);
     InfraRetry first =
         retries
             .arm(
@@ -132,8 +112,7 @@ class InfraRetriesTest {
   }
 
   @Test
-  void armsTheThirdRetryFortyFiveMinutesOutAfterTwoWereSent(@TempDir Path dir) {
-    StateService state = state(dir);
+  void armsTheThirdRetryFortyFiveMinutesOutAfterTwoWereSent() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -141,7 +120,8 @@ class InfraRetriesTest {
             .build());
 
     Optional<InfraRetry> armed =
-        retries(state)
+        infraRetries()
+            .build(state)
             .arm(
                 "ABC-42",
                 "shop",
@@ -153,8 +133,7 @@ class InfraRetriesTest {
   }
 
   @Test
-  void armsNothingOnceAsManyRetriesWereSentAsWaitsAreConfigured(@TempDir Path dir) {
-    StateService state = state(dir);
+  void armsNothingOnceAsManyRetriesWereSentAsWaitsAreConfigured() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -162,7 +141,8 @@ class InfraRetriesTest {
             .build());
 
     Optional<InfraRetry> armed =
-        retries(state)
+        infraRetries()
+            .build(state)
             .arm(
                 "ABC-42",
                 "shop",
@@ -174,8 +154,7 @@ class InfraRetriesTest {
   }
 
   @Test
-  void listsOnlyTheRetriesWhoseTimeHasCome(@TempDir Path dir) {
-    StateService state = state(dir);
+  void listsOnlyTheRetriesWhoseTimeHasCome() {
     InfraRetry overdue =
         InfraRetry.armed(
             NOW.minusSeconds(1).toEpochMilli(),
@@ -205,14 +184,13 @@ class InfraRetriesTest {
             .infraRetries(List.of(later))
             .build());
 
-    Map<String, InfraRetry> due = retries(state).due();
+    Map<String, InfraRetry> due = infraRetries().build(state).due();
 
     assertThat(due).containsOnlyKeys("ABC-42");
   }
 
   @Test
-  void recordsSentRetryAsMoveWithoutChangingTheStatus(@TempDir Path dir) {
-    StateService state = state(dir);
+  void recordsSentRetryAsMoveWithoutChangingTheStatus() {
     InfraRetry armed =
         InfraRetry.armed(
             1_000, "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure", 1, 3);
@@ -222,7 +200,7 @@ class InfraRetriesTest {
             .infraRetries(List.of(armed))
             .build());
 
-    retries(state).sent("ABC-42", armed);
+    infraRetries().build(state).sent("ABC-42", armed);
 
     TaskState after = state.task("ABC-42").orElseThrow();
     assertThat(after.infraRetries()).containsExactly(armed.sentAt(NOW.toEpochMilli()));
@@ -231,8 +209,7 @@ class InfraRetriesTest {
   }
 
   @Test
-  void forgetsOnlyTheArmedRetryWhenTheSentOnesAreKept(@TempDir Path dir) {
-    StateService state = state(dir);
+  void forgetsOnlyTheArmedRetryWhenTheSentOnesAreKept() {
     InfraRetry sent =
         new InfraRetry(
             1_000,
@@ -259,21 +236,20 @@ class InfraRetriesTest {
                         3)))
             .build());
 
-    retries(state).clear("ABC-42", false);
+    infraRetries().build(state).clear("ABC-42", false);
 
     assertThat(state.task("ABC-42").orElseThrow().infraRetries()).containsExactly(sent);
   }
 
   @Test
-  void waitsOnlyWhileTheTaskIsOpenAndItsChecksStillReadRed(@TempDir Path dir) {
-    StateService state = state(dir);
+  void waitsOnlyWhileTheTaskIsOpenAndItsChecksStillReadRed() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).pipelineStatus("failed").build());
     state.putTask(
         "ABC-43",
         TaskState.builder("proj", "/wt2", TaskStatus.CI_POLLING).pipelineStatus("running").build());
-    InfraRetries retries = retries(state);
+    InfraRetries retries = infraRetries().build(state);
 
     assertThat(retries.stillWaiting("ABC-42")).isTrue();
     assertThat(retries.stillWaiting("ABC-43")).isFalse();
@@ -281,9 +257,8 @@ class InfraRetriesTest {
   }
 
   @Test
-  void doesNotApplyWhereTheTaskIsPastItsReview(@TempDir Path dir) {
-    StateService state = state(dir);
-    final InfraRetries retries = retries(state);
+  void doesNotApplyWhereTheTaskIsPastItsReview() {
+    final InfraRetries retries = infraRetries().build(state);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     state.putTask("ABC-43", TaskState.builder("proj", "/wt2", TaskStatus.DEPLOYED).build());
     state.putTask("ABC-44", TaskState.builder("proj", "/wt3", TaskStatus.DEPLOY_CONFLICT).build());
@@ -296,12 +271,11 @@ class InfraRetriesTest {
   }
 
   @Test
-  void sendsTheDueRetryOfDeployedTaskWhoseDeployPipelineDiedOnInfrastructure(@TempDir Path dir) {
-    StateService state = state(dir);
+  void sendsTheDueRetryOfDeployedTaskWhoseDeployPipelineDiedOnInfrastructure() {
     state.putTask(
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).pipelineStatus("success").build());
 
-    assertThat(retries(state).stillWaiting("ABC-42")).isTrue();
+    assertThat(infraRetries().build(state).stillWaiting("ABC-42")).isTrue();
   }
 }

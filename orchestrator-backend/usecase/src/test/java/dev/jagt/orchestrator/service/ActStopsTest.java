@@ -1,9 +1,8 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ActStop.Cause;
 import dev.jagt.orchestrator.service.master.MasterBrake;
 import java.io.IOException;
@@ -18,31 +17,24 @@ class ActStopsTest {
   void namesThreeBadEndingsWhereActStoppedFileStands(@TempDir Path root) throws IOException {
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
 
-    assertThat(stopsIn(root).standing()).contains(new ActStop(Cause.STRIKES));
+    assertThat(new ActStops(new MasterBrake(orchestratorPaths().withRoot(root).build())).standing())
+        .contains(new ActStop(Cause.STRIKES));
   }
 
   @Test
   void liftsNothingWhereNoStopStands(@TempDir Path root) {
-    assertThat(stopsIn(root).lift()).isFalse();
+    assertThat(new ActStops(new MasterBrake(orchestratorPaths().withRoot(root).build())).lift())
+        .isFalse();
   }
 
   @Test
   void liftsTheStop(@TempDir Path root) throws IOException {
     Files.writeString(root.resolve("act-stopped"), "ABC-1\n");
-    ActStops stops = stopsIn(root);
+    ActStops stops = new ActStops(new MasterBrake(orchestratorPaths().withRoot(root).build()));
 
     boolean lifted = stops.lift();
 
     assertThat(lifted).isTrue();
     assertThat(stops.standing()).isEmpty();
-  }
-
-  private static ActStops stopsIn(Path root) {
-    OrchestratorPaths paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
-    return new ActStops(new MasterBrake(paths));
   }
 }

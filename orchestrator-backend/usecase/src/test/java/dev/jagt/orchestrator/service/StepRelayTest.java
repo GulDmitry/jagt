@@ -35,6 +35,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -112,56 +113,65 @@ class StepRelayTest {
             "ABC-42", "ABC-42 is deployed:\n- proj: 01234567 on dev\n\nopen it in a browser");
   }
 
-  interface Entry {
-    boolean relayed(StepRelay relay, Standing read, StepRelay.Claim claim);
-  }
-
   static Stream<Arguments> entries() {
     return Stream.of(
         Arguments.of(
             "relay",
-            (Entry)
-                (relay, read, claim) ->
-                    relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
+            (BiFunction<StepRelay, Standing, Boolean>)
+                (relay, read) -> relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
         Arguments.of(
             "relayRound",
-            (Entry)
-                (relay, read, claim) ->
+            (BiFunction<StepRelay, Standing, Boolean>)
+                (relay, read) ->
                     relay.relayRound("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
         Arguments.of(
             "relayUnder",
-            (Entry)
-                (relay, read, claim) ->
+            (BiFunction<StepRelay, Standing, Boolean>)
+                (relay, read) ->
                     relay.relayUnder("ABC-42", Step.DEPLOY, "ABC-42 is deployed", false, read)),
         Arguments.of(
             "relay with a claim",
-            (Entry)
-                (relay, read, claim) ->
-                    relay.relay("ABC-42", Step.DEPLOY, "ABC-42 is deployed", claim)),
+            (BiFunction<StepRelay, Standing, Boolean>)
+                (relay, read) ->
+                    relay.relay(
+                        "ABC-42",
+                        Step.DEPLOY,
+                        "ABC-42 is deployed",
+                        new StepRelay.Claim(
+                            read, opens -> FlowReports.Claimed.LANDED, opened -> true))),
         Arguments.of(
             "relayRound with a claim",
-            (Entry)
-                (relay, read, claim) ->
-                    relay.relayRound("ABC-42", Step.DEPLOY, "ABC-42 is deployed", claim)),
+            (BiFunction<StepRelay, Standing, Boolean>)
+                (relay, read) ->
+                    relay.relayRound(
+                        "ABC-42",
+                        Step.DEPLOY,
+                        "ABC-42 is deployed",
+                        new StepRelay.Claim(
+                            read, opens -> FlowReports.Claimed.LANDED, opened -> true))),
         Arguments.of(
             "relayUnder with a claim",
-            (Entry)
-                (relay, read, claim) ->
-                    relay.relayUnder("ABC-42", Step.DEPLOY, "ABC-42 is deployed", false, claim)),
+            (BiFunction<StepRelay, Standing, Boolean>)
+                (relay, read) ->
+                    relay.relayUnder(
+                        "ABC-42",
+                        Step.DEPLOY,
+                        "ABC-42 is deployed",
+                        false,
+                        new StepRelay.Claim(
+                            read, opens -> FlowReports.Claimed.LANDED, opened -> true))),
         Arguments.of(
             "write",
-            (Entry)
-                (relay, read, claim) ->
-                    relay.write("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
+            (BiFunction<StepRelay, Standing, Boolean>)
+                (relay, read) -> relay.write("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
         Arguments.of(
             "say",
-            (Entry)
-                (relay, read, claim) ->
-                    relay.say("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
+            (BiFunction<StepRelay, Standing, Boolean>)
+                (relay, read) -> relay.say("ABC-42", Step.DEPLOY, "ABC-42 is deployed", read)),
         Arguments.of(
             "relayComposed",
-            (Entry)
-                (relay, read, claim) ->
+            (BiFunction<StepRelay, Standing, Boolean>)
+                (relay, read) ->
                     relay.relayComposed(
                         "ABC-42",
                         List.of(Step.DEPLOY),
@@ -172,19 +182,17 @@ class StepRelayTest {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("entries")
-  void relaysNothingWhenTheTurnMovedOnSinceTheTaskWasRead(String kind, Entry entry) {
+  void relaysNothingWhenTheTurnMovedOnSinceTheTaskWasRead(
+      String kind, BiFunction<StepRelay, Standing, Boolean> entry) {
     when(door.opens("ABC-42", Step.DEPLOY))
         .thenReturn(new CaseDoor.Admission(true, TaskStatus.REVIEWED));
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build());
     final Standing read = Standing.of(state.task("ABC-42").orElseThrow());
-    final StepRelay.Claim claim =
-        new StepRelay.Claim(read, opens -> FlowReports.Claimed.LANDED, opened -> true);
     turns.opened("ABC-42", "answered", "the human answered", TaskStatus.DEPLOYED);
     when(door.roundDue("ABC-42", "deploy")).thenReturn(true);
     Turn before = turns.of("ABC-42");
 
-    assertThatThrownBy(() -> entry.relayed(admittingRelay, read, claim))
-        .isInstanceOf(TaskMovedOn.class);
+    assertThatThrownBy(() -> entry.apply(admittingRelay, read)).isInstanceOf(TaskMovedOn.class);
 
     verifyNoInteractions(sessions);
     assertThat(turns.of("ABC-42")).isEqualTo(before);

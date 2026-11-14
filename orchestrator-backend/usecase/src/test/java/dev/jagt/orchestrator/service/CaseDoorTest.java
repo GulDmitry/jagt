@@ -1,18 +1,13 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestCaseDoorBuilder.caseDoor;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
+import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dev.jagt.orchestrator.config.MasterCases;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.SessionCases;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AgentReport;
 import dev.jagt.orchestrator.task.Master;
@@ -29,54 +24,37 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import tools.jackson.databind.json.JsonMapper;
 
 class CaseDoorTest {
 
   @TempDir Path root;
 
   private StateService state;
-  private OrchestratorPaths paths;
+  private CaseDoor door;
 
   @BeforeEach
   void wireState() {
     state = stateService().withRoot(root).build();
-    paths =
-        new OrchestratorPaths(
-            OrchestratorProperties.defaults()
-                .withRoot(root.toString())
-                .withStateFile(root.resolve("state.json").toString()));
+    door =
+        caseDoor()
+            .withRoot(root)
+            .build(
+                state,
+                taskStops()
+                    .withRoot(root)
+                    .withProfile(
+                        new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)
+                            .profile())
+                    .build(state, Clock.systemUTC()),
+                Clock.systemUTC());
   }
 
   private static final String SHIP_CASE =
       "## ship\n\nmove: ship\nat: REVIEW_PENDING\nby: master\nThe Master ships it.\n";
 
-  private static CaseDoor doorOver(OrchestratorPaths paths, StateService state) {
-    return doorOver(
-        paths, state, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
-  }
-
-  private static CaseDoor doorOver(
-      OrchestratorPaths paths, StateService state, ConfigService.ConfigFile.MasterConfig master) {
-    return new CaseDoor(
-        new SessionCases(paths),
-        new MasterCases(paths),
-        state,
-        new MissLog(new JsonMapper(), paths, Clock.systemUTC()),
-        new TaskStops(
-            new StopPolicy(
-                task -> master.profile(),
-                ConfigService.ConfigFile.defaults()::loopBreakerOrDefault,
-                new StopAnnouncements(new StopLog(new JsonMapper(), paths))),
-            state,
-            Clock.systemUTC(),
-            new FlowRules(new TaskChart(Composition.builtIn()))));
-  }
-
   @Test
   void letsAnyPressThroughThatTheMasterDidNotMake() {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    CaseDoor door = doorOver(paths, state);
 
     assertThat(door.presses("ABC-42", TaskAction.DONE)).isTrue();
     assertThat(door.presses("ABC-42", "ship")).isTrue();
@@ -99,7 +77,6 @@ class CaseDoorTest {
         root.resolve("roles/master/cases.md"),
         "## verb\n\nmove: " + move + "\nat: any\nby: master\nThe Master presses it.\n");
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    CaseDoor door = doorOver(paths, state);
 
     boolean admitted = OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", action));
 
@@ -118,10 +95,18 @@ class CaseDoorTest {
   void refusesTheMasterVerbItsHumanKeepsInMine(TaskAction action, String mine) {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
     CaseDoor door =
-        doorOver(
-            paths,
-            state,
-            new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of(mine), null));
+        caseDoor()
+            .withRoot(root)
+            .build(
+                state,
+                taskStops()
+                    .withRoot(root)
+                    .withProfile(
+                        new ConfigService.ConfigFile.MasterConfig(
+                                "act", null, null, List.of(mine), null)
+                            .profile())
+                    .build(state, Clock.systemUTC()),
+                Clock.systemUTC());
 
     assertThatThrownBy(
             () -> OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", action)))
@@ -135,7 +120,6 @@ class CaseDoorTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build());
-    CaseDoor door = doorOver(paths, state);
 
     boolean byVerb =
         OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", TaskAction.SHIP));
@@ -151,7 +135,6 @@ class CaseDoorTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    CaseDoor door = doorOver(paths, state);
 
     boolean byVerb =
         OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", TaskAction.SHIP));
@@ -167,7 +150,6 @@ class CaseDoorTest {
     Files.createDirectories(root.resolve("roles/master"));
     Files.writeString(root.resolve("roles/master/cases.md"), SHIP_CASE);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-    CaseDoor door = doorOver(paths, state);
 
     boolean byMove = OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", "ship"));
 
@@ -184,7 +166,6 @@ class CaseDoorTest {
         TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
             .turn(Turn.none().relayed("ship", "d1", "", 100))
             .build());
-    CaseDoor door = doorOver(paths, state);
 
     boolean taken =
         OriginContext.as(
@@ -214,7 +195,6 @@ class CaseDoorTest {
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .master(Master.defaults().withLiftedStops(1))
             .build());
-    CaseDoor door = doorOver(paths, state);
 
     assertThatThrownBy(
             () -> OriginContext.as(ActionOrigin.MASTER, () -> door.presses("ABC-42", action)))

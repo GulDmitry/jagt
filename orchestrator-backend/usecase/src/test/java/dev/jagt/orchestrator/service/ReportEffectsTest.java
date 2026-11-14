@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import static dev.jagt.orchestrator.service.TestReportEffectsBuilder.reportEffects;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -8,9 +9,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.config.InfraWaitProperties;
-import dev.jagt.orchestrator.flow.Checkers;
-import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.task.Step;
@@ -25,7 +23,6 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -34,6 +31,7 @@ class ReportEffectsTest {
 
   private static final Instant NOW = Instant.parse("2026-10-29T10:00:00Z");
   private final TaskStops stops = mock(TaskStops.class);
+  private final LinkRefusals links = mock(LinkRefusals.class);
   private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
 
   @TempDir Path dir;
@@ -45,40 +43,22 @@ class ReportEffectsTest {
   @BeforeEach
   void wireEffects() {
     state = stateService().withRoot(dir).build();
-    TaskTurns turns =
-        new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
     realStops = taskStops().withRoot(dir).build(state, clock);
-    realEffects =
-        new ReportEffects(
-            new SessionWakes(state, turns, clock),
-            turns,
-            realStops,
-            InfraWaitProperties.defaults(),
-            mock(LinkRefusals.class));
+    realEffects = reportEffects().withClock(clock).build(state, realStops, links);
   }
 
   private final AgentStatusMessage waits =
       new AgentStatusMessage("IN_PROGRESS", "db down: ping db.internal", "wait", null, Map.of());
 
-  private ReportEffects effects(InfraWaitProperties properties) {
-    TaskTurns turns =
-        new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
-    return new ReportEffects(
-        new SessionWakes(state, turns, clock), turns, stops, properties, mock(LinkRefusals.class));
-  }
-
-  private static TaskState taskAnswering(String step, @Nullable String waited) {
-    TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
-    Turn turn =
-        new Turn(step, 4, "", 0, waited == null ? Map.of() : Map.of("waits", waited), List.of());
-    return task.withTurn(turn);
-  }
-
   @Test
   void armsWakeFiveMinutesOutForTheTurnTheWaitClosed() {
-    state.putTask("ABC-42", taskAnswering("context", null));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .build()
+            .withTurn(new Turn("context", 4, "", 0, Map.of(), List.of())));
 
-    effects(InfraWaitProperties.defaults()).after(waits, "ABC-42");
+    reportEffects().withClock(clock).build(state, stops, links).after(waits, "ABC-42");
 
     Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
     assertThat(Wake.parse(turn.mark(Wake.MARK)))
@@ -87,9 +67,13 @@ class ReportEffectsTest {
 
   @Test
   void armsTheNextWaitWhenTheSessionAnswersWaitOverWithWaitAgain() {
-    state.putTask("ABC-42", taskAnswering("wait-over", "1"));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .build()
+            .withTurn(new Turn("wait-over", 4, "", 0, Map.of("waits", "1"), List.of())));
 
-    effects(InfraWaitProperties.defaults()).after(waits, "ABC-42");
+    reportEffects().withClock(clock).build(state, stops, links).after(waits, "ABC-42");
 
     Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
     assertThat(Wake.parse(turn.mark(Wake.MARK)).orElseThrow().at())
@@ -99,18 +83,28 @@ class ReportEffectsTest {
 
   @Test
   void stopsTheTaskWithTheSessionsWordsOnceEveryWaitWasSpent() {
-    state.putTask("ABC-42", taskAnswering("wait-over", "3"));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .build()
+            .withTurn(new Turn("wait-over", 4, "", 0, Map.of("waits", "3"), List.of())));
 
-    effects(InfraWaitProperties.defaults()).after(waits, "ABC-42");
+    reportEffects().withClock(clock).build(state, stops, links).after(waits, "ABC-42");
 
     verify(stops).stop("ABC-42", TaskStop.Trigger.WAIT, "db down: ping db.internal");
   }
 
   @Test
   void armsNothingForReportThatIsNoWait() {
-    state.putTask("ABC-42", taskAnswering("context", null));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .build()
+            .withTurn(new Turn("context", 4, "", 0, Map.of(), List.of())));
 
-    effects(InfraWaitProperties.defaults())
+    reportEffects()
+        .withClock(clock)
+        .build(state, stops, links)
         .after(AgentStatusMessage.of("IN_PROGRESS", "working"), "ABC-42");
 
     assertThat(state.task("ABC-42").orElseThrow().turnOrNone().mark(Wake.MARK)).isNull();
@@ -119,7 +113,11 @@ class ReportEffectsTest {
 
   @Test
   void refusesWaitWhereNoWaitIsConfigured() {
-    ReportEffects off = effects(new InfraWaitProperties(List.of()));
+    ReportEffects off =
+        reportEffects()
+            .withClock(clock)
+            .withInfraWait(new InfraWaitProperties(List.of()))
+            .build(state, stops, links);
 
     MessageContext judged = off.judged(MessageContext.NONE);
 
@@ -128,7 +126,11 @@ class ReportEffectsTest {
 
   @Test
   void asksTheSessionAgainAtTheLastWaitOnceTheTaskStoppedAsWaiting() {
-    state.putTask("ABC-42", taskAnswering("wait-over", "3"));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .build()
+            .withTurn(new Turn("wait-over", 4, "", 0, Map.of("waits", "3"), List.of())));
     realEffects.after(waits, "ABC-42");
 
     Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
@@ -138,7 +140,11 @@ class ReportEffectsTest {
 
   @Test
   void keepsTheWaitStopAndTheNextWakeDueWhenTheSessionWaitsAgain() {
-    state.putTask("ABC-42", taskAnswering("wait-over", "3"));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .build()
+            .withTurn(new Turn("wait-over", 4, "", 0, Map.of("waits", "3"), List.of())));
     realStops.stop("ABC-42", TaskStop.Trigger.WAIT, "db down: ping db.internal");
     realEffects.after(waits, "ABC-42");
 
@@ -150,7 +156,11 @@ class ReportEffectsTest {
 
   @Test
   void endsTheWaitStopWhenTheSessionReportsProgressWithoutWait() {
-    state.putTask("ABC-42", taskAnswering("wait-over", "3"));
+    state.putTask(
+        "ABC-42",
+        TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+            .build()
+            .withTurn(new Turn("wait-over", 4, "", 0, Map.of("waits", "3"), List.of())));
     realStops.stop("ABC-42", TaskStop.Trigger.WAIT, "db down: ping db.internal");
     realEffects.after(AgentStatusMessage.of("IN_PROGRESS", "db is back"), "ABC-42");
 

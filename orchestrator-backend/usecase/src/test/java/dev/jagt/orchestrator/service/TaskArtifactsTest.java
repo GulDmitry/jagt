@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -21,7 +22,8 @@ class TaskArtifactsTest {
   private final StateService state = mock(StateService.class);
   private final TaskArtifacts artifacts = new TaskArtifacts(state);
 
-  private void taskWithWorktree() {
+  @BeforeEach
+  void taskWithWorktree() {
     when(state.canonicalTaskId("ABC-42")).thenReturn("ABC-42");
     when(state.task("ABC-42"))
         .thenReturn(
@@ -31,7 +33,6 @@ class TaskArtifactsTest {
 
   @Test
   void listsOnlyTheDocumentsThatExistInTheWorktree() throws Exception {
-    taskWithWorktree();
     Files.writeString(worktree.resolve("plan.md"), "# plan");
     Files.writeString(worktree.resolve("task_visual.md"), "sketch");
     Files.writeString(worktree.resolve("README.md"), "not a document of a task");
@@ -41,7 +42,6 @@ class TaskArtifactsTest {
 
   @Test
   void listsThePlanAndTheSketchFirstAndTheReviewersNotesLast() throws Exception {
-    taskWithWorktree();
     Files.writeString(worktree.resolve("master-review.md"), "verdict");
     Files.writeString(worktree.resolve("master-decisions.md"), "decided");
     Files.writeString(worktree.resolve("task_request.md"), "asked");
@@ -59,14 +59,12 @@ class TaskArtifactsTest {
 
   @Test
   void listsNothingForWorktreeHoldingNoDocument() {
-    taskWithWorktree();
 
     assertThat(artifacts.present("ABC-42")).isEmpty();
   }
 
   @Test
   void readsTheDocumentAsItStandsOnDiskNow() throws Exception {
-    taskWithWorktree();
     Files.writeString(worktree.resolve("plan.md"), "first");
     artifacts.read("ABC-42", "plan.md");
     Files.writeString(worktree.resolve("plan.md"), "second");
@@ -76,7 +74,6 @@ class TaskArtifactsTest {
 
   @Test
   void refusesNameOutsideTheDocumentsOfTaskWithoutTouchingTheDisk() throws Exception {
-    taskWithWorktree();
     Files.writeString(worktree.resolve("secret.txt"), "x");
 
     assertThatThrownBy(() -> artifacts.read("ABC-42", "../secret.txt"))
@@ -87,7 +84,6 @@ class TaskArtifactsTest {
 
   @Test
   void saysKnownDocumentIsAbsentWhenTheWorktreeHoldsNoSuchFile() {
-    taskWithWorktree();
 
     assertThatThrownBy(() -> artifacts.read("ABC-42", "plan.md"))
         .isInstanceOf(TaskArtifacts.ArtifactAbsent.class);
@@ -95,7 +91,6 @@ class TaskArtifactsTest {
 
   @Test
   void saysDocumentIsUnreadableRatherThanAbsentWhenItCannotBeRead() throws Exception {
-    taskWithWorktree();
     Files.write(worktree.resolve("plan.md"), new byte[(int) TaskArtifacts.MAX_BYTES + 1]);
 
     assertThatThrownBy(() -> artifacts.read("ABC-42", "plan.md"))
@@ -113,7 +108,6 @@ class TaskArtifactsTest {
 
   @Test
   void readsDocumentOfExactlyTheSizeCeiling() throws Exception {
-    taskWithWorktree();
     Files.write(worktree.resolve("plan.md"), new byte[(int) TaskArtifacts.MAX_BYTES]);
 
     assertThat(artifacts.read("ABC-42", "plan.md")).hasSize((int) TaskArtifacts.MAX_BYTES);
