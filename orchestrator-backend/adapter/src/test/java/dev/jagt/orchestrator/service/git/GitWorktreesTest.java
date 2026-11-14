@@ -12,8 +12,8 @@ import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.worktree.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.worktree.WorktreeContainers;
 import dev.jagt.orchestrator.port.worktree.WorktreeProcesses;

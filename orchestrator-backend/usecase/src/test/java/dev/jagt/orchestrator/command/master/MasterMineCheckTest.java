@@ -6,9 +6,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

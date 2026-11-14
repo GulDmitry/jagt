@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.job.tracker;
 
 import dev.jagt.orchestrator.job.Job;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import java.time.Duration;

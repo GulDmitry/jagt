@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.flows;
 
-import dev.jagt.orchestrator.config.role.RoleOptions.Flows;
 import dev.jagt.orchestrator.config.role.RoleOptions;
+import dev.jagt.orchestrator.config.role.RoleOptions.Flows;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.port.reach.ReachLost;

@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.adapter.agent.OpenCodeProvider;
+import dev.jagt.orchestrator.adapter.agent.opencode.OpenCodeProvider;
 import java.nio.file.Path;
 import java.util.List;
 import tools.jackson.databind.json.JsonMapper;

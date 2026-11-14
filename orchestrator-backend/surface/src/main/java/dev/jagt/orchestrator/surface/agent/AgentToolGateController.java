@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.agent;
 
 import dev.jagt.orchestrator.flow.session.SessionSign;
-import dev.jagt.orchestrator.port.agent.ToolGateEnvelope.Kind;
 import dev.jagt.orchestrator.port.agent.ToolGateEnvelope;
+import dev.jagt.orchestrator.port.agent.ToolGateEnvelope.Kind;
 import dev.jagt.orchestrator.protocol.ToolCall;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;

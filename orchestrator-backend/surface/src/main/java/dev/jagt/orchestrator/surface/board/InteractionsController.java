@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.service.log.PressLog.Interaction;
 import dev.jagt.orchestrator.service.log.PressLog;
+import dev.jagt.orchestrator.service.log.PressLog.Interaction;
 import java.time.Clock;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

@@ -160,34 +160,34 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `AgentPresence` | `service/AgentSessions` |
 | `flow/capability/TaskCapability` | one per verb under `capability/` |
 | `flow/capability/CapabilityInterceptor` | `capability/ship/SpecFold`, `capability/GitStateGuard`; an install may add its own step |
-| `Specs` | `adapter/OpenSpec` |
-| `AgentRuntime` | `adapter/agent/{Claude,Codex,OpenCode,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/replay/ReplayAgentRuntime` |
-| `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `ClaudeMcpHealthProbe`; `Replay<port>` for tracker and code host |
+| `Specs` | `adapter/worktree/OpenSpec` |
+| `AgentRuntime` | `adapter/agent/{Claude,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/agent/{codex/Codex,opencode/OpenCode}AgentRuntime`, `adapter/replay/ReplayAgentRuntime` |
+| `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `reach/ClaudeMcpHealthProbe`; `Replay<port>` for tracker and code host |
 | `CodeHost` | `adapter/codehost/ChosenCodeHost` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`, `ReplayCodeHost`) by `codeHost`; re-running a pipeline is jagt's one code-host write |
-| `CodeHostCommands` | `adapter/codehost/{GitHub,GitLab}Commands` — each code-host CLI's word, read verbs and command groups; `service/gate/ToolGate` judges every one wherever it stands |
+| `CodeHostCommands` | `adapter/codehost/cli/{GitHub,GitLab}Commands` — each code-host CLI's word, read verbs and command groups; `service/gate/ToolGate` judges every one wherever it stands |
 | `RoundReviewer` | `adapter/assistant/ChosenRoundReviewer` choosing a driver by config (`HeadlessClaudeRoundReviewer`, OpenCode), `ReplayRoundReviewer` (a stand recording played back) |
 | `CheckerReader` | `adapter/assistant/ChosenCheckerReader` choosing a driver by config (`HeadlessClaudeCheckerReader`, `OpenCodeCheckerReader`), `ReplayCheckerReader` |
 | `EnvironmentProbe` | `adapter/assistant/HttpEnvironmentProbe` |
 | `AcceptanceRunner` | `adapter/flows/FlowsRunner` choosing `PlaywrightRunner` by `flows.driver` in the role folder, read per run — scripted flows run as argv, judged from the JSON report |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Reach` | `service/reach/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login`; `adapter/assistant/AssistantBreaker` writes the assistant's outage into it |
-| `ChannelDriver` | `adapter/DesktopNotifier`, `adapter/CommandChannel`, `adapter/teams/TeamsWorkflowChannel` — one per channel `kind`; `notify/Notifications` routes a point to the channels `jagt.yml` lists |
+| `ChannelDriver` | `adapter/channel/{DesktopNotifier,CommandChannel,TeamsWorkflowChannel}` — one per channel `kind`; `notify/Notifications` routes a point to the channels `jagt.yml` lists |
 | `Processes` | `adapter/ProcessRunner` |
 | `Host` | `adapter/SystemHost` — OS name, home, environment, executables on PATH, the running jar |
 | `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one single-impl seam; `openCommandWindow` runs a command as a window's process |
 | `ReadScope` | `adapter/tmux/TmuxReads` — a job run lists the windows and processes once for every task it visits ([0147](docs/decisions/0147-the-tick-scope-is-its-own-port.md)) |
-| `SessionLog` | `adapter/agent/ClaudeSessionLog` — what a session's own log says it last did |
+| `SessionLog` | `adapter/agent/log/ClaudeSessionLog` — what a session's own log says it last did |
 | `SubscriptionUsage` | `adapter/agent/{Claude,Codex}SubscriptionUsage` |
-| `BuildTools` | `adapter/RepositoryBuildTools` |
-| `LineDiff` | `adapter/DiffUtilsLineDiff` |
+| `BuildTools` | `adapter/worktree/RepositoryBuildTools` |
+| `LineDiff` | `adapter/worktree/DiffUtilsLineDiff` |
 | `RequestlessShip` | `service/repo/HostlessShips` |
-| `ToolGateEnvelope` | `adapter/agent/ClaudeToolGateEnvelope` |
-| `WorktreeProcesses` | `adapter/LsofWorktreeProcesses` |
-| `WorktreeContainers` | `adapter/{DockerComposeContainers,NoWorktreeContainers}` — by `orchestrator.containers` |
+| `ToolGateEnvelope` | `adapter/agent/hook/ClaudeToolGateEnvelope` |
+| `WorktreeProcesses` | `adapter/worktree/LsofWorktreeProcesses` |
+| `WorktreeContainers` | `adapter/worktree/{DockerComposeContainers,NoWorktreeContainers}` — by `orchestrator.containers` |
 | `UserNotifier` | `adapter/macos/MacNotifier`, `adapter/linux/LibNotifyNotifier` |
 | `KeepAwake` | `adapter/macos/Caffeinate`, `adapter/linux/SystemdInhibit` |
-| `TerminalDriver` | `adapter/AbstractKittyTerminalDriver` (+ one per platform) |
-| `EditorDriver` | `adapter/CliEditorDriver` |
+| `TerminalDriver` | `adapter/terminal/AbstractKittyTerminalDriver` (+ one per platform) |
+| `EditorDriver` | `adapter/terminal/CliEditorDriver` |
 | `StartupCheck` | `startup/` and the edge — see [Assembly validation](#assembly-validation) |
 | `AgentWorktree`, `Notification`, `Answer`, `Sandbox` | nothing: value **records** the ports pass |
 

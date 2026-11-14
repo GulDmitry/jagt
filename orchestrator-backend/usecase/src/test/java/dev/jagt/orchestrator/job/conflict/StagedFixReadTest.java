@@ -8,9 +8,9 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.session.Standing;
 import dev.jagt.orchestrator.job.deploy.DeployConflicts;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Conflict;

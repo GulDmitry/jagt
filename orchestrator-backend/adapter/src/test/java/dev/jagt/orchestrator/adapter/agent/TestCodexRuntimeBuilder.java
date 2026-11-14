@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.adapter.agent.codex.CodexAgentRuntime;
+import dev.jagt.orchestrator.adapter.agent.codex.CodexProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;

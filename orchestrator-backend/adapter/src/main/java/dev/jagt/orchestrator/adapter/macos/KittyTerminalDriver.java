@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter.macos;
 
-import dev.jagt.orchestrator.adapter.AbstractKittyTerminalDriver;
-import dev.jagt.orchestrator.adapter.KittyOptions;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.terminal.AbstractKittyTerminalDriver;
+import dev.jagt.orchestrator.adapter.terminal.KittyOptions;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import java.time.Clock;
 import java.util.List;

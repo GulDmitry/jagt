@@ -10,7 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
+import dev.jagt.orchestrator.adapter.agent.opencode.OpenCodeProperties;
 import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.gate.ReadScopes;

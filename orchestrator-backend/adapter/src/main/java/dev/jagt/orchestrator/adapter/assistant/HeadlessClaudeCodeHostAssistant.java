@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.adapter.assistant;
 import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaude.DATA_RULE;
 import static dev.jagt.orchestrator.adapter.assistant.HeadlessClaude.FAILURE_RULE;
 
-import dev.jagt.orchestrator.adapter.HostStamp;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.CodeHostAssistant;
 import dev.jagt.orchestrator.protocol.MergeRequestRead;

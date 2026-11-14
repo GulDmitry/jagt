@@ -7,7 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
+import dev.jagt.orchestrator.adapter.agent.opencode.OpenCodeProperties;
 import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.config.role.RoleDefinitions;
 import dev.jagt.orchestrator.port.agent.McpHealth;

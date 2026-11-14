@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.job.tracker;
 
 import dev.jagt.orchestrator.service.CommandService;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.service.StateService;
 import java.time.Clock;
 import lombok.With;

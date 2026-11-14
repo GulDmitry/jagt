@@ -1,0 +1,230 @@
+package dev.jagt.orchestrator.adapter.agent.codex;
+
+import static dev.jagt.orchestrator.adapter.agent.TestCodexRuntimeBuilder.codexRuntime;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.agent.Sandbox;
+import dev.jagt.orchestrator.port.host.Problem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class CodexAgentRuntimeTest {
+
+  @Test
+  void launchesTheCodexCliAgainstTheWorktreesOwnCodexHome(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(
+        root.resolve("roles/session/brief.md"), "## start\n\nRead AGENTS.md and work\n");
+    var runtime = codexRuntime().withBriefRoot(root.toString()).build();
+
+    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false))
+        .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.jagt/codex' codex 'Read AGENTS.md and work'");
+  }
+
+  @Test
+  void tellsCodexTheModelItIsGivenAndNoneWhenBlank(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
+    var runtime = codexRuntime().withBriefRoot(root.toString()).build();
+
+    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false, " gpt-5 ", "go"))
+        .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.jagt/codex' codex -m 'gpt-5' 'go'");
+    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false, " ", "go"))
+        .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.jagt/codex' codex 'go'");
+  }
+
+  @Test
+  void runsReadOnlyInPlanModeSoTheAgentCannotTouchFilesBeforeTheHumanApproves(@TempDir Path root)
+      throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(root.resolve("roles/session/brief.md"), "## start\n\ngo\n");
+    var runtime = codexRuntime().withBriefRoot(root.toString()).build();
+
+    assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), true))
+        .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.jagt/codex' codex --sandbox read-only 'go'");
+  }
+
+  @Test
+  void refusesToStartAnAgentWhoseOnlyMemoryFileTheRepositoryAlreadyOwns(@TempDir Path root)
+      throws Exception {
+    Path worktree = root.resolve("ABC-1-proj");
+    worktree.toFile().mkdirs();
+    Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "project rules");
+
+    var runtime = codexRuntime().build();
+
+    assertThatThrownBy(() -> runtime.systemKnowledgeFile(worktree))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining(AgentRuntime.SYSTEM_KNOWLEDGE_FILE);
+  }
+
+  @Test
+  void refusesToWireAnAgentOntoScriptTheRepositoryAlreadyShipsUnderThatName(@TempDir Path root)
+      throws Exception {
+    Path worktree = root.resolve("ABC-1-proj");
+    worktree.toFile().mkdirs();
+    Files.writeString(worktree.resolve("mcp_client.js"), "the project's own script");
+
+    var runtime = codexRuntime().build();
+
+    assertThatThrownBy(() -> runtime.provisionWorktree(AgentWorktree.of(worktree, root)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("mcp_client.js");
+  }
+
+  @Test
+  void declaresTheJagtMcpProxyInTheWorktreesConfigToml(@TempDir Path root) throws Exception {
+    Path worktree = root.resolve("ABC-1-proj");
+    worktree.toFile().mkdirs();
+    codexRuntime().build().provisionWorktree(AgentWorktree.of(worktree, root));
+
+    assertThat(Files.readString(worktree.resolve(".jagt/codex/config.toml")))
+        .contains("[mcp_servers.jagt-orchestrator]")
+        .contains("args = [\"" + worktree.resolve("mcp_client.js") + "\"]");
+  }
+
+  @Test
+  void pointsTheBridgeAtThePortTheBoardWasConfiguredToRunOn(@TempDir Path root) throws Exception {
+    Path worktree = root.resolve("ABC-1-proj");
+    worktree.toFile().mkdirs();
+    codexRuntime()
+        .withMcpUrl("http://127.0.0.1:9111/mcp")
+        .build()
+        .provisionWorktree(AgentWorktree.of(worktree, root));
+
+    assertThat(Files.readString(worktree.resolve(".jagt/codex/config.toml")))
+        .contains("env = { MCP_SERVER_URL = \"http://127.0.0.1:9111/mcp\" }");
+  }
+
+  @Test
+  void linksTheBridgeItsConfigNamesIntoTheWorktree(@TempDir Path root) throws Exception {
+    Path worktree = root.resolve("ABC-1-proj");
+    worktree.toFile().mkdirs();
+    codexRuntime().build().provisionWorktree(AgentWorktree.of(worktree, root));
+
+    assertThat(Files.readSymbolicLink(worktree.resolve("mcp_client.js")))
+        .isEqualTo(root.resolve("mcp_client.js"));
+  }
+
+  @Test
+  void runsWithoutApprovalPromptsBecauseNobodyWatchesTheTmuxWindow(@TempDir Path root)
+      throws Exception {
+    Path worktree = root.resolve("ABC-1-proj");
+    worktree.toFile().mkdirs();
+    codexRuntime().build().provisionWorktree(AgentWorktree.of(worktree, root));
+
+    assertThat(Files.readString(worktree.resolve(".jagt/codex/config.toml")))
+        .contains("approval_policy = \"never\"");
+  }
+
+  @Test
+  void confinesWritesToTheTaskWithTheNetworkOpenWhenTheSandboxIsOn() {
+    String toml =
+        CodexAgentRuntime.configToml(
+            Path.of("/w/ABC-42"),
+            "http://127.0.0.1:8290/mcp",
+            Sandbox.on(List.of(Path.of("/w/ABC-42"), Path.of("/repo/.git")), List.of()));
+
+    assertThat(toml)
+        .contains("approval_policy = \"never\"\nsandbox_mode = \"workspace-write\"\n")
+        .endsWith(
+            """
+            [sandbox_workspace_write]
+            network_access = true
+            writable_roots = ["/w/ABC-42","/repo/.git"]
+            """);
+  }
+
+  @Test
+  void writesAnywhereWhenTheSandboxIsOff() {
+    String toml =
+        CodexAgentRuntime.configToml(
+            Path.of("/w/ABC-42"), "http://127.0.0.1:8290/mcp", Sandbox.off());
+
+    assertThat(toml)
+        .contains("sandbox_mode = \"danger-full-access\"")
+        .doesNotContain("[sandbox_workspace_write]");
+  }
+
+  @Test
+  void leavesCodexConfigTheRepositoryShipsExactlyAsItCheckedOut(@TempDir Path root)
+      throws Exception {
+    Path worktree = root.resolve("ABC-1-proj");
+    Files.createDirectories(worktree.resolve(".codex"));
+    Files.writeString(
+        worktree.resolve(".codex/config.toml"), "model = \"the project's own choice\"\n");
+
+    codexRuntime().build().provisionWorktree(AgentWorktree.of(worktree, root));
+
+    assertThat(Files.readString(worktree.resolve(".codex/config.toml")))
+        .isEqualTo("model = \"the project's own choice\"\n");
+  }
+
+  @Test
+  void writesNoClaudeArtifactsIntoCodexWorktree(@TempDir Path root) {
+    Path worktree = root.resolve("ABC-1-proj");
+    worktree.toFile().mkdirs();
+    codexRuntime().build().provisionWorktree(AgentWorktree.of(worktree, root));
+
+    assertThat(worktree.resolve(".mcp.json")).doesNotExist();
+    assertThat(worktree.resolve(".claude")).doesNotExist();
+    assertThat(worktree.resolve("CLAUDE.md")).doesNotExist();
+  }
+
+  @Test
+  void refusesToStartWithoutTheBridgeItIsTheOnlyRuntimeStillSpawning(@TempDir Path root) {
+    var runtime = codexRuntime().withOrchestratorRoot(root.toString()).build();
+
+    assertThat(runtime.problems()).extracting(Problem::key).contains("orchestrator.agent.cli");
+  }
+
+  @Test
+  void hasNothingToReportAboutTheBridgeOnceItIsThere(@TempDir Path root) throws Exception {
+    Files.writeString(root.resolve("mcp_client.js"), "// bridge");
+
+    var runtime = codexRuntime().withOrchestratorRoot(root.toString()).build();
+
+    assertThat(runtime.problems())
+        .extracting(Problem::key)
+        .doesNotContain("orchestrator.agent.cli");
+  }
+
+  @Test
+  void fallsBackToTheCliNameWhereTheConfiguredCommandIsBlank() {
+    assertThat(new CodexProperties("  ").command()).isEqualTo("codex");
+  }
+
+  @Test
+  void keepsConfiguredCommand() {
+    assertThat(new CodexProperties("/opt/bin/codex").command()).isEqualTo("/opt/bin/codex");
+  }
+
+  @Test
+  void namesItselfCodexWhereTheBoardSaysWhichAgentRuns() {
+    var runtime = codexRuntime().build();
+
+    assertThat(runtime.displayName()).isEqualTo("Codex");
+  }
+
+  @Test
+  void namesTheSessionLogInTheWorktreesOwnCodexHome(@TempDir Path worktree) throws Exception {
+    Path rollout =
+        Files.createDirectories(worktree.resolve(".jagt/codex/sessions/2026/11/06"))
+            .resolve("rollout-a.jsonl");
+    Files.writeString(rollout, "{}");
+    var runtime = codexRuntime().build();
+
+    assertThat(runtime.sessionLogOf(worktree)).contains(rollout);
+  }
+
+  @Test
+  void offersBangAsItsShellEscape() {
+    assertThat(codexRuntime().build().shellEscape()).contains("!");
+  }
+}

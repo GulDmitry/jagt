@@ -3,8 +3,8 @@ package dev.jagt.orchestrator.service.git;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.worktree.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import java.nio.file.Files;

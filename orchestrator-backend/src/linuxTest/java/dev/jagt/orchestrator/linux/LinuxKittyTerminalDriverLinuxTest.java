@@ -3,9 +3,9 @@ package dev.jagt.orchestrator.linux;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import dev.jagt.orchestrator.adapter.KittyOptions;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
+import dev.jagt.orchestrator.adapter.terminal.KittyOptions;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import java.nio.file.Path;

@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.adapter.agent.opencode.OpenCodeAgentRuntime;
+import dev.jagt.orchestrator.adapter.agent.opencode.OpenCodeProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.role.SessionBrief;

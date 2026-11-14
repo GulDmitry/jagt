@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
+import dev.jagt.orchestrator.adapter.agent.opencode.OpenCodeProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.OneLine;
