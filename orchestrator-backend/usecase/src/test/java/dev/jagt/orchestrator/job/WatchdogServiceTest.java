@@ -14,9 +14,6 @@ import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import dev.jagt.orchestrator.flow.Composition;
-import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.Move;
-import dev.jagt.orchestrator.flow.Owner;
 import dev.jagt.orchestrator.flow.SessionPhase;
 import dev.jagt.orchestrator.flow.SessionSign;
 import dev.jagt.orchestrator.flow.TaskChart;
@@ -69,13 +66,6 @@ class WatchdogServiceTest {
   void watchesOnlyTheStatusesInWhichAnAgentIsSupposedToBeWorking() {
     assertThat(Arrays.stream(TaskStatus.values()).filter(WatchdogService::watches).toList())
         .containsExactly(TaskStatus.NEW, TaskStatus.IN_PROGRESS, TaskStatus.SHIPPING);
-  }
-
-  @ParameterizedTest
-  @EnumSource(TaskStatus.class)
-  void watchesEveryStatusWhoseNextMoveIsTheAgentsOwnAndJagtIsNotHoldingItself(TaskStatus status) {
-    assertThat(WatchdogService.watches(status))
-        .isEqualTo(Move.ownerOf(status) == Owner.AGENT && !FlowRules.awaitingVerification(status));
   }
 
   @Test

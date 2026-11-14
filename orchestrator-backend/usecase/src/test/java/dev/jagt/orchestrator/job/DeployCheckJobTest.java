@@ -72,6 +72,7 @@ class DeployCheckJobTest {
 
     verify(relay, never()).relay(anyString(), any(Step.class), anyString(), any(Standing.class));
     verify(pipelines, never()).read(anyString(), any());
+    assertThat(state.task("ABC-42").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
   }
 
   @Test

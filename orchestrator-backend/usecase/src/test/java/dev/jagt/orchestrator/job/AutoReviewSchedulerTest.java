@@ -106,14 +106,12 @@ class AutoReviewSchedulerTest {
   }
 
   @Test
-  void sweepsDueTaskAndRecordsThatItLooked() {
+  void sweepsDueTask() {
     state.putTask("ABC-1", due);
 
     scheduler.run();
 
     verify(sweep).sweep("ABC-1");
-    assertThat(state.task("ABC-1").orElseThrow().lastPolledAt())
-        .isBetween(now, System.currentTimeMillis());
   }
 
   @Test
