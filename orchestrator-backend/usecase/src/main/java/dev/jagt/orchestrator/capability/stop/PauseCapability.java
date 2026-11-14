@@ -1,0 +1,27 @@
+package dev.jagt.orchestrator.capability.stop;
+
+import dev.jagt.orchestrator.flow.capability.Outcome;
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.flow.capability.TaskCapability;
+import dev.jagt.orchestrator.service.stop.TaskStops;
+import dev.jagt.orchestrator.task.stop.TaskStop;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+public class PauseCapability implements TaskCapability {
+
+  private final TaskStops stops;
+
+  @Override
+  public TaskAction action() {
+    return TaskAction.PAUSE;
+  }
+
+  @Override
+  public Outcome run(String taskId) {
+    stops.stop(taskId, TaskStop.Trigger.PAUSE, "you paused it");
+    return Outcome.ok("pause " + taskId + ": nothing of jagt moves it until you lift the stop");
+  }
+}

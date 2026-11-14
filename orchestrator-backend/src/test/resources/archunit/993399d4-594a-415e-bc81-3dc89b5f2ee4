@@ -1,5 +1,5 @@
 dev.jagt.orchestrator.adapter.codehost.ToolGateTest
-dev.jagt.orchestrator.job.SessionBriefContractTest
-dev.jagt.orchestrator.service.GitCaseFactsTest
+dev.jagt.orchestrator.job.conflict.SessionBriefContractTest
+dev.jagt.orchestrator.service.git.GitCaseFactsTest
 dev.jagt.orchestrator.surface.board.BoardAssetsTest
 dev.jagt.orchestrator.surface.mcp.tools.McpToolScopeTest

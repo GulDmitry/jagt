@@ -2,10 +2,10 @@ package dev.jagt.orchestrator.job;
 
 import static dev.jagt.orchestrator.service.TestOrchestratorPathsBuilder.orchestratorPaths;
 
-import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.SubAgentBriefing;
-import dev.jagt.orchestrator.service.TicketScenarios;
+import dev.jagt.orchestrator.service.scenario.TicketScenarios;
+import dev.jagt.orchestrator.service.worktree.SubAgentBriefing;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.repo.NewRepo;
 import java.nio.file.Path;

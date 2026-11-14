@@ -5,8 +5,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import dev.jagt.orchestrator.service.PressLog;
-import dev.jagt.orchestrator.service.PressLog.Interaction;
+import dev.jagt.orchestrator.service.log.PressLog.Interaction;
+import dev.jagt.orchestrator.service.log.PressLog;
 import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.Test;

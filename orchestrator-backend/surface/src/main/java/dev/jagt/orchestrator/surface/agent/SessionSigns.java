@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.agent;
 
 import dev.jagt.orchestrator.flow.session.SessionSign;
-import dev.jagt.orchestrator.job.WatchdogService;
-import dev.jagt.orchestrator.service.SessionLedger;
+import dev.jagt.orchestrator.job.session.WatchdogService;
+import dev.jagt.orchestrator.service.presence.SessionLedger;
 import java.nio.file.Path;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;

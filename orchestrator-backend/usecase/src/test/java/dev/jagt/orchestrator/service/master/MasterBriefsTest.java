@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;

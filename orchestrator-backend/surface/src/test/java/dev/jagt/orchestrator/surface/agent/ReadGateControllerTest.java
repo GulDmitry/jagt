@@ -6,8 +6,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.agent.ToolGateEnvelope;
-import dev.jagt.orchestrator.service.ReadScopes;
-import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
+import dev.jagt.orchestrator.service.gate.ReadScopes.ReadScope;
+import dev.jagt.orchestrator.service.gate.ReadScopes;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

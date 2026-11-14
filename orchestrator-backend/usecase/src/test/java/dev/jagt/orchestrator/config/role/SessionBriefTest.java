@@ -1,0 +1,125 @@
+package dev.jagt.orchestrator.config.role;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.task.turn.Step;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class SessionBriefTest {
+
+  @Test
+  void readsTheHumansCopyOfStepUpToTheNextStep(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(
+        root.resolve("roles/session/brief.md"),
+        "# Brief\n\n## deploy\n\ncheck it in a browser\n\n## verify\n\nrun it\n");
+    Files.writeString(
+        root.resolve("roles/session/brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
+    SessionBrief brief =
+        new SessionBrief(
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+    assertThat(brief.section(Step.DEPLOY)).contains("check it in a browser");
+  }
+
+  @Test
+  void theShipStepRebasesOntoTheMovedTargetBeforeItPushes(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
+    SessionBrief brief =
+        new SessionBrief(
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+    String ship = brief.section(Step.SHIP).orElseThrow();
+
+    assertThat(ship).contains("`git fetch`", "`git rebase`", "`--force-with-lease`");
+    assertThat(ship.indexOf("`git rebase`"))
+        .isLessThan(ship.indexOf("Push the branch named above"));
+    assertThat(ship.indexOf("Push the branch named above"))
+        .isLessThan(ship.indexOf("Open the request"));
+  }
+
+  @Test
+  void readsTheShippedStepTheHumansCopyLacks(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(root.resolve("roles/session/brief.md"), "## verify\n\nrun it\n");
+    Files.writeString(
+        root.resolve("roles/session/brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
+    SessionBrief brief =
+        new SessionBrief(
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+    assertThat(brief.section(Step.DEPLOY)).contains("check the pipeline");
+  }
+
+  @Test
+  void readsTheShippedBriefWhereNoneWasCopied(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(
+        root.resolve("roles/session/brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
+    SessionBrief brief =
+        new SessionBrief(
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+    assertThat(brief.section(Step.DEPLOY)).contains("check the pipeline");
+  }
+
+  @Test
+  void keepsStepTheHumanEmptiedEmpty(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(root.resolve("roles/session/brief.md"), "## deploy\n\n## verify\n\nrun it\n");
+    Files.writeString(
+        root.resolve("roles/session/brief.md.dist"), "## deploy\n\ncheck the pipeline\n");
+    SessionBrief brief =
+        new SessionBrief(
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+    assertThat(brief.section(Step.DEPLOY)).contains("");
+  }
+
+  @Test
+  void keepsHeadingThatNamesNoStepInsideItsStep(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(
+        root.resolve("roles/session/brief.md"),
+        "## ship\n\nshape:\n## <thread link>\nFIXED\n\n## verify\n\nrun it\n");
+    SessionBrief brief =
+        new SessionBrief(
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+    assertThat(brief.section(Step.SHIP)).contains("shape:\n## <thread link>\nFIXED");
+  }
+
+  @Test
+  void readsStepAsOneLineForCommandLine(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.writeString(
+        root.resolve("roles/session/brief.md"), "## start\n\nRead the notes,\n  then work.\n");
+    SessionBrief brief =
+        new SessionBrief(
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+    assertThat(brief.line(Step.START)).isEqualTo("Read the notes, then work.");
+  }
+
+  @Test
+  void carriedTaskKeepsItsBoardStatusUntilChangeBegins(@TempDir Path root) throws Exception {
+    Files.createDirectories(root.resolve("roles/session"));
+    Files.copy(
+        Path.of("../../roles/session/brief.md.dist"), root.resolve("roles/session/brief.md.dist"));
+    SessionBrief brief =
+        new SessionBrief(
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+    assertThat(brief.line(Step.START))
+        .contains("One carried from a previous session keeps the status the board shows")
+        .contains("answer a question and end your turn without a report")
+        .contains("report IN_PROGRESS when a change begins");
+  }
+}

@@ -1,0 +1,37 @@
+package dev.jagt.orchestrator.startup.role;
+
+import dev.jagt.orchestrator.config.role.SessionBrief;
+import dev.jagt.orchestrator.config.role.SessionCases;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.port.host.Problem;
+import dev.jagt.orchestrator.port.host.StartupCheck;
+import java.util.List;
+import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+/** A step no case sends never reaches a session, and a case naming no step sends nothing. */
+@Component
+@RequiredArgsConstructor
+public class CaseCheck implements StartupCheck {
+
+  private final SessionCases cases;
+  private final SessionBrief brief;
+  private final Checkers checkers;
+
+  @Override
+  public List<Problem> problems() {
+    return Stream.concat(
+            cases
+                .book()
+                .problems(brief.steps(), SessionCases.FILE, checkers.installed(), Checkers.SHIPPED)
+                .stream(),
+            brief.unreadable().stream())
+        .toList();
+  }
+
+  @Override
+  public boolean machine() {
+    return false;
+  }
+}

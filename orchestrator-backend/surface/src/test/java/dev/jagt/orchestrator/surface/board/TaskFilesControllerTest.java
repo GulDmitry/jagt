@@ -5,8 +5,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.worktree.LineChange;
-import dev.jagt.orchestrator.service.PlanBaseline;
-import dev.jagt.orchestrator.service.TaskArtifacts;
+import dev.jagt.orchestrator.service.plan.PlanBaseline;
+import dev.jagt.orchestrator.service.task.TaskArtifacts;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

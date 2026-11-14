@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.capability.Outcome;
-import dev.jagt.orchestrator.service.FinishedTasks;
+import dev.jagt.orchestrator.service.task.FinishedTasks;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;

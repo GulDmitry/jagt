@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.TicketTexts;
-import dev.jagt.orchestrator.service.WorktreeChanges;
-import dev.jagt.orchestrator.service.WorktreeFiles;
+import dev.jagt.orchestrator.service.assistant.TicketTexts;
+import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
+import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.plan.Artifact;
 import java.nio.file.Path;

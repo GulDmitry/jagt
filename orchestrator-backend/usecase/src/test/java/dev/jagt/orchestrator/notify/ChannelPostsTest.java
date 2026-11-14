@@ -19,7 +19,7 @@ import dev.jagt.orchestrator.port.channel.ChannelDriver;
 import dev.jagt.orchestrator.port.channel.ChannelMessage;
 import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.port.reach.ReachLost;
-import dev.jagt.orchestrator.service.ReachLedger;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;

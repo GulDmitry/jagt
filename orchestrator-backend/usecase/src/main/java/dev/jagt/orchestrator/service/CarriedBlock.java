@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
+import dev.jagt.orchestrator.service.task.TaskFacts;
+import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import java.nio.file.Path;
 import java.util.Set;

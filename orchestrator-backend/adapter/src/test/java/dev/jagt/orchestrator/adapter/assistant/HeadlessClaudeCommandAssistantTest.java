@@ -8,7 +8,7 @@ import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.config.LocalModelProperties;
 import dev.jagt.orchestrator.port.assistant.CommandAssistant;
 import dev.jagt.orchestrator.port.host.Processes;
-import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.service.usage.UsageTracker;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

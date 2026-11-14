@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.session.SessionSign;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
-import dev.jagt.orchestrator.service.SessionProbe;
+import dev.jagt.orchestrator.service.presence.SessionProbe;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.AgentReport;

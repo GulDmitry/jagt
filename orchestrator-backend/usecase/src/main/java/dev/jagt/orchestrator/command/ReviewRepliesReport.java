@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.flow.view.TaskView;
-import dev.jagt.orchestrator.service.ReviewDrafts;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.TaskViews;
-import dev.jagt.orchestrator.service.WorktreeFiles;
+import dev.jagt.orchestrator.service.review.ReviewDrafts;
+import dev.jagt.orchestrator.service.task.TaskViews;
+import dev.jagt.orchestrator.service.worktree.WorktreeFiles;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.plan.Artifact;
 import java.nio.file.Path;

@@ -6,7 +6,7 @@ import static org.mockito.Mockito.verify;
 
 import com.sun.net.httpserver.HttpServer;
 import dev.jagt.orchestrator.config.LocalModelProperties;
-import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.io.IOException;

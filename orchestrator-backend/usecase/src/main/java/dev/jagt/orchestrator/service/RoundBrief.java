@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.flow.deploy.Pipeline;
 import dev.jagt.orchestrator.task.review.ReviewFacts;
 import dev.jagt.orchestrator.task.text.Outside;

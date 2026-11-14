@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.surface.ui;
 
-import dev.jagt.orchestrator.service.BoardUrl;
+import dev.jagt.orchestrator.service.log.BoardUrl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;

@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.service.OpenedWindows;
+import dev.jagt.orchestrator.service.scenario.OpenedWindows;
 import dev.jagt.orchestrator.surface.board.TaskCommandsController.ActionResult;
 import dev.jagt.orchestrator.surface.board.TypedLineController.LineRequest;
 import dev.jagt.orchestrator.surface.board.TypedLineController.Screen;

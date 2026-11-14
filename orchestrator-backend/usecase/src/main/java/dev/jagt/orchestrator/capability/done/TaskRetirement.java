@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.capability.done;
 
-import dev.jagt.orchestrator.capability.TaskViewer;
+import dev.jagt.orchestrator.capability.session.TaskViewer;
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.RetiredWorktrees;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.worktree.RetiredWorktrees;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

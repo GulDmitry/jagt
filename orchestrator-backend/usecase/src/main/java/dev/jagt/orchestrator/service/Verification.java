@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.service.scenario.AcceptanceProbing;
+import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.plan.Probe;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;

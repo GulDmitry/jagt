@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.service.TaskDiff;
-import dev.jagt.orchestrator.service.TrustedGitState;
+import dev.jagt.orchestrator.service.git.TaskDiff;
+import dev.jagt.orchestrator.service.git.TrustedGitState;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;

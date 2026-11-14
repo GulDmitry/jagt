@@ -1,0 +1,107 @@
+package dev.jagt.orchestrator.job.checker;
+
+import dev.jagt.orchestrator.config.role.RoleOptions;
+import dev.jagt.orchestrator.flow.CheckerPhase;
+import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.capability.Watch;
+import dev.jagt.orchestrator.flow.session.StopKind;
+import dev.jagt.orchestrator.job.TaskJob;
+import dev.jagt.orchestrator.port.assistant.Answer;
+import dev.jagt.orchestrator.service.role.RoleSettings;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
+import dev.jagt.orchestrator.task.deploy.Deployment;
+import java.time.Duration;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+/**
+ * The after-deploy check where the role is enabled: one acceptance run per deploy, opened once the
+ * deploy's pipelines are green. {@link DeployCheckJob} asks the session nothing then, so a deploy
+ * is never checked twice.
+ */
+@Service
+@RequiredArgsConstructor
+public class CheckerCheckJob implements TaskJob {
+
+  private final RoleSettings settings;
+  private final CheckerPrompts prompts;
+  private final CheckerReads reads;
+  private final CheckerRecords records;
+  private final CheckerOutcomes outcomes;
+
+  @Override
+  public String id() {
+    return settings.role().id() + "-check";
+  }
+
+  @Override
+  public Serves serves() {
+    return Serves.TASKS;
+  }
+
+  @Override
+  public String describe() {
+    return "check each deployed change against its ticket on the environments"
+        + " roles.acceptance.environments names";
+  }
+
+  @Override
+  public Duration every() {
+    return Duration.ofMinutes(1);
+  }
+
+  @Override
+  public Watch watch() {
+    return Watch.defaults().withStatuses(FlowRules::checkedWhereItLanded).withStops(StopKind.NONE);
+  }
+
+  @Override
+  public void run(String taskId, TaskState task) {
+    RoleOptions acceptance = settings.load();
+    String worktree = task.worktreePath();
+    Optional<Deployment> open = openFor(task, acceptance);
+    if (open.isEmpty() || worktree == null) {
+      return;
+    }
+    String digest = Objects.requireNonNull(open.get().askedDigest());
+    if (records.settled(taskId, digest)) {
+      return;
+    }
+    String sha = open.get().tips();
+    String step =
+        CheckerPhase.of(task, settings.role().id()) == CheckerPhase.READING
+            ? AcceptanceVerdict.AGAIN
+            : AcceptanceVerdict.ACCEPT;
+    Answer<AcceptanceVerdict> answer =
+        reads.check(taskId, step, digest, prompts.accept(taskId, worktree, sha, acceptance, step));
+    AcceptanceVerdict verdict =
+        answer.facts().orElse(AcceptanceVerdict.failed(sha, answer.failure()));
+    records.put(taskId, digest, sha, outcomes.apply(taskId, task, verdict));
+  }
+
+  /**
+   * The deployment where a check may open: the role is on and every predicate its trigger names
+   * holds.
+   */
+  private Optional<Deployment> openFor(TaskState task, RoleOptions config) {
+    List<String> trigger = settings.role().trigger().trigger();
+    return Optional.ofNullable(task.deployment())
+        .filter(deployment ->
+            config.enabled()
+                && deployment.askedDigest() != null
+                && trigger.stream().allMatch(predicate -> holds(predicate, deployment, config)));
+  }
+
+  private static boolean holds(String predicate, Deployment deployment, RoleOptions config) {
+    return switch (predicate) {
+      case "deployed" -> deployment.live();
+      case "pipelines-green" -> deployment.askedDigest() != null;
+      case "environment-named" -> !config.environments().isEmpty();
+      default -> false;
+    };
+  }
+}

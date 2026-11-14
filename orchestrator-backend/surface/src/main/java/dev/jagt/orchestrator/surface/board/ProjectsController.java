@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.service.ProjectFolders;
-import dev.jagt.orchestrator.service.ProjectRemoval;
-import dev.jagt.orchestrator.service.ProjectSetup;
+import dev.jagt.orchestrator.service.project.ProjectFolders;
+import dev.jagt.orchestrator.service.project.ProjectRemoval;
+import dev.jagt.orchestrator.service.project.ProjectSetup;
 import dev.jagt.orchestrator.surface.board.TaskCommandsController.ActionResult;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

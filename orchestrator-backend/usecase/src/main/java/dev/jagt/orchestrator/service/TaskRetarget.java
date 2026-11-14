@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.service.git.GitWorktrees;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.repo.Remote;
 import dev.jagt.orchestrator.task.repo.TaskRepo;

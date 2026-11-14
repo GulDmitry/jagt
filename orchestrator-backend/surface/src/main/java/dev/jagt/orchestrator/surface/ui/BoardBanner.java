@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.surface.ui;
 
-import dev.jagt.orchestrator.service.BoardUrl;
+import dev.jagt.orchestrator.service.log.BoardUrl;
 import java.io.PrintStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;

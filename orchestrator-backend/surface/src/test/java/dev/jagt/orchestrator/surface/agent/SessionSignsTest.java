@@ -5,8 +5,8 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.flow.session.SessionSign;
-import dev.jagt.orchestrator.job.WatchdogService;
-import dev.jagt.orchestrator.service.SessionLedger;
+import dev.jagt.orchestrator.job.session.WatchdogService;
+import dev.jagt.orchestrator.service.presence.SessionLedger;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 

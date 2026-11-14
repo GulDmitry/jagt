@@ -4,8 +4,8 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.port.channel.NotificationSink;
-import dev.jagt.orchestrator.service.InstalledRoles;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.role.InstalledRoles;
 import java.nio.file.Path;
 import lombok.With;
 

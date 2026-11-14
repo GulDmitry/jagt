@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.port.host.Processes;
-import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.launch.RoutingAnswer;
 import dev.jagt.orchestrator.task.launch.RoutingQuestion;
 import dev.jagt.orchestrator.task.launch.RulePair;

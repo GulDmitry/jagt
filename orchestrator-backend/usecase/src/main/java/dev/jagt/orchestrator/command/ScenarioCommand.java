@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.flow.view.Refusal;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.ScenarioSessions;
+import dev.jagt.orchestrator.service.scenario.ScenarioSessions;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

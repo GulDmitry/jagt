@@ -12,8 +12,8 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.GitCommands;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.git.GitCommands;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

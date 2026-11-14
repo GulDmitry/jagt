@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.acceptanceeval;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import dev.jagt.orchestrator.config.RoleOptions;
+import dev.jagt.orchestrator.config.role.RoleOptions;
 import dev.jagt.orchestrator.eval.AcceptanceCase;
 import dev.jagt.orchestrator.eval.AcceptanceRoleYml;
 import dev.jagt.orchestrator.eval.EvalGit;

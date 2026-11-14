@@ -21,6 +21,8 @@ import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.service.git.GitWorktrees;
+import dev.jagt.orchestrator.service.plan.Unplaceable;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.launch.NewTask;

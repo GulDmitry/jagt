@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.service.TaskDiff;
-import dev.jagt.orchestrator.service.TrustedGitState;
+import dev.jagt.orchestrator.service.git.TaskDiff;
+import dev.jagt.orchestrator.service.git.TrustedGitState;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;

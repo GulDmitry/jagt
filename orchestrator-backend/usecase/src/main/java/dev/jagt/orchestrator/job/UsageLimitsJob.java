@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
-import dev.jagt.orchestrator.service.UsageLimits;
+import dev.jagt.orchestrator.service.usage.UsageLimits;
 import java.time.Clock;
 import java.time.Duration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

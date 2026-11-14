@@ -33,8 +33,8 @@ final class ClassKinds {
     if (packages[0].isEmpty()) {
       return "root";
     }
-    return packages[0].equals("service") && packages.length > 1
-        ? "service/" + packages[1]
+    return packages[0].equals("service") && packages.length > 1 && packages[1].equals("master")
+        ? "service/master"
         : packages[0];
   }
 

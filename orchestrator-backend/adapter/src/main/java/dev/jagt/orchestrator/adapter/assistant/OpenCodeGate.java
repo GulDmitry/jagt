@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.adapter.agent.HookEndpoint;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
+import dev.jagt.orchestrator.service.gate.ReadScopes.ReadScope;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;

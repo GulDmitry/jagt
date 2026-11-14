@@ -6,9 +6,9 @@ import static org.mockito.Mockito.mock;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.reach.ReachLost;
-import dev.jagt.orchestrator.service.ActStops;
-import dev.jagt.orchestrator.service.ReachLedger;
-import dev.jagt.orchestrator.service.RoleSettings;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
+import dev.jagt.orchestrator.service.role.RoleSettings;
+import dev.jagt.orchestrator.service.stop.ActStops;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;

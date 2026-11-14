@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.service.ProjectFolders;
-import dev.jagt.orchestrator.service.ProjectRemoval;
-import dev.jagt.orchestrator.service.ProjectSetup;
+import dev.jagt.orchestrator.service.project.ProjectFolders;
+import dev.jagt.orchestrator.service.project.ProjectRemoval;
+import dev.jagt.orchestrator.service.project.ProjectSetup;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

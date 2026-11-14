@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator;
 
-import dev.jagt.orchestrator.capability.DeployLiftsStop;
-import dev.jagt.orchestrator.capability.StopGuard;
+import dev.jagt.orchestrator.capability.GitStateGuard;
 import dev.jagt.orchestrator.capability.ship.MergedGuard;
-import dev.jagt.orchestrator.capability.trust.GitStateGuard;
+import dev.jagt.orchestrator.capability.stop.DeployLiftsStop;
+import dev.jagt.orchestrator.capability.stop.StopGuard;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.FactSources;
 import dev.jagt.orchestrator.flow.FlowEngine;
@@ -18,10 +18,10 @@ import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.capability.TaskCapability;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.port.codehost.RequestlessShip;
-import dev.jagt.orchestrator.service.InstalledRoles;
-import dev.jagt.orchestrator.service.MergedRequests;
-import dev.jagt.orchestrator.service.TaskStops;
-import dev.jagt.orchestrator.service.TrustedGitState;
+import dev.jagt.orchestrator.service.git.TrustedGitState;
+import dev.jagt.orchestrator.service.repo.MergedRequests;
+import dev.jagt.orchestrator.service.role.InstalledRoles;
+import dev.jagt.orchestrator.service.stop.TaskStops;
 import java.time.Clock;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;

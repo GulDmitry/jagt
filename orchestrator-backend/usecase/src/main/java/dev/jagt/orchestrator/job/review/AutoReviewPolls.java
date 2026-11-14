@@ -1,0 +1,103 @@
+package dev.jagt.orchestrator.job.review;
+
+import dev.jagt.orchestrator.service.OriginContext;
+import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.git.SweepFetches;
+import dev.jagt.orchestrator.service.review.ReviewSweepService;
+import dev.jagt.orchestrator.service.stop.TaskStops;
+import dev.jagt.orchestrator.task.turn.ActionOrigin;
+import dev.jagt.orchestrator.task.turn.ToldOnce;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+@Component
+@Slf4j
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+class AutoReviewPolls {
+
+  private final ReviewSweepService reviewSweep;
+  private final TaskStops stops;
+
+  @Qualifier("autoReviewSweeps")
+  private final Executor executor;
+
+  private final StateService stateService;
+  private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
+
+  /**
+   * Stops the tick from QUEUING polls behind a sweep that runs for minutes. It does NOT make a
+   * task's sweeps mutually exclusive; that exclusion lives where every trigger passes through.
+   * {@code finished} runs last and unconditionally: losing it would exclude the task from
+   * auto-review for the JVM's life.
+   */
+  boolean start(
+      String taskId, @Nullable String alias, long round, SweepFetches fetches, Runnable finished) {
+    if (!stops.moveDue(taskId) || !inFlight.add(taskId)) {
+      return false;
+    }
+    log.atInfo()
+        .setMessage("auto-review poll due")
+        .addKeyValue("task", taskId)
+        .addKeyValue("alias", alias)
+        .log();
+    try {
+      executor.execute(() -> pollNow(taskId, round, fetches, finished));
+      return true;
+    } catch (RejectedExecutionException e) {
+      // Caught NARROWLY: an exception from the sweep landing here would leave lastPolledAt
+      // unadvanced
+      // under a same-thread executor, re-running the sweep forever.
+      inFlight.remove(taskId);
+      log.atWarn()
+          .setMessage("auto-review poll not scheduled")
+          .addKeyValue("task", taskId)
+          .addKeyValue("cause", e.toString())
+          .log();
+      return false;
+    }
+  }
+
+  private void pollNow(String taskId, long round, SweepFetches fetches, Runnable finished) {
+    try {
+      ReviewSweepService.SweepResult result;
+      try (OriginContext.Scope ignored = fetches.open()) {
+        result = OriginContext.as(ActionOrigin.AUTO_REVIEW, () -> reviewSweep.sweep(taskId));
+      }
+      // A round nobody could read is the one outcome an unattended poll must not keep to itself:
+      // the
+      // retries are spent, and every further tick would say the same thing to the same log.
+      if ((result.kind() == ReviewSweepService.SweepResult.Kind.UNREADABLE
+              || result.kind() == ReviewSweepService.SweepResult.Kind.GONE)
+          && stateService
+              .task(taskId)
+              .filter(t ->
+                  !t.toldOrNone().said(ToldOnce.Kind.AUTO_REVIEW_UNREADABLE, String.valueOf(round)))
+              .isPresent()) {
+        stateService.reduce(
+            taskId,
+            (reducer, t) ->
+                reducer.told(t, ToldOnce.Kind.AUTO_REVIEW_UNREADABLE, String.valueOf(round)));
+      }
+    } catch (RuntimeException e) {
+      log.atWarn()
+          .setMessage("auto-review sweep failed")
+          .addKeyValue("task", taskId)
+          .addKeyValue("cause", e.toString())
+          .log();
+    } finally {
+      try {
+        finished.run();
+      } finally {
+        inFlight.remove(taskId);
+      }
+    }
+  }
+}

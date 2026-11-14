@@ -11,7 +11,7 @@ import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.reach.ReachLost;
-import dev.jagt.orchestrator.service.ReachLedger;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;

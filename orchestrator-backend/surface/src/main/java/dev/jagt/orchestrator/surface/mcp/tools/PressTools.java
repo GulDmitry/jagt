@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
-import dev.jagt.orchestrator.command.MasterPresses;
+import dev.jagt.orchestrator.command.master.MasterPresses;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.message.CommandPress;
 import dev.jagt.orchestrator.protocol.message.TaskPress;

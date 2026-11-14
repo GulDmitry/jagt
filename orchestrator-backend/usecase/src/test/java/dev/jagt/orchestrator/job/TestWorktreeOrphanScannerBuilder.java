@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.GitCommands;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.WorktreeOrphans;
+import dev.jagt.orchestrator.service.git.GitCommands;
+import dev.jagt.orchestrator.service.git.WorktreeOrphans;
 import dev.jagt.orchestrator.task.repo.ProjectConfig;
 import java.nio.file.Path;
 import java.util.List;

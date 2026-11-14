@@ -17,7 +17,7 @@ import org.springframework.mock.env.MockEnvironment;
 class LogFileAppenderTest {
 
   @ParameterizedTest
-  @CsvSource({"ROOT,FILE", "dev.jagt.orchestrator.job.MasterPress,MASTER"})
+  @CsvSource({"ROOT,FILE", "dev.jagt.orchestrator.job.master.MasterPress,MASTER"})
   void keepsAtMostOneArchiveRolledAtTenMegabytes(
       String logger, String appender, @TempDir Path directory) throws Exception {
     LoggerContext context = new LoggerContext();

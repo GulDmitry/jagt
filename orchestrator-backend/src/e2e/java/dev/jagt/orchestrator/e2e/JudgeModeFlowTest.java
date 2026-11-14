@@ -10,8 +10,8 @@ import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer.Finding;
-import dev.jagt.orchestrator.service.Assistants;
 import dev.jagt.orchestrator.service.TaskProvisioning;
+import dev.jagt.orchestrator.service.assistant.Assistants;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import dev.jagt.orchestrator.task.turn.StatusChange;

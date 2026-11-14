@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.session.Standing;
+import dev.jagt.orchestrator.job.deploy.DeployConflicts;
 import dev.jagt.orchestrator.task.deploy.Conflict;
 import java.nio.file.Path;
 import lombok.With;

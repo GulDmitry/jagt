@@ -79,7 +79,7 @@ answer. Every type in `flow/`, one question each:
 | `flow/capability/TaskCapability` | `Outcome run(taskId)` — and names no `TaskStatus` |
 | `Outcome` | OK, NOTHING, RELAYED, CONFLICT, PARTIAL, GONE + the sentence, the stamp, the cause |
 | `TaskChart` | the regions and their edges: `edge(chart, DEPLOYED, "deploy read red", move, DEPLOY_CONFLICT)` — one per status move |
-| `ConflictEnding` | which reads end a deploy conflict, by its cause, and under which stops; `job/DeployConflictJob` walks it |
+| `ConflictEnding` | which reads end a deploy conflict, by its cause, and under which stops; `job/conflict/DeployConflictJob` walks it |
 | `TaskOffers` | which statuses offer which action: a self-loop per action, guarded by the task's facts |
 | `FlowRules` | the questions asked of the chart — `allows`, `allowed`, `next`, `reportable` — and no declaration |
 | `Facts` | the guard's second argument — an open request, a live deploy, and a liveness probe passed as a SUPPLIER |
@@ -98,7 +98,7 @@ answer. Every type in `flow/`, one question each:
 | `Move` | what can be done to this task, whose turn it is, how loudly it asks |
 | `Owner` | whose turn |
 | `Attention` | whether the card is an interruption — one value for the badge, the count and the filter |
-| `TaskView` | what the board renders, built by `service/TaskViews` |
+| `TaskView` | what the board renders, built by `service/task/TaskViews` |
 
 - The lifecycle's legal moves are `flow/TaskChart`, drawn in [`docs/task-chart.md`](docs/task-chart.md);
   the stop's way out, in [`docs/task-stop-chart.md`](docs/task-stop-chart.md); the plan gate,
@@ -135,8 +135,8 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 
 | step | what it leaves behind | where |
 |------|----------------------|-------|
-| `do` | the task as the agent read it, and the rules it works under | `AGENTS.md` in the worktree (`service/SubAgentBriefing`) |
-| a ticket's first read | the ticket as read once, never read again for a round | `ticket-texts/`, beside `state.json` (`service/TicketTexts`) |
+| `do` | the task as the agent read it, and the rules it works under | `AGENTS.md` in the worktree (`service/worktree/SubAgentBriefing`) |
+| a ticket's first read | the ticket as read once, never read again for a round | `ticket-texts/`, beside `state.json` (`service/assistant/TicketTexts`) |
 | a plan | what the agent will do, and the probes jagt runs | `plan.md`, at PLAN_PENDING |
 | a relay | the one instruction standing right now, and no older one | `task_context.md` |
 | the agent works | the diff | the task branch |
@@ -159,18 +159,18 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `TaskStore` | `service/StateService` |
 | `AgentPresence` | `service/AgentSessions` |
 | `flow/capability/TaskCapability` | one per verb under `capability/` |
-| `flow/capability/CapabilityInterceptor` | `capability/ship/SpecFold`, `capability/trust/GitStateGuard`; an install may add its own step |
+| `flow/capability/CapabilityInterceptor` | `capability/ship/SpecFold`, `capability/GitStateGuard`; an install may add its own step |
 | `Specs` | `adapter/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Codex,OpenCode,Stub}AgentRuntime` (+ `AbstractAgentRuntime`), `adapter/replay/ReplayAgentRuntime` |
 | `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `ClaudeMcpHealthProbe`; `Replay<port>` for tracker and code host |
 | `CodeHost` | `adapter/codehost/ChosenCodeHost` choosing a `CodeHostDriver` (`GitHubCli`, `GitLabCli`, `CommandPipeline`, `NoCodeHost`, `ReplayCodeHost`) by `codeHost`; re-running a pipeline is jagt's one code-host write |
-| `CodeHostCommands` | `adapter/codehost/{GitHub,GitLab}Commands` — each code-host CLI's word, read verbs and command groups; `service/ToolGate` judges every one wherever it stands |
+| `CodeHostCommands` | `adapter/codehost/{GitHub,GitLab}Commands` — each code-host CLI's word, read verbs and command groups; `service/gate/ToolGate` judges every one wherever it stands |
 | `RoundReviewer` | `adapter/assistant/ChosenRoundReviewer` choosing a driver by config (`HeadlessClaudeRoundReviewer`, OpenCode), `ReplayRoundReviewer` (a stand recording played back) |
 | `CheckerReader` | `adapter/assistant/ChosenCheckerReader` choosing a driver by config (`HeadlessClaudeCheckerReader`, `OpenCodeCheckerReader`), `ReplayCheckerReader` |
 | `EnvironmentProbe` | `adapter/assistant/HttpEnvironmentProbe` |
 | `AcceptanceRunner` | `adapter/flows/FlowsRunner` choosing `PlaywrightRunner` by `flows.driver` in the role folder, read per run — scripted flows run as argv, judged from the JSON report |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
-| `Reach` | `service/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login`; `adapter/assistant/AssistantBreaker` writes the assistant's outage into it |
+| `Reach` | `service/reach/ReachLedger` — jagt's lost reach per driver and host, held in memory, written by the drivers, read by the board's head and `login`; `adapter/assistant/AssistantBreaker` writes the assistant's outage into it |
 | `ChannelDriver` | `adapter/DesktopNotifier`, `adapter/CommandChannel`, `adapter/teams/TeamsWorkflowChannel` — one per channel `kind`; `notify/Notifications` routes a point to the channels `jagt.yml` lists |
 | `Processes` | `adapter/ProcessRunner` |
 | `Host` | `adapter/SystemHost` — OS name, home, environment, executables on PATH, the running jar |
@@ -180,7 +180,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `SubscriptionUsage` | `adapter/agent/{Claude,Codex}SubscriptionUsage` |
 | `BuildTools` | `adapter/RepositoryBuildTools` |
 | `LineDiff` | `adapter/DiffUtilsLineDiff` |
-| `RequestlessShip` | `service/HostlessShips` |
+| `RequestlessShip` | `service/repo/HostlessShips` |
 | `ToolGateEnvelope` | `adapter/agent/ClaudeToolGateEnvelope` |
 | `WorktreeProcesses` | `adapter/LsofWorktreeProcesses` |
 | `WorktreeContainers` | `adapter/{DockerComposeContainers,NoWorktreeContainers}` — by `orchestrator.containers` |
@@ -269,7 +269,7 @@ file it reads its instructions from.
 - **What a session is doing is read, never asked**: the log a CLI keeps answers liveness (`lastSessionActivity`) and its
   own hooks report a stop (`surface/agent`) — no model in either path, so a session out of tokens still reaches the
   board. Which events a CLI reports is a resource (`adapter/…/resources/hooks/`), not Java.
-- **What a session may push is refused below the CLI as well**: `service/WorktreeHooks` writes a `pre-push` into the
+- **What a session may push is refused below the CLI as well**: `service/git/WorktreeHooks` writes a `pre-push` into the
   worktree's own `.jagt/hooks` and the launch command points that session's git at it, so a CLI with no hooks of its own
   meets it too. Nothing goes into the repository ([`git`](openspec/specs/git/spec.md)).
 - **The one-shot assistant is a separate port**: an install may run a local model for text-to-command and a vendor CLI
@@ -292,7 +292,7 @@ key that fixes it. The composition half, and what of it exists:
 | 4 | a job's declared capability and watched statuses exist | partly — a `TaskJob` declares its `Watch` and `Jobs` hands it only those tasks (`JobsTest`); capability still planned |
 | 5 | a required port capability present in the selected adapter | weak form: a configured type resolves to a bean, and the platform it was picked for is the one jagt runs on (`adapter/PlatformCheck`) |
 | 6 | one owner per id | built for all three registries |
-| 7 | every role under `roles/<id>/` compiles and composes into the chart | built (`service/InstalledRoles`, `startup/RoleCheck`) — a role that does not is skipped with its reason, a note and never a problem |
+| 7 | every role under `roles/<id>/` compiles and composes into the chart | built (`service/role/InstalledRoles`, `startup/role/RoleCheck`) — a role that does not is skipped with its reason, a note and never a problem |
 
 - No "stuck status" check beside #2, deliberately: the report door judges the status being reported, not the one being
   left, so no status can trap a task.

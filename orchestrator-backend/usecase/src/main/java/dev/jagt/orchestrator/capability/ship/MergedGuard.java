@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.capability.ship;
 import dev.jagt.orchestrator.flow.capability.CapabilityInterceptor;
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
-import dev.jagt.orchestrator.service.MergedRequests;
+import dev.jagt.orchestrator.service.repo.MergedRequests;
 import java.util.function.Supplier;
 
 /**

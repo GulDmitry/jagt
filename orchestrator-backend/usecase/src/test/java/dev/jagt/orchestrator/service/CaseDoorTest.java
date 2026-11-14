@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import static dev.jagt.orchestrator.service.TestCaseDoorBuilder.caseDoor;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
-import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
+import static dev.jagt.orchestrator.service.stop.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

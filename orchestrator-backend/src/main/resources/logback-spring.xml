@@ -57,20 +57,20 @@ archives. `LogFileRoll` rolls the backend log and the Master's into `.1` at star
             <maxFileSize>10MB</maxFileSize>
         </triggeringPolicy>
     </appender>
-    <logger name="dev.jagt.orchestrator.job.MasterAnswerJob"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.job.MasterStopJob"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.job.MasterReviewJob"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.job.MasterVerdicts"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.job.MasterPlanVerdicts"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.job.MasterPress"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.job.ConflictHandOff"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.job.ConflictFinish"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.verdict.MasterAnswerJob"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.master.MasterStopJob"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.verdict.MasterReviewJob"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.verdict.MasterVerdicts"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.verdict.MasterPlanVerdicts"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.master.MasterPress"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.conflict.ConflictHandOff"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.conflict.ConflictFinish"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.master.MasterPanel"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.master.MasterBriefs"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.master.MasterDecisions"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.master.MasterReview"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.master.MasterBrake"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.service.master.ChargedReviews"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.service.assistant.ChargedReviews"><appender-ref ref="MASTER"/></logger>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

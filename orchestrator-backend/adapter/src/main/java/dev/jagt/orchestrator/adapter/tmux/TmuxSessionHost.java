@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.terminal.SessionHost;
 import dev.jagt.orchestrator.port.terminal.TerminalDriver;
 import dev.jagt.orchestrator.service.OneLine;
-import dev.jagt.orchestrator.service.WorktreeHooks;
+import dev.jagt.orchestrator.service.git.WorktreeHooks;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;

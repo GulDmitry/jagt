@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.service.ConfigService;
 import lombok.With;
 

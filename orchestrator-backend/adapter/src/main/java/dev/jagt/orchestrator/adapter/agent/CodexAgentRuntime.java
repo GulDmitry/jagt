@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.SessionBrief;
+import dev.jagt.orchestrator.config.role.SessionBrief;
 import dev.jagt.orchestrator.port.agent.AgentWorktree;
 import dev.jagt.orchestrator.port.agent.Sandbox;
 import dev.jagt.orchestrator.port.host.Problem;

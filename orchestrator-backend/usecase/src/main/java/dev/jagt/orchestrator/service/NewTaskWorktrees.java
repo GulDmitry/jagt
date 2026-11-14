@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.TaskReducer;
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.service.git.GitWorktrees;
+import dev.jagt.orchestrator.service.plan.Unplaceable;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.launch.NewTask;
 import dev.jagt.orchestrator.task.launch.TaskName;

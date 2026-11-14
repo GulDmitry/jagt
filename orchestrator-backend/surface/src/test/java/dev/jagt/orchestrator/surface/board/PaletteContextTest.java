@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.port.assistant.CommandAssistant;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.TaskViews;
+import dev.jagt.orchestrator.service.task.TaskViews;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;

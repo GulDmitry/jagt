@@ -10,7 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import dev.jagt.orchestrator.config.RoleOptions.Flows;
+import dev.jagt.orchestrator.config.role.RoleOptions.Flows;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.FlowResult;
 import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.Verdict;

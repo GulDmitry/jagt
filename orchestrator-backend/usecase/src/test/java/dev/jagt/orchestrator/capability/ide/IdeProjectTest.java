@@ -8,8 +8,8 @@ import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.terminal.EditorDriver;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.DeployTargets;
-import dev.jagt.orchestrator.service.GitDeploy;
+import dev.jagt.orchestrator.service.deploy.DeployTargets;
+import dev.jagt.orchestrator.service.git.GitDeploy;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.deploy.Conflict;

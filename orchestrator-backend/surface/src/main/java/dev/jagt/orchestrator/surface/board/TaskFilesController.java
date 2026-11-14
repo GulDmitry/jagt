@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.board;
 
 import dev.jagt.orchestrator.port.worktree.LineChange;
-import dev.jagt.orchestrator.service.PlanBaseline;
-import dev.jagt.orchestrator.service.TaskArtifacts;
+import dev.jagt.orchestrator.service.plan.PlanBaseline;
+import dev.jagt.orchestrator.service.task.TaskArtifacts;
 import dev.jagt.orchestrator.task.plan.Artifact;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

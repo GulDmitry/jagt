@@ -12,7 +12,7 @@ import dev.jagt.orchestrator.config.UsageLimitsProperties;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.agent.SubscriptionUsage;
 import dev.jagt.orchestrator.port.channel.Notification;
-import dev.jagt.orchestrator.service.UsageLimits;
+import dev.jagt.orchestrator.service.usage.UsageLimits;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;

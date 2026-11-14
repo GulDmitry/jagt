@@ -5,8 +5,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.capability.Outcome;
-import dev.jagt.orchestrator.service.PlanApproval;
-import dev.jagt.orchestrator.service.Unplaceable;
+import dev.jagt.orchestrator.service.plan.PlanApproval;
+import dev.jagt.orchestrator.service.plan.Unplaceable;
 import dev.jagt.orchestrator.task.turn.AgentReport;
 import java.util.List;
 import org.junit.jupiter.api.Test;

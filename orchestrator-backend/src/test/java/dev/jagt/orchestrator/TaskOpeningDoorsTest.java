@@ -20,7 +20,7 @@ class TaskOpeningDoorsTest {
         .and()
         .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.surface.board.NaturalLanguageDispatch")
         .and()
-        .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.job.IntakeStart")
+        .doNotHaveFullyQualifiedName("dev.jagt.orchestrator.job.tracker.IntakeStart")
         .should()
         .dependOnClassesThat()
         .haveFullyQualifiedName("dev.jagt.orchestrator.service.TaskLauncher")

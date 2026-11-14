@@ -3,8 +3,8 @@ package dev.jagt.orchestrator.capability;
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.capability.TaskCapability;
-import dev.jagt.orchestrator.service.PlanApproval;
-import dev.jagt.orchestrator.service.Unplaceable;
+import dev.jagt.orchestrator.service.plan.PlanApproval;
+import dev.jagt.orchestrator.service.plan.Unplaceable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

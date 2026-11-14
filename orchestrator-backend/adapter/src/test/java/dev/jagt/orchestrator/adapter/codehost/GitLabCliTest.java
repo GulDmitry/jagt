@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.codehost.CommitPipeline;
 import dev.jagt.orchestrator.port.host.Processes;
-import dev.jagt.orchestrator.service.ReachLedger;
+import dev.jagt.orchestrator.service.reach.ReachLedger;
 import dev.jagt.orchestrator.task.deploy.FailedJob;
 import java.nio.file.Path;
 import java.time.Duration;

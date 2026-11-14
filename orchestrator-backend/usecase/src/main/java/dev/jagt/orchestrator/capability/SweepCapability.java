@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.capability;
 import dev.jagt.orchestrator.flow.capability.Outcome;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.capability.TaskCapability;
-import dev.jagt.orchestrator.service.ReviewSweepService;
+import dev.jagt.orchestrator.service.review.ReviewSweepService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

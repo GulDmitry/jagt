@@ -12,8 +12,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
-import dev.jagt.orchestrator.service.ColdPrompts;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.session.ColdPrompts;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.session.Session;

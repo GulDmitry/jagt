@@ -13,7 +13,7 @@ import dev.jagt.orchestrator.notify.Routes.Routed;
 import dev.jagt.orchestrator.port.channel.ChannelAddress;
 import dev.jagt.orchestrator.port.channel.ChannelMessage;
 import dev.jagt.orchestrator.port.channel.Notification;
-import dev.jagt.orchestrator.service.BoardUrl;
+import dev.jagt.orchestrator.service.log.BoardUrl;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.acceptance.RoleRecord;

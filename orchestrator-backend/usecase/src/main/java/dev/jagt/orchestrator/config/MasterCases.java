@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.config;
 
+import dev.jagt.orchestrator.config.role.CaseBook;
+import dev.jagt.orchestrator.config.role.RoleFiles;
 import org.springframework.stereotype.Component;
 
 /** A case the human's copy lacks is read from the shipped file. */

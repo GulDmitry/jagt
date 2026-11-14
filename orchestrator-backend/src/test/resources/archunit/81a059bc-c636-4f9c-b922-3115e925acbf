@@ -36,10 +36,10 @@ dev.jagt.orchestrator.eval.Yamls
 dev.jagt.orchestrator.flow.TaskReducerProperties
 dev.jagt.orchestrator.mastereval.MasterEvalWorkspace
 dev.jagt.orchestrator.prompteval.CommandMappingCase
-dev.jagt.orchestrator.service.GitRepos
+dev.jagt.orchestrator.service.git.GitRepos
 dev.jagt.orchestrator.service.KeyedTracker
 dev.jagt.orchestrator.service.NoTracker
-dev.jagt.orchestrator.service.ScriptedProcesses
+dev.jagt.orchestrator.service.git.ScriptedProcesses
 dev.jagt.orchestrator.stand.BackendSignals
 dev.jagt.orchestrator.stand.ContextRelays
 dev.jagt.orchestrator.stand.HostSleep

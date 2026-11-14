@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.replay;
 
 import dev.jagt.orchestrator.adapter.agent.McpEndpoint;
 import dev.jagt.orchestrator.port.host.Processes;
-import dev.jagt.orchestrator.service.WorktreeHooks;
+import dev.jagt.orchestrator.service.git.WorktreeHooks;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;

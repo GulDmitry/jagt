@@ -2,10 +2,10 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.config.RoleDefinition;
+import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
-import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
+import dev.jagt.orchestrator.service.gate.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceDecline;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import dev.jagt.orchestrator.task.usage.AssistantCallKind;

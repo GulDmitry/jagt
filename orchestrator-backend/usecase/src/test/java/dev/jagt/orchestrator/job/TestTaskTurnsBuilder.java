@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.TaskTurns;
+import dev.jagt.orchestrator.service.turn.TaskTurns;
 import java.time.Clock;
 
 public record TestTaskTurnsBuilder() {

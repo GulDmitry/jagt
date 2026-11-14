@@ -8,14 +8,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
-import dev.jagt.orchestrator.config.RoleDefinition;
-import dev.jagt.orchestrator.config.RoleDefinitions;
+import dev.jagt.orchestrator.config.role.RoleDefinition;
+import dev.jagt.orchestrator.config.role.RoleDefinitions;
 import dev.jagt.orchestrator.port.agent.McpHealth;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
 import dev.jagt.orchestrator.port.host.Processes;
-import dev.jagt.orchestrator.service.ReadScopes;
-import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.service.gate.ReadScopes;
+import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceDecline;
 import dev.jagt.orchestrator.task.acceptance.AcceptanceVerdict;
 import java.nio.file.Path;

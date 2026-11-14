@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.board;
 
 import dev.jagt.orchestrator.flow.view.TaskView;
-import dev.jagt.orchestrator.service.AutoReviewCadence;
-import dev.jagt.orchestrator.service.TaskViews;
+import dev.jagt.orchestrator.service.review.AutoReviewCadence;
+import dev.jagt.orchestrator.service.task.TaskViews;
 import java.time.Duration;
 import java.util.List;
 import lombok.With;

@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.adapter.Executables;
-import dev.jagt.orchestrator.config.RoleDefinition;
+import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
-import dev.jagt.orchestrator.service.InstalledRoles;
+import dev.jagt.orchestrator.service.role.InstalledRoles;
 import dev.jagt.orchestrator.startup.HttpAddress;
 import java.util.ArrayList;
 import java.util.List;

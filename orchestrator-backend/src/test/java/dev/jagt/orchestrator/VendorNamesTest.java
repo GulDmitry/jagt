@@ -22,7 +22,8 @@ class VendorNamesTest {
           Map.entry(
               SERVICE + "WorktreeSandbox.java npm", "build tools' cache directories; iteration 2"),
           Map.entry(
-              SERVICE + "WorktreeNoise.java gradle", "a build tool's directory; iteration 2"));
+              SERVICE + "worktree/WorktreeNoise.java gradle",
+              "a build tool's directory; iteration 2"));
 
   @Test
   void namesNoVendorOfAnAgentTerminalEditorCodeHostTrackerBuildToolOrModelOutsideTheAdapters() {

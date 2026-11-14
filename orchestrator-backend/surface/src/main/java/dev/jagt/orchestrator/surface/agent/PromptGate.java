@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.surface.agent;
 
 import dev.jagt.orchestrator.flow.session.SessionPhase;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
-import dev.jagt.orchestrator.service.ColdPrompts;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OneLine;
+import dev.jagt.orchestrator.service.session.ColdPrompts;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

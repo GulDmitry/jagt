@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.adapter.FakeProcesses;
 import dev.jagt.orchestrator.port.host.Processes;
-import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.List;

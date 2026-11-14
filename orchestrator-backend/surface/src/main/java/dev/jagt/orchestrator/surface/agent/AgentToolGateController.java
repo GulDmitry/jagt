@@ -1,14 +1,14 @@
 package dev.jagt.orchestrator.surface.agent;
 
 import dev.jagt.orchestrator.flow.session.SessionSign;
-import dev.jagt.orchestrator.port.agent.ToolGateEnvelope;
 import dev.jagt.orchestrator.port.agent.ToolGateEnvelope.Kind;
+import dev.jagt.orchestrator.port.agent.ToolGateEnvelope;
 import dev.jagt.orchestrator.protocol.ToolCall;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.KeepAlive;
-import dev.jagt.orchestrator.service.PlanFirst;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.ToolGate;
+import dev.jagt.orchestrator.service.gate.ToolGate;
+import dev.jagt.orchestrator.service.plan.PlanFirst;
+import dev.jagt.orchestrator.service.presence.KeepAlive;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.repo.Remote;
 import dev.jagt.orchestrator.task.stop.Guard;

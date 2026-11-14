@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.port.agent.SubscriptionUsage.Paid;
 import dev.jagt.orchestrator.port.agent.SubscriptionUsage.Snapshot;
 import dev.jagt.orchestrator.port.agent.SubscriptionUsage.Window;
 import dev.jagt.orchestrator.port.channel.Notification;
-import dev.jagt.orchestrator.service.UsageLimits;
+import dev.jagt.orchestrator.service.usage.UsageLimits;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;

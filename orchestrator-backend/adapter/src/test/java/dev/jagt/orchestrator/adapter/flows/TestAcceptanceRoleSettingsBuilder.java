@@ -2,14 +2,14 @@ package dev.jagt.orchestrator.adapter.flows;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.RoleDefinitions;
+import dev.jagt.orchestrator.config.role.RoleDefinitions;
 import dev.jagt.orchestrator.flow.Checkers;
 import dev.jagt.orchestrator.flow.Composition;
 import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.port.agent.AgentRuntime;
-import dev.jagt.orchestrator.service.ActStops;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.RoleSettings;
+import dev.jagt.orchestrator.service.role.RoleSettings;
+import dev.jagt.orchestrator.service.stop.ActStops;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

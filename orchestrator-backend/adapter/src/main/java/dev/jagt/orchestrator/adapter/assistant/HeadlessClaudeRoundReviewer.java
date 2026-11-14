@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.assistant.Answer;
 import dev.jagt.orchestrator.port.assistant.RoundReviewer;
 import dev.jagt.orchestrator.protocol.read.RoundRead;
-import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
+import dev.jagt.orchestrator.service.gate.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.task.usage.AssistantCallKind;
 import java.time.Duration;
 import java.util.ArrayList;

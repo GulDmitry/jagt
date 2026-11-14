@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify;
 import dev.jagt.orchestrator.port.channel.ChannelAddress;
 import dev.jagt.orchestrator.port.channel.ChannelMessage;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
-import dev.jagt.orchestrator.service.BoardUrl;
+import dev.jagt.orchestrator.service.log.BoardUrl;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

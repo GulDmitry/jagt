@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.adapter.flows;
 
-import dev.jagt.orchestrator.config.RoleOptions.Flows;
+import dev.jagt.orchestrator.config.role.RoleOptions.Flows;
 import dev.jagt.orchestrator.port.worktree.AcceptanceRunner;
-import dev.jagt.orchestrator.service.RoleSettings;
+import dev.jagt.orchestrator.service.role.RoleSettings;
 import java.nio.file.Path;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

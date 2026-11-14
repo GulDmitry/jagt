@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import static dev.jagt.orchestrator.service.TestCaseDoorBuilder.caseDoor;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
-import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
+import static dev.jagt.orchestrator.service.stop.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.flow.FlowEngine;
 import dev.jagt.orchestrator.flow.capability.TaskAction;
 import dev.jagt.orchestrator.flow.role.Arbiter;
 import dev.jagt.orchestrator.flow.view.Refusal;
+import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.master.MasterMode;

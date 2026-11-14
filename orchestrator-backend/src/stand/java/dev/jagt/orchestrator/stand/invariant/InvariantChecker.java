@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.stand.invariant;
 
-import dev.jagt.orchestrator.config.CaseBook;
+import dev.jagt.orchestrator.config.role.CaseBook;
 import java.util.Comparator;
 import java.util.List;
 

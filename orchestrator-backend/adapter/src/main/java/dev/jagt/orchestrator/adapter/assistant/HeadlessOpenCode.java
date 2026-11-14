@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.adapter.agent.OpenCodeProperties;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.service.Causes;
 import dev.jagt.orchestrator.service.OneLine;
-import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.service.usage.UsageTracker;
 import dev.jagt.orchestrator.task.usage.TokenUsage;
 import java.util.HashMap;
 import java.util.List;

@@ -1,0 +1,53 @@
+package dev.jagt.orchestrator.job.master;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import dev.jagt.orchestrator.flow.capability.TaskAction;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
+import org.junit.jupiter.api.Test;
+
+class MasterShipTest {
+
+  private final ShipDue due = mock(ShipDue.class);
+  private final MasterPress press = mock(MasterPress.class);
+  private final ShipRecord record = mock(ShipRecord.class);
+
+  @Test
+  void shipsTaskThatHoldsWork() {
+    TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
+    when(due.due("ABC-1", task)).thenReturn(true);
+    when(press.press("ABC-1", task, TaskAction.SHIP)).thenReturn(true);
+
+    boolean shipped = new MasterShip(due, press, record).ship("ABC-1", task);
+
+    assertThat(shipped).isTrue();
+  }
+
+  @Test
+  void leavesTaskNoShipIsDueOnForTheHuman() {
+    TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
+
+    boolean shipped = new MasterShip(due, press, record).ship("ABC-1", task);
+
+    assertThat(shipped).isFalse();
+    verify(press, never()).press(anyString(), any(), any());
+  }
+
+  @Test
+  void pressRecordsTheTreeItShipped() {
+    TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
+    when(due.due("ABC-1", task)).thenReturn(true);
+    when(press.press("ABC-1", task, TaskAction.SHIP)).thenReturn(true);
+
+    new MasterShip(due, press, record).ship("ABC-1", task);
+
+    verify(record).pressedOn("ABC-1", task);
+  }
+}

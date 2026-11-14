@@ -1,0 +1,54 @@
+package dev.jagt.orchestrator.job.master;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import dev.jagt.orchestrator.service.review.ReviewDrafts;
+import dev.jagt.orchestrator.service.turn.TaskTurns;
+import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TaskStatus;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+
+class ShipRecordTest {
+
+  private final TaskTurns turns = mock(TaskTurns.class);
+  private final WorktreeChanges changes = mock(WorktreeChanges.class);
+  private final ReviewDrafts drafts = mock(ReviewDrafts.class);
+
+  @Test
+  void pressRecordsTheTreeItShipped() {
+    TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
+    when(changes.state(task)).thenReturn(Optional.of("tree-1;"));
+
+    new ShipRecord(turns, changes, new ShipContent(changes, drafts)).pressedOn("ABC-1", task);
+
+    verify(turns).mark("ABC-1", TaskTurns.PRESSED_SHIP, "tree-1;");
+    verify(turns).shippedOn("ABC-1", "tree-1;");
+  }
+
+  @Test
+  void treeGitCouldNotReadLeavesNoMark() {
+    TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
+    when(changes.state(task)).thenReturn(Optional.empty());
+
+    new ShipRecord(turns, changes, new ShipContent(changes, drafts)).pressedOn("ABC-1", task);
+
+    verifyNoInteractions(turns);
+  }
+
+  @Test
+  void pressWithDraftsRecordsThemBesideTheTreeButShipsTheTreeAlone() {
+    TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
+    when(changes.state(task)).thenReturn(Optional.of("tree-1;"));
+    when(drafts.unspentDigest(task)).thenReturn(Optional.of("d1"));
+
+    new ShipRecord(turns, changes, new ShipContent(changes, drafts)).pressedOn("ABC-1", task);
+
+    verify(turns).mark("ABC-1", TaskTurns.PRESSED_SHIP, "tree-1;|drafts:d1");
+    verify(turns).shippedOn("ABC-1", "tree-1;");
+  }
+}

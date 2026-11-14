@@ -1,17 +1,17 @@
 package dev.jagt.orchestrator.notify;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.RoleDefinition;
+import dev.jagt.orchestrator.config.role.RoleDefinition;
 import dev.jagt.orchestrator.flow.role.Point;
 import dev.jagt.orchestrator.flow.role.Points;
 import dev.jagt.orchestrator.port.channel.ChannelDriver;
 import dev.jagt.orchestrator.port.host.Problem;
 import dev.jagt.orchestrator.port.host.StartupCheck;
-import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.NotificationsConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.NotificationsConfig.ChannelDef;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.NotificationsConfig.RouteDef;
-import dev.jagt.orchestrator.service.InstalledRoles;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.NotificationsConfig;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.role.InstalledRoles;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;

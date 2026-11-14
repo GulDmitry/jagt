@@ -1,15 +1,15 @@
 package dev.jagt.orchestrator.capability.ship;
 
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
-import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
+import static dev.jagt.orchestrator.service.stop.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.flow.capability.Outcome;
-import dev.jagt.orchestrator.service.MergedRequests;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.TaskStops;
+import dev.jagt.orchestrator.service.repo.MergedRequests;
+import dev.jagt.orchestrator.service.stop.TaskStops;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;

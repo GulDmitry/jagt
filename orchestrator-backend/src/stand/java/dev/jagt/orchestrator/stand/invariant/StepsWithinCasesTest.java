@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.stand.invariant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.config.CaseBook;
+import dev.jagt.orchestrator.config.role.CaseBook;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Files;
 import java.nio.file.Path;

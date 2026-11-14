@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.mastereval;
 
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterReview;
+import dev.jagt.orchestrator.service.usage.UsageTracker;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class MasterVerdictEvalShard5Test extends MasterVerdictEvalTest {

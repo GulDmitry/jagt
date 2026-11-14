@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.eval;
 
-import dev.jagt.orchestrator.config.RoleOptions;
+import dev.jagt.orchestrator.config.role.RoleOptions;
 import java.util.stream.Collectors;
 
 /** The {@code role.yml} an acceptance eval run installs: one environment and one flows driver. */

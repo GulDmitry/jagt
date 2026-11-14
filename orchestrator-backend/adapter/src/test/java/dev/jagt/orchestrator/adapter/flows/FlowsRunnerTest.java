@@ -13,7 +13,7 @@ import dev.jagt.orchestrator.port.agent.AgentRuntime;
 import dev.jagt.orchestrator.port.host.Processes;
 import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.FlowResult;
 import dev.jagt.orchestrator.port.worktree.AcceptanceRunner.Verdict;
-import dev.jagt.orchestrator.service.ActStops;
+import dev.jagt.orchestrator.service.stop.ActStops;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;

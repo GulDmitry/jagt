@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.adapter.flows;
 
-import dev.jagt.orchestrator.config.RoleOptions;
-import dev.jagt.orchestrator.config.RoleOptions.Flows;
+import dev.jagt.orchestrator.config.role.RoleOptions.Flows;
+import dev.jagt.orchestrator.config.role.RoleOptions;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.reach.Reach;
 import dev.jagt.orchestrator.port.reach.ReachLost;
-import dev.jagt.orchestrator.service.RoleSettings;
+import dev.jagt.orchestrator.service.role.RoleSettings;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;

@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.acceptanceeval;
 
-import dev.jagt.orchestrator.config.RoleDefinition;
-import dev.jagt.orchestrator.job.CheckerFlows;
-import dev.jagt.orchestrator.job.CheckerPrompts;
+import dev.jagt.orchestrator.config.role.RoleDefinition;
+import dev.jagt.orchestrator.job.checker.CheckerFlows;
+import dev.jagt.orchestrator.job.checker.CheckerPrompts;
 import dev.jagt.orchestrator.port.assistant.CheckerReader;
-import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.service.usage.UsageTracker;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class AcceptanceVerdictEvalShard4Test extends AcceptanceVerdictEvalTest {

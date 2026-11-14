@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.eval.ShippedRoot;
 import dev.jagt.orchestrator.port.channel.UserNotifier;
 import dev.jagt.orchestrator.port.terminal.EditorDriver;
-import dev.jagt.orchestrator.service.TicketReader;
+import dev.jagt.orchestrator.service.assistant.TicketReader;
 import dev.jagt.orchestrator.surface.mcp.McpController;
 import dev.jagt.orchestrator.surface.ui.LogFileRoll;
 import dev.jagt.orchestrator.surface.ui.PortGuard;

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.capability.done;
 
-import dev.jagt.orchestrator.service.KeptTicketTexts;
-import dev.jagt.orchestrator.service.PlanBaseline;
+import dev.jagt.orchestrator.service.assistant.KeptTicketTexts;
+import dev.jagt.orchestrator.service.plan.PlanBaseline;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

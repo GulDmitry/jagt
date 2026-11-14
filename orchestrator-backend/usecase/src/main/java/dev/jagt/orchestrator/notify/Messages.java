@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.notify.Routes.Routed;
 import dev.jagt.orchestrator.port.channel.ChannelMessage;
 import dev.jagt.orchestrator.port.channel.Notification;
-import dev.jagt.orchestrator.service.BoardUrl;
+import dev.jagt.orchestrator.service.log.BoardUrl;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.turn.ActionOrigin;
 import dev.jagt.orchestrator.task.turn.StatusChange;

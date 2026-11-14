@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service.master;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.service.master.MasterReview.Identity;
 import dev.jagt.orchestrator.service.master.MasterReview.Said;
+import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.plan.Artifact;
 import java.io.IOException;

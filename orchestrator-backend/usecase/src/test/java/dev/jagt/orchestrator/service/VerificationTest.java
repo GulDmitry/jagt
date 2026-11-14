@@ -9,6 +9,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.jagt.orchestrator.port.host.Processes;
+import dev.jagt.orchestrator.service.gate.ToolGate;
+import dev.jagt.orchestrator.service.scenario.AcceptanceProbing;
+import dev.jagt.orchestrator.service.worktree.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.plan.Probe;

@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.command.GlobalCommands;
-import dev.jagt.orchestrator.command.MasterPresses;
+import dev.jagt.orchestrator.command.master.MasterPresses;
 import dev.jagt.orchestrator.config.MasterMove;
 import dev.jagt.orchestrator.eval.ShippedRoot;
 import dev.jagt.orchestrator.flow.capability.TaskAction;

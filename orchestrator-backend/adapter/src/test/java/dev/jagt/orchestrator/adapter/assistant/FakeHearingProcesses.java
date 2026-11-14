@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.port.host.Processes;
-import dev.jagt.orchestrator.service.ReadScopes;
+import dev.jagt.orchestrator.service.gate.ReadScopes;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;

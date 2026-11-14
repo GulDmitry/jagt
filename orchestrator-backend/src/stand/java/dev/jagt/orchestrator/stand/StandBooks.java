@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.stand;
 
-import dev.jagt.orchestrator.config.CaseBook;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.SessionBrief;
-import dev.jagt.orchestrator.config.SessionCases;
+import dev.jagt.orchestrator.config.role.CaseBook;
+import dev.jagt.orchestrator.config.role.SessionBrief;
+import dev.jagt.orchestrator.config.role.SessionCases;
 import dev.jagt.orchestrator.stand.invariant.GitAncestry;
 import dev.jagt.orchestrator.stand.invariant.InvariantChecker;
 import dev.jagt.orchestrator.stand.invariant.RunRecord;

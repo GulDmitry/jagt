@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.eval;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.jagt.orchestrator.config.RoleOptions;
+import dev.jagt.orchestrator.config.role.RoleOptions;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;

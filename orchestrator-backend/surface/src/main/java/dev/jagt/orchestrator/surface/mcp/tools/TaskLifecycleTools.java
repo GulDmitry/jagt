@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.protocol.NewTaskMessage;
 import dev.jagt.orchestrator.protocol.message.NoArguments;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
-import dev.jagt.orchestrator.service.TaskViews;
+import dev.jagt.orchestrator.service.task.TaskViews;
 import dev.jagt.orchestrator.surface.mcp.Audience;
 import dev.jagt.orchestrator.surface.mcp.Effect;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
