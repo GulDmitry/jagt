@@ -3,13 +3,16 @@ package dev.jagt.orchestrator;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +29,17 @@ final class TestKinds {
           "org.springframework.context.annotation.Bean",
           "org.springframework.test.context.DynamicPropertySource");
   private static final String CLASSES = "/build/classes/java/";
+  private static final Set<String> OUTSIDE_VALUES =
+      Set.of(
+          "java.time.Clock.systemUTC",
+          "java.time.Clock.systemDefaultZone",
+          "java.time.Instant.now",
+          "java.lang.System.currentTimeMillis",
+          "java.lang.System.nanoTime",
+          "java.lang.Math.random",
+          "java.util.UUID.randomUUID");
+  private static final Pattern BRANCH_OR_LOOP =
+      Pattern.compile("\\b(if|for|while|switch)\\s*\\(|\\bdo\\s*\\{|\\s\\?\\s");
   private static final String ROOT_TEST_SET = "orchestrator-backend/build/classes/java/test/";
 
   private TestKinds() {}
@@ -126,5 +140,36 @@ final class TestKinds {
             parent ->
                 location(parent).contains(CLASSES + "main/")
                     || !parent.getPackageName().startsWith("dev.jagt"));
+  }
+
+  static DescribedPredicate<JavaClass> testBuilders() {
+    return DescribedPredicate.describe(
+        "Test<Thing>Builders",
+        type ->
+            type.getSimpleName().startsWith("Test") && type.getSimpleName().endsWith("Builder"));
+  }
+
+  static DescribedPredicate<JavaMethodCall> readClockRandomMockOrAssertion() {
+    return DescribedPredicate.describe(
+        "a clock, random, mock or assertion call",
+        call -> {
+          String owner = call.getTargetOwner().getName();
+          String name = call.getName();
+          return OUTSIDE_VALUES.contains(owner + "." + name)
+              || owner.startsWith("org.mockito.")
+              || owner.startsWith("org.assertj.")
+              || owner.equals("org.junit.jupiter.api.Assertions")
+              || owner.equals("java.util.Random")
+              || owner.equals("java.util.concurrent.ThreadLocalRandom");
+        });
+  }
+
+  static Stream<Path> testBuilderSources() {
+    return SourceRoots.javaFiles()
+        .filter(path -> path.getFileName().toString().matches("Test\\w*Builder\\.java"));
+  }
+
+  static boolean holdsBranchOrLoop(Path source) {
+    return BRANCH_OR_LOOP.matcher(SourceRoots.read(source)).find();
   }
 }
