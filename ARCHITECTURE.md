@@ -321,6 +321,7 @@ that points outward does not compile. Two folders inside one module it cannot se
   and `WorktreeHooksTest` live in `:adapter:test`, where git is.
 - Five suites stay out of `check`: `e2eTest` (git + tmux, real worktrees), `boardTest` (the page in a real browser),
   `linuxDriverTest` (Linux binaries, container), `promptEval` and `roleEval` (the assistant's CLI, and tokens).
+- Spotless formats every source set with google-java-format before compile; `spotlessCheck` is part of `check`.
 - `build-logic/` is an included build of convention plugins, one per concern (`jagt.pitest`); a module's
   `build.gradle` only applies and declares. New build logic is a new plugin there, never code in a build file.
 - `./gradlew test e2eTest boardTest` is everything runnable here; `./gradlew build stageJar && java -jar

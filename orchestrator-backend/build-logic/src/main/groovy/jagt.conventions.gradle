@@ -42,6 +42,16 @@ allprojects {
         }
     }
 
+    // 0143: the build lays the code out before anything reads it.
+    apply plugin: 'com.diffplug.spotless'
+    spotless {
+        java {
+            target 'src/**/*.java'
+            googleJavaFormat('2.0.0')
+        }
+    }
+    tasks.withType(JavaCompile).configureEach { dependsOn tasks.named('spotlessApply') }
+
     // 0143: the gate fails on a breach, so `test` waits for the check.
     apply plugin: 'checkstyle'
     checkstyle {

@@ -5,6 +5,7 @@
 ## Writing
 
 - **Java follows Google style**; Checkstyle's Google checks gate every source set, Javadoc checks off; `gradle/checkstyle/` holds the config.
+- **google-java-format's output is the layout**; a check contradicting it is switched off as the Checkstyle counts rule below says ([0143](../decisions/0143-checkstyle-gates-parameter-and-component-counts.md)).
   Write to it: a line ≤ 100 columns, wrapped before a `.` or after `(`, indent 2, continuation 4; no unused import;
   overloads adjacent; no one-letter word in a name (`ofA`).
   Error Prone runs with `-Werror` on every set: `&&` inside `||` takes parentheses.
@@ -61,7 +62,8 @@ Each rule below is AGENTS.md "Code" / "First priority"; only its why and details
 - **Cognitive complexity** is PMD's count of Sonar's metric ([0053](../decisions/0053-a-method-reads-at-cognitive-complexity-twelve-at-most.md)):
   over it, extract a named step. The ceiling only falls: `refresh` lowers it once few methods stand above the next step.
 - **Checkstyle counts** ([0143](../decisions/0143-checkstyle-gates-parameter-and-component-counts.md)): over them, nested records or a builder.
-  A suppression carries its reason and estimated cost.
+  A suppression carries its reason and estimated cost. **A linter check (Checkstyle, Spotless, any rule config) is never
+  removed**: one switched off is commented out in its config with its reason beside it.
 - **Static state** ([0160](../decisions/0160-the-chart-is-an-instance-and-start-work-is-an-event.md)): a static method reads only its
   arguments and immutable constants. A class needing a clock, a file root,
   the composition or a registry is an instance built by its `*Wiring`. `@PostConstruct` validates configuration only;
