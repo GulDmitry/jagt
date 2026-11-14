@@ -1,8 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import static dev.jagt.orchestrator.service.TestSessionWakesBuilder.sessionWakes;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
-import static dev.jagt.orchestrator.service.TestUsageLimitWakesBuilder.usageLimitWakes;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.config.UsageLimitsProperties;
@@ -33,22 +31,43 @@ class SessionWakesTest {
   @TempDir Path dir;
 
   private StateService state;
+  private Checkers checkers;
+  private Clock atStop;
+  private Clock atReset;
+  private SessionWakes wakesAtStop;
+  private SessionWakes wakesAtReset;
+  private UsageLimitWakes limitWakes;
 
   @BeforeEach
   void startsOneRunningTaskUnderTheTempState() {
     state = stateService().withRoot(dir).build();
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+    checkers = new Checkers(new TaskChart(Composition.builtIn()));
+    atStop = Clock.fixed(STOPPED, ZoneOffset.UTC);
+    atReset = Clock.fixed(RESET, ZoneOffset.UTC);
+    wakesAtStop = new SessionWakes(state, new TaskTurns(state, atStop, checkers), atStop);
+    wakesAtReset = new SessionWakes(state, new TaskTurns(state, atReset, checkers), atReset);
+    SubscriptionUsage usage =
+        () ->
+            new SubscriptionUsage.Read(
+                new SubscriptionUsage.Snapshot(
+                    List.of(new SubscriptionUsage.Window("5h", 100, Optional.of(RESET))),
+                    Optional.empty()));
+    limitWakes =
+        new UsageLimitWakes(
+            new UsageLimits(Optional.of(usage)),
+            UsageLimitsProperties.defaults().withWakeOnReset(true),
+            wakesAtStop,
+            atStop);
   }
 
   @Test
   void wakesNothingBeforeTheWindowResets() {
-    usageLimitWakes().withRoot(dir).build().arm("ABC-42");
+    limitWakes.arm("ABC-42");
+    Clock beforeReset = Clock.fixed(RESET.minusSeconds(1), ZoneOffset.UTC);
 
     List<SessionWakes.Due> due =
-        sessionWakes()
-            .withRoot(dir)
-            .withNow(RESET.minusSeconds(1))
-            .build()
+        new SessionWakes(state, new TaskTurns(state, beforeReset, checkers), beforeReset)
             .takeDue(taskId -> false);
 
     assertThat(due).isEmpty();
@@ -56,8 +75,8 @@ class SessionWakesTest {
 
   @Test
   void wakesTheSessionOnceWhenTheWindowResets() {
-    usageLimitWakes().withRoot(dir).build().arm("ABC-42");
-    SessionWakes later = sessionWakes().withRoot(dir).withNow(RESET).build();
+    limitWakes.arm("ABC-42");
+    SessionWakes later = wakesAtReset;
 
     List<SessionWakes.Due> first = later.takeDue(taskId -> false);
     List<SessionWakes.Due> second = later.takeDue(taskId -> false);
@@ -71,8 +90,8 @@ class SessionWakesTest {
 
   @Test
   void keepsDueWakePendingWhileTheHumanIsTypingAndSendsItOnceAfter() {
-    usageLimitWakes().withRoot(dir).build().arm("ABC-42");
-    SessionWakes later = sessionWakes().withRoot(dir).withNow(RESET).build();
+    limitWakes.arm("ABC-42");
+    SessionWakes later = wakesAtReset;
 
     List<SessionWakes.Due> whileTyping = later.takeDue(taskId -> true);
     List<SessionWakes.Due> afterSending = later.takeDue(taskId -> false);
@@ -93,8 +112,8 @@ class SessionWakesTest {
         TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
             .stop(new TaskStop(TaskStop.Trigger.PAUSE, 1, "you paused it"))
             .build());
-    sessionWakes().withRoot(dir).build().arm("ABC-42", RESET, Step.WAIT_OVER);
-    SessionWakes later = sessionWakes().withRoot(dir).withNow(RESET).build();
+    wakesAtStop.arm("ABC-42", RESET, Step.WAIT_OVER);
+    SessionWakes later = wakesAtReset;
 
     List<SessionWakes.Due> whilePaused = later.takeDue(taskId -> false);
     state.updateTask("ABC-42", task -> task.lifted(2));
@@ -106,14 +125,13 @@ class SessionWakesTest {
 
   @Test
   void doesNotWakeSessionTwiceAcrossRestart() {
-    usageLimitWakes().withRoot(dir).build().arm("ABC-42");
-    sessionWakes().withRoot(dir).withNow(RESET).build().takeDue(taskId -> false);
+    limitWakes.arm("ABC-42");
+    wakesAtReset.takeDue(taskId -> false);
+    Clock later = Clock.fixed(RESET.plusSeconds(60), ZoneOffset.UTC);
+    StateService restarted = stateService().withRoot(dir).build();
 
     List<SessionWakes.Due> afterRestart =
-        sessionWakes()
-            .withRoot(dir)
-            .withNow(RESET.plusSeconds(60))
-            .build()
+        new SessionWakes(restarted, new TaskTurns(restarted, later, checkers), later)
             .takeDue(taskId -> false);
 
     assertThat(afterRestart).isEmpty();
@@ -121,10 +139,12 @@ class SessionWakesTest {
 
   @Test
   void keepsPendingWakeAcrossRestart() {
-    usageLimitWakes().withRoot(dir).build().arm("ABC-42");
+    limitWakes.arm("ABC-42");
+    StateService restarted = stateService().withRoot(dir).build();
 
     List<SessionWakes.Due> afterRestart =
-        sessionWakes().withRoot(dir).withNow(RESET).build().takeDue(taskId -> false);
+        new SessionWakes(restarted, new TaskTurns(restarted, atReset, checkers), atReset)
+            .takeDue(taskId -> false);
 
     assertThat(afterRestart)
         .containsExactly(
@@ -134,38 +154,68 @@ class SessionWakesTest {
 
   @Test
   void armsNoWakeWhenNoWindowIsAtItsLimit() {
-    usageLimitWakes().withRoot(dir).withPercent(99).build().arm("ABC-42");
+    SubscriptionUsage usage =
+        () ->
+            new SubscriptionUsage.Read(
+                new SubscriptionUsage.Snapshot(
+                    List.of(new SubscriptionUsage.Window("5h", 99, Optional.of(RESET))),
+                    Optional.empty()));
+    new UsageLimitWakes(
+            new UsageLimits(Optional.of(usage)),
+            UsageLimitsProperties.defaults().withWakeOnReset(true),
+            wakesAtStop,
+            atStop)
+        .arm("ABC-42");
 
-    List<SessionWakes.Due> due =
-        sessionWakes().withRoot(dir).withNow(RESET).build().takeDue(taskId -> false);
+    List<SessionWakes.Due> due = wakesAtReset.takeDue(taskId -> false);
 
     assertThat(due).isEmpty();
   }
 
   @Test
   void armsNoWakeWhenTheFullWindowReportsNoReset() {
-    usageLimitWakes().withRoot(dir).withResetsAt(Optional.empty()).build().arm("ABC-42");
+    SubscriptionUsage usage =
+        () ->
+            new SubscriptionUsage.Read(
+                new SubscriptionUsage.Snapshot(
+                    List.of(new SubscriptionUsage.Window("5h", 100, Optional.empty())),
+                    Optional.empty()));
+    new UsageLimitWakes(
+            new UsageLimits(Optional.of(usage)),
+            UsageLimitsProperties.defaults().withWakeOnReset(true),
+            wakesAtStop,
+            atStop)
+        .arm("ABC-42");
 
-    List<SessionWakes.Due> due =
-        sessionWakes().withRoot(dir).withNow(RESET).build().takeDue(taskId -> false);
+    List<SessionWakes.Due> due = wakesAtReset.takeDue(taskId -> false);
 
     assertThat(due).isEmpty();
   }
 
   @Test
   void armsNoWakeWhileTheKeyIsOff() {
-    usageLimitWakes().withRoot(dir).withWakeOnReset(false).build().arm("ABC-42");
+    SubscriptionUsage usage =
+        () ->
+            new SubscriptionUsage.Read(
+                new SubscriptionUsage.Snapshot(
+                    List.of(new SubscriptionUsage.Window("5h", 100, Optional.of(RESET))),
+                    Optional.empty()));
+    new UsageLimitWakes(
+            new UsageLimits(Optional.of(usage)),
+            UsageLimitsProperties.defaults().withWakeOnReset(false),
+            wakesAtStop,
+            atStop)
+        .arm("ABC-42");
 
-    List<SessionWakes.Due> due =
-        sessionWakes().withRoot(dir).withNow(RESET).build().takeDue(taskId -> false);
+    List<SessionWakes.Due> due = wakesAtReset.takeDue(taskId -> false);
 
     assertThat(due).isEmpty();
   }
 
   @Test
   void dropsTheWakeWhenTheSessionMovesAgain() {
-    usageLimitWakes().withRoot(dir).build().arm("ABC-42");
-    SessionWakes later = sessionWakes().withRoot(dir).withNow(RESET).build();
+    limitWakes.arm("ABC-42");
+    SessionWakes later = wakesAtReset;
 
     later.cancel("ABC-42");
 
@@ -186,37 +236,31 @@ class SessionWakesTest {
     new UsageLimitWakes(
             new UsageLimits(Optional.of(usage)),
             UsageLimitsProperties.defaults().withWakeOnReset(true),
-            sessionWakes().withRoot(dir).build(),
-            Clock.fixed(STOPPED, ZoneOffset.UTC))
+            wakesAtStop,
+            atStop)
         .arm("ABC-42");
 
-    List<SessionWakes.Due> atFirstReset =
-        sessionWakes().withRoot(dir).withNow(RESET).build().takeDue(taskId -> false);
+    List<SessionWakes.Due> atFirstReset = wakesAtReset.takeDue(taskId -> false);
 
     assertThat(atFirstReset).isEmpty();
   }
 
   @Test
   void dropsWakeOnceAnotherTurnOpenedAfterItWasArmed() {
-    usageLimitWakes().withRoot(dir).build().arm("ABC-42");
-    new TaskTurns(
-            state,
-            Clock.fixed(STOPPED, ZoneOffset.UTC),
-            new Checkers(new TaskChart(Composition.builtIn())))
+    limitWakes.arm("ABC-42");
+    new TaskTurns(state, atStop, checkers)
         .opened("ABC-42", "context", "a1b2", TaskStatus.IN_PROGRESS);
 
-    List<SessionWakes.Due> due =
-        sessionWakes().withRoot(dir).withNow(RESET).build().takeDue(taskId -> false);
+    List<SessionWakes.Due> due = wakesAtReset.takeDue(taskId -> false);
 
     assertThat(due).isEmpty();
   }
 
   @Test
   void wakesWithTheStepItWasArmedFor() {
-    sessionWakes().withRoot(dir).build().arm("ABC-42", RESET, Step.WAIT_OVER);
+    wakesAtStop.arm("ABC-42", RESET, Step.WAIT_OVER);
 
-    List<SessionWakes.Due> due =
-        sessionWakes().withRoot(dir).withNow(RESET).build().takeDue(taskId -> false);
+    List<SessionWakes.Due> due = wakesAtReset.takeDue(taskId -> false);
 
     assertThat(due)
         .containsExactly(

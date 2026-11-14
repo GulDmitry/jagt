@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import static dev.jagt.orchestrator.service.TestReportEffectsBuilder.reportEffects;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.config.MasterCases;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -65,10 +65,22 @@ class OwnStatusReportsTest {
   private StateService state;
   private OwnStatusReports doorReports;
   private CaseDoor realDoor;
+  private TaskTurns turns;
+  private TaskStops stops;
+  private ReportEffects effects;
 
   @BeforeEach
   void wireDoor() {
     state = stateService().withRoot(root).build();
+    turns = new TaskTurns(state, Clock.systemUTC(), checkers);
+    stops = taskStops().withRoot(root).build(state, Clock.systemUTC());
+    effects =
+        new ReportEffects(
+            new SessionWakes(state, turns, Clock.systemUTC()),
+            turns,
+            stops,
+            InfraWaitProperties.defaults(),
+            new LinkRefusals(new ReachLedger(), (task, line) -> "", state));
     OrchestratorPaths paths =
         new OrchestratorPaths(
             OrchestratorProperties.defaults()
@@ -81,10 +93,8 @@ class OwnStatusReportsTest {
             state,
             new MissLog(
                 new JsonMapper(), paths, Clock.fixed(Instant.ofEpochMilli(1_000), ZoneOffset.UTC)),
-            taskStops().withRoot(root).build(state, Clock.systemUTC()));
-    doorReports =
-        new OwnStatusReports(
-            state, due, statusReports, realDoor, reportEffects().withRoot(root).build(state));
+            stops);
+    doorReports = new OwnStatusReports(state, due, statusReports, realDoor, effects);
     state.putTask(
         "ABC-42", TaskState.builder("proj", root.toString(), TaskStatus.DEPLOYED).build());
     new TaskTurns(state, Clock.systemUTC(), checkers)
@@ -101,9 +111,7 @@ class OwnStatusReportsTest {
     when(due.invalid(any())).thenReturn(Optional.empty());
     when(due.owed(any(), any()))
         .thenReturn(Optional.of("write task_notes.md before handing the round back"));
-    OwnStatusReports reports =
-        new OwnStatusReports(
-            state, due, statusReports, door, reportEffects().withRoot(root).build(state));
+    OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, door, effects);
     AgentStatusMessage handBack =
         new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
 
@@ -120,9 +128,7 @@ class OwnStatusReportsTest {
         "ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
     when(statusReports.contextFor("ABC-1")).thenReturn(MessageContext.NONE);
     when(due.invalid(any())).thenReturn(Optional.of("task_notes.md names the model 'gpt'"));
-    OwnStatusReports reports =
-        new OwnStatusReports(
-            state, due, statusReports, door, reportEffects().withRoot(root).build(state));
+    OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, door, effects);
     AgentStatusMessage handBack =
         new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
 
@@ -149,13 +155,18 @@ class OwnStatusReportsTest {
             due,
             statusReports,
             door,
-            reportEffects()
-                .withRoot(root)
-                .withSessions((task, line) -> {
-                  said.add(line);
-                  return "";
-                })
-                .build(state));
+            new ReportEffects(
+                new SessionWakes(state, turns, Clock.systemUTC()),
+                turns,
+                stops,
+                InfraWaitProperties.defaults(),
+                new LinkRefusals(
+                    new ReachLedger(),
+                    (task, line) -> {
+                      said.add(line);
+                      return "";
+                    },
+                    state)));
 
     reports.report(
         new AgentStatusMessage(
@@ -175,9 +186,7 @@ class OwnStatusReportsTest {
         new AgentStatusMessage("IN_PROGRESS", "still going", null, null, Map.of());
     when(statusReports.report(working, "ABC-1")).thenReturn("Task ABC-1 -> IN_PROGRESS");
     when(door.takes("ABC-1", TaskStatus.IN_PROGRESS, AgentReport.PLAIN)).thenReturn(true);
-    OwnStatusReports reports =
-        new OwnStatusReports(
-            state, due, statusReports, door, reportEffects().withRoot(root).build(state));
+    OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, door, effects);
 
     reports.report(working, "ABC-1");
 
@@ -194,9 +203,7 @@ class OwnStatusReportsTest {
         new AgentStatusMessage("PLAN_PENDING", "plan ready", null, null, Map.of());
     when(statusReports.report(plan, "ABC-1")).thenReturn("Task ABC-1 -> PLAN_PENDING");
     when(door.takes("ABC-1", TaskStatus.PLAN_PENDING, AgentReport.PLAIN)).thenReturn(true);
-    OwnStatusReports reports =
-        new OwnStatusReports(
-            state, due, statusReports, door, reportEffects().withRoot(root).build(state));
+    OwnStatusReports reports = new OwnStatusReports(state, due, statusReports, door, effects);
 
     String answer = reports.report(plan, "ABC-1");
 

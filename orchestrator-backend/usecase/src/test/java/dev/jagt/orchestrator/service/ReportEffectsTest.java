@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import static dev.jagt.orchestrator.service.TestReportEffectsBuilder.reportEffects;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static dev.jagt.orchestrator.service.TestTaskStopsBuilder.taskStops;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,6 +8,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import dev.jagt.orchestrator.config.InfraWaitProperties;
+import dev.jagt.orchestrator.flow.Checkers;
+import dev.jagt.orchestrator.flow.Composition;
+import dev.jagt.orchestrator.flow.TaskChart;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.task.Step;
@@ -38,13 +40,29 @@ class ReportEffectsTest {
 
   private StateService state;
   private TaskStops realStops;
+  private TaskTurns turns;
+  private ReportEffects effects;
   private ReportEffects realEffects;
 
   @BeforeEach
   void wireEffects() {
     state = stateService().withRoot(dir).build();
     realStops = taskStops().withRoot(dir).build(state, clock);
-    realEffects = reportEffects().withClock(clock).build(state, realStops, links);
+    turns = new TaskTurns(state, clock, new Checkers(new TaskChart(Composition.builtIn())));
+    effects =
+        new ReportEffects(
+            new SessionWakes(state, turns, clock),
+            turns,
+            stops,
+            InfraWaitProperties.defaults(),
+            links);
+    realEffects =
+        new ReportEffects(
+            new SessionWakes(state, turns, clock),
+            turns,
+            realStops,
+            InfraWaitProperties.defaults(),
+            links);
   }
 
   private final AgentStatusMessage waits =
@@ -58,7 +76,7 @@ class ReportEffectsTest {
             .build()
             .withTurn(new Turn("context", 4, "", 0, Map.of(), List.of())));
 
-    reportEffects().withClock(clock).build(state, stops, links).after(waits, "ABC-42");
+    effects.after(waits, "ABC-42");
 
     Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
     assertThat(Wake.parse(turn.mark(Wake.MARK)))
@@ -73,7 +91,7 @@ class ReportEffectsTest {
             .build()
             .withTurn(new Turn("wait-over", 4, "", 0, Map.of("waits", "1"), List.of())));
 
-    reportEffects().withClock(clock).build(state, stops, links).after(waits, "ABC-42");
+    effects.after(waits, "ABC-42");
 
     Turn turn = state.task("ABC-42").orElseThrow().turnOrNone();
     assertThat(Wake.parse(turn.mark(Wake.MARK)).orElseThrow().at())
@@ -89,7 +107,7 @@ class ReportEffectsTest {
             .build()
             .withTurn(new Turn("wait-over", 4, "", 0, Map.of("waits", "3"), List.of())));
 
-    reportEffects().withClock(clock).build(state, stops, links).after(waits, "ABC-42");
+    effects.after(waits, "ABC-42");
 
     verify(stops).stop("ABC-42", TaskStop.Trigger.WAIT, "db down: ping db.internal");
   }
@@ -102,10 +120,7 @@ class ReportEffectsTest {
             .build()
             .withTurn(new Turn("context", 4, "", 0, Map.of(), List.of())));
 
-    reportEffects()
-        .withClock(clock)
-        .build(state, stops, links)
-        .after(AgentStatusMessage.of("IN_PROGRESS", "working"), "ABC-42");
+    effects.after(AgentStatusMessage.of("IN_PROGRESS", "working"), "ABC-42");
 
     assertThat(state.task("ABC-42").orElseThrow().turnOrNone().mark(Wake.MARK)).isNull();
     verify(stops, never()).stop("ABC-42", TaskStop.Trigger.WAIT, "working");
@@ -114,10 +129,12 @@ class ReportEffectsTest {
   @Test
   void refusesWaitWhereNoWaitIsConfigured() {
     ReportEffects off =
-        reportEffects()
-            .withClock(clock)
-            .withInfraWait(new InfraWaitProperties(List.of()))
-            .build(state, stops, links);
+        new ReportEffects(
+            new SessionWakes(state, turns, clock),
+            turns,
+            stops,
+            new InfraWaitProperties(List.of()),
+            links);
 
     MessageContext judged = off.judged(MessageContext.NONE);
 

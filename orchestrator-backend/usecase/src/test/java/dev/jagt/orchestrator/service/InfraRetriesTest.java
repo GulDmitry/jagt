@@ -1,14 +1,17 @@
 package dev.jagt.orchestrator.service;
 
-import static dev.jagt.orchestrator.service.TestInfraRetriesBuilder.infraRetries;
 import static dev.jagt.orchestrator.service.TestStateServiceBuilder.stateService;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
+import dev.jagt.orchestrator.config.InfraWaitProperties;
 import dev.jagt.orchestrator.task.InfraRetry;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,10 +24,17 @@ class InfraRetriesTest {
   @TempDir Path dir;
 
   private StateService state;
+  private InfraRetries retries;
 
   @BeforeEach
   void startsWithAnEmptyState() {
     state = stateService().withRoot(dir).build();
+    retries =
+        new InfraRetries(
+            state,
+            mock(TaskStops.class),
+            InfraWaitProperties.defaults(),
+            Clock.fixed(NOW, ZoneOffset.UTC));
   }
 
   private static final Instant NOW = Instant.parse("2026-10-29T10:00:00Z");
@@ -64,14 +74,8 @@ class InfraRetriesTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
 
     Optional<InfraRetry> armed =
-        infraRetries()
-            .build(state)
-            .arm(
-                "ABC-42",
-                "shop",
-                "https://host.invalid/p/1",
-                "unit-tests",
-                "runner_system_failure");
+        retries.arm(
+            "ABC-42", "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure");
 
     assertThat(armed.orElseThrow().at()).isEqualTo(NOW.plusSeconds(300).toEpochMilli());
     assertThat(state.task("ABC-42").orElseThrow().infraRetries()).containsExactly(armed.get());
@@ -82,14 +86,8 @@ class InfraRetriesTest {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
 
     Optional<InfraRetry> armed =
-        infraRetries()
-            .build(state)
-            .arm(
-                "ABC-42",
-                "shop",
-                "https://host.invalid/p/1",
-                "unit-tests",
-                "runner_system_failure");
+        retries.arm(
+            "ABC-42", "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure");
 
     assertThat(armed.orElseThrow().attempt()).isEqualTo(1);
   }
@@ -97,7 +95,6 @@ class InfraRetriesTest {
   @Test
   void keepsTheTimeOfRetryAlreadyArmedForTheSamePipeline() {
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
-    InfraRetries retries = infraRetries().build(state);
     InfraRetry first =
         retries
             .arm(
@@ -120,14 +117,8 @@ class InfraRetriesTest {
             .build());
 
     Optional<InfraRetry> armed =
-        infraRetries()
-            .build(state)
-            .arm(
-                "ABC-42",
-                "shop",
-                "https://host.invalid/p/1",
-                "unit-tests",
-                "runner_system_failure");
+        retries.arm(
+            "ABC-42", "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure");
 
     assertThat(armed.orElseThrow().at()).isEqualTo(NOW.plusSeconds(45 * 60).toEpochMilli());
   }
@@ -141,14 +132,8 @@ class InfraRetriesTest {
             .build());
 
     Optional<InfraRetry> armed =
-        infraRetries()
-            .build(state)
-            .arm(
-                "ABC-42",
-                "shop",
-                "https://host.invalid/p/1",
-                "unit-tests",
-                "runner_system_failure");
+        retries.arm(
+            "ABC-42", "shop", "https://host.invalid/p/1", "unit-tests", "runner_system_failure");
 
     assertThat(armed).isEmpty();
   }
@@ -184,7 +169,7 @@ class InfraRetriesTest {
             .infraRetries(List.of(later))
             .build());
 
-    Map<String, InfraRetry> due = infraRetries().build(state).due();
+    Map<String, InfraRetry> due = retries.due();
 
     assertThat(due).containsOnlyKeys("ABC-42");
   }
@@ -200,7 +185,7 @@ class InfraRetriesTest {
             .infraRetries(List.of(armed))
             .build());
 
-    infraRetries().build(state).sent("ABC-42", armed);
+    retries.sent("ABC-42", armed);
 
     TaskState after = state.task("ABC-42").orElseThrow();
     assertThat(after.infraRetries()).containsExactly(armed.sentAt(NOW.toEpochMilli()));
@@ -236,7 +221,7 @@ class InfraRetriesTest {
                         3)))
             .build());
 
-    infraRetries().build(state).clear("ABC-42", false);
+    retries.clear("ABC-42", false);
 
     assertThat(state.task("ABC-42").orElseThrow().infraRetries()).containsExactly(sent);
   }
@@ -249,7 +234,6 @@ class InfraRetriesTest {
     state.putTask(
         "ABC-43",
         TaskState.builder("proj", "/wt2", TaskStatus.CI_POLLING).pipelineStatus("running").build());
-    InfraRetries retries = infraRetries().build(state);
 
     assertThat(retries.stillWaiting("ABC-42")).isTrue();
     assertThat(retries.stillWaiting("ABC-43")).isFalse();
@@ -258,7 +242,6 @@ class InfraRetriesTest {
 
   @Test
   void doesNotApplyWhereTheTaskIsPastItsReview() {
-    final InfraRetries retries = infraRetries().build(state);
     state.putTask("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build());
     state.putTask("ABC-43", TaskState.builder("proj", "/wt2", TaskStatus.DEPLOYED).build());
     state.putTask("ABC-44", TaskState.builder("proj", "/wt3", TaskStatus.DEPLOY_CONFLICT).build());
@@ -276,6 +259,6 @@ class InfraRetriesTest {
         "ABC-42",
         TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).pipelineStatus("success").build());
 
-    assertThat(infraRetries().build(state).stillWaiting("ABC-42")).isTrue();
+    assertThat(retries.stillWaiting("ABC-42")).isTrue();
   }
 }

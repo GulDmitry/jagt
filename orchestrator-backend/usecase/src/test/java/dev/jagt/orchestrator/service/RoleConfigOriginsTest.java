@@ -1,11 +1,12 @@
 package dev.jagt.orchestrator.service;
 
-import static dev.jagt.orchestrator.service.TestRoleConfigOriginsBuilder.roleConfigOrigins;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.RoleConfig;
 import dev.jagt.orchestrator.testing.FakeLogCapture;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,7 +25,23 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class RoleConfigOriginsTest {
 
+  @TempDir Path root;
+
   private final ConfigService config = mock(ConfigService.class);
+  private RoleConfigOrigins origins;
+
+  @BeforeEach
+  void shipsTheAcceptanceRoleWithAnEmptyJagtYml() throws Exception {
+    Files.createDirectories(root.resolve("roles/acceptance"));
+    Files.copy(
+        Path.of("../../roles/acceptance/role.yml.dist"),
+        root.resolve("roles/acceptance/role.yml.dist"));
+    Files.writeString(root.resolve("jagt.yml"), "");
+    Files.writeString(root.resolve("roles/acceptance/role.yml"), "");
+    OrchestratorPaths paths =
+        new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
+    origins = new RoleConfigOrigins(new InstalledRoles(paths), config, paths);
+  }
 
   static Stream<Arguments> origins() {
     return Stream.of(
@@ -60,11 +78,9 @@ class RoleConfigOriginsTest {
   @ParameterizedTest(name = "{0}")
   @MethodSource("origins")
   void logsEachRoleSettingWithTheFileItCameFrom(
-      String name, String humanCopy, ConfigFile file, List<String> expected, @TempDir Path root)
-      throws Exception {
+      String name, String humanCopy, ConfigFile file, List<String> expected) throws Exception {
     when(config.load()).thenReturn(file);
-    RoleConfigOrigins origins =
-        roleConfigOrigins().withRoot(root).withHumanCopy(humanCopy).build(config);
+    Files.writeString(root.resolve("roles/acceptance/role.yml"), humanCopy);
 
     try (FakeLogCapture appender = new FakeLogCapture(RoleConfigOrigins.class)) {
       origins.logAtStart();
@@ -82,8 +98,7 @@ class RoleConfigOriginsTest {
   }
 
   @Test
-  void everyValueIsDefaultedWhereNoJagtYmlExistsYet(@TempDir Path root) throws Exception {
-    RoleConfigOrigins origins = roleConfigOrigins().withRoot(root).build(config);
+  void everyValueIsDefaultedWhereNoJagtYmlExistsYet() throws Exception {
     Files.delete(root.resolve("jagt.yml"));
 
     try (FakeLogCapture appender = new FakeLogCapture(RoleConfigOrigins.class)) {
