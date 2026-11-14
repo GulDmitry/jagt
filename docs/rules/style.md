@@ -86,6 +86,8 @@ Each rule below is AGENTS.md "Code" / "First priority"; only its why and details
   ([0034](../decisions/0034-null-is-declared-and-the-compiler-checks-it.md)).
 - **Code speaks the Java the build targets**: record and switch patterns, `instanceof` patterns, switch expressions,
   a single expression where a stream or `Optional` says it; a toolchain bump applies its new forms tree-wide.
+  Error Prone fails the build on a missed `instanceof` or switch form in every source set
+  ([0165](../decisions/0165-error-prone-keeps-the-java-the-build-targets.md)).
 - On every code + test change the production code is refactored until its tests are light.
 
 ## Code review is mandatory after every code change, before committing

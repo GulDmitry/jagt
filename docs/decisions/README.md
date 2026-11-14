@@ -178,3 +178,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0162 A check holds for all code](0162-a-check-holds-for-all-code.md) (amends 0034, 0053, 0143, 0146)
 - [0163 A test shares a builder, a fake or a scanner](0163-a-test-shares-a-builder-a-fake-or-a-scanner.md) (amends 0162)
 - [0164 A unit test is named after its main class](0164-a-unit-test-is-named-after-its-main-class.md) (amends 0163)
+- [0165 Error Prone keeps the Java the build targets](0165-error-prone-keeps-the-java-the-build-targets.md)

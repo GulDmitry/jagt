@@ -119,9 +119,7 @@ public class McpProtocolService implements McpToolRegistry {
   private @Nullable String keepAlive(@Nullable String callerCwd) {
     var caller = stateService.findByWorktree(callerCwd);
     long now = clock.millis();
-    caller.ifPresent(entry -> {
-      KeepAlive.beat(stateService, entry, new SessionSign.Called(), now);
-    });
+    caller.ifPresent(entry -> KeepAlive.beat(stateService, entry, new SessionSign.Called(), now));
     return caller.map(Map.Entry::getKey).orElse(null);
   }
 
