@@ -6,7 +6,7 @@ Which facts jagt tells, to which channel, in whose words, and once.
 ## Requirements
 
 ### Requirement: A point is routed to the channels jagt.yml lists, told once per key
-A point is a fact that stands (`flow/Point`): an id and what makes it stand. `notifications.channels` SHALL name each channel (kinds `desktop`,
+A point is a fact that stands (`flow/role/Point`): an id and what makes it stand. `notifications.channels` SHALL name each channel (kinds `desktop`,
 `teams`, `command`) and `notifications.points` route a point to channels, each route with its own title and text. A point nobody routes is told to
 nobody. `PointWatch` SHALL observe each persisted write and tell a standing point once per (task, point, key), in `ToldOnce.points`; one standing at
 start is told silently.

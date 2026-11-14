@@ -67,7 +67,7 @@ Master's reviewer, the ⌘K palette.
 - Every read's schema carries a **`failure`** string, empty **only** when the host itself answered,
   else naming the tool or server that stopped it.
 - A non-empty `failure` is **empty facts** (unreadable), logged at ERROR, never `exists=false`.
-- On an unreadable read the callers ask `McpHealth` (`adapter/assistant/ClaudeMcpHealthProbe`,
+- On an unreadable read the callers ask `McpHealth` (`adapter/assistant/reach/ClaudeMcpHealthProbe`,
   `claude mcp list`): **three** values — down / nothing down / **could not be established**; merging
   the last two is the same bug.
 - The surfaces say which happened: **never "could not read (or not found)"**.

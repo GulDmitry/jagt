@@ -26,6 +26,6 @@ Input: the lines of `stops.jsonl` (beside `state.json`) with no line of their ow
 5. **Append one line to `stops-reviewed.jsonl`**: `{"at":…, "task":…, "trigger":…, "who":…, "class":…, "fix":"<sha or why none>",
    "lift":"<safe, or what must be true first>"}`. A stop of a class already in the file reuses its class and lift verdict.
 6. Tell the human which stops may be lifted now, and what changed for each. No lift is advised before its line exists.
-7. **A verdict that changes when a class may be lifted rewrites that trigger's `next` in `task/TaskStop`**, in the
+7. **A verdict that changes when a class may be lifted rewrites that trigger's `next` in `task/stop/TaskStop`**, in the
    fix's commit, so every install reads it on the card's hover. Generic words only: no task, project, path, host or
    vendor of this machine; the cases that taught it stay in `stops-reviewed.jsonl`.

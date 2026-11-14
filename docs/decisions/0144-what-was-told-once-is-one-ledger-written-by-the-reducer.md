@@ -14,7 +14,7 @@ Accepted 2026-11-07.
 
 ## Decision
 
-- `task/ToldOnce` on the round holds one entry per `Kind`: the key the fact was told for. Absent reads as never told.
+- `task/turn/ToldOnce` on the round holds one entry per `Kind`: the key the fact was told for. Absent reads as never told.
 - `said(kind, key)` is true only for the key told; another key (a new round, a new silence, a new tree) tells again.
 - `TaskReducer.told` and `TaskReducer.untold` are the only callers of `withTold` (`FlowDoorsTest`).
 - A reset names the kinds it clears: the auto-review reset never clears the silence or the failed verification.

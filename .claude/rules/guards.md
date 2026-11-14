@@ -1,12 +1,12 @@
 ---
 paths:
   - "**/surface/agent/*Gate*.java"
-  - "**/service/ReadGate.java"
-  - "**/service/HostCliLine.java"
-  - "**/service/ToolGate.java"
-  - "**/service/AcceptanceProbing.java"
-  - "**/service/ReadScopes.java"
-  - "**/service/WorktreeHooks.java"
+  - "**/service/gate/ReadGate.java"
+  - "**/service/gate/HostCliLine.java"
+  - "**/service/gate/ToolGate.java"
+  - "**/service/scenario/AcceptanceProbing.java"
+  - "**/service/gate/ReadScopes.java"
+  - "**/service/git/WorktreeHooks.java"
   - "**/BoardWriteFilter.java"
   - "**/adapter/assistant/ReadOnlyTools.java"
 ---

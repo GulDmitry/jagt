@@ -62,7 +62,8 @@ It SHALL decide a stop for a suspected loop ([task-stops](../task-stops/spec.md)
 - **THEN** it presses nothing, and the task waits for you; an unpushed commit, uncommitted work or replies drafted since the last ship make it due
 
 ### Requirement: The human keeps what mine and humanPaths name
-`roles.master.mine` SHALL name the steps (`task/MasterRight`) and verbs the human keeps, any `TaskAction` or `GlobalCommand` id. `humanPaths` keeps a
+`roles.master.mine` SHALL name the steps (`task/master/MasterRight`) and verbs the human keeps, any `TaskAction` or `GlobalCommand` id.
+`humanPaths` keeps a
 task's ship and deploy where it changes a path they name (`HumanPaths`). The Master SHALL press every other verb through `press_task` and
 `run_command` as a human's press, held to a Master case. A command declares `whyNotTheMaster` where the Master never runs it, whatever `mine` says.
 

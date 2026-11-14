@@ -7,7 +7,7 @@ What the agent CLI's subscription has used, shown and told, never a gate.
 
 ### Requirement: Limits are read through the CLI's own login
 A `usage` job SHALL read the subscription's windows and paid usage every `usageLimits.every` through
-`port/SubscriptionUsage`, one adapter per `orchestrator.agent.cli`. The stored login is read at each call and never
+`port/agent/SubscriptionUsage`, one adapter per `orchestrator.agent.cli`. The stored login is read at each call and never
 kept or refreshed. `usageLimits.enabled: false` reads, tells and shows nothing.
 
 #### Scenario: An expired login

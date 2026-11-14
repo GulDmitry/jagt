@@ -16,7 +16,7 @@ Accepted 2026-10-19.
 - Every constructor in `main` is called from `main`; `ProductionConstructorTest` fails the build on one that is not.
 - Exempt: a record's canonical constructor, the only constructor of a Spring bean or a Boot failure analyzer, a private constructor.
 - What varies is a collaborator: `Clock`, the executors, `HttpClient` and `RetryPolicy` come from `RuntimeWiring`.
-- OS name, home, environment, PATH and the running jar come from `port/Host`.
+- OS name, home, environment, PATH and the running jar come from `port/host/Host`.
 - A limit that never varies stays a constant; its test writes the volume that reaches it.
 - `RuntimeWiring` declares its own `TaskScheduler`, so `@Scheduled` never lands on the board's executor.
 

@@ -9,7 +9,7 @@ and hooks, and what a worktree leaves behind.
 
 ### Requirement: The backend owns no terminal
 The backend SHALL own no terminal, and no terminal UI SHALL come back. It MUST NOT automate a GUI or keystrokes. Agent terminals SHALL be windows in
-a session host (`port/SessionHost`, tmux today), one kitty window attached.
+a session host (`port/terminal/SessionHost`, tmux today), one kitty window attached.
 
 #### Scenario: An agent terminal opens
 - **WHEN** jagt starts an agent session
@@ -166,7 +166,8 @@ question, else the status message.
 
 ### Requirement: jagt reaps a worktree's processes
 Each sub-agent spawns its own language server (jdtls ~1–2 GB per Java worktree), never released. jagt SHALL reap it on `done`
-(`port/WorktreeProcesses`, `LsofWorktreeProcesses.reap`). `orchestrator.claude.disabledPlugins` SHALL write `enabledPlugins: {"<name>": false}` into
+(`port/worktree/WorktreeProcesses`, `LsofWorktreeProcesses.reap`). `orchestrator.claude.disabledPlugins` SHALL write `enabledPlugins:
+{"<name>": false}` into
 worktree settings, default empty.
 
 #### Scenario: A Java task is done

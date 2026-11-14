@@ -39,7 +39,7 @@ A unit test is `<MainClass>[<Aspect>]Test` in its package ([0164](../decisions/0
 
 - **`ProductionConstructorTest`** exempts a record's canonical constructor, a bean's or failure analyzer's only one, a private one.
 - A test **mocks a collaborator, never a constructor**: a clock, a pool, a path, a limit or a host fact that varies is a collaborator, supplied by
-  `RuntimeWiring`, `OrchestratorPaths` or `port/Host`; a limit that never varies is a constant, and the test writes the volume that reaches it.
+  `RuntimeWiring`, `OrchestratorPaths` or `port/host/Host`; a limit that never varies is a constant, and the test writes the volume that reaches it.
 - Why: a second constructor builds in tests a class production never builds, and it sidesteps `MockCeilingTest`.
 
 ### Bare binary names, and a concurrent unit suite

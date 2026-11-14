@@ -4,9 +4,9 @@ paths:
   - "**/dev/jagt/orchestrator/surface/mcp/**"
   - "**/dev/jagt/orchestrator/startup/**"
   - "**/service/TaskLauncher.java"
-  - "**/service/TaskLaunches.java"
-  - "**/service/TicketPlacement.java"
-  - "**/service/ResumeRegistration.java"
+  - "**/service/launch/TaskLaunches.java"
+  - "**/service/launch/TicketPlacement.java"
+  - "**/service/launch/ResumeRegistration.java"
   - "**/task/TaskState.java"
 ---
 

@@ -7,7 +7,7 @@ What jagt asks of the machine it runs on, each only when `jagt.yml` asks for it,
 ## Requirements
 
 ### Requirement: The machine stays awake only when asked
-With `keepAwake: true`, the `keepawake` job SHALL hold `port/KeepAwake` while the Master is in `act`, auto-review
+With `keepAwake: true`, the `keepawake` job SHALL hold `port/host/KeepAwake` while the Master is in `act`, auto-review
 is enabled or `tracker.mode` takes work. Each minute it SHALL check, releasing the hold otherwise. On macOS it is `caffeinate -i -w
 <jagt's pid>`, on Linux `systemd-inhibit --what=idle:sleep` around `tail --pid=<jagt's pid>`, each ending with jagt.
 Unset, no job is declared and nothing is spawned.
@@ -64,7 +64,7 @@ IDE service folders present in the base repository SHALL be copied into a fresh 
 
 ### Requirement: jagt stops a worktree's container stacks
 Removing a worktree SHALL first take down every Compose project whose compose file lies under it
-(`port/WorktreeContainers`, `DockerComposeContainers.stop`, `docker compose -p <project> down -v --remove-orphans`). A project outside the
+(`port/worktree/WorktreeContainers`, `DockerComposeContainers.stop`, `docker compose -p <project> down -v --remove-orphans`). A project outside the
 worktree SHALL never be touched. `orchestrator.containers` selects the driver: `docker-compose` (default) or `none`.
 A missing or failing Docker SHALL log at most a WARN and never stop the removal.
 

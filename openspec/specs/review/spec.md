@@ -24,7 +24,7 @@ or ask via `outcome=question`. It SHALL send a question to REVIEW_PENDING, never
 
 ### Requirement: The outcome is a field
 `update_agent_status` SHALL take `outcome` (`question` | `no_changes` | `progress`) and `reviewRequestUrl`, the brief ending
-all three at REVIEW_PENDING. What a report means SHALL be the task's `task/AgentReport`, never a marker read out of its
+all three at REVIEW_PENDING. What a report means SHALL be the task's `task/turn/AgentReport`, never a marker read out of its
 line; an outcome typed into the message is words. A `state.json` from before SHALL read it once from the line's marker.
 Over uncommitted work `no_changes` SHALL become a round with a diff (`WorktreeChanges`, one `git status` per report).
 #### Scenario: A marker typed into the message
@@ -75,7 +75,7 @@ round it SHALL post nothing, and a draft SHALL go only where the answered note's
 - **THEN** replies are posted only now; a fixed thread is resolved, a disputed one left for the reviewer
 
 ### Requirement: Pipeline status is one of jagt's five words
-`TaskState.pipelineStatus` SHALL be one of jagt's five words: `success`, `failed`, `running`, `none`, `unknown`; `flow/Pipeline` parses it.
+`TaskState.pipelineStatus` SHALL be one of jagt's five words: `success`, `failed`, `running`, `none`, `unknown`; `flow/deploy/Pipeline` parses it.
 A round reading no listing SHALL write nothing, the last word standing flagged. The third such round running since the `lift`
 SHALL stop the task, its evidence the reads' words for why; a listing counts anew.
 #### Scenario: No checks dot while the host shows a failed run

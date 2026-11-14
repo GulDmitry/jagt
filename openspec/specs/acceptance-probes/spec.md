@@ -8,7 +8,7 @@ A plan's acceptance criteria, tagged, and its acceptance checks, declared as typ
 
 ### Requirement: A plan declares its probes in one form
 `plan.md` MAY hold a fenced `probes` block, one probe a line: `command [repo=<project>] [exit=<n>] <argv…>`,
-`ref <ref>` or `artifact <relative path>`, at most ten (`protocol/PlanProbes`). `repo=` and `exit=` each stand at most once,
+`ref <ref>` or `artifact <relative path>`, at most ten (`protocol/plan/PlanProbes`). `repo=` and `exit=` each stand at most once,
 before the argv, and only a `command` takes `repo=`. A command SHALL run as argv with no shell.
 A probe whose `repo=` is no repository of the task SHALL be refused as `validation`.
 
@@ -27,7 +27,7 @@ A probe whose `repo=` is no repository of the task SHALL be refused as `validati
 ### Requirement: A plan carries its tagged acceptance criteria
 `plan.md` SHALL hold a `## Acceptance criteria` section of at least one `- ` item, each `- [here] <text>`,
 `- [elsewhere: <part>] <text>` or `- [wrong: <why>] <text>`; `, own` inside the brackets marks one the session wrote itself
-(`protocol/PlanCriteria`). The criteria SHALL come from the ticket, read with every field, since a tracker may keep them in a
+(`protocol/plan/PlanCriteria`). The criteria SHALL come from the ticket, read with every field, since a tracker may keep them in a
 custom field; where it has none the session writes them. A criterion of a part this task does not build is `elsewhere`.
 
 #### Scenario: Criteria in a custom field
@@ -111,7 +111,7 @@ The last failing run's key is kept on the turn's marks. A question or permission
 
 ### Requirement: A multi-repository plan names every repository
 For a task with several repositories, `plan.md` SHALL hold a `## Repositories` section with one item per repository,
-`- [changed] <key>` or `- [unaffected: <why>] <key>` (`protocol/PlanRepositories`).
+`- [changed] <key>` or `- [unaffected: <why>] <key>` (`protocol/plan/PlanRepositories`).
 A PLAN_PENDING report SHALL be refused as `validation` for a missing section, an untagged item, a key outside the task
 or a repository left out. A repository the plan lacks is asked for with `needsProject`.
 On approval every repository tagged unaffected SHALL leave the task (`UnaffectedRepos`).
@@ -145,7 +145,7 @@ any key passes, configured or not, and `[unaffected]` keys are ignored.
 - **THEN** the plan passes
 
 ### Requirement: Scripted flows are run by jagt and judged by their report
-`port/AcceptanceRunner` SHALL run the named flows of the project's flows repository against one environment.
+`port/worktree/AcceptanceRunner` SHALL run the named flows of the project's flows repository against one environment.
 It runs them as argv with no shell and a timeout (`adapter/flows`; the folder's `flows.driver` is `none` or `playwright`).
 It answers per flow `passed`, `failed` or `unprovable` from the driver's JSON report, never its HTML.
 Evidence SHALL lie under `acceptance/` in the worktree; jagt holds no credential, the flows repository does.

@@ -22,12 +22,12 @@ Accepted 2026-10-25. Mechanism superseded by [0086](0086-the-breaker-is-resilien
 - Every headless call passes `CLAUDE_CODE_MAX_RETRIES=2`, so an outage ends inside the timeout with its own error.
 - After `orchestrator.assistant.breakerFailures` (3) consecutive provider failures the breaker opens for
   `breakerCooldown` (5m); then one probe read runs, success closes it, failure re-opens it.
-- A refused read throws `port/AssistantUnavailable`, an `IllegalStateException` naming the last provider error:
+- A refused read throws `port/assistant/AssistantUnavailable`, an `IllegalStateException` naming the last provider error:
   jobs book it as a failed run, a surface shows its sentence, `PaidRead` does not retry it.
 - `ProviderFault` reads the result envelope: `is_error` with `terminal_reason: api_error` and an `api_error_status`
   of 500 or more, or none (a refused connection), is a failure; 429 means the provider answered and never counts.
 - A timeout, a spend ceiling, another status or no envelope says nothing and is ignored.
-- The outage is a lost `port/Reach` (driver `assistant`), standing while the breaker is not closed.
+- The outage is a lost `port/reach/Reach` (driver `assistant`), standing while the breaker is not closed.
 
 ## Rejected
 

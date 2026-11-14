@@ -1,7 +1,9 @@
 package dev.jagt.orchestrator;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class TaskOpeningDoorsTest {
@@ -27,5 +29,14 @@ class TaskOpeningDoorsTest {
         .dependOnClassesThat()
         .haveFullyQualifiedName("dev.jagt.orchestrator.service.TaskLauncher")
         .check(MainClasses.CODE);
+  }
+
+  @Test
+  void everyClassTheDoorsNameExists() {
+    assertThat(
+            NamedClasses.in(
+                Path.of("src/test/java/dev/jagt/orchestrator/TaskOpeningDoorsTest.java")))
+        .isNotEmpty()
+        .allSatisfy(name -> assertThat(MainClasses.CODE.contain(name)).describedAs(name).isTrue());
   }
 }

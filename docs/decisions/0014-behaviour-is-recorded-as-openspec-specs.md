@@ -21,7 +21,7 @@ in a project saw the code and a commit message, nothing of what was decided. jag
   strict, or says `skip_specs: true` (`HandBack.specsOwed`).
 - `ship` folds the change into the main specs before the session commits (`SpecFold`), so the delta travels in the
   request with the code and the base branch stays read-only.
-- The CLI is a vendor: only `adapter/OpenSpec` names it, telemetry off.
+- The CLI is a vendor: only `adapter/worktree/OpenSpec` names it, telemetry off.
 
 ## Rejected
 

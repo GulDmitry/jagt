@@ -68,8 +68,9 @@ See [components](../../../docs/rules/components.md#whoever-works-on-jagt-reads-t
 - **THEN** it gets the same rules and the same MCP server
 
 ### Requirement: The steps the Master leaves you are checked at start
-`roles.master.mine` SHALL name only `task/MasterRight` steps, `TaskAction` ids or `GlobalCommand` ids, and in `act` `deploy` and `revert` both or
-neither; anything else SHALL refuse the start (`startup/MasterCheck`).
+`roles.master.mine` SHALL name only `task/master/MasterRight` steps, `TaskAction` ids or `GlobalCommand` ids, and in `act` `deploy` and
+`revert` both or
+neither; anything else SHALL refuse the start (`startup/role/MasterCheck`).
 
 #### Scenario: A misspelled step
 - **WHEN** `roles.master.mine` names a word that is no step and no verb

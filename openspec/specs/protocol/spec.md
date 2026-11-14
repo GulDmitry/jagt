@@ -80,9 +80,9 @@ tool, taking a message class, so a tool skipping validation does not compile.
 - **THEN** the schema offers it with no other edit
 
 ### Requirement: A session's refusal is a correction
-A refusal SHALL come back from the session's call, never a block or a human's question. `surface/mcp/ToolFailure` reads
+A refusal SHALL come back from the session's call, never a block or a human's question. `surface/mcp/refusal/ToolFailure` reads
 what comes next off what the handler threw: `validation`, a wrong argument, is fixed and resent; `business` (a
-`flow/Refusal`: what jagt holds refuses) and `permission` are the answer; `transient` alone is `retryable`.
+`flow/view/Refusal`: what jagt holds refuses) and `permission` are the answer; `transient` alone is `retryable`.
 
 #### Scenario: The board is full
 - **WHEN** a session asks for a 25th task, or hands back owing its notes
@@ -113,7 +113,7 @@ ask: the identical question returns the identical answer.
 - **THEN** it is asked once more at once, both calls billed; a failed call is not
 
 ### Requirement: Retries are bounded and end in a person
-`protocol/RetryPolicy` SHALL allow a paid read three attempts, spaced, under a budget. An exhausted policy answers with
+`protocol/read/RetryPolicy` SHALL allow a paid read three attempts, spaced, under a budget. An exhausted policy answers with
 no facts, never a guess; reaching the human is the caller's (`AutoReviewScheduler`).
 
 #### Scenario: An unattended poll exhausts

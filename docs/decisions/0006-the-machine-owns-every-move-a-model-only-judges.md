@@ -40,5 +40,5 @@ Accepted 2026-08-19 (`3195708`), recorded retroactively 2026-10-02.
 
 ## Reopen when
 
-- A transition is needed that only a model can decide, and no guard over `flow/Facts` can express it.
+- A transition is needed that only a model can decide, and no guard over `flow/capability/Facts` can express it.
 - A light model's answers come back wrong often enough that the heavy one redoes the work.

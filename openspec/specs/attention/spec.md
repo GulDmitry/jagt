@@ -94,7 +94,8 @@ nobody, as `DONE`'s; `done` stays highlighted.
 - **THEN** you are pinged; once !571, its only request, is merged, the card reads `merged` and the badge `you can close the task`
 
 ### Requirement: Attention tiers
-`flow/Attention` SHALL name the tier, pinned per status in `MoveTest`. `REQUIRED` (a stopped or asking session, a round back, a red run, a conflict,
+`flow/view/Attention` SHALL name the tier, pinned per status in `MoveTest`. `REQUIRED` (a stopped or asking session, a round back, a red
+run, a conflict,
 a round nothing reads again): header count, own-move filter, alarm edge. `OPTIONAL` (an approval landed, their own revert): a card badge only. `NONE`
 (owner not YOU): nothing.
 #### Scenario: Owner not YOU

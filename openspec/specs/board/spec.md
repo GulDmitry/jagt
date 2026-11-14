@@ -7,7 +7,8 @@ What a card shows and the surface it is drawn on; the verbs are [`board-verbs`](
 ## Requirements
 
 ### Requirement: One surface, one projection
-The board, served by the jar, SHALL be the one front-end. Its projection is `flow/Move` + `flow/TaskView`, built by `service/TaskViews`, rendered by
+The board, served by the jar, SHALL be the one front-end. Its projection is `flow/Move` + `flow/view/TaskView`, built by
+`service/task/TaskViews`, rendered by
 `/api/tasks`; gate and button read one `FlowRules.allows`; `TaskViews.snapshot()` reads the configuration once a render. A second surface MUST add
 no second answer to a board question. Stopping the backend is no verb.
 #### Scenario: Ship
@@ -17,7 +18,7 @@ no second answer to a board question. Stopping the backend is no verb.
 ### Requirement: A mark says what it replaces
 The colour legend SHALL be a section of the `help` report (`static/ui/legend.js`), never a control beside it; colours are
 [design.md](../../../docs/rules/design.md)'s. A control the board lacks is the bug: New task form's branch-strategy picker and MCP schema both read
-`task/BranchStrategy`. A verb with all its inputs gets no form. The project key shows only where projects are several, in the install or task.
+`task/repo/BranchStrategy`. A verb with all its inputs gets no form. The project key shows only where projects are several, in the install or task.
 #### Scenario: A mark is unclear
 - **WHEN** the human opens `Help`
 - **THEN** above the commands every mark stands beside its one board-wide meaning

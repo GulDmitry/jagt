@@ -49,8 +49,8 @@ The window SHALL run per round from `mrCreatedAt`, restamped on each entry into 
 - **THEN** the card says `polling stopped` and asks for you, and one banner says so, none again after a restart
 
 ### Requirement: The cadence is the whole policy
-`AutoReviewCadence` SHALL be the whole policy: enabled, the interval ramp, `watch(task, now)` → `task/AutoReviewWatch` (the next-poll stamp, window
-elapsed, off, or nothing). `AutoReviewScheduler.decide` SHALL translate the same watch.
+`AutoReviewCadence` SHALL be the whole policy: enabled, the interval ramp, `watch(task, now)` → `task/review/AutoReviewWatch` (the
+next-poll stamp, window elapsed, off, or nothing). `AutoReviewScheduler.decide` SHALL translate the same watch.
 
 #### Scenario: An open request nothing polls
 - **WHEN** a request is open and nothing polls it
@@ -79,7 +79,7 @@ the shared `TaskScheduler` once ready: never overlapping itself, the next run st
 - **AND** a run lasting longer than the job's interval is followed the moment it ends, never beside it
 
 ### Requirement: A restart keeps the run before
-`logback-spring.xml` SHALL drop Boot's rolling appender; `surface/ui/LogFileRoll` SHALL roll the file into `.1` before it opens
+`logback-spring.xml` SHALL drop Boot's rolling appender; `surface/ui/log/LogFileRoll` SHALL roll the file into `.1` before it opens
 and keep the `.1` it replaces as a dated archive for 14 days.
 
 #### Scenario: Restart
@@ -183,7 +183,7 @@ and startup refuses `file` without `tracker.file`.
 - **THEN** it is read through your MCP servers as without the file tracker
 
 ### Requirement: The activity report is the task activity log
-`command/ActivityReport` SHALL list every status change of every live and every finished task, newest first: time (UTC), task, from and to
+`command/activity/ActivityReport` SHALL list every status change of every live and every finished task, newest first: time (UTC), task, from and to
 status, origin. A kind and a project key after the verb filter it. A report line naming a task still on the board SHALL open that task.
 #### Scenario: Live and finished tasks merge
 - **WHEN** finished ABC-1 changed at 03:00 and live ABC-2 at 02:00

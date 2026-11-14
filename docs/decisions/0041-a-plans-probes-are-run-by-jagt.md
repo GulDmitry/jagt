@@ -15,7 +15,7 @@ Accepted 2026-10-14.
 
 ## Decision
 
-- `plan.md` declares probes in a fenced `probes` block, parsed by one class (`protocol/PlanProbes`): `command`,
+- `plan.md` declares probes in a fenced `probes` block, parsed by one class (`protocol/plan/PlanProbes`): `command`,
   `ref`, `artifact`, at most ten. A line it cannot read refuses the PLAN_PENDING report.
 - They are read once, as the plan is put up, into `state.json`: what runs is what was ratified, whatever
   `plan.md` says later.

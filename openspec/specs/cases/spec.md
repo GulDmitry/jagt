@@ -87,7 +87,7 @@ It SHALL refuse a file it cannot read. Each refusal names the file and the case 
 
 ### Requirement: The turn is a fact on the task
 `flow/Turns.next` SHALL alone answer who holds a task's turn from its status, report, stop and the Master's mode and
-`mine`; the board's owner maps it. A relay SHALL open the session's turn (`task/Turn`) and its next report close it.
+`mine`; the board's owner maps it. A relay SHALL open the session's turn (`task/turn/Turn`) and its next report close it.
 Each starts a turn of its own id, which a Master's verdict answers. A step relayed again with the same facts while
 that turn is open SHALL send nothing. What the Master pressed, left or failed to answer SHALL stay on the turn, so a
 restart repeats none.
@@ -172,7 +172,7 @@ human extends the cases.
 - **THEN** the reply is taken and ABC-42 is not stopped
 
 ### Requirement: A relay acts only where the task still stands
-Every relay SHALL carry the standing of the task it decided on: `flow/Standing`, its status, the way its stop ends and its turn.
+Every relay SHALL carry the standing of the task it decided on: `flow/session/Standing`, its status, the way its stop ends and its turn.
 It SHALL refuse where the task stands elsewhere by the time it is sent, opening no turn and writing nothing.
 Writes that move none of these (usage, polls, silence, probes) never refuse one.
 

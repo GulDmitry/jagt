@@ -17,13 +17,13 @@ Accepted 2026-11-09. Beside [0110](0110-the-task-statechart-runs-on-an-engine-of
 
 ## Decision
 
-- `flow/ConflictEnding` is the table: per cause, the reads that end it in the order they run, and the stops each reads under.
+- `flow/deploy/ConflictEnding` is the table: per cause, the reads that end it in the order they run, and the stops each reads under.
 - `RED_PIPELINE`: later green, closed request, staged fix. `MERGE`: closed request, staged fix. `REVERT`: staged fix.
 - A later green reads under no stop or a deploy-read stop; the others under any stop but a pause.
 - `DeployConflictJob` is the one reader: every 20 s it walks the table for each task in `DEPLOY_CONFLICT`.
 - A read that may have changed the task hands the next read the task as it now is; one that ended the conflict ends the walk.
 - A read of the host runs at most once a minute per task, as before; the worktree read every pass.
-- Each read is a `job/ConflictRead`; a new ending is one row and one read, touching nothing else.
+- Each read is a `job/conflict/ConflictRead`; a new ending is one row and one read, touching nothing else.
 - A `revert` pressed on a conflict is a verb, not a read: it stays with `Move.actions()`.
 
 ## Rejected

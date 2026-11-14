@@ -1,10 +1,10 @@
 ---
 paths:
   - "**/flow/Move.java"
-  - "**/flow/Owner.java"
-  - "**/flow/Attention.java"
-  - "**/flow/TaskView.java"
-  - "**/service/TaskViews.java"
+  - "**/flow/view/Owner.java"
+  - "**/flow/view/Attention.java"
+  - "**/flow/view/TaskView.java"
+  - "**/service/task/TaskViews.java"
   - "**/static/ui/card.js"
   - "**/static/ui/header.js"
 ---

@@ -1,14 +1,14 @@
 ---
 paths:
-  - "**/service/ReviewSweepService.java"
+  - "**/service/review/ReviewSweepService.java"
   - "**/service/Round*.java"
   - "**/AutoReview*.java"
-  - "**/task/AutoReviewWatch.java"
+  - "**/task/review/AutoReviewWatch.java"
   - "**/dev/jagt/orchestrator/job/Job.java"
   - "**/dev/jagt/orchestrator/job/Jobs.java"
-  - "**/service/ReviewDrafts.java"
-  - "**/flow/AgentReport.java"
-  - "**/flow/Pipeline.java"
+  - "**/service/review/ReviewDrafts.java"
+  - "**/task/turn/AgentReport.java"
+  - "**/flow/deploy/Pipeline.java"
   - "**/service/master/**"
 ---
 

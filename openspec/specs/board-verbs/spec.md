@@ -21,7 +21,8 @@ and `remove-repo <ticket> <project>` the one to drop, neither with a button; the
 - **THEN** its top row offers `approve-plan`, or `add-repo` on the NEEDS INPUT card; no other status or question does
 
 ### Requirement: Commands are two declarations
-A verb a task owns SHALL be a `flow/TaskAction` row gated by `Move`, run by `CommandService`; one no task owns is a `command/GlobalCommand` bean
+A verb a task owns SHALL be a `flow/capability/TaskAction` row gated by `Move`, run by `CommandService`; one no task owns is a
+`command/GlobalCommand` bean
 (`command/*`, collected by `GlobalCommands`) running itself. It declares the board part it opens typed alone and its tab (`offeredOn`).
 `CommandReference` renders `help` and the palette's verb list. A launch creating no task is refused.
 #### Scenario: Reports
@@ -44,7 +45,8 @@ button, no tier 2 offer, and one line typing into that session (`POST /api/tasks
 - **THEN** the dialog closes
 
 ### Requirement: Tier 1 is grammar, tier 2 only proposes
-Tier 1, a parsing palette line or a board button, SHALL stay LLM-free. Tier 2, `surface/board/NaturalLanguageDispatch`, sends ⌘K free text via `POST
+Tier 1, a parsing palette line or a board button, SHALL stay LLM-free. Tier 2, `surface/board/task/NaturalLanguageDispatch`, sends ⌘K free
+text via `POST
 /api/interpret` to a model proposing one grammar command, validated (task and verb exist) and run through `CommandService`: never more than a
 button. The call is stripped (`--strict-mcp-config --mcp-config '{"mcpServers":{}}'`, no `--setting-sources`), interpretation first.
 #### Scenario: A proposal names no real verb
@@ -53,7 +55,7 @@ button. The call is stripped (`--strict-mcp-config --mcp-config '{"mcpServers":{
 
 ### Requirement: Rules live behind the controller
 `service/CommandService` SHALL validate against `Move` first; `service/TaskLauncher` starts a task; controller and
-palette own no rules. A refusal's sentence is the whole answer; one a caller acts on carries a `flow/Refusal.Code`, grown only when something
+palette own no rules. A refusal's sentence is the whole answer; one a caller acts on carries a `flow/view/Refusal.Code`, grown only when something
 branches on it. No tools facade: each MCP tool group under `surface/mcp/tools` declares its own.
 #### Scenario: A stale tab
 - **WHEN** a stale tab sends a verb `Move` no longer allows

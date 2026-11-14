@@ -3,10 +3,12 @@ package dev.jagt.orchestrator;
 import static com.tngtech.archunit.core.domain.JavaCall.Predicates.target;
 import static com.tngtech.archunit.core.domain.properties.HasName.Predicates.name;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.jagt.orchestrator.flow.session.StopKind;
 import dev.jagt.orchestrator.job.TaskJob;
 import dev.jagt.orchestrator.task.turn.Turn;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class FlowDoorsTest {
@@ -272,5 +274,12 @@ class FlowDoorsTest {
         .should()
         .callMethodWhere(target(name("restoredFrom")))
         .check(MainClasses.CODE);
+  }
+
+  @Test
+  void everyClassTheDoorsNameExists() {
+    assertThat(NamedClasses.in(Path.of("src/test/java/dev/jagt/orchestrator/FlowDoorsTest.java")))
+        .isNotEmpty()
+        .allSatisfy(name -> assertThat(MainClasses.CODE.contain(name)).describedAs(name).isTrue());
   }
 }

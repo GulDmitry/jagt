@@ -8,8 +8,8 @@ A task's life: which status allows which action and where each outcome leads; ho
 
 ### Requirement: One table owns the life of a task
 `flow/TaskChart` SHALL hold, as one compiler-checked statechart, which statuses allow which action and what each outcome leads to; `flow/FlowRules`
-answers from it. Its guard MUST read `flow/Facts`: an open request, a request found merged, a live deploy, and a liveness probe the projection
-passes as "no" (a spawn per row).
+answers from it. Its guard MUST read `flow/capability/Facts`: an open request, a request found merged, a live deploy, and a liveness probe
+the projection passes as "no" (a spawn per row).
 
 #### Scenario: An action is asked
 - **WHEN** an action is asked
@@ -34,7 +34,8 @@ The Master SHALL press every `TaskAction` where `roles.master.mode` is `act` and
 - **THEN** the door admits it as a human's press, held to a Master case
 
 ### Requirement: Door one runs an action
-`flow/FlowEngine.run` SHALL check the rules, run the action's `flow/TaskCapability`, and write the status the table gives for its `flow/Outcome`.
+`flow/FlowEngine.run` SHALL check the rules, run the action's `flow/capability/TaskCapability`, and write the status the table gives for
+its `flow/capability/Outcome`.
 
 #### Scenario: A verb runs
 - **WHEN** an allowed action finishes

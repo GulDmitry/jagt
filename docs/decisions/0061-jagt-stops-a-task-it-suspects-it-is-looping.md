@@ -24,7 +24,7 @@ Amended by [0140](0140-in-act-the-master-decides-a-stop-for-a-suspected-loop.md)
 
 - A task carries its relayed rounds on `TaskState.loop`: threads, the failing job, a digest of the brief.
 - A brief equal to the last one relayed is not relayed again.
-- `task/LoopBreaker`, pure, trips on N stalled rounds or a ship past the ceiling within the auto-review window.
+- `task/review/LoopBreaker`, pure, trips on N stalled rounds or a ship past the ceiling within the auto-review window.
 - A stop is a fact on the task, not a status: the flow table keeps its fourteen, the work keeps its place in it.
 - `lift`, human-only, is the one control; `LoopStopGuard` refuses an unattended ship or deploy at the door.
 - The board reuses the amber ring, `stopped, yours to restart`, its hover the evidence and the proposal.

@@ -153,7 +153,7 @@ call but a read, however wrapped (quoted as data, it runs); a line naming the bo
 - **THEN** refused
 
 ### Requirement: Repositories multiply worktrees, not agents
-`task/TaskRepo` SHALL be a list, `repos.get(0)` running the session. Creation is all-or-nothing (`resolveRepos`),
+`task/repo/TaskRepo` SHALL be a list, `repos.get(0)` running the session. Creation is all-or-nothing (`resolveRepos`),
 unwinding what was cut wherever it fails; a task's repositories are one scope (`findByWorktree`). A round is merged
 as the least finished (`RoundReading.merged`): approved only when all are, the **worst** pipeline, each comment prefixed with its repository.
 

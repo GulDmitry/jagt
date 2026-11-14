@@ -15,6 +15,7 @@ Status is part of the map: *built* means built; fix a stale row, never delete it
 - [The flow machine](#the-flow-machine)
 - [The artifact chain](#the-artifact-chain)
 - [Ports and who answers them](#ports-and-who-answers-them)
+- [The package map](#the-package-map)
 - [Where a new thing goes](#where-a-new-thing-goes)
 - [The board is two rings too](#the-board-is-two-rings-too)
 - [The agent system is a ring](#the-agent-system-is-a-ring)
@@ -195,6 +196,147 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
   guessed from a name, a URL or a host is a defect ([0130](docs/decisions/0130-every-third-party-is-a-configured-seam.md)).
 - **A driver that cannot reach its party fails jagt, not a task**: the board's head carries it, never a card's stop.
 
+## The package map
+
+Every package of every module as it stands on disk, one line each; `PackagesTest` fails on a package missing here, on a
+row with no package, on a package of more than ten classes and on one of a single class
+([0166](docs/decisions/0166-packages-are-architecture.md)).
+
+| package | module | holds |
+|---------|--------|-------|
+| `flow` | core | the chart, reducer, rules and engine: which status allows what, whose turn |
+| `flow/capability` | core | a verb's contract: `TaskAction`, `TaskCapability`, interceptors, outcomes |
+| `flow/deploy` | core | the chart regions for deploy: phases, steps, pipeline, red causes |
+| `flow/repo` | core | the chart regions for git, repository and request |
+| `flow/role` | core | the chart's roles and points: arbiter, checker role, master phase |
+| `flow/session` | core | the chart's session facts: stop kinds and holds, standing, human waits |
+| `flow/view` | core | what a reader sees of a task: `TaskView`, attention, owner, phase |
+| `port` | core | the interfaces the rules declare that no kind owns: store, events, presence, tracker workflow |
+| `port/agent` | core | the agent runtime, its sandbox, session log, usage and tool-gate ports |
+| `port/assistant` | core | the headless assistants and readers, their answers |
+| `port/channel` | core | the channel driver port and what it carries |
+| `port/codehost` | core | the code host port and its commands |
+| `port/host` | core | the host: processes, keep-awake, supervisor, startup checks |
+| `port/reach` | core | what jagt's reach loss is told in |
+| `port/terminal` | core | terminal, editor and session-host ports |
+| `port/worktree` | core | worktree-facing ports: acceptance runner, build tools, line diff, specs, containers, processes |
+| `protocol` | core | what crosses into jagt: tool messages, reads, hooks, schema |
+| `protocol/message` | core | the tool messages a session sends and their arguments |
+| `protocol/plan` | core | the plan's parts: criteria, probes, repositories, judgements |
+| `protocol/read` | core | the reads jagt asks a model for: round, review, ticket, retry policy |
+| `task` | core | the task record, its status and the migrations of old records |
+| `task/acceptance` | core | what the acceptance role leaves on a task: verdict, decline, question, ending |
+| `task/deploy` | core | the deployment record, its conflicts, failed jobs and infra retries |
+| `task/launch` | core | what a task is born from: request, name, routing question, tracker facts |
+| `task/master` | core | what the Master leaves on a task: mode, rights, the record |
+| `task/plan` | core | the plan gate, its artifacts and probes |
+| `task/repo` | core | a task's repositories: remotes, branch strategy, trust, project config |
+| `task/review` | core | review rounds, loop breaker and the merge-request facts |
+| `task/session` | core | the session record, its wake and the ask stamp |
+| `task/stop` | core | a stop on a task, its guard and triage |
+| `task/text` | core | text and file helpers of the record: ANSI, atomic files, UTC time |
+| `task/turn` | core | the turn on a task: steps, reports, human waits, what was told once |
+| `task/usage` | core | spend of a task: tokens, model tier, cost per accepted task |
+| `capability` | usecase | the verbs with no feature of their own: plan, scenarios, sweep, trust, git state guard |
+| `capability/deploy` | usecase | deploy and revert: capability, runner, service |
+| `capability/done` | usecase | done: the capability, retirement and finished artifacts |
+| `capability/ide` | usecase | open a task in the IDE and its diff |
+| `capability/repo` | usecase | attach and remove a repository |
+| `capability/session` | usecase | focus, hand off, respawn and run a session |
+| `capability/ship` | usecase | ship: capability, service, spec fold and merged guard |
+| `capability/stop` | usecase | pause, lift and escalate a stop |
+| `command` | usecase | what a human asks that no task owns, with no feature of its own: `GlobalCommand`, do, resume, help |
+| `command/activity` | usecase | the activity report |
+| `command/host` | usecase | commands about jagt itself: jobs, log, login, restart, run, supervise |
+| `command/master` | usecase | the Master's commands and records |
+| `command/stats` | usecase | stats and finished reports with their renderers |
+| `command/workspace` | usecase | projects and worktrees as commands |
+| `config` | usecase | the properties jagt reads from `jagt.yml` |
+| `config/role` | usecase | a role's definition, files, options, cases and session brief |
+| `job` | usecase | unattended work with no feature of its own: `Job`, `Jobs`, the scheduler, usage and worktree sweeps |
+| `job/checker` | usecase | the checker role's jobs: check, decline, wait, records and prompts |
+| `job/conflict` | usecase | deploy-conflict jobs and the reads that end them |
+| `job/deploy` | usecase | deploy checks, pipelines and infra retries |
+| `job/master` | usecase | the Master's deploy, repo, ship and stop jobs |
+| `job/review` | usecase | auto-review and the verify and your-move jobs |
+| `job/session` | usecase | session liveness, wake, restart and watchdog jobs |
+| `job/stop` | usecase | stop reads and the stop triage |
+| `job/tracker` | usecase | tracker intake and ticket close jobs |
+| `job/verdict` | usecase | the Master's verdict and answer jobs |
+| `notify` | usecase | points routed to channels: routes, messages, posts, watch |
+| `service` | usecase | state, config, commands and the task flow's shared work that no feature owns |
+| `service/assistant` | usecase | assistant reads and their charged, kept and paid forms |
+| `service/deploy` | usecase | deploy targets and infra retries |
+| `service/gate` | usecase | the tool gate: read lines, scopes and the verdict on a command |
+| `service/git` | usecase | git commands, states, worktrees, deploys and diffs |
+| `service/launch` | usecase | starting a task: routing, placement, resume |
+| `service/log` | usecase | jagt's own logs: rolling files, press, stop and miss logs |
+| `service/master` | usecase | what the Master reads: panels, briefs, decisions, brake |
+| `service/plan` | usecase | plan approval, baseline and placement |
+| `service/presence` | usecase | session presence: ledger, probe, wakes, keep-alive |
+| `service/project` | usecase | projects: cards, folders, setup, removal |
+| `service/reach` | usecase | the reach ledger and what writes it |
+| `service/repo` | usecase | repositories: remotes, departures, hostless ships, merged requests |
+| `service/report` | usecase | status reports and their effects |
+| `service/review` | usecase | review rounds: cadence, drafts, sweep |
+| `service/role` | usecase | installed roles, their beans, settings and config origins |
+| `service/scenario` | usecase | scenario sessions, windows and acceptance probing |
+| `service/session` | usecase | session hosting, lines, prompts and offered models |
+| `service/stop` | usecase | stops: announcements, policy, per-task stops |
+| `service/task` | usecase | task views, facts, artifacts and finished tasks |
+| `service/turn` | usecase | turns: relay, tree, human wait recording |
+| `service/usage` | usecase | usage ledger, limits and wakes |
+| `service/worktree` | usecase | worktree files, changes, bases and briefing |
+| `startup` | usecase | why the assembly must not start: validation and its checks |
+| `startup/role` | usecase | the role checks of startup |
+| `adapter` | adapter | OS-free process and host plumbing: runner, executables, host, platform and toolchain checks |
+| `adapter/agent` | adapter | the agent drivers' shared and Claude-specific parts |
+| `adapter/agent/codex` | adapter | the Codex driver |
+| `adapter/agent/hook` | adapter | Claude's hook JSON and tool-gate envelope |
+| `adapter/agent/log` | adapter | session logs and prices per agent |
+| `adapter/agent/opencode` | adapter | the OpenCode driver |
+| `adapter/assistant` | adapter | the headless assistants, readers and replays |
+| `adapter/assistant/reach` | adapter | MCP and local-model reach probes |
+| `adapter/channel` | adapter | notification channel drivers |
+| `adapter/codehost` | adapter | code host drivers: choice, pipeline, replay, none |
+| `adapter/codehost/cli` | adapter | the GitHub and GitLab CLIs and their commands |
+| `adapter/flows` | adapter | the scripted-flows runner and its Playwright driver |
+| `adapter/linux` | adapter | Linux notifier, kitty driver and keep-awake |
+| `adapter/macos` | adapter | macOS notifier, terminal drivers, keep-awake and supervisor |
+| `adapter/replay` | adapter | a stand recording played back: runtime, sessions, moves, reads |
+| `adapter/terminal` | adapter | the kitty base, editor driver and kitty options |
+| `adapter/tmux` | adapter | the tmux session host and its reads |
+| `adapter/tracker` | adapter | tracker drivers: file and Jira workflows |
+| `adapter/worktree` | adapter | worktree-facing drivers: line diff, containers, processes, build tools, OpenSpec |
+| `surface/agent` | surface | what a session calls into: hooks, prompts, gates, reports |
+| `surface/board` | surface | the board's HTTP: API, projects, interactions, event stream |
+| `surface/board/filter` | surface | request filters of the board: origin, loopback, write, aborted connections |
+| `surface/board/task` | surface | per-task board endpoints and the palette's tiers |
+| `surface/mcp` | surface | the MCP endpoint: controller, protocol service, registry, token, handlers |
+| `surface/mcp/refusal` | surface | how a tool refuses: caller scope, failure, refusal |
+| `surface/mcp/tools` | surface | the MCP tool groups, each declaring its own scope |
+| `surface/ui` | surface | the console banner, failure page and startup failure |
+| `surface/ui/log` | surface | log archives and rolling, the port guard, task alias feed and filter |
+| `(root)` | backend | the application, its wiring and the one isolation of state writes |
+
+### Over ten classes
+
+A package-private partner that cannot move without being widened keeps its package whole. An exception ends when its
+partners move or are widened, never by raising the number.
+
+| package | why |
+|---------|-----|
+| `flow` | package-private chart types (`Fact`, `Landing`, `TaskMove`, `Phases`, `Role`) are partners of `TaskChart` and `TaskReducer` |
+| `protocol` | package-private `Wire` is the codec of eight message and read records beside it |
+| `service` | package-private `RoundBrief`, `TaskNotes` and `WorktreeSandbox` tie `HandBack`, `RoundRelay`, `AgentSessions` and their readers |
+| `service/git` | twelve classes of one feature, no sub-kind of three; `GitStates` is package-private to `GitWorktrees` |
+| `adapter/agent` | package-private `ClaudeConfigDir`, `ClaudeTrust` and `ClaudeTranscripts` tie the Claude classes together |
+| `adapter/assistant` | package-private `HeadlessClaude` and `HeadlessOpenCode` tie the assistants and readers built on them |
+
+### A single class
+
+None today; a package of one class folds into its parent.
+
 ## Where a new thing goes
 
 | you want to | do this |
@@ -212,9 +354,10 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
   legal ones only, `FlowRules.allowed(...)`), and `FlowEngine` refuses an illegal one with a sentence.
 - **The surface holds no list** — the usual way to break that is building a button in `static/components/Card.js`.
 - An action the table never mentions is offered by nobody, so `startup/FlowCheck` refuses to start.
-- **The tree shows layers, then features, then kinds**: a new kind of thing is named here before its first class; three
-  classes of one kind or feature get their own sub-package (`capability/ship/`); nothing is split ahead of that, and no
-  package holds a single class.
+- **The tree shows layers, then features, then kinds**: a new kind of thing is named in [the package map](#the-package-map)
+  before its first class; three classes of one kind or feature get their own sub-package (`capability/ship/`); nothing is
+  split ahead of that, and no package holds a single class or more than ten
+  ([0166](docs/decisions/0166-packages-are-architecture.md)).
 - `do` and `resume` are named literally only in tier 2: `PaletteContext`'s prompt maps a line onto them,
   `NaturalLanguageDispatch` runs them.
 

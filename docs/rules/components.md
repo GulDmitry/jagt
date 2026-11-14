@@ -36,8 +36,8 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
 
 - `history`: every status a task moved **to**, with when and **who asked**, oldest first, capped at 50, and
   copied whole into `finished.jsonl` on `done`.
-- The asker (`task/ActionOrigin`) rides `service/OriginContext` and is set at an **entry point** only —
-  `surface/board/OriginFilter`, `NaturalLanguageDispatch`, `AutoReviewScheduler` — never passed down.
+- The asker (`task/turn/ActionOrigin`) rides `service/OriginContext` and is set at an **entry point** only —
+  `surface/board/filter/OriginFilter`, `NaturalLanguageDispatch`, `AutoReviewScheduler` — never passed down.
 - `StateService` writes atomically and keeps `state.json.bak`, recovering from it and moving an unparsable
   file to `state.json.corrupt`; with no usable backup it **throws** — never make that path fail soft.
 - **A dedup key lives with its writer**, on the task (`TaskState.trail`, the `Conflict` of `TaskState.deployment`): never a file
@@ -54,14 +54,14 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
   briefed by `AGENTS.md` (`AgentRuntime.SYSTEM_KNOWLEDGE_FILE`) and `task_context.md`.
 - **A task is created with its item's own facts or not at all.** `TaskLauncher` and `TaskResume` read it on every
   launch; `TicketFacts.usable()` gates on a key, a title **and** a link. A failing answer is asked again:
-  `protocol/RetryPolicy`, 3 attempts, each carrying what the last got wrong. A bare key answered for a
+  `protocol/read/RetryPolicy`, 3 attempts, each carrying what the last got wrong. A bare key answered for a
   **different** key is refused, and nothing invents a URL. **A line opening on a project key names no item**: the words after it ARE
   the task and `TaskName.from` cuts its branch out of them.
-- **Sub-agents can only act on their own task**: `surface/mcp/CallerScope` enforces X-Working-Directory; the
+- **Sub-agents can only act on their own task**: `surface/mcp/refusal/CallerScope` enforces X-Working-Directory; the
   Master presents `surface/mcp/MasterToken`; anyone else is refused.
   A tool taking a taskId gets a `McpToolScopeTest` row. A sub-agent is listed and answered `update_agent_status`,
   `notify_user` and `open_in_ide` alone, the rest being `Audience.MASTER`; its every call bumps `lastActiveTimestamp`.
-- **A task id is any name git accepts as a branch** (`core/task/TaskName`): a task IS its branch, and every
+- **A task id is any name git accepts as a branch** (`core/task/launch/TaskName`): a task IS its branch, and every
   directory, tmux session, socket and temp file goes through `TaskName.slug`.
 - **The MCP transport must never emit non-JSON-RPC bytes**: malformed JSON → `-32700`, an HTTP error → a
   synthesized JSON-RPC error in `mcp_client.js`.
@@ -78,5 +78,5 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
 - Two limits: **nothing reaches the network** (presence, never validity) and nothing asks a
   remote about a branch. `orchestrator.startup-checks=false` is for test harnesses only and skips the machine
   alone: a check of jagt's own files answers `machine()` false and runs always.
-- `surface/board/AbortedConnectionFilter` drops the aborted-peer `setSoLinger` `SocketException`. Never
+- `surface/board/filter/AbortedConnectionFilter` drops the aborted-peer `setSoLinger` `SocketException`. Never
   silence `NioEndpoint` instead.

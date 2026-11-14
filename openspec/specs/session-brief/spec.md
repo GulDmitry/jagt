@@ -89,7 +89,7 @@ A repro SHALL count only when it shows the report's signal. The default SHALL be
 
 ### Requirement: A session judges each switch that is on
 A session SHALL answer each of `autoplan`, `visualize` and `diagnose` that is on as `yes — <why>` or `no — <why>`.
-The answers go in `switches` (`protocol/SwitchJudgements`) of its first `update_agent_status` report, whatever status it reports.
+The answers go in `switches` (`protocol/plan/SwitchJudgements`) of its first `update_agent_status` report, whatever status it reports.
 jagt SHALL refuse such a report as `validation`, naming the switch and the form, when an answer is missing, lacks its why or is
 unknown; other reports need none and a later answer replaces an earlier.
 

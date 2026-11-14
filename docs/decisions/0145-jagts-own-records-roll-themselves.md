@@ -10,7 +10,7 @@ Accepted 2026-11-07, recorded retroactively.
 
 - `misses.jsonl`, `stops.jsonl` and `interactions.jsonl` are jagt's data: a line per event, read back by its own
   readers and by a human, beside `state.json` in the state directory.
-- `service/RollingFile` keeps each under 1 MiB with one `.1` generation; Logback's `RollingFileAppender` does the same job.
+- `service/log/RollingFile` keeps each under 1 MiB with one `.1` generation; Logback's `RollingFileAppender` does the same job.
 
 ## Decision
 

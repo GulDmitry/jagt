@@ -19,7 +19,7 @@ Extended by [0144](0144-what-was-told-once-is-one-ledger-written-by-the-reducer.
 
 ## Decision
 
-- `task/Turn` lives on `TaskState` in `state.json`: holder, the step that opened it, an id, the digest of its facts,
+- `task/turn/Turn` lives on `TaskState` in `state.json`: holder, the step that opened it, an id, the digest of its facts,
   `since`, and one mark per step for what that step last carried. Absent reads as no turn.
 - `flow/Turns.next(status, report, profile)` is the one answer to who holds the turn; `Move.ownerOf` maps it.
 - `StepRelay` opens the session's turn; the session's report closes it, naming the next holder. The same step with

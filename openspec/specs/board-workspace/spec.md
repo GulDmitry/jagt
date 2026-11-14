@@ -168,7 +168,7 @@ before it runs asks on its key too, and `Done` carries none and stands apart at 
 - **THEN** Focus runs on a1
 
 ### Requirement: The history names who asked
-Each step of a task's status history SHALL name who asked for it (`task/ActionOrigin`), the opening step what opened
+Each step of a task's status history SHALL name who asked for it (`task/turn/ActionOrigin`), the opening step what opened
 the task: the board, the palette, a task session's MCP call, the root session's or the tracker. A step jagt took unasked names nobody.
 A step whose asker gave a reason SHALL show it in the step's hover alone. The history holds 50 steps. Past that the oldest after the
 opening step drop; the opening step stays. Time held per owner leaves out the gap after it.

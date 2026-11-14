@@ -11,7 +11,7 @@ Amended by [0150](0150-a-file-tracker-is-read-by-jagt-itself.md): a Markdown fil
 
 ## Context
 
-- 2026-08-13: `99e7564` added `port/CodeHost` (GitLab v4) so the review sweep read over REST when
+- 2026-08-13: `99e7564` added `port/codehost/CodeHost` (GitLab v4) so the review sweep read over REST when
   `orchestrator.code-host.*` was set, falling back to the paid headless read; `52a8c60` opened the merge request
   over REST too.
 - 2026-08-17: `7bd2270` added GitHub behind `CodeHost` and a `port/Tracker` (Jira) for the one ticket a launch
