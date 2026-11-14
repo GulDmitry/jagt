@@ -35,6 +35,9 @@ Accepted 2026-11-11. Amended by [0164](0164-a-unit-test-is-named-after-its-main-
 - Builders in place of `GitRepos`: its scripted git scenarios are a fake of a repository; it stays.
 - Inlining `BoardPageContext`'s page actions: they drive the board's page for every board test; they stay.
 - Inlining `FlowHarness`'s waits, driver actions and world setup: they drive jagt for every e2e test; they stay.
+- Moving the model evals' helpers into new harness classes: it moves their freeze entries, removes none; they stay frozen (0162).
+- Nesting a test's Spring event and listener: a fake of `ApplicationEvent` or `ApplicationListener` fakes the seam Spring dispatches through.
+- Folding a repeated call under 75 tokens back into a helper: `DuplicationTest` is the judge.
 
 ## Reopen when
 
