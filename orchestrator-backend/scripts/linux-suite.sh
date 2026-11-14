@@ -41,11 +41,17 @@ for project in "$BACKEND_DIR"/build.gradle "$BACKEND_DIR"/*/build.gradle; do
     STATE_MOUNTS+=(-v "$dir/build" -v "$dir/.gradle")
 done
 
+# Root ignores file modes, so the suites run as the image's own user, as they do on a CI runner;
+# only the volumes it writes are handed to it first.
+DROP_ROOT='[[ $(stat -c %u /gradle-home) == 1000 ]] || chown -R 1000:1000 /gradle-home
+chown 1000:1000 /jagt/orchestrator-backend/build /jagt/orchestrator-backend/.gradle /jagt/orchestrator-backend/*/build /jagt/orchestrator-backend/*/.gradle
+exec setpriv --reuid=1000 --regid=1000 --init-groups env HOME=/home/ubuntu "$@"'
+
 echo "==> running: ${TASKS[*]}"
 # --init: a killed command's orphan is reaped, never left a zombie that still reads as alive.
 docker run --rm --init \
     -v "$REPO_ROOT:/jagt" \
     "${STATE_MOUNTS[@]}" \
     -v "$CACHE_VOLUME:/gradle-home" \
-    "$IMAGE" scripts/with-linux-desktop.sh ./gradlew --no-daemon "${TASKS[@]}"
+    "$IMAGE" bash -c "$DROP_ROOT" - scripts/with-linux-desktop.sh ./gradlew --no-daemon "${TASKS[@]}"
 echo "==> done"
