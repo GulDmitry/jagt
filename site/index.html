@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>jagt: one ticket, one agent, one worktree</title>
+<meta name="description" content="jagt hands a ticket to an AI coding agent in its own Git worktree and lets you drive every session from one board.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav>
+  <div class="container">
+    <a class="brand" href="#top"><img src="favicon.svg" alt="">jagt</a>
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#install">Install</a>
+    <a href="#docs">Docs</a>
+  </div>
+</nav>
+
+<main id="top">
+  <header class="hero container">
+    <h1>One ticket. One agent session. One Git worktree.</h1>
+    <p class="lede">You decide each step, or let an agent decide it.</p>
+    <pre class="install"><span class="prompt">$ </span>git clone https://github.com/GulDmitry/jagt.git &amp;&amp; cd jagt</pre>
+    <p class="actions">
+      <a class="button primary" href="#install">Install</a>
+      <a class="button" href="https://github.com/GulDmitry/jagt">GitHub</a>
+    </p>
+  </header>
+
+  <section class="container" id="features">
+    <h2>What jagt does</h2>
+    <div class="grid">
+      <div class="card"><h3>Several tickets at once</h3><p>Each in its own worktree and branch: agents never trip over each other or your base branch.</p></div>
+      <div class="card"><h3>You look only when it needs you</h3><p>Questions, stalls and crashes are flagged and ranked by whose move it is, with a banner.</p></div>
+      <div class="card"><h3>Review comments answered for you</h3><p>Each thread is fixed, declined with a why, or asked; replies are drafted for you to read first.</p></div>
+      <div class="card"><h3>A red pipeline goes back by itself</h3><p>The session fixes it; a failure the host blames on infrastructure is re-run.</p></div>
+      <div class="card"><h3>A reviewer before you read</h3><p>The Master judges every round by your brief; in <code>act</code> it ships and deploys, your word overrules it.</p></div>
+      <div class="card"><h3>Done means checked</h3><p>jagt runs the plan's acceptance probes itself and refuses a hand-back without a valid spec change.</p></div>
+      <div class="card"><h3>Tickets in, tickets out</h3><p>A ready ticket can open a task and a done one close it, through your own MCP; jagt holds no token.</p></div>
+    </div>
+    <p class="more">Everything jagt does, one line each and linked to its spec: <a href="https://github.com/GulDmitry/jagt/blob/main/docs/features.md">Features</a>.</p>
+  </section>
+
+  <section class="container" id="how">
+    <h2>How it works</h2>
+    <p>jagt hands a ticket to an autonomous AI coding agent in its own isolated Git worktree, so two agents cannot see or break each other's work. You drive all of them from one board in your browser.</p>
+    <div class="grid three">
+      <div class="card"><h3>The board</h3><p>A row shows status, age and checks; pick one and its detail opens beside the list.</p></div>
+      <div class="card"><h3>Sessions</h3><p>Sessions live in tmux and the state is one JSON file, so restarting the backend loses nothing</p></div>
+      <div class="card"><h3>Git worktree</h3><p>Nothing is written into your project's tracked files</p></div>
+    </div>
+    <h3 class="subhead">The session, and you</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>the agent session</th><th>you</th></tr></thead>
+        <tbody>
+          <tr><td>reads the ticket, writes the code, runs your tests</td><td>look at the live diff — <code>ide</code></td></tr>
+          <tr><td>leaves <strong>everything uncommitted</strong></td><td><code>ship</code> — the first commit and push there is</td></tr>
+          <tr><td>fixes the CI failures and the comments, drafts every reply</td><td>read the drafts — <code>replies</code> — then <code>ship</code></td></tr>
+          <tr><td>touches no shared branch and no other task</td><td><code>deploy</code>, then <code>done</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="container" id="install">
+    <h2>Install</h2>
+    <p>Tools: <a href="https://github.com/GulDmitry/jagt/blob/main/docs/installation.md">Technologies</a></p>
+    <ol class="steps">
+      <li>check MCP access
+        <pre class="install"><span class="prompt">$ </span>cd "$TMPDIR" &amp;&amp; claude "Name your MCP tools for &lt;your tracker&gt; and &lt;your code host&gt;, or say NONE." -p</pre></li>
+      <li>clone, and name one repository
+        <pre class="install"><span class="prompt">$ </span>git clone https://github.com/GulDmitry/jagt.git &amp;&amp; cd jagt
+<span class="prompt">$ </span>cp jagt.yml.dist jagt.yml</pre></li>
+      <li>build, and run
+        <pre class="install"><span class="prompt">$ </span>cd orchestrator-backend
+<span class="prompt">$ </span>./gradlew build stageJar
+<span class="prompt">$ </span>java -jar build/libs/jagt-run.jar</pre></li>
+      <li>open the board <code>http://localhost:8290</code> <strong>New task</strong> It starts an agent session in tmux at once, and a session costs tokens.</li>
+    </ol>
+  </section>
+
+  <section class="container" id="docs">
+    <h2>Documentation</h2>
+    <div class="table-wrap">
+      <table>
+        <tbody>
+          <tr><td><a href="https://github.com/GulDmitry/jagt/blob/main/docs/installation.md">Installation</a></td><td>every technology, per platform, and the first run</td></tr>
+          <tr><td><a href="https://github.com/GulDmitry/jagt/blob/main/docs/usage.md">Usage</a></td><td>the board, every command, the review loop</td></tr>
+          <tr><td><a href="https://github.com/GulDmitry/jagt/blob/main/docs/configuration.md">Configuration</a></td><td>where a setting goes, and what outranks what</td></tr>
+          <tr><td><a href="https://github.com/GulDmitry/jagt/blob/main/docs/troubleshooting.md">Troubleshooting</a></td><td>symptom → cause → fix</td></tr>
+          <tr><td><a href="https://github.com/GulDmitry/jagt/blob/main/ARCHITECTURE.md">Architecture</a></td><td>the code map: what kinds of thing jagt has, and where a new one goes</td></tr>
+          <tr><td><a href="https://github.com/GulDmitry/jagt/blob/main/docs/development.md">Development</a></td><td>test suites, CI, running the Linux suite from a Mac</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    <a href="https://github.com/GulDmitry/jagt">GitHub</a> · <a href="https://github.com/GulDmitry/jagt/blob/main/LICENSE">Apache 2.0</a>
+  </div>
+</footer>
+</body>
+</html>

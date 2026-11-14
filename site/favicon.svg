@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- A "j" that is also a branch: the stem is the line of work, the tittle and the foot are its two commit
+       nodes, and the hook is where it comes back. Regenerating the fallbacks: docs/development.md. -->
+  <style>
+    .badge { fill: #1d4ed8 }
+    .stem { fill: none; stroke: #fff; stroke-width: 4.2; stroke-linecap: round }
+    .node { fill: #fff }
+    @media (prefers-color-scheme: dark) { .badge { fill: #3b6cf0 } }
+  </style>
+  <rect class="badge" width="32" height="32" rx="7"/>
+  <path class="stem" d="M19 11v8c0 4-3 6-7 5.6"/>
+  <circle class="node" cx="19" cy="5.6" r="2.9"/>
+  <circle class="node" cx="11.4" cy="24.4" r="3.4"/>
+</svg>

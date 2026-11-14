@@ -23,7 +23,9 @@ class CiWorkflowTest {
   void publishesReleaseOnlyOnceEveryOtherJobIsGreen() {
     Map<String, Map<String, Object>> jobs = jobs();
     Set<String> others =
-        jobs.keySet().stream().filter(job -> !job.equals("release")).collect(Collectors.toSet());
+        jobs.keySet().stream()
+            .filter(job -> !job.equals("release") && !job.equals("pages"))
+            .collect(Collectors.toSet());
     assertThat(Objects.requireNonNull(jobs.get("release")).get("needs"))
         .asInstanceOf(list(String.class))
         .containsExactlyInAnyOrderElementsOf(others);
